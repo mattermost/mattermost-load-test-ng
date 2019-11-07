@@ -1,46 +1,78 @@
-# Mattermost Load Test 
+# New Loadtest (User model version)
 
-Mattermost Load Test provides a set of tools written in [Go](https://golang.org/) for profiling [Mattermost](https://github.com/mattermost/mattermost-server) under heavy load simulating real-world usage of the Mattermost Enterprise Edition E20 at scale.
+## Code Structure / Packages
 
-In setting up this system you will: 
+- cmd
+	 - loadtest
+- loadtest
+	- control
+		- simplecontroller
+	- user
+		- userentity
+	- store
+		- memstore
 
-- Deploy Mattermost in a production configuration, potentially in high availability mode
-- Optimize the performance of your Mattermost deployment 
-- Deploy a Mattermost Load Test server to apply simulated load to your production deployment 
-- Log in to your Mattermost deployment to observe it under load
+## Goals/Features 
 
-If you have questions about configuration, please contact your Customer Success Manager. An overview of support available to E20 customers is available at https://about.mattermost.com/support/
+- No external dependencies.
+- Loosely coupled components.
+- Short, *do one thing only* functions. 
+- State handling out of main logic.
+- Theoretically no need to bulkload.
+- No need to synchronize state between multiple loadtesting instances.
+- Easy to add/remove concurrent users at execution time.
 
-## Installation
+## How it works (high level view)
 
-Install the binaries:
-```
-go get github.com/mattermost/mattermost-load-test/cmd/ltops
-go get github.com/mattermost/mattermost-load-test/cmd/loadtest
-go get github.com/mattermost/mattermost-load-test/cmd/ltparse
-```
+The main idea behind this refactor/rewrite is to move to a more user centered model. A user is made of two parts: its state (what it knows) and its behaviour (what it does).   
+It's important we keep the two aspects completely separated in order to avoid unnecessary complexities.
 
-Run `ltops help` to verify the installation and get started with the available commands.
+By defining a user this way we make it independent and should be easy to spawn as many entities as we need and obtain a higher quality simulation.
 
-## Profiling Strategies
+Under this model a user will be running loops of this kind:
 
-Various profiling strategies are currently supported:
-* [AWS cluster using Terraform](docs/terraform.md) (recommended)
-* [Kubernetes cluster](docs/kubernetes.md)
-* [Manual loadtesting against an existing cluster](docs/manual.md)
+Sign up --> Log in --> Do stuff --> ... --> Logout --> Log in --> Do stuff --> ...
 
-The best way to profile the mattermost-server is to set up an [AWS cluster using Terraform](docs/terraform.md) using the `ltops` tool. Use this setup to qualify the performance of a given Mattermost release, or measure the effect of an experimental change to the [mattermost-server](https://github.com/mattermost/mattermost-server). Note that while other cloud providers are on the roadmap, only AWS is supported at present.
+The implementation tries to keep everything abstracted enough to make its components as loosely coupled as possible and at the same time allow for good extensibility.
 
-Feel free to experiment with profiling a Mattermost [Kubernetes cluster](docs/kubernetes.md) using the `ltops` tool, but recognize that this is still in beta. There may also be some tooling differences between Kubernetes and the more stable Terraform setup.
+## Implementation Details (low level view)
 
-The `loadtest` tool may be run [manually against an existing cluster](docs/manual.md), regardless of how that cluster is deployed. Note that care is required to tune an arbitrary cluster to perform well under load. This method of profiling is also suitable for basic `localhost` profiling, especially when developing against mattermost-load-test itself.
+### Interfaces
 
-## Development
+- `UserController`
+	this is the actor that's in charge of user's behaviour. It has *almost* readonly access to the user's state. This is where the logic of "what/when the user does" goes. You can think about it as the user's *mind*.
+I envision multiple implementations going from a very simple, deterministic one (included) to something more realistic (stochastic approach) like we currently have in the master branch.
 
-Follow the [Mattermost developer setup instructions](https://developers.mattermost.com/contribute/server/developer-setup/), then clone the repository and build for yourself:
+- `User` 
+   this exposes basic user's actions (signup/login/logout/post, etc) , handles API client and deals with state management.
+   Made as an interface to hide implementation details from outside while keeping state handling confined.
+   
+- `UserStore`
+  this is the user's state (*brain*), think of this as what redux is for webapp (1000 times simplified). Should expose basic *readonly* access to the user's state (user/channels/teams, etc). It is used by the `UserController` implementation.
 
-```
-go get github.com/mattermost/mattermost-load-test
-cd $(go env GOPATH)/src/mattermost/mattermost-load-test
-make install
-```
+- `MutableUserStore`
+  this is a supertype of `UserStore` that adds the write functionality. It is used by the `User` implementation to manage the internal user state.
+
+### Concrete Types
+
+- `LoadTester`
+   this is the main point of entry . It's currently a convenient singleton that initializes and operates the controllers and handles goroutines synchronization.
+- `SimpleController`
+   simple (dumb) implementation of `UserController`. It will run user actions sequentially. Currently executes signup/login/logout loops.
+- `UserEntity`
+   This is the type that implements `User`. It holds API and WS clients and has full access to the underlying store. This is where user's state management is implemented.
+- `MemStore`
+   A very basic *in memory* state implementation of `MutableUserStore` mainly consisting of maps of structs the user needs to operate.
+
+## TODOs
+
+- Configuration needs some rework mainly in the direction of *simplification*.
+- Loadtest Input data (user analytics / opentrace dump?) / Output data (errors, timing, latency) have to be well defined and an implementation making use of both provided.
+- Expose a LoadTesting API to be ran as a service and controlled remotely. I can see current `ltops` tool interfacing with such API and orchestrate loadtesting instances.
+
+## Demo
+
+Still in a POC state but should work by running:
+
+`go run -v cmd/loadtest/loadtest.go`
+
