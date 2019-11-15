@@ -12,13 +12,13 @@ import (
 )
 
 type UserAction struct {
-	run       func(status chan<- user.UserStatus) bool
+	run       func() user.UserStatus
 	waitAfter time.Duration
 }
 
-func (c *SimpleController) signUp(status chan<- user.UserStatus) bool {
+func (c *SimpleController) signUp() user.UserStatus {
 	if c.user.Store().User() != nil {
-		return true
+		return user.UserStatus{User: c.user, Info: "user already signed up"}
 	}
 
 	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
@@ -27,39 +27,32 @@ func (c *SimpleController) signUp(status chan<- user.UserStatus) bool {
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
-		status <- user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		return false
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 
-	status <- user.UserStatus{User: c.user, Info: "signed up"}
-	return true
+	return user.UserStatus{User: c.user, Info: "signed up"}
 }
 
-func (c *SimpleController) login(status chan<- user.UserStatus) bool {
+func (c *SimpleController) login() user.UserStatus {
 	// return here if already logged in
 	err := c.user.Login()
 	if err != nil {
-		status <- user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		return false
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 
-	status <- user.UserStatus{User: c.user, Info: "logged in"}
-	return true
+	return user.UserStatus{User: c.user, Info: "logged in"}
 }
 
-func (c *SimpleController) logout(status chan<- user.UserStatus) bool {
+func (c *SimpleController) logout() user.UserStatus {
 	// return here if already logged out
 	ok, err := c.user.Logout()
 	if err != nil {
-		status <- user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		return false
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 
 	if !ok {
-		status <- user.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: user.STATUS_ERROR}
-		return false
+		return user.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: user.STATUS_ERROR}
 	}
 
-	status <- user.UserStatus{User: c.user, Info: "logged out"}
-	return true
+	return user.UserStatus{User: c.user, Info: "logged out"}
 }

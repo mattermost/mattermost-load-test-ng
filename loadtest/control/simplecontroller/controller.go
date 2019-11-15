@@ -47,7 +47,7 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 
 	for {
 		for i := 0; i < len(actions); i++ {
-			actions[i].run(status)
+			status <- actions[i].run()
 			select {
 			case <-c.stop:
 				return
