@@ -5,7 +5,6 @@ package simplecontroller
 
 import (
 	"errors"
-	"sync/atomic"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test/loadtest/user"
@@ -13,11 +12,12 @@ import (
 
 type SimpleController struct {
 	user user.User
-	done int32
+	stop chan bool
 }
 
 func (c *SimpleController) Init(user user.User) {
 	c.user = user
+	c.stop = make(chan bool)
 }
 
 func (c *SimpleController) Run(status chan<- user.UserStatus) {
@@ -47,11 +47,13 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 
 	for {
 		for i := 0; i < len(actions); i++ {
-			if c.shouldStop() {
-				return
-			}
 			actions[i].run(status)
-			time.Sleep(actions[i].waitAfter * time.Millisecond)
+			select {
+			case <-c.stop:
+				return
+			case <-time.After(time.Millisecond * actions[i].waitAfter):
+			default:
+			}
 		}
 
 		// status <- user.UserStatus{User: c.user, Info: "user loop done", Code: user.STATUS_DONE}
@@ -59,11 +61,7 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 }
 
 func (c *SimpleController) Stop() {
-	atomic.StoreInt32(&c.done, 1)
-}
-
-func (c *SimpleController) shouldStop() bool {
-	return atomic.LoadInt32(&c.done) == 1
+	close(c.stop)
 }
 
 func (c *SimpleController) sendFailStatus(status chan<- user.UserStatus, reason string) {
