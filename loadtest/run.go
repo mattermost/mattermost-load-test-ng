@@ -83,13 +83,15 @@ func Run() error {
 
 	go lt.handleStatus(status)
 
+	start := time.Now()
+
 	lt.runControllers(status)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	lt.stopControllers()
 
-	mlog.Info("loadtest done")
+	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
 
 	return nil
 }

@@ -44,18 +44,18 @@ func (ue *UserEntity) Login() error {
 	return nil
 }
 
-func (ue *UserEntity) Logout() error {
+func (ue *UserEntity) Logout() (bool, error) {
 	user := ue.store.User()
 
 	if user == nil {
-		return errors.New("user was not initialized")
+		return false, errors.New("user was not initialized")
 	}
 
-	_, resp := ue.client.Logout()
+	ok, resp := ue.client.Logout()
 
 	if resp.Error != nil {
-		return resp.Error
+		return ok, resp.Error
 	}
 
-	return nil
+	return ok, nil
 }

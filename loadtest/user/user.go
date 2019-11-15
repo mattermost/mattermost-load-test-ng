@@ -21,7 +21,7 @@ type User interface {
 
 	SignUp(email, username, password string) error
 	Login() error
-	Logout() error
+	Logout() (bool, error)
 }
 
 type UserStatus struct {

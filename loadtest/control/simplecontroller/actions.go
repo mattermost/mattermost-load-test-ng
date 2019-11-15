@@ -4,6 +4,7 @@
 package simplecontroller
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,9 +49,14 @@ func (c *SimpleController) login(status chan<- user.UserStatus) bool {
 
 func (c *SimpleController) logout(status chan<- user.UserStatus) bool {
 	// return here if already logged out
-	err := c.user.Logout()
+	ok, err := c.user.Logout()
 	if err != nil {
 		status <- user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+		return false
+	}
+
+	if !ok {
+		status <- user.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: user.STATUS_ERROR}
 		return false
 	}
 
