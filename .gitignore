@@ -58,8 +58,8 @@ dummies
 dummies.log
 sessions.db
 
-# ignore local loadtestconfig
-loadtestconfig.json
+# ignore local config
+config/config.json
 
 /terraformenv
 .idea

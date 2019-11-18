@@ -1,23 +1,24 @@
-// Copyright (c) 2017 Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See License.txt for license information.
 
 package main
 
 import (
-	// "io/ioutil"
 	"os"
 	"strings"
 
-	// "github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	// "github.com/spf13/viper"
-
+	"github.com/mattermost/mattermost-load-test/example"
 	"github.com/mattermost/mattermost-load-test/loadtest"
 	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/spf13/cobra"
 )
 
 func RunLoadTest(cmd *cobra.Command, args []string) error {
 	return loadtest.Run()
+}
+
+func RunExample(cmd *cobra.Command, args []string) error {
+	return example.Run()
 }
 
 func main() {
@@ -25,7 +26,14 @@ func main() {
 
 	var rootCmd = &cobra.Command{Use: "loadtest", RunE: RunLoadTest}
 
-	commands := make([]*cobra.Command, 0)
+	commands := make([]*cobra.Command, 1)
+
+	commands[0] = &cobra.Command{
+		Use:   "example",
+		Short: "Run example implementation",
+		RunE:  RunExample,
+	}
+
 	rootCmd.AddCommand(commands...)
 	rootCmd.Execute()
 }

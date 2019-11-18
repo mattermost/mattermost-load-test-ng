@@ -52,7 +52,6 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 			case <-c.stop:
 				return
 			case <-time.After(time.Millisecond * actions[i].waitAfter):
-			default:
 			}
 		}
 

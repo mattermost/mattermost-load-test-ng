@@ -42,9 +42,9 @@ package: build-linux
 	rm -rf $(DIST_ROOT)
 	mkdir -p $(DIST_PATH)/bin
 
-	cp loadtestconfig.default.json $(DIST_PATH)/loadtestconfig.json
+	cp config.default.json $(DIST_PATH)/config/config.json
 	cp README.md $(DIST_PATH)
-	cp -r testfiles $(DIST_PATH)
+	#cp -r testfiles $(DIST_PATH)
 
 	@# ----- PLATFORM SPECIFIC -----
 

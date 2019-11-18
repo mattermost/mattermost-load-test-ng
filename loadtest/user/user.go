@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	STATUS_STARTED int = iota
-	STATUS_STOPPED int = iota
-	STATUS_DONE    int = iota
-	STATUS_ERROR   int = iota
-	STATUS_FAILED  int = iota
+	STATUS_UNKNOWN int = iota
+	STATUS_STARTED
+	STATUS_STOPPED
+	STATUS_DONE
+	STATUS_ERROR
+	STATUS_FAILED
 )
 
 type User interface {
