@@ -1,5 +1,5 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
-// See License.txt for license information.
+// Copyright (c) 2019 Mattermost, Inc. All Rights Reserved.
+// See License.txt for license information
 
 package loadtest
 
@@ -11,71 +11,18 @@ import (
 )
 
 type LoadTestConfig struct {
-	ConnectionConfiguration   ConnectionConfiguration
-	UserEntitiesConfiguration UserEntitiesConfiguration
-	ResultsConfiguration      ResultsConfiguration
-	LogSettings               LoggerSettings
-}
-
-type UserEntitiesConfiguration struct {
-	TestLengthMinutes                 int
-	NumActiveEntities                 int
-	ActionRateMilliseconds            int
-	ActionRateMaxVarianceMilliseconds int
-	EnableRequestTiming               bool
-	ChannelLinkChance                 float64
-	UploadImageChance                 float64
-	LinkPreviewChance                 float64
-	CustomEmojiChance                 float64
-	CustomEmojiReactionChance         float64
-	SystemEmojiReactionChance         float64
-	NeedsProfilesByIdChance           float64
-	NeedsProfilesByUsernameChance     float64
-	NeedsProfileStatusChance          float64
-	DoStatusPolling                   bool
-	RandomizeEntitySelection          bool
-	UserProfileUpdateFullnameChance   float64
-	UserProfileUpdateUsernameChance   float64
-	UserProfileUpdateNicknameChance   float64
-	UserProfileUpdatePositionChance   float64
-	UserProfileUpdateEmailChance      float64
-	UserProfileUpdateImageChance      float64
-	PublicChannelCreationChance       float64
-	PrivateChannelCreationChance      float64
-	DirectChannelCreationChance       float64
-	GroupChannelCreationChance        float64
-	NumPostReactionsPerUser           int
-	PostReactionsRateMilliseconds     int
-	NumPostsGetBeforeAfter            int
-	GetPostsAroundLastUnreadChance    float64
-	NumGetPostsAroundLastUnread       int
+	ConnectionConfiguration ConnectionConfiguration
+	LogSettings             LoggerSettings
 }
 
 type ConnectionConfiguration struct {
 	ServerURL                   string
 	WebsocketURL                string
-	PProfURL                    string
 	DriverName                  string
 	DataSource                  string
-	DBEndpoint                  string // deprecated
-	LocalCommands               bool
-	SSHHostnamePort             string
-	SSHUsername                 string
-	SSHPassword                 string
-	SSHKey                      string
-	MattermostInstallDir        string
-	ConfigFileLoc               string
-	AdminEmail                  string
-	AdminPassword               string
-	SkipBulkload                bool
 	MaxIdleConns                int
 	MaxIdleConnsPerHost         int
 	IdleConnTimeoutMilliseconds int
-}
-
-type ResultsConfiguration struct {
-	PProfDelayMinutes int
-	PProfLength       int
 }
 
 type LoggerSettings struct {
@@ -89,7 +36,7 @@ type LoggerSettings struct {
 }
 
 func ReadConfig() error {
-	viper.SetConfigName("loadtestconfig")
+	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config/")
 	viper.SetEnvPrefix("mmloadtest")
