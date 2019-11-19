@@ -8,10 +8,11 @@ import (
 )
 
 type UserStore interface {
-	User() *model.User
+	Id() string
 }
 
 type MutableUserStore interface {
 	UserStore
+	User() *model.User
 	SetUser(user *model.User) error
 }

@@ -15,6 +15,13 @@ func New() *SampleStore {
 	return &SampleStore{}
 }
 
+func (s *SampleStore) Id() string {
+	if s.user == nil {
+		return ""
+	}
+	return s.user.Id
+}
+
 func (s *SampleStore) User() *model.User {
 	return s.user
 }

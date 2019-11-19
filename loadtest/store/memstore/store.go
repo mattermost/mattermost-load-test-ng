@@ -17,6 +17,13 @@ func New() *MemStore {
 	return &MemStore{}
 }
 
+func (s *MemStore) Id() string {
+	if s.user == nil {
+		return ""
+	}
+	return s.user.Id
+}
+
 func (s *MemStore) User() *model.User {
 	return s.user
 }

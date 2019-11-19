@@ -17,7 +17,7 @@ type UserAction struct {
 }
 
 func (c *SimpleController) signUp() user.UserStatus {
-	if c.user.Store().User() != nil {
+	if c.user.Store().Id() != "" {
 		return user.UserStatus{User: c.user, Info: "user already signed up"}
 	}
 

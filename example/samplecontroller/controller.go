@@ -76,7 +76,7 @@ func (c *SampleController) sendStopStatus(status chan<- user.UserStatus) {
 }
 
 func (c *SampleController) signUp() user.UserStatus {
-	if c.user.Store().User() != nil {
+	if c.user.Store().Id() != "" {
 		return user.UserStatus{User: c.user, Info: "user already signed up"}
 	}
 
@@ -89,7 +89,7 @@ func (c *SampleController) signUp() user.UserStatus {
 		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 
-	return user.UserStatus{User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().User().Id)}
+	return user.UserStatus{User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id())}
 }
 
 func (c *SampleController) login() user.UserStatus {
