@@ -16,6 +16,12 @@ type UserEntity struct {
 	store    store.MutableUserStore
 	client   *model.Client4
 	wsClient *model.WebSocketClient
+	config   Config
+}
+
+type Config struct {
+	ServerURL    string
+	WebsocketURL string
 }
 
 func (ue *UserEntity) Id() int {
@@ -26,10 +32,11 @@ func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
 }
 
-func New(store store.MutableUserStore, id int, serverURL string) *UserEntity {
+func New(store store.MutableUserStore, id int, config Config) *UserEntity {
 	ue := UserEntity{}
 	ue.id = id
-	ue.client = model.NewAPIv4Client(serverURL)
+	ue.config = config
+	ue.client = model.NewAPIv4Client(ue.config.ServerURL)
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
