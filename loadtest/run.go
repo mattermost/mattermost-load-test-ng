@@ -25,7 +25,7 @@ type LoadTester struct {
 func (lt *LoadTester) initControllers(numUsers int) {
 	config := userentity.Config{
 		lt.config.ConnectionConfiguration.ServerURL,
-		lt.config.ConnectionConfiguration.WebsocketURL,
+		lt.config.ConnectionConfiguration.WebSocketURL,
 	}
 	for i := 0; i < numUsers; i++ {
 		lt.users[i] = userentity.New(memstore.New(), i, config)

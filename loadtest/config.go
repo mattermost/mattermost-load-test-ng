@@ -17,7 +17,7 @@ type LoadTestConfig struct {
 
 type ConnectionConfiguration struct {
 	ServerURL                   string
-	WebsocketURL                string
+	WebSocketURL                string
 	DriverName                  string
 	DataSource                  string
 	MaxIdleConns                int

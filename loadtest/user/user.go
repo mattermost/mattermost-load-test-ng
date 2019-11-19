@@ -20,6 +20,8 @@ type User interface {
 	Id() int
 	Store() store.UserStore
 
+	Connect() error
+	Disconnect() error
 	SignUp(email, username, password string) error
 	Login() error
 	Logout() (bool, error)

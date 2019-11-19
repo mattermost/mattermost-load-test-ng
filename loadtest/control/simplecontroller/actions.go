@@ -40,11 +40,22 @@ func (c *SimpleController) login() user.UserStatus {
 		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 
+	err = c.user.Connect()
+	if err != nil {
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+	}
+
 	return user.UserStatus{User: c.user, Info: "logged in"}
 }
 
 func (c *SimpleController) logout() user.UserStatus {
 	// return here if already logged out
+
+	err := c.user.Disconnect()
+	if err != nil {
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+	}
+
 	ok, err := c.user.Logout()
 	if err != nil {
 		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}

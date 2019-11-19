@@ -50,6 +50,14 @@ func New(store store.MutableUserStore, id int, serverURL string) *SampleUser {
 	}
 }
 
+func (u *SampleUser) Connect() error {
+	return nil
+}
+
+func (u *SampleUser) Disconnect() error {
+	return nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
