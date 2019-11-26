@@ -1,0 +1,66 @@
+logs
+.DS_Store
+
+# Build Targets
+.prebuild
+.npminstall
+
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj
+_test
+
+# Log files
+*mattermost.log
+*npm-debug.log*
+loadtest.log
+
+.tmp
+debug
+
+# Vim temporary files
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+.agignore
+.ctags
+tags
+
+cache.db
+/rethinkdb_data
+bin/*
+!bin/echo_example.sh
+!bin/run_example.sh
+
+# Ignore dist directory
+dist
+
+# built application
+mattermost-load-test
+mattermost-load-test.log
+errors.log
+stats.log
+.installdeps
+state.json
+status.log
+results.txt
+
+#historic
+dummies
+dummies.log
+sessions.db
+
+# ignore local loadtestconfig
+loadtestconfig.json
+
+/terraformenv
+.idea
+mattermost-load-test.iml
