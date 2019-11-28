@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test/config"
-	"github.com/mattermost/mattermost-load-test/loadtest/control"
-	"github.com/mattermost/mattermost-load-test/loadtest/control/simplecontroller"
-	"github.com/mattermost/mattermost-load-test/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test/loadtest/user"
-	"github.com/mattermost/mattermost-load-test/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/mlog"
 )
 

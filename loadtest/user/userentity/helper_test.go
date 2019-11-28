@@ -3,9 +3,9 @@ package userentity
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test/config"
-	"github.com/mattermost/mattermost-load-test/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/stretchr/testify/require"
 )
 

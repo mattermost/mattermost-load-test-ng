@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
 type SampleController struct {

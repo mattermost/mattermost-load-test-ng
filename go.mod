@@ -1,4 +1,4 @@
-module github.com/mattermost/mattermost-load-test
+module github.com/mattermost/mattermost-load-test-ng
 
 go 1.12
 

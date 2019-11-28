@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test/loadtest/store"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/model"
 )
 

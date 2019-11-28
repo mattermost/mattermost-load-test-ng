@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mattermost/mattermost-load-test/config"
-	"github.com/mattermost/mattermost-load-test/example"
-	"github.com/mattermost/mattermost-load-test/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/example"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/spf13/cobra"
 )

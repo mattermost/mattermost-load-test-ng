@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test/example/samplecontroller"
-	"github.com/mattermost/mattermost-load-test/example/samplestore"
-	"github.com/mattermost/mattermost-load-test/example/sampleuser"
-	"github.com/mattermost/mattermost-load-test/loadtest/control"
-	"github.com/mattermost/mattermost-load-test/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/example/samplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/example/samplestore"
+	"github.com/mattermost/mattermost-load-test-ng/example/sampleuser"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-server/mlog"
 )
 
