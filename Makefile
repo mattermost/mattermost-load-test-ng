@@ -1,10 +1,11 @@
 .PHONY: install clean
 
-GOFLAGS ?= $(GOFLAGS:)
+GOFLAGS ?= $(GOFLAGS:) -mod=vendor
 GO=go
+PACKAGES=$(shell $(GO) list ./...)
 
 DIST_ROOT=dist
-DIST_FOLDER_NAME=mattermost-load-test
+DIST_FOLDER_NAME=mattermost-load-test-ng
 DIST_PATH=$(DIST_ROOT)/$(DIST_FOLDER_NAME)
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
@@ -50,15 +51,18 @@ package: build-linux
 
 	@# Linux, the only supported package version for now. Build manually for other targets.
 ifeq ($(BUILDER_GOOS_GOARCH),"linux_amd64")
-	cp $(GOPATH)/bin/loadtest $(DIST_PATH)/bin # from native bin dir, not cross-compiled
+	cp $(GOPATH)/bin/loadtest-ng $(DIST_PATH)/bin # from native bin dir, not cross-compiled
 else
-	cp $(GOPATH)/bin/linux_amd64/loadtest $(DIST_PATH)/bin # from cross-compiled bin dir
+	cp $(GOPATH)/bin/linux_amd64/loadtest-ng $(DIST_PATH)/bin # from cross-compiled bin dir
 endif
 	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
 
+test:
+	go test -run=. -failfast $(PACKAGES)
+
 clean:
 	rm -f errors.log cache.db stats.log status.log
-	rm -f ./cmd/loadtest/loadtest
+	rm -f ./cmd/loadtest/loadtest-ng
 	rm -f .installdeps
 	rm -f loadtest.log
 	rm -rf $(DIST_ROOT)
