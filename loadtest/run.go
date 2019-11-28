@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test/config"
 	"github.com/mattermost/mattermost-load-test/loadtest/control"
 	"github.com/mattermost/mattermost-load-test/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test/loadtest/store/memstore"
@@ -18,7 +19,7 @@ import (
 type LoadTester struct {
 	users       []user.User
 	controllers []control.UserController
-	config      *LoadTestConfig
+	config      *config.LoadTestConfig
 	wg          sync.WaitGroup
 }
 
@@ -77,7 +78,7 @@ func Run() error {
 	}
 
 	var err error
-	if lt.config, err = GetConfig(); err != nil {
+	if lt.config, err = config.GetConfig(); err != nil {
 		return err
 	}
 

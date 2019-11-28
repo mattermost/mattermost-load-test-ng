@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test/config"
 	"github.com/mattermost/mattermost-load-test/example"
 	"github.com/mattermost/mattermost-load-test/loadtest"
 	"github.com/mattermost/mattermost-server/mlog"
@@ -39,12 +40,12 @@ func main() {
 }
 
 func initConfig() {
-	if err := loadtest.ReadConfig(); err != nil {
+	if err := config.ReadConfig(); err != nil {
 		mlog.Error("Failed to initialize config", mlog.Err(err))
 		os.Exit(1)
 	}
 
-	cfg, err := loadtest.GetConfig()
+	cfg, err := config.GetConfig()
 	if err != nil {
 		mlog.Error("Failed to get logging config: %s\n", mlog.Err(err))
 		os.Exit(1)
