@@ -58,7 +58,7 @@ endif
 	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
 
 test:
-	go test -run=. -failfast $(PACKAGES)
+	$(GO) test -v -run=. -failfast $(PACKAGES)
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
