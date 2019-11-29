@@ -61,6 +61,7 @@ func (ue *UserEntity) CreatePost(post *model.Post) error {
 	post.UserId = user.Id
 
 	_, resp := ue.client.CreatePost(post)
+	_ = ue.store.SetPost(post)
 
 	return resp.Error
 }

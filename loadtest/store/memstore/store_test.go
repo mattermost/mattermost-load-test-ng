@@ -26,9 +26,18 @@ func TestUser(t *testing.T) {
 	t.Run("SetUser", func(t *testing.T) {
 		u := &model.User{}
 		err := s.SetUser(u)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		uu := s.User()
 		require.Equal(t, u, uu)
+	})
+	
+	t.Run("SetPost", func(t *testing.T) {
+		p := &model.Post{Id: model.NewId()}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		uu, err := s.Post(p.Id)
+		require.NoError(t, err)
+		require.Equal(t, p, uu)
 	})
 }
 
@@ -42,9 +51,9 @@ func TestId(t *testing.T) {
 
 	t.Run("ExpectedId", func(t *testing.T) {
 		expected := model.NewId()
-		s.SetUser(&model.User{
+		require.NoError(t, s.SetUser(&model.User{
 			Id: expected,
-		})
+		}))
 		id := s.Id()
 		require.Equal(t, expected, id)
 	})
