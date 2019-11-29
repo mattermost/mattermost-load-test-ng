@@ -5,6 +5,7 @@ package simplecontroller
 
 import (
 	"errors"
+	"math"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -13,11 +14,13 @@ import (
 type SimpleController struct {
 	user user.User
 	stop chan bool
+	rate float64
 }
 
 func (c *SimpleController) Init(user user.User) {
 	c.user = user
 	c.stop = make(chan bool)
+	c.rate = 1.0
 }
 
 func (c *SimpleController) Run(status chan<- user.UserStatus) {
@@ -52,15 +55,26 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 	for {
 		for i := 0; i < len(actions); i++ {
 			status <- actions[i].run()
+
+			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
+
 			select {
 			case <-c.stop:
 				return
-			case <-time.After(time.Millisecond * actions[i].waitAfter):
+			case <-time.After(time.Millisecond * idleTime):
 			}
 		}
 
 		// status <- user.UserStatus{User: c.user, Info: "user loop done", Code: user.STATUS_DONE}
 	}
+}
+
+func (c *SimpleController) SetRate(rate float64) error {
+	if rate < 0 {
+		return errors.New("rate should be a positive value")
+	}
+	c.rate = rate
+	return nil
 }
 
 func (c *SimpleController) Stop() {

@@ -63,6 +63,10 @@ func (c *SampleController) Run(status chan<- user.UserStatus) {
 	}
 }
 
+func (c *SampleController) SetRate(rate float64) error {
+	return nil
+}
+
 func (c *SampleController) Stop() {
 	close(c.stop)
 }
