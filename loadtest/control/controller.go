@@ -4,7 +4,7 @@
 package control
 
 import (
-	"github.com/mattermost/mattermost-load-test/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
 type UserController interface {

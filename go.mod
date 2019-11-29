@@ -1,4 +1,4 @@
-module github.com/mattermost/mattermost-load-test
+module github.com/mattermost/mattermost-load-test-ng
 
 go 1.12
 
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.4.0 // indirect
+	github.com/stretchr/testify v1.4.0
 	go.uber.org/multierr v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc // indirect
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0 // indirect
