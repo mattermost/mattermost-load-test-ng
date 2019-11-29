@@ -34,3 +34,5 @@ replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
 replace github.com/codegangsta/cli v1.22.1 => github.com/urfave/cli v1.22.1
 
 replace github.com/golang/lint => golang.org/x/lint v0.0.0-20190930215403-16217165b5de
+
+replace willnorris.com/go/imageproxy => willnorris.com/go/imageproxy v0.8.1-0.20190422234945-d4246a08fdec
