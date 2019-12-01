@@ -13,7 +13,7 @@ type UserStore interface {
 
 type MutableUserStore interface {
 	UserStore
-	User() *model.User
+	User() (*model.User, error)
 	SetUser(user *model.User) error
 	Post(postId string) (*model.Post, error)
 	SetPost(post *model.Post) error

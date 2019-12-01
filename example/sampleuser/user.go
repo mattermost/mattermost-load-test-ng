@@ -81,9 +81,9 @@ func (u *SampleUser) SignUp(email, username, password string) error {
 }
 
 func (u *SampleUser) Login() error {
-	user := u.store.User()
+	user, err := u.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return errors.New("user was not initialized")
 	}
 
@@ -93,9 +93,9 @@ func (u *SampleUser) Login() error {
 }
 
 func (u *SampleUser) Logout() (bool, error) {
-	user := u.store.User()
+	user, err := u.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return false, errors.New("user was not initialized")
 	}
 

@@ -19,7 +19,8 @@ func TestUser(t *testing.T) {
 	s := New()
 
 	t.Run("NilUser", func(t *testing.T) {
-		u := s.User()
+		u, err := s.User()
+		require.NoError(t, err)
 		require.Nil(t, u)
 	})
 
@@ -27,7 +28,8 @@ func TestUser(t *testing.T) {
 		u := &model.User{}
 		err := s.SetUser(u)
 		require.NoError(t, err)
-		uu := s.User()
+		uu, err := s.User()
+		require.NoError(t, err)
 		require.Equal(t, u, uu)
 	})
 	

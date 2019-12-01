@@ -31,8 +31,8 @@ func (s *MemStore) Id() string {
 	return s.user.Id
 }
 
-func (s *MemStore) User() *model.User {
-	return s.user
+func (s *MemStore) User() (*model.User, error) {
+	return s.user, nil
 }
 
 func (s *MemStore) SetUser(user *model.User) error {

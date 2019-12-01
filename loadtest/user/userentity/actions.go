@@ -27,9 +27,9 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 }
 
 func (ue *UserEntity) Login() error {
-	user := ue.store.User()
+	user, err:= ue.store.User()
 
-	if user == nil {
+	if user == nil  || err != nil{
 		return errors.New("user was not initialized")
 	}
 
@@ -39,9 +39,9 @@ func (ue *UserEntity) Login() error {
 }
 
 func (ue *UserEntity) Logout() (bool, error) {
-	user := ue.store.User()
+	user, err:= ue.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return false, errors.New("user was not initialized")
 	}
 
@@ -52,16 +52,20 @@ func (ue *UserEntity) Logout() (bool, error) {
 
 
 func (ue *UserEntity) CreatePost(post *model.Post) error {
-	user := ue.store.User()
-	if user == nil {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
 		return errors.New("user was not initialized")
 	}
 	
 	post.PendingPostId = model.NewId()
 	post.UserId = user.Id
 
-	_, resp := ue.client.CreatePost(post)
-	_ = ue.store.SetPost(post)
+	post, resp := ue.client.CreatePost(post)
+	if resp.Error != nil {
+		return resp.Error
+	}
 
-	return resp.Error
+	err = ue.store.SetPost(post)
+
+	return err
 }
