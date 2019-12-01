@@ -90,11 +90,13 @@ func (c *SimpleController) createGroupChannel() user.UserStatus {
 }
 
 func (c *SimpleController) viewChannel() user.UserStatus {
+	return user.UserStatus{User: c.user, Err: errors.New("not implemented"), Code: user.STATUS_ERROR}
+	/*
 	channel, err := c.user.Store().Channel("") // TODO: fetch channel randomly?
 	if err != nil {
 		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
-	
+
 	channelViewResponse, err := c.user.ViewChannel(&model.ChannelView{
 		ChannelId: channel.Id,
 		PrevChannelId: "",
@@ -104,4 +106,5 @@ func (c *SimpleController) viewChannel() user.UserStatus {
 	}
 	
 	return user.UserStatus{User: c.user, Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
+	*/
 }

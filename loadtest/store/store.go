@@ -9,9 +9,6 @@ import (
 
 type UserStore interface {
 	Id() string
-	Post(postId string) (*model.Post, error)
-	User() (*model.User, error)
-	Channel(channelId string) (*model.Channel, error)
 }
 
 type MutableUserStore interface {
@@ -19,4 +16,7 @@ type MutableUserStore interface {
 	SetUser(user *model.User) error
 	SetPost(post *model.Post) error
 	SetChannel(channel *model.Channel) error
+	Post(postId string) (*model.Post, error)
+	User() (*model.User, error)
+	Channel(channelId string) (*model.Channel, error)
 }
