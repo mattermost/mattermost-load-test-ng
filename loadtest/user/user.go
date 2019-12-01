@@ -35,6 +35,8 @@ type User interface {
 
 	CreateGroupChannel(memberIds []string) (string, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
+	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
+	
 	// teams
 }
 

@@ -91,3 +91,13 @@ func (ue *UserEntity) ViewChannel(view *model.ChannelView)  (*model.ChannelViewR
 	channelViewResponse, resp := ue.client.ViewChannel(user.Id, view)
 	return channelViewResponse, resp.Error
 }
+
+func (ue *UserEntity) 	GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+	channelUnreadResponse, resp := ue.client.GetChannelUnread(channelId, user.Id)
+	return channelUnreadResponse, resp.Error
+
+}
