@@ -15,9 +15,9 @@ type MemStore struct {
 }
 
 func New() *MemStore {
-	return &MemStore{		
-		posts: map[string]*model.Post{},
-		teams: map[string]*model.Team{},
+	return &MemStore{
+		posts:    map[string]*model.Post{},
+		teams:    map[string]*model.Team{},
 		channels: map[string]*model.Channel{},
 	}
 }
