@@ -34,7 +34,7 @@ type User interface {
 	// channels
 
 	CreateGroupChannel(memberIds []string) (string, error)
-
+	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	// teams
 }
 

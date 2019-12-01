@@ -66,6 +66,10 @@ func (u *SampleUser) CreateGroupChannel(memberIds []string) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
