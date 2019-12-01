@@ -10,11 +10,13 @@ import (
 type SampleStore struct {
 	user  *model.User
 	posts map[string]*model.Post
+	channels map[string]*model.Channel
 }
 
 func New() *SampleStore {
 	return &SampleStore{
 		posts: map[string]*model.Post{},
+		channels: map[string]*model.Channel{},
 	}
 }
 
@@ -43,5 +45,18 @@ func (s *SampleStore) SetUser(user *model.User) error {
 
 func (s *SampleStore) SetPost(post *model.Post) error {
 	s.posts[post.Id] = post
+	return nil
+}
+
+
+func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
+	if channel, ok := s.channels[channelId]; ok {
+		return channel, nil
+	}
+	return nil, nil
+}
+
+func (s *SampleStore) SetChannel(channel *model.Channel) error {
+	s.channels[channel.Id] = channel
 	return nil
 }

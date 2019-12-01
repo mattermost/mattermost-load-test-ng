@@ -21,12 +21,21 @@ type User interface {
 	Id() int
 	Store() store.UserStore
 
+	// connection
 	Connect() error
 	Disconnect() error
 	SignUp(email, username, password string) error
 	Login() error
 	Logout() (bool, error)
+
+	// posts
 	CreatePost(post *model.Post) (string, error)
+
+	// channels
+
+	CreateGroupChannel(memberIds []string) (string, error)
+
+	// teams
 }
 
 type UserStatus struct {
