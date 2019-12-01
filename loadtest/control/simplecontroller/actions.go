@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/model"
 )
 
 type UserAction struct {
@@ -66,4 +67,15 @@ func (c *SimpleController) logout() user.UserStatus {
 	}
 
 	return user.UserStatus{User: c.user, Info: "logged out"}
+}
+
+func (c *SimpleController) createPost() user.UserStatus {
+	postId, err := c.user.CreatePost(&model.Post{
+		Message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+	})
+	if err != nil {
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+	}
+	
+	return user.UserStatus{User: c.user, Info: fmt.Sprintf("post created, id %v", postId)}
 }

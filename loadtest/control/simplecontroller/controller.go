@@ -39,6 +39,10 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.createPost,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.logout,
 			waitAfter: 1000,
 		},

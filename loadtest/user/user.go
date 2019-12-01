@@ -5,6 +5,7 @@ package user
 
 import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+	"github.com/mattermost/mattermost-server/model"
 )
 
 const (
@@ -25,6 +26,7 @@ type User interface {
 	SignUp(email, username, password string) error
 	Login() error
 	Logout() (bool, error)
+	CreatePost(post *model.Post) (string, error)
 }
 
 type UserStatus struct {

@@ -8,11 +8,14 @@ import (
 )
 
 type SampleStore struct {
-	user *model.User
+	user  *model.User
+	posts map[string]*model.Post
 }
 
 func New() *SampleStore {
-	return &SampleStore{}
+	return &SampleStore{
+		posts: map[string]*model.Post{},
+	}
 }
 
 func (s *SampleStore) Id() string {
@@ -22,11 +25,23 @@ func (s *SampleStore) Id() string {
 	return s.user.Id
 }
 
-func (s *SampleStore) User() *model.User {
-	return s.user
+func (s *SampleStore) User() (*model.User, error) {
+	return s.user, nil
+}
+
+func (s *SampleStore) Post(postId string) (*model.Post, error) {
+	if post, ok := s.posts[postId]; ok {
+		return post, nil
+	}
+	return nil, nil
 }
 
 func (s *SampleStore) SetUser(user *model.User) error {
 	s.user = user
+	return nil
+}
+
+func (s *SampleStore) SetPost(post *model.Post) error {
+	s.posts[post.Id] = post
 	return nil
 }

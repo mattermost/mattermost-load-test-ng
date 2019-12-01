@@ -58,6 +58,10 @@ func (u *SampleUser) Disconnect() error {
 	return nil
 }
 
+func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
+	return "", nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
@@ -71,40 +75,31 @@ func (u *SampleUser) SignUp(email, username, password string) error {
 		return resp.Error
 	}
 
-	newUser.Password = password
-	u.store.SetUser(newUser)
+	newUser.Password = password	
 
-	return nil
+	return u.store.SetUser(newUser)
 }
 
 func (u *SampleUser) Login() error {
-	user := u.store.User()
+	user, err := u.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return errors.New("user was not initialized")
 	}
 
 	_, resp := u.client.Login(user.Email, user.Password)
 
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	return nil
+	return resp.Error
 }
 
 func (u *SampleUser) Logout() (bool, error) {
-	user := u.store.User()
+	user, err := u.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return false, errors.New("user was not initialized")
 	}
 
 	ok, resp := u.client.Logout()
 
-	if resp.Error != nil {
-		return ok, resp.Error
-	}
-
-	return ok, nil
+	return ok, resp.Error
 }

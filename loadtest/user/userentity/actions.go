@@ -23,39 +23,49 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 	}
 
 	newUser.Password = password
-	ue.store.SetUser(newUser)
-
-	return nil
+	return ue.store.SetUser(newUser)
 }
 
 func (ue *UserEntity) Login() error {
-	user := ue.store.User()
+	user, err:= ue.store.User()
 
-	if user == nil {
+	if user == nil  || err != nil{
 		return errors.New("user was not initialized")
 	}
 
 	_, resp := ue.client.Login(user.Email, user.Password)
 
-	if resp.Error != nil {
-		return resp.Error
-	}
-
-	return nil
+	return resp.Error
 }
 
 func (ue *UserEntity) Logout() (bool, error) {
-	user := ue.store.User()
+	user, err:= ue.store.User()
 
-	if user == nil {
+	if user == nil || err != nil {
 		return false, errors.New("user was not initialized")
 	}
 
 	ok, resp := ue.client.Logout()
 
+	return ok, resp.Error
+}
+
+
+func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return "", errors.New("user was not initialized")
+	}
+	
+	post.PendingPostId = model.NewId()
+	post.UserId = user.Id
+
+	post, resp := ue.client.CreatePost(post)
 	if resp.Error != nil {
-		return ok, resp.Error
+		return "", resp.Error
 	}
 
-	return ok, nil
+	err = ue.store.SetPost(post)
+
+	return post.Id, err
 }

@@ -9,12 +9,17 @@ import (
 
 type MemStore struct {
 	user     *model.User
+	posts    map[string]*model.Post
 	teams    map[string]*model.Team
 	channels map[string]*model.Channel
 }
 
 func New() *MemStore {
-	return &MemStore{}
+	return &MemStore{		
+		posts: map[string]*model.Post{},
+		teams: map[string]*model.Team{},
+		channels: map[string]*model.Channel{},
+	}
 }
 
 func (s *MemStore) Id() string {
@@ -24,11 +29,23 @@ func (s *MemStore) Id() string {
 	return s.user.Id
 }
 
-func (s *MemStore) User() *model.User {
-	return s.user
+func (s *MemStore) User() (*model.User, error) {
+	return s.user, nil
 }
 
 func (s *MemStore) SetUser(user *model.User) error {
 	s.user = user
+	return nil
+}
+
+func (s *MemStore) Post(postId string) (*model.Post, error) {
+	if post, ok := s.posts[postId]; ok {
+		return post, nil
+	}
+	return nil, nil
+}
+
+func (s *MemStore) SetPost(post *model.Post) error {
+	s.posts[post.Id] = post
 	return nil
 }
