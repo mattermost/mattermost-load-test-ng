@@ -62,6 +62,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) CreateGroupChannel(memberIds []string) (string, error) {
+	return "", nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,

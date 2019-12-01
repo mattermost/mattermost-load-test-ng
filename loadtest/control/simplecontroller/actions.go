@@ -79,3 +79,12 @@ func (c *SimpleController) createPost() user.UserStatus {
 	
 	return user.UserStatus{User: c.user, Info: fmt.Sprintf("post created, id %v", postId)}
 }
+
+func (c *SimpleController) createGroupChannel() user.UserStatus {
+	channelId, err := c.user.CreateGroupChannel([]string{}) // TODO: populate memberIds parameter with other users
+	if err != nil {
+		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+	}
+	
+	return user.UserStatus{User: c.user, Info: fmt.Sprintf("group channel created, id %v", channelId)}
+}

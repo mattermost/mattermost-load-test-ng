@@ -49,3 +49,15 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	s.posts[post.Id] = post
 	return nil
 }
+
+func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
+	if channel, ok := s.channels[channelId]; ok {
+		return channel, nil
+	}
+	return nil, nil
+}
+
+func (s *MemStore) SetChannel(channel *model.Channel) error {
+	s.channels[channel.Id] = channel
+	return nil
+}
