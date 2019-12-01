@@ -75,7 +75,7 @@ func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	if user == nil || err != nil {
 		return "", errors.New("user was not initialized")
 	}
-	channel, resp := ue.client.CreateGroupChannel(append(memberIds, user.Id))
+	channel, resp := ue.client.CreateGroupChannel(memberIds)
 	if resp.Error != nil {
 		return "", resp.Error
 	}
