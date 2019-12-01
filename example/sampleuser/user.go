@@ -58,8 +58,8 @@ func (u *SampleUser) Disconnect() error {
 	return nil
 }
 
-func (u *SampleUser) CreatePost(post *model.Post) error {
-	return nil
+func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
+	return "", nil
 }
 
 func (u *SampleUser) SignUp(email, username, password string) error {

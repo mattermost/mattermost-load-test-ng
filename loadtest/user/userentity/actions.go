@@ -51,10 +51,10 @@ func (ue *UserEntity) Logout() (bool, error) {
 }
 
 
-func (ue *UserEntity) CreatePost(post *model.Post) error {
+func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
-		return errors.New("user was not initialized")
+		return "", errors.New("user was not initialized")
 	}
 	
 	post.PendingPostId = model.NewId()
@@ -62,10 +62,10 @@ func (ue *UserEntity) CreatePost(post *model.Post) error {
 
 	post, resp := ue.client.CreatePost(post)
 	if resp.Error != nil {
-		return resp.Error
+		return "", resp.Error
 	}
 
 	err = ue.store.SetPost(post)
 
-	return err
+	return post.Id, err
 }

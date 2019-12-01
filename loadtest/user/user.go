@@ -26,7 +26,7 @@ type User interface {
 	SignUp(email, username, password string) error
 	Login() error
 	Logout() (bool, error)
-	CreatePost(post *model.Post) error
+	CreatePost(post *model.Post) (string, error)
 }
 
 type UserStatus struct {

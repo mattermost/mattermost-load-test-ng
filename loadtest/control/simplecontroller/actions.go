@@ -70,12 +70,12 @@ func (c *SimpleController) logout() user.UserStatus {
 }
 
 func (c *SimpleController) createPost() user.UserStatus {
-	err := c.user.CreatePost(&model.Post{
+	postId, err := c.user.CreatePost(&model.Post{
 		Message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 	})
 	if err != nil {
 		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
 	}
 	
-	return user.UserStatus{User: c.user, Info: "post created"}
+	return user.UserStatus{User: c.user, Info: fmt.Sprintf("post created, id %v", postId)}
 }

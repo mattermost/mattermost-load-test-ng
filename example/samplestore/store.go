@@ -4,8 +4,6 @@
 package samplestore
 
 import (
-	"fmt"
-
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -35,7 +33,7 @@ func (s *SampleStore) Post(postId string) (*model.Post, error) {
 	if post, ok := s.posts[postId]; ok {
 		return post, nil
 	}
-	return nil, fmt.Errorf("post with id %v not found", postId)
+	return nil, nil
 }
 
 func (s *SampleStore) SetUser(user *model.User) error {
