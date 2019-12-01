@@ -70,6 +70,10 @@ func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewRes
 	return nil, nil
 }
 
+func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
@@ -83,7 +87,7 @@ func (u *SampleUser) SignUp(email, username, password string) error {
 		return resp.Error
 	}
 
-	newUser.Password = password	
+	newUser.Password = password
 
 	return u.store.SetUser(newUser)
 }

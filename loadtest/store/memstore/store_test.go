@@ -32,7 +32,7 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, u, uu)
 	})
-	
+
 	t.Run("SetPost", func(t *testing.T) {
 		p := &model.Post{Id: model.NewId()}
 		err := s.SetPost(p)

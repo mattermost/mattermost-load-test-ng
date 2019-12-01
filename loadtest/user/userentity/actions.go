@@ -27,9 +27,9 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 }
 
 func (ue *UserEntity) Login() error {
-	user, err:= ue.store.User()
+	user, err := ue.store.User()
 
-	if user == nil  || err != nil{
+	if user == nil || err != nil {
 		return errors.New("user was not initialized")
 	}
 
@@ -39,7 +39,7 @@ func (ue *UserEntity) Login() error {
 }
 
 func (ue *UserEntity) Logout() (bool, error) {
-	user, err:= ue.store.User()
+	user, err := ue.store.User()
 
 	if user == nil || err != nil {
 		return false, errors.New("user was not initialized")
@@ -50,13 +50,12 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, resp.Error
 }
 
-
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
 		return "", errors.New("user was not initialized")
 	}
-	
+
 	post.PendingPostId = model.NewId()
 	post.UserId = user.Id
 
@@ -83,11 +82,21 @@ func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	return channel.Id, err
 }
 
-func (ue *UserEntity) ViewChannel(view *model.ChannelView)  (*model.ChannelViewResponse, error) {
+func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
 		return nil, errors.New("user was not initialized")
 	}
 	channelViewResponse, resp := ue.client.ViewChannel(user.Id, view)
 	return channelViewResponse, resp.Error
+}
+
+func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+	channelUnreadResponse, resp := ue.client.GetChannelUnread(channelId, user.Id)
+	return channelUnreadResponse, resp.Error
+
 }
