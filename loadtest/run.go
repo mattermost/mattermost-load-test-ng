@@ -35,7 +35,7 @@ func (lt *LoadTester) initControllers(numUsers int) {
 	}
 }
 
-func (lt *LoadTester) runControllers(status chan<- user.UserStatus) {
+func (lt *LoadTester) runControllers(status chan<- control.UserStatus) {
 	lt.wg.Add(len(lt.controllers))
 	for i := 0; i < len(lt.controllers); i++ {
 		go func(controller control.UserController) {
@@ -51,15 +51,15 @@ func (lt *LoadTester) stopControllers() {
 	lt.wg.Wait()
 }
 
-func (lt *LoadTester) handleStatus(status <-chan user.UserStatus) {
+func (lt *LoadTester) handleStatus(status <-chan control.UserStatus) {
 	for us := range status {
-		if us.Code == user.STATUS_STOPPED || us.Code == user.STATUS_FAILED {
+		if us.Code == control.USER_STATUS_STOPPED || us.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
-		if us.Code == user.STATUS_ERROR {
+		if us.Code == control.USER_STATUS_ERROR {
 			mlog.Info(us.Err.Error(), mlog.Int("user_id", us.User.Id()))
 			continue
-		} else if us.Code == user.STATUS_FAILED {
+		} else if us.Code == control.USER_STATUS_FAILED {
 			mlog.Error(us.Err.Error())
 			continue
 		}
@@ -84,7 +84,7 @@ func Run() error {
 
 	lt.initControllers(numUsers)
 
-	status := make(chan user.UserStatus, numUsers)
+	status := make(chan control.UserStatus, numUsers)
 
 	go lt.handleStatus(status)
 
