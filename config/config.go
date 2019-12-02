@@ -35,7 +35,7 @@ type LoggerSettings struct {
 	FileLocation  string
 }
 
-func ReadConfig() error {
+func ReadConfig(configFilePath string) error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config/")
@@ -53,6 +53,10 @@ func ReadConfig() error {
 	viper.SetDefault("ConnectionConfiguration.MaxIdleConns", 100)
 	viper.SetDefault("ConnectionConfiguration.MaxIdleConnsPerHost", 128)
 	viper.SetDefault("ConnectionConfiguration.IdleConnTimeoutMilliseconds", 90000)
+
+	if configFilePath != "" {
+		viper.SetConfigFile(configFilePath)
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		return errors.Wrap(err, "unable to read configuration file")

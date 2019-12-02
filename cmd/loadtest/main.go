@@ -14,33 +14,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RunLoadTest(cmd *cobra.Command, args []string) error {
+func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	return loadtest.Run()
 }
 
-func RunExample(cmd *cobra.Command, args []string) error {
+func RunExampleCmdF(cmd *cobra.Command, args []string) error {
 	return example.Run()
 }
 
 func main() {
-	cobra.OnInitialize(initConfig)
-
-	var rootCmd = &cobra.Command{Use: "loadtest", RunE: RunLoadTest}
+	rootCmd := &cobra.Command{
+		Use:    "loadtest",
+		RunE:   RunLoadTestCmdF,
+		PreRun: initializeRootCmdF,
+	}
+	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
 	commands := make([]*cobra.Command, 1)
-
 	commands[0] = &cobra.Command{
 		Use:   "example",
 		Short: "Run example implementation",
-		RunE:  RunExample,
+		RunE:  RunExampleCmdF,
 	}
 
 	rootCmd.AddCommand(commands...)
 	rootCmd.Execute()
 }
 
-func initConfig() {
-	if err := config.ReadConfig(); err != nil {
+func initializeRootCmdF(cmd *cobra.Command, args []string) {
+	configFilePath, _ := cmd.Flags().GetString("config")
+	if err := config.ReadConfig(configFilePath); err != nil {
 		mlog.Error("Failed to initialize config", mlog.Err(err))
 		os.Exit(1)
 	}
