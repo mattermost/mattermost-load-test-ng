@@ -98,5 +98,13 @@ func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, 
 	}
 	channelUnreadResponse, resp := ue.client.GetChannelUnread(channelId, user.Id)
 	return channelUnreadResponse, resp.Error
+}
 
+func (ue *UserEntity) GetChannelStats(channelId string) (*model.ChannelStats, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+	channelUnreadResponse, resp := ue.client.GetChannelStats(channelId, "")
+	return channelUnreadResponse, resp.Error
 }
