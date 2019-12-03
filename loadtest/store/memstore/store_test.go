@@ -33,6 +33,18 @@ func TestUser(t *testing.T) {
 		require.Equal(t, u, uu)
 	})
 
+	t.Run("SetPreferences", func(t *testing.T) {
+		p := model.Preferences{
+			{"user-id-1", "category-1", "name-1", "value-1"},
+			{"user-id-2", "category-2", "name-2", "value-2"},
+		}
+		err := s.SetPreferences(p)
+		require.NoError(t, err)
+		pp, err := s.Preferences()
+		require.NoError(t, err)
+		require.ElementsMatch(t, p, pp)
+	})
+
 	t.Run("SetPost", func(t *testing.T) {
 		p := &model.Post{Id: model.NewId()}
 		err := s.SetPost(p)

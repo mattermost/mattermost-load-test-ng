@@ -8,9 +8,10 @@ import (
 )
 
 type SampleStore struct {
-	user     *model.User
-	posts    map[string]*model.Post
-	channels map[string]*model.Channel
+	user        *model.User
+	preferences model.Preferences
+	posts       map[string]*model.Post
+	channels    map[string]*model.Channel
 }
 
 func New() *SampleStore {
@@ -29,6 +30,15 @@ func (s *SampleStore) Id() string {
 
 func (s *SampleStore) User() (*model.User, error) {
 	return s.user, nil
+}
+
+func (s *SampleStore) Preferences() (model.Preferences, error) {
+	return s.preferences, nil
+}
+
+func (s *SampleStore) SetPreferences(preferences model.Preferences) error {
+	s.preferences = preferences
+	return nil
 }
 
 func (s *SampleStore) Post(postId string) (*model.Post, error) {
