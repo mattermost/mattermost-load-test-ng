@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
@@ -17,7 +18,7 @@ type SampleController struct {
 }
 
 type userAction struct {
-	run       func() user.UserStatus
+	run       func() control.UserStatus
 	waitAfter time.Duration
 }
 
@@ -26,7 +27,7 @@ func (c *SampleController) Init(user user.User) {
 	c.stop = make(chan bool)
 }
 
-func (c *SampleController) Run(status chan<- user.UserStatus) {
+func (c *SampleController) Run(status chan<- control.UserStatus) {
 	if c.user == nil {
 		c.sendFailStatus(status, "controller was not initialized")
 		return
@@ -47,7 +48,7 @@ func (c *SampleController) Run(status chan<- user.UserStatus) {
 		},
 	}
 
-	status <- user.UserStatus{User: c.user, Info: "user started", Code: user.STATUS_STARTED}
+	status <- control.UserStatus{User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer c.sendStopStatus(status)
 
@@ -71,17 +72,17 @@ func (c *SampleController) Stop() {
 	close(c.stop)
 }
 
-func (c *SampleController) sendFailStatus(status chan<- user.UserStatus, reason string) {
-	status <- user.UserStatus{User: c.user, Code: user.STATUS_FAILED, Err: errors.New(reason)}
+func (c *SampleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
+	status <- control.UserStatus{User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
-func (c *SampleController) sendStopStatus(status chan<- user.UserStatus) {
-	status <- user.UserStatus{User: c.user, Info: "user stopped", Code: user.STATUS_STOPPED}
+func (c *SampleController) sendStopStatus(status chan<- control.UserStatus) {
+	status <- control.UserStatus{User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
 
-func (c *SampleController) signUp() user.UserStatus {
+func (c *SampleController) signUp() control.UserStatus {
 	if c.user.Store().Id() != "" {
-		return user.UserStatus{User: c.user, Info: "user already signed up"}
+		return control.UserStatus{User: c.user, Info: "user already signed up", Code: control.USER_STATUS_INFO}
 	}
 
 	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
@@ -90,30 +91,30 @@ func (c *SampleController) signUp() user.UserStatus {
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
-		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
-	return user.UserStatus{User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id())}
+	return control.UserStatus{User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id()), Code: control.USER_STATUS_INFO}
 }
 
-func (c *SampleController) login() user.UserStatus {
+func (c *SampleController) login() control.UserStatus {
 	err := c.user.Login()
 	if err != nil {
-		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
-	return user.UserStatus{User: c.user, Info: "logged in"}
+	return control.UserStatus{User: c.user, Info: "logged in", Code: control.USER_STATUS_INFO}
 }
 
-func (c *SampleController) logout() user.UserStatus {
+func (c *SampleController) logout() control.UserStatus {
 	ok, err := c.user.Logout()
 	if err != nil {
-		return user.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
+		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
 	if !ok {
-		return user.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: user.STATUS_ERROR}
+		return control.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: control.USER_STATUS_ERROR}
 	}
 
-	return user.UserStatus{User: c.user, Info: "logged out"}
+	return control.UserStatus{User: c.user, Info: "logged out", Code: control.USER_STATUS_INFO}
 }

@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
@@ -23,7 +24,7 @@ func (c *SimpleController) Init(user user.User) {
 	c.rate = 1.0
 }
 
-func (c *SimpleController) Run(status chan<- user.UserStatus) {
+func (c *SimpleController) Run(status chan<- control.UserStatus) {
 	if c.user == nil {
 		c.sendFailStatus(status, "controller was not initialized")
 		return
@@ -56,7 +57,7 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 		},
 	}
 
-	status <- user.UserStatus{User: c.user, Info: "user started", Code: user.STATUS_STARTED}
+	status <- control.UserStatus{User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer c.sendStopStatus(status)
 
@@ -72,8 +73,6 @@ func (c *SimpleController) Run(status chan<- user.UserStatus) {
 			case <-time.After(time.Millisecond * idleTime):
 			}
 		}
-
-		// status <- user.UserStatus{User: c.user, Info: "user loop done", Code: user.STATUS_DONE}
 	}
 }
 
@@ -89,10 +88,10 @@ func (c *SimpleController) Stop() {
 	close(c.stop)
 }
 
-func (c *SimpleController) sendFailStatus(status chan<- user.UserStatus, reason string) {
-	status <- user.UserStatus{User: c.user, Code: user.STATUS_FAILED, Err: errors.New(reason)}
+func (c *SimpleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
+	status <- control.UserStatus{User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
-func (c *SimpleController) sendStopStatus(status chan<- user.UserStatus) {
-	status <- user.UserStatus{User: c.user, Info: "user stopped", Code: user.STATUS_STOPPED}
+func (c *SimpleController) sendStopStatus(status chan<- control.UserStatus) {
+	status <- control.UserStatus{User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }

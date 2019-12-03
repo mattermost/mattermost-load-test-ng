@@ -9,7 +9,7 @@ import (
 
 type UserController interface {
 	Init(user user.User)
-	Run(status chan<- user.UserStatus)
+	Run(status chan<- UserStatus)
 	SetRate(rate float64) error
 	Stop()
 }

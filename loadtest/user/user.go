@@ -8,15 +8,6 @@ import (
 	"github.com/mattermost/mattermost-server/model"
 )
 
-const (
-	STATUS_UNKNOWN int = iota
-	STATUS_STARTED
-	STATUS_STOPPED
-	STATUS_DONE
-	STATUS_ERROR
-	STATUS_FAILED
-)
-
 type User interface {
 	Id() int
 	Store() store.UserStore
@@ -38,11 +29,4 @@ type User interface {
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 
 	// teams
-}
-
-type UserStatus struct {
-	User User
-	Code int
-	Info string
-	Err  error
 }
