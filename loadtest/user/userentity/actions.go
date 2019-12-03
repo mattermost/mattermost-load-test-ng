@@ -180,8 +180,8 @@ func (ue *UserEntity) GetTeams() ([]string, error) {
 	}
 
 	teamIds := make([]string, len(teams))
-	for _, team := range teams {
-		teamIds = append(teamIds, team.Id)
+	for i, team := range teams {
+		teamIds[i] = team.Id
 	}
 	return teamIds, nil
 }
