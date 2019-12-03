@@ -160,11 +160,6 @@ func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, 
 }
 
 func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) error {
-	user, err := ue.getUserFromStore()
-	if err != nil {
-		return nil, err
-	}
-
 	channelMembers, resp := ue.client.GetChannelMembers(channelId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
@@ -174,14 +169,10 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 }
 
 func (ue *UserEntity) GetChannelStats(channelId string) error {
-	user, err := ue.getUserFromStore()
-	if err != nil {
-		return nil, err
-	}
 	_, resp := ue.client.GetChannelStats(channelId, "")
 	if resp.Error != nil {
-		return nil, resp.Error
+		return resp.Error
 	}
 
-	return channelUnreadResponse, nil
+	return nil
 }
