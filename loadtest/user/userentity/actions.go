@@ -69,18 +69,18 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
-func (ue *UserEntity) CreateChannel(channel *model.Channel) (*model.Channel, error) {
+func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
-		return nil, errors.New("user was not initialized")
+		return "", errors.New("user was not initialized")
 	}
 
 	channel, resp := ue.client.CreateChannel(channel)
 	if resp.Error != nil {
-		return nil, resp.Error
+		return "", resp.Error
 	}
 	err = ue.store.SetChannel(channel)
-	return channel, err
+	return channel.Id, err
 }
 
 func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
