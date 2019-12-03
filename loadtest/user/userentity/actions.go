@@ -82,6 +82,19 @@ func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	return channel.Id, err
 }
 
+func (ue *UserEntity) CreateDirectChannel(userId1, userId2 string) (*model.Channel, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+	channel, resp := ue.client.CreateDirectChannel(userId1, userId2)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	err = ue.store.SetChannel(channel)
+	return channel, err
+}
+
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {

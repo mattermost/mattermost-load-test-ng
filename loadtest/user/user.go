@@ -25,6 +25,7 @@ type User interface {
 	// channels
 
 	CreateGroupChannel(memberIds []string) (string, error)
+	CreateDirectChannel(userId1, userId2 string) (string, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 
