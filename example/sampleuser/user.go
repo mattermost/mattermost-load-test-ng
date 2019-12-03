@@ -127,3 +127,16 @@ func (u *SampleUser) Logout() (bool, error) {
 
 	return ok, resp.Error
 }
+
+func (u *SampleUser) GetMe() (string, error) {
+	user, resp := u.client.GetMe("")
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	if err := u.store.SetUser(user); err != nil {
+		return "", err
+	}
+
+	return user.Id, nil
+}
