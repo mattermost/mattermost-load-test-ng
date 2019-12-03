@@ -82,3 +82,17 @@ func (ue *UserEntity) Disconnect() error {
 	ue.wsClient = nil
 	return nil
 }
+
+func (ue *UserEntity) getUserFromStore() (*model.User, error) {
+	user, err := ue.store.User()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, errors.New("user was not initialized")
+	}
+
+	return user, nil
+}
