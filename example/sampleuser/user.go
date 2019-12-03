@@ -82,6 +82,10 @@ func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, e
 	return nil, nil
 }
 
+func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) error {
+	return nil
+}
+
 func (u *SampleUser) GetChannelStats(channelId string) error {
 	return nil
 }

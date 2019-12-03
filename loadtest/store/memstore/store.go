@@ -8,17 +8,19 @@ import (
 )
 
 type MemStore struct {
-	user     *model.User
-	posts    map[string]*model.Post
-	teams    map[string]*model.Team
-	channels map[string]*model.Channel
+	user           *model.User
+	posts          map[string]*model.Post
+	teams          map[string]*model.Team
+	channels       map[string]*model.Channel
+	channelMembers map[string]*model.ChannelMembers
 }
 
 func New() *MemStore {
 	return &MemStore{
-		posts:    map[string]*model.Post{},
-		teams:    map[string]*model.Team{},
-		channels: map[string]*model.Channel{},
+		posts:          map[string]*model.Post{},
+		teams:          map[string]*model.Team{},
+		channels:       map[string]*model.Channel{},
+		channelMembers: map[string]*model.ChannelMembers{},
 	}
 }
 
@@ -59,5 +61,10 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 
 func (s *MemStore) SetChannel(channel *model.Channel) error {
 	s.channels[channel.Id] = channel
+	return nil
+}
+
+func (s *MemStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
+	s.channelMembers[channelId] = channelMembers
 	return nil
 }
