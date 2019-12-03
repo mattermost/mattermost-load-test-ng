@@ -23,7 +23,7 @@ type User interface {
 	CreatePost(post *model.Post) (string, error)
 
 	// channels
-
+	CreateChannel(channel *model.Channel) (string, error)
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
