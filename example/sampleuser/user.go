@@ -144,3 +144,20 @@ func (u *SampleUser) GetMe() (string, error) {
 
 	return user.Id, nil
 }
+
+func (u *SampleUser) GetPreferences() error {
+	user, err := u.store.User()
+	if user == nil || err != nil {
+		return errors.New("user was not initialized")
+	}
+
+	preferences, resp := u.client.GetPreferences(user.Id)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := u.store.SetPreferences(preferences); err != nil {
+		return err
+	}
+	return nil
+}

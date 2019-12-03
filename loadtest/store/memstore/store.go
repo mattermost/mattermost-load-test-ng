@@ -9,6 +9,7 @@ import (
 
 type MemStore struct {
 	user           *model.User
+	preferences    model.Preferences
 	posts          map[string]*model.Post
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
@@ -37,6 +38,15 @@ func (s *MemStore) User() (*model.User, error) {
 
 func (s *MemStore) SetUser(user *model.User) error {
 	s.user = user
+	return nil
+}
+
+func (s *MemStore) Preferences() (model.Preferences, error) {
+	return s.preferences, nil
+}
+
+func (s *MemStore) SetPreferences(preferences model.Preferences) error {
+	s.preferences = preferences
 	return nil
 }
 

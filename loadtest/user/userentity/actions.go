@@ -63,6 +63,23 @@ func (ue *UserEntity) GetMe() (string, error) {
 	return user.Id, nil
 }
 
+func (ue *UserEntity) GetPreferences() error {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return errors.New("user was not initialized")
+	}
+
+	preferences, resp := ue.client.GetPreferences(user.Id)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := ue.store.SetPreferences(preferences); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
