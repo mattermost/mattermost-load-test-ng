@@ -62,7 +62,15 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
+	return "", nil
+}
+
 func (u *SampleUser) CreateGroupChannel(memberIds []string) (string, error) {
+	return "", nil
+}
+
+func (u *SampleUser) CreateDirectChannel(otherUserId string) (string, error) {
 	return "", nil
 }
 
@@ -75,6 +83,10 @@ func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, e
 }
 
 func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) error {
+	return nil
+}
+
+func (u *SampleUser) GetChannelStats(channelId string) error {
 	return nil
 }
 
@@ -118,4 +130,17 @@ func (u *SampleUser) Logout() (bool, error) {
 	ok, resp := u.client.Logout()
 
 	return ok, resp.Error
+}
+
+func (u *SampleUser) GetMe() (string, error) {
+	user, resp := u.client.GetMe("")
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	if err := u.store.SetUser(user); err != nil {
+		return "", err
+	}
+
+	return user.Id, nil
 }

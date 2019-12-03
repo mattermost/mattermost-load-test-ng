@@ -50,6 +50,19 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, resp.Error
 }
 
+func (ue *UserEntity) GetMe() (string, error) {
+	user, resp := ue.client.GetMe("")
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	if err := ue.store.SetUser(user); err != nil {
+		return "", err
+	}
+
+	return user.Id, nil
+}
+
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
@@ -69,12 +82,39 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return "", errors.New("user was not initialized")
+	}
+
+	channel, resp := ue.client.CreateChannel(channel)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+	err = ue.store.SetChannel(channel)
+	return channel.Id, err
+}
+
 func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
 		return "", errors.New("user was not initialized")
 	}
 	channel, resp := ue.client.CreateGroupChannel(memberIds)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+	err = ue.store.SetChannel(channel)
+	return channel.Id, err
+}
+
+func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return "", errors.New("user was not initialized")
+	}
+	channel, resp := ue.client.CreateDirectChannel(user.Id, otherUserId)
 	if resp.Error != nil {
 		return "", resp.Error
 	}
@@ -110,4 +150,16 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 		return resp.Error
 	}
 	return ue.store.SetChannelMembers(channelId, channelMembers)
+}
+
+func (ue *UserEntity) GetChannelStats(channelId string) error {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return errors.New("user was not initialized")
+	}
+	_, resp := ue.client.GetChannelStats(channelId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return err
 }
