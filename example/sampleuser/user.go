@@ -66,8 +66,8 @@ func (u *SampleUser) CreateGroupChannel(memberIds []string) (string, error) {
 	return "", nil
 }
 
-func (u *SampleUser) CreateDirectChannel(userId1, userId2 string) (*model.Channel, error) {
-	return nil, nil
+func (u *SampleUser) CreateDirectChannel(otherUserId string) (string, error) {
+	return "", nil
 }
 
 func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
