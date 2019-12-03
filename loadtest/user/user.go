@@ -19,6 +19,9 @@ type User interface {
 	Login() error
 	Logout() (bool, error)
 
+	// user
+	GetMe() (string, error)
+
 	// posts
 	CreatePost(post *model.Post) (string, error)
 

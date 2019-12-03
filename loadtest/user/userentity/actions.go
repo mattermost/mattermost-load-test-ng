@@ -50,6 +50,19 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, resp.Error
 }
 
+func (ue *UserEntity) GetMe() (string, error) {
+	user, resp := ue.client.GetMe("")
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	if err := ue.store.SetUser(user); err != nil {
+		return "", err
+	}
+
+	return user.Id, nil
+}
+
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
