@@ -74,8 +74,8 @@ func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, e
 	return nil, nil
 }
 
-func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) (*model.ChannelMembers, error) {
-	return nil, nil
+func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) error {
+	return nil
 }
 
 func (u *SampleUser) SignUp(email, username, password string) error {

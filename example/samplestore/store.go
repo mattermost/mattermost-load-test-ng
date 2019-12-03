@@ -8,15 +8,17 @@ import (
 )
 
 type SampleStore struct {
-	user     *model.User
-	posts    map[string]*model.Post
-	channels map[string]*model.Channel
+	user           *model.User
+	posts          map[string]*model.Post
+	channels       map[string]*model.Channel
+	channelMembers map[string]*model.ChannelMembers
 }
 
 func New() *SampleStore {
 	return &SampleStore{
-		posts:    map[string]*model.Post{},
-		channels: map[string]*model.Channel{},
+		posts:          map[string]*model.Post{},
+		channels:       map[string]*model.Channel{},
+		channelMembers: map[string]*model.ChannelMembers{},
 	}
 }
 
@@ -57,5 +59,10 @@ func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 
 func (s *SampleStore) SetChannel(channel *model.Channel) error {
 	s.channels[channel.Id] = channel
+	return nil
+}
+
+func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
+	s.channelMembers[channelId] = channelMembers
 	return nil
 }

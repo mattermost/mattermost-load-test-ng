@@ -100,11 +100,14 @@ func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, 
 	return channelUnreadResponse, resp.Error
 }
 
-func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) (*model.ChannelMembers, error) {
+func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) error {
 	user, err := ue.store.User()
 	if user == nil || err != nil {
-		return nil, errors.New("user was not initialized")
+		return errors.New("user was not initialized")
 	}
-	channelMembersResponse, resp := ue.client.GetChannelMembers(channelId, page, perPage, "")
-	return channelMembersResponse, resp.Error
+	channelMembers, resp := ue.client.GetChannelMembers(channelId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetChannelMembers(channelId, channelMembers)
 }
