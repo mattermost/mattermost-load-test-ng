@@ -5,12 +5,11 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/stretchr/testify/require"
 )
 
 type TestHelper struct {
-	User   user.User
+	User   *UserEntity
 	config *config.LoadTestConfig
 	tb     testing.TB
 }
@@ -30,7 +29,7 @@ func (th *TestHelper) Init() *TestHelper {
 	return th
 }
 
-func (th *TestHelper) CreateUser() user.User {
+func (th *TestHelper) CreateUser() *UserEntity {
 	s := memstore.New()
 	u := New(s, 1, Config{
 		th.config.ConnectionConfiguration.ServerURL,
