@@ -62,6 +62,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) CreateChannel(channel *model.Channel) (*model.Channel, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateGroupChannel(memberIds []string) (string, error) {
 	return "", nil
 }
