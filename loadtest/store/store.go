@@ -16,8 +16,12 @@ type MutableUserStore interface {
 	SetUser(user *model.User) error
 	SetPost(post *model.Post) error
 	SetChannel(channel *model.Channel) error
+	SetTeam(team *model.Team) error
+	SetTeams(teams []*model.Team) error
 	Post(postId string) (*model.Post, error)
 	User() (*model.User, error)
 	Channel(channelId string) (*model.Channel, error)
+	Team(teamId string) (*model.Team, error)
+	Teams() ([]*model.Team, error)
 	SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error
 }

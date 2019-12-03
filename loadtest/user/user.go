@@ -35,4 +35,5 @@ type User interface {
 	GetChannelStats(channelId string) error
 
 	// teams
+	GetTeams() ([]string, error)
 }

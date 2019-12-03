@@ -10,6 +10,7 @@ import (
 type SampleStore struct {
 	user           *model.User
 	posts          map[string]*model.Post
+	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
 	channelMembers map[string]*model.ChannelMembers
 }
@@ -17,6 +18,7 @@ type SampleStore struct {
 func New() *SampleStore {
 	return &SampleStore{
 		posts:          map[string]*model.Post{},
+		teams:          map[string]*model.Team{},
 		channels:       map[string]*model.Channel{},
 		channelMembers: map[string]*model.ChannelMembers{},
 	}
@@ -59,6 +61,33 @@ func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 
 func (s *SampleStore) SetChannel(channel *model.Channel) error {
 	s.channels[channel.Id] = channel
+	return nil
+}
+
+func (s *SampleStore) Team(teamId string) (*model.Team, error) {
+	if team, ok := s.teams[teamId]; ok {
+		return team, nil
+	}
+	return nil, nil
+}
+
+func (s *SampleStore) SetTeam(team *model.Team) error {
+	s.teams[team.Id] = team
+	return nil
+}
+
+func (s *SampleStore) Teams() ([]*model.Team, error) {
+	teams := make([]*model.Team, len(s.teams))
+	for _, team := range s.teams {
+		teams = append(teams, team)
+	}
+	return teams, nil
+}
+
+func (s *SampleStore) SetTeams(teams []*model.Team) error {
+	for _, team := range teams {
+		s.teams[team.Id] = team
+	}
 	return nil
 }
 

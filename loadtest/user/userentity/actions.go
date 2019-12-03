@@ -163,3 +163,25 @@ func (ue *UserEntity) GetChannelStats(channelId string) error {
 	}
 	return err
 }
+
+func (ue *UserEntity) GetTeams() ([]string, error) {
+	user, err := ue.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+
+	teams, resp := ue.client.GetTeamsForUser(user.Id, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for _, team := range teams {
+		teamIds = append(teamIds, team.Id)
+	}
+	return teamIds, nil
+}

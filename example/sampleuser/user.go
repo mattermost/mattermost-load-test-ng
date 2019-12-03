@@ -144,3 +144,25 @@ func (u *SampleUser) GetMe() (string, error) {
 
 	return user.Id, nil
 }
+
+func (u *SampleUser) GetTeams() ([]string, error) {
+	user, err := u.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+
+	teams, resp := u.client.GetTeamsForUser(user.Id, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := u.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for _, team := range teams {
+		teamIds = append(teamIds, team.Id)
+	}
+	return teamIds, nil
+}
