@@ -28,6 +28,7 @@ type User interface {
 	CreateDirectChannel(otherUserId string) (string, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
+	GetChannelStats(channelId string) error
 
 	// teams
 }

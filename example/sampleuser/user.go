@@ -82,6 +82,10 @@ func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, e
 	return nil, nil
 }
 
+func (u *SampleUser) GetChannelStats(channelId string) error {
+	return nil
+}
+
 func (u *SampleUser) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
