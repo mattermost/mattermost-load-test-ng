@@ -72,3 +72,39 @@ func TestId(t *testing.T) {
 		require.Equal(t, expected, id)
 	})
 }
+
+func TestChannelMembers(t *testing.T) {
+	s := New()
+
+	t.Run("SetChannelMembers", func(t *testing.T) {
+		channelId := model.NewId()
+		userId := model.NewId()
+		expected := model.ChannelMembers{
+			model.ChannelMember{
+				ChannelId: channelId,
+				UserId:    userId,
+			},
+		}
+		s.SetChannelMembers(channelId, &expected)
+		members, err := s.ChannelMembers(channelId)
+		require.NoError(t, err)
+		require.Equal(t, &expected, members)
+	})
+
+	t.Run("SetChannelMember", func(t *testing.T) {
+		channelId := model.NewId()
+		userId := model.NewId()
+		member, err := s.ChannelMember(channelId, userId)
+		require.NoError(t, err)
+		require.Nil(t, member)
+		expected := model.ChannelMember{
+			ChannelId: channelId,
+			UserId:    userId,
+		}
+		err = s.SetChannelMember(channelId, &expected)
+		require.NoError(t, err)
+		member, err = s.ChannelMember(channelId, userId)
+		require.NoError(t, err)
+		require.Equal(t, &expected, member)
+	})
+}

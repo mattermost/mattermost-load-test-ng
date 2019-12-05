@@ -194,6 +194,15 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 	return ue.store.SetChannelMembers(channelId, channelMembers)
 }
 
+func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
+	cm, resp := ue.client.GetChannelMember(channelId, userId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannelMember(channelId, cm)
+}
+
 func (ue *UserEntity) GetChannelStats(channelId string) error {
 	_, resp := ue.client.GetChannelStats(channelId, "")
 	if resp.Error != nil {

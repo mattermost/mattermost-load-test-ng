@@ -4,22 +4,22 @@
 package samplestore
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
 type SampleStore struct {
-	user           *model.User
-	preferences    model.Preferences
-	posts          map[string]*model.Post
-	channels       map[string]*model.Channel
-	channelMembers map[string]*model.ChannelMembers
+	user        *model.User
+	preferences model.Preferences
+	posts       map[string]*model.Post
+	channels    map[string]*model.Channel
 }
 
 func New() *SampleStore {
 	return &SampleStore{
-		posts:          map[string]*model.Post{},
-		channels:       map[string]*model.Channel{},
-		channelMembers: map[string]*model.ChannelMembers{},
+		posts:    map[string]*model.Post{},
+		channels: map[string]*model.Channel{},
 	}
 }
 
@@ -73,6 +73,17 @@ func (s *SampleStore) SetChannel(channel *model.Channel) error {
 }
 
 func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
-	s.channelMembers[channelId] = channelMembers
-	return nil
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
+	return nil, errors.New("not implemented")
 }
