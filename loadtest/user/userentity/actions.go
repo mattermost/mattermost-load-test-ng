@@ -157,6 +157,15 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	return channel.Id, nil
 }
 
+func (ue *UserEntity) GetChannel(channelId string) error {
+	channel, resp := ue.client.GetChannel(channelId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannel(channel)
+}
+
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
