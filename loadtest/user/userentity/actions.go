@@ -4,6 +4,8 @@
 package userentity
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -155,6 +157,12 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	}
 
 	return channel.Id, nil
+}
+func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
