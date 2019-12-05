@@ -210,4 +210,8 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 	}
 
 	return team.Id, nil
+
+func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) ([]*model.Status, error) {
+	statuses, resp := ue.client.GetUsersStatusesByIds(userIds)
+	return statuses, resp.Error
 }
