@@ -103,3 +103,8 @@ func (s *MemStore) SetChannelMember(channelId string, channelMember *model.Chann
 func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
 	return s.channelMembers[channelId][userId], nil
 }
+
+func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
+	delete(s.channelMembers[channelId], userId)
+	return nil
+}
