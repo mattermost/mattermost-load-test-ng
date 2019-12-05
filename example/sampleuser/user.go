@@ -86,6 +86,10 @@ func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) erro
 	return nil
 }
 
+func (u *SampleUser) GetChannelMember(channelId, userId string) error {
+	return nil
+}
+
 func (u *SampleUser) GetChannelStats(channelId string) error {
 	return nil
 }

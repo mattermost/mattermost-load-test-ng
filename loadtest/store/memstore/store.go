@@ -13,7 +13,7 @@ type MemStore struct {
 	posts          map[string]*model.Post
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
-	channelMembers map[string]*model.ChannelMembers
+	channelMembers map[string]map[string]*model.ChannelMember
 }
 
 func New() *MemStore {
@@ -21,7 +21,7 @@ func New() *MemStore {
 		posts:          map[string]*model.Post{},
 		teams:          map[string]*model.Team{},
 		channels:       map[string]*model.Channel{},
-		channelMembers: map[string]*model.ChannelMembers{},
+		channelMembers: map[string]map[string]*model.ChannelMember{},
 	}
 }
 
@@ -75,6 +75,31 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 }
 
 func (s *MemStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
-	s.channelMembers[channelId] = channelMembers
+	membersMap := make(map[string]*model.ChannelMember)
+	members := *channelMembers
+	for _, m := range members {
+		membersMap[m.UserId] = &m
+	}
+	s.channelMembers[channelId] = membersMap
 	return nil
+}
+
+func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
+	channelMembers := model.ChannelMembers{}
+	for key := range s.channelMembers[channelId] {
+		channelMembers = append(channelMembers, *s.channelMembers[channelId][key])
+	}
+	return &channelMembers, nil
+}
+
+func (s *MemStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
+	if s.channelMembers[channelId] == nil {
+		s.channelMembers[channelId] = map[string]*model.ChannelMember{}
+	}
+	s.channelMembers[channelId][channelMember.UserId] = channelMember
+	return nil
+}
+
+func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
+	return s.channelMembers[channelId][userId], nil
 }
