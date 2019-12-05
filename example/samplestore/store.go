@@ -87,3 +87,7 @@ func (s *SampleStore) SetChannelMember(channelId string, channelMember *model.Ch
 func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
 	return nil, errors.New("not implemented")
 }
+
+func (s *SampleStore) RemoveChannelMember(channelId string, userId string) error {
+	return errors.New("not implemented")
+}

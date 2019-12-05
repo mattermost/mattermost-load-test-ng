@@ -156,6 +156,13 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 
 	return channel.Id, nil
 }
+func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+	ok, resp := ue.client.RemoveUserFromChannel(channelId, userId)
+	if resp.Error != nil {
+		return false, resp.Error
+	}
+	return ok, ue.store.RemoveChannelMember(channelId, userId)
+}
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
