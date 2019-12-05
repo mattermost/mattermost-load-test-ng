@@ -161,3 +161,7 @@ func (u *SampleUser) GetPreferences() error {
 	}
 	return nil
 }
+
+func (u *SampleUser) CreateUser(user *model.User) (string, error) {
+	return "", nil
+}
