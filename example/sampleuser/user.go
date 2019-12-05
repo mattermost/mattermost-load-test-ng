@@ -165,3 +165,7 @@ func (u *SampleUser) GetPreferences() error {
 func (u *SampleUser) CreateUser(user *model.User) (string, error) {
 	return "", nil
 }
+
+func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
+	return "", nil
+}

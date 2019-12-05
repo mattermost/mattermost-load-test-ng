@@ -202,3 +202,12 @@ func (ue *UserEntity) GetChannelStats(channelId string) error {
 
 	return nil
 }
+
+func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
+	team, resp := ue.client.CreateTeam(team)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	return team.Id, nil
+}

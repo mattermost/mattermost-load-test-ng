@@ -37,4 +37,5 @@ type User interface {
 	GetChannelStats(channelId string) error
 
 	// teams
+	CreateTeam(team *model.Team) (string, error)
 }
