@@ -25,4 +25,6 @@ type MutableUserStore interface {
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	ChannelMember(channelId, userId string) (*model.ChannelMember, error)
+	SetTeamMember(teamId string, teamMember *model.TeamMember) error
+	TeamMember(teamdId, userId string) (*model.TeamMember, error)
 }

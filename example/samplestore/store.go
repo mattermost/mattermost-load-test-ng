@@ -87,3 +87,11 @@ func (s *SampleStore) SetChannelMember(channelId string, channelMember *model.Ch
 func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
 	return nil, errors.New("not implemented")
 }
+
+func (s *SampleStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
+	return nil, errors.New("not implemented")
+}
