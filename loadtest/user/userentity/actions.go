@@ -211,3 +211,8 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 
 	return team.Id, nil
 }
+
+func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
+	_, resp := ue.client.GetUsersStatusesByIds(userIds)
+	return resp.Error
+}
