@@ -39,6 +39,7 @@ type User interface {
 
 	// teams
 	CreateTeam(team *model.Team) (string, error)
+	GetTeam(teamId string) error
 
 	// users
 	GetUsersStatusesByIds(userIds []string) error
