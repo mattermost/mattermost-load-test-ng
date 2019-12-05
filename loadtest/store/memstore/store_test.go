@@ -138,7 +138,9 @@ func TestChannelMembers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 2, len(s.channelMembers[channel.Id]))
 		err = s.RemoveChannelMember(channel.Id, channelMember1.UserId)
+		members, err := s.ChannelMembers(channel.Id)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(s.channelMembers[channel.Id]))
+		require.Equal(t, channelMember2, (*members)[0])
 	})
 }

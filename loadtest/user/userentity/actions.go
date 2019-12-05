@@ -4,8 +4,6 @@
 package userentity
 
 import (
-	"errors"
-
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -158,20 +156,12 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 
 	return channel.Id, nil
 }
-func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) error {
+func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
 	ok, resp := ue.client.RemoveUserFromChannel(channelId, userId)
-	if !ok {
-		return errors.New("Cant delete the user in the server")
-	}
 	if resp.Error != nil {
-		return resp.Error
+		return false, resp.Error
 	}
-	err := ue.store.RemoveChannelMember(channelId, userId)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ok, ue.store.RemoveChannelMember(channelId, userId)
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
