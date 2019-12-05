@@ -40,5 +40,5 @@ type User interface {
 	CreateTeam(team *model.Team) (string, error)
 
 	// users
-	GetUsersStatusesByIds(userIds []string) ([]*model.Status, error)
+	GetUsersStatusesByIds(userIds []string) error
 }
