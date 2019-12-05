@@ -74,6 +74,10 @@ func (u *SampleUser) CreateDirectChannel(otherUserId string) (string, error) {
 	return "", nil
 }
 
+func (ue *SampleUser) RemoveUserFromChannel(channelId, userId string) error {
+	return nil
+}
+
 func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	return nil, nil
 }
