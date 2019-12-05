@@ -173,6 +173,15 @@ func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
 	return ue.store.SetChannelMember(channelId, member)
 }
 
+func (ue *UserEntity) GetChannel(channelId string) error {
+	channel, resp := ue.client.GetChannel(channelId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannel(channel)
+}
+
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {

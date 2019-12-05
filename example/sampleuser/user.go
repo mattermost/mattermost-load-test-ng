@@ -86,6 +86,10 @@ func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewRes
 	return nil, nil
 }
 
+func (u *SampleUser) GetChannel(channelId string) error {
+	return nil
+}
+
 func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
 	return nil, nil
 }
