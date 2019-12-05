@@ -78,6 +78,10 @@ func (ue *SampleUser) RemoveUserFromChannel(channelId, userId string) (bool, err
 	return true, nil
 }
 
+func (u *SampleUser) AddChannelMember(channelId, userId string) error {
+	return nil
+}
+
 func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	return nil, nil
 }

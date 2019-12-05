@@ -37,6 +37,7 @@ type User interface {
 	GetChannelMembers(channelId string, page, perPage int) error
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
+	AddChannelMember(channelId, userId string) error
 
 	// teams
 	CreateTeam(team *model.Team) (string, error)
