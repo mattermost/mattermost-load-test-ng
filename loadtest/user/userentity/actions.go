@@ -164,18 +164,13 @@ func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, err
 	return ok, ue.store.RemoveChannelMember(channelId, userId)
 }
 
-func (ue *UserEntity) AddChannelMember(channelId, userId string) (*model.ChannelMember, error) {
+func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
 	member, resp := ue.client.AddChannelMember(channelId, userId)
 	if resp.Error != nil {
-		return nil, resp.Error
+		return nil
 	}
 
-	err := ue.store.SetChannelMember(channelId, member)
-	if err != nil {
-		return nil, err
-	}
-
-	return member, nil
+	return ue.store.SetChannelMember(channelId, member)
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
