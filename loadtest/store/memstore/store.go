@@ -4,8 +4,6 @@
 package memstore
 
 import (
-	"errors"
-
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -106,16 +104,7 @@ func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember
 	return s.channelMembers[channelId][userId], nil
 }
 
-func (s *MemStore) RemoveChannelMember(channelId string, channelMember *model.ChannelMember) error {
-	members := *s.channelMembers[channelId]
-	for index, member := range *s.channelMembers[channelId] {
-		if member.UserId == channelMember.UserId {
-			copy(members[index:], members[index+1:])
-			members := members[:len(members)-1]
-			s.channelMembers[channelId] = &members
-			return nil
-		}
-	}
-
-	return errors.New("User is not a channel member for the passed channel")
+func (s *MemStore) RemoveChannelMember(channelId string, userID string) error {
+	delete(s.channelMembers[channelId], userID)
+	return nil
 }

@@ -88,16 +88,6 @@ func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMem
 	return nil, errors.New("not implemented")
 }
 
-func (s *SampleStore) RemoveChannelMember(channelId string, channelMember *model.ChannelMember) error {
-	members := *s.channelMembers[channelId]
-	for index, member := range *s.channelMembers[channelId] {
-		if member.UserId == channelMember.UserId {
-			copy(members[index:], members[index+1:])
-			members := members[:len(members)-1]
-			s.channelMembers[channelId] = &members
-			return nil
-		}
-	}
-
-	return errors.New("User is not a channel member for the passed channel")
+func (s *SampleStore) RemoveChannelMember(channelId string, userId string) error {
+	return errors.New("not implemented")
 }

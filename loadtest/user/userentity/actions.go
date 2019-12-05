@@ -166,11 +166,7 @@ func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) error {
 	if resp.Error != nil {
 		return resp.Error
 	}
-	channelMember := &model.ChannelMember{
-		UserId:    userId,
-		ChannelId: channelId,
-	}
-	err := ue.store.RemoveChannelMember(channelId, channelMember)
+	err := ue.store.RemoveChannelMember(channelId, userId)
 	if err != nil {
 		return err
 	}
