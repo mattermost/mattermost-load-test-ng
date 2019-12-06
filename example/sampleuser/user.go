@@ -194,6 +194,10 @@ func (u *SampleUser) UpdateUser(user *model.User) error {
 	return nil
 }
 
+func (u *SampleUser) PatchUser(userId string, patch *model.UserPatch) error {
+	return nil
+}
+
 func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 	return "", nil
 }
