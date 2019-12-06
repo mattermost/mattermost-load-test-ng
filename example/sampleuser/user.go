@@ -180,7 +180,7 @@ func (u *SampleUser) GetPreferences() error {
 		return resp.Error
 	}
 
-	if err := u.store.SetPreferences(preferences); err != nil {
+	if err := u.store.SetPreferences(&preferences); err != nil {
 		return err
 	}
 	return nil

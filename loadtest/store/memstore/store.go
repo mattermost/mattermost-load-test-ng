@@ -4,12 +4,14 @@
 package memstore
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
 type MemStore struct {
 	user           *model.User
-	preferences    model.Preferences
+	preferences    *model.Preferences
 	posts          map[string]*model.Post
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
@@ -39,15 +41,18 @@ func (s *MemStore) User() (*model.User, error) {
 }
 
 func (s *MemStore) SetUser(user *model.User) error {
+	if user == nil {
+		return errors.New("user should not be nil")
+	}
 	s.user = user
 	return nil
 }
 
-func (s *MemStore) Preferences() (model.Preferences, error) {
+func (s *MemStore) Preferences() (*model.Preferences, error) {
 	return s.preferences, nil
 }
 
-func (s *MemStore) SetPreferences(preferences model.Preferences) error {
+func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
 	s.preferences = preferences
 	return nil
 }
@@ -60,6 +65,9 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 }
 
 func (s *MemStore) SetPost(post *model.Post) error {
+	if post == nil {
+		return errors.New("post should not be nil")
+	}
 	s.posts[post.Id] = post
 	return nil
 }
@@ -72,11 +80,17 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 }
 
 func (s *MemStore) SetChannel(channel *model.Channel) error {
+	if channel == nil {
+		return errors.New("channel should not be nil")
+	}
 	s.channels[channel.Id] = channel
 	return nil
 }
 
 func (s *MemStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
+	if channelMembers == nil {
+		return errors.New("channelMembers should not be nil")
+	}
 	membersMap := make(map[string]*model.ChannelMember)
 	members := *channelMembers
 	for _, m := range members {
@@ -95,6 +109,9 @@ func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, erro
 }
 
 func (s *MemStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
+	if channelMember == nil {
+		return errors.New("channelMember should not be nil")
+	}
 	if s.channelMembers[channelId] == nil {
 		s.channelMembers[channelId] = map[string]*model.ChannelMember{}
 	}
@@ -107,11 +124,17 @@ func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember
 }
 
 func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
+	if s.channelMembers[channelId] == nil {
+		return nil
+	}
 	delete(s.channelMembers[channelId], userId)
 	return nil
 }
 
 func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	if teamMember == nil {
+		return errors.New("teamMember should not be nil")
+	}
 	if s.teamMembers[teamId] == nil {
 		s.teamMembers[teamId] = map[string]*model.TeamMember{}
 	}

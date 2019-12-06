@@ -71,7 +71,7 @@ func (ue *UserEntity) GetPreferences() error {
 		return resp.Error
 	}
 
-	if err := ue.store.SetPreferences(preferences); err != nil {
+	if err := ue.store.SetPreferences(&preferences); err != nil {
 		return err
 	}
 	return nil

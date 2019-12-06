@@ -25,8 +25,10 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("SetUser", func(t *testing.T) {
+		err := s.SetUser(nil)
+		require.Error(t, err)
 		u := &model.User{}
-		err := s.SetUser(u)
+		err = s.SetUser(u)
 		require.NoError(t, err)
 		uu, err := s.User()
 		require.NoError(t, err)
@@ -38,16 +40,18 @@ func TestUser(t *testing.T) {
 			{"user-id-1", "category-1", "name-1", "value-1"},
 			{"user-id-2", "category-2", "name-2", "value-2"},
 		}
-		err := s.SetPreferences(p)
+		err := s.SetPreferences(&p)
 		require.NoError(t, err)
 		pp, err := s.Preferences()
 		require.NoError(t, err)
-		require.ElementsMatch(t, p, pp)
+		require.Equal(t, &p, pp)
 	})
 
 	t.Run("SetPost", func(t *testing.T) {
+		err := s.SetPost(nil)
+		require.Error(t, err)
 		p := &model.Post{Id: model.NewId()}
-		err := s.SetPost(p)
+		err = s.SetPost(p)
 		require.NoError(t, err)
 		uu, err := s.Post(p.Id)
 		require.NoError(t, err)
@@ -58,8 +62,10 @@ func TestUser(t *testing.T) {
 func TestChannel(t *testing.T) {
 	t.Run("Create channel", func(t *testing.T) {
 		s := New()
+		err := s.SetChannel(nil)
+		require.Error(t, err)
 		channel := &model.Channel{Id: model.NewId()}
-		err := s.SetChannel(channel)
+		err = s.SetChannel(channel)
 		require.NoError(t, err)
 		c, err := s.Channel(channel.Id)
 		require.NoError(t, err)
@@ -90,6 +96,8 @@ func TestChannelMembers(t *testing.T) {
 
 	t.Run("SetChannelMembers", func(t *testing.T) {
 		channelId := model.NewId()
+		err := s.SetChannelMembers(channelId, nil)
+		require.Error(t, err)
 		userId := model.NewId()
 		expected := model.ChannelMembers{
 			model.ChannelMember{
@@ -97,7 +105,8 @@ func TestChannelMembers(t *testing.T) {
 				UserId:    userId,
 			},
 		}
-		s.SetChannelMembers(channelId, &expected)
+		err = s.SetChannelMembers(channelId, &expected)
+		require.NoError(t, err)
 		members, err := s.ChannelMembers(channelId)
 		require.NoError(t, err)
 		require.Equal(t, &expected, members)
@@ -105,6 +114,8 @@ func TestChannelMembers(t *testing.T) {
 
 	t.Run("SetChannelMember", func(t *testing.T) {
 		channelId := model.NewId()
+		err := s.SetChannelMember(channelId, nil)
+		require.Error(t, err)
 		userId := model.NewId()
 		member, err := s.ChannelMember(channelId, userId)
 		require.NoError(t, err)
@@ -158,6 +169,8 @@ func TestTeamMembers(t *testing.T) {
 			TeamId: teamId,
 			UserId: userId,
 		}
+		err = s.SetTeamMember(teamId, nil)
+		require.Error(t, err)
 		err = s.SetTeamMember(teamId, &expected)
 		require.NoError(t, err)
 		member, err = s.TeamMember(teamId, userId)
