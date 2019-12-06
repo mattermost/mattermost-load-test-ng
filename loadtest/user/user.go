@@ -31,11 +31,14 @@ type User interface {
 	CreateChannel(channel *model.Channel) (string, error)
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
+	GetChannel(channelId string) error
+	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 	GetChannelMembers(channelId string, page, perPage int) error
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
+	AddChannelMember(channelId, userId string) error
 
 	// teams
 	CreateTeam(team *model.Team) (string, error)

@@ -106,6 +106,11 @@ func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember
 	return s.channelMembers[channelId][userId], nil
 }
 
+func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
+	delete(s.channelMembers[channelId], userId)
+	return nil
+}
+
 func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
 	if s.teamMembers[teamId] == nil {
 		s.teamMembers[teamId] = map[string]*model.TeamMember{}
