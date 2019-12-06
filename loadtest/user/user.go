@@ -28,6 +28,9 @@ type User interface {
 	// posts
 	CreatePost(post *model.Post) (string, error)
 
+	// files
+	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
+
 	// channels
 	CreateChannel(channel *model.Channel) (string, error)
 	CreateGroupChannel(memberIds []string) (string, error)
