@@ -23,6 +23,7 @@ type User interface {
 	GetMe() (string, error)
 	GetPreferences() error
 	CreateUser(user *model.User) (string, error)
+	PatchUser(userId string, patch *model.UserPatch) error
 
 	// posts
 	CreatePost(post *model.Post) (string, error)

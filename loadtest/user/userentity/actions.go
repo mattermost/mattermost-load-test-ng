@@ -86,6 +86,19 @@ func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	return user.Id, nil
 }
 
+func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
+	user, resp := ue.client.PatchUser(userId, patch)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if userId == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
