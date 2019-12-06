@@ -14,6 +14,7 @@ type MemStore struct {
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
 	channelMembers map[string]map[string]*model.ChannelMember
+	teamMembers    map[string]map[string]*model.TeamMember
 }
 
 func New() *MemStore {
@@ -22,6 +23,7 @@ func New() *MemStore {
 		teams:          map[string]*model.Team{},
 		channels:       map[string]*model.Channel{},
 		channelMembers: map[string]map[string]*model.ChannelMember{},
+		teamMembers:    map[string]map[string]*model.TeamMember{},
 	}
 }
 
@@ -107,4 +109,16 @@ func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember
 func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
 	delete(s.channelMembers[channelId], userId)
 	return nil
+}
+
+func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	if s.teamMembers[teamId] == nil {
+		s.teamMembers[teamId] = map[string]*model.TeamMember{}
+	}
+	s.teamMembers[teamId][teamMember.UserId] = teamMember
+	return nil
+}
+
+func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
+	return s.teamMembers[teamId][userId], nil
 }
