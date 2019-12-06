@@ -86,8 +86,22 @@ func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	return user.Id, nil
 }
 
+func (ue *UserEntity) UpdateUser(user *model.User) error {
+	user, resp := ue.client.UpdateUser(user)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if user.Id == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
 	user, resp := ue.client.PatchUser(userId, patch)
+
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -116,6 +130,15 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	err = ue.store.SetPost(post)
 
 	return post.Id, err
+}
+
+func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	fresp, resp := ue.client.UploadFile(data, channelId, filename)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return fresp, nil
 }
 
 func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {

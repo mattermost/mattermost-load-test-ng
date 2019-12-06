@@ -23,10 +23,14 @@ type User interface {
 	GetMe() (string, error)
 	GetPreferences() error
 	CreateUser(user *model.User) (string, error)
+	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
+
+	// files
+	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
 
 	// channels
 	CreateChannel(channel *model.Channel) (string, error)

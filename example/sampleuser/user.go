@@ -62,6 +62,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
 	return "", nil
 }
@@ -184,6 +188,10 @@ func (u *SampleUser) GetPreferences() error {
 
 func (u *SampleUser) CreateUser(user *model.User) (string, error) {
 	return "", nil
+}
+
+func (u *SampleUser) UpdateUser(user *model.User) error {
+	return nil
 }
 
 func (u *SampleUser) PatchUser(userId string, patch *model.UserPatch) error {
