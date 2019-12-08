@@ -70,6 +70,10 @@ func (u *SampleUser) GetFileInfosForPost(postId string) ([]*model.FileInfo, erro
 	return nil, nil
 }
 
+func (ue *SampleUser) GetFileThumbnail(fileId string) ([]byte, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
 	return "", nil
 }
@@ -220,4 +224,12 @@ func (u *SampleUser) GetTeamStats(teamId string) error {
 
 func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	return []*model.TeamUnread{}, nil
+}
+
+func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
+	return nil
+}
+
+func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+	return nil
 }

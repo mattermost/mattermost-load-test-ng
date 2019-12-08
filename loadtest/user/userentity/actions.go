@@ -291,7 +291,7 @@ func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	return ue.store.SetTeamMember(teamId, tm)
 }
 
-func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) (error) {
+func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
@@ -328,6 +328,34 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 }
 
 func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
-	infos, response := ue.client.GetFileInfosForPost(postId, "")
-	return infos, response.Error
+	infos, resp := ue.client.GetFileInfosForPost(postId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return infos, nil
+}
+
+func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
+	data, resp := ue.client.GetFileThumbnail(fileId)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return data, nil
+}
+
+func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
+	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
+
+func (ue *UserEntity) GetEmojiList(page, perPage int) error {
+	emojis, resp := ue.client.GetEmojiList(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetEmojis(emojis)
 }

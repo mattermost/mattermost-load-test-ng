@@ -25,6 +25,7 @@ type User interface {
 	CreateUser(user *model.User) (string, error)
 	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error
+	GetUsersStatusesByIds(userIds []string) error
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
@@ -32,6 +33,7 @@ type User interface {
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
 	GetFileInfosForPost(postId string) ([]*model.FileInfo, error)
+	GetFileThumbnail(fileId string) ([]byte, error)
 
 	// channels
 	CreateChannel(channel *model.Channel) (string, error)
@@ -52,7 +54,8 @@ type User interface {
 	GetTeamMembers(teamId string, page, perPage int) error
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
+	AddTeamMemberFromInvite(token, inviteId string) error
 
-	// users
-	GetUsersStatusesByIds(userIds []string) error
+	// emoji
+	GetEmojiList(page, perPage int) error
 }
