@@ -296,12 +296,7 @@ func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) (error) {
 	if resp.Error != nil {
 		return resp.Error
 	}
-	for _, tm := range members {
-		if err := ue.store.SetTeamMember(teamId, tm); err != nil {
-			return err
-		}
-	}
-	return nil
+	return ue.store.SetTeamMembers(teamId, members)
 }
 
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {

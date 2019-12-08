@@ -99,3 +99,7 @@ func (s *SampleStore) SetTeamMember(teamId string, teamMember *model.TeamMember)
 func (s *SampleStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
 	return nil, errors.New("not implemented")
 }
+
+func (s *SampleStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
+	return errors.New("not implemented")
+}
