@@ -291,7 +291,7 @@ func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	return ue.store.SetTeamMember(teamId, tm)
 }
 
-func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) (error) {
+func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
@@ -342,4 +342,12 @@ func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
 	}
 
 	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
+
+func (ue *UserEntity) GetEmojiList(page, perPage int) error {
+	emojis, resp := ue.client.GetEmojiList(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetEmojis(emojis)
 }
