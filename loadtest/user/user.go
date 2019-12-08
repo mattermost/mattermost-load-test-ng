@@ -48,6 +48,7 @@ type User interface {
 	// teams
 	CreateTeam(team *model.Team) (string, error)
 	AddTeamMember(teamId, userId string) error
+	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 
 	// users
