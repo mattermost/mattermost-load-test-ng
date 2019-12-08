@@ -31,6 +31,7 @@ type User interface {
 
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
+	GetFileThumbnail(fileId string) ([]byte, error)
 
 	// channels
 	CreateChannel(channel *model.Channel) (string, error)
@@ -51,9 +52,6 @@ type User interface {
 	GetTeamMembers(teamId string, page, perPage int) error
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
-
-	// files
-	GetFileThumbnail(fileId string) error
 	
 	// users
 	GetUsersStatusesByIds(userIds []string) error
