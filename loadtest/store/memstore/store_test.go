@@ -177,4 +177,21 @@ func TestTeamMembers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, &expected, member)
 	})
+
+	t.Run("SetTeamMembers", func(t *testing.T) {
+		teamId := model.NewId()
+		userId := model.NewId()
+		member, err := s.TeamMember(teamId, userId)
+		require.NoError(t, err)
+		require.Nil(t, member)
+		expected := model.TeamMember{
+			TeamId: teamId,
+			UserId: userId,
+		}
+		err = s.SetTeamMembers(teamId, []*model.TeamMember{&expected})
+		require.NoError(t, err)
+		member, err = s.TeamMember(teamId, userId)
+		require.NoError(t, err)
+		require.Equal(t, &expected, member)
+	})
 }
