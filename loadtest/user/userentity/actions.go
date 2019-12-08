@@ -326,3 +326,8 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 
 	return unread, nil
 }
+
+func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	infos, response := ue.client.GetFileInfosForPost(postId, "")
+	return infos, response.Error
+}

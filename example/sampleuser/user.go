@@ -66,6 +66,10 @@ func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model
 	return nil, nil
 }
 
+func (u *SampleUser) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
 	return "", nil
 }
