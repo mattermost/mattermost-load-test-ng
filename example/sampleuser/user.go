@@ -210,6 +210,10 @@ func (u *SampleUser) GetTeamMembers(teamId string, page, perPage int) error {
 	return nil
 }
 
+func (u *SampleUser) GetTeamStats(teamId string) error {
+	return nil
+}
+
 func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	return []*model.TeamUnread{}, nil
 }

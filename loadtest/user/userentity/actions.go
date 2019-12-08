@@ -304,6 +304,15 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	return resp.Error
 }
 
+func (ue *UserEntity) GetTeamStats(teamId string) error {
+	_, resp := ue.client.GetTeamStats(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
