@@ -360,7 +360,7 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 		return err
 	}
 	ok, resp := ue.client.SetProfileImage(user.Id, data)
-	if resp != nil {
+	if resp.Error != nil {
 		return resp.Error
 	}
 	if !ok {
