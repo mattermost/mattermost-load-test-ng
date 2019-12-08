@@ -295,3 +295,12 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	_, resp := ue.client.GetUsersStatusesByIds(userIds)
 	return resp.Error
 }
+
+func (ue *UserEntity) GetTeamStats(teamId string) error {
+	_, resp := ue.client.GetTeamStats(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}

@@ -205,3 +205,7 @@ func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 func (u *SampleUser) AddTeamMember(teamId, userId string) error {
 	return nil
 }
+
+func (u *SampleUser) GetTeamStats(teamId string) error {
+	return nil
+}
