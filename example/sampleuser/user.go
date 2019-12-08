@@ -209,3 +209,7 @@ func (u *SampleUser) AddTeamMember(teamId, userId string) error {
 func (u *SampleUser) GetTeamMembers(teamId string, page, perPage int) error {
 	return nil
 }
+
+func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+	return []*model.TeamUnread{}, nil
+}
