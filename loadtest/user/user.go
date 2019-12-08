@@ -52,6 +52,9 @@ type User interface {
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 
+	// files
+	GetFileThumbnail(fileId string) error
+	
 	// users
 	GetUsersStatusesByIds(userIds []string) error
 }

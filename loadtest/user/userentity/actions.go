@@ -326,3 +326,8 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 
 	return unread, nil
 }
+
+func (ue *UserEntity) GetFileThumbnail(fileId string) error {
+	_, response := ue.client.GetFileThumbnail(fileId)
+	return response.Error
+}

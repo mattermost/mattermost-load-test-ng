@@ -217,3 +217,7 @@ func (u *SampleUser) GetTeamStats(teamId string) error {
 func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	return []*model.TeamUnread{}, nil
 }
+
+func (ue *SampleUser) GetFileThumbnail(fileId string) error {
+	return nil
+}
