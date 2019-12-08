@@ -326,3 +326,12 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 
 	return unread, nil
 }
+
+func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
+	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
