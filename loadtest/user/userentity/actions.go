@@ -327,6 +327,14 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 	return unread, nil
 }
 
+func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	infos, resp := ue.client.GetFileInfosForPost(postId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return infos, nil
+}
+
 func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
 	data, resp := ue.client.GetFileThumbnail(fileId)
 	if resp.Error != nil {
