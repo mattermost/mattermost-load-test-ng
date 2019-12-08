@@ -4,6 +4,8 @@
 package userentity
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -350,6 +352,21 @@ func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
 	}
 
 	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
+
+func (ue *UserEntity) SetProfileImage(data []byte) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	ok, resp := ue.client.SetProfileImage(user.Id, data)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	if !ok {
+		return errors.New("cannot set profile image")
+	}
+	return nil
 }
 
 func (ue *UserEntity) GetEmojiList(page, perPage int) error {
