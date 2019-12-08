@@ -205,3 +205,7 @@ func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 func (u *SampleUser) AddTeamMember(teamId, userId string) error {
 	return nil
 }
+
+func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+	return []*model.TeamUnread{}, nil
+}
