@@ -40,4 +40,7 @@ type MutableUserStore interface {
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error
 	TeamMember(teamdId, userId string) (*model.TeamMember, error)
+
+	// emoji
+	SetEmojis(emoji []*model.Emoji) error
 }

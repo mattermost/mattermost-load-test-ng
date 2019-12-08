@@ -55,4 +55,7 @@ type User interface {
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 	AddTeamMemberFromInvite(token, inviteId string) error
+
+	// emoji
+	GetEmojiList(page, perPage int) error
 }

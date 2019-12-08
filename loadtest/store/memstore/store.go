@@ -12,6 +12,7 @@ import (
 type MemStore struct {
 	user           *model.User
 	preferences    *model.Preferences
+	emojis         []*model.Emoji
 	posts          map[string]*model.Post
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
@@ -153,4 +154,9 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 
 func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
 	return s.teamMembers[teamId][userId], nil
+}
+
+func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
+	s.emojis = emoji
+	return nil
 }

@@ -360,3 +360,11 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 	}
 	return nil
 }
+
+func (ue *UserEntity) GetEmojiList(page, perPage int) error {
+	emojis, resp := ue.client.GetEmojiList(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetEmojis(emojis)
+}

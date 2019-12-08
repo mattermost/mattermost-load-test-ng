@@ -229,3 +229,7 @@ func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
 func (ue *SampleUser) SetProfileImage(data []byte) error {
 	return nil
 }
+
+func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+	return nil
+}
