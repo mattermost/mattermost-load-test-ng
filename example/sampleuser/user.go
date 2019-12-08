@@ -222,3 +222,6 @@ func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 	return []*model.TeamUnread{}, nil
 }
 
+func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
+	return nil
+}
