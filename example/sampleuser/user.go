@@ -221,3 +221,7 @@ func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
 	return nil
 }
+
+func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+	return nil
+}
