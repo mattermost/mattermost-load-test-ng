@@ -332,7 +332,7 @@ func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	return data, resp.Error
+	return data, nil
 }
 
 func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
