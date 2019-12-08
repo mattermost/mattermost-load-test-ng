@@ -26,6 +26,7 @@ type User interface {
 	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error
 	GetUsersStatusesByIds(userIds []string) error
+	SetProfileImage(data []byte) error
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
@@ -54,5 +55,4 @@ type User interface {
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 	AddTeamMemberFromInvite(token, inviteId string) error
-	
 }

@@ -13,7 +13,7 @@ type UserStore interface {
 
 type MutableUserStore interface {
 	UserStore
-	
+
 	// users
 
 	SetUser(user *model.User) error

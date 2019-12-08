@@ -225,3 +225,7 @@ func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
 	return nil
 }
+
+func (ue *SampleUser) SetProfileImage(data []byte) error {
+	return nil
+}

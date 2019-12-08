@@ -142,13 +142,12 @@ func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) er
 	return nil
 }
 
-
 func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
 	s.teamMembers[teamId] = map[string]*model.TeamMember{}
 	for _, m := range teamMembers {
 		s.teamMembers[teamId][m.UserId] = m
 	}
-	
+
 	return nil
 }
 
