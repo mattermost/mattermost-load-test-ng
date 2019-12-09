@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type UserEntity struct {
@@ -81,4 +81,18 @@ func (ue *UserEntity) Disconnect() error {
 	ue.wsClient.Close()
 	ue.wsClient = nil
 	return nil
+}
+
+func (ue *UserEntity) getUserFromStore() (*model.User, error) {
+	user, err := ue.store.User()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, errors.New("user was not initialized")
+	}
+
+	return user, nil
 }

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type SampleUser struct {
@@ -62,6 +62,18 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	return nil, nil
+}
+
+func (u *SampleUser) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	return nil, nil
+}
+
+func (ue *SampleUser) GetFileThumbnail(fileId string) ([]byte, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
 	return "", nil
 }
@@ -74,8 +86,20 @@ func (u *SampleUser) CreateDirectChannel(otherUserId string) (string, error) {
 	return "", nil
 }
 
+func (ue *SampleUser) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+	return true, nil
+}
+
+func (u *SampleUser) AddChannelMember(channelId, userId string) error {
+	return nil
+}
+
 func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	return nil, nil
+}
+
+func (u *SampleUser) GetChannel(channelId string) error {
+	return nil
 }
 
 func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
@@ -86,7 +110,15 @@ func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) erro
 	return nil
 }
 
+func (u *SampleUser) GetChannelMember(channelId, userId string) error {
+	return nil
+}
+
 func (u *SampleUser) GetChannelStats(channelId string) error {
+	return nil
+}
+
+func (u *SampleUser) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }
 
@@ -145,6 +177,35 @@ func (u *SampleUser) GetMe() (string, error) {
 	return user.Id, nil
 }
 
+func (u *SampleUser) GetPreferences() error {
+	user, err := u.store.User()
+	if user == nil || err != nil {
+		return errors.New("user was not initialized")
+	}
+
+	preferences, resp := u.client.GetPreferences(user.Id)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := u.store.SetPreferences(&preferences); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *SampleUser) CreateUser(user *model.User) (string, error) {
+	return "", nil
+}
+
+func (u *SampleUser) UpdateUser(user *model.User) error {
+	return nil
+}
+
+func (u *SampleUser) PatchUser(userId string, patch *model.UserPatch) error {
+	return nil
+}
+
 func (u *SampleUser) GetTeams() ([]string, error) {
 	user, err := u.store.User()
 	if user == nil || err != nil {
@@ -165,4 +226,36 @@ func (u *SampleUser) GetTeams() ([]string, error) {
 		teamIds = append(teamIds, team.Id)
 	}
 	return teamIds, nil
+}
+
+func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
+	return "", nil
+}
+
+func (u *SampleUser) AddTeamMember(teamId, userId string) error {
+	return nil
+}
+
+func (u *SampleUser) GetTeamMembers(teamId string, page, perPage int) error {
+	return nil
+}
+
+func (u *SampleUser) GetTeamStats(teamId string) error {
+	return nil
+}
+
+func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+	return []*model.TeamUnread{}, nil
+}
+
+func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
+	return nil
+}
+
+func (ue *SampleUser) SetProfileImage(data []byte) error {
+	return nil
+}
+
+func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+	return nil
 }

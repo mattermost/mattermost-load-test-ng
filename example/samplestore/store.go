@@ -4,12 +4,15 @@
 package samplestore
 
 import (
-	"github.com/mattermost/mattermost-server/model"
+	"errors"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type SampleStore struct {
 	user           *model.User
 	posts          map[string]*model.Post
+	preferences    *model.Preferences
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
 	channelMembers map[string]*model.ChannelMembers
@@ -33,6 +36,15 @@ func (s *SampleStore) Id() string {
 
 func (s *SampleStore) User() (*model.User, error) {
 	return s.user, nil
+}
+
+func (s *SampleStore) Preferences() (*model.Preferences, error) {
+	return s.preferences, nil
+}
+
+func (s *SampleStore) SetPreferences(preferences *model.Preferences) error {
+	s.preferences = preferences
+	return nil
 }
 
 func (s *SampleStore) Post(postId string) (*model.Post, error) {
@@ -92,6 +104,37 @@ func (s *SampleStore) SetTeams(teams []*model.Team) error {
 }
 
 func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
-	s.channelMembers[channelId] = channelMembers
-	return nil
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) RemoveChannelMember(channelId string, userId string) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) SetEmojis(emoji []*model.Emoji) error {
+	return errors.New("not implemented")
 }

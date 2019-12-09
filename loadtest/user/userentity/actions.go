@@ -6,7 +6,7 @@ package userentity
 import (
 	"errors"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (ue *UserEntity) SignUp(email, username, password string) error {
@@ -27,27 +27,26 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 }
 
 func (ue *UserEntity) Login() error {
-	user, err := ue.store.User()
-
-	if user == nil || err != nil {
-		return errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
 	}
 
 	_, resp := ue.client.Login(user.Email, user.Password)
+	if resp.Error != nil {
+		return resp.Error
+	}
 
-	return resp.Error
+	return nil
 }
 
 func (ue *UserEntity) Logout() (bool, error) {
-	user, err := ue.store.User()
-
-	if user == nil || err != nil {
-		return false, errors.New("user was not initialized")
+	ok, resp := ue.client.Logout()
+	if resp.Error != nil {
+		return false, resp.Error
 	}
 
-	ok, resp := ue.client.Logout()
-
-	return ok, resp.Error
+	return ok, nil
 }
 
 func (ue *UserEntity) GetMe() (string, error) {
@@ -63,10 +62,63 @@ func (ue *UserEntity) GetMe() (string, error) {
 	return user.Id, nil
 }
 
+func (ue *UserEntity) GetPreferences() error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	preferences, resp := ue.client.GetPreferences(user.Id)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if err := ue.store.SetPreferences(&preferences); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
+	user, resp := ue.client.CreateUser(user)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	return user.Id, nil
+}
+
+func (ue *UserEntity) UpdateUser(user *model.User) error {
+	user, resp := ue.client.UpdateUser(user)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if user.Id == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
+}
+
+func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
+	user, resp := ue.client.PatchUser(userId, patch)
+
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if userId == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return "", errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return "", err
 	}
 
 	post.PendingPostId = model.NewId()
@@ -82,86 +134,247 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	fresp, resp := ue.client.UploadFile(data, channelId, filename)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return fresp, nil
+}
+
 func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return "", errors.New("user was not initialized")
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return "", err
 	}
 
 	channel, resp := ue.client.CreateChannel(channel)
 	if resp.Error != nil {
 		return "", resp.Error
 	}
+
 	err = ue.store.SetChannel(channel)
-	return channel.Id, err
+	if err != nil {
+		return "", err
+	}
+
+	return channel.Id, nil
 }
 
 func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return "", errors.New("user was not initialized")
-	}
 	channel, resp := ue.client.CreateGroupChannel(memberIds)
 	if resp.Error != nil {
 		return "", resp.Error
 	}
-	err = ue.store.SetChannel(channel)
-	return channel.Id, err
+
+	err := ue.store.SetChannel(channel)
+	if err != nil {
+		return "", err
+	}
+
+	return channel.Id, nil
 }
 
 func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return "", errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return "", err
 	}
+
 	channel, resp := ue.client.CreateDirectChannel(user.Id, otherUserId)
 	if resp.Error != nil {
 		return "", resp.Error
 	}
+
 	err = ue.store.SetChannel(channel)
-	return channel.Id, err
+	if err != nil {
+		return "", err
+	}
+
+	return channel.Id, nil
+}
+func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+	ok, resp := ue.client.RemoveUserFromChannel(channelId, userId)
+	if resp.Error != nil {
+		return false, resp.Error
+	}
+	return ok, ue.store.RemoveChannelMember(channelId, userId)
+}
+
+func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
+	member, resp := ue.client.AddChannelMember(channelId, userId)
+	if resp.Error != nil {
+		return nil
+	}
+
+	return ue.store.SetChannelMember(channelId, member)
+}
+
+func (ue *UserEntity) GetChannel(channelId string) error {
+	channel, resp := ue.client.GetChannel(channelId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannel(channel)
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return nil, errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
 	}
+
 	channelViewResponse, resp := ue.client.ViewChannel(user.Id, view)
-	return channelViewResponse, resp.Error
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return channelViewResponse, nil
 }
 
 func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return nil, errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
 	}
+
 	channelUnreadResponse, resp := ue.client.GetChannelUnread(channelId, user.Id)
-	return channelUnreadResponse, resp.Error
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return channelUnreadResponse, nil
 }
 
 func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) error {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return errors.New("user was not initialized")
-	}
 	channelMembers, resp := ue.client.GetChannelMembers(channelId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
+
 	return ue.store.SetChannelMembers(channelId, channelMembers)
 }
 
-func (ue *UserEntity) GetChannelStats(channelId string) error {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return errors.New("user was not initialized")
+func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
+	cm, resp := ue.client.GetChannelMember(channelId, userId, "")
+	if resp.Error != nil {
+		return resp.Error
 	}
+
+	return ue.store.SetChannelMember(channelId, cm)
+}
+
+func (ue *UserEntity) GetChannelStats(channelId string) error {
 	_, resp := ue.client.GetChannelStats(channelId, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
-	return err
+
+	return nil
+}
+
+func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
+	team, resp := ue.client.CreateTeam(team)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	return team.Id, nil
+}
+
+func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
+	tm, resp := ue.client.AddTeamMember(teamId, userId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(teamId, tm)
+}
+
+func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
+	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetTeamMembers(teamId, members)
+}
+
+func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
+	_, resp := ue.client.GetUsersStatusesByIds(userIds)
+	return resp.Error
+}
+
+func (ue *UserEntity) GetTeamStats(teamId string) error {
+	_, resp := ue.client.GetTeamStats(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
+func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
+
+	unread, resp := ue.client.GetTeamsUnreadForUser(user.Id, teamIdToExclude)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return unread, nil
+}
+
+func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	infos, resp := ue.client.GetFileInfosForPost(postId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return infos, nil
+}
+
+func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
+	data, resp := ue.client.GetFileThumbnail(fileId)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return data, nil
+}
+
+func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
+	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
+
+func (ue *UserEntity) SetProfileImage(data []byte) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	ok, resp := ue.client.SetProfileImage(user.Id, data)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	if !ok {
+		return errors.New("cannot set profile image")
+	}
+	return nil
+}
+
+func (ue *UserEntity) GetEmojiList(page, perPage int) error {
+	emojis, resp := ue.client.GetEmojiList(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetEmojis(emojis)
 }
 
 func (ue *UserEntity) GetTeams() ([]string, error) {
