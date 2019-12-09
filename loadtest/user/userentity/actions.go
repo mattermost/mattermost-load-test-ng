@@ -6,7 +6,7 @@ package userentity
 import (
 	"errors"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (ue *UserEntity) SignUp(email, username, password string) error {
