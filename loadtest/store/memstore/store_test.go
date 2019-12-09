@@ -52,7 +52,6 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("SetTeams", func(t *testing.T) {
-		s = New()
 		tms := []*model.Team{
 			{Id: model.NewId()},
 			{Id: model.NewId()},

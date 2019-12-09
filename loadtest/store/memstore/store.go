@@ -85,6 +85,7 @@ func (s *MemStore) Teams() ([]*model.Team, error) {
 }
 
 func (s *MemStore) SetTeams(teams []*model.Team) error {
+	s.teams = make(map[string]*model.Team)
 	for _, team := range teams {
 		s.teams[team.Id] = team
 	}
