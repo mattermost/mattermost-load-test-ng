@@ -134,6 +134,14 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
+	postList, resp := ue.client.SearchPosts(teamId, terms, isOrSearch)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return postList, nil
+}
+
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	fresp, resp := ue.client.UploadFile(data, channelId, filename)
 	if resp.Error != nil {
