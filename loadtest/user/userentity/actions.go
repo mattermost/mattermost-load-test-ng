@@ -220,6 +220,14 @@ func (ue *UserEntity) GetChannel(channelId string) error {
 	return ue.store.SetChannel(channel)
 }
 
+func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
+	channels, resp := ue.client.SearchChannels(teamId, search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return channels, nil
+}
+
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
