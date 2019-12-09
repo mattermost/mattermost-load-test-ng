@@ -376,3 +376,25 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	}
 	return ue.store.SetEmojis(emojis)
 }
+
+func (ue *UserEntity) GetTeams() ([]string, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
+
+	teams, resp := ue.client.GetTeamsForUser(user.Id, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for i, team := range teams {
+		teamIds[i] = team.Id
+	}
+	return teamIds, nil
+}

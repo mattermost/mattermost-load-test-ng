@@ -37,6 +37,10 @@ type MutableUserStore interface {
 	RemoveChannelMember(channelId string, userId string) error
 
 	// teams
+	SetTeam(team *model.Team) error
+	Team(teamId string) (*model.Team, error)
+	SetTeams(teams []*model.Team) error
+	Teams() ([]*model.Team, error)
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error
 	TeamMember(teamdId, userId string) (*model.TeamMember, error)

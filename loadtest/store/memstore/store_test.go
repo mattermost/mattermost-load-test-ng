@@ -57,6 +57,28 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, p, uu)
 	})
+
+	t.Run("SetTeam", func(t *testing.T) {
+		tm := &model.Team{Id: model.NewId()}
+		err := s.SetTeam(tm)
+		require.NoError(t, err)
+		tt, err := s.Team(tm.Id)
+		require.NoError(t, err)
+		require.Equal(t, tm, tt)
+	})
+
+	t.Run("SetTeams", func(t *testing.T) {
+		tms := []*model.Team{
+			{Id: model.NewId()},
+			{Id: model.NewId()},
+			{Id: model.NewId()},
+		}
+		err := s.SetTeams(tms)
+		require.NoError(t, err)
+		ttms, err := s.Teams()
+		require.NoError(t, err)
+		require.ElementsMatch(t, tms, ttms)
+	})
 }
 
 func TestChannel(t *testing.T) {

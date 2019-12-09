@@ -88,6 +88,34 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+func (s *MemStore) Team(teamId string) (*model.Team, error) {
+	if team, ok := s.teams[teamId]; ok {
+		return team, nil
+	}
+	return nil, nil
+}
+
+func (s *MemStore) SetTeam(team *model.Team) error {
+	s.teams[team.Id] = team
+	return nil
+}
+
+func (s *MemStore) Teams() ([]*model.Team, error) {
+	teams := []*model.Team{}
+	for _, team := range s.teams {
+		teams = append(teams, team)
+	}
+	return teams, nil
+}
+
+func (s *MemStore) SetTeams(teams []*model.Team) error {
+	s.teams = make(map[string]*model.Team)
+	for _, team := range teams {
+		s.teams[team.Id] = team
+	}
+	return nil
+}
+
 func (s *MemStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
 	if channelMembers == nil {
 		return errors.New("channelMembers should not be nil")

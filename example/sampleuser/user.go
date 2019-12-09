@@ -206,6 +206,28 @@ func (u *SampleUser) PatchUser(userId string, patch *model.UserPatch) error {
 	return nil
 }
 
+func (u *SampleUser) GetTeams() ([]string, error) {
+	user, err := u.store.User()
+	if user == nil || err != nil {
+		return nil, errors.New("user was not initialized")
+	}
+
+	teams, resp := u.client.GetTeamsForUser(user.Id, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := u.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for _, team := range teams {
+		teamIds = append(teamIds, team.Id)
+	}
+	return teamIds, nil
+}
+
 func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 	return "", nil
 }
