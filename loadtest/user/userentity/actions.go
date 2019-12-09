@@ -378,9 +378,9 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 }
 
 func (ue *UserEntity) GetTeams() ([]string, error) {
-	user, err := ue.store.User()
-	if user == nil || err != nil {
-		return nil, errors.New("user was not initialized")
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
 	}
 
 	teams, resp := ue.client.GetTeamsForUser(user.Id, "")
