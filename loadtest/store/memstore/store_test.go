@@ -37,8 +37,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("SetPreferences", func(t *testing.T) {
 		p := model.Preferences{
-			{"user-id-1", "category-1", "name-1", "value-1"},
-			{"user-id-2", "category-2", "name-2", "value-2"},
+			{UserId: "user-id-1", Category: "category-1", Name: "name-1", Value: "value-1"},
+			{UserId: "user-id-2", Category: "category-2", Name: "name-2", Value: "value-2"},
 		}
 		err := s.SetPreferences(&p)
 		require.NoError(t, err)
@@ -171,6 +171,7 @@ func TestChannelMembers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 2, len(s.channelMembers[channel.Id]))
 		err = s.RemoveChannelMember(channel.Id, channelMember1.UserId)
+		require.NoError(t, err)
 		members, err := s.ChannelMembers(channel.Id)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(s.channelMembers[channel.Id]))

@@ -57,6 +57,18 @@ else
 endif
 	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
 
+check-style: golangci-lint
+
+golangci-lint:
+# https://stackoverflow.com/a/677212/1027058 (check if a command exists or not)
+	@if ! [ -x "$$(command -v golangci-lint)" ]; then \
+		echo "golangci-lint is not installed. Please see https://github.com/golangci/golangci-lint#install for installation instructions."; \
+		exit 1; \
+	fi; \
+
+	@echo Running golangci-lint
+	golangci-lint run -E gofmt ./...
+
 test:
 	$(GO) test -v -run=. -failfast $(PACKAGES)
 

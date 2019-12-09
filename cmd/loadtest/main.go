@@ -38,7 +38,9 @@ func main() {
 	}
 
 	rootCmd.AddCommand(commands...)
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func initializeRootCmdF(cmd *cobra.Command, args []string) {

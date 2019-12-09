@@ -6,18 +6,18 @@ import (
 
 func (c *SimpleController) newInfoStatus(info string) control.UserStatus {
 	return control.UserStatus{
-		c.user,
-		control.USER_STATUS_INFO,
-		info,
-		nil,
+		User: c.user,
+		Code: control.USER_STATUS_INFO,
+		Info: info,
+		Err:  nil,
 	}
 }
 
 func (c *SimpleController) newErrorStatus(err error) control.UserStatus {
 	return control.UserStatus{
-		c.user,
-		control.USER_STATUS_ERROR,
-		"",
-		err,
+		User: c.user,
+		Code: control.USER_STATUS_ERROR,
+		Info: "",
+		Err:  err,
 	}
 }

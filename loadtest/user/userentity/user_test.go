@@ -15,9 +15,10 @@ func TestGetUserFromStore(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, "user was not initialized")
 
-	th.User.store.SetUser(&model.User{
+	err = th.User.store.SetUser(&model.User{
 		Id: "someid",
 	})
+	require.NoError(t, err)
 	user, err = th.User.getUserFromStore()
 	require.NoError(t, err)
 	require.NotNil(t, user)
