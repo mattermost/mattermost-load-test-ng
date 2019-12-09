@@ -138,3 +138,11 @@ func (s *SampleStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMem
 func (s *SampleStore) SetEmojis(emoji []*model.Emoji) error {
 	return errors.New("not implemented")
 }
+
+func (s *SampleStore) Users() ([]*model.User, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) SetUsers(users []*model.User) error {
+	return errors.New("not implemented")
+}

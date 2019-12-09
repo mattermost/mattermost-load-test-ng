@@ -35,6 +35,19 @@ func TestUser(t *testing.T) {
 		require.Equal(t, u, uu)
 	})
 
+	t.Run("SetUsers", func(t *testing.T) {
+		usrs := []*model.User{
+			{Id: model.NewId()},
+			{Id: model.NewId()},
+			{Id: model.NewId()},
+		}
+		err := s.SetUsers(usrs)
+		require.NoError(t, err)
+		uusrs, err := s.Users()
+		require.NoError(t, err)
+		require.ElementsMatch(t, usrs, uusrs)
+	})
+
 	t.Run("SetPreferences", func(t *testing.T) {
 		p := model.Preferences{
 			{"user-id-1", "category-1", "name-1", "value-1"},
