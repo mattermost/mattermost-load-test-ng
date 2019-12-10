@@ -148,8 +148,10 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) er
 		return resp.Error
 	}
 	posts := make([]*model.Post, 0, len(postlist.Posts))
+	i := 0
 	for _, v := range postlist.Posts {
-		posts = append(posts, v)
+		posts[i] = v
+		i++
 	}
 	return ue.store.SetPosts(posts)
 }
