@@ -301,8 +301,11 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 }
 
 func (ue *UserEntity) GetTeam(teamId string) error {
-	_, resp := ue.client.GetTeam(teamId, "")
-	return resp.Error
+	team, resp := ue.client.GetTeam(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetTeam(team)
 }
 
 func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
