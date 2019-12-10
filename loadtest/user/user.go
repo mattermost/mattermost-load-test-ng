@@ -56,6 +56,7 @@ type User interface {
 	// teams
 	GetTeams() ([]string, error)
 	CreateTeam(team *model.Team) (string, error)
+	GetTeam(teamId string) error
 	AddTeamMember(teamId, userId string) error
 	GetTeamMembers(teamId string, page, perPage int) error
 	GetTeamStats(teamId string) error

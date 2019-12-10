@@ -240,6 +240,10 @@ func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) GetTeam(teamId string) error {
+	return nil
+}
+
 func (u *SampleUser) AddTeamMember(teamId, userId string) error {
 	return nil
 }

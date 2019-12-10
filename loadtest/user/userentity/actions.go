@@ -300,6 +300,14 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 	return team.Id, nil
 }
 
+func (ue *UserEntity) GetTeam(teamId string) error {
+	team, resp := ue.client.GetTeam(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetTeam(team)
+}
+
 func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	tm, resp := ue.client.AddTeamMember(teamId, userId)
 	if resp.Error != nil {
