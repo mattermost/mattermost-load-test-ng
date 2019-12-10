@@ -103,9 +103,11 @@ func (s *MemStore) SetTeam(team *model.Team) error {
 }
 
 func (s *MemStore) Teams() ([]*model.Team, error) {
-	teams := []*model.Team{}
+	teams := make([]*model.Team, len(s.teams))
+	i := 0
 	for _, team := range s.teams {
-		teams = append(teams, team)
+		teams[i] = team
+		i++
 	}
 	return teams, nil
 }
@@ -192,9 +194,11 @@ func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 }
 
 func (s *MemStore) Users() ([]*model.User, error) {
-	users := []*model.User{}
+	users := make([]*model.User, len(s.users))
+	i := 0
 	for _, user := range s.users {
-		users = append(users, user)
+		users[i] = user
+		i++
 	}
 	return users, nil
 }
