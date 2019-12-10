@@ -62,6 +62,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	return nil, nil
 }
@@ -100,6 +104,10 @@ func (u *SampleUser) ViewChannel(view *model.ChannelView) (*model.ChannelViewRes
 
 func (u *SampleUser) GetChannel(channelId string) error {
 	return nil
+}
+
+func (u *SampleUser) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
+	return nil, nil
 }
 
 func (u *SampleUser) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
@@ -254,6 +262,10 @@ func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
 
 func (ue *SampleUser) SetProfileImage(data []byte) error {
 	return nil
+}
+
+func (ue *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
+	return nil, nil
 }
 
 func (ue *SampleUser) GetEmojiList(page, perPage int) error {

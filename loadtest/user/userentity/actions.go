@@ -134,6 +134,14 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
+	postList, resp := ue.client.SearchPosts(teamId, terms, isOrSearch)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return postList, nil
+}
+
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	fresp, resp := ue.client.UploadFile(data, channelId, filename)
 	if resp.Error != nil {
@@ -218,6 +226,14 @@ func (ue *UserEntity) GetChannel(channelId string) error {
 	}
 
 	return ue.store.SetChannel(channel)
+}
+
+func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
+	channels, resp := ue.client.SearchChannels(teamId, search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return channels, nil
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
@@ -367,6 +383,14 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 		return errors.New("cannot set profile image")
 	}
 	return nil
+}
+
+func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
+	users, resp := ue.client.SearchUsers(search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return users, nil
 }
 
 func (ue *UserEntity) GetEmojiList(page, perPage int) error {

@@ -27,9 +27,11 @@ type User interface {
 	PatchUser(userId string, patch *model.UserPatch) error
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
+	SearchUsers(search *model.UserSearch) ([]*model.User, error)
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
+	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
@@ -41,6 +43,7 @@ type User interface {
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
+	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
