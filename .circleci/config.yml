@@ -1,151 +1,64 @@
 version: 2.1
 
-orbs:
-  aws-s3: circleci/aws-s3@1.0.11
+executors:
+  default:
+    docker:
+      - image: circleci/golang:1.13
 
-only_branches: &only_branches
-  filters:
-    branches:
-      ignore: master
+aliases:
+- &restore_cache
+  restore_cache:
+    key: go-mod-v1-{{ checksum "go.sum" }}
+- &save_cache
+  save_cache:
+    key: go-mod-v1-{{ checksum "go.sum" }}
+    paths:
+    - "/go/pkg/mod"
 
-only_master: &only_master
-  filters:
-    branches:
-      only: master
-
-only_v_tags: &only_v_tags
-  filters:
-    tags:
-      only: /^v.*/
-    branches:
-      ignore: /.*/
-
-mm_binary: &mm_binary
-  mm-binary: https://releases.mattermost.com/mattermost-platform/master/mattermost-enterprise-linux-amd64.tar.gz
+commands:
+  install-golangci-lint:
+    description: Install golangci-lint
+    parameters:
+      version:
+        type: string
+        default: 1.21.0
+      gobin:
+        type: string
+        default: /go/bin
+      prefix:
+        type: string
+        default: v1
+        description: Prefix for cache key to store the binary.
+    steps:
+      - restore_cache:
+          name: Restore golangci-lint cache
+          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
+      - run:
+          name: Install golangci-lint
+          command: |
+            mkdir -p << parameters.gobin >>
+            command -v << parameters.gobin >>/golangci-lint && exit
+            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
+      - save_cache:
+          name: Save golangci-lint cache
+          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
+          paths: [<< parameters.gobin >>/golangci-lint]
 
 jobs:
-  build-ltops-and-test:
-    docker:
-      - image: circleci/golang:1.12
+  test:
+    executor:
+      name: default
     steps:
       - checkout
-      - restore_cache:
-          key: dependencies-{{ checksum "go.sum" }}
-      - run:
-          name: Install dependencies
-          command: |
-            export PATH=$PATH:$GOPATH/bin
-            mkdir -p $GOPATH/bin
-            make install
-      - save_cache:
-          key: dependencies-{{ checksum "go.sum" }}
-          paths:
-            - $GOPATH/pkg/mod
-      - run:
-          name: Build package
-          command: make package
-      - run:
-          name: Test
-          command: |
-            set +x
-            ltops --help
-      - persist_to_workspace:
-          root: .
-          paths:
-            - dist
-
-  upload-s3:
-    docker:
-      - image: circleci/python:3.6
-    parameters:
-      s3-copy-to:
-        type: string
-    steps:
-      - attach_workspace:
-          at: .
-      - aws-s3/copy:
-          from: dist/mattermost-load-test.tar.gz
-          to: << parameters.s3-copy-to >>
-          arguments: --cache-control no-cache
-
-  build-docker:
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    parameters:
-      mm-binary:
-        type: string
-      loadtest-binary:
-        type: string
-      docker-tag:
-        type: string
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          command: >
-            docker build
-            --build-arg MM_BINARY=<< parameters.mm-binary >>
-            --build-arg LOADTEST_BINARY=<< parameters.loadtest-binary >>
-            -t mattermost/mattermost-loadtest:<< parameters.docker-tag >>
-            .
-            --no-cache
-      - run:
-          command: |
-            echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-            docker push mattermost/mattermost-loadtest:<< parameters.docker-tag >>
-            docker logout
-            docker rmi -f mattermost/mattermost-loadtest:<< parameters.docker-tag >>
+      - install-golangci-lint
+      - *restore_cache
+      - run: make check-style
+      - run: make test
+      - *save_cache
 
 workflows:
   version: 2
-  build_and_upload_and_build_push_image:
+  untagged-build:
     jobs:
-      - build-ltops-and-test
-
-      - upload-s3:
-          name: upload-s3-branches
-          s3-copy-to: s3://releases.mattermost.com/loadtest-pr/${CIRCLE_BRANCH}/
-          context: mattermost-ci-s3
-          requires:
-            - build-ltops-and-test
-          <<: *only_branches
-      - build-docker:
-          <<: *mm_binary
-          loadtest-binary: https://releases.mattermost.com/loadtest-pr/${CIRCLE_BRANCH}/mattermost-load-test.tar.gz
-          docker-tag: ${CIRCLE_SHA1}
-          context: matterbuild-docker
-          <<: *only_branches
-          requires:
-            - upload-s3-branches
-
-      - upload-s3:
-          name: upload-s3-master
-          s3-copy-to: s3://releases.mattermost.com/mattermost-load-test/
-          context: mattermost-ci-s3
-          <<: *only_master
-          requires:
-            - build-ltops-and-test
-      - build-docker:
-          <<: *mm_binary
-          loadtest-binary: https://releases.mattermost.com/mattermost-load-test/mattermost-load-test.tar.gz
-          docker-tag: master
-          context: matterbuild-docker
-          <<: *only_master
-          requires:
-            - upload-s3-master
-
-      - upload-s3:
-          name: upload-s3-tags
-          s3-copy-to: s3://releases.mattermost.com/mattermost-load-test/${CIRCLE_TAG}/
-          context: mattermost-ci-s3
-          <<: *only_v_tags
-          requires:
-            - build-ltops-and-test
-      - build-docker:
-          <<: *mm_binary
-          loadtest-binary: https://releases.mattermost.com/mattermost-load-test/${CIRCLE_TAG}/mattermost-load-test.tar.gz
-          docker-tag: ${CIRCLE_TAG}
-          context: matterbuild-docker
-          <<: *only_v_tags
-          requires:
-            - upload-s3-tags
+      - test
