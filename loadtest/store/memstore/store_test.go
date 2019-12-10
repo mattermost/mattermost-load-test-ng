@@ -71,7 +71,7 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, uu)
 	})
 
-	t.Run("SetReaction", func(t *testing.T) {
+	t.Run("SetReactions", func(t *testing.T) {
 		postId := model.NewId()
 		userId := model.NewId()
 		emojiName := "testemoji"
