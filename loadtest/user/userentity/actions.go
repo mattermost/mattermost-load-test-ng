@@ -426,6 +426,15 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	return ue.store.SetEmojis(emojis)
 }
 
+func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
+	r, resp := ue.client.SaveReaction(reaction)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetReaction(r)
+}
+
 func (ue *UserEntity) GetTeams() ([]string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
