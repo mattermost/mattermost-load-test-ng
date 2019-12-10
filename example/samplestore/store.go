@@ -54,6 +54,10 @@ func (s *SampleStore) Post(postId string) (*model.Post, error) {
 	return nil, nil
 }
 
+func (s *SampleStore) ChannelPosts(channelId string) ([]*model.Post, error) {
+	return nil, nil
+}
+
 func (s *SampleStore) SetUser(user *model.User) error {
 	s.user = user
 	return nil
@@ -61,6 +65,13 @@ func (s *SampleStore) SetUser(user *model.User) error {
 
 func (s *SampleStore) SetPost(post *model.Post) error {
 	s.posts[post.Id] = post
+	return nil
+}
+
+func (s *SampleStore) SetPosts(posts []*model.Post) error {
+	for _, post := range posts {
+		s.posts[post.Id] = post
+	}
 	return nil
 }
 

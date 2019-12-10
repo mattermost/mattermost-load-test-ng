@@ -69,11 +69,33 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 	return nil, nil
 }
 
+func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
+	var channelPosts []*model.Post
+	for _, post := range s.posts {
+		if post.ChannelId == channelId {
+			channelPosts = append(channelPosts, post)
+		}
+	}
+
+	return channelPosts, nil
+}
+
 func (s *MemStore) SetPost(post *model.Post) error {
 	if post == nil {
 		return errors.New("post should not be nil")
 	}
 	s.posts[post.Id] = post
+	return nil
+}
+
+func (s *MemStore) SetPosts(posts []*model.Post) error {
+	if posts == nil || len(posts) == 0 {
+		return errors.New("posts should not be nil or empty")
+	}
+
+	for _, post := range posts {
+		s.SetPost(post)
+	}
 	return nil
 }
 
