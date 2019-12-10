@@ -23,6 +23,8 @@ type MutableUserStore interface {
 	// posts
 	SetPost(post *model.Post) error
 	Post(postId string) (*model.Post, error)
+	SetReactions(postId string, reactions []*model.Reaction) error
+	Reactions(postId string) ([]*model.Reaction, error)
 
 	// preferences
 	SetPreferences(preferences *model.Preferences) error

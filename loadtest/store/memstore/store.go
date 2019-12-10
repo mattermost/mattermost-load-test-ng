@@ -19,6 +19,7 @@ type MemStore struct {
 	channelMembers map[string]map[string]*model.ChannelMember
 	teamMembers    map[string]map[string]*model.TeamMember
 	users          map[string]*model.User
+	reactions      map[string][]*model.Reaction
 }
 
 func New() *MemStore {
@@ -29,6 +30,7 @@ func New() *MemStore {
 		channelMembers: map[string]map[string]*model.ChannelMember{},
 		teamMembers:    map[string]map[string]*model.TeamMember{},
 		users:          map[string]*model.User{},
+		reactions:      map[string][]*model.Reaction{},
 	}
 }
 
@@ -191,6 +193,15 @@ func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 	s.emojis = emoji
 	return nil
+}
+
+func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) error {
+	s.reactions[postId] = reactions
+	return nil
+}
+
+func (s *MemStore) Reactions(postId string) ([]*model.Reaction, error) {
+	return s.reactions[postId], nil
 }
 
 func (s *MemStore) Users() ([]*model.User, error) {

@@ -139,6 +139,14 @@ func (s *SampleStore) SetEmojis(emoji []*model.Emoji) error {
 	return errors.New("not implemented")
 }
 
+func (s *SampleStore) SetReactions(postId string, reactions []*model.Reaction) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) Reactions(postId string) ([]*model.Reaction, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (s *SampleStore) Users() ([]*model.User, error) {
 	return nil, errors.New("not implemented")
 }

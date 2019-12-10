@@ -279,3 +279,7 @@ func (ue *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, erro
 func (ue *SampleUser) GetEmojiList(page, perPage int) error {
 	return nil
 }
+
+func (ue *SampleUser) SaveReaction(reaction *model.Reaction) error {
+	return nil
+}
