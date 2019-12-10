@@ -4,7 +4,9 @@
 package userentity
 
 import (
-	"github.com/mattermost/mattermost-server/model"
+	"errors"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 func (ue *UserEntity) SignUp(email, username, password string) error {
@@ -71,7 +73,7 @@ func (ue *UserEntity) GetPreferences() error {
 		return resp.Error
 	}
 
-	if err := ue.store.SetPreferences(preferences); err != nil {
+	if err := ue.store.SetPreferences(&preferences); err != nil {
 		return err
 	}
 	return nil
@@ -84,6 +86,33 @@ func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	}
 
 	return user.Id, nil
+}
+
+func (ue *UserEntity) UpdateUser(user *model.User) error {
+	user, resp := ue.client.UpdateUser(user)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if user.Id == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
+}
+
+func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
+	user, resp := ue.client.PatchUser(userId, patch)
+
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if userId == ue.store.Id() {
+		return ue.store.SetUser(user)
+	}
+
+	return nil
 }
 
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
@@ -103,6 +132,23 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	err = ue.store.SetPost(post)
 
 	return post.Id, err
+}
+
+func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
+	postList, resp := ue.client.SearchPosts(teamId, terms, isOrSearch)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return postList, nil
+}
+
+func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	fresp, resp := ue.client.UploadFile(data, channelId, filename)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return fresp, nil
 }
 
 func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
@@ -155,6 +201,39 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	}
 
 	return channel.Id, nil
+}
+func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+	ok, resp := ue.client.RemoveUserFromChannel(channelId, userId)
+	if resp.Error != nil {
+		return false, resp.Error
+	}
+	return ok, ue.store.RemoveChannelMember(channelId, userId)
+}
+
+func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
+	member, resp := ue.client.AddChannelMember(channelId, userId)
+	if resp.Error != nil {
+		return nil
+	}
+
+	return ue.store.SetChannelMember(channelId, member)
+}
+
+func (ue *UserEntity) GetChannel(channelId string) error {
+	channel, resp := ue.client.GetChannel(channelId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannel(channel)
+}
+
+func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
+	channels, resp := ue.client.SearchChannels(teamId, search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return channels, nil
 }
 
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
@@ -223,6 +302,33 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 
 func (ue *UserEntity) GetTeam(teamId string) error {
 	_, resp := ue.client.GetTeam(teamId, "")
+	return resp.Error
+}
+
+func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
+	tm, resp := ue.client.AddTeamMember(teamId, userId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(teamId, tm)
+}
+
+func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
+	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetTeamMembers(teamId, members)
+}
+
+func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
+	_, resp := ue.client.GetUsersStatusesByIds(userIds)
+	return resp.Error
+}
+
+func (ue *UserEntity) GetTeamStats(teamId string) error {
+	_, resp := ue.client.GetTeamStats(teamId, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -230,7 +336,94 @@ func (ue *UserEntity) GetTeam(teamId string) error {
 	return nil
 }
 
-func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
-	_, resp := ue.client.GetUsersStatusesByIds(userIds)
-	return resp.Error
+func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
+
+	unread, resp := ue.client.GetTeamsUnreadForUser(user.Id, teamIdToExclude)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return unread, nil
+}
+
+func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
+	infos, resp := ue.client.GetFileInfosForPost(postId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return infos, nil
+}
+
+func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
+	data, resp := ue.client.GetFileThumbnail(fileId)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return data, nil
+}
+
+func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
+	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetTeamMember(tm.TeamId, tm)
+}
+
+func (ue *UserEntity) SetProfileImage(data []byte) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	ok, resp := ue.client.SetProfileImage(user.Id, data)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	if !ok {
+		return errors.New("cannot set profile image")
+	}
+	return nil
+}
+
+func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
+	users, resp := ue.client.SearchUsers(search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return users, nil
+}
+
+func (ue *UserEntity) GetEmojiList(page, perPage int) error {
+	emojis, resp := ue.client.GetEmojiList(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetEmojis(emojis)
+}
+
+func (ue *UserEntity) GetTeams() ([]string, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
+
+	teams, resp := ue.client.GetTeamsForUser(user.Id, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for i, team := range teams {
+		teamIds[i] = team.Id
+	}
+	return teamIds, nil
 }

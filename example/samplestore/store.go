@@ -6,20 +6,24 @@ package samplestore
 import (
 	"errors"
 
-	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 type SampleStore struct {
-	user        *model.User
-	preferences model.Preferences
-	posts       map[string]*model.Post
-	channels    map[string]*model.Channel
+	user           *model.User
+	posts          map[string]*model.Post
+	preferences    *model.Preferences
+	teams          map[string]*model.Team
+	channels       map[string]*model.Channel
+	channelMembers map[string]*model.ChannelMembers
 }
 
 func New() *SampleStore {
 	return &SampleStore{
-		posts:    map[string]*model.Post{},
-		channels: map[string]*model.Channel{},
+		posts:          map[string]*model.Post{},
+		teams:          map[string]*model.Team{},
+		channels:       map[string]*model.Channel{},
+		channelMembers: map[string]*model.ChannelMembers{},
 	}
 }
 
@@ -34,11 +38,11 @@ func (s *SampleStore) User() (*model.User, error) {
 	return s.user, nil
 }
 
-func (s *SampleStore) Preferences() (model.Preferences, error) {
+func (s *SampleStore) Preferences() (*model.Preferences, error) {
 	return s.preferences, nil
 }
 
-func (s *SampleStore) SetPreferences(preferences model.Preferences) error {
+func (s *SampleStore) SetPreferences(preferences *model.Preferences) error {
 	s.preferences = preferences
 	return nil
 }
@@ -72,6 +76,33 @@ func (s *SampleStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+func (s *SampleStore) Team(teamId string) (*model.Team, error) {
+	if team, ok := s.teams[teamId]; ok {
+		return team, nil
+	}
+	return nil, nil
+}
+
+func (s *SampleStore) SetTeam(team *model.Team) error {
+	s.teams[team.Id] = team
+	return nil
+}
+
+func (s *SampleStore) Teams() ([]*model.Team, error) {
+	teams := make([]*model.Team, len(s.teams))
+	for _, team := range s.teams {
+		teams = append(teams, team)
+	}
+	return teams, nil
+}
+
+func (s *SampleStore) SetTeams(teams []*model.Team) error {
+	for _, team := range teams {
+		s.teams[team.Id] = team
+	}
+	return nil
+}
+
 func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
 	return errors.New("not implemented")
 }
@@ -86,4 +117,24 @@ func (s *SampleStore) SetChannelMember(channelId string, channelMember *model.Ch
 
 func (s *SampleStore) ChannelMember(channelId, userId string) (*model.ChannelMember, error) {
 	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) RemoveChannelMember(channelId string, userId string) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (s *SampleStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) SetEmojis(emoji []*model.Emoji) error {
+	return errors.New("not implemented")
 }
