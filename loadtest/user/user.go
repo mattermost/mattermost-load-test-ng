@@ -30,6 +30,7 @@ type User interface {
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
+	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)

@@ -62,6 +62,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	return nil, nil
 }
