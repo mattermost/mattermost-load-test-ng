@@ -76,7 +76,7 @@ func TestUser(t *testing.T) {
 		require.Error(t, err)
 		err = s.SetPosts([]*model.Post{})
 		require.Error(t, err)
-		p := []*model.Post{&model.Post{Id: model.NewId()}}
+		p := []*model.Post{{Id: model.NewId()}}
 		err = s.SetPosts(p)
 		require.NoError(t, err)
 		uu, err := s.Post(p[0].Id)
@@ -93,8 +93,8 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		require.Nil(t, channelPosts)
 		p := []*model.Post{
-			&model.Post{Id: postId, ChannelId: channelId},
-			&model.Post{Id: model.NewId(), ChannelId: model.NewId()},
+			{Id: postId, ChannelId: channelId},
+			{Id: model.NewId(), ChannelId: model.NewId()},
 		}
 		err = s.SetPosts(p)
 		require.NoError(t, err)
