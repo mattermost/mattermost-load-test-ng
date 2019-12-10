@@ -19,6 +19,7 @@ type MemStore struct {
 	channelMembers map[string]map[string]*model.ChannelMember
 	teamMembers    map[string]map[string]*model.TeamMember
 	users          map[string]*model.User
+	reactions      map[string]map[string]map[string]*model.Reaction
 }
 
 func New() *MemStore {
@@ -29,6 +30,7 @@ func New() *MemStore {
 		channelMembers: map[string]map[string]*model.ChannelMember{},
 		teamMembers:    map[string]map[string]*model.TeamMember{},
 		users:          map[string]*model.User{},
+		reactions:      map[string]map[string]map[string]*model.Reaction{},
 	}
 }
 
@@ -191,6 +193,21 @@ func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 	s.emojis = emoji
 	return nil
+}
+
+func (s *MemStore) SetReaction(reaction *model.Reaction) error {
+	if s.reactions[reaction.PostId] == nil {
+		s.reactions[reaction.PostId] = map[string]map[string]*model.Reaction{}
+		s.reactions[reaction.PostId][reaction.EmojiName] = map[string]*model.Reaction{}
+	} else if s.reactions[reaction.PostId][reaction.EmojiName] == nil {
+		s.reactions[reaction.PostId][reaction.EmojiName] = map[string]*model.Reaction{}
+	}
+	s.reactions[reaction.PostId][reaction.EmojiName][reaction.UserId] = reaction
+	return nil
+}
+
+func (s *MemStore) Reaction(postId, emojiName, userId string) (*model.Reaction, error) {
+	return s.reactions[postId][emojiName][userId], nil
 }
 
 func (s *MemStore) Users() ([]*model.User, error) {

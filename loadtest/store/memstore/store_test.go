@@ -71,6 +71,22 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, uu)
 	})
 
+	t.Run("SetReaction", func(t *testing.T) {
+		postId := model.NewId()
+		userId := model.NewId()
+		emojiName := "testemoji"
+		reaction := &model.Reaction{
+			UserId:    userId,
+			PostId:    postId,
+			EmojiName: emojiName,
+		}
+		err := s.SetReaction(reaction)
+		require.NoError(t, err)
+		r, err := s.Reaction(postId, emojiName, userId)
+		require.NoError(t, err)
+		require.Equal(t, reaction, r)
+	})
+
 	t.Run("SetTeam", func(t *testing.T) {
 		tm := &model.Team{Id: model.NewId()}
 		err := s.SetTeam(tm)
