@@ -64,6 +64,13 @@ func (s *SampleStore) SetPost(post *model.Post) error {
 	return nil
 }
 
+func (s *SampleStore) SetPosts(posts []*model.Post) error {
+	for _, post := range posts {
+		s.posts[post.Id] = post
+	}
+	return nil
+}
+
 func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 	if channel, ok := s.channels[channelId]; ok {
 		return channel, nil

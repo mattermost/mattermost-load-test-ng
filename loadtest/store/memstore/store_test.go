@@ -71,6 +71,19 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, uu)
 	})
 
+	t.Run("SetPosts", func(t *testing.T) {
+		err := s.SetPosts(nil)
+		require.Error(t, err)
+		err = s.SetPosts([]*model.Post{})
+		require.Error(t, err)
+		p := []*model.Post{&model.Post{Id: model.NewId()}}
+		err = s.SetPosts(p)
+		require.NoError(t, err)
+		uu, err := s.Post(p[0].Id)
+		require.NoError(t, err)
+		require.Equal(t, p[0], uu)
+	})
+
 	t.Run("SetReactions", func(t *testing.T) {
 		postId := model.NewId()
 		userId := model.NewId()

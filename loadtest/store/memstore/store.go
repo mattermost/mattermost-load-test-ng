@@ -77,6 +77,17 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	return nil
 }
 
+func (s *MemStore) SetPosts(posts []*model.Post) error {
+	if posts == nil || len(posts) == 0 {
+		return errors.New("posts should not be nil or empty")
+	}
+
+	for _, post := range posts {
+		s.SetPost(post)
+	}
+	return nil
+}
+
 func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 	if channel, ok := s.channels[channelId]; ok {
 		return channel, nil
