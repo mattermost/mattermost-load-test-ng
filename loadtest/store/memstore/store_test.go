@@ -80,11 +80,11 @@ func TestUser(t *testing.T) {
 			PostId:    postId,
 			EmojiName: emojiName,
 		}
-		err := s.SetReaction(reaction)
+		err := s.SetReactions(postId, []*model.Reaction{reaction})
 		require.NoError(t, err)
-		r, err := s.Reaction(postId, emojiName, userId)
+		reactions, err := s.Reactions(postId)
 		require.NoError(t, err)
-		require.Equal(t, reaction, r)
+		require.Equal(t, reaction, reactions[0])
 	})
 
 	t.Run("SetTeam", func(t *testing.T) {
