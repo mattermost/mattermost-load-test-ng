@@ -377,6 +377,14 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 	return nil
 }
 
+func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
+	users, resp := ue.client.SearchUsers(search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return users, nil
+}
+
 func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	emojis, resp := ue.client.GetEmojiList(page, perPage)
 	if resp.Error != nil {
