@@ -15,9 +15,10 @@ type MutableUserStore interface {
 	UserStore
 
 	// users
-
 	SetUser(user *model.User) error
 	User() (*model.User, error)
+	SetUsers(users []*model.User) error
+	Users() ([]*model.User, error)
 
 	// posts
 	SetPost(post *model.Post) error

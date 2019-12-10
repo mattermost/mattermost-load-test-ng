@@ -25,6 +25,7 @@ type User interface {
 	CreateUser(user *model.User) (string, error)
 	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error
+	GetUsersByIds(userIds []string) ([]string, error)
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)

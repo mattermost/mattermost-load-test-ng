@@ -18,6 +18,7 @@ type MemStore struct {
 	channels       map[string]*model.Channel
 	channelMembers map[string]map[string]*model.ChannelMember
 	teamMembers    map[string]map[string]*model.TeamMember
+	users          map[string]*model.User
 }
 
 func New() *MemStore {
@@ -27,6 +28,7 @@ func New() *MemStore {
 		channels:       map[string]*model.Channel{},
 		channelMembers: map[string]map[string]*model.ChannelMember{},
 		teamMembers:    map[string]map[string]*model.TeamMember{},
+		users:          map[string]*model.User{},
 	}
 }
 
@@ -101,9 +103,11 @@ func (s *MemStore) SetTeam(team *model.Team) error {
 }
 
 func (s *MemStore) Teams() ([]*model.Team, error) {
-	teams := []*model.Team{}
+	teams := make([]*model.Team, len(s.teams))
+	i := 0
 	for _, team := range s.teams {
-		teams = append(teams, team)
+		teams[i] = team
+		i++
 	}
 	return teams, nil
 }
@@ -186,5 +190,23 @@ func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) 
 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 	s.emojis = emoji
+	return nil
+}
+
+func (s *MemStore) Users() ([]*model.User, error) {
+	users := make([]*model.User, len(s.users))
+	i := 0
+	for _, user := range s.users {
+		users[i] = user
+		i++
+	}
+	return users, nil
+}
+
+func (s *MemStore) SetUsers(users []*model.User) error {
+	s.users = make(map[string]*model.User)
+	for _, user := range users {
+		s.users[user.Id] = user
+	}
 	return nil
 }
