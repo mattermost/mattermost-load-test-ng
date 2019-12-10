@@ -33,6 +33,7 @@ type User interface {
 	// posts
 	CreatePost(post *model.Post) (string, error)
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
+	GetPostsForChannel(channelId string) ([]string, error)
 	SaveReaction(reaction *model.Reaction) error
 
 	// files
