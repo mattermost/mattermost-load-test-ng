@@ -89,12 +89,14 @@ func (s *MemStore) SetPost(post *model.Post) error {
 }
 
 func (s *MemStore) SetPosts(posts []*model.Post) error {
-	if posts == nil || len(posts) == 0 {
+	if len(posts) == 0 {
 		return errors.New("posts should not be nil or empty")
 	}
 
 	for _, post := range posts {
-		s.SetPost(post)
+		if err := s.SetPost(post); err != nil {
+			return err
+		}
 	}
 	return nil
 }
