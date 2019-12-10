@@ -142,22 +142,16 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 	return postList, nil
 }
 
-func (ue *UserEntity) GetPostsForChannel(channelId string) ([]string, error) {
-	postlist, resp := ue.client.GetPostsForChannel(channelId, 0, 9999, "")
+func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) error {
+	postlist, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "")
 	if resp.Error != nil {
-		return nil, resp.Error
+		return resp.Error
 	}
 	posts := make([]*model.Post, 0, len(postlist.Posts))
-	postIds := make([]string, 0, len(postlist.Posts))
-	for k, v := range postlist.Posts {
+	for _, v := range postlist.Posts {
 		posts = append(posts, v)
-		postIds = append(postIds, k)
 	}
-	err := ue.store.SetPosts(posts)
-	if err != nil {
-		return nil, err
-	}
-	return postIds, nil
+	return ue.store.SetPosts(posts)
 }
 
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {

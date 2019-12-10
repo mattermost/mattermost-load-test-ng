@@ -66,8 +66,8 @@ func (u *SampleUser) SearchPosts(teamId, terms string, isOrSearch bool) (*model.
 	return nil, nil
 }
 
-func (u *SampleUser) GetPostsForChannel(channelId string) ([]string, error) {
-	return nil, nil
+func (u *SampleUser) GetPostsForChannel(channelId string, page, perPage int) error {
+	return nil
 }
 
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
