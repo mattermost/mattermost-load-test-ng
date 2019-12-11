@@ -287,3 +287,7 @@ func (ue *SampleUser) GetEmojiList(page, perPage int) error {
 func (ue *SampleUser) SaveReaction(reaction *model.Reaction) error {
 	return nil
 }
+
+func (ue *SampleUser) GetReactions(postId string) error {
+	return nil
+}

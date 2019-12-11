@@ -35,6 +35,7 @@ type User interface {
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	GetPostsForChannel(channelId string, page, perPage int) error
 	SaveReaction(reaction *model.Reaction) error
+	GetReactions(postId string) error
 
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)

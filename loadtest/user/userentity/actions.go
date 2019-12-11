@@ -440,6 +440,15 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	return ue.store.SetEmojis(emojis)
 }
 
+func (ue *UserEntity) GetReactions(postId string) error {
+	reactions, resp := ue.client.GetReactions(postId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetReactions(postId, reactions)
+}
+
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	_, resp := ue.client.SaveReaction(reaction)
 	if resp.Error != nil {
