@@ -183,10 +183,12 @@ func (s *MemStore) ChannelMember(channelId, userId string) (*model.ChannelMember
 }
 
 func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
-	if s.channelMembers[channelId] == nil {
-		return nil
-	}
 	delete(s.channelMembers[channelId], userId)
+	return nil
+}
+
+func (s *MemStore) RemoveTeamMember(teamId string, userId string) error {
+	delete(s.teamMembers[teamId], userId)
 	return nil
 }
 

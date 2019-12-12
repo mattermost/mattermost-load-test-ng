@@ -138,6 +138,10 @@ func (s *SampleStore) SetTeamMember(teamId string, teamMember *model.TeamMember)
 	return errors.New("not implemented")
 }
 
+func (s *SampleStore) RemoveTeamMember(teamId, userId string) error {
+	return errors.New("not implemented")
+}
+
 func (s *SampleStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
 	return nil, errors.New("not implemented")
 }
