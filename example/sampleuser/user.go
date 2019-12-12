@@ -260,6 +260,10 @@ func (u *SampleUser) GetUsersByIds(userIds []string) ([]string, error) {
 	return nil, nil
 }
 
+func (u *SampleUser) GetUsersByUsernames(usernames []string) ([]string, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) GetTeamStats(teamId string) error {
 	return nil
 }
