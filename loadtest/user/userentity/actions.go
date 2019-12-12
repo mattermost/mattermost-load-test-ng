@@ -331,6 +331,15 @@ func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	return ue.store.SetTeamMember(teamId, tm)
 }
 
+func (ue *UserEntity) RemoveTeamMember(teamId, userId string) error {
+	_, resp := ue.client.RemoveTeamMember(teamId, userId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.RemoveTeamMember(teamId, userId)
+}
+
 func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
 	if resp.Error != nil {

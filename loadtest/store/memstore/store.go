@@ -190,6 +190,14 @@ func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
 	return nil
 }
 
+func (s *MemStore) RemoveTeamMember(teamId string, userId string) error {
+	if s.teamMembers[teamId] == nil {
+		return nil
+	}
+	delete(s.teamMembers[teamId], userId)
+	return nil
+}
+
 func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
 	if teamMember == nil {
 		return errors.New("teamMember should not be nil")

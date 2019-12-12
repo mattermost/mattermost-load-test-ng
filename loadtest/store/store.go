@@ -47,6 +47,7 @@ type MutableUserStore interface {
 	SetTeams(teams []*model.Team) error
 	Teams() ([]*model.Team, error)
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
+	RemoveTeamMember(teamId, memberId string) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error
 	TeamMember(teamdId, userId string) (*model.TeamMember, error)
 
