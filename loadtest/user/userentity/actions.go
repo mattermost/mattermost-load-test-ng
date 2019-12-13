@@ -147,13 +147,15 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) er
 	if resp.Error != nil {
 		return resp.Error
 	}
-	posts := make([]*model.Post, 0, len(postlist.Posts))
-	i := 0
-	for _, v := range postlist.Posts {
-		posts[i] = v
-		i++
+	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+}
+
+func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int) error {
+	postlist, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
 	}
-	return ue.store.SetPosts(posts)
+	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
