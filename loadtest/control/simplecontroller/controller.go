@@ -14,13 +14,13 @@ import (
 
 type SimpleController struct {
 	user user.User
-	stop chan bool
+	stop chan struct{}
 	rate float64
 }
 
 func (c *SimpleController) Init(user user.User) {
 	c.user = user
-	c.stop = make(chan bool)
+	c.stop = make(chan struct{})
 	c.rate = 1.0
 }
 
