@@ -34,6 +34,7 @@ type User interface {
 	CreatePost(post *model.Post) (string, error)
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	GetPostsForChannel(channelId string, page, perPage int) error
+	GetPostsBefore(channelId, postId string, page, perPage int) error
 	SaveReaction(reaction *model.Reaction) error
 
 	// files
