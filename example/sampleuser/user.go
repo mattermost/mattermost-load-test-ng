@@ -74,6 +74,10 @@ func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int)
 	return nil
 }
 
+func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int) error {
+	return nil
+}
+
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	return nil, nil
 }
