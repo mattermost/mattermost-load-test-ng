@@ -144,12 +144,24 @@ func TestUser(t *testing.T) {
 }
 
 func TestChannel(t *testing.T) {
-	t.Run("Create channel", func(t *testing.T) {
+	t.Run("Store channel", func(t *testing.T) {
 		s := New()
 		err := s.SetChannel(nil)
 		require.Error(t, err)
 		channel := &model.Channel{Id: model.NewId()}
 		err = s.SetChannel(channel)
+		require.NoError(t, err)
+		c, err := s.Channel(channel.Id)
+		require.NoError(t, err)
+		require.Equal(t, channel, c)
+	})
+
+	t.Run("Store channels", func(t *testing.T) {
+		s := New()
+		err := s.SetChannels(nil)
+		require.Error(t, err)
+		channel := &model.Channel{Id: model.NewId()}
+		err = s.SetChannels([]*model.Channel{channel})
 		require.NoError(t, err)
 		c, err := s.Channel(channel.Id)
 		require.NoError(t, err)

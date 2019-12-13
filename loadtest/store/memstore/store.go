@@ -116,6 +116,16 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+func (s *MemStore) SetChannels(channels []*model.Channel) error {
+	if channels == nil {
+		return errors.New("channels shouldn't be nil")
+	}
+	for _, channel := range channels {
+		s.SetChannel(channel)
+	}
+	return nil
+}
+
 func (s *MemStore) Team(teamId string) (*model.Team, error) {
 	if team, ok := s.teams[teamId]; ok {
 		return team, nil
