@@ -460,6 +460,23 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 	return nil
 }
 
+func (ue *UserEntity) GetProfileImage() error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	return ue.GetProfileImageForUser(user.Id)
+}
+
+func (ue *UserEntity) GetProfileImageForUser(userId string) error {
+	_, resp := ue.client.GetProfileImage(userId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
 	users, resp := ue.client.SearchUsers(search)
 	if resp.Error != nil {
