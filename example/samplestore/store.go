@@ -89,7 +89,9 @@ func (s *SampleStore) SetChannel(channel *model.Channel) error {
 
 func (s *SampleStore) SetChannels(channels []*model.Channel) error {
 	for _, channel := range channels {
-		s.SetChannel(channel)
+		if err := s.SetChannel(channel); err != nil {
+			return err
+		}
 	}
 	return nil
 }

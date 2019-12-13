@@ -121,7 +121,9 @@ func (s *MemStore) SetChannels(channels []*model.Channel) error {
 		return errors.New("channels shouldn't be nil")
 	}
 	for _, channel := range channels {
-		s.SetChannel(channel)
+		if err := s.SetChannel(channel); err != nil {
+			return err
+		}
 	}
 	return nil
 }
