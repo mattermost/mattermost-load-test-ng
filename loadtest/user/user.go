@@ -48,6 +48,7 @@ type User interface {
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
+	GetChannelsForTeam(teamId, userId string) error
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
