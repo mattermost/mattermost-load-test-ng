@@ -135,11 +135,15 @@ func TestUser(t *testing.T) {
 			{Id: model.NewId()},
 			{Id: model.NewId()},
 		}
+		tmsV := make([]model.Team, len(tms))
+		for i, tm := range tms {
+			tmsV[i] = *tm
+		}
 		err := s.SetTeams(tms)
 		require.NoError(t, err)
 		ttms, err := s.Teams()
 		require.NoError(t, err)
-		require.ElementsMatch(t, tms, ttms)
+		require.ElementsMatch(t, tmsV, ttms)
 	})
 }
 

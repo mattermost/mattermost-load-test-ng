@@ -6,6 +6,7 @@ package simplecontroller
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -107,4 +108,101 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 
 		return control.UserStatus{User: c.user, Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
 	*/
+}
+
+func (c *SimpleController) reload() control.UserStatus {
+	teams, err := c.user.Store().Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	chanId := ""
+	if len(teams) > 0 {
+		// Assuming this is a browser and the user has selected the
+		// first team as the default.
+		t := teams[0]
+		// TODO: This will be populated by GetChannelsForTeamForUser API
+		// which is to be implemented. For now, we assume that the user
+		// already belongs to some channels, and they are stored in the
+		// store's memory.
+		chans, err := c.user.Store().Channels(t.Id)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+		for _, ch := range chans {
+			// Assuming the first channel to be the currently
+			// selected one.
+			if chanId == "" {
+				chanId = ch.Id
+			}
+			// Marking the channels as viewed
+			_, err := c.user.ViewChannel(&model.ChannelView{
+				ChannelId:     ch.Id,
+				PrevChannelId: "",
+			})
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+		}
+	}
+
+	// TODO: GetConfig
+	// TODO: GetLicense
+
+	// Getting the user.
+	_, err = c.user.GetMe()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// Getting preferences.
+	err = c.user.GetPreferences()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// TODO: GetTeamsForUser
+	// TODO: GetTeamMembersForUser
+	// TODO: GetRolesByNames
+	// TODO: GetWebappPlugins
+	// TODO: GetAllTeams
+	// TODO: GetChannelsForTeamForUser
+	// TODO: GetChannelMembersForUser
+
+	// Getting unread teams.
+	_, err = c.user.GetTeamsUnread("")
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// Get users by Ids.
+	ids, err := c.user.GetUsersByIds([]string{strconv.Itoa(c.user.Id())})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// Get user statuses by Ids.
+	if len(ids) > 0 {
+		err = c.user.GetUsersStatusesByIds(ids)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	// TODO: GetUserStatus
+
+	if chanId != "" {
+		// Getting the channel stats.
+		err = c.user.GetChannelStats(chanId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+
+		// Getting channel unread.
+		_, err = c.user.GetChannelUnread(chanId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	return c.newInfoStatus("page reloaded")
 }

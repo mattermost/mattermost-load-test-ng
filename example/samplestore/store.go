@@ -82,6 +82,17 @@ func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 	return nil, nil
 }
 
+// Channels return all the channels for a team.
+func (s *SampleStore) Channels(teamId string) ([]model.Channel, error) {
+	var channels []model.Channel
+	for _, channel := range s.channels {
+		if channel.TeamId == teamId {
+			channels = append(channels, *channel)
+		}
+	}
+	return channels, nil
+}
+
 func (s *SampleStore) SetChannel(channel *model.Channel) error {
 	s.channels[channel.Id] = channel
 	return nil
@@ -99,10 +110,10 @@ func (s *SampleStore) SetTeam(team *model.Team) error {
 	return nil
 }
 
-func (s *SampleStore) Teams() ([]*model.Team, error) {
-	teams := make([]*model.Team, len(s.teams))
+func (s *SampleStore) Teams() ([]model.Team, error) {
+	teams := make([]model.Team, len(s.teams))
 	for _, team := range s.teams {
-		teams = append(teams, team)
+		teams = append(teams, *team)
 	}
 	return teams, nil
 }
