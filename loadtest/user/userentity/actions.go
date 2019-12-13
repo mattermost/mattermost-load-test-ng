@@ -493,6 +493,15 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	return ue.store.SetEmojis(emojis)
 }
 
+func (ue *UserEntity) GetEmojiImage(emojiId string) error {
+	_, resp := ue.client.GetEmojiImage(emojiId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) GetReactions(postId string) error {
 	reactions, resp := ue.client.GetReactions(postId)
 	if resp.Error != nil {

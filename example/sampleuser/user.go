@@ -308,6 +308,10 @@ func (ue *SampleUser) GetEmojiList(page, perPage int) error {
 	return nil
 }
 
+func (ue *SampleUser) GetEmojiImage(emojiId string) error {
+	return nil
+}
+
 func (ue *SampleUser) SaveReaction(reaction *model.Reaction) error {
 	return nil
 }
