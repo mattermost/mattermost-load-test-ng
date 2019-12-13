@@ -292,6 +292,10 @@ func (ue *SampleUser) GetProfileImage() error {
 	return nil
 }
 
+func (ue *SampleUser) GetProfileImageForUser(userId string) error {
+	return nil
+}
+
 func (ue *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
 	return nil, nil
 }

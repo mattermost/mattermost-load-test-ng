@@ -457,8 +457,11 @@ func (ue *UserEntity) GetProfileImage() error {
 	if err != nil {
 		return err
 	}
+	return ue.GetProfileImageForUser(user.Id)
+}
 
-	_, resp := ue.client.GetProfileImage(user.Id, "")
+func (ue *UserEntity) GetProfileImageForUser(userId string) error {
+	_, resp := ue.client.GetProfileImage(userId, "")
 	if resp.Error != nil {
 		return resp.Error
 	}

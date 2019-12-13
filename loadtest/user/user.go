@@ -30,6 +30,7 @@ type User interface {
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
 	GetProfileImage() error
+	GetProfileImageForUser(userId string) error
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
 
 	// posts
