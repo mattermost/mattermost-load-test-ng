@@ -52,6 +52,10 @@ func (c *SimpleController) Run(status chan<- control.UserStatus) {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.reload,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.logout,
 			waitAfter: 1000,
 		},
