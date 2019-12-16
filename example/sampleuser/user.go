@@ -232,20 +232,7 @@ func (u *SampleUser) GetTeams() ([]string, error) {
 		return nil, errors.New("user was not initialized")
 	}
 
-	teams, resp := u.client.GetTeamsForUser(user.Id, "")
-	if resp.Error != nil {
-		return nil, resp.Error
-	}
-
-	if err := u.store.SetTeams(teams); err != nil {
-		return nil, err
-	}
-
-	teamIds := make([]string, len(teams))
-	for _, team := range teams {
-		teamIds = append(teamIds, team.Id)
-	}
-	return teamIds, nil
+	return u.GetTeamsForUser(user.Id)
 }
 
 func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
@@ -256,8 +243,21 @@ func (u *SampleUser) GetTeam(teamId string) error {
 	return nil
 }
 
-func (u *SampleUser) GetTeamsForUser(userId string) ([]*model.Team, error) {
-	return nil, nil
+func (u *SampleUser) GetTeamsForUser(userId string) ([]string, error) {
+	teams, resp := u.client.GetTeamsForUser(userId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := u.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for i, team := range teams {
+		teamIds[i] = team.Id
+	}
+	return teamIds, nil
 }
 
 func (u *SampleUser) AddTeamMember(teamId, userId string) error {
