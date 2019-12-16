@@ -68,6 +68,7 @@ type User interface {
 	AddTeamMember(teamId, userId string) error
 	RemoveTeamMember(teamId, userId string) error
 	GetTeamMembers(teamId string, page, perPage int) error
+	GetTeamMembersForUser(userId string) error
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 	AddTeamMemberFromInvite(token, inviteId string) error

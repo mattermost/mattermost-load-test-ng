@@ -5,6 +5,7 @@ package userentity
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -356,6 +357,21 @@ func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 		return resp.Error
 	}
 	return ue.store.SetTeamMembers(teamId, members)
+}
+
+func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
+	members, resp := ue.client.GetTeamMembersForUser(strconv.Itoa(ue.id), "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	for _, m := range members {
+		err := ue.store.SetTeamMember(m.TeamId, m)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (ue *UserEntity) GetUsersByIds(userIds []string) ([]string, error) {

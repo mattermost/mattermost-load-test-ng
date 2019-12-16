@@ -268,6 +268,10 @@ func (u *SampleUser) GetTeamMembers(teamId string, page, perPage int) error {
 	return nil
 }
 
+func (u *SampleUser) GetTeamMembersForUser(userId string) error {
+	return nil
+}
+
 func (u *SampleUser) GetUsersByIds(userIds []string) ([]string, error) {
 	return nil, nil
 }
