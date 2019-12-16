@@ -6,7 +6,6 @@ package simplecontroller
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -115,6 +114,13 @@ func (c *SimpleController) reload() control.UserStatus {
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
+
+	// Getting preferences.
+	err = c.user.GetPreferences()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
 	chanId := ""
 	if len(teams) > 0 {
 		// Assuming this is a browser and the user has selected the
@@ -154,12 +160,6 @@ func (c *SimpleController) reload() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	// Getting preferences.
-	err = c.user.GetPreferences()
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
-
 	// TODO: GetTeamsForUser
 	// TODO: GetTeamMembersForUser
 	// TODO: GetRolesByNames
@@ -175,7 +175,7 @@ func (c *SimpleController) reload() control.UserStatus {
 	}
 
 	// Get users by Ids.
-	ids, err := c.user.GetUsersByIds([]string{strconv.Itoa(c.user.Id())})
+	ids, err := c.user.GetUsersByIds([]string{c.user.Store().Id()})
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
