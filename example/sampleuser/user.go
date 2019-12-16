@@ -86,8 +86,8 @@ func (u *SampleUser) GetFileInfosForPost(postId string) ([]*model.FileInfo, erro
 	return nil, nil
 }
 
-func (ue *SampleUser) GetFileThumbnail(fileId string) ([]byte, error) {
-	return nil, nil
+func (ue *SampleUser) GetFileThumbnail(fileId string) error {
+	return nil
 }
 
 func (ue *SampleUser) GetFilePreview(fileId string) error {

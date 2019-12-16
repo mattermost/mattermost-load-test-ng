@@ -45,7 +45,7 @@ type User interface {
 	// files
 	UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error)
 	GetFileInfosForPost(postId string) ([]*model.FileInfo, error)
-	GetFileThumbnail(fileId string) ([]byte, error)
+	GetFileThumbnail(fileId string) error
 	GetFilePreview(fileId string) error
 
 	// channels
