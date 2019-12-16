@@ -39,7 +39,7 @@ func (s *SampleStore) User() (*model.User, error) {
 }
 
 func (s *SampleStore) Preferences() (model.Preferences, error) {
-	newPref := make(model.Preferences, 0, len(*s.preferences))
+	newPref := make(model.Preferences, len(*s.preferences))
 	copy(newPref, *s.preferences)
 	return newPref, nil
 }
