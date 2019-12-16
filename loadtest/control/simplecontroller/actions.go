@@ -108,3 +108,89 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 		return control.UserStatus{User: c.user, Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
 	*/
 }
+
+func (c *SimpleController) reload() control.UserStatus {
+	// Getting preferences.
+	err := c.user.GetPreferences()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	prefs, _ := c.user.Store().Preferences()
+	var userIds []string
+	chanId := ""
+	for _, p := range prefs {
+		if p.Name == model.PREFERENCE_NAME_LAST_CHANNEL {
+			chanId = p.Value
+		}
+		if p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW {
+			userIds = append(userIds, p.Name)
+		}
+	}
+
+	if chanId != "" {
+		// Marking the channel as viewed
+		_, err := c.user.ViewChannel(&model.ChannelView{
+			ChannelId:     chanId,
+			PrevChannelId: "",
+		})
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	// TODO: GetConfig
+	// TODO: GetLicense
+
+	// Getting the user.
+	_, err = c.user.GetMe()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// TODO: GetTeamsForUser
+	// TODO: GetTeamMembersForUser
+	// TODO: GetRolesByNames
+	// TODO: GetWebappPlugins
+	// TODO: GetAllTeams
+	// TODO: GetChannelsForTeamForUser
+	// TODO: GetChannelMembersForUser
+
+	// Getting unread teams.
+	_, err = c.user.GetTeamsUnread("")
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	if len(userIds) > 0 {
+		// Get users by Ids.
+		_, err := c.user.GetUsersByIds(userIds)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+
+		// Get user statuses by Ids.
+		err = c.user.GetUsersStatusesByIds(userIds)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	// TODO: GetUserStatus
+
+	if chanId != "" {
+		// Getting the channel stats.
+		err = c.user.GetChannelStats(chanId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+
+		// Getting channel unread.
+		_, err = c.user.GetChannelUnread(chanId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	return c.newInfoStatus("page reloaded")
+}

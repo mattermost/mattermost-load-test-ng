@@ -9,6 +9,14 @@ import (
 
 type UserStore interface {
 	Id() string
+	// TODO: Move all getters to this interface
+
+	// Channels return the channels for a team.
+	Channels(teamId string) ([]model.Channel, error)
+	// Teams return the teams a user belong to.
+	Teams() ([]model.Team, error)
+	// Preferences return the preferences of the user.
+	Preferences() (model.Preferences, error)
 }
 
 type MutableUserStore interface {
@@ -30,7 +38,6 @@ type MutableUserStore interface {
 
 	// preferences
 	SetPreferences(preferences *model.Preferences) error
-	Preferences() (*model.Preferences, error)
 
 	// channels
 	SetChannel(channel *model.Channel) error
@@ -46,7 +53,6 @@ type MutableUserStore interface {
 	SetTeam(team *model.Team) error
 	Team(teamId string) (*model.Team, error)
 	SetTeams(teams []*model.Team) error
-	Teams() ([]*model.Team, error)
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
 	RemoveTeamMember(teamId, memberId string) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error

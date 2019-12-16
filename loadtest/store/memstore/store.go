@@ -53,8 +53,13 @@ func (s *MemStore) SetUser(user *model.User) error {
 	return nil
 }
 
-func (s *MemStore) Preferences() (*model.Preferences, error) {
-	return s.preferences, nil
+func (s *MemStore) Preferences() (model.Preferences, error) {
+	if s.preferences == nil {
+		return nil, nil
+	}
+	newPref := make(model.Preferences, len(*s.preferences))
+	copy(newPref, *s.preferences)
+	return newPref, nil
 }
 
 func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
@@ -116,6 +121,17 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+// Channels return all the channels for a team.
+func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
+	var channels []model.Channel
+	for _, channel := range s.channels {
+		if channel.TeamId == teamId {
+			channels = append(channels, *channel)
+		}
+	}
+	return channels, nil
+}
+
 func (s *MemStore) SetChannels(channels []*model.Channel) error {
 	if channels == nil {
 		return errors.New("channels shouldn't be nil")
@@ -140,11 +156,11 @@ func (s *MemStore) SetTeam(team *model.Team) error {
 	return nil
 }
 
-func (s *MemStore) Teams() ([]*model.Team, error) {
-	teams := make([]*model.Team, len(s.teams))
+func (s *MemStore) Teams() ([]model.Team, error) {
+	teams := make([]model.Team, len(s.teams))
 	i := 0
 	for _, team := range s.teams {
-		teams[i] = team
+		teams[i] = *team
 		i++
 	}
 	return teams, nil
