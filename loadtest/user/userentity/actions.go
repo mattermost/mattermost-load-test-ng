@@ -385,6 +385,21 @@ func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	return ue.store.SetTeamMembers(teamId, members)
 }
 
+func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
+	members, resp := ue.client.GetTeamMembersForUser(userId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	for _, m := range members {
+		err := ue.store.SetTeamMember(m.TeamId, m)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ue *UserEntity) GetUsersByIds(userIds []string) ([]string, error) {
 	users, resp := ue.client.GetUsersByIds(userIds)
 	if resp.Error != nil {
