@@ -359,6 +359,24 @@ func (ue *UserEntity) GetTeam(teamId string) error {
 	return ue.store.SetTeam(team)
 }
 
+func (ue *UserEntity) GetTeamsForUser(userId string) ([]string, error) {
+	teams, resp := ue.client.GetTeamsForUser(userId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for i, team := range teams {
+		teamIds[i] = team.Id
+	}
+
+	return teamIds, nil
+}
+
 func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	tm, resp := ue.client.AddTeamMember(teamId, userId)
 	if resp.Error != nil {
@@ -577,18 +595,5 @@ func (ue *UserEntity) GetTeams() ([]string, error) {
 		return nil, err
 	}
 
-	teams, resp := ue.client.GetTeamsForUser(user.Id, "")
-	if resp.Error != nil {
-		return nil, resp.Error
-	}
-
-	if err := ue.store.SetTeams(teams); err != nil {
-		return nil, err
-	}
-
-	teamIds := make([]string, len(teams))
-	for i, team := range teams {
-		teamIds[i] = team.Id
-	}
-	return teamIds, nil
+	return ue.GetTeamsForUser(user.Id)
 }
