@@ -341,7 +341,7 @@ func (ue *UserEntity) GetTeamsForUser(userId string) ([]*model.Team, error) {
 	for _, t := range teams {
 		err := ue.store.SetTeam(t)
 		if err != nil {
-			return teams, err
+			return nil, err
 		}
 	}
 	return teams, nil
