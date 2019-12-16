@@ -54,6 +54,9 @@ func (s *MemStore) SetUser(user *model.User) error {
 }
 
 func (s *MemStore) Preferences() (model.Preferences, error) {
+	if s.preferences == nil {
+		return nil, nil
+	}
 	newPref := make(model.Preferences, len(*s.preferences))
 	copy(newPref, *s.preferences)
 	return newPref, nil

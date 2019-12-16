@@ -117,13 +117,15 @@ func (c *SimpleController) reload() control.UserStatus {
 	}
 
 	prefs, _ := c.user.Store().Preferences()
-	userIds := make([]string, len(prefs))
+	var userIds []string
 	chanId := ""
 	for i, p := range prefs {
 		if p.Name == model.PREFERENCE_NAME_LAST_CHANNEL {
 			chanId = p.Value
 		}
-		userIds[i] = p.UserId
+		if p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW {
+			userIds = append(userIds, p.Name)
+		}
 	}
 
 	if chanId != "" {
