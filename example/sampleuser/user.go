@@ -110,7 +110,7 @@ func (u *SampleUser) GetChannel(channelId string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetChannelsForTeam(teamId, userId string) error {
+func (ue *SampleUser) GetChannelsForTeam(teamId string) error {
 	return nil
 }
 
