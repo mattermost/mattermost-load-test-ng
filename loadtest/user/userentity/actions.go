@@ -273,6 +273,20 @@ func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch)
 	return channels, nil
 }
 
+func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error) {
+	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	for _, ch := range channels {
+		err := ue.store.SetChannel(ch)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return channels, nil
+}
+
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {

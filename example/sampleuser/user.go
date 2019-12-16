@@ -142,6 +142,10 @@ func (u *SampleUser) GetChannelStats(channelId string) error {
 	return nil
 }
 
+func (u *SampleUser) GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }
