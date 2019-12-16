@@ -14,7 +14,7 @@ import (
 
 type SampleController struct {
 	user user.User
-	stop chan bool
+	stop chan struct{}
 }
 
 type userAction struct {
@@ -24,7 +24,7 @@ type userAction struct {
 
 func (c *SampleController) Init(user user.User) {
 	c.user = user
-	c.stop = make(chan bool)
+	c.stop = make(chan struct{})
 }
 
 func (c *SampleController) Run(status chan<- control.UserStatus) {
@@ -87,7 +87,7 @@ func (c *SampleController) signUp() control.UserStatus {
 
 	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
 	username := fmt.Sprintf("testuser%d", c.user.Id())
-	password := "testpwd"
+	password := "testPass123$"
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {

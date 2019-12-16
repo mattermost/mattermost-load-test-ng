@@ -29,12 +29,16 @@ type User interface {
 	GetUsersByUsernames(usernames []string) ([]string, error)
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
+	GetProfileImage() error
+	GetProfileImageForUser(userId string) error
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	GetPostsForChannel(channelId string, page, perPage int) error
+	GetPostsBefore(channelId, postId string, page, perPage int) error
+	GetPostsAfter(channelId, postId string, page, perPage int) error
 	SaveReaction(reaction *model.Reaction) error
 	GetReactions(postId string) error
 
@@ -48,6 +52,7 @@ type User interface {
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
+	GetChannelsForTeam(teamId string) error
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
@@ -56,6 +61,7 @@ type User interface {
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
 	AddChannelMember(channelId, userId string) error
+	GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error)
 
 	// teams
 	GetTeams() ([]string, error)
@@ -70,4 +76,5 @@ type User interface {
 
 	// emoji
 	GetEmojiList(page, perPage int) error
+	GetEmojiImage(emojiId string) error
 }
