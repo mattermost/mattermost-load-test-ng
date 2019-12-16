@@ -65,6 +65,7 @@ type User interface {
 	GetTeams() ([]string, error)
 	CreateTeam(team *model.Team) (string, error)
 	GetTeam(teamId string) error
+	GetTeamsForUser(userId string) ([]*model.Team, error)
 	AddTeamMember(teamId, userId string) error
 	RemoveTeamMember(teamId, userId string) error
 	GetTeamMembers(teamId string, page, perPage int) error

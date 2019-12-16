@@ -256,6 +256,10 @@ func (u *SampleUser) GetTeam(teamId string) error {
 	return nil
 }
 
+func (u *SampleUser) GetTeamsForUser(userId string) ([]*model.Team, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) AddTeamMember(teamId, userId string) error {
 	return nil
 }

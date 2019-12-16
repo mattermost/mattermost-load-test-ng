@@ -332,6 +332,21 @@ func (ue *UserEntity) GetTeam(teamId string) error {
 	return ue.store.SetTeam(team)
 }
 
+func (ue *UserEntity) GetTeamsForUser(userId string) ([]*model.Team, error) {
+	teams, resp := ue.client.GetTeamsForUser(userId, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	for _, t := range teams {
+		err := ue.store.SetTeam(t)
+		if err != nil {
+			return teams, err
+		}
+	}
+	return teams, nil
+}
+
 func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	tm, resp := ue.client.AddTeamMember(teamId, userId)
 	if resp.Error != nil {
