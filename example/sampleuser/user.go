@@ -118,6 +118,10 @@ func (u *SampleUser) GetChannel(channelId string) error {
 	return nil
 }
 
+func (ue *SampleUser) GetChannelsForTeam(teamId string) error {
+	return nil
+}
+
 func (u *SampleUser) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	return nil, nil
 }

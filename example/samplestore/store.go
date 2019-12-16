@@ -87,6 +87,15 @@ func (s *SampleStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+func (s *SampleStore) SetChannels(channels []*model.Channel) error {
+	for _, channel := range channels {
+		if err := s.SetChannel(channel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *SampleStore) Team(teamId string) (*model.Team, error) {
 	if team, ok := s.teams[teamId]; ok {
 		return team, nil
