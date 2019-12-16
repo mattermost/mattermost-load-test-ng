@@ -268,7 +268,7 @@ func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string) ([]*model
 	for _, ch := range channels {
 		err := ue.store.SetChannel(ch)
 		if err != nil {
-			return channels, err
+			return nil, err
 		}
 	}
 	return channels, nil
