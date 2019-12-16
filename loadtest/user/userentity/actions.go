@@ -449,6 +449,15 @@ func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
 	return data, nil
 }
 
+func (ue *UserEntity) GetFilePreview(fileId string) error {
+	_, resp := ue.client.GetFilePreview(fileId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
 	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
 	if resp.Error != nil {

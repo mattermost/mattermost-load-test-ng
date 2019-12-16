@@ -90,6 +90,10 @@ func (ue *SampleUser) GetFileThumbnail(fileId string) ([]byte, error) {
 	return nil, nil
 }
 
+func (ue *SampleUser) GetFilePreview(fileId string) error {
+	return nil
+}
+
 func (u *SampleUser) CreateChannel(channel *model.Channel) (string, error) {
 	return "", nil
 }
