@@ -253,7 +253,7 @@ func (ue *UserEntity) GetChannel(channelId string) error {
 }
 
 func (ue *UserEntity) GetChannelsForTeam(teamId string) error {
-	user, err := ue.store.User()
+	user, err := ue.getUserFromStore()
 	if err != nil {
 		return err
 	}
