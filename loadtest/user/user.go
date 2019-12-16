@@ -29,12 +29,16 @@ type User interface {
 	GetUsersByUsernames(usernames []string) ([]string, error)
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
+	GetProfileImage() error
+	GetProfileImageForUser(userId string) error
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	GetPostsForChannel(channelId string, page, perPage int) error
+	GetPostsBefore(channelId, postId string, page, perPage int) error
+	GetPostsAfter(channelId, postId string, page, perPage int) error
 	SaveReaction(reaction *model.Reaction) error
 	GetReactions(postId string) error
 
@@ -71,4 +75,5 @@ type User interface {
 
 	// emoji
 	GetEmojiList(page, perPage int) error
+	GetEmojiImage(emojiId string) error
 }

@@ -13,6 +13,7 @@ logs
 # Folders
 _obj
 _test
+.vscode
 
 # Log files
 *mattermost.log

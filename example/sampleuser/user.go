@@ -70,6 +70,14 @@ func (u *SampleUser) GetPostsForChannel(channelId string, page, perPage int) err
 	return nil
 }
 
+func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int) error {
+	return nil
+}
+
+func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int) error {
+	return nil
+}
+
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	return nil, nil
 }
@@ -288,11 +296,23 @@ func (ue *SampleUser) SetProfileImage(data []byte) error {
 	return nil
 }
 
+func (ue *SampleUser) GetProfileImage() error {
+	return nil
+}
+
+func (ue *SampleUser) GetProfileImageForUser(userId string) error {
+	return nil
+}
+
 func (ue *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
 	return nil, nil
 }
 
 func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+	return nil
+}
+
+func (ue *SampleUser) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
