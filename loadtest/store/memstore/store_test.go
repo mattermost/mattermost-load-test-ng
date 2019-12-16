@@ -57,7 +57,7 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		pp, err := s.Preferences()
 		require.NoError(t, err)
-		require.Equal(t, &p, pp)
+		require.Equal(t, p, pp)
 	})
 
 	t.Run("SetPost", func(t *testing.T) {

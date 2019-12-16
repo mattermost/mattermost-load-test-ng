@@ -38,8 +38,10 @@ func (s *SampleStore) User() (*model.User, error) {
 	return s.user, nil
 }
 
-func (s *SampleStore) Preferences() (*model.Preferences, error) {
-	return s.preferences, nil
+func (s *SampleStore) Preferences() (model.Preferences, error) {
+	newPref := make(model.Preferences, 0, len(*s.preferences))
+	copy(newPref, *s.preferences)
+	return newPref, nil
 }
 
 func (s *SampleStore) SetPreferences(preferences *model.Preferences) error {

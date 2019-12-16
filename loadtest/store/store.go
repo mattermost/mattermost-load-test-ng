@@ -15,6 +15,8 @@ type UserStore interface {
 	Channels(teamId string) ([]model.Channel, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
+	// Preferences return the preferences of the user.
+	Preferences() (model.Preferences, error)
 }
 
 type MutableUserStore interface {
@@ -36,7 +38,6 @@ type MutableUserStore interface {
 
 	// preferences
 	SetPreferences(preferences *model.Preferences) error
-	Preferences() (*model.Preferences, error)
 
 	// channels
 	SetChannel(channel *model.Channel) error
