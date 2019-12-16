@@ -60,6 +60,7 @@ type User interface {
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
 	AddChannelMember(channelId, userId string) error
+	GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error)
 
 	// teams
 	GetTeams() ([]string, error)
