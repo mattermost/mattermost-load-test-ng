@@ -87,7 +87,7 @@ func (c *SampleController) signUp() control.UserStatus {
 
 	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
 	username := fmt.Sprintf("testuser%d", c.user.Id())
-	password := "testpwd"
+	password := "testPass123$"
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
