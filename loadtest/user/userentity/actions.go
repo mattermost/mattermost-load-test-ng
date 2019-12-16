@@ -455,12 +455,21 @@ func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, err
 	return infos, nil
 }
 
-func (ue *UserEntity) GetFileThumbnail(fileId string) ([]byte, error) {
-	data, resp := ue.client.GetFileThumbnail(fileId)
+func (ue *UserEntity) GetFileThumbnail(fileId string) error {
+	_, resp := ue.client.GetFileThumbnail(fileId)
 	if resp.Error != nil {
-		return nil, resp.Error
+		return resp.Error
 	}
-	return data, nil
+	return nil
+}
+
+func (ue *UserEntity) GetFilePreview(fileId string) error {
+	_, resp := ue.client.GetFilePreview(fileId)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
 }
 
 func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
