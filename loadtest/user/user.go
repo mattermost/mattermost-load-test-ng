@@ -77,6 +77,10 @@ type User interface {
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 	AddTeamMemberFromInvite(token, inviteId string) error
 
+	// roles
+	// GetRolesByNames returns a list of role ids based on the provided role names.
+	GetRolesByNames(roleNames []string) ([]string, error)
+
 	// emoji
 	GetEmojiList(page, perPage int) error
 	GetEmojiImage(emojiId string) error

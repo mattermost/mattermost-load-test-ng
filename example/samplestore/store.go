@@ -16,6 +16,7 @@ type SampleStore struct {
 	teams          map[string]*model.Team
 	channels       map[string]*model.Channel
 	channelMembers map[string]*model.ChannelMembers
+	roles          map[string]*model.Role
 }
 
 func New() *SampleStore {
@@ -24,6 +25,7 @@ func New() *SampleStore {
 		teams:          map[string]*model.Team{},
 		channels:       map[string]*model.Channel{},
 		channelMembers: map[string]*model.ChannelMembers{},
+		roles:          map[string]*model.Role{},
 	}
 }
 
@@ -134,6 +136,26 @@ func (s *SampleStore) SetTeams(teams []*model.Team) error {
 		s.teams[team.Id] = team
 	}
 	return nil
+}
+
+// SetRoles stores the given roles.
+func (s *SampleStore) SetRoles(roles []*model.Role) error {
+	s.roles = make(map[string]*model.Role)
+	for _, role := range roles {
+		s.roles[role.Id] = role
+	}
+	return nil
+}
+
+// Roles return the roles of the user.
+func (s *SampleStore) Roles() ([]model.Role, error) {
+	roles := make([]model.Role, len(s.roles))
+	i := 0
+	for _, role := range s.roles {
+		roles[i] = *role
+		i++
+	}
+	return roles, nil
 }
 
 func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {

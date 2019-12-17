@@ -597,3 +597,20 @@ func (ue *UserEntity) GetTeams() ([]string, error) {
 
 	return ue.GetTeamsForUser(user.Id)
 }
+
+func (ue *UserEntity) GetRolesByNames(roleNames []string) ([]string, error) {
+	roles, resp := ue.client.GetRolesByNames(roleNames)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetRoles(roles); err != nil {
+		return nil, err
+	}
+
+	roleIds := make([]string, len(roles))
+	for i, role := range roles {
+		roleIds[i] = role.Id
+	}
+	return roleIds, nil
+}
