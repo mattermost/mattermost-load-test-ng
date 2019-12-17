@@ -17,6 +17,8 @@ type UserStore interface {
 	Teams() ([]model.Team, error)
 	// Preferences return the preferences of the user.
 	Preferences() (model.Preferences, error)
+	// Roles return the roles of the user.
+	Roles() ([]model.Role, error)
 }
 
 type MutableUserStore interface {
@@ -57,6 +59,10 @@ type MutableUserStore interface {
 	RemoveTeamMember(teamId, memberId string) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error
 	TeamMember(teamdId, userId string) (*model.TeamMember, error)
+
+	// roles
+	// SetRoles stores the given roles.
+	SetRoles(roles []*model.Role) error
 
 	// emoji
 	SetEmojis(emoji []*model.Emoji) error

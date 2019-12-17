@@ -20,6 +20,7 @@ type MemStore struct {
 	teamMembers    map[string]map[string]*model.TeamMember
 	users          map[string]*model.User
 	reactions      map[string][]*model.Reaction
+	roles          map[string]*model.Role
 }
 
 func New() *MemStore {
@@ -31,6 +32,7 @@ func New() *MemStore {
 		teamMembers:    map[string]map[string]*model.TeamMember{},
 		users:          map[string]*model.User{},
 		reactions:      map[string][]*model.Reaction{},
+		roles:          map[string]*model.Role{},
 	}
 }
 
@@ -274,4 +276,24 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 		s.users[user.Id] = user
 	}
 	return nil
+}
+
+// SetRoles stores the given roles.
+func (s *MemStore) SetRoles(roles []*model.Role) error {
+	s.roles = make(map[string]*model.Role)
+	for _, role := range roles {
+		s.roles[role.Id] = role
+	}
+	return nil
+}
+
+// Roles return the roles of the user.
+func (s *MemStore) Roles() ([]model.Role, error) {
+	roles := make([]model.Role, len(s.roles))
+	i := 0
+	for _, role := range s.roles {
+		roles[i] = *role
+		i++
+	}
+	return roles, nil
 }
