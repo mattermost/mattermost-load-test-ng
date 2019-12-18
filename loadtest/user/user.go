@@ -27,6 +27,7 @@ type User interface {
 	PatchUser(userId string, patch *model.UserPatch) error
 	GetUsersByIds(userIds []string) ([]string, error)
 	GetUsersByUsernames(usernames []string) ([]string, error)
+	GetUserStatus() error
 	GetUsersStatusesByIds(userIds []string) error
 	SetProfileImage(data []byte) error
 	GetProfileImage() error

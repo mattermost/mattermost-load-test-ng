@@ -160,6 +160,10 @@ func (u *SampleUser) AutocompleteChannelsForTeam(teamId, name string) error {
 	return nil
 }
 
+func (ue *SampleUser) GetUserStatus() error {
+	return nil
+}
+
 func (u *SampleUser) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }

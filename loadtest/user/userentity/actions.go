@@ -477,6 +477,20 @@ func (ue *UserEntity) GetUsersByUsernames(usernames []string) ([]string, error) 
 	return newUserIds, nil
 }
 
+func (ue *UserEntity) GetUserStatus() error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	_, resp := ue.client.GetUserStatus(user.Id, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	_, resp := ue.client.GetUsersStatusesByIds(userIds)
 	return resp.Error
