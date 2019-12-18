@@ -50,11 +50,11 @@ func (ue *UserEntity) Logout() (bool, error) {
 }
 
 func (ue *UserEntity) GetConfig() error {
-	_, resp := ue.client.GetConfig()
+	config, resp := ue.client.GetConfig()
 	if resp.Error != nil {
 		return resp.Error
 	}
-
+	ue.store.SetConfig(config)
 	return nil
 }
 

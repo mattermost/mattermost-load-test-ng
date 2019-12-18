@@ -24,6 +24,10 @@ type UserStore interface {
 type MutableUserStore interface {
 	UserStore
 
+	// server
+	Config() *model.Config
+	SetConfig(*model.Config)
+
 	// users
 	SetUser(user *model.User) error
 	User() (*model.User, error)
