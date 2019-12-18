@@ -342,6 +342,16 @@ func (ue *UserEntity) GetChannelStats(channelId string) error {
 	return nil
 }
 
+// AutocompleteChannelsForTeam returns an ordered list of channels for a given name.
+func (ue *UserEntity) AutocompleteChannelsForTeam(teamId, name string) error {
+	channelList, resp := ue.client.AutocompleteChannelsForTeam(teamId, name)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannels(*channelList)
+}
+
 func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 	team, resp := ue.client.CreateTeam(team)
 	if resp.Error != nil {

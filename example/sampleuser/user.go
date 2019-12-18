@@ -150,6 +150,11 @@ func (u *SampleUser) GetChannelsForTeamForUser(teamId, userId string) ([]*model.
 	return nil, nil
 }
 
+// AutocompleteChannelsForTeam returns an ordered list of channels for a given name.
+func (u *SampleUser) AutocompleteChannelsForTeam(teamId, name string) error {
+	return nil
+}
+
 func (u *SampleUser) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }

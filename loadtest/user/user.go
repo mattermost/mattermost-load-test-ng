@@ -63,6 +63,8 @@ type User interface {
 	GetChannelStats(channelId string) error
 	AddChannelMember(channelId, userId string) error
 	GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error)
+	// AutocompleteChannelsForTeam returns an ordered list of channels for a given name.
+	AutocompleteChannelsForTeam(teamId, name string) error
 
 	// teams
 	GetTeams() ([]string, error)
