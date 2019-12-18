@@ -1,8 +1,6 @@
 .PHONY: install clean
 
-GOFLAGS ?= $(GOFLAGS:) -mod=vendor
 GO=go
-PACKAGES=$(shell $(GO) list ./...)
 
 DIST_ROOT=dist
 DIST_FOLDER_NAME=mattermost-load-test-ng
@@ -15,15 +13,15 @@ all: install
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) install -i $(GOFLAGS) $(GO_LINKER_FLAGS) ./...
+	env GOOS=linux GOARCH=amd64 $(GO) install -trimpath ./...
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=darwin GOARCH=amd64 $(GO) install -i $(GOFLAGS) $(GO_LINKER_FLAGS) ./...
+	env GOOS=darwin GOARCH=amd64 $(GO) install -trimpath ./...
 
 build-windows:
 	@echo Build Windows amd64
-	env GOOS=windows GOARCH=amd64 $(GO) install -i $(GOFLAGS) $(GO_LINKER_FLAGS) ./...
+	env GOOS=windows GOARCH=amd64 $(GO) install -trimpath ./...
 
 build: build-linux build-windows build-osx
 
@@ -70,7 +68,7 @@ golangci-lint:
 	golangci-lint run -E gofmt ./...
 
 test:
-	$(GO) test -v -run=. -failfast $(PACKAGES)
+	$(GO) test -v -failfast ./...
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
