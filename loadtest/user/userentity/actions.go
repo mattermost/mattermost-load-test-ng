@@ -49,6 +49,15 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, nil
 }
 
+func (ue *UserEntity) GetConfig() error {
+	_, resp := ue.client.GetConfig()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) GetMe() (string, error) {
 	user, resp := ue.client.GetMe("")
 	if resp.Error != nil {

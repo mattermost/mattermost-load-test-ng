@@ -19,6 +19,9 @@ type User interface {
 	Login() error
 	Logout() (bool, error)
 
+	//server
+	GetConfig() error
+
 	// user
 	GetMe() (string, error)
 	GetPreferences() error
