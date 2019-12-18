@@ -11,6 +11,8 @@ type UserStore interface {
 	Id() string
 	// TODO: Move all getters to this interface
 
+	// Config return the server configuration settings
+	Config() *model.Config
 	// Channels return the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
 	// Teams return the teams a user belong to.
@@ -25,7 +27,6 @@ type MutableUserStore interface {
 	UserStore
 
 	// server
-	Config() *model.Config
 	SetConfig(*model.Config)
 
 	// users
