@@ -11,6 +11,7 @@ import (
 
 type SampleStore struct {
 	user           *model.User
+	config         *model.Config
 	posts          map[string]*model.Post
 	preferences    *model.Preferences
 	teams          map[string]*model.Team
@@ -34,6 +35,14 @@ func (s *SampleStore) Id() string {
 		return ""
 	}
 	return s.user.Id
+}
+
+func (s *SampleStore) Config() model.Config {
+	return *s.config
+}
+
+func (s *SampleStore) SetConfig(config *model.Config) {
+	s.config = config
 }
 
 func (s *SampleStore) User() (*model.User, error) {

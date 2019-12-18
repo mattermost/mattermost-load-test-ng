@@ -210,6 +210,10 @@ func (u *SampleUser) Logout() (bool, error) {
 	return ok, resp.Error
 }
 
+func (u *SampleUser) GetConfig() error {
+	return nil
+}
+
 func (u *SampleUser) GetMe() (string, error) {
 	user, resp := u.client.GetMe("")
 	if resp.Error != nil {

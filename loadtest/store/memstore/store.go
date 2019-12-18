@@ -12,6 +12,7 @@ import (
 type MemStore struct {
 	user           *model.User
 	preferences    *model.Preferences
+	config         *model.Config
 	emojis         []*model.Emoji
 	posts          map[string]*model.Post
 	teams          map[string]*model.Team
@@ -41,6 +42,14 @@ func (s *MemStore) Id() string {
 		return ""
 	}
 	return s.user.Id
+}
+
+func (s *MemStore) Config() model.Config {
+	return *s.config
+}
+
+func (s *MemStore) SetConfig(config *model.Config) {
+	s.config = config
 }
 
 func (s *MemStore) User() (*model.User, error) {

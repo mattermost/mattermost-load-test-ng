@@ -296,3 +296,13 @@ func TestTeamMembers(t *testing.T) {
 		require.Equal(t, &expected, member)
 	})
 }
+
+func TestConfig(t *testing.T) {
+	s := New()
+
+	t.Run("SetConfig", func(t *testing.T) {
+		config := &model.Config{}
+		s.SetConfig(config)
+		require.Equal(t, s.Config(), *config)
+	})
+}
