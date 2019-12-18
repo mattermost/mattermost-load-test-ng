@@ -37,8 +37,8 @@ func (s *SampleStore) Id() string {
 	return s.user.Id
 }
 
-func (s *SampleStore) Config() *model.Config {
-	return s.config
+func (s *SampleStore) Config() model.Config {
+	return *s.config
 }
 
 func (s *SampleStore) SetConfig(config *model.Config) {

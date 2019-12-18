@@ -303,6 +303,6 @@ func TestConfig(t *testing.T) {
 	t.Run("SetConfig", func(t *testing.T) {
 		config := &model.Config{}
 		s.SetConfig(config)
-		require.Equal(t, s.Config(), config)
+		require.Equal(t, s.Config(), *config)
 	})
 }

@@ -44,8 +44,8 @@ func (s *MemStore) Id() string {
 	return s.user.Id
 }
 
-func (s *MemStore) Config() *model.Config {
-	return s.config
+func (s *MemStore) Config() model.Config {
+	return *s.config
 }
 
 func (s *MemStore) SetConfig(config *model.Config) {
