@@ -39,6 +39,8 @@ type User interface {
 	GetPostsForChannel(channelId string, page, perPage int) error
 	GetPostsBefore(channelId, postId string, page, perPage int) error
 	GetPostsAfter(channelId, postId string, page, perPage int) error
+	// GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
+	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error
 	SaveReaction(reaction *model.Reaction) error
 	GetReactions(postId string) error
 
