@@ -166,6 +166,21 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
+// GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
+func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	postList, resp := ue.client.GetPostsAroundLastUnread(user.Id, channelId, limitBefore, limitAfter)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
+}
+
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
 	fresp, resp := ue.client.UploadFile(data, channelId, filename)
 	if resp.Error != nil {
