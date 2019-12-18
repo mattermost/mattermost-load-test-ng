@@ -358,3 +358,7 @@ func (ue *SampleUser) GetReactions(postId string) error {
 func (ue *SampleUser) GetRolesByNames(roleNames []string) ([]string, error) {
 	return nil, nil
 }
+
+func (ue *SampleUser) GetWebappPlugins() error {
+	return nil
+}

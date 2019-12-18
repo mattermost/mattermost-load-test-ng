@@ -90,4 +90,7 @@ type User interface {
 	// emoji
 	GetEmojiList(page, perPage int) error
 	GetEmojiImage(emojiId string) error
+
+	// plugins
+	GetWebappPlugins() error
 }

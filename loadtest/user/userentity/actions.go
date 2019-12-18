@@ -658,3 +658,12 @@ func (ue *UserEntity) GetRolesByNames(roleNames []string) ([]string, error) {
 	}
 	return roleIds, nil
 }
+
+func (ue *UserEntity) GetWebappPlugins() error {
+	_, resp := ue.client.GetWebappPlugins()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
