@@ -55,6 +55,7 @@ jobs:
       - *restore_cache
       - run: make check-style
       - run: make test
+      - run: make verify-gomod
       - *save_cache
 
 workflows:
