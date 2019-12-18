@@ -56,6 +56,7 @@ endif
 	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
 
 verify-gomod:
+	$(GO) mod download
 	$(GO) mod verify
 
 check-style: golangci-lint

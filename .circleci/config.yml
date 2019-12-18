@@ -53,9 +53,9 @@ jobs:
       - checkout
       - install-golangci-lint
       - *restore_cache
+      - run: make verify-gomod
       - run: make check-style
       - run: make test
-      - run: make verify-gomod
       - *save_cache
 
 workflows:
