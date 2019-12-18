@@ -247,6 +247,11 @@ func (u *SampleUser) GetTeams() ([]string, error) {
 	return u.GetTeamsForUser(user.Id)
 }
 
+// GetAllTeams returns all teams based on permissions.
+func (u *SampleUser) GetAllTeams(page, perPage int) ([]string, error) {
+	return nil, nil
+}
+
 func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 	return "", nil
 }

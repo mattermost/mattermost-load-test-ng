@@ -66,6 +66,8 @@ type User interface {
 
 	// teams
 	GetTeams() ([]string, error)
+	// GetAllTeams returns all teams based on permissions.
+	GetAllTeams(page, perPage int) ([]string, error)
 	CreateTeam(team *model.Team) (string, error)
 	GetTeam(teamId string) error
 	GetTeamsForUser(userId string) ([]string, error)

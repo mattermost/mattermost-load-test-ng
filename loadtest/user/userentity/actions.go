@@ -598,6 +598,25 @@ func (ue *UserEntity) GetTeams() ([]string, error) {
 	return ue.GetTeamsForUser(user.Id)
 }
 
+// GetAllTeams returns all teams based on permissions.
+func (ue *UserEntity) GetAllTeams(page, perPage int) ([]string, error) {
+	teams, resp := ue.client.GetAllTeams("", page, perPage)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if err := ue.store.SetTeams(teams); err != nil {
+		return nil, err
+	}
+
+	teamIds := make([]string, len(teams))
+	for i, team := range teams {
+		teamIds[i] = team.Id
+	}
+
+	return teamIds, nil
+}
+
 func (ue *UserEntity) GetRolesByNames(roleNames []string) ([]string, error) {
 	roles, resp := ue.client.GetRolesByNames(roleNames)
 	if resp.Error != nil {
