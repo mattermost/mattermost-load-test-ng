@@ -70,7 +70,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 	}
 }
 
-// Wait for some time. This is the same as webapp reconnection logic.
+// getWaitTime returns the wait time to sleep for.
+// This is the same as webapp reconnection logic.
 func getWaitTime(failCount int) time.Duration {
 	waitTime := minWebsocketReconnectDuration
 	if failCount > maxWebsocketFails {
