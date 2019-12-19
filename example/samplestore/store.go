@@ -158,7 +158,8 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
-func (s *SampleStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
+// SetChannelMembers stores the given channel members in the store.
+func (s *SampleStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
 	return errors.New("not implemented")
 }
 

@@ -336,7 +336,7 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 		return resp.Error
 	}
 
-	return ue.store.SetChannelMembers(channelId, channelMembers)
+	return ue.store.SetChannelMembers(channelMembers)
 }
 
 // GetChannelMembersForUser gets all the channel members for a user on a team.
@@ -345,28 +345,8 @@ func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {
 	if resp.Error != nil {
 		return resp.Error
 	}
-	if channelMembers == nil {
-		return errors.New("channelMembers should not be nil")
-	}
-	chanIdMap := make(map[string]*model.ChannelMembers)
-	for _, member := range *channelMembers {
-		if chanIdMap[member.ChannelId] == nil {
-			chanMembers := model.ChannelMembers([]model.ChannelMember{member})
-			chanIdMap[member.ChannelId] = &chanMembers
-		} else {
-			chanMembers := model.ChannelMembers(append(*chanIdMap[member.ChannelId], member))
-			chanIdMap[member.ChannelId] = &chanMembers
-		}
-	}
 
-	for chanId, members := range chanIdMap {
-		err := ue.store.SetChannelMembers(chanId, members)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return ue.store.SetChannelMembers(channelMembers)
 }
 
 func (ue *UserEntity) GetChannelMember(channelId, userId string) error {

@@ -45,7 +45,8 @@ type MutableUserStore interface {
 	SetChannel(channel *model.Channel) error
 	SetChannels(channels []*model.Channel) error
 	Channel(channelId string) (*model.Channel, error)
-	SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error
+	// SetChannelMembers stores the given channel members in the store.
+	SetChannelMembers(channelMembers *model.ChannelMembers) error
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	ChannelMember(channelId, userId string) (*model.ChannelMember, error)
