@@ -22,6 +22,7 @@ type UserEntity struct {
 	wsClient    *model.WebSocketClient
 	closing     chan struct{}
 	closed      chan struct{}
+	wsErrorChan chan error
 	config      Config
 }
 
@@ -60,21 +61,24 @@ func New(store store.MutableUserStore, id int, config Config) *UserEntity {
 	ue.store = store
 	ue.closing = make(chan struct{})
 	ue.closed = make(chan struct{})
+	ue.wsErrorChan = make(chan error, 1)
 	return &ue
 }
 
 // Connect creates a websocket connection to the server and starts listening for messages.
-func (ue *UserEntity) Connect() error {
+func (ue *UserEntity) Connect() chan error {
 	if ue.client.AuthToken == "" {
-		return errors.New("user is not authenticated")
+		ue.wsErrorChan <- errors.New("user is not authenticated")
+		return ue.wsErrorChan
 	}
 	cli := ue.getWsClient()
 	if cli != nil {
-		return errors.New("user is already connected")
+		ue.wsErrorChan <- errors.New("user is already connected")
+		return ue.wsErrorChan
 	}
 
-	go ue.listen()
-	return nil
+	go ue.listen(ue.wsErrorChan)
+	return ue.wsErrorChan
 }
 
 // Disconnect closes the websocket connection.
@@ -83,21 +87,22 @@ func (ue *UserEntity) Disconnect() error {
 	if cli == nil {
 		return errors.New("user is not connected")
 	}
+	// We exit the listener loop first, and then close the connection.
+	// Otherwise, it tries to reconnect first, and then
+	// exits, which causes unnecessary delay.
+	close(ue.closing)
+
+	// We wait to get the response with a timeout, because
+	// the loop may be sleeping on a reconnect cycle.
+	select {
+	case <-ue.closed:
+	case <-time.After(minWebsocketReconnectDuration):
+	}
+
+	close(ue.wsErrorChan)
+
 	cli.Close()
 	cli = nil
-	// Wait for the listener to shut down.
-	close(ue.closing)
-	<-ue.closed
-	return nil
-}
-
-// SendWebsocketMessage sends a given action type with data to the websocket.
-func (ue *UserEntity) SendWebsocketMessage(action string, data map[string]interface{}) error {
-	cli := ue.getWsClient()
-	if cli == nil {
-		return errors.New("user is not connected")
-	}
-	cli.SendMessage(action, data)
 	return nil
 }
 
