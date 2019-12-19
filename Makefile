@@ -13,15 +13,15 @@ all: install
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) install -trimpath ./...
+	env GOOS=linux GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=darwin GOARCH=amd64 $(GO) install -trimpath ./...
+	env GOOS=darwin GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
 
 build-windows:
 	@echo Build Windows amd64
-	env GOOS=windows GOARCH=amd64 $(GO) install -trimpath ./...
+	env GOOS=windows GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
 
 build: build-linux build-windows build-osx
 
@@ -55,6 +55,10 @@ else
 endif
 	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
 
+verify-gomod:
+	$(GO) mod download
+	$(GO) mod verify
+
 check-style: golangci-lint
 
 golangci-lint:
@@ -68,7 +72,7 @@ golangci-lint:
 	golangci-lint run -E gofmt ./...
 
 test:
-	$(GO) test -v -failfast ./...
+	$(GO) test -v -mod=readonly -failfast ./...
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
