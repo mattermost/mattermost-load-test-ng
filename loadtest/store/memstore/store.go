@@ -185,16 +185,24 @@ func (s *MemStore) SetTeams(teams []*model.Team) error {
 	return nil
 }
 
-func (s *MemStore) SetChannelMembers(channelId string, channelMembers *model.ChannelMembers) error {
+// SetChannelMembers stores the given channel members in the store.
+func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
 	if channelMembers == nil {
 		return errors.New("channelMembers should not be nil")
 	}
-	membersMap := make(map[string]*model.ChannelMember)
-	members := *channelMembers
-	for _, m := range members {
-		membersMap[m.UserId] = &m
+
+	for _, member := range *channelMembers {
+		// Initialize the maps as necessary.
+		if s.channelMembers == nil {
+			s.channelMembers = make(map[string]map[string]*model.ChannelMember)
+		}
+		if s.channelMembers[member.ChannelId] == nil {
+			s.channelMembers[member.ChannelId] = make(map[string]*model.ChannelMember)
+		}
+		// Set value.
+		s.channelMembers[member.ChannelId][member.UserId] = &member
 	}
-	s.channelMembers[channelId] = membersMap
+
 	return nil
 }
 

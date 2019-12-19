@@ -196,7 +196,7 @@ func TestChannelMembers(t *testing.T) {
 
 	t.Run("SetChannelMembers", func(t *testing.T) {
 		channelId := model.NewId()
-		err := s.SetChannelMembers(channelId, nil)
+		err := s.SetChannelMembers(nil)
 		require.Error(t, err)
 		userId := model.NewId()
 		expected := model.ChannelMembers{
@@ -205,7 +205,7 @@ func TestChannelMembers(t *testing.T) {
 				UserId:    userId,
 			},
 		}
-		err = s.SetChannelMembers(channelId, &expected)
+		err = s.SetChannelMembers(&expected)
 		require.NoError(t, err)
 		members, err := s.ChannelMembers(channelId)
 		require.NoError(t, err)
@@ -245,7 +245,7 @@ func TestChannelMembers(t *testing.T) {
 			UserId:    model.NewId(),
 		}
 		channelMembers := append(model.ChannelMembers{}, channelMember1, channelMember2)
-		err = s.SetChannelMembers(channel.Id, &channelMembers)
+		err = s.SetChannelMembers(&channelMembers)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(s.channelMembers[channel.Id]))
 		err = s.RemoveChannelMember(channel.Id, channelMember1.UserId)

@@ -65,6 +65,8 @@ type User interface {
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 	GetChannelMembers(channelId string, page, perPage int) error
+	// GetChannelMembersForUser gets all the channel members for a user on a team.
+	GetChannelMembersForUser(userId, teamId string) error
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
 	AddChannelMember(channelId, userId string) error

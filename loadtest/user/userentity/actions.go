@@ -345,7 +345,17 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 		return resp.Error
 	}
 
-	return ue.store.SetChannelMembers(channelId, channelMembers)
+	return ue.store.SetChannelMembers(channelMembers)
+}
+
+// GetChannelMembersForUser gets all the channel members for a user on a team.
+func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {
+	channelMembers, resp := ue.client.GetChannelMembersForUser(userId, teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetChannelMembers(channelMembers)
 }
 
 func (ue *UserEntity) GetChannelMember(channelId, userId string) error {

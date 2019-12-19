@@ -143,6 +143,11 @@ func (u *SampleUser) GetChannelMembers(channelId string, page, perPage int) erro
 	return nil
 }
 
+// GetChannelMembersForUser gets all the channel members for a user on a team.
+func (u *SampleUser) GetChannelMembersForUser(userId, teamId string) error {
+	return nil
+}
+
 func (u *SampleUser) GetChannelMember(channelId, userId string) error {
 	return nil
 }
