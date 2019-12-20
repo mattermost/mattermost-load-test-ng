@@ -13,6 +13,7 @@ import (
 )
 
 type SimpleController struct {
+	id     int
 	user   user.User
 	stop   chan struct{}
 	status chan<- control.UserStatus
@@ -23,6 +24,15 @@ func (c *SimpleController) Init(user user.User) {
 	c.user = user
 	c.stop = make(chan struct{})
 	c.rate = 1.0
+}
+
+func New(id int, user user.User) *SimpleController {
+	return &SimpleController{
+		id,
+		user,
+		make(chan struct{}),
+		1.0,
+	}
 }
 
 func (c *SimpleController) Run(status chan<- control.UserStatus) {
@@ -65,7 +75,7 @@ func (c *SimpleController) Run(status chan<- control.UserStatus) {
 		},
 	}
 
-	status <- control.UserStatus{User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
+	status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer c.sendStopStatus(status)
 
@@ -97,9 +107,9 @@ func (c *SimpleController) Stop() {
 }
 
 func (c *SimpleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
-	status <- control.UserStatus{User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
+	status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
 func (c *SimpleController) sendStopStatus(status chan<- control.UserStatus) {
-	status <- control.UserStatus{User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+	status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }

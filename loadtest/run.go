@@ -11,13 +11,11 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 type LoadTester struct {
-	users       []user.User
 	controllers []control.UserController
 	config      *config.LoadTestConfig
 	wg          sync.WaitGroup
@@ -29,9 +27,8 @@ func (lt *LoadTester) initControllers(numUsers int) {
 		WebSocketURL: lt.config.ConnectionConfiguration.WebSocketURL,
 	}
 	for i := 0; i < numUsers; i++ {
-		lt.users[i] = userentity.New(memstore.New(), i, config)
-		lt.controllers[i] = &simplecontroller.SimpleController{}
-		lt.controllers[i].Init(lt.users[i])
+		ue := userentity.New(memstore.New(), config)
+		lt.controllers[i] = simplecontroller.New(i, ue)
 	}
 }
 
@@ -57,13 +54,13 @@ func (lt *LoadTester) handleStatus(status <-chan control.UserStatus) {
 			lt.wg.Done()
 		}
 		if us.Code == control.USER_STATUS_ERROR {
-			mlog.Info(us.Err.Error(), mlog.Int("user_id", us.User.Id()))
+			mlog.Info(us.Err.Error(), mlog.Int("controller_id", us.ControllerId))
 			continue
 		} else if us.Code == control.USER_STATUS_FAILED {
 			mlog.Error(us.Err.Error())
 			continue
 		}
-		mlog.Info(us.Info, mlog.Int("user_id", us.User.Id()))
+		mlog.Info(us.Info, mlog.Int("controller_id", us.ControllerId))
 	}
 }
 
@@ -73,7 +70,6 @@ func Run() error {
 	const numUsers = 4
 
 	lt := LoadTester{
-		users:       make([]user.User, numUsers),
 		controllers: make([]control.UserController, numUsers),
 	}
 

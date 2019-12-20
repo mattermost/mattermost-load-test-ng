@@ -31,7 +31,7 @@ func (th *TestHelper) Init() *TestHelper {
 
 func (th *TestHelper) CreateUser() *UserEntity {
 	s := memstore.New()
-	u := New(s, 1, Config{
+	u := New(s, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,
 	})
