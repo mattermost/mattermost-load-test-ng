@@ -13,9 +13,10 @@ import (
 )
 
 type SimpleController struct {
-	user user.User
-	stop chan struct{}
-	rate float64
+	user   user.User
+	stop   chan struct{}
+	status chan<- control.UserStatus
+	rate   float64
 }
 
 func (c *SimpleController) Init(user user.User) {
@@ -29,6 +30,9 @@ func (c *SimpleController) Run(status chan<- control.UserStatus) {
 		c.sendFailStatus(status, "controller was not initialized")
 		return
 	}
+	// TODO: This needs to be revamped. Status needs to be passed during
+	// initialization.
+	c.status = status
 
 	actions := []UserAction{
 		{

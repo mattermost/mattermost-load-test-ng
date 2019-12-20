@@ -50,7 +50,7 @@ func New(store store.MutableUserStore, id int, serverURL string) *SampleUser {
 	}
 }
 
-func (u *SampleUser) Connect() error {
+func (u *SampleUser) Connect() <-chan error {
 	return nil
 }
 

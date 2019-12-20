@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -14,11 +15,15 @@ import (
 )
 
 type UserEntity struct {
-	id       int
-	store    store.MutableUserStore
-	client   *model.Client4
-	wsClient *model.WebSocketClient
-	config   Config
+	id          int
+	store       store.MutableUserStore
+	client      *model.Client4
+	wsClientMut sync.RWMutex
+	wsClient    *model.WebSocketClient
+	wsClosing   chan struct{}
+	wsClosed    chan struct{}
+	wsErrorChan chan error
+	config      Config
 }
 
 type Config struct {
@@ -54,33 +59,58 @@ func New(store store.MutableUserStore, id int, config Config) *UserEntity {
 	}
 	ue.client.HttpClient = &http.Client{Transport: transport}
 	ue.store = store
+	ue.wsClosing = make(chan struct{})
+	ue.wsClosed = make(chan struct{})
+	ue.wsErrorChan = make(chan error, 1)
 	return &ue
 }
 
-func (ue *UserEntity) Connect() error {
+// Connect creates a websocket connection to the server and starts listening for messages.
+func (ue *UserEntity) Connect() <-chan error {
 	if ue.client.AuthToken == "" {
-		return errors.New("user is not authenticated")
+		ue.wsErrorChan <- errors.New("user is not authenticated")
+		return ue.wsErrorChan
 	}
-	if ue.wsClient != nil {
-		return errors.New("user is already connected")
+	cli := ue.getWsClient()
+	if cli != nil {
+		ue.wsErrorChan <- errors.New("user is already connected")
+		return ue.wsErrorChan
 	}
-	client, err := model.NewWebSocketClient4(ue.config.WebSocketURL, ue.client.AuthToken)
-	if err != nil {
-		return err
+
+	go ue.listen(ue.wsErrorChan)
+	return ue.wsErrorChan
+}
+
+// Disconnect closes the websocket connection.
+func (ue *UserEntity) Disconnect() error {
+	cli := ue.getWsClient()
+	if cli == nil {
+		return errors.New("user is not connected")
 	}
-	ue.wsClient = client
-	ue.wsClient.Listen()
-	// TODO: implement listener function
+	// We exit the listener loop first, and then close the connection.
+	// Otherwise, it tries to reconnect first, and then
+	// exits, which causes unnecessary delay.
+	close(ue.wsClosing)
+
+	// We wait to get the response with a timeout, because
+	// the loop may be sleeping on a reconnect cycle.
+	select {
+	case <-ue.wsClosed:
+	case <-time.After(minWebsocketReconnectDuration):
+	}
+
+	close(ue.wsErrorChan)
+
+	cli.Close()
+	cli = nil
 	return nil
 }
 
-func (ue *UserEntity) Disconnect() error {
-	if ue.wsClient == nil {
-		return errors.New("user is not connected")
-	}
-	ue.wsClient.Close()
-	ue.wsClient = nil
-	return nil
+// getWsClient is a simple mutex wrapper to access the underlying client object.
+func (ue *UserEntity) getWsClient() *model.WebSocketClient {
+	ue.wsClientMut.RLock()
+	defer ue.wsClientMut.RUnlock()
+	return ue.wsClient
 }
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {

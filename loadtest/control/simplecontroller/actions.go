@@ -41,10 +41,12 @@ func (c *SimpleController) login() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	err = c.user.Connect()
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
+	errChan := c.user.Connect()
+	go func() {
+		for err := range errChan {
+			c.status <- c.newErrorStatus(err)
+		}
+	}()
 
 	return c.newInfoStatus("logged in")
 }

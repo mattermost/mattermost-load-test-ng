@@ -13,7 +13,7 @@ type User interface {
 	Store() store.UserStore
 
 	// connection
-	Connect() error
+	Connect() <-chan error
 	Disconnect() error
 	SignUp(email, username, password string) error
 	Login() error
