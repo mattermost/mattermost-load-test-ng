@@ -13,9 +13,10 @@ import (
 )
 
 type SampleController struct {
-	id   int
-	user user.User
-	stop chan struct{}
+	id     int
+	user   user.User
+	stop   chan struct{}
+	status chan<- control.UserStatus
 }
 
 type userAction struct {
@@ -23,17 +24,18 @@ type userAction struct {
 	waitAfter time.Duration
 }
 
-func New(id int, user user.User) *SampleController {
+func New(id int, user user.User, status chan<- control.UserStatus) *SampleController {
 	return &SampleController{
 		id,
 		user,
 		make(chan struct{}),
+		status,
 	}
 }
 
-func (c *SampleController) Run(status chan<- control.UserStatus) {
+func (c *SampleController) Run() {
 	if c.user == nil {
-		c.sendFailStatus(status, "controller was not initialized")
+		c.sendFailStatus("controller was not initialized")
 		return
 	}
 
@@ -52,13 +54,13 @@ func (c *SampleController) Run(status chan<- control.UserStatus) {
 		},
 	}
 
-	status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus(status)
+	defer c.sendStopStatus()
 
 	for {
 		for i := 0; i < len(actions); i++ {
-			status <- actions[i].run()
+			c.status <- actions[i].run()
 			select {
 			case <-c.stop:
 				return
@@ -76,12 +78,12 @@ func (c *SampleController) Stop() {
 	close(c.stop)
 }
 
-func (c *SampleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
-	status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
+func (c *SampleController) sendFailStatus(reason string) {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
-func (c *SampleController) sendStopStatus(status chan<- control.UserStatus) {
-	status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+func (c *SampleController) sendStopStatus() {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
 
 func (c *SampleController) signUp() control.UserStatus {

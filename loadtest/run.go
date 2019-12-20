@@ -21,22 +21,22 @@ type LoadTester struct {
 	wg          sync.WaitGroup
 }
 
-func (lt *LoadTester) initControllers(numUsers int) {
+func (lt *LoadTester) initControllers(numUsers int, status chan<- control.UserStatus) {
 	config := userentity.Config{
 		ServerURL:    lt.config.ConnectionConfiguration.ServerURL,
 		WebSocketURL: lt.config.ConnectionConfiguration.WebSocketURL,
 	}
 	for i := 0; i < numUsers; i++ {
 		ue := userentity.New(memstore.New(), config)
-		lt.controllers[i] = simplecontroller.New(i, ue)
+		lt.controllers[i] = simplecontroller.New(i, ue, status)
 	}
 }
 
-func (lt *LoadTester) runControllers(status chan<- control.UserStatus) {
+func (lt *LoadTester) runControllers() {
 	lt.wg.Add(len(lt.controllers))
 	for i := 0; i < len(lt.controllers); i++ {
 		go func(controller control.UserController) {
-			controller.Run(status)
+			controller.Run()
 		}(lt.controllers[i])
 	}
 }
@@ -78,15 +78,15 @@ func Run() error {
 		return err
 	}
 
-	lt.initControllers(numUsers)
-
 	status := make(chan control.UserStatus, numUsers)
+
+	lt.initControllers(numUsers, status)
 
 	go lt.handleStatus(status)
 
 	start := time.Now()
 
-	lt.runControllers(status)
+	lt.runControllers()
 
 	time.Sleep(60 * time.Second)
 

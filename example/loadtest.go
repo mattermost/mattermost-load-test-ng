@@ -20,18 +20,18 @@ type SampleLoadTester struct {
 	serverURL   string
 }
 
-func (lt *SampleLoadTester) initControllers(numUsers int) {
+func (lt *SampleLoadTester) initControllers(numUsers int, status chan<- control.UserStatus) {
 	for i := 0; i < numUsers; i++ {
 		su := sampleuser.New(samplestore.New(), lt.serverURL)
-		lt.controllers[i] = samplecontroller.New(i, su)
+		lt.controllers[i] = samplecontroller.New(i, su, status)
 	}
 }
 
-func (lt *SampleLoadTester) runControllers(status chan<- control.UserStatus) {
+func (lt *SampleLoadTester) runControllers() {
 	lt.wg.Add(len(lt.controllers))
 	for i := 0; i < len(lt.controllers); i++ {
 		go func(controller control.UserController) {
-			controller.Run(status)
+			controller.Run()
 		}(lt.controllers[i])
 	}
 }
@@ -69,11 +69,11 @@ func Run() error {
 
 	status := make(chan control.UserStatus, numUsers)
 
-	lt.initControllers(numUsers)
+	lt.initControllers(numUsers, status)
 
 	go lt.handleStatus(status)
 
-	lt.runControllers(status)
+	lt.runControllers()
 
 	<-time.After(60 * time.Second)
 

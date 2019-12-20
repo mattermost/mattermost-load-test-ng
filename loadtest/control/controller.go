@@ -4,7 +4,7 @@
 package control
 
 type UserController interface {
-	Run(status chan<- UserStatus)
+	Run()
 	SetRate(rate float64) error
 	Stop()
 }
