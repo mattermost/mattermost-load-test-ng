@@ -51,9 +51,9 @@ func (ue *UserEntity) listen(errChan chan error) {
 					break
 				}
 				_ = resp // TODO: handle response
-			case <-ue.closing:
+			case <-ue.wsClosing:
 				// Explicit disconnect. Return.
-				close(ue.closed)
+				close(ue.wsClosed)
 				return
 			}
 			if chanClosed {

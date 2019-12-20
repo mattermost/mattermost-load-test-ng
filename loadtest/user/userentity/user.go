@@ -20,8 +20,8 @@ type UserEntity struct {
 	client      *model.Client4
 	wsClientMut sync.RWMutex
 	wsClient    *model.WebSocketClient
-	closing     chan struct{}
-	closed      chan struct{}
+	wsClosing   chan struct{}
+	wsClosed    chan struct{}
 	wsErrorChan chan error
 	config      Config
 }
@@ -59,14 +59,14 @@ func New(store store.MutableUserStore, id int, config Config) *UserEntity {
 	}
 	ue.client.HttpClient = &http.Client{Transport: transport}
 	ue.store = store
-	ue.closing = make(chan struct{})
-	ue.closed = make(chan struct{})
+	ue.wsClosing = make(chan struct{})
+	ue.wsClosed = make(chan struct{})
 	ue.wsErrorChan = make(chan error, 1)
 	return &ue
 }
 
 // Connect creates a websocket connection to the server and starts listening for messages.
-func (ue *UserEntity) Connect() chan error {
+func (ue *UserEntity) Connect() <-chan error {
 	if ue.client.AuthToken == "" {
 		ue.wsErrorChan <- errors.New("user is not authenticated")
 		return ue.wsErrorChan
@@ -90,12 +90,12 @@ func (ue *UserEntity) Disconnect() error {
 	// We exit the listener loop first, and then close the connection.
 	// Otherwise, it tries to reconnect first, and then
 	// exits, which causes unnecessary delay.
-	close(ue.closing)
+	close(ue.wsClosing)
 
 	// We wait to get the response with a timeout, because
 	// the loop may be sleeping on a reconnect cycle.
 	select {
-	case <-ue.closed:
+	case <-ue.wsClosed:
 	case <-time.After(minWebsocketReconnectDuration):
 	}
 
