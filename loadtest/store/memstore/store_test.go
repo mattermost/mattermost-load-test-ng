@@ -33,19 +33,32 @@ func TestUser(t *testing.T) {
 		uu, err := s.User()
 		require.NoError(t, err)
 		require.Equal(t, u, uu)
+	})
 
-		password := "password"
-		u.Password = password
-		err = s.SetUser(u)
+	t.Run("SetUserPrivateData", func(t *testing.T) {
+		authdata := "authdata"
+		u := &model.User{
+			Password:           "password",
+			LastPasswordUpdate: 100,
+			FirstName:          "firstname",
+			LastName:           "lastname",
+			AuthData:           &authdata,
+			MfaSecret:          "mfasecret",
+			Email:              "test@example.com",
+			AuthService:        "authservice",
+		}
+
+		err := s.SetUser(u)
 		require.NoError(t, err)
-		uu, err = s.User()
+		u2, err := s.User()
 		require.NoError(t, err)
-		require.Equal(t, password, uu.Password)
+		require.Equal(t, u, u2)
+
 		err = s.SetUser(&model.User{})
 		require.NoError(t, err)
-		uu, err = s.User()
+		u3, err := s.User()
 		require.NoError(t, err)
-		require.Equal(t, password, uu.Password)
+		require.Equal(t, u, u3)
 	})
 
 	t.Run("SetUsers", func(t *testing.T) {
