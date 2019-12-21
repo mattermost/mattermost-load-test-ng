@@ -31,9 +31,7 @@ func (ue *UserEntity) listen(errChan chan error) {
 			// Reconnect again.
 			continue
 		}
-		ue.wsClientMut.Lock()
 		ue.wsClient = client
-		ue.wsClientMut.Unlock()
 
 		ue.wsClient.Listen()
 		chanClosed := false
@@ -52,6 +50,7 @@ func (ue *UserEntity) listen(errChan chan error) {
 				}
 				_ = resp // TODO: handle response
 			case <-ue.wsClosing:
+				ue.wsClient.Close()
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return

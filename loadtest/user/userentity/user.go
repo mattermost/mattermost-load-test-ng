@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -18,7 +17,6 @@ type UserEntity struct {
 	id          int
 	store       store.MutableUserStore
 	client      *model.Client4
-	wsClientMut sync.RWMutex
 	wsClient    *model.WebSocketClient
 	wsClosing   chan struct{}
 	wsClosed    chan struct{}
@@ -72,8 +70,7 @@ func (ue *UserEntity) Connect() <-chan error {
 		ue.wsErrorChan <- errors.New("user is not authenticated")
 		return ue.wsErrorChan
 	}
-	cli := ue.getWsClient()
-	if cli != nil {
+	if ue.connected {
 		ue.wsErrorChan <- errors.New("user is already connected")
 		return ue.wsErrorChan
 	}
@@ -85,8 +82,7 @@ func (ue *UserEntity) Connect() <-chan error {
 
 // Disconnect closes the websocket connection.
 func (ue *UserEntity) Disconnect() error {
-	cli := ue.getWsClient()
-	if cli == nil || !ue.connected {
+	if !ue.connected {
 		return errors.New("user is not connected")
 	}
 	// We exit the listener loop first, and then close the connection.
@@ -102,18 +98,8 @@ func (ue *UserEntity) Disconnect() error {
 	}
 
 	close(ue.wsErrorChan)
-
-	cli.Close()
-	cli = nil
 	ue.connected = false
 	return nil
-}
-
-// getWsClient is a simple mutex wrapper to access the underlying client object.
-func (ue *UserEntity) getWsClient() *model.WebSocketClient {
-	ue.wsClientMut.RLock()
-	defer ue.wsClientMut.RUnlock()
-	return ue.wsClient
 }
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {
