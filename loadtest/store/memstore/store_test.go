@@ -33,6 +33,19 @@ func TestUser(t *testing.T) {
 		uu, err := s.User()
 		require.NoError(t, err)
 		require.Equal(t, u, uu)
+
+		password := "password"
+		u.Password = password
+		err = s.SetUser(u)
+		require.NoError(t, err)
+		uu, err = s.User()
+		require.NoError(t, err)
+		require.Equal(t, password, uu.Password)
+		err = s.SetUser(&model.User{})
+		require.NoError(t, err)
+		uu, err = s.User()
+		require.NoError(t, err)
+		require.Equal(t, password, uu.Password)
 	})
 
 	t.Run("SetUsers", func(t *testing.T) {

@@ -60,6 +60,11 @@ func (s *MemStore) SetUser(user *model.User) error {
 	if user == nil {
 		return errors.New("user should not be nil")
 	}
+
+	if s.user != nil && user.Password == "" {
+		user.Password = s.user.Password
+	}
+
 	s.user = user
 	return nil
 }
