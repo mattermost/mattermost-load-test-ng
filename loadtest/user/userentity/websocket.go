@@ -31,26 +31,25 @@ func (ue *UserEntity) listen(errChan chan error) {
 			// Reconnect again.
 			continue
 		}
-		ue.wsClient = client
 
-		ue.wsClient.Listen()
+		client.Listen()
 		chanClosed := false
 		for {
 			select {
-			case ev, ok := <-ue.wsClient.EventChannel:
+			case ev, ok := <-client.EventChannel:
 				if !ok {
 					chanClosed = true
 					break
 				}
 				_ = ev // TODO: handle event
-			case resp, ok := <-ue.wsClient.ResponseChannel:
+			case resp, ok := <-client.ResponseChannel:
 				if !ok {
 					chanClosed = true
 					break
 				}
 				_ = resp // TODO: handle response
 			case <-ue.wsClosing:
-				ue.wsClient.Close()
+				client.Close()
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return
@@ -60,8 +59,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 			}
 		}
 
-		if ue.wsClient.ListenError != nil {
-			errChan <- fmt.Errorf("websocket listen error: %w", ue.wsClient.ListenError)
+		if client.ListenError != nil {
+			errChan <- fmt.Errorf("websocket listen error: %w", client.ListenError)
 		}
 		connectionFailCount++
 		time.Sleep(getWaitTime(connectionFailCount))

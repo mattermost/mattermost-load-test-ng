@@ -17,7 +17,6 @@ type UserEntity struct {
 	id          int
 	store       store.MutableUserStore
 	client      *model.Client4
-	wsClient    *model.WebSocketClient
 	wsClosing   chan struct{}
 	wsClosed    chan struct{}
 	wsErrorChan chan error
@@ -94,7 +93,7 @@ func (ue *UserEntity) Disconnect() error {
 	// the loop may be sleeping on a reconnect cycle.
 	select {
 	case <-ue.wsClosed:
-	case <-time.After(minWebsocketReconnectDuration):
+	case <-time.After(minWebsocketReconnectDuration * 2):
 	}
 
 	close(ue.wsErrorChan)
