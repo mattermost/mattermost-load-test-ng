@@ -60,6 +60,7 @@ func (s *MemStore) SetUser(user *model.User) error {
 	if user == nil {
 		return errors.New("user should not be nil")
 	}
+	restorePrivateData(s.user, user)
 	s.user = user
 	return nil
 }

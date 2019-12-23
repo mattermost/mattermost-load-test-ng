@@ -35,6 +35,32 @@ func TestUser(t *testing.T) {
 		require.Equal(t, u, uu)
 	})
 
+	t.Run("SetUserPrivateData", func(t *testing.T) {
+		authdata := "authdata"
+		u := &model.User{
+			Password:           "password",
+			LastPasswordUpdate: 100,
+			FirstName:          "firstname",
+			LastName:           "lastname",
+			AuthData:           &authdata,
+			MfaSecret:          "mfasecret",
+			Email:              "test@example.com",
+			AuthService:        "authservice",
+		}
+
+		err := s.SetUser(u)
+		require.NoError(t, err)
+		u2, err := s.User()
+		require.NoError(t, err)
+		require.Equal(t, u, u2)
+
+		err = s.SetUser(&model.User{})
+		require.NoError(t, err)
+		u3, err := s.User()
+		require.NoError(t, err)
+		require.Equal(t, u, u3)
+	})
+
 	t.Run("SetUsers", func(t *testing.T) {
 		usrs := []*model.User{
 			{Id: model.NewId()},
