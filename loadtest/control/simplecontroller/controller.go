@@ -13,26 +13,31 @@ import (
 )
 
 type SimpleController struct {
+	id     int
 	user   user.User
 	stop   chan struct{}
 	status chan<- control.UserStatus
 	rate   float64
 }
 
-func (c *SimpleController) Init(user user.User) {
-	c.user = user
-	c.stop = make(chan struct{})
-	c.rate = 1.0
+// New creates and initializes a new SimpleController with given parameters.
+// An id is provided to identify the controller, a User is passed as the entity to be controlled and
+// a UserStatus channel is passed to communicate errors and information about the user's status.
+func New(id int, user user.User, status chan<- control.UserStatus) *SimpleController {
+	return &SimpleController{
+		id:     id,
+		user:   user,
+		stop:   make(chan struct{}),
+		status: status,
+		rate:   1.0,
+	}
 }
 
-func (c *SimpleController) Run(status chan<- control.UserStatus) {
+func (c *SimpleController) Run() {
 	if c.user == nil {
-		c.sendFailStatus(status, "controller was not initialized")
+		c.sendFailStatus("controller was not initialized")
 		return
 	}
-	// TODO: This needs to be revamped. Status needs to be passed during
-	// initialization.
-	c.status = status
 
 	actions := []UserAction{
 		{
@@ -65,13 +70,13 @@ func (c *SimpleController) Run(status chan<- control.UserStatus) {
 		},
 	}
 
-	status <- control.UserStatus{User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus(status)
+	defer c.sendStopStatus()
 
 	for {
 		for i := 0; i < len(actions); i++ {
-			status <- actions[i].run()
+			c.status <- actions[i].run()
 
 			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
 
@@ -96,10 +101,10 @@ func (c *SimpleController) Stop() {
 	close(c.stop)
 }
 
-func (c *SimpleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
-	status <- control.UserStatus{User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
+func (c *SimpleController) sendFailStatus(reason string) {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
-func (c *SimpleController) sendStopStatus(status chan<- control.UserStatus) {
-	status <- control.UserStatus{User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+func (c *SimpleController) sendStopStatus() {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }

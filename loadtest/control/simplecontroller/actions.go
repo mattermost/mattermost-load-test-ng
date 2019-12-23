@@ -22,8 +22,8 @@ func (c *SimpleController) signUp() control.UserStatus {
 		return c.newInfoStatus("user already signed up")
 	}
 
-	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
-	username := fmt.Sprintf("testuser%d", c.user.Id())
+	email := fmt.Sprintf("testuser%d@example.com", c.id)
+	username := fmt.Sprintf("testuser%d", c.id)
 	password := "testPass123$"
 
 	err := c.user.SignUp(email, username, password)

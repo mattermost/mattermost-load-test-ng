@@ -14,20 +14,15 @@ import (
 )
 
 type SampleUser struct {
-	id     int
 	store  store.MutableUserStore
 	client *model.Client4
-}
-
-func (u *SampleUser) Id() int {
-	return u.id
 }
 
 func (u *SampleUser) Store() store.UserStore {
 	return u.store
 }
 
-func New(store store.MutableUserStore, id int, serverURL string) *SampleUser {
+func New(store store.MutableUserStore, serverURL string) *SampleUser {
 	client := model.NewAPIv4Client(serverURL)
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -44,7 +39,6 @@ func New(store store.MutableUserStore, id int, serverURL string) *SampleUser {
 	}
 	client.HttpClient = &http.Client{Transport: transport}
 	return &SampleUser{
-		id:     id,
 		client: client,
 		store:  store,
 	}

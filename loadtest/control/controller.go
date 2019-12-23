@@ -3,13 +3,8 @@
 
 package control
 
-import (
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-)
-
 type UserController interface {
-	Init(user user.User)
-	Run(status chan<- UserStatus)
+	Run()
 	SetRate(rate float64) error
 	Stop()
 }

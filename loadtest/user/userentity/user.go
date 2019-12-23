@@ -14,7 +14,6 @@ import (
 )
 
 type UserEntity struct {
-	id          int
 	store       store.MutableUserStore
 	client      *model.Client4
 	wsClosing   chan struct{}
@@ -29,17 +28,12 @@ type Config struct {
 	WebSocketURL string
 }
 
-func (ue *UserEntity) Id() int {
-	return ue.id
-}
-
 func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
 }
 
-func New(store store.MutableUserStore, id int, config Config) *UserEntity {
+func New(store store.MutableUserStore, config Config) *UserEntity {
 	ue := UserEntity{}
-	ue.id = id
 	ue.config = config
 	ue.client = model.NewAPIv4Client(ue.config.ServerURL)
 	transport := &http.Transport{

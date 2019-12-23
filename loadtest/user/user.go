@@ -9,7 +9,6 @@ import (
 )
 
 type User interface {
-	Id() int
 	Store() store.UserStore
 
 	// connection

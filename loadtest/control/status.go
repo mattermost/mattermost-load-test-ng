@@ -18,8 +18,9 @@ const (
 )
 
 type UserStatus struct {
-	User user.User
-	Code int
-	Info string
-	Err  error
+	ControllerId int
+	User         user.User
+	Code         int
+	Info         string
+	Err          error
 }

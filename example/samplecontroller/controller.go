@@ -13,8 +13,10 @@ import (
 )
 
 type SampleController struct {
-	user user.User
-	stop chan struct{}
+	id     int
+	user   user.User
+	stop   chan struct{}
+	status chan<- control.UserStatus
 }
 
 type userAction struct {
@@ -22,14 +24,18 @@ type userAction struct {
 	waitAfter time.Duration
 }
 
-func (c *SampleController) Init(user user.User) {
-	c.user = user
-	c.stop = make(chan struct{})
+func New(id int, user user.User, status chan<- control.UserStatus) *SampleController {
+	return &SampleController{
+		id:     id,
+		user:   user,
+		stop:   make(chan struct{}),
+		status: status,
+	}
 }
 
-func (c *SampleController) Run(status chan<- control.UserStatus) {
+func (c *SampleController) Run() {
 	if c.user == nil {
-		c.sendFailStatus(status, "controller was not initialized")
+		c.sendFailStatus("controller was not initialized")
 		return
 	}
 
@@ -48,13 +54,13 @@ func (c *SampleController) Run(status chan<- control.UserStatus) {
 		},
 	}
 
-	status <- control.UserStatus{User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus(status)
+	defer c.sendStopStatus()
 
 	for {
 		for i := 0; i < len(actions); i++ {
-			status <- actions[i].run()
+			c.status <- actions[i].run()
 			select {
 			case <-c.stop:
 				return
@@ -72,49 +78,49 @@ func (c *SampleController) Stop() {
 	close(c.stop)
 }
 
-func (c *SampleController) sendFailStatus(status chan<- control.UserStatus, reason string) {
-	status <- control.UserStatus{User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
+func (c *SampleController) sendFailStatus(reason string) {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
-func (c *SampleController) sendStopStatus(status chan<- control.UserStatus) {
-	status <- control.UserStatus{User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+func (c *SampleController) sendStopStatus() {
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
 
 func (c *SampleController) signUp() control.UserStatus {
 	if c.user.Store().Id() != "" {
-		return control.UserStatus{User: c.user, Info: "user already signed up", Code: control.USER_STATUS_INFO}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Info: "user already signed up", Code: control.USER_STATUS_INFO}
 	}
 
-	email := fmt.Sprintf("testuser%d@example.com", c.user.Id())
-	username := fmt.Sprintf("testuser%d", c.user.Id())
+	email := fmt.Sprintf("testuser%d@example.com", c.id)
+	username := fmt.Sprintf("testuser%d", c.id)
 	password := "testPass123$"
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
-		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
-	return control.UserStatus{User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id()), Code: control.USER_STATUS_INFO}
+	return control.UserStatus{ControllerId: c.id, User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id()), Code: control.USER_STATUS_INFO}
 }
 
 func (c *SampleController) login() control.UserStatus {
 	err := c.user.Login()
 	if err != nil {
-		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
-	return control.UserStatus{User: c.user, Info: "logged in", Code: control.USER_STATUS_INFO}
+	return control.UserStatus{ControllerId: c.id, User: c.user, Info: "logged in", Code: control.USER_STATUS_INFO}
 }
 
 func (c *SampleController) logout() control.UserStatus {
 	ok, err := c.user.Logout()
 	if err != nil {
-		return control.UserStatus{User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
 	if !ok {
-		return control.UserStatus{User: c.user, Err: errors.New("User did not logout"), Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: errors.New("User did not logout"), Code: control.USER_STATUS_ERROR}
 	}
 
-	return control.UserStatus{User: c.user, Info: "logged out", Code: control.USER_STATUS_INFO}
+	return control.UserStatus{ControllerId: c.id, User: c.user, Info: "logged out", Code: control.USER_STATUS_INFO}
 }
