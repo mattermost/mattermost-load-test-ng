@@ -26,10 +26,10 @@ type userAction struct {
 
 func New(id int, user user.User, status chan<- control.UserStatus) *SampleController {
 	return &SampleController{
-		id,
-		user,
-		make(chan struct{}),
-		status,
+		id:     id,
+		user:   user,
+		stop:   make(chan struct{}),
+		status: status,
 	}
 }
 
