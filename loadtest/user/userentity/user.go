@@ -83,12 +83,7 @@ func (ue *UserEntity) Disconnect() error {
 	// exits, which causes unnecessary delay.
 	close(ue.wsClosing)
 
-	// We wait to get the response with a timeout, because
-	// the loop may be sleeping on a reconnect cycle.
-	select {
-	case <-ue.wsClosed:
-	case <-time.After(minWebsocketReconnectDuration * 2):
-	}
+	<-ue.wsClosed
 
 	close(ue.wsErrorChan)
 	ue.connected = false

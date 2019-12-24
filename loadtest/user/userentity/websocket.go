@@ -27,7 +27,14 @@ func (ue *UserEntity) listen(errChan chan error) {
 		if err != nil {
 			errChan <- fmt.Errorf("websocketClient creation error: %w", err)
 			connectionFailCount++
-			time.Sleep(getWaitTime(connectionFailCount))
+			select {
+			case <-ue.wsClosing:
+				client.Close()
+				// Explicit disconnect. Return.
+				close(ue.wsClosed)
+				return
+			case <-time.After(getWaitTime(connectionFailCount)):
+			}
 			// Reconnect again.
 			continue
 		}
@@ -63,7 +70,14 @@ func (ue *UserEntity) listen(errChan chan error) {
 			errChan <- fmt.Errorf("websocket listen error: %w", client.ListenError)
 		}
 		connectionFailCount++
-		time.Sleep(getWaitTime(connectionFailCount))
+		select {
+		case <-ue.wsClosing:
+			client.Close()
+			// Explicit disconnect. Return.
+			close(ue.wsClosed)
+			return
+		case <-time.After(getWaitTime(connectionFailCount)):
+		}
 		// Reconnect again.
 	}
 }
