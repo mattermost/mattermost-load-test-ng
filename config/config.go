@@ -12,6 +12,7 @@ import (
 
 type LoadTestConfig struct {
 	ConnectionConfiguration ConnectionConfiguration
+	UsersConfiguration      UsersConfiguration
 	LogSettings             LoggerSettings
 }
 
@@ -23,6 +24,11 @@ type ConnectionConfiguration struct {
 	MaxIdleConns                int
 	MaxIdleConnsPerHost         int
 	IdleConnTimeoutMilliseconds int
+}
+
+type UsersConfiguration struct {
+	InitialActiveUsers int
+	MaxActiveUsers     int
 }
 
 type LoggerSettings struct {

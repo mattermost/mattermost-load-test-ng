@@ -8,6 +8,10 @@
         "MaxIdleConnsPerHost": 128,
         "IdleConnTimeoutMilliseconds": 90000
     },
+    "UsersConfiguration": {
+      "InitialActiveUsers": 4,
+      "MaxActiveUsers": 1000
+    },
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",

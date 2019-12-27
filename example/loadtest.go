@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/example/samplestore"
 	"github.com/mattermost/mattermost-load-test-ng/example/sampleuser"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -59,25 +60,20 @@ func (lt *SampleLoadTester) handleStatus(status <-chan control.UserStatus) {
 	}
 }
 
-func Run() error {
-	const numUsers = 4
+func (lt *SampleLoadTester) Run(numUsers int) error {
+	status := make(chan control.UserStatus, numUsers)
+	lt.initControllers(numUsers, status)
+	go lt.handleStatus(status)
+	lt.runControllers()
+	<-time.After(60 * time.Second)
+	lt.stopControllers()
+	return nil
+}
 
-	lt := SampleLoadTester{
+func New(serverURL string) *SampleLoadTester {
+	const numUsers = 4
+	return &SampleLoadTester{
 		controllers: make([]control.UserController, numUsers),
 		serverURL:   "http://localhost:8065",
 	}
-
-	status := make(chan control.UserStatus, numUsers)
-
-	lt.initControllers(numUsers, status)
-
-	go lt.handleStatus(status)
-
-	lt.runControllers()
-
-	<-time.After(60 * time.Second)
-
-	lt.stopControllers()
-
-	return nil
 }
