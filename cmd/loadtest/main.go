@@ -60,15 +60,16 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:    "loadtest",
 		RunE:   RunLoadTestCmdF,
-		PreRun: initializeRootCmdF,
+		PreRun: initializeLogger,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
 	commands := make([]*cobra.Command, 1)
 	commands[0] = &cobra.Command{
-		Use:   "example",
-		Short: "Run example implementation",
-		RunE:  RunExampleCmdF,
+		Use:    "example",
+		Short:  "Run example implementation",
+		RunE:   RunExampleCmdF,
+		PreRun: initializeLogger,
 	}
 
 	rootCmd.AddCommand(commands...)
@@ -77,7 +78,7 @@ func main() {
 	}
 }
 
-func initializeRootCmdF(cmd *cobra.Command, args []string) {
+func initializeLogger(cmd *cobra.Command, args []string) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	if err := config.ReadConfig(configFilePath); err != nil {
 		mlog.Error("Failed to initialize config", mlog.Err(err))
