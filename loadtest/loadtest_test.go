@@ -40,6 +40,9 @@ func TestNew(t *testing.T) {
 	lt := New(nil, newController)
 	require.Nil(t, lt)
 
+	lt = New(&ltConfig, nil)
+	require.Nil(t, lt)
+
 	lt = New(&ltConfig, newController)
 	require.NotNil(t, lt)
 }
@@ -93,8 +96,12 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, lt.started)
 	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
+
 	err = lt.Run()
 	require.EqualError(t, err, "LoadTester is already running")
+
+	err = lt.Stop()
+	require.NoError(t, err)
 }
 
 func TestStop(t *testing.T) {

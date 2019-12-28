@@ -20,34 +20,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newSimpleController(id int, status chan<- control.UserStatus) control.UserController {
-	config, err := config.GetConfig()
-	if err != nil {
-		return nil
-	}
-	ueConfig := userentity.Config{
-		ServerURL:    config.ConnectionConfiguration.ServerURL,
-		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-	}
-	ue := userentity.New(memstore.New(), ueConfig)
-	return simplecontroller.New(id, ue, status)
-}
-
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	config, err := config.GetConfig()
 	if err != nil {
 		return err
 	}
+
+	newSimpleController := func(id int, status chan<- control.UserStatus) control.UserController {
+		ueConfig := userentity.Config{
+			ServerURL:    config.ConnectionConfiguration.ServerURL,
+			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+		}
+		ue := userentity.New(memstore.New(), ueConfig)
+		return simplecontroller.New(id, ue, status)
+	}
+
 	lt := loadtest.New(config, newSimpleController)
+
 	start := time.Now()
 	err = lt.Run()
 	if err != nil {
 		return err
 	}
+
 	mlog.Info("loadtest started")
 	time.Sleep(60 * time.Second)
+
 	err = lt.Stop()
 	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+
 	return err
 }
 
@@ -60,7 +61,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:    "loadtest",
 		RunE:   RunLoadTestCmdF,
-		PreRun: initializeLogger,
+		PreRun: initLogger,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
@@ -69,7 +70,7 @@ func main() {
 		Use:    "example",
 		Short:  "Run example implementation",
 		RunE:   RunExampleCmdF,
-		PreRun: initializeLogger,
+		PreRun: initLogger,
 	}
 
 	rootCmd.AddCommand(commands...)
@@ -78,7 +79,7 @@ func main() {
 	}
 }
 
-func initializeLogger(cmd *cobra.Command, args []string) {
+func initLogger(cmd *cobra.Command, args []string) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	if err := config.ReadConfig(configFilePath); err != nil {
 		mlog.Error("Failed to initialize config", mlog.Err(err))
