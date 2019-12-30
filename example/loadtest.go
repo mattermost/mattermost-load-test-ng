@@ -45,18 +45,18 @@ func (lt *SampleLoadTester) stopControllers() {
 }
 
 func (lt *SampleLoadTester) handleStatus(status <-chan control.UserStatus) {
-	for us := range status {
-		if us.Code == control.USER_STATUS_STOPPED || us.Code == control.USER_STATUS_FAILED {
+	for st := range status {
+		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
-		if us.Code == control.USER_STATUS_ERROR {
-			mlog.Info(us.Err.Error(), mlog.Int("controller_id", us.ControllerId))
+		if st.Code == control.USER_STATUS_ERROR {
+			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId))
 			continue
-		} else if us.Code == control.USER_STATUS_FAILED {
-			mlog.Error(us.Err.Error())
+		} else if st.Code == control.USER_STATUS_FAILED {
+			mlog.Error(st.Err.Error())
 			continue
 		}
-		mlog.Info(us.Info, mlog.Int("controller_id", us.ControllerId))
+		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
 	}
 }
 

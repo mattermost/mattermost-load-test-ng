@@ -52,13 +52,13 @@ func TestAddUser(t *testing.T) {
 	require.NotNil(t, lt)
 
 	err := lt.AddUser()
-	require.EqualError(t, err, "LoadTester is not running")
+	require.Equal(t, ErrNotRunning, err)
 
 	lt.started = true
 
 	ltConfig.UsersConfiguration.MaxActiveUsers = 0
 	err = lt.AddUser()
-	require.EqualError(t, err, "Max active users limit reached")
+	require.Equal(t, ErrMaxUsersReached, err)
 	ltConfig.UsersConfiguration.MaxActiveUsers = 8
 
 	numUsers := 8
@@ -75,12 +75,12 @@ func TestRemoveUser(t *testing.T) {
 	require.NotNil(t, lt)
 
 	err := lt.RemoveUser()
-	require.EqualError(t, err, "LoadTester is not running")
+	require.Equal(t, ErrNotRunning, err)
 
 	lt.started = true
 
 	err = lt.RemoveUser()
-	require.EqualError(t, err, "No active users left")
+	require.Equal(t, ErrNoUsersLeft, err)
 
 	err = lt.AddUser()
 	require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestRun(t *testing.T) {
 	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
 
 	err = lt.Run()
-	require.EqualError(t, err, "LoadTester is already running")
+	require.Equal(t, ErrAlreadyRunning, err)
 
 	err = lt.Stop()
 	require.NoError(t, err)
@@ -107,12 +107,17 @@ func TestRun(t *testing.T) {
 func TestStop(t *testing.T) {
 	lt := New(&ltConfig, newController)
 	err := lt.Stop()
-	require.EqualError(t, err, "LoadTester is not running")
+	require.Equal(t, ErrNotRunning, err)
 
 	err = lt.Run()
 	require.NoError(t, err)
 	require.True(t, lt.started)
 
+	numUsers := 8
+	for i := 0; i < numUsers; i++ {
+		err = lt.AddUser()
+		require.NoError(t, err)
+	}
 	err = lt.Stop()
 	require.NoError(t, err)
 	require.False(t, lt.started)
