@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/example/samplestore"
 	"github.com/mattermost/mattermost-load-test-ng/example/sampleuser"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -44,40 +45,35 @@ func (lt *SampleLoadTester) stopControllers() {
 }
 
 func (lt *SampleLoadTester) handleStatus(status <-chan control.UserStatus) {
-	for us := range status {
-		if us.Code == control.USER_STATUS_STOPPED || us.Code == control.USER_STATUS_FAILED {
+	for st := range status {
+		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
-		if us.Code == control.USER_STATUS_ERROR {
-			mlog.Info(us.Err.Error(), mlog.Int("controller_id", us.ControllerId))
+		if st.Code == control.USER_STATUS_ERROR {
+			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId))
 			continue
-		} else if us.Code == control.USER_STATUS_FAILED {
-			mlog.Error(us.Err.Error())
+		} else if st.Code == control.USER_STATUS_FAILED {
+			mlog.Error(st.Err.Error())
 			continue
 		}
-		mlog.Info(us.Info, mlog.Int("controller_id", us.ControllerId))
+		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
 	}
 }
 
-func Run() error {
-	const numUsers = 4
+func (lt *SampleLoadTester) Run(numUsers int) error {
+	status := make(chan control.UserStatus, numUsers)
+	lt.initControllers(numUsers, status)
+	go lt.handleStatus(status)
+	lt.runControllers()
+	<-time.After(60 * time.Second)
+	lt.stopControllers()
+	return nil
+}
 
-	lt := SampleLoadTester{
+func New(serverURL string) *SampleLoadTester {
+	const numUsers = 4
+	return &SampleLoadTester{
 		controllers: make([]control.UserController, numUsers),
 		serverURL:   "http://localhost:8065",
 	}
-
-	status := make(chan control.UserStatus, numUsers)
-
-	lt.initControllers(numUsers, status)
-
-	go lt.handleStatus(status)
-
-	lt.runControllers()
-
-	<-time.After(60 * time.Second)
-
-	lt.stopControllers()
-
-	return nil
 }

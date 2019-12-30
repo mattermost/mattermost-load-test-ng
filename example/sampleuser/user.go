@@ -192,9 +192,11 @@ func (u *SampleUser) Login() error {
 		return errors.New("user was not initialized")
 	}
 
-	_, resp := u.client.Login(user.Email, user.Password)
+	if _, resp := u.client.Login(user.Email, user.Password); resp.Error != nil {
+		return resp.Error
+	}
 
-	return resp.Error
+	return nil
 }
 
 func (u *SampleUser) Logout() (bool, error) {
@@ -206,7 +208,11 @@ func (u *SampleUser) Logout() (bool, error) {
 
 	ok, resp := u.client.Logout()
 
-	return ok, resp.Error
+	if resp.Error != nil {
+		return false, resp.Error
+	}
+
+	return ok, nil
 }
 
 func (u *SampleUser) GetConfig() error {
