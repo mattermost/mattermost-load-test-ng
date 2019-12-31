@@ -112,8 +112,20 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 }
 
 func (c *SimpleController) reload() control.UserStatus {
+	err := c.user.Disconnect()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	errChan := c.user.Connect()
+	go func() {
+		for err := range errChan {
+			c.status <- c.newErrorStatus(err)
+		}
+	}()
+
 	// Getting preferences.
-	err := c.user.GetPreferences()
+	err = c.user.GetPreferences()
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -121,11 +133,14 @@ func (c *SimpleController) reload() control.UserStatus {
 	prefs, _ := c.user.Store().Preferences()
 	var userIds []string
 	chanId := ""
+	teamId := ""
 	for _, p := range prefs {
-		if p.Name == model.PREFERENCE_NAME_LAST_CHANNEL {
+		switch {
+		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
 			chanId = p.Value
-		}
-		if p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW {
+		case p.Name == model.PREFERENCE_NAME_LAST_TEAM:
+			teamId = p.Value
+		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
 			userIds = append(userIds, p.Name)
 		}
 	}
@@ -141,22 +156,56 @@ func (c *SimpleController) reload() control.UserStatus {
 		}
 	}
 
-	// TODO: GetConfig
+	err = c.user.GetConfig()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 	// TODO: GetLicense
 
 	// Getting the user.
-	_, err = c.user.GetMe()
+	userId, err := c.user.GetMe()
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
 
-	// TODO: GetTeamsForUser
-	// TODO: GetTeamMembersForUser
-	// TODO: GetRolesByNames
-	// TODO: GetWebappPlugins
-	// TODO: GetAllTeams
-	// TODO: GetChannelsForTeamForUser
-	// TODO: GetChannelMembersForUser
+	_, err = c.user.GetTeams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	err = c.user.GetTeamMembersForUser(userId)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	roles, _ := c.user.Store().Roles()
+	var roleNames []string
+	for _, role := range roles {
+		roleNames = append(roleNames, role.Name)
+	}
+	if len(roleNames) > 0 {
+		_, err = c.user.GetRolesByNames(roleNames)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
+	err = c.user.GetWebappPlugins()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	if teamId != "" {
+		err = c.user.GetChannelsForTeam(teamId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+
+		err = c.user.GetChannelMembersForUser(userId, teamId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
 
 	// Getting unread teams.
 	_, err = c.user.GetTeamsUnread("")
@@ -178,7 +227,10 @@ func (c *SimpleController) reload() control.UserStatus {
 		}
 	}
 
-	// TODO: GetUserStatus
+	err = c.user.GetUserStatus()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
 	if chanId != "" {
 		// Getting the channel stats.
