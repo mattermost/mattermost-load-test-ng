@@ -21,6 +21,14 @@ type UserStore interface {
 	Preferences() (model.Preferences, error)
 	// Roles return the roles of the user.
 	Roles() ([]model.Role, error)
+
+	// Random things
+	// RandomChannel returns a random channel for a user.
+	RandomChannel() (model.Channel, error)
+	// RandomTeam returns a random team for a user.
+	RandomTeam() (model.Team, error)
+	// RandomUser returns a random user from the set of users.
+	RandomUser() (model.User, error)
 }
 
 type MutableUserStore interface {
