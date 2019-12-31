@@ -5,7 +5,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -331,68 +330,5 @@ func TestConfig(t *testing.T) {
 		config := &model.Config{}
 		s.SetConfig(config)
 		require.Equal(t, s.Config(), *config)
-	})
-}
-
-func TestRandomChannel(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetChannels([]*model.Channel{
-		&model.Channel{Id: id1},
-		&model.Channel{Id: id2},
-	})
-	require.NoError(t, err)
-	ch, err := s.RandomChannel()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch ch.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
-	})
-}
-
-func TestRandomTeam(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetTeams([]*model.Team{
-		&model.Team{Id: id1},
-		&model.Team{Id: id2},
-	})
-	require.NoError(t, err)
-	team, err := s.RandomTeam()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch team.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
-	})
-}
-
-func TestRandomUser(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetUsers([]*model.User{
-		&model.User{Id: id1},
-		&model.User{Id: id2},
-	})
-	require.NoError(t, err)
-	u, err := s.RandomUser()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch u.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
 	})
 }

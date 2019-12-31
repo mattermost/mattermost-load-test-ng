@@ -24,11 +24,19 @@ type UserStore interface {
 
 	// Random things
 	// RandomChannel returns a random channel for a user.
-	RandomChannel() (model.Channel, error)
+	RandomChannel(teamId string) (model.Channel, error)
 	// RandomTeam returns a random team for a user.
 	RandomTeam() (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)
+	// RandomPost returns a random post.
+	RandomPost() (model.Post, error)
+	// RandomEmoji returns a random emoji.
+	RandomEmoji() (model.Emoji, error)
+	// RandomChannelMember returns a random channel member for a channel.
+	RandomChannelMember(channelId string) (model.ChannelMember, error)
+	// RandomTeamMember returns a random team member for a team.
+	RandomTeamMember(teamId string) (model.TeamMember, error)
 }
 
 type MutableUserStore interface {

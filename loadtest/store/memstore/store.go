@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"errors"
-	"math/rand"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -315,43 +314,4 @@ func (s *MemStore) Roles() ([]model.Role, error) {
 		i++
 	}
 	return roles, nil
-}
-
-// For all the random utilities we flatten the map to a slice
-// and then take a random index from the slice.
-// We do this, because even though the map iteration order
-// is "undefined" in the spec, practically it returns the
-// same set of values always.
-
-// RandomChannel returns a random channel for a user.
-func (s *MemStore) RandomChannel() (model.Channel, error) {
-	channels := make([]*model.Channel, len(s.channels))
-	i := 0
-	for _, channel := range s.channels {
-		channels[i] = channel
-		i++
-	}
-	return *channels[rand.Intn(len(channels))], nil
-}
-
-// RandomTeam returns a random team for a user.
-func (s *MemStore) RandomTeam() (model.Team, error) {
-	teams := make([]*model.Team, len(s.teams))
-	i := 0
-	for _, team := range s.teams {
-		teams[i] = team
-		i++
-	}
-	return *teams[rand.Intn(len(teams))], nil
-}
-
-// RandomUser returns a random user from the set of users.
-func (s *MemStore) RandomUser() (model.User, error) {
-	users := make([]*model.User, len(s.users))
-	i := 0
-	for _, user := range s.users {
-		users[i] = user
-		i++
-	}
-	return *users[rand.Intn(len(users))], nil
 }
