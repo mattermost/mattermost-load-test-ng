@@ -167,6 +167,21 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
+// RandomChannel returns a random channel for a user.
+func (s *SampleStore) RandomChannel() (model.Channel, error) {
+	return model.Channel{}, nil
+}
+
+// RandomTeam returns a random team for a user.
+func (s *SampleStore) RandomTeam() (model.Team, error) {
+	return model.Team{}, nil
+}
+
+// RandomUser returns a random user from the set of users.
+func (s *SampleStore) RandomUser() (model.User, error) {
+	return model.User{}, nil
+}
+
 // SetChannelMembers stores the given channel members in the store.
 func (s *SampleStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
 	return errors.New("not implemented")
