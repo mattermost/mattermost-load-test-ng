@@ -13,23 +13,30 @@ import (
 )
 
 func TestRandomChannel(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetChannels([]*model.Channel{
-		{Id: id1, TeamId: "t1"},
-		{Id: id2, TeamId: "t1"},
+	t.Run("basic", func(t *testing.T) {
+		s := New()
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetChannels([]*model.Channel{
+			{Id: id1, TeamId: "t1"},
+			{Id: id2, TeamId: "t1"},
+		})
+		require.NoError(t, err)
+		ch, err := s.RandomChannel("t1")
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch ch.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
 	})
-	require.NoError(t, err)
-	ch, err := s.RandomChannel("t1")
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch ch.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
+	t.Run("emptyslice", func(t *testing.T) {
+		s := New()
+		_, err := s.RandomChannel("t1")
+		require.Equal(t, ErrEmptySlice, err)
 	})
 }
 
@@ -97,23 +104,30 @@ func TestRandomPost(t *testing.T) {
 }
 
 func TestRandomEmoji(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetEmojis([]*model.Emoji{
-		{Id: id1},
-		{Id: id2},
+	t.Run("basic", func(t *testing.T) {
+		s := New()
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetEmojis([]*model.Emoji{
+			{Id: id1},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+		e, err := s.RandomEmoji()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch e.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
 	})
-	require.NoError(t, err)
-	e, err := s.RandomEmoji()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch e.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
+	t.Run("emptyslice", func(t *testing.T) {
+		s := New()
+		_, err := s.RandomEmoji()
+		require.Equal(t, ErrEmptySlice, err)
 	})
 }
 
@@ -174,6 +188,34 @@ func TestRandomTeamMember(t *testing.T) {
 		default:
 			return false
 		}
+	})
+}
+
+func TestPickRandomKeyFromMap(t *testing.T) {
+	t.Run("Basic", func(t *testing.T) {
+		m := make(map[string]int)
+		m["a"] = 1
+		m["b"] = 2
+		key, err := pickRandomKeyFromMap(m)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch key.(string) {
+			case "a", "b":
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("NotMap", func(t *testing.T) {
+		_, err := pickRandomKeyFromMap(1)
+		require.Equal(t, err.Error(), "not a map")
+	})
+
+	t.Run("EmptyMap", func(t *testing.T) {
+		_, err := pickRandomKeyFromMap(map[string]int{})
+		require.Equal(t, ErrEmptyMap, err)
 	})
 }
 
