@@ -176,3 +176,21 @@ func TestRandomTeamMember(t *testing.T) {
 		}
 	})
 }
+
+var errG error
+
+func BenchmarkRandomTeam(b *testing.B) {
+	s := New()
+	id1 := model.NewId()
+	id2 := model.NewId()
+	err := s.SetTeams([]*model.Team{
+		{Id: id1},
+		{Id: id2},
+	})
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+		_, errG = s.RandomTeam()
+		require.NoError(b, errG)
+	}
+}
