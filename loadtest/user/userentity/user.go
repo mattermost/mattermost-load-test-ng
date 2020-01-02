@@ -27,7 +27,9 @@ type UserEntity struct {
 
 // Config holds necessary information required by a UserEntity.
 type Config struct {
-	ServerURL    string
+	// The URL of the Mattermost web server.
+	ServerURL string
+	// The URL of the mattermost WebSocket server.
 	WebSocketURL string
 }
 
