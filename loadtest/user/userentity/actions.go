@@ -700,3 +700,15 @@ func (ue *UserEntity) GetWebappPlugins() error {
 
 	return nil
 }
+
+// GetClientLicense returns the client license in the old format.
+func (ue *UserEntity) GetClientLicense() error {
+	license, resp := ue.client.GetOldClientLicense("")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	if err := ue.store.SetLicense(license); err != nil {
+		return err
+	}
+	return nil
+}

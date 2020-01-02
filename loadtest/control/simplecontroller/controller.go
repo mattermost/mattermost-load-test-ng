@@ -49,6 +49,12 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run: func() control.UserStatus {
+				return c.reload(false)
+			},
+			waitAfter: 1000,
+		},
+		{
 			run:       c.createPost,
 			waitAfter: 1000,
 		},
@@ -58,10 +64,6 @@ func (c *SimpleController) Run() {
 		},
 		{
 			run:       c.viewChannel,
-			waitAfter: 1000,
-		},
-		{
-			run:       c.reload,
 			waitAfter: 1000,
 		},
 		{

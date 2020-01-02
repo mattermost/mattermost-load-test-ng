@@ -98,4 +98,8 @@ type User interface {
 
 	// plugins
 	GetWebappPlugins() error
+
+	// license
+	// GetClientLicense returns the client license in the old format.
+	GetClientLicense() error
 }

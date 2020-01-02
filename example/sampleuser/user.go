@@ -375,3 +375,8 @@ func (ue *SampleUser) GetRolesByNames(roleNames []string) ([]string, error) {
 func (ue *SampleUser) GetWebappPlugins() error {
 	return nil
 }
+
+// GetClientLicense returns the client license in the old format.
+func (ue *SampleUser) GetClientLicense() error {
+	return nil
+}

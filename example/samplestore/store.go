@@ -167,6 +167,11 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
+// SetLicense stores the given license in the store.
+func (s *SampleStore) SetLicense(license map[string]string) error {
+	return nil
+}
+
 // SetChannelMembers stores the given channel members in the store.
 func (s *SampleStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
 	return errors.New("not implemented")
