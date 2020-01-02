@@ -39,6 +39,7 @@ func (c *SimpleController) Run() {
 		return
 	}
 
+	i := 0
 	actions := []UserAction{
 		{
 			run:       c.signUp,
@@ -49,7 +50,14 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
-			run:       c.reload,
+			run: func() control.UserStatus {
+				// Do not perform a full reload
+				// on a first run.
+				if i == 0 {
+					return c.reload(false)
+				}
+				return c.reload(true)
+			},
 			waitAfter: 1000,
 		},
 		{
@@ -75,7 +83,7 @@ func (c *SimpleController) Run() {
 	defer c.sendStopStatus()
 
 	for {
-		for i := 0; i < len(actions); i++ {
+		for ; i < len(actions); i++ {
 			c.status <- actions[i].run()
 
 			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
@@ -86,6 +94,7 @@ func (c *SimpleController) Run() {
 			case <-time.After(time.Millisecond * idleTime):
 			}
 		}
+		i = 0
 	}
 }
 

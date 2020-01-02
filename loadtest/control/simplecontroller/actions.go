@@ -41,12 +41,7 @@ func (c *SimpleController) login() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	errChan := c.user.Connect()
-	go func() {
-		for err := range errChan {
-			c.status <- c.newErrorStatus(err)
-		}
-	}()
+	c.connect()
 
 	return c.newInfoStatus("logged in")
 }
@@ -111,21 +106,21 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 	*/
 }
 
-func (c *SimpleController) reload() control.UserStatus {
-	err := c.user.Disconnect()
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
-
-	errChan := c.user.Connect()
-	go func() {
-		for err := range errChan {
+// reload performs all actions done when a user reloads the browser.
+// If full parameter is enabled, it also disconnects and reconnects
+// the WebSocket connection.
+func (c *SimpleController) reload(full bool) control.UserStatus {
+	if full {
+		err := c.user.Disconnect()
+		if err != nil {
 			c.status <- c.newErrorStatus(err)
 		}
-	}()
+
+		c.connect()
+	}
 
 	// Getting preferences.
-	err = c.user.GetPreferences()
+	err := c.user.GetPreferences()
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -195,6 +190,11 @@ func (c *SimpleController) reload() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
+	_, err = c.user.GetAllTeams(0, 50)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
 	if teamId != "" {
 		err = c.user.GetChannelsForTeam(teamId)
 		if err != nil {
@@ -247,4 +247,13 @@ func (c *SimpleController) reload() control.UserStatus {
 	}
 
 	return c.newInfoStatus("page reloaded")
+}
+
+func (c *SimpleController) connect() {
+	errChan := c.user.Connect()
+	go func() {
+		for err := range errChan {
+			c.status <- c.newErrorStatus(err)
+		}
+	}()
 }
