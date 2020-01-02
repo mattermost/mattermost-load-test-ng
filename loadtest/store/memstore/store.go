@@ -22,6 +22,7 @@ type MemStore struct {
 	users          map[string]*model.User
 	reactions      map[string][]*model.Reaction
 	roles          map[string]*model.Role
+	license        map[string]string
 }
 
 func New() *MemStore {
@@ -314,4 +315,10 @@ func (s *MemStore) Roles() ([]model.Role, error) {
 		i++
 	}
 	return roles, nil
+}
+
+// SetLicense stores the given license in the store.
+func (s *MemStore) SetLicense(license map[string]string) error {
+	s.license = license
+	return nil
 }

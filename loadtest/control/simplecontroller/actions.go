@@ -155,7 +155,11 @@ func (c *SimpleController) reload(full bool) control.UserStatus {
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
-	// TODO: GetLicense
+
+	err = c.user.GetClientLicense()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
 	// Getting the user.
 	userId, err := c.user.GetMe()
