@@ -12,6 +12,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
+// SimpleController is a very basic implementation of a controller.
+// Currently, it just performs a pre-defined set of actions in a loop.
 type SimpleController struct {
 	id     int
 	user   user.User
@@ -33,6 +35,8 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SimpleContro
 	}
 }
 
+// Run begins performing a set of actions in a loop with a defined wait
+// in between the actions. It keeps on doing it until Stop is invoked.
 func (c *SimpleController) Run() {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
@@ -89,6 +93,7 @@ func (c *SimpleController) Run() {
 	}
 }
 
+// SetRate sets the relative speed of execution of actions by the user.
 func (c *SimpleController) SetRate(rate float64) error {
 	if rate < 0 {
 		return errors.New("rate should be a positive value")
@@ -97,6 +102,7 @@ func (c *SimpleController) SetRate(rate float64) error {
 	return nil
 }
 
+// Stop stops the controller.
 func (c *SimpleController) Stop() {
 	close(c.stop)
 }

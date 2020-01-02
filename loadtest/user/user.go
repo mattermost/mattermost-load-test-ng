@@ -8,6 +8,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// User provides a wrapper interface to interact with the Mattermost server
+// through its client APIs. It persists the data to its UserStore for later use.
 type User interface {
 	Store() store.UserStore
 

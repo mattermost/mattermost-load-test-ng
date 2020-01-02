@@ -13,6 +13,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// UserEntity is an implementation of the User interface
+// which provides methods to interact with the Mattermost server.
 type UserEntity struct {
 	store       store.MutableUserStore
 	client      *model.Client4
@@ -23,15 +25,18 @@ type UserEntity struct {
 	config      Config
 }
 
+// Config holds necessary information required by a UserEntity.
 type Config struct {
 	ServerURL    string
 	WebSocketURL string
 }
 
+// Store returns the underlying store of the user.
 func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
 }
 
+// New returns a new instance of a UserEntity.
 func New(store store.MutableUserStore, config Config) *UserEntity {
 	ue := UserEntity{}
 	ue.config = config
