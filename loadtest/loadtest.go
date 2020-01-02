@@ -14,12 +14,16 @@ import (
 
 // LoadTester is a structure holding all the state needed to run a load-test
 type LoadTester struct {
-	controllers   []control.UserController
-	config        *config.LoadTestConfig
-	wg            sync.WaitGroup
-	status        chan control.UserStatus
-	started       bool
-	newController NewController
+	controllersMut  sync.RWMutex
+	controllers     []control.UserController
+	config          *config.LoadTestConfig
+	wg              sync.WaitGroup
+	status          chan control.UserStatus
+	startedMut      sync.RWMutex
+	started         bool
+	statusClosedMut sync.RWMutex
+	statusClosed    bool
+	newController   NewController
 }
 
 // NewController is a factory function that returns a new
@@ -30,6 +34,9 @@ type LoadTester struct {
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
 func (lt *LoadTester) handleStatus() {
+	lt.withStatusLock(func() {
+		lt.statusClosed = false
+	})
 	for st := range lt.status {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
@@ -47,9 +54,11 @@ func (lt *LoadTester) handleStatus() {
 
 // AddUser increments by one the number of concurrently active users
 func (lt *LoadTester) AddUser() error {
-	if !lt.started {
+	if !lt.hasStarted() {
 		return ErrNotRunning
 	}
+	lt.controllersMut.Lock()
+	defer lt.controllersMut.Unlock()
 	activeUsers := len(lt.controllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
@@ -65,10 +74,14 @@ func (lt *LoadTester) AddUser() error {
 
 // RemoveUser decrements by one the number of concurrently active users
 func (lt *LoadTester) RemoveUser() error {
-	if !lt.started {
+	if !lt.hasStarted() {
 		return ErrNotRunning
 	}
+	lt.controllersMut.Lock()
+	defer lt.controllersMut.Unlock()
+
 	activeUsers := len(lt.controllers)
+
 	if activeUsers == 0 {
 		return ErrNoUsersLeft
 	}
@@ -82,13 +95,15 @@ func (lt *LoadTester) RemoveUser() error {
 
 // Run starts the execution of a new load-test
 func (lt *LoadTester) Run() error {
-	// NOTE: we are currently not guarding against access from multiple goroutines.
-	// TODO: Access to LoadTester should be made goroutine safe.
+	lt.startedMut.Lock()
 	if lt.started {
+		lt.startedMut.Unlock()
 		return ErrAlreadyRunning
 	}
-	go lt.handleStatus()
 	lt.started = true
+	lt.startedMut.Unlock()
+
+	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.AddUser(); err != nil {
 			mlog.Error(err.Error())
@@ -99,17 +114,30 @@ func (lt *LoadTester) Run() error {
 
 // Stop terminates the current load-test
 func (lt *LoadTester) Stop() error {
-	if !lt.started {
+	if !lt.hasStarted() {
 		return ErrNotRunning
 	}
-	for range lt.controllers {
+
+	var controllers []control.UserController
+	lt.controllersMut.RLock()
+	controllers = lt.controllers
+	lt.controllersMut.RUnlock()
+	for range controllers {
 		if err := lt.RemoveUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
 	lt.wg.Wait()
-	close(lt.status)
+	lt.startedMut.Lock()
 	lt.started = false
+	lt.startedMut.Unlock()
+	lt.withStatusLock(func() {
+		if !lt.statusClosed {
+			close(lt.status)
+		}
+		lt.statusClosed = true
+	})
+
 	return nil
 }
 
@@ -125,4 +153,18 @@ func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 		status:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
 	}
+}
+
+// Util methods to help manage the guarded variables.
+
+func (lt *LoadTester) hasStarted() bool {
+	lt.startedMut.RLock()
+	defer lt.startedMut.RUnlock()
+	return lt.started
+}
+
+func (lt *LoadTester) withStatusLock(f func()) {
+	lt.statusClosedMut.Lock()
+	defer lt.statusClosedMut.Unlock()
+	f()
 }

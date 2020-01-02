@@ -54,7 +54,9 @@ func TestAddUser(t *testing.T) {
 	err := lt.AddUser()
 	require.Equal(t, ErrNotRunning, err)
 
+	lt.startedMut.Lock()
 	lt.started = true
+	lt.startedMut.Unlock()
 
 	ltConfig.UsersConfiguration.MaxActiveUsers = 0
 	err = lt.AddUser()
