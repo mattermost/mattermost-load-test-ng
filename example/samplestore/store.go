@@ -167,6 +167,41 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
+// RandomChannel returns a random channel for a user.
+func (s *SampleStore) RandomChannel(teamId string) (model.Channel, error) {
+	return model.Channel{}, nil
+}
+
+// RandomTeam returns a random team for a user.
+func (s *SampleStore) RandomTeam() (model.Team, error) {
+	return model.Team{}, nil
+}
+
+// RandomUser returns a random user from the set of users.
+func (s *SampleStore) RandomUser() (model.User, error) {
+	return model.User{}, nil
+}
+
+// RandomPost returns a random post.
+func (s *SampleStore) RandomPost() (model.Post, error) {
+	return model.Post{}, nil
+}
+
+// RandomEmoji returns a random emoji.
+func (s *SampleStore) RandomEmoji() (model.Emoji, error) {
+	return model.Emoji{}, nil
+}
+
+// RandomChannelMember returns a random channel member for a channel.
+func (s *SampleStore) RandomChannelMember(channelId string) (model.ChannelMember, error) {
+	return model.ChannelMember{}, nil
+}
+
+// RandomTeamMember returns a random team member for a team.
+func (s *SampleStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
+	return model.TeamMember{}, nil
+}
+
 // SetLicense stores the given license in the store.
 func (s *SampleStore) SetLicense(license map[string]string) error {
 	return nil
