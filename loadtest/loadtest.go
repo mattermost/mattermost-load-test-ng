@@ -5,6 +5,7 @@ package loadtest
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -14,16 +15,18 @@ import (
 
 // LoadTester is a structure holding all the state needed to run a load-test
 type LoadTester struct {
-	controllersMut  sync.RWMutex
-	controllers     []control.UserController
-	config          *config.LoadTestConfig
-	wg              sync.WaitGroup
-	status          chan control.UserStatus
-	startedMut      sync.RWMutex
-	started         bool
-	statusClosedMut sync.RWMutex
-	statusClosed    bool
-	newController   NewController
+	controllersMut sync.RWMutex
+	controllers    []control.UserController
+	config         *config.LoadTestConfig
+	wg             sync.WaitGroup
+	status         chan control.UserStatus
+	// started is an atomic variable which indicates whether
+	// a load test has started or not. 0 means no, 1 means yes.
+	started int32
+	// stopping is an atomic variable which indicates whether
+	// a load test is stopping or not. 0 means no, 1 means yes.
+	stopping      int32
+	newController NewController
 }
 
 // NewController is a factory function that returns a new
@@ -34,9 +37,6 @@ type LoadTester struct {
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
 func (lt *LoadTester) handleStatus() {
-	lt.withStatusLock(func() {
-		lt.statusClosed = false
-	})
 	for st := range lt.status {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
@@ -54,8 +54,11 @@ func (lt *LoadTester) handleStatus() {
 
 // AddUser increments by one the number of concurrently active users
 func (lt *LoadTester) AddUser() error {
-	if !lt.hasStarted() {
+	if atomic.LoadInt32(&lt.started) == 0 {
 		return ErrNotRunning
+	}
+	if atomic.LoadInt32(&lt.stopping) == 1 {
+		return ErrStopping
 	}
 	lt.controllersMut.Lock()
 	defer lt.controllersMut.Unlock()
@@ -74,9 +77,15 @@ func (lt *LoadTester) AddUser() error {
 
 // RemoveUser decrements by one the number of concurrently active users
 func (lt *LoadTester) RemoveUser() error {
-	if !lt.hasStarted() {
+	if atomic.LoadInt32(&lt.started) == 0 {
 		return ErrNotRunning
 	}
+	// We cannot check for stopping here because Stop itself calls RemoveUser.
+	// TODO: add a more fine-grained check and combine all of the states (running,stopping)
+	// into a single check.
+	// if atomic.LoadInt32(&lt.stopping) == 1 {
+	// 	return ErrStopping
+	// }
 	lt.controllersMut.Lock()
 	defer lt.controllersMut.Unlock()
 
@@ -93,15 +102,17 @@ func (lt *LoadTester) RemoveUser() error {
 	return nil
 }
 
-// Run starts the execution of a new load-test
+// Run starts the execution of a new load-test.
+// It returns an error if called again without stopping the test first.
 func (lt *LoadTester) Run() error {
-	lt.startedMut.Lock()
-	if lt.started {
-		lt.startedMut.Unlock()
+	// TODO: do the started and stopping checks atomically.
+	// Set to started if not started. And return error if already started.
+	if !atomic.CompareAndSwapInt32(&lt.started, 0, 1) {
 		return ErrAlreadyRunning
 	}
-	lt.started = true
-	lt.startedMut.Unlock()
+	if atomic.LoadInt32(&lt.stopping) == 1 {
+		return ErrStopping
+	}
 
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
@@ -112,13 +123,22 @@ func (lt *LoadTester) Run() error {
 	return nil
 }
 
-// Stop terminates the current load-test
+// Stop terminates the current load-test.
+// It returns an error if it is called when the load test has not started,
+// or if it gets called concurrently from multiple goroutines.
 func (lt *LoadTester) Stop() error {
-	if !lt.hasStarted() {
+	// TODO: do the started and stopping checks atomically.
+	if atomic.LoadInt32(&lt.started) == 0 {
 		return ErrNotRunning
+	}
+	// Set to stopping if not set. And return error if already stopping.
+	if !atomic.CompareAndSwapInt32(&lt.stopping, 0, 1) {
+		return ErrStopping
 	}
 
 	var controllers []control.UserController
+	// It is sufficient to just read the value safely,
+	// because Stop cannot be called concurrently.
 	lt.controllersMut.RLock()
 	controllers = lt.controllers
 	lt.controllersMut.RUnlock()
@@ -128,16 +148,9 @@ func (lt *LoadTester) Stop() error {
 		}
 	}
 	lt.wg.Wait()
-	lt.startedMut.Lock()
-	lt.started = false
-	lt.startedMut.Unlock()
-	lt.withStatusLock(func() {
-		if !lt.statusClosed {
-			close(lt.status)
-		}
-		lt.statusClosed = true
-	})
-
+	atomic.StoreInt32(&lt.started, 0)
+	close(lt.status)
+	atomic.StoreInt32(&lt.stopping, 0)
 	return nil
 }
 
@@ -153,18 +166,4 @@ func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 		status:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
 	}
-}
-
-// Util methods to help manage the guarded variables.
-
-func (lt *LoadTester) hasStarted() bool {
-	lt.startedMut.RLock()
-	defer lt.startedMut.RUnlock()
-	return lt.started
-}
-
-func (lt *LoadTester) withStatusLock(f func()) {
-	lt.statusClosedMut.Lock()
-	defer lt.statusClosedMut.Unlock()
-	f()
 }
