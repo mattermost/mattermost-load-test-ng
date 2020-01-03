@@ -174,9 +174,11 @@ func (c *SimpleController) reload(full bool) control.UserStatus {
 		}
 	}
 
-	err = c.user.GetConfig()
-	if err != nil {
-		return c.newErrorStatus(err)
+	if ok, err := c.user.IsSysAdmin(); ok && err != nil {
+		err = c.user.GetConfig()
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
 	}
 
 	err = c.user.GetClientLicense()
