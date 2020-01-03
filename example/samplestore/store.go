@@ -202,6 +202,11 @@ func (s *SampleStore) RandomTeamMember(teamId string) (model.TeamMember, error) 
 	return model.TeamMember{}, nil
 }
 
+// SetLicense stores the given license in the store.
+func (s *SampleStore) SetLicense(license map[string]string) error {
+	return nil
+}
+
 // SetChannelMembers stores the given channel members in the store.
 func (s *SampleStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
 	return errors.New("not implemented")

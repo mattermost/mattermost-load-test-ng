@@ -88,4 +88,8 @@ type MutableUserStore interface {
 
 	// emoji
 	SetEmojis(emoji []*model.Emoji) error
+
+	// license
+	// SetLicense stores the given license in the store.
+	SetLicense(license map[string]string) error
 }
