@@ -58,6 +58,13 @@ func (c *SimpleController) Run() {
 			run: func() control.UserStatus {
 				return c.reload(false)
 			},
+		},
+		{
+			run:       c.joinTeam,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.createPost,
 			waitAfter: 1000,
 		},
 		{

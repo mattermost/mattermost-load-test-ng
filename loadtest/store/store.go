@@ -20,6 +20,8 @@ type UserStore interface {
 	Channels(teamId string) ([]model.Channel, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
+	// TeamMember returns the TeamMember for the given teamId and userId
+	TeamMember(teamdId, userId string) (model.TeamMember, error)
 	// Preferences return the preferences of the user.
 	Preferences() (model.Preferences, error)
 	// Roles return the roles of the user.
@@ -85,7 +87,6 @@ type MutableUserStore interface {
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
 	RemoveTeamMember(teamId, memberId string) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error
-	TeamMember(teamdId, userId string) (*model.TeamMember, error)
 
 	// roles
 	// SetRoles stores the given roles.
