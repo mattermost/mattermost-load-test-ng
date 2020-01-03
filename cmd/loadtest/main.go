@@ -65,11 +65,17 @@ func main() {
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
-	commands := make([]*cobra.Command, 1)
+	commands := make([]*cobra.Command, 2)
 	commands[0] = &cobra.Command{
 		Use:    "example",
 		Short:  "Run example implementation",
 		RunE:   RunExampleCmdF,
+		PreRun: initLogger,
+	}
+	commands[1] = &cobra.Command{
+		Use:    "init",
+		Short:  "Initialize instance",
+		RunE:   RunInitCmdF,
 		PreRun: initLogger,
 	}
 
