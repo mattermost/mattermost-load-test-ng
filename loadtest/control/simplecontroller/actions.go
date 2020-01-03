@@ -12,8 +12,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-// UserAction specifies an action performed by a user
-// followed by a wait time.
 type UserAction struct {
 	run       func() control.UserStatus
 	waitAfter time.Duration

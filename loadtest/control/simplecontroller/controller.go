@@ -37,6 +37,8 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SimpleContro
 
 // Run begins performing a set of actions in a loop with a defined wait
 // in between the actions. It keeps on doing it until Stop is invoked.
+// This is also a blocking function, so it is recommended to invoke it
+// inside a goroutine.
 func (c *SimpleController) Run() {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
