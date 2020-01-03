@@ -9,6 +9,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// MemStore is a simple implementation of MutableUserStore
+// which holds all data in memory.
 type MemStore struct {
 	user           *model.User
 	preferences    *model.Preferences
@@ -25,6 +27,7 @@ type MemStore struct {
 	license        map[string]string
 }
 
+// New returns a new instance of MemStore.
 func New() *MemStore {
 	return &MemStore{
 		posts:          map[string]*model.Post{},

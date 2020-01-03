@@ -7,7 +7,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// UserStore is a read-only interface which provides access to various
+// data belonging to a user.
 type UserStore interface {
+	// Id of the user.
 	Id() string
 	// TODO: Move all getters to this interface
 
@@ -39,6 +42,8 @@ type UserStore interface {
 	RandomTeamMember(teamId string) (model.TeamMember, error)
 }
 
+// MutableUserStore is a super-set of UserStore which, apart from providing
+// read access, also allows to edit the data of a user.
 type MutableUserStore interface {
 	UserStore
 
