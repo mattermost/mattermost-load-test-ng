@@ -264,8 +264,12 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 	return nil
 }
 
-func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
-	return s.teamMembers[teamId][userId], nil
+func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
+	var tm model.TeamMember
+	if s.teamMembers[teamId][userId] != nil {
+		tm = *s.teamMembers[teamId][userId]
+	}
+	return tm, nil
 }
 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {

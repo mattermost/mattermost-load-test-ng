@@ -4,9 +4,14 @@
         "WebSocketURL": "ws://localhost:8065",
         "DriverName": "mysql",
         "DataSource": "mmuser:mostest@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8&readTimeout=20s&writeTimeout=20s&timeout=20s",
+        "AdminEmail": "sysadmin@sample.mattermost.com",
+        "AdminPassword": "Sys@dmin-sample1",
         "MaxIdleConns": 100,
         "MaxIdleConnsPerHost": 128,
         "IdleConnTimeoutMilliseconds": 90000
+    },
+    "InstanceConfiguration": {
+      "NumTeams": 2
     },
     "UsersConfiguration": {
       "InitialActiveUsers": 4,

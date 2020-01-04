@@ -12,6 +12,7 @@ import (
 
 type LoadTestConfig struct {
 	ConnectionConfiguration ConnectionConfiguration
+	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
 	LogSettings             LoggerSettings
 }
@@ -21,9 +22,15 @@ type ConnectionConfiguration struct {
 	WebSocketURL                string
 	DriverName                  string
 	DataSource                  string
+	AdminEmail                  string
+	AdminPassword               string
 	MaxIdleConns                int
 	MaxIdleConnsPerHost         int
 	IdleConnTimeoutMilliseconds int
+}
+
+type InstanceConfiguration struct {
+	NumTeams int
 }
 
 type UsersConfiguration struct {

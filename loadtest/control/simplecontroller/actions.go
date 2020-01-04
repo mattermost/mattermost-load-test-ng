@@ -66,6 +66,29 @@ func (c *SimpleController) logout() control.UserStatus {
 	return c.newInfoStatus("logged out")
 }
 
+func (c *SimpleController) joinTeam() control.UserStatus {
+	userStore := c.user.Store()
+	userId := userStore.Id()
+	teams, err := userStore.Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, team := range teams {
+		tm, err := userStore.TeamMember(team.Id, userId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+		if tm.UserId == "" {
+			err := c.user.AddTeamMember(team.Id, userId)
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			return c.newInfoStatus(fmt.Sprintf("joined team %s", team.Id))
+		}
+	}
+	return c.newInfoStatus("no teams to join")
+}
+
 func (c *SimpleController) createPost() control.UserStatus {
 	postId, err := c.user.CreatePost(&model.Post{
 		Message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
@@ -151,9 +174,11 @@ func (c *SimpleController) reload(full bool) control.UserStatus {
 		}
 	}
 
-	err = c.user.GetConfig()
-	if err != nil {
-		return c.newErrorStatus(err)
+	if ok, err := c.user.IsSysAdmin(); ok && err != nil {
+		err = c.user.GetConfig()
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
 	}
 
 	err = c.user.GetClientLicense()

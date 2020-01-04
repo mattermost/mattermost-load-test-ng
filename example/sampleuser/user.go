@@ -380,3 +380,7 @@ func (ue *SampleUser) GetWebappPlugins() error {
 func (ue *SampleUser) GetClientLicense() error {
 	return nil
 }
+
+func (ue *SampleUser) IsSysAdmin() (bool, error) {
+	return false, nil
+}

@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-// LoadTester is a structure holding all the state needed to run a load-test
+// LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	controllers   []control.UserController
 	config        *config.LoadTestConfig
@@ -45,7 +45,7 @@ func (lt *LoadTester) handleStatus() {
 	}
 }
 
-// AddUser increments by one the number of concurrently active users
+// AddUser increments by one the number of concurrently active users.
 func (lt *LoadTester) AddUser() error {
 	if !lt.started {
 		return ErrNotRunning
@@ -63,7 +63,7 @@ func (lt *LoadTester) AddUser() error {
 	return nil
 }
 
-// RemoveUser decrements by one the number of concurrently active users
+// RemoveUser decrements by one the number of concurrently active users.
 func (lt *LoadTester) RemoveUser() error {
 	if !lt.started {
 		return ErrNotRunning
@@ -80,7 +80,7 @@ func (lt *LoadTester) RemoveUser() error {
 	return nil
 }
 
-// Run starts the execution of a new load-test
+// Run starts the execution of a new load-test.
 func (lt *LoadTester) Run() error {
 	// NOTE: we are currently not guarding against access from multiple goroutines.
 	// TODO: Access to LoadTester should be made goroutine safe.
@@ -97,7 +97,7 @@ func (lt *LoadTester) Run() error {
 	return nil
 }
 
-// Stop terminates the current load-test
+// Stop terminates the current load-test.
 func (lt *LoadTester) Stop() error {
 	if !lt.started {
 		return ErrNotRunning
