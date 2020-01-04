@@ -14,13 +14,13 @@ type UserStore interface {
 	Id() string
 	// TODO: Move all getters to this interface
 
-	// Config return the server configuration settings
+	// Config return the server configuration settings.
 	Config() model.Config
 	// Channels return the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
-	// TeamMember returns the TeamMember for the given teamId and userId
+	// TeamMember returns the TeamMember for the given teamId and userId.
 	TeamMember(teamdId, userId string) (model.TeamMember, error)
 	// Preferences return the preferences of the user.
 	Preferences() (model.Preferences, error)

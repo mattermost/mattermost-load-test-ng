@@ -106,6 +106,6 @@ type User interface {
 	GetClientLicense() error
 
 	// utils
-	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise
+	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise.
 	IsSysAdmin() (bool, error)
 }
