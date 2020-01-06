@@ -9,6 +9,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// MemStore is a simple implementation of MutableUserStore
+// which holds all data in memory.
 type MemStore struct {
 	user           *model.User
 	preferences    *model.Preferences
@@ -22,8 +24,10 @@ type MemStore struct {
 	users          map[string]*model.User
 	reactions      map[string][]*model.Reaction
 	roles          map[string]*model.Role
+	license        map[string]string
 }
 
+// New returns a new instance of MemStore.
 func New() *MemStore {
 	return &MemStore{
 		posts:          map[string]*model.Post{},
@@ -260,8 +264,12 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 	return nil
 }
 
-func (s *MemStore) TeamMember(teamId, userId string) (*model.TeamMember, error) {
-	return s.teamMembers[teamId][userId], nil
+func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
+	var tm model.TeamMember
+	if s.teamMembers[teamId][userId] != nil {
+		tm = *s.teamMembers[teamId][userId]
+	}
+	return tm, nil
 }
 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
@@ -314,4 +322,10 @@ func (s *MemStore) Roles() ([]model.Role, error) {
 		i++
 	}
 	return roles, nil
+}
+
+// SetLicense stores the given license in the store.
+func (s *MemStore) SetLicense(license map[string]string) error {
+	s.license = license
+	return nil
 }

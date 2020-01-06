@@ -8,6 +8,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// User provides a wrapper interface to interact with the Mattermost server
+// through its client APIs. It persists the data to its UserStore for later use.
 type User interface {
 	Store() store.UserStore
 
@@ -98,4 +100,12 @@ type User interface {
 
 	// plugins
 	GetWebappPlugins() error
+
+	// license
+	// GetClientLicense returns the client license in the old format.
+	GetClientLicense() error
+
+	// utils
+	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise.
+	IsSysAdmin() (bool, error)
 }

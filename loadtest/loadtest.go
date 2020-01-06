@@ -23,7 +23,7 @@ const (
 	StateStopping
 )
 
-// LoadTester is a structure holding all the state needed to run a load-test
+// LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	mut           sync.RWMutex
 	controllers   []control.UserController
@@ -57,7 +57,7 @@ func (lt *LoadTester) handleStatus() {
 	}
 }
 
-// AddUser increments by one the number of concurrently active users
+// AddUser increments by one the number of concurrently active users.
 func (lt *LoadTester) AddUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
@@ -88,7 +88,7 @@ func (lt *LoadTester) addUser(isStarting bool) error {
 	return nil
 }
 
-// RemoveUser decrements by one the number of concurrently active users
+// RemoveUser decrements by one the number of concurrently active users.
 func (lt *LoadTester) RemoveUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
@@ -139,8 +139,7 @@ func (lt *LoadTester) Run() error {
 }
 
 // Stop terminates the current load-test.
-// It returns an error if it is called when the load test has not started,
-// or if it gets called concurrently from multiple goroutines.
+// It returns an error if it is called when the load test has not started.
 func (lt *LoadTester) Stop() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()

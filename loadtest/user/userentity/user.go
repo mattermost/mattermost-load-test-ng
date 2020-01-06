@@ -13,6 +13,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// UserEntity is an implementation of the User interface
+// which provides methods to interact with the Mattermost server.
 type UserEntity struct {
 	store       store.MutableUserStore
 	client      *model.Client4
@@ -23,15 +25,20 @@ type UserEntity struct {
 	config      Config
 }
 
+// Config holds necessary information required by a UserEntity.
 type Config struct {
-	ServerURL    string
+	// The URL of the Mattermost web server.
+	ServerURL string
+	// The URL of the mattermost WebSocket server.
 	WebSocketURL string
 }
 
+// Store returns the underlying store of the user.
 func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
 }
 
+// New returns a new instance of a UserEntity.
 func New(store store.MutableUserStore, config Config) *UserEntity {
 	ue := UserEntity{}
 	ue.config = config
@@ -88,6 +95,15 @@ func (ue *UserEntity) Disconnect() error {
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil
+}
+
+func (ue *UserEntity) IsSysAdmin() (bool, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return false, err
+	}
+
+	return user.IsInRole(model.SYSTEM_ADMIN_ROLE_ID), nil
 }
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {
