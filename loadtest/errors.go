@@ -6,7 +6,7 @@ import (
 
 var (
 	ErrNotRunning      = errors.New("LoadTester is not running")
-	ErrAlreadyRunning  = errors.New("LoadTester is already running")
+	ErrNotStopped      = errors.New("LoadTester has not stopped")
 	ErrNoUsersLeft     = errors.New("No active users left")
 	ErrMaxUsersReached = errors.New("Max active users limit reached")
 )
