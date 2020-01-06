@@ -62,19 +62,15 @@ func (lt *LoadTester) AddUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	return lt.addUser(false)
+	if lt.state != StateRunning {
+		return ErrNotRunning
+	}
+	return lt.addUser()
 }
 
 // addUser is an internal API called from Run and AddUser both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
-// isStarting is true when called from Start, and false when called from
-// AddUser.
-func (lt *LoadTester) addUser(isStarting bool) error {
-	if isStarting && lt.state != StateStarting {
-		return ErrNotStarting
-	} else if !isStarting && lt.state != StateRunning {
-		return ErrNotRunning
-	}
+func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.controllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
@@ -93,19 +89,15 @@ func (lt *LoadTester) RemoveUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	return lt.removeUser(false)
+	if lt.state != StateRunning {
+		return ErrNotRunning
+	}
+	return lt.removeUser()
 }
 
 // removeUser is an internal API called from Stop and RemoveUser both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
-// isStopping is true when called from Stop, and false when called from
-// RemoveUser.
-func (lt *LoadTester) removeUser(isStopping bool) error {
-	if isStopping && lt.state != StateStopping {
-		return ErrNotStopping
-	} else if !isStopping && lt.state != StateRunning {
-		return ErrNotRunning
-	}
+func (lt *LoadTester) removeUser() error {
 	activeUsers := len(lt.controllers)
 	if activeUsers == 0 {
 		return ErrNoUsersLeft
@@ -130,7 +122,7 @@ func (lt *LoadTester) Run() error {
 	lt.state = StateStarting
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
-		if err := lt.addUser(true); err != nil {
+		if err := lt.addUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
@@ -149,7 +141,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.state = StateStopping
 	for range lt.controllers {
-		if err := lt.removeUser(true); err != nil {
+		if err := lt.removeUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
