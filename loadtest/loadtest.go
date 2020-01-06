@@ -5,7 +5,6 @@ package loadtest
 
 import (
 	"sync"
-	"sync/atomic"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -13,19 +12,25 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
+// State determines which state a loadtester is in.
+type State int
+
+// Different possible states of a loadtester.
+const (
+	StateStopped State = iota
+	StateStarting
+	StateRunning
+	StateStopping
+)
+
 // LoadTester is a structure holding all the state needed to run a load-test
 type LoadTester struct {
-	controllersMut sync.RWMutex
-	controllers    []control.UserController
-	config         *config.LoadTestConfig
-	wg             sync.WaitGroup
-	status         chan control.UserStatus
-	// started is an atomic variable which indicates whether
-	// a load test has started or not. 0 means no, 1 means yes.
-	started int32
-	// stopping is an atomic variable which indicates whether
-	// a load test is stopping or not. 0 means no, 1 means yes.
-	stopping      int32
+	mut           sync.RWMutex
+	controllers   []control.UserController
+	config        *config.LoadTestConfig
+	wg            sync.WaitGroup
+	status        chan control.UserStatus
+	state         State
 	newController NewController
 }
 
@@ -54,14 +59,22 @@ func (lt *LoadTester) handleStatus() {
 
 // AddUser increments by one the number of concurrently active users
 func (lt *LoadTester) AddUser() error {
-	if atomic.LoadInt32(&lt.started) == 0 {
+	lt.mut.Lock()
+	defer lt.mut.Unlock()
+
+	return lt.addUser(false)
+}
+
+// addUser is an internal API called from Run and AddUser both.
+// DO NOT call this by itself, because this method is not protected by a mutex.
+// isStarting is true when called from Start, and false when called from
+// AddUser.
+func (lt *LoadTester) addUser(isStarting bool) error {
+	if isStarting && lt.state != StateStarting {
+		return ErrNotStarting
+	} else if !isStarting && lt.state != StateRunning {
 		return ErrNotRunning
 	}
-	if atomic.LoadInt32(&lt.stopping) == 1 {
-		return ErrStopping
-	}
-	lt.controllersMut.Lock()
-	defer lt.controllersMut.Unlock()
 	activeUsers := len(lt.controllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
@@ -77,20 +90,23 @@ func (lt *LoadTester) AddUser() error {
 
 // RemoveUser decrements by one the number of concurrently active users
 func (lt *LoadTester) RemoveUser() error {
-	if atomic.LoadInt32(&lt.started) == 0 {
+	lt.mut.Lock()
+	defer lt.mut.Unlock()
+
+	return lt.removeUser(false)
+}
+
+// removeUser is an internal API called from Stop and RemoveUser both.
+// DO NOT call this by itself, because this method is not protected by a mutex.
+// isStopping is true when called from Stop, and false when called from
+// RemoveUser.
+func (lt *LoadTester) removeUser(isStopping bool) error {
+	if isStopping && lt.state != StateStopping {
+		return ErrNotStopping
+	} else if !isStopping && lt.state != StateRunning {
 		return ErrNotRunning
 	}
-	// We cannot check for stopping here because Stop itself calls RemoveUser.
-	// TODO: add a more fine-grained check and combine all of the states (running,stopping)
-	// into a single check.
-	// if atomic.LoadInt32(&lt.stopping) == 1 {
-	// 	return ErrStopping
-	// }
-	lt.controllersMut.Lock()
-	defer lt.controllersMut.Unlock()
-
 	activeUsers := len(lt.controllers)
-
 	if activeUsers == 0 {
 		return ErrNoUsersLeft
 	}
@@ -105,21 +121,20 @@ func (lt *LoadTester) RemoveUser() error {
 // Run starts the execution of a new load-test.
 // It returns an error if called again without stopping the test first.
 func (lt *LoadTester) Run() error {
-	// TODO: do the started and stopping checks atomically.
-	// Set to started if not started. And return error if already started.
-	if !atomic.CompareAndSwapInt32(&lt.started, 0, 1) {
-		return ErrAlreadyRunning
-	}
-	if atomic.LoadInt32(&lt.stopping) == 1 {
-		return ErrStopping
-	}
+	lt.mut.Lock()
+	defer lt.mut.Unlock()
 
+	if lt.state != StateStopped {
+		return ErrNotStopped
+	}
+	lt.state = StateStarting
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
-		if err := lt.AddUser(); err != nil {
+		if err := lt.addUser(true); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
+	lt.state = StateRunning
 	return nil
 }
 
@@ -127,30 +142,21 @@ func (lt *LoadTester) Run() error {
 // It returns an error if it is called when the load test has not started,
 // or if it gets called concurrently from multiple goroutines.
 func (lt *LoadTester) Stop() error {
-	// TODO: do the started and stopping checks atomically.
-	if atomic.LoadInt32(&lt.started) == 0 {
+	lt.mut.Lock()
+	defer lt.mut.Unlock()
+
+	if lt.state != StateRunning {
 		return ErrNotRunning
 	}
-	// Set to stopping if not set. And return error if already stopping.
-	if !atomic.CompareAndSwapInt32(&lt.stopping, 0, 1) {
-		return ErrStopping
-	}
-
-	var controllers []control.UserController
-	// It is sufficient to just read the value safely,
-	// because Stop cannot be called concurrently.
-	lt.controllersMut.RLock()
-	controllers = lt.controllers
-	lt.controllersMut.RUnlock()
-	for range controllers {
-		if err := lt.RemoveUser(); err != nil {
+	lt.state = StateStopping
+	for range lt.controllers {
+		if err := lt.removeUser(true); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
 	lt.wg.Wait()
-	atomic.StoreInt32(&lt.started, 0)
 	close(lt.status)
-	atomic.StoreInt32(&lt.stopping, 0)
+	lt.state = StateStopped
 	return nil
 }
 
