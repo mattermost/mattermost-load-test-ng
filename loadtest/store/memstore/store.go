@@ -101,11 +101,11 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	return channelPosts, nil
 }
 
-func (s *MemStore) PostsSince(ts int64) ([]*model.Post, error) {
-	var posts []*model.Post
+func (s *MemStore) PostsSince(ts int64) ([]model.Post, error) {
+	var posts []model.Post
 	for _, post := range s.posts {
 		if post.CreateAt > ts {
-			posts = append(posts, post)
+			posts = append(posts, *post)
 		}
 	}
 	return posts, nil
@@ -292,8 +292,12 @@ func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) erro
 	return nil
 }
 
-func (s *MemStore) Reactions(postId string) ([]*model.Reaction, error) {
-	return s.reactions[postId], nil
+func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
+	var reactions []model.Reaction
+	for _, reaction := range s.reactions[postId] {
+		reactions = append(reactions, *reaction)
+	}
+	return reactions, nil
 }
 
 func (s *MemStore) Users() ([]*model.User, error) {

@@ -147,7 +147,7 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, postsSince, 4)
 		for i := 6; i < 10; i++ {
-			require.Contains(t, postsSince, posts[i])
+			require.Contains(t, postsSince, *posts[i])
 		}
 	})
 
@@ -164,7 +164,7 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		reactions, err := s.Reactions(postId)
 		require.NoError(t, err)
-		require.Equal(t, reaction, reactions[0])
+		require.Equal(t, *reaction, reactions[0])
 	})
 
 	t.Run("SetTeam", func(t *testing.T) {
