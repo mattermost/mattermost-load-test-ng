@@ -142,8 +142,8 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	r.HandleFunc("/stop/{id}", agent.stopLoadTestHandler).Methods("POST")
 	r.HandleFunc("/destroy/{id}", agent.destroyLoadTestHandler).Methods("POST")
 	r.HandleFunc("/status/{id}", agent.getLoadTestStatusHandler).Methods("GET")
-	r.HandleFunc("/user/{loadTestId}", agent.addUserHandler).Methods("PUT")
-	r.HandleFunc("/user/{loadTestId}/{userId}", agent.removeUserHandler).Methods("DELETE")
+	r.HandleFunc("/user/{id}", agent.addUserHandler).Methods("PUT")
+	r.HandleFunc("/user/{id}", agent.removeUserHandler).Methods("DELETE")
 
 	mlog.Info("Agent started, listening on", mlog.Int("port", port))
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), r)
