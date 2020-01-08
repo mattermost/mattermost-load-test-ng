@@ -175,6 +175,14 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
+func (ue *UserEntity) GetPostsSince(channelId string, time int64) error {
+	postlist, resp := ue.client.GetPostsSince(channelId, time)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+}
+
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
 func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
 	user, err := ue.getUserFromStore()

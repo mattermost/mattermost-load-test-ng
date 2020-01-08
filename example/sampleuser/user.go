@@ -72,6 +72,10 @@ func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int) 
 	return nil
 }
 
+func (u *SampleUser) GetPostsSince(channelId string, time int64) error {
+	return nil
+}
+
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
 func (ue *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
 	return nil
