@@ -30,4 +30,7 @@ type UserStatus struct {
 	Info string
 	// Err contains the error encountered while performing the action.
 	Err error
+	// ErrOrigin contains information about where the error originated in the
+	// controller.
+	ErrOrigin string
 }

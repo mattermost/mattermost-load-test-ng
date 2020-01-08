@@ -210,7 +210,7 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 
 	t.Run("NotMap", func(t *testing.T) {
 		_, err := pickRandomKeyFromMap(1)
-		require.Equal(t, err.Error(), "not a map")
+		require.Equal(t, err.Error(), "memstore: not a map")
 	})
 
 	t.Run("EmptyMap", func(t *testing.T) {
