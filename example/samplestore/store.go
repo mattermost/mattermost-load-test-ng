@@ -71,6 +71,10 @@ func (s *SampleStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	return nil, nil
 }
 
+func (s *SampleStore) PostsSince(ts int64) ([]*model.Post, error) {
+	return nil, nil
+}
+
 func (s *SampleStore) SetUser(user *model.User) error {
 	s.user = user
 	return nil

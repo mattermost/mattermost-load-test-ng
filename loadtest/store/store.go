@@ -27,6 +27,9 @@ type UserStore interface {
 	// Roles return the roles of the user.
 	Roles() ([]model.Role, error)
 
+	// PostsSince returns posts created after a specified timestamp in milliseconds.
+	PostsSince(ts int64) ([]*model.Post, error)
+
 	// Random things
 	// RandomChannel returns a random channel for a user.
 	RandomChannel(teamId string) (model.Channel, error)

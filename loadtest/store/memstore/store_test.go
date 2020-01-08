@@ -130,6 +130,27 @@ func TestUser(t *testing.T) {
 		require.Equal(t, postId, channelPosts[0].Id)
 	})
 
+	t.Run("PostsSince", func(t *testing.T) {
+		posts := make([]*model.Post, 10)
+		for i := 0; i < 10; i++ {
+			posts[i] = &model.Post{
+				Id:       model.NewId(),
+				CreateAt: int64(i),
+			}
+		}
+		postsSince, err := s.PostsSince(0)
+		require.NoError(t, err)
+		require.Empty(t, postsSince)
+		err = s.SetPosts(posts)
+		require.NoError(t, err)
+		postsSince, err = s.PostsSince(5)
+		require.NoError(t, err)
+		require.Len(t, postsSince, 4)
+		for i := 6; i < 10; i++ {
+			require.Contains(t, postsSince, posts[i])
+		}
+	})
+
 	t.Run("SetReactions", func(t *testing.T) {
 		postId := model.NewId()
 		userId := model.NewId()

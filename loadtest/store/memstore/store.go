@@ -101,6 +101,16 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	return channelPosts, nil
 }
 
+func (s *MemStore) PostsSince(ts int64) ([]*model.Post, error) {
+	var posts []*model.Post
+	for _, post := range s.posts {
+		if post.CreateAt > ts {
+			posts = append(posts, post)
+		}
+	}
+	return posts, nil
+}
+
 func (s *MemStore) SetPost(post *model.Post) error {
 	if post == nil {
 		return errors.New("post should not be nil")
