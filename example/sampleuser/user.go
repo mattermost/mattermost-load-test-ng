@@ -364,6 +364,10 @@ func (ue *SampleUser) SaveReaction(reaction *model.Reaction) error {
 	return nil
 }
 
+func (ue *SampleUser) DeleteReaction(reaction *model.Reaction) error {
+	return nil
+}
+
 func (ue *SampleUser) GetReactions(postId string) error {
 	return nil
 }

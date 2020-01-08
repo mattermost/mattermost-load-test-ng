@@ -647,6 +647,15 @@ func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	return nil
 }
 
+func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {
+	_, resp := ue.client.DeleteReaction(reaction)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) GetTeams() ([]string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
