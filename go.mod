@@ -7,16 +7,14 @@ require (
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect v2.0.0+incompatible
-	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
-	github.com/go-redis/redis v6.15.6+incompatible // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gorilla/mux v1.7.3
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
-	github.com/mattermost/mattermost-load-test v0.0.0-20191210214319-593c7cf2f402
-	github.com/mattermost/mattermost-server v5.11.1+incompatible
 	github.com/mattermost/mattermost-server/v5 v5.18.0-rc1
 	github.com/moul/http2curl v1.0.0 // indirect
+	github.com/onsi/ginkgo v1.10.2 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/spf13/cobra v0.0.5

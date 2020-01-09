@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
-	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
 
