@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -16,13 +18,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Agent struct {
+type API struct {
 	loadTests map[string]*loadtest.LoadTester
 }
 
-func (a *Agent) createLoadTestHandler(w http.ResponseWriter, r *http.Request) {
+func writeJsonResponse(w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(data)
+}
+
+func (a *API) createLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	var config config.LoadTestConfig
 	err := json.NewDecoder(r.Body).Decode(&config)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	u, err := uuid.NewV4()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -38,27 +51,12 @@ func (a *Agent) createLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lt := loadtest.New(&config, newSimpleController)
-	a.loadTests[lt.Id] = lt
-	// start := time.Now()
-	// err = lt.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	a.loadTests[u.String()] = lt
 
-	// mlog.Info("loadtest started")
-	// time.Sleep(60 * time.Second)
-
-	// err = lt.Stop()
-	// mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
-
-	// return err
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"loadTestId": lt.Id})
-
+	writeJsonResponse(w, map[string]string{"loadTestId": u.String()})
 }
 
-func (a *Agent) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
+func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	lt, ok := a.loadTests[id]
@@ -69,65 +67,97 @@ func (a *Agent) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadte
 	}
 	return lt, nil
 }
-func (a *Agent) runLoadTestHandler(w http.ResponseWriter, r *http.Request) {
+
+func (a *API) runLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
-	go lt.Run()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "load test started"})
+	if err = lt.Run(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJsonResponse(w, map[string]string{"message": "load test started"})
 }
 
-func (a *Agent) stopLoadTestHandler(w http.ResponseWriter, r *http.Request) {
+func (a *API) stopLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
-	_ = lt.Stop()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "load test stopped"})
+	if err = lt.Stop(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJsonResponse(w, map[string]string{"message": "load test stopped"})
 }
 
-func (a *Agent) destroyLoadTestHandler(w http.ResponseWriter, r *http.Request) {
+func (a *API) destroyLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
-	_ = lt.Stop()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "load test destroyed"})
-	delete(a.loadTests, lt.Id)
+	if err = lt.Stop(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	delete(a.loadTests, mux.Vars(r)["id"])
+	writeJsonResponse(w, map[string]string{"message": "load test destroyed"})
 }
 
-func (a *Agent) getLoadTestStatusHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadTestById(w, r)
+func (a *API) getLoadTestStatusHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]loadtest.State{"status": lt.GetState()})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "Not yet implemented"})
 }
 
-func (a *Agent) addUserHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadTestById(w, r)
-	if err != nil {
-		return
-	}
-	lt.AddUser()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "user added"})
+func getAmount(r *http.Request) int {
+	amountStr := r.FormValue("amount")
+	amount := 1
 
+	if amountStr != "" {
+		if a, err := strconv.ParseInt(amountStr, 10, 16); err == nil && a > 0 {
+			amount = int(a)
+		}
+	}
+	return amount
 }
 
-func (a *Agent) removeUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
+	amount := getAmount(r)
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
-	lt.RemoveUser()
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "user removed"})
+
+	for i := 0; i < amount; i++ {
+		if err = lt.AddUser(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	writeJsonResponse(w, map[string]string{"message": "user added"})
+}
+
+func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
+	amount := getAmount(r)
+
+	lt, err := a.getLoadTestById(w, r)
+	if err != nil {
+		return
+	}
+
+	for i := 0; i < amount; i++ {
+		if err = lt.RemoveUser(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	writeJsonResponse(w, map[string]string{"message": "user removed"})
 }
 
 func RunServerCmdF(cmd *cobra.Command, args []string) error {
@@ -136,14 +166,14 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadtest").Subrouter()
 
-	agent := Agent{loadTests: make(map[string]*loadtest.LoadTester)}
+	agent := API{loadTests: make(map[string]*loadtest.LoadTester)}
 	r.HandleFunc("/create", agent.createLoadTestHandler).Methods("POST")
 	r.HandleFunc("/run/{id}", agent.runLoadTestHandler).Methods("POST")
 	r.HandleFunc("/stop/{id}", agent.stopLoadTestHandler).Methods("POST")
 	r.HandleFunc("/destroy/{id}", agent.destroyLoadTestHandler).Methods("POST")
 	r.HandleFunc("/status/{id}", agent.getLoadTestStatusHandler).Methods("GET")
-	r.HandleFunc("/user/{id}", agent.addUserHandler).Methods("PUT")
-	r.HandleFunc("/user/{id}", agent.removeUserHandler).Methods("DELETE")
+	r.HandleFunc("/user/{id}", agent.addUserHandler).Methods("PUT").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/user/{id}", agent.removeUserHandler).Methods("DELETE").Queries("amount", "{[0-9]*?}")
 
 	mlog.Info("Agent started, listening on", mlog.Int("port", port))
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), r)

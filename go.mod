@@ -3,13 +3,15 @@ module github.com/mattermost/mattermost-load-test-ng
 go 1.12
 
 require (
+	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
+	github.com/go-redis/redis v6.15.6+incompatible // indirect
+	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gorilla/mux v1.7.3
 	github.com/mattermost/mattermost-server v5.11.1+incompatible
 	github.com/mattermost/mattermost-server/v5 v5.18.0-rc1
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0

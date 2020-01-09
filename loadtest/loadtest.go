@@ -8,7 +8,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -33,7 +32,6 @@ type LoadTester struct {
 	status        chan control.UserStatus
 	state         State
 	newController NewController
-	Id            string
 }
 
 // NewController is a factory function that returns a new
@@ -164,11 +162,10 @@ func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 	if config == nil || nc == nil {
 		return nil
 	}
-	id, _ := uuid.NewV1()
+
 	return &LoadTester{
 		config:        config,
 		status:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
-		Id:            id.String(),
 	}
 }
