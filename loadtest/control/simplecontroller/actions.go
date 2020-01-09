@@ -149,6 +149,24 @@ func (c *SimpleController) searchUsers() control.UserStatus {
 	return c.newInfoStatus(fmt.Sprintf("found %d users", len(users)))
 }
 
+func (c *SimpleController) updateProfile() control.UserStatus {
+	userId := c.user.Store().Id()
+	userName := fmt.Sprintf("testuserNew%d", c.id)
+	nickName := fmt.Sprintf("testNickName%d", c.id)
+	firstName := fmt.Sprintf("firstName%d", c.id)
+	lastName := fmt.Sprintf("lastName%d", c.id)
+	err := c.user.PatchUser(userId, &model.UserPatch{
+		Username:  &userName,
+		Nickname:  &nickName,
+		FirstName: &firstName,
+		LastName:  &lastName,
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus("user patched")
+}
+
 func (c *SimpleController) searchChannels() control.UserStatus {
 	teams, err := c.user.Store().Teams()
 	if err != nil {
