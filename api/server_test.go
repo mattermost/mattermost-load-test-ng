@@ -20,10 +20,10 @@ func TestAPI(t *testing.T) {
 	defer server.Close()
 
 	// create httpexpect instance
-	e := httpexpect.New(t, server.URL)
+	e := httpexpect.New(t, server.URL+"/loadagent")
 
 	// is it working?
-	e.GET("/loadtest/123/status").
+	e.GET("/123/status").
 		Expect().
 		Status(http.StatusNotFound)
 
@@ -32,14 +32,14 @@ func TestAPI(t *testing.T) {
 	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
 	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	sampleConfig.UsersConfiguration.MaxActiveUsers = 100
-	obj := e.POST("/loadtest/create").WithJSON(sampleConfig).
+	obj := e.POST("/create").WithJSON(sampleConfig).
 		Expect().
 		Status(http.StatusOK).JSON().Object()
 	ltId := obj.Value("loadTestId").String().Raw()
 
-	e.POST("/loadtest/" + ltId + "/run").Expect().Status(http.StatusOK)
-	e.POST("/loadtest/"+ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
-	e.POST("/loadtest/"+ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
-	e.POST("/loadtest/" + ltId + "/stop").Expect().Status(http.StatusOK)
-	e.DELETE("/loadtest/" + ltId).Expect().Status(http.StatusOK)
+	e.POST("/" + ltId + "/run").Expect().Status(http.StatusOK)
+	e.POST("/"+ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
+	e.POST("/"+ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
+	e.POST("/" + ltId + "/stop").Expect().Status(http.StatusOK)
+	e.DELETE("/" + ltId).Expect().Status(http.StatusOK)
 }

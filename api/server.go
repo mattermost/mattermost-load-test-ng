@@ -86,7 +86,7 @@ func (a *API) runLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, map[string]string{"message": "load test started"})
+	writeJsonResponse(w, map[string]interface{}{"message": "load test started", "status": MockStatus{}})
 }
 
 func (a *API) stopLoadTestHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func (a *API) stopLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, map[string]string{"message": "load test stopped"})
+	writeJsonResponse(w, map[string]interface{}{"message": "load test stopped", "status": MockStatus{}})
 }
 
 func (a *API) destroyLoadTestHandler(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +175,7 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
-	r := router.PathPrefix("/loadtest").Subrouter()
+	r := router.PathPrefix("/loadagent").Subrouter()
 
 	agent := API{agents: make(map[string]*loadtest.LoadTester)}
 	r.HandleFunc("/create", agent.createLoadTestHandler).Methods("POST")
