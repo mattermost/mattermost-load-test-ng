@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
@@ -16,8 +17,18 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 )
 
+// remove once https://github.com/mattermost/mattermost-load-test-ng/pull/87 is merged
+type MockStatus struct {
+	State           loadtest.State // State of the the load test.
+	NumUsers        int            // Number of active users.
+	NumUsersAdded   int            // Number of users added since the start of the test.
+	NumUsersRemoved int            // Number of users removed since the start of the test.
+	NumErrors       int32          // Number of errors that have occurred.
+	StartTime       time.Time      // Time when the load test was started. This only logs the time when the load test was first started, and does not get reset if it was subsequently restarted.
+}
+
 type API struct {
-	loadTests map[string]*loadtest.LoadTester
+	agents map[string]*loadtest.LoadTester
 }
 
 func writeJsonResponse(w http.ResponseWriter, data interface{}) {
@@ -49,7 +60,7 @@ func (a *API) createLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lt := loadtest.New(&config, newSimpleController)
-	a.loadTests[u.String()] = lt
+	a.agents[u.String()] = lt
 
 	writeJsonResponse(w, map[string]string{"loadTestId": u.String()})
 }
@@ -57,7 +68,7 @@ func (a *API) createLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	lt, ok := a.loadTests[id]
+	lt, ok := a.agents[id]
 	if !ok {
 		err := fmt.Errorf("Load test with id %s not found", id)
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -98,7 +109,7 @@ func (a *API) destroyLoadTestHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
-	delete(a.loadTests, mux.Vars(r)["id"])
+	delete(a.agents, mux.Vars(r)["id"])
 	writeJsonResponse(w, map[string]string{"message": "load test destroyed"})
 }
 
@@ -108,7 +119,7 @@ func (a *API) getLoadTestStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "Not yet implemented"})
+	_ = json.NewEncoder(w).Encode(map[string]MockStatus{"status": MockStatus{}})
 }
 
 func getAmount(r *http.Request) int {
@@ -130,14 +141,14 @@ func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := 0; i < amount; i++ {
-		if err = lt.AddUser(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	i := 0
+	for ; i < amount; i++ {
+		if lt.AddUser() != nil {
+			break // stop on first error, result is reported as part of status
 		}
 	}
 
-	writeJsonResponse(w, map[string]string{"message": "user added"})
+	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "status": MockStatus{}})
 }
 
 func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -148,26 +159,27 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := 0; i < amount; i++ {
+	i := 0
+	for ; i < amount; i++ {
 		if err = lt.RemoveUser(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			break // stop on first error, result is reported as part of status
 		}
 	}
-	writeJsonResponse(w, map[string]string{"message": "user removed"})
+
+	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "status": MockStatus{}})
 }
 
 func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadtest").Subrouter()
 
-	agent := API{loadTests: make(map[string]*loadtest.LoadTester)}
+	agent := API{agents: make(map[string]*loadtest.LoadTester)}
 	r.HandleFunc("/create", agent.createLoadTestHandler).Methods("POST")
-	r.HandleFunc("/run/{id}", agent.runLoadTestHandler).Methods("POST")
-	r.HandleFunc("/stop/{id}", agent.stopLoadTestHandler).Methods("POST")
-	r.HandleFunc("/destroy/{id}", agent.destroyLoadTestHandler).Methods("POST")
-	r.HandleFunc("/status/{id}", agent.getLoadTestStatusHandler).Methods("GET")
-	r.HandleFunc("/user/{id}", agent.addUserHandler).Methods("PUT").Queries("amount", "{[0-9]*?}")
-	r.HandleFunc("/user/{id}", agent.removeUserHandler).Methods("DELETE").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/run", agent.runLoadTestHandler).Methods("POST")
+	r.HandleFunc("/{id}/stop", agent.stopLoadTestHandler).Methods("POST")
+	r.HandleFunc("/{id}", agent.destroyLoadTestHandler).Methods("DELETE")
+	r.HandleFunc("/{id}/status", agent.getLoadTestStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/user/add", agent.addUserHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/user/remove", agent.removeUserHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	return router
 }

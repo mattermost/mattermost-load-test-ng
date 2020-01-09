@@ -130,10 +130,6 @@ func (lt *LoadTester) Run() error {
 	return nil
 }
 
-func (lt *LoadTester) GetState() State {
-	return lt.state
-}
-
 // Stop terminates the current load-test.
 // It returns an error if it is called when the load test has not started.
 func (lt *LoadTester) Stop() error {

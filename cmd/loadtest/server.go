@@ -12,14 +12,14 @@ import (
 func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetInt("port")
 
-	mlog.Info("Agent started, listening on", mlog.Int("port", port))
+	mlog.Info("API server started, listening on", mlog.Int("port", port))
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter())
 }
 
 func MakeServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "server",
-		Short:  "Start load-test agent",
+		Short:  "Start API agent",
 		RunE:   RunServerCmdF,
 		PreRun: initLogger,
 	}
