@@ -142,13 +142,15 @@ func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	i := 0
+	var addError string
 	for ; i < amount; i++ {
-		if lt.AddUser() != nil {
+		if err := lt.AddUser(); err != nil {
+			addError = err.Error()
 			break // stop on first error, result is reported as part of status
 		}
 	}
 
-	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "status": MockStatus{}})
+	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "error": addError, "status": MockStatus{}})
 }
 
 func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -160,13 +162,15 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	i := 0
+	var removeError string
 	for ; i < amount; i++ {
 		if err = lt.RemoveUser(); err != nil {
+			removeError = err.Error()
 			break // stop on first error, result is reported as part of status
 		}
 	}
 
-	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "status": MockStatus{}})
+	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "error": removeError, "status": MockStatus{}})
 }
 
 func SetupAPIRouter() *mux.Router {
