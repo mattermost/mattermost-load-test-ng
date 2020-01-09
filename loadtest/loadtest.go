@@ -31,7 +31,7 @@ type Status struct {
 	NumUsers        int       // Number of active users.
 	NumUsersAdded   int       // Number of users added since the start of the test.
 	NumUsersRemoved int       // Number of users removed since the start of the test.
-	NumErrors       int32     // Number of errors that have occurred.
+	NumErrors       int64     // Number of errors that have occurred.
 	StartTime       time.Time // Time when the load test was started. This only logs the time when the load test was first started, and does not get reset if it was subsequently restarted.
 }
 
@@ -42,7 +42,6 @@ type LoadTester struct {
 	config        *config.LoadTestConfig
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
-	startTimeOnce sync.Once
 	status        Status
 	newController NewController
 }
@@ -60,7 +59,7 @@ func (lt *LoadTester) handleStatus() {
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
-			atomic.AddInt32(&lt.status.NumErrors, 1)
+			atomic.AddInt64(&lt.status.NumErrors, 1)
 			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId))
 			continue
 		} else if st.Code == control.USER_STATUS_FAILED {
@@ -138,15 +137,16 @@ func (lt *LoadTester) Run() error {
 		return ErrNotStopped
 	}
 	lt.status.State = StateStarting
+	lt.status.NumUsersRemoved = 0
+	lt.status.NumUsersAdded = 0
+	lt.status.NumErrors = 0
+	lt.status.StartTime = time.Now()
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.addUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
-	lt.startTimeOnce.Do(func() {
-		lt.status.StartTime = time.Now()
-	})
 	lt.status.State = StateRunning
 	return nil
 }
@@ -168,6 +168,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.wg.Wait()
 	close(lt.statusChan)
+	lt.status.NumUsers = 0
 	lt.status.State = StateStopped
 	return nil
 }
@@ -177,8 +178,8 @@ func (lt *LoadTester) Status() Status {
 	lt.mut.RLock()
 	defer lt.mut.RUnlock()
 	// We need to construct the struct anew because
-	// NumErrors get incremented in a separate goroutine.
-	numErrors := atomic.LoadInt32(&lt.status.NumErrors)
+	// NumErrors gets incremented in a separate goroutine.
+	numErrors := atomic.LoadInt64(&lt.status.NumErrors)
 
 	return Status{
 		State:           lt.status.State,

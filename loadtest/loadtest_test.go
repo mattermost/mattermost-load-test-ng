@@ -162,10 +162,10 @@ func TestStatus(t *testing.T) {
 	assert.Equal(t, 1, st.NumUsersAdded)
 	assert.Equal(t, 1, st.NumUsersRemoved)
 
-	// Start again, and verify that start time does not change.
+	// Start again, and verify that start time got reset.
 	err = lt.Run()
 	require.NoError(t, err)
 	st = lt.Status()
-	assert.True(t, startTime.Equal(st.StartTime))
+	assert.True(t, startTime.Before(st.StartTime))
 	assert.Equal(t, StateRunning, st.State)
 }
