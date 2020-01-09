@@ -101,7 +101,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, map[string]interface{}{"message": "Load-test agent stopped", "status": MockStatus{}})
 }
 
-func (a *API) destroyLoadTestHandler(w http.ResponseWriter, r *http.Request) {
+func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
@@ -181,7 +181,7 @@ func SetupAPIRouter() *mux.Router {
 	r.HandleFunc("/create", agent.createLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}/run", agent.runLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}/stop", agent.stopLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}", agent.destroyLoadTestHandler).Methods("DELETE")
+	r.HandleFunc("/{id}", agent.destroyLoadAgentHandler).Methods("DELETE")
 	r.HandleFunc("/{id}/status", agent.getLoadAgentStatusHandler).Methods("GET")
 	r.HandleFunc("/{id}/user/add", agent.addUserHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	r.HandleFunc("/{id}/user/remove", agent.removeUserHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
