@@ -28,9 +28,6 @@ type UserStatus struct {
 	Code int
 	// Info contains any extra information attached with the status.
 	Info string
-	// Err contains the error encountered while performing the action.
-	Err error
-	// ErrOrigin contains information about where the error originated in the
-	// controller.
-	ErrOrigin string
+	// Custom error containing the error encountered and location information.
+	Err *ControlError
 }

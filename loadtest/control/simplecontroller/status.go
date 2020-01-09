@@ -21,7 +21,9 @@ func (c *SimpleController) newErrorStatus(err error) control.UserStatus {
 		User:         c.user,
 		Code:         control.USER_STATUS_ERROR,
 		Info:         "",
-		Err:          err,
-		ErrOrigin:    origin,
+		Err: &control.ControlError{
+			Err:    err,
+			Origin: origin,
+		},
 	}
 }
