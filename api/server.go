@@ -119,7 +119,7 @@ func (a *API) getLoadTestStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]MockStatus{"status": MockStatus{}})
+	_ = json.NewEncoder(w).Encode(map[string]MockStatus{"status": {}})
 }
 
 func getAmount(r *http.Request) int {

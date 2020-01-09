@@ -23,7 +23,7 @@ func main() {
 	rootCmd := MakeLoadTestCommand()
 
 	commands := []*cobra.Command{
-		&cobra.Command{
+		{
 			Use:    "example",
 			Short:  "Run example implementation",
 			RunE:   RunExampleCmdF,
