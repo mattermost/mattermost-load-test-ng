@@ -1,12 +1,14 @@
 package api
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gavv/httpexpect"
+	"github.com/mattermost/mattermost-load-test-ng/config"
 )
 
 func TestAPI(t *testing.T) {
@@ -25,8 +27,12 @@ func TestAPI(t *testing.T) {
 		Expect().
 		Status(http.StatusNotFound)
 
-	sampleConfig, _ := ioutil.ReadFile("../config/config.default.json")
-	obj := e.POST("/loadtest/create").WithHeader("Content-Type", "application/json").WithBytes(sampleConfig).
+	sampleConfigBytes, _ := ioutil.ReadFile("../config/config.default.json")
+	var sampleConfig config.LoadTestConfig
+	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
+	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	sampleConfig.UsersConfiguration.MaxActiveUsers = 100
+	obj := e.POST("/loadtest/create").WithJSON(sampleConfig).
 		Expect().
 		Status(http.StatusOK).JSON().Object()
 	ltId := obj.Value("loadTestId").String().Raw()
