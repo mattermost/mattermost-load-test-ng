@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +55,7 @@ func TestAddUser(t *testing.T) {
 	err := lt.AddUser()
 	require.Equal(t, ErrNotRunning, err)
 
-	lt.state = StateRunning
+	lt.status.State = StateRunning
 
 	ltConfig.UsersConfiguration.MaxActiveUsers = 0
 	err = lt.AddUser()
@@ -77,7 +78,7 @@ func TestRemoveUser(t *testing.T) {
 	err := lt.RemoveUser()
 	require.Equal(t, ErrNotRunning, err)
 
-	lt.state = StateRunning
+	lt.status.State = StateRunning
 
 	err = lt.RemoveUser()
 	require.Equal(t, ErrNoUsersLeft, err)
@@ -94,7 +95,7 @@ func TestRun(t *testing.T) {
 	lt := New(&ltConfig, newController)
 	err := lt.Run()
 	require.NoError(t, err)
-	require.Equal(t, lt.state, StateRunning)
+	require.Equal(t, lt.status.State, StateRunning)
 	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
 
 	err = lt.Run()
@@ -111,7 +112,7 @@ func TestStop(t *testing.T) {
 
 	err = lt.Run()
 	require.NoError(t, err)
-	lt.state = StateRunning
+	lt.status.State = StateRunning
 
 	numUsers := 8
 	for i := 0; i < numUsers; i++ {
@@ -120,6 +121,51 @@ func TestStop(t *testing.T) {
 	}
 	err = lt.Stop()
 	require.NoError(t, err)
-	require.Equal(t, lt.state, StateStopped)
+	require.Equal(t, lt.status.State, StateStopped)
 	require.Empty(t, lt.controllers)
+}
+
+func TestStatus(t *testing.T) {
+	lt := New(&ltConfig, newController)
+	require.NotNil(t, lt)
+
+	err := lt.Run()
+	require.NoError(t, err)
+	st := lt.Status()
+	startTime := st.StartTime
+	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, 0, st.NumUsers)
+	assert.Equal(t, 0, st.NumUsersAdded)
+	assert.Equal(t, 0, st.NumUsersRemoved)
+
+	err = lt.AddUser()
+	require.NoError(t, err)
+	st = lt.Status()
+	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, 1, st.NumUsers)
+	assert.Equal(t, 1, st.NumUsersAdded)
+	assert.Equal(t, 0, st.NumUsersRemoved)
+
+	err = lt.RemoveUser()
+	require.NoError(t, err)
+	st = lt.Status()
+	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, 0, st.NumUsers)
+	assert.Equal(t, 1, st.NumUsersAdded)
+	assert.Equal(t, 1, st.NumUsersRemoved)
+
+	err = lt.Stop()
+	require.NoError(t, err)
+	st = lt.Status()
+	assert.Equal(t, StateStopped, st.State)
+	assert.Equal(t, 0, st.NumUsers)
+	assert.Equal(t, 1, st.NumUsersAdded)
+	assert.Equal(t, 1, st.NumUsersRemoved)
+
+	// Start again, and verify that start time got reset.
+	err = lt.Run()
+	require.NoError(t, err)
+	st = lt.Status()
+	assert.True(t, startTime.Before(st.StartTime))
+	assert.Equal(t, StateRunning, st.State)
 }
