@@ -35,11 +35,11 @@ func TestAPI(t *testing.T) {
 	obj := e.POST("/create").WithJSON(sampleConfig).
 		Expect().
 		Status(http.StatusOK).JSON().Object()
-	ltId := obj.Value("loadTestId").String().Raw()
+	ltId := obj.Value("loadAgentId").String().Raw()
 
-	e.POST("/" + ltId + "/run").Expect().Status(http.StatusOK)
-	e.POST("/"+ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
-	e.POST("/"+ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
-	e.POST("/" + ltId + "/stop").Expect().Status(http.StatusOK)
-	e.DELETE("/" + ltId).Expect().Status(http.StatusOK)
+	e.POST(ltId + "/run").Expect().Status(http.StatusOK)
+	e.POST(ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
+	e.POST(ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
+	e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
+	e.DELETE(ltId).Expect().Status(http.StatusOK)
 }
