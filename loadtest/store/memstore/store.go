@@ -150,7 +150,7 @@ func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 
 func (s *MemStore) SetChannels(channels []*model.Channel) error {
 	if channels == nil {
-		return errors.New("memstore: channels shouldn't be nil")
+		return errors.New("memstore: channels should not be nil")
 	}
 	for _, channel := range channels {
 		if err := s.SetChannel(channel); err != nil {
