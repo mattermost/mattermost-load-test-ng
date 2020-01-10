@@ -64,6 +64,18 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.searchPosts,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.searchChannels,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.searchUsers,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.createPost,
 			waitAfter: 1000,
 		},
