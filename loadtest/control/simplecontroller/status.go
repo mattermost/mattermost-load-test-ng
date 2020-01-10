@@ -15,11 +15,15 @@ func (c *SimpleController) newInfoStatus(info string) control.UserStatus {
 }
 
 func (c *SimpleController) newErrorStatus(err error) control.UserStatus {
+	origin := getErrOrigin()
 	return control.UserStatus{
 		ControllerId: c.id,
 		User:         c.user,
 		Code:         control.USER_STATUS_ERROR,
 		Info:         "",
-		Err:          err,
+		Err: &control.ControlError{
+			Err:    err,
+			Origin: origin,
+		},
 	}
 }

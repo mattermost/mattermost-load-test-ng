@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrEmptyMap   = errors.New("cannot select from an empty map")
-	ErrEmptySlice = errors.New("cannot select from an empty slice")
+	ErrEmptyMap   = errors.New("memstore: cannot select from an empty map")
+	ErrEmptySlice = errors.New("memstore: cannot select from an empty slice")
 )
 
 // RandomChannel returns a random channel for a user.
@@ -102,7 +102,7 @@ func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
 func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Map {
-		return nil, errors.New("not a map")
+		return nil, errors.New("memstore: not a map")
 	}
 	keys := val.MapKeys()
 	if len(keys) == 0 {
