@@ -256,6 +256,10 @@ func (s *SampleStore) SetReactions(postId string, reactions []*model.Reaction) e
 	return errors.New("not implemented")
 }
 
+func (s *SampleStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
+	return false, errors.New("not implemented")
+}
+
 func (s *SampleStore) Reactions(postId string) ([]model.Reaction, error) {
 	return nil, errors.New("not implemented")
 }

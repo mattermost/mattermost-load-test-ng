@@ -300,6 +300,21 @@ func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 	return reactions, nil
 }
 
+func (s *MemStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
+	if reaction == nil {
+		return false, errors.New("memstore: reaction should not be nil")
+	}
+	reactions := s.reactions[reaction.PostId]
+	for i, r := range reactions {
+		if *r == *reaction {
+			reactions[i] = reactions[len(reactions)-1]
+			s.reactions[reaction.PostId] = reactions[:len(reactions)-1]
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *MemStore) Users() ([]*model.User, error) {
 	users := make([]*model.User, len(s.users))
 	i := 0

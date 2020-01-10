@@ -70,6 +70,7 @@ type MutableUserStore interface {
 	Post(postId string) (*model.Post, error)
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	SetReactions(postId string, reactions []*model.Reaction) error
+	DeleteReaction(reaction *model.Reaction) (bool, error)
 
 	// preferences
 	SetPreferences(preferences *model.Preferences) error

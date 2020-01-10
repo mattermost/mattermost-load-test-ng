@@ -661,6 +661,10 @@ func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {
 		return resp.Error
 	}
 
+	if _, err := ue.store.DeleteReaction(reaction); err != nil {
+		return err
+	}
+
 	return nil
 }
 
