@@ -178,6 +178,62 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 	*/
 }
 
+func (c *SimpleController) searchUsers() control.UserStatus {
+	teams, err := c.user.Store().Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(teams) == 0 {
+		return c.newInfoStatus("no teams to search for users")
+	}
+
+	users, err := c.user.SearchUsers(&model.UserSearch{
+		Term:  "test",
+		Limit: 100,
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("found %d users", len(users)))
+}
+
+func (c *SimpleController) searchChannels() control.UserStatus {
+	teams, err := c.user.Store().Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(teams) == 0 {
+		return c.newInfoStatus("no teams to search for channels")
+	}
+
+	channels, err := c.user.SearchChannels(teams[0].Id, &model.ChannelSearch{
+		Term: "test",
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("found %d channels", len(channels)))
+}
+
+func (c *SimpleController) searchPosts() control.UserStatus {
+	teams, err := c.user.Store().Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(teams) == 0 {
+		return c.newInfoStatus("no teams to search for posts")
+	}
+
+	list, err := c.user.SearchPosts(teams[0].Id, "test search", false)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("found %d posts", len(list.Posts)))
+}
+
 // reload performs all actions done when a user reloads the browser.
 // If full parameter is enabled, it also disconnects and reconnects
 // the WebSocket connection.

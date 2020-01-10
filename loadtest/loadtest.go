@@ -59,8 +59,8 @@ func (lt *LoadTester) handleStatus() {
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
+			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("origin", st.Err.Origin))
 			atomic.AddInt64(&lt.status.NumErrors, 1)
-			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId))
 			continue
 		} else if st.Code == control.USER_STATUS_FAILED {
 			mlog.Error(st.Err.Error())
