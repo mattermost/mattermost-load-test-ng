@@ -5,6 +5,8 @@ package loadtest
 
 import (
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -23,14 +25,24 @@ const (
 	StateStopping
 )
 
+// Status contains various information about the load test.
+type Status struct {
+	State           State     // State of the the load test.
+	NumUsers        int       // Number of active users.
+	NumUsersAdded   int       // Number of users added since the start of the test.
+	NumUsersRemoved int       // Number of users removed since the start of the test.
+	NumErrors       int64     // Number of errors that have occurred.
+	StartTime       time.Time // Time when the load test was started. This only logs the time when the load test was first started, and does not get reset if it was subsequently restarted.
+}
+
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	mut           sync.RWMutex
 	controllers   []control.UserController
 	config        *config.LoadTestConfig
 	wg            sync.WaitGroup
-	status        chan control.UserStatus
-	state         State
+	statusChan    chan control.UserStatus
+	status        Status
 	newController NewController
 }
 
@@ -42,12 +54,13 @@ type LoadTester struct {
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
 func (lt *LoadTester) handleStatus() {
-	for st := range lt.status {
+	for st := range lt.statusChan {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
-			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId))
+			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("origin", st.Err.Origin))
+			atomic.AddInt64(&lt.status.NumErrors, 1)
 			continue
 		} else if st.Code == control.USER_STATUS_FAILED {
 			mlog.Error(st.Err.Error())
@@ -62,7 +75,7 @@ func (lt *LoadTester) AddUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.state != StateRunning {
+	if lt.status.State != StateRunning {
 		return ErrNotRunning
 	}
 	return lt.addUser()
@@ -75,7 +88,9 @@ func (lt *LoadTester) addUser() error {
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
-	controller := lt.newController(activeUsers+1, lt.status)
+	lt.status.NumUsers++
+	lt.status.NumUsersAdded++
+	controller := lt.newController(activeUsers+1, lt.statusChan)
 	lt.wg.Add(1)
 	go func() {
 		controller.Run()
@@ -89,7 +104,7 @@ func (lt *LoadTester) RemoveUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.state != StateRunning {
+	if lt.status.State != StateRunning {
 		return ErrNotRunning
 	}
 	return lt.removeUser()
@@ -102,6 +117,8 @@ func (lt *LoadTester) removeUser() error {
 	if activeUsers == 0 {
 		return ErrNoUsersLeft
 	}
+	lt.status.NumUsers--
+	lt.status.NumUsersRemoved++
 	// TODO: Add a way to make how a user is removed decidable from the upper layer (the user of this API),
 	// for example by passing a typed constant (e.g. random, first, last).
 	controller := lt.controllers[activeUsers-1]
@@ -116,17 +133,21 @@ func (lt *LoadTester) Run() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.state != StateStopped {
+	if lt.status.State != StateStopped {
 		return ErrNotStopped
 	}
-	lt.state = StateStarting
+	lt.status.State = StateStarting
+	lt.status.NumUsersRemoved = 0
+	lt.status.NumUsersAdded = 0
+	lt.status.NumErrors = 0
+	lt.status.StartTime = time.Now()
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.addUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
-	lt.state = StateRunning
+	lt.status.State = StateRunning
 	return nil
 }
 
@@ -136,19 +157,38 @@ func (lt *LoadTester) Stop() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.state != StateRunning {
+	if lt.status.State != StateRunning {
 		return ErrNotRunning
 	}
-	lt.state = StateStopping
+	lt.status.State = StateStopping
 	for range lt.controllers {
 		if err := lt.removeUser(); err != nil {
 			mlog.Error(err.Error())
 		}
 	}
 	lt.wg.Wait()
-	close(lt.status)
-	lt.state = StateStopped
+	close(lt.statusChan)
+	lt.status.NumUsers = 0
+	lt.status.State = StateStopped
 	return nil
+}
+
+// Status returns information regarding the current state of the load-test.
+func (lt *LoadTester) Status() Status {
+	lt.mut.RLock()
+	defer lt.mut.RUnlock()
+	// We need to construct the struct anew because
+	// NumErrors gets incremented in a separate goroutine.
+	numErrors := atomic.LoadInt64(&lt.status.NumErrors)
+
+	return Status{
+		State:           lt.status.State,
+		NumUsers:        lt.status.NumUsers,
+		NumUsersAdded:   lt.status.NumUsersAdded,
+		NumUsersRemoved: lt.status.NumUsersRemoved,
+		NumErrors:       numErrors,
+		StartTime:       lt.status.StartTime,
+	}
 }
 
 // New creates and initializes a new LoadTester with given config. A factory
@@ -161,7 +201,8 @@ func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 
 	return &LoadTester{
 		config:        config,
-		status:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
+		status:        Status{},
 	}
 }

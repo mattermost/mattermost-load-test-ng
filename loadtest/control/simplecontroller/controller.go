@@ -64,6 +64,18 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.searchPosts,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.searchChannels,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.searchUsers,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.createPost,
 			waitAfter: 1000,
 		},
@@ -119,7 +131,7 @@ func (c *SimpleController) Stop() {
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
-	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: &control.ControlError{Err: errors.New(reason)}}
 }
 
 func (c *SimpleController) sendStopStatus() {
