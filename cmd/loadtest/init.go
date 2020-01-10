@@ -73,3 +73,12 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+
+func MakeInitCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:    "init",
+		Short:  "Initialize instance",
+		RunE:   RunInitCmdF,
+		PreRun: initLogger,
+	}
+}
