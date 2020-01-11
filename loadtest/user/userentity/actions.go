@@ -175,6 +175,14 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
+func (ue *UserEntity) GetPostsSince(channelId string, time int64) error {
+	postlist, resp := ue.client.GetPostsSince(channelId, time)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+}
+
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
 func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
 	user, err := ue.getUserFromStore()
@@ -642,6 +650,19 @@ func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	_, resp := ue.client.SaveReaction(reaction)
 	if resp.Error != nil {
 		return resp.Error
+	}
+
+	return nil
+}
+
+func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {
+	_, resp := ue.client.DeleteReaction(reaction)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	if _, err := ue.store.DeleteReaction(reaction); err != nil {
+		return err
 	}
 
 	return nil

@@ -27,6 +27,12 @@ type UserStore interface {
 	// Roles return the roles of the user.
 	Roles() ([]model.Role, error)
 
+	// PostsSince returns posts created after a specified timestamp in milliseconds.
+	PostsSince(ts int64) ([]model.Post, error)
+
+	// Reactions returns reactions for a given postId.
+	Reactions(postId string) ([]model.Reaction, error)
+
 	// Random things
 	// RandomChannel returns a random channel for a user.
 	RandomChannel(teamId string) (model.Channel, error)
@@ -64,7 +70,7 @@ type MutableUserStore interface {
 	Post(postId string) (*model.Post, error)
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	SetReactions(postId string, reactions []*model.Reaction) error
-	Reactions(postId string) ([]*model.Reaction, error)
+	DeleteReaction(reaction *model.Reaction) (bool, error)
 
 	// preferences
 	SetPreferences(preferences *model.Preferences) error

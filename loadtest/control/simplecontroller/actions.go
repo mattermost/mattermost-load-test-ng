@@ -100,6 +100,55 @@ func (c *SimpleController) createPost() control.UserStatus {
 	return c.newInfoStatus(fmt.Sprintf("post created, id %v", postId))
 }
 
+func (c *SimpleController) addReaction() control.UserStatus {
+	// get posts from UserStore that have been created in the last minute
+	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 + 60000)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(posts) == 0 {
+		return c.newInfoStatus("no posts to add reaction to")
+	}
+
+	err = c.user.SaveReaction(&model.Reaction{
+		UserId:    c.user.Store().Id(),
+		PostId:    posts[0].Id,
+		EmojiName: "grinning",
+	})
+
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus("added reaction")
+}
+
+func (c *SimpleController) removeReaction() control.UserStatus {
+	// get posts from UserStore that have been created in the last minute
+	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 + 60000)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(posts) == 0 {
+		return c.newInfoStatus("no posts to remove reaction from")
+	}
+
+	reactions, err := c.user.Store().Reactions(posts[0].Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	if len(reactions) == 0 {
+		return c.newInfoStatus("no reactions to remove")
+	}
+
+	err = c.user.DeleteReaction(&reactions[0])
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus("removed reaction")
+}
+
 func (c *SimpleController) createGroupChannel() control.UserStatus {
 	channelId, err := c.user.CreateGroupChannel([]string{}) // TODO: populate memberIds parameter with other users
 	if err != nil {

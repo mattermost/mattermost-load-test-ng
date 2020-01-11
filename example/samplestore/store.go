@@ -71,6 +71,10 @@ func (s *SampleStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	return nil, nil
 }
 
+func (s *SampleStore) PostsSince(ts int64) ([]model.Post, error) {
+	return []model.Post{}, nil
+}
+
 func (s *SampleStore) SetUser(user *model.User) error {
 	s.user = user
 	return nil
@@ -252,7 +256,11 @@ func (s *SampleStore) SetReactions(postId string, reactions []*model.Reaction) e
 	return errors.New("not implemented")
 }
 
-func (s *SampleStore) Reactions(postId string) ([]*model.Reaction, error) {
+func (s *SampleStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
+	return false, errors.New("not implemented")
+}
+
+func (s *SampleStore) Reactions(postId string) ([]model.Reaction, error) {
 	return nil, errors.New("not implemented")
 }
 

@@ -130,6 +130,27 @@ func TestUser(t *testing.T) {
 		require.Equal(t, postId, channelPosts[0].Id)
 	})
 
+	t.Run("PostsSince", func(t *testing.T) {
+		posts := make([]*model.Post, 10)
+		for i := 0; i < 10; i++ {
+			posts[i] = &model.Post{
+				Id:       model.NewId(),
+				CreateAt: int64(i),
+			}
+		}
+		postsSince, err := s.PostsSince(0)
+		require.NoError(t, err)
+		require.Empty(t, postsSince)
+		err = s.SetPosts(posts)
+		require.NoError(t, err)
+		postsSince, err = s.PostsSince(5)
+		require.NoError(t, err)
+		require.Len(t, postsSince, 4)
+		for i := 6; i < 10; i++ {
+			require.Contains(t, postsSince, *posts[i])
+		}
+	})
+
 	t.Run("SetReactions", func(t *testing.T) {
 		postId := model.NewId()
 		userId := model.NewId()
@@ -143,7 +164,50 @@ func TestUser(t *testing.T) {
 		require.NoError(t, err)
 		reactions, err := s.Reactions(postId)
 		require.NoError(t, err)
-		require.Equal(t, reaction, reactions[0])
+		require.Equal(t, *reaction, reactions[0])
+	})
+
+	t.Run("DeleteReaction", func(t *testing.T) {
+		postId := model.NewId()
+		userId := model.NewId()
+		emojiName := "testemoji"
+
+		r1 := &model.Reaction{
+			UserId:    userId,
+			PostId:    postId,
+			EmojiName: emojiName,
+		}
+
+		reactions := make([]*model.Reaction, 10)
+
+		for i := range reactions {
+			reactions[i] = &model.Reaction{
+				UserId:    model.NewId(),
+				PostId:    postId,
+				EmojiName: emojiName,
+			}
+		}
+
+		err := s.SetReactions(postId, reactions)
+		require.NoError(t, err)
+
+		ok, err := s.DeleteReaction(r1)
+		require.NoError(t, err)
+		require.False(t, ok)
+
+		reactions[4] = r1
+
+		err = s.SetReactions(postId, reactions)
+		require.NoError(t, err)
+
+		ok, err = s.DeleteReaction(r1)
+		require.NoError(t, err)
+		require.True(t, ok)
+
+		storedReactions, err := s.Reactions(postId)
+		require.NoError(t, err)
+		require.Len(t, storedReactions, 9)
+		require.NotContains(t, storedReactions, *r1)
 	})
 
 	t.Run("SetTeam", func(t *testing.T) {

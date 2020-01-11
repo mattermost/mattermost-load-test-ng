@@ -64,6 +64,14 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.addReaction,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.removeReaction,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.searchPosts,
 			waitAfter: 1000,
 		},
@@ -73,10 +81,6 @@ func (c *SimpleController) Run() {
 		},
 		{
 			run:       c.searchUsers,
-			waitAfter: 1000,
-		},
-		{
-			run:       c.createPost,
 			waitAfter: 1000,
 		},
 		{
