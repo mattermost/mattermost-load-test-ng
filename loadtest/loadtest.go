@@ -39,7 +39,7 @@ type Status struct {
 type LoadTester struct {
 	mut           sync.RWMutex
 	controllers   []control.UserController
-	config        *config.LoadTestConfig
+	config        *config.Configuration
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
 	status        Status
@@ -194,7 +194,7 @@ func (lt *LoadTester) Status() Status {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
+func New(config *config.Configuration, nc NewController) *LoadTester {
 	if config == nil || nc == nil {
 		return nil
 	}

@@ -79,6 +79,6 @@ func MakeInitCommand() *cobra.Command {
 		Use:    "init",
 		Short:  "Initialize instance",
 		RunE:   RunInitCmdF,
-		PreRun: initLogger,
+		PreRun: config.Setup,
 	}
 }

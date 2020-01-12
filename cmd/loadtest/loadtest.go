@@ -49,7 +49,7 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "loadtest",
 		RunE:   RunLoadTestCmdF,
-		PreRun: initLogger,
+		PreRun: config.Setup,
 	}
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	return cmd

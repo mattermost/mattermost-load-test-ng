@@ -2,6 +2,7 @@
     "ConnectionConfiguration": {
         "ServerURL": "http://localhost:8065",
         "WebSocketURL": "ws://localhost:8065",
+        "PrometheusURL": "http://localhost:9090",
         "DriverName": "mysql",
         "DataSource": "mmuser:mostest@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8&readTimeout=20s&writeTimeout=20s&timeout=20s",
         "AdminEmail": "sysadmin@sample.mattermost.com",
@@ -11,11 +12,11 @@
         "IdleConnTimeoutMilliseconds": 90000
     },
     "InstanceConfiguration": {
-      "NumTeams": 2
+        "NumTeams": 2
     },
     "UsersConfiguration": {
-      "InitialActiveUsers": 4,
-      "MaxActiveUsers": 1000
+        "InitialActiveUsers": 4,
+        "MaxActiveUsers": 1000
     },
     "LogSettings": {
         "EnableConsole": true,
