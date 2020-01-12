@@ -90,9 +90,20 @@ func (c *SimpleController) joinTeam() control.UserStatus {
 }
 
 func (c *SimpleController) createPost() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
 	postId, err := c.user.CreatePost(&model.Post{
-		Message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channel.Id,
 	})
+
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
