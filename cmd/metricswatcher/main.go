@@ -3,15 +3,10 @@ package main
 import (
 	"os"
 	"sync"
-	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/metricswatcher/prometheushelper"
 	"github.com/spf13/cobra"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
-	"github.com/mattermost/mattermost-server/v5/mlog"
-	prometheus "github.com/prometheus/client_golang/api"
-	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
 var configuration *config.Configuration
@@ -47,28 +42,4 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	wg.Wait()
 
 	return nil
-}
-
-func checkMetrics() {
-	var (
-		config      = prometheus.Config{Address: configuration.ConnectionConfiguration.PrometheusURL}
-		client, err = prometheus.NewClient(config)
-	)
-
-	if err != nil {
-		mlog.Critical("Error while trying to initialize metricswatcher: %s", mlog.Err(err))
-		os.Exit(1)
-	}
-
-	var (
-		api        = apiv1.NewAPI(client)
-		prometheus = &prometheushelper.PrometheusHelper{api}
-	)
-
-	for {
-		printRequestDuration(prometheus)
-		printCurrentWebsockets(prometheus)
-
-		time.Sleep(5 * time.Second)
-	}
 }

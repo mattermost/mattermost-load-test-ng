@@ -7,11 +7,33 @@ import (
 	"strconv"
 	"time"
 
+	prometheus "github.com/prometheus/client_golang/api"
+	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 )
 
 type PrometheusHelper struct {
 	API prometheusAPI
+}
+
+// NewPrometheusHelper creates a helper with the standard Prometheus client
+// and API inside it, encapsulating all Prometheus dependencies.
+func NewPrometheusHelper(prometheusURL string) (*PrometheusHelper, error) {
+	var (
+		config      = prometheus.Config{Address: prometheusURL}
+		client, err = prometheus.NewClient(config)
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		api              = apiv1.NewAPI(client)
+		prometheusHelper = &PrometheusHelper{api}
+	)
+
+	return prometheusHelper, nil
 }
 
 func (p PrometheusHelper) VectorFirst(query string) (float64, error) {

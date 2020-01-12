@@ -2,11 +2,32 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/metricswatcher/prometheushelper"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
+
+func checkMetrics() {
+	var (
+		prometheusURL         = configuration.ConnectionConfiguration.PrometheusURL
+		prometheusHelper, err = prometheushelper.NewPrometheusHelper(prometheusURL)
+	)
+
+	if err != nil {
+		mlog.Critical("Error while trying to initialize metricswatcher: %s", mlog.Err(err))
+		os.Exit(1)
+	}
+
+	for {
+		printRequestDuration(prometheusHelper)
+		printCurrentWebsockets(prometheusHelper)
+
+		time.Sleep(5 * time.Second)
+	}
+}
 
 func printRequestDuration(prometheus *prometheushelper.PrometheusHelper) {
 	query := `rate(mattermost_http_request_duration_seconds_sum[5m])/rate(mattermost_http_request_duration_seconds_count[5m])`
