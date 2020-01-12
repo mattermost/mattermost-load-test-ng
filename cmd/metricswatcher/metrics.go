@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/metricswatcher/prometheushelper"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushelper"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
