@@ -65,3 +65,6 @@ config/config.json
 /terraformenv
 .idea
 mattermost-load-test.iml
+
+vendor/
+
