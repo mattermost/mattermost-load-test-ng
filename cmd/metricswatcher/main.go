@@ -18,7 +18,10 @@ func main() {
 		PreRun: config.Setup,
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
+	persistentFlags := rootCmd.PersistentFlags()
+	persistentFlags.StringP("config", "c", "", "path to the configuration file to use")
+	persistentFlags.StringP("queries", "q", "", "path to the JSON file with Prometheus queries")
+	cobra.MarkFlagRequired(persistentFlags, "queries")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -29,6 +32,8 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	var err error
 	configuration, err = config.GetConfig()
 
+	jsonQueryFile, _ := cmd.Flags().GetString("queries")
+
 	if err != nil {
 		return err
 	}
@@ -37,7 +42,7 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	wg.Add(2)
 
 	go healthcheck()
-	go checkMetrics()
+	go checkMetrics(jsonQueryFile)
 
 	wg.Wait()
 
