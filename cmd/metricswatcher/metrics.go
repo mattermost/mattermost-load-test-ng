@@ -12,8 +12,9 @@ import (
 
 func checkMetrics() {
 	var (
-		prometheusURL         = configuration.ConnectionConfiguration.PrometheusURL
-		prometheusHelper, err = prometheushelper.NewPrometheusHelper(prometheusURL)
+		prometheusConfiguration = configuration.PrometheusConfiguration
+		prometheusURL           = prometheusConfiguration.PrometheusURL
+		prometheusHelper, err   = prometheushelper.NewPrometheusHelper(prometheusURL)
 	)
 
 	if err != nil {
@@ -25,7 +26,7 @@ func checkMetrics() {
 		printRequestDuration(prometheusHelper)
 		printCurrentWebsockets(prometheusHelper)
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Duration(prometheusConfiguration.UpdateIntervalInMS) * time.Millisecond)
 	}
 }
 

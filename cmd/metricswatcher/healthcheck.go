@@ -10,7 +10,7 @@ import (
 )
 
 func healthcheck() {
-	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.ConnectionConfiguration.PrometheusURL)
+	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {
 		mlog.Error(err.Error())

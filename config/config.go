@@ -18,12 +18,12 @@ type Configuration struct {
 	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
 	LogSettings             LoggerSettings
+	PrometheusConfiguration PrometheusConfiguration
 }
 
 type ConnectionConfiguration struct {
 	ServerURL                   string
 	WebSocketURL                string
-	PrometheusURL               string
 	DriverName                  string
 	DataSource                  string
 	AdminEmail                  string
@@ -50,6 +50,11 @@ type LoggerSettings struct {
 	FileJson      bool
 	FileLevel     string
 	FileLocation  string
+}
+
+type PrometheusConfiguration struct {
+	PrometheusURL      string
+	UpdateIntervalInMS int
 }
 
 func Setup(cmd *cobra.Command, args []string) {

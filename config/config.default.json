@@ -2,7 +2,6 @@
     "ConnectionConfiguration": {
         "ServerURL": "http://localhost:8065",
         "WebSocketURL": "ws://localhost:8065",
-        "PrometheusURL": "http://localhost:9090",
         "DriverName": "mysql",
         "DataSource": "mmuser:mostest@tcp(localhost:3306)/mattermost?charset=utf8mb4,utf8&readTimeout=20s&writeTimeout=20s&timeout=20s",
         "AdminEmail": "sysadmin@sample.mattermost.com",
@@ -26,5 +25,9 @@
         "FileLevel": "INFO",
         "FileJson": true,
         "FileLocation": "loadtest.log"
+    },
+    "PrometheusConfiguration": {
+        "PrometheusURL": "http://localhost:9090",
+        "UpdateIntervalInMS": 1000
     }
 }
