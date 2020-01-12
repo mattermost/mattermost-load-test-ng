@@ -39,7 +39,7 @@ func createPrometheusHelper() *prometheushelper.PrometheusHelper {
 	)
 
 	if err != nil {
-		mlog.Critical("Error while trying to create Prometheus helper: %s", mlog.Err(err))
+		mlog.Critical("Error while trying to create Prometheus helper:", mlog.Err(err))
 		os.Exit(1)
 	}
 

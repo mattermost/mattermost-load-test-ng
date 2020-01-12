@@ -21,7 +21,7 @@ func healthcheck() {
 		healthcheckResult := healthCheck.Check()
 
 		if !healthcheckResult.Healthy && healthcheckResult.Error != nil {
-			mlog.Error("Prometheus is not healthy: %s\n", mlog.Err(healthcheckResult.Error))
+			mlog.Error("Prometheus is not healthy:", mlog.Err(healthcheckResult.Error))
 		}
 
 		time.Sleep(60 * time.Second)

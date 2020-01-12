@@ -67,7 +67,7 @@ func Setup(cmd *cobra.Command, args []string) {
 
 	cfg, err := GetConfig()
 	if err != nil {
-		mlog.Error("Failed to get logging config: %s\n", mlog.Err(err))
+		mlog.Error("Failed to get logging config:", mlog.Err(err))
 		os.Exit(1)
 	}
 
