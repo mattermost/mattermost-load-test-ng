@@ -23,31 +23,54 @@ func checkMetrics() {
 	}
 
 	for {
-		printRequestDuration(prometheusHelper)
-		printCurrentWebsockets(prometheusHelper)
+		checkQueries(prometheusHelper)
 
 		time.Sleep(time.Duration(prometheusConfiguration.UpdateIntervalInMS) * time.Millisecond)
 	}
 }
 
-func printRequestDuration(prometheus *prometheushelper.PrometheusHelper) {
-	query := `rate(mattermost_http_request_duration_seconds_sum[5m])/rate(mattermost_http_request_duration_seconds_count[5m])`
-
-	if requestDuration, err := prometheus.VectorFirst(query); err == nil {
-		message := fmt.Sprintf("Request duration is %2.8f", requestDuration)
-		mlog.Info(message)
-	} else {
-		mlog.Error("Error while querying Prometheus for request duration: %s", mlog.Err(err))
-	}
+type PrometheusQuery struct {
+	Description string
+	Query       string
+	Threshold   float64
+	Alert       bool
 }
 
-func printCurrentWebsockets(prometheus *prometheushelper.PrometheusHelper) {
-	requestDurationQuery := `mattermost_http_websockets_total`
+var queries = []PrometheusQuery{
+	PrometheusQuery{
+		Description: "Request duration",
+		Query:       `rate(mattermost_http_request_duration_seconds_sum[5m])/rate(mattermost_http_request_duration_seconds_count[5m])`,
+		Threshold:   1.0,
+		Alert:       true,
+	},
+	PrometheusQuery{
+		Description: "Total amount of websockets",
+		Query:       `mattermost_http_websockets_total`,
+		Threshold:   0.0,
+		Alert:       false,
+	},
+}
 
-	if amountOfWebsockets, err := prometheus.VectorFirst(requestDurationQuery); err == nil {
-		message := fmt.Sprintf("Current amount of websockets is %1.0f", amountOfWebsockets)
-		mlog.Info(message)
-	} else {
-		mlog.Error("Error while querying Prometheus for current amount of websockets: %s", mlog.Err(err))
+func checkQueries(prometheus *prometheushelper.PrometheusHelper) {
+	for _, query := range queries {
+		value, err := prometheus.VectorFirst(query.Query)
+
+		if err != nil {
+			mlog.Error("Error while querying Prometheus for %s: %s", mlog.String("query_description", query.Description), mlog.Err(err))
+			continue
+		}
+
+		message := fmt.Sprintf("%s = %2.8f", query.Description, value)
+		mlog.Debug(message)
+
+		if query.Alert && value >= query.Threshold {
+			// TODO: if we need to trigger some event, this would be the place.
+
+			mlog.Warn("%s value is %s, threshold is %s",
+				mlog.String("query_description", query.Description),
+				mlog.String("query_returned_value", fmt.Sprintf("%2.8f", value)),
+				mlog.String("query_threshold", fmt.Sprintf("%2.8f", query.Threshold)),
+			)
+		}
 	}
 }
