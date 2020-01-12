@@ -10,5 +10,11 @@
         "Query": "mattermost_http_websockets_total",
         "Threshold": 0.0,
         "Alert": false
+    },
+    {
+        "Description": "Average database store time",
+        "Query": "avg(rate(mattermost_db_store_time_sum[5m]))",
+        "Threshold": 0.05,
+        "Alert": true
     }
 ]
