@@ -141,7 +141,7 @@ func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "error": addError, "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users added", i), "error": addError, "status": lt.Status()})
 }
 
 func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +166,7 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "error": removeError, "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i), "error": removeError, "status": lt.Status()})
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
