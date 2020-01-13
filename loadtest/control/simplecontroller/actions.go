@@ -170,7 +170,7 @@ func (c *SimpleController) updateProfile() control.UserStatus {
 
 func (c *SimpleController) updateProfileImage() control.UserStatus {
 	// TODO: take this from the config later.
-	imagePath := "./testdata/test.png"
+	imagePath := "./testdata/test_profile.png"
 	buf, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		return c.newErrorStatus(err)
