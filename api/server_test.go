@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gavv/httpexpect"
 	"github.com/mattermost/mattermost-load-test-ng/config"
+
+	"github.com/gavv/httpexpect"
 )
 
 func TestAPI(t *testing.T) {
@@ -40,6 +41,30 @@ func TestAPI(t *testing.T) {
 	e.POST(ltId + "/run").Expect().Status(http.StatusOK)
 	e.POST(ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
 	e.POST(ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
+	e.POST(ltId+"/user/add").WithQuery("amount", 0).Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
+	e.POST(ltId+"/user/add").WithQuery("amount", -2).Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
+	e.POST(ltId+"/user/add").WithQuery("amount", "bad").Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
+	e.POST(ltId+"/user/remove").WithQuery("amount", 0).Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
+	e.POST(ltId+"/user/remove").WithQuery("amount", -2).Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
+	e.POST(ltId+"/user/remove").WithQuery("amount", "bad").Expect().
+		Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+
 	e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
 	e.DELETE(ltId).Expect().Status(http.StatusOK)
 }

@@ -6,22 +6,25 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gofrs/uuid"
-	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+
+	"github.com/gofrs/uuid"
+	"github.com/gorilla/mux"
 )
 
+// API contains information about all load tests.
 type API struct {
 	agents map[string]*loadtest.LoadTester
 }
 
-func writeJsonResponse(w http.ResponseWriter, data interface{}) {
+func writeJsonResponse(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(data)
 }
 
@@ -51,7 +54,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt := loadtest.New(&config, newSimpleController)
 	a.agents[u.String()] = lt
 
-	writeJsonResponse(w, map[string]string{"loadAgentId": u.String()})
+	writeJsonResponse(w, http.StatusOK, map[string]string{"loadAgentId": u.String()})
 }
 
 func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
@@ -75,7 +78,7 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, map[string]interface{}{"message": "Load-test agent started", "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": "Load-test agent started", "status": lt.Status()})
 }
 
 func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +90,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, map[string]interface{}{"message": "Load-test agent stopped", "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": "Load-test agent stopped", "status": lt.Status()})
 }
 
 func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +102,7 @@ func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
 	delete(a.agents, mux.Vars(r)["id"])
-	writeJsonResponse(w, map[string]string{"message": "Load-test agent destroyed"})
+	writeJsonResponse(w, http.StatusOK, map[string]string{"message": "Load-test agent destroyed"})
 }
 
 func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,24 +110,23 @@ func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"status": lt.Status()})
 }
 
-func getAmount(r *http.Request) int {
+func getAmount(r *http.Request) (int, error) {
 	amountStr := r.FormValue("amount")
-	amount := 1
-
-	if amountStr != "" {
-		if a, err := strconv.ParseInt(amountStr, 10, 16); err == nil && a > 0 {
-			amount = int(a)
-		}
-	}
-	return amount
+	amount, err := strconv.ParseInt(amountStr, 10, 16)
+	return int(amount), err
 }
 
 func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
-	amount := getAmount(r)
+	amount, err := getAmount(r)
+	if amount <= 0 || err != nil {
+		msg := fmt.Sprintf("invalid amount: %s", r.FormValue("amount"))
+		writeJsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": msg})
+		return
+	}
+
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
@@ -139,11 +141,16 @@ func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "error": addError, "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "error": addError, "status": lt.Status()})
 }
 
 func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
-	amount := getAmount(r)
+	amount, err := getAmount(r)
+	if amount <= 0 || err != nil {
+		msg := fmt.Sprintf("invalid amount: %s", r.FormValue("amount"))
+		writeJsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": msg})
+		return
+	}
 
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
@@ -159,9 +166,10 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJsonResponse(w, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "error": removeError, "status": lt.Status()})
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "error": removeError, "status": lt.Status()})
 }
 
+// SetupAPIRouter creates a router to handle load test API requests.
 func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadagent").Subrouter()
