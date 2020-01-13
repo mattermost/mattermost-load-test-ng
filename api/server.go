@@ -22,23 +22,47 @@ type API struct {
 	agents map[string]*loadtest.LoadTester
 }
 
-func writeJsonResponse(w http.ResponseWriter, status int, data interface{}) {
+// APIResponse contains the data returned by the HTTP server.
+type APIResponse struct {
+	Message string          `json:"message,omitempty"` // Message contains information about the response.
+	Status  loadtest.Status `json:"status"`            // Status contains the current status of the load test.
+	Error   error           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
+}
+
+func writeResponse(w http.ResponseWriter, status int, response *APIResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	var config config.LoadTestConfig
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Error: err,
+		})
+		return
+	}
+
+	if config.ConnectionConfiguration.ServerURL == "" {
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Error: fmt.Errorf("ServerURL is not present in config"),
+		})
+		return
+	}
+	if config.ConnectionConfiguration.WebSocketURL == "" {
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Error: fmt.Errorf("WebSocketURL is not present in config"),
+		})
 		return
 	}
 
 	u, err := uuid.NewV4()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Error: err,
+		})
 		return
 	}
 
@@ -54,7 +78,9 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt := loadtest.New(&config, newSimpleController)
 	a.agents[u.String()] = lt
 
-	writeJsonResponse(w, http.StatusOK, map[string]string{"loadAgentId": u.String()})
+	writeResponse(w, http.StatusCreated, &APIResponse{
+		Message: fmt.Sprintf("Load-test started with agent id: %s", u.String()),
+	})
 }
 
 func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
@@ -63,7 +89,9 @@ func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest
 	lt, ok := a.agents[id]
 	if !ok {
 		err := fmt.Errorf("Load-test agent with id %s not found", id)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		writeResponse(w, http.StatusNotFound, &APIResponse{
+			Error: err,
+		})
 		return nil, err
 	}
 	return lt, nil
@@ -75,10 +103,16 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Run(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeResponse(w, http.StatusInternalServerError, &APIResponse{
+			Error:  err,
+			Status: lt.Status(),
+		})
 		return
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": "Load-test agent started", "status": lt.Status()})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Message: "Load-test agent started",
+		Status:  lt.Status(),
+	})
 }
 
 func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,10 +121,16 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Stop(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeResponse(w, http.StatusInternalServerError, &APIResponse{
+			Error:  err,
+			Status: lt.Status(),
+		})
 		return
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": "Load-test agent stopped", "status": lt.Status()})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Message: "Load-test agent started",
+		Status:  lt.Status(),
+	})
 }
 
 func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +142,10 @@ func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
 	delete(a.agents, mux.Vars(r)["id"])
-	writeJsonResponse(w, http.StatusOK, map[string]string{"message": "Load-test agent destroyed"})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Message: "Load-test agent destroyed",
+		Status:  lt.Status(),
+	})
 }
 
 func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +153,9 @@ func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"status": lt.Status()})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Status: lt.Status(),
+	})
 }
 
 func getAmount(r *http.Request) (int, error) {
@@ -120,53 +165,65 @@ func getAmount(r *http.Request) (int, error) {
 }
 
 func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
-	amount, err := getAmount(r)
-	if amount <= 0 || err != nil {
-		msg := fmt.Sprintf("invalid amount: %s", r.FormValue("amount"))
-		writeJsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": msg})
-		return
-	}
-
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
 
+	amount, err := getAmount(r)
+	if amount <= 0 || err != nil {
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Status: lt.Status(),
+			Error:  fmt.Errorf("invalid amount: %s", r.FormValue("amount")),
+		})
+		return
+	}
+
 	i := 0
-	var addError string
+	var addError error
 	for ; i < amount; i++ {
 		if err := lt.AddUser(); err != nil {
-			addError = err.Error()
+			addError = err
 			break // stop on first error, result is reported as part of status
 		}
 	}
 
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users added", i+1), "error": addError, "status": lt.Status()})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Message: fmt.Sprintf("%d users added", i+1),
+		Status:  lt.Status(),
+		Error:   addError,
+	})
 }
 
 func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
-	amount, err := getAmount(r)
-	if amount <= 0 || err != nil {
-		msg := fmt.Sprintf("invalid amount: %s", r.FormValue("amount"))
-		writeJsonResponse(w, http.StatusBadRequest, map[string]interface{}{"error": msg})
-		return
-	}
-
 	lt, err := a.getLoadTestById(w, r)
 	if err != nil {
 		return
 	}
 
+	amount, err := getAmount(r)
+	if amount <= 0 || err != nil {
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
+			Status: lt.Status(),
+			Error:  fmt.Errorf("invalid amount: %s", r.FormValue("amount")),
+		})
+		return
+	}
+
 	i := 0
-	var removeError string
+	var removeError error
 	for ; i < amount; i++ {
 		if err = lt.RemoveUser(); err != nil {
-			removeError = err.Error()
+			removeError = err
 			break // stop on first error, result is reported as part of status
 		}
 	}
 
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{"message": fmt.Sprintf("%d users removed", i+1), "error": removeError, "status": lt.Status()})
+	writeResponse(w, http.StatusOK, &APIResponse{
+		Message: fmt.Sprintf("%d users removed", i+1),
+		Status:  lt.Status(),
+		Error:   removeError,
+	})
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
@@ -176,6 +233,8 @@ func SetupAPIRouter() *mux.Router {
 
 	agent := API{agents: make(map[string]*loadtest.LoadTester)}
 	r.HandleFunc("/create", agent.createLoadAgentHandler).Methods("POST")
+	// TODO: add a middleware which refactors getLoadTestById and passes the load test
+	// in a request context.
 	r.HandleFunc("/{id}/run", agent.runLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}/stop", agent.stopLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}", agent.destroyLoadAgentHandler).Methods("DELETE")
