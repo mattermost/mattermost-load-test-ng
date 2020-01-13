@@ -309,7 +309,7 @@ func TestChannelMembers(t *testing.T) {
 		userId := model.NewId()
 		member, err := s.ChannelMember(channelId, userId)
 		require.NoError(t, err)
-		require.Nil(t, member)
+		require.Empty(t, member.UserId)
 		expected := model.ChannelMember{
 			ChannelId: channelId,
 			UserId:    userId,
@@ -318,7 +318,7 @@ func TestChannelMembers(t *testing.T) {
 		require.NoError(t, err)
 		member, err = s.ChannelMember(channelId, userId)
 		require.NoError(t, err)
-		require.Equal(t, &expected, member)
+		require.Equal(t, expected, member)
 	})
 
 	t.Run("Remove channel members", func(t *testing.T) {

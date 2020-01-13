@@ -19,7 +19,7 @@ type UserStore interface {
 	// Channels return the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
-	ChannelMember(channelId, userId string) (*model.ChannelMember, error)
+	ChannelMember(channelId, userId string) (model.ChannelMember, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
