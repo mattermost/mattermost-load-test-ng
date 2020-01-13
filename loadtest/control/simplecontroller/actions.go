@@ -67,6 +67,64 @@ func (c *SimpleController) logout() control.UserStatus {
 	return c.newInfoStatus("logged out")
 }
 
+func (c *SimpleController) joinChannel() control.UserStatus {
+	userStore := c.user.Store()
+	userId := userStore.Id()
+	teams, err := userStore.Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, team := range teams {
+		channels, err := userStore.Channels(team.Id)
+		for _, channel := range channels {
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			cm, err := userStore.ChannelMember(team.Id, userId)
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			if cm.UserId == "" {
+				err := c.user.AddChannelMember(channel.Id, userId)
+				if err != nil {
+					return c.newErrorStatus(err)
+				}
+				return c.newInfoStatus(fmt.Sprintf("joined channel %s", channel.Id))
+			}
+		}
+	}
+	return c.newInfoStatus("no channel to join")
+}
+
+func (c *SimpleController) leaveChannel() control.UserStatus {
+	userStore := c.user.Store()
+	userId := userStore.Id()
+	teams, err := userStore.Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, team := range teams {
+		channels, err := userStore.Channels(team.Id)
+		for _, channel := range channels {
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			cm, err := userStore.ChannelMember(team.Id, userId)
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			if cm.UserId != "" {
+				_, err := c.user.RemoveUserFromChannel(channel.Id, userId)
+				if err != nil {
+					return c.newErrorStatus(err)
+				}
+				return c.newInfoStatus(fmt.Sprintf("left channel %s", channel.Id))
+			}
+		}
+	}
+	return c.newInfoStatus("unable to leave, not member of any channel")
+}
+
 func (c *SimpleController) joinTeam() control.UserStatus {
 	userStore := c.user.Store()
 	userId := userStore.Id()

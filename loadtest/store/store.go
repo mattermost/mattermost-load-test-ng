@@ -18,6 +18,8 @@ type UserStore interface {
 	Config() model.Config
 	// Channels return the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
+	// ChannelMember returns the ChannelMember for the given channelId and userId.
+	ChannelMember(channelId, userId string) (model.ChannelMember, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
@@ -83,7 +85,6 @@ type MutableUserStore interface {
 	SetChannelMembers(channelMembers *model.ChannelMembers) error
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
-	ChannelMember(channelId, userId string) (*model.ChannelMember, error)
 	RemoveChannelMember(channelId string, userId string) error
 
 	// teams

@@ -64,6 +64,10 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.joinChannel,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.addReaction,
 			waitAfter: 1000,
 		},
@@ -101,6 +105,10 @@ func (c *SimpleController) Run() {
 		},
 		{
 			run:       c.viewChannel,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.leaveChannel,
 			waitAfter: 1000,
 		},
 		{
