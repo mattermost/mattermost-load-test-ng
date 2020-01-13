@@ -88,6 +88,14 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.updateProfile,
+			waitAfter: 1000,
+		},
+		{
+			run:       c.updateProfileImage,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.createGroupChannel,
 			waitAfter: 1000,
 		},

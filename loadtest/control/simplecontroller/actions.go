@@ -6,6 +6,7 @@ package simplecontroller
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -196,6 +197,38 @@ func (c *SimpleController) searchUsers() control.UserStatus {
 	}
 
 	return c.newInfoStatus(fmt.Sprintf("found %d users", len(users)))
+}
+
+func (c *SimpleController) updateProfile() control.UserStatus {
+	userId := c.user.Store().Id()
+	userName := fmt.Sprintf("testuserNew%d", c.id)
+	nickName := fmt.Sprintf("testNickName%d", c.id)
+	firstName := fmt.Sprintf("firstName%d", c.id)
+	lastName := fmt.Sprintf("lastName%d", c.id)
+	err := c.user.PatchUser(userId, &model.UserPatch{
+		Username:  &userName,
+		Nickname:  &nickName,
+		FirstName: &firstName,
+		LastName:  &lastName,
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus("user patched")
+}
+
+func (c *SimpleController) updateProfileImage() control.UserStatus {
+	// TODO: take this from the config later.
+	imagePath := "./testdata/test_profile.png"
+	buf, err := ioutil.ReadFile(imagePath)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	err = c.user.SetProfileImage(buf)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus("profile image updated")
 }
 
 func (c *SimpleController) searchChannels() control.UserStatus {
