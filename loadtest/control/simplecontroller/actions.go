@@ -160,23 +160,24 @@ func (c *SimpleController) createGroupChannel() control.UserStatus {
 }
 
 func (c *SimpleController) viewChannel() control.UserStatus {
-	return c.newErrorStatus(errors.New("not implemented"))
-	/*
-		channel, err := c.user.Store().Channel("") // TODO: fetch channel randomly?
-		if err != nil {
-			return control.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		}
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
-		channelViewResponse, err := c.user.ViewChannel(&model.ChannelView{
-			ChannelId: channel.Id,
-			PrevChannelId: "",
-		})
-		if err != nil {
-			return control.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		}
+	channelViewResponse, err := c.user.ViewChannel(&model.ChannelView{
+		ChannelId:     channel.Id,
+		PrevChannelId: "",
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
-		return control.UserStatus{User: c.user, Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
-	*/
+	return c.newInfoStatus(fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson()))
 }
 
 func (c *SimpleController) searchUsers() control.UserStatus {
