@@ -183,8 +183,6 @@ func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 		config:        config,
 		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
-		status: Status{
-			State: StateStopped,
-		},
+		status:        Status{},
 	}
 }

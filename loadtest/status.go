@@ -5,6 +5,7 @@ package loadtest
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 )
@@ -14,12 +15,14 @@ type State int
 
 // Different possible states of a loadtester.
 const (
-	StateUnknown State = iota
-	StateStopped
+	StateStopped State = iota
 	StateStarting
 	StateRunning
 	StateStopping
 )
+
+// ErrUnknownState is returned when an unknown state variable is encoded/decoded.
+var ErrUnknownState = errors.New("unknown state")
 
 // UnmarshalJSON constructs the state from a JSON string.
 func (s *State) UnmarshalJSON(b []byte) error {
@@ -30,7 +33,7 @@ func (s *State) UnmarshalJSON(b []byte) error {
 
 	switch strings.ToLower(res) {
 	default:
-		*s = StateUnknown
+		return ErrUnknownState
 	case "stopped":
 		*s = StateStopped
 	case "starting":
@@ -49,7 +52,7 @@ func (s State) MarshalJSON() ([]byte, error) {
 	var res string
 	switch s {
 	default:
-		res = "unknown"
+		return nil, ErrUnknownState
 	case StateStopped:
 		res = "stopped"
 	case StateStarting:
@@ -65,7 +68,7 @@ func (s State) MarshalJSON() ([]byte, error) {
 
 // Status contains various information about the load test.
 type Status struct {
-	State           State     // State of the the load test.
+	State           State     // State of the load test.
 	NumUsers        int       // Number of active users.
 	NumUsersAdded   int       // Number of users added since the start of the test.
 	NumUsersRemoved int       // Number of users removed since the start of the test.
