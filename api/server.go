@@ -128,7 +128,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: "Load-test agent started",
+		Message: "Load-test agent stopped",
 		Status:  lt.Status(),
 	})
 }
@@ -189,7 +189,7 @@ func (a *API) addUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: fmt.Sprintf("%d users added", i+1),
+		Message: fmt.Sprintf("%d users added", i),
 		Status:  lt.Status(),
 		Error:   addError,
 	})
@@ -220,7 +220,7 @@ func (a *API) removeUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: fmt.Sprintf("%d users removed", i+1),
+		Message: fmt.Sprintf("%d users removed", i),
 		Status:  lt.Status(),
 		Error:   removeError,
 	})

@@ -105,6 +105,21 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestRerun(t *testing.T) {
+	lt := New(&ltConfig, newController)
+	err := lt.Run()
+	require.NoError(t, err)
+
+	err = lt.Stop()
+	require.NoError(t, err)
+
+	err = lt.Run()
+	require.NoError(t, err)
+
+	err = lt.Stop()
+	require.NoError(t, err)
+}
+
 func TestStop(t *testing.T) {
 	lt := New(&ltConfig, newController)
 	err := lt.Stop()

@@ -120,6 +120,7 @@ func (lt *LoadTester) Run() error {
 	lt.status.NumUsersAdded = 0
 	lt.status.NumErrors = 0
 	lt.status.StartTime = time.Now()
+	lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
 	go lt.handleStatus()
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.addUser(); err != nil {
