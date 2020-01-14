@@ -97,7 +97,7 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Run(); err != nil {
-		writeResponse(w, http.StatusBadRequest, &APIResponse{
+		writeResponse(w, http.StatusOK, &APIResponse{
 			Error:  err,
 			Status: lt.Status(),
 		})
@@ -115,7 +115,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Stop(); err != nil {
-		writeResponse(w, http.StatusInternalServerError, &APIResponse{
+		writeResponse(w, http.StatusOK, &APIResponse{
 			Error:  err,
 			Status: lt.Status(),
 		})
