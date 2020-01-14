@@ -5,11 +5,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
 
 	"github.com/gavv/httpexpect"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAPI(t *testing.T) {
@@ -35,8 +37,11 @@ func TestAPI(t *testing.T) {
 	sampleConfig.UsersConfiguration.MaxActiveUsers = 100
 	obj := e.POST("/create").WithJSON(sampleConfig).
 		Expect().
-		Status(http.StatusOK).JSON().Object()
-	ltId := obj.Value("loadAgentId").String().Raw()
+		Status(http.StatusCreated).JSON().Object()
+	rawMsg := obj.Value("message").String().Raw()
+	parts := strings.Split(rawMsg, ":")
+	require.Len(t, parts, 2)
+	ltId := strings.TrimSpace(parts[1])
 
 	e.POST(ltId + "/run").Expect().Status(http.StatusOK)
 	e.POST(ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)

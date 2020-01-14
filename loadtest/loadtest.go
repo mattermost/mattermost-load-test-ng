@@ -14,27 +14,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-// State determines which state a loadtester is in.
-type State int
-
-// Different possible states of a loadtester.
-const (
-	StateStopped State = iota
-	StateStarting
-	StateRunning
-	StateStopping
-)
-
-// Status contains various information about the load test.
-type Status struct {
-	State           State     // State of the the load test.
-	NumUsers        int       // Number of active users.
-	NumUsersAdded   int       // Number of users added since the start of the test.
-	NumUsersRemoved int       // Number of users removed since the start of the test.
-	NumErrors       int64     // Number of errors that have occurred.
-	StartTime       time.Time // Time when the load test was started. This only logs the time when the load test was first started, and does not get reset if it was subsequently restarted.
-}
-
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	mut           sync.RWMutex
