@@ -1,0 +1,16 @@
+{
+    "LogSettings": {
+        "EnableConsole": true,
+        "ConsoleLevel": "INFO",
+        "ConsoleJson": true,
+        "EnableFile": true,
+        "FileLevel": "INFO",
+        "FileJson": true,
+        "FileLocation": "metricscheck.log"
+    },
+    "PrometheusConfiguration": {
+        "PrometheusURL": "http://localhost:9090",
+        "MetricsUpdateIntervalInMS": 50000,
+        "HealthcheckUpdateIntervalInMS": 60000
+    }
+}

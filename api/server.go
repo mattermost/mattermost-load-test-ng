@@ -26,7 +26,7 @@ func writeJsonResponse(w http.ResponseWriter, data interface{}) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config config.Configuration
+	var config config.LoadTestConfig
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

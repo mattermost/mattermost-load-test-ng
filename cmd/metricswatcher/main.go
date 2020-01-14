@@ -9,8 +9,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/config"
 )
 
-var configuration *config.Configuration
-
 func main() {
 	rootCmd := &cobra.Command{
 		Use:    "metricswatcher",
@@ -29,9 +27,7 @@ func main() {
 }
 
 func runMetricsWatcher(cmd *cobra.Command, args []string) error {
-	var err error
-	configuration, err = config.GetConfig()
-
+	configuration, err := config.GetMetricsCheckConfig()
 	jsonQueryFile, _ := cmd.Flags().GetString("queries")
 
 	if err != nil {
@@ -41,8 +37,8 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go healthcheck()
-	go checkMetrics(jsonQueryFile)
+	go healthcheck(configuration)
+	go checkMetrics(configuration, jsonQueryFile)
 
 	wg.Wait()
 

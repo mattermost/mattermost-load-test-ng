@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushelper"
 
+	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -19,24 +20,21 @@ type PrometheusQuery struct {
 	Alert       bool
 }
 
-func checkMetrics(queryFile string) {
+func checkMetrics(configuration *config.MetricsCheckConfig, queryFile string) {
 	var (
 		prometheusQueries = readPrometheusQueriesFile(queryFile)
-		prometheusHelper  = createPrometheusHelper()
+		prometheusHelper  = createPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
 	)
 
 	for {
 		checkQueries(prometheusHelper, prometheusQueries)
 
-		time.Sleep(time.Duration(configuration.PrometheusConfiguration.UpdateIntervalInMS) * time.Millisecond)
+		time.Sleep(time.Duration(configuration.PrometheusConfiguration.MetricsUpdateIntervalInMS) * time.Millisecond)
 	}
 }
 
-func createPrometheusHelper() *prometheushelper.PrometheusHelper {
-	var (
-		prometheusURL         = configuration.PrometheusConfiguration.PrometheusURL
-		prometheusHelper, err = prometheushelper.NewPrometheusHelper(prometheusURL)
-	)
+func createPrometheusHelper(prometheusURL string) *prometheushelper.PrometheusHelper {
+	prometheusHelper, err := prometheushelper.NewPrometheusHelper(prometheusURL)
 
 	if err != nil {
 		mlog.Critical("Error while trying to create Prometheus helper:", mlog.Err(err))

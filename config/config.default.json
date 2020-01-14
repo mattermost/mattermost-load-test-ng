@@ -25,9 +25,5 @@
         "FileLevel": "INFO",
         "FileJson": true,
         "FileLocation": "loadtest.log"
-    },
-    "PrometheusConfiguration": {
-        "PrometheusURL": "http://localhost:9090",
-        "UpdateIntervalInMS": 1000
     }
 }

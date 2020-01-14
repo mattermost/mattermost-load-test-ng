@@ -13,12 +13,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Configuration struct {
+type LoadTestConfig struct {
 	ConnectionConfiguration ConnectionConfiguration
 	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
 	LogSettings             LoggerSettings
-	PrometheusConfiguration PrometheusConfiguration
 }
 
 type ConnectionConfiguration struct {
@@ -52,9 +51,15 @@ type LoggerSettings struct {
 	FileLocation  string
 }
 
+type MetricsCheckConfig struct {
+	LogSettings             LoggerSettings
+	PrometheusConfiguration PrometheusConfiguration
+}
+
 type PrometheusConfiguration struct {
-	PrometheusURL      string
-	UpdateIntervalInMS int
+	PrometheusURL                 string
+	MetricsUpdateIntervalInMS     int
+	HealthcheckUpdateIntervalInMS int
 }
 
 func Setup(cmd *cobra.Command, args []string) {
@@ -66,6 +71,7 @@ func Setup(cmd *cobra.Command, args []string) {
 	}
 
 	cfg, err := GetConfig()
+
 	if err != nil {
 		mlog.Error("Failed to get logging config:", mlog.Err(err))
 		os.Exit(1)
@@ -104,8 +110,18 @@ func ReadConfig(configFilePath string) error {
 	return nil
 }
 
-func GetConfig() (*Configuration, error) {
-	var cfg *Configuration
+func GetConfig() (*LoadTestConfig, error) {
+	var cfg *LoadTestConfig
+
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+func GetMetricsCheckConfig() (*MetricsCheckConfig, error) {
+	var cfg *MetricsCheckConfig
 
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
