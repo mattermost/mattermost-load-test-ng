@@ -1,9 +1,10 @@
 // Copyright (c) 2019 Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information
 
-package config
+package main
 
 import (
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"os"
 	"strings"
 
@@ -13,48 +14,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type LoadTestConfig struct {
-	ConnectionConfiguration ConnectionConfiguration
-	InstanceConfiguration   InstanceConfiguration
-	UsersConfiguration      UsersConfiguration
-	LogSettings             LoggerSettings
-}
 
-type ConnectionConfiguration struct {
-	ServerURL                   string
-	WebSocketURL                string
-	DriverName                  string
-	DataSource                  string
-	AdminEmail                  string
-	AdminPassword               string
-	MaxIdleConns                int
-	MaxIdleConnsPerHost         int
-	IdleConnTimeoutMilliseconds int
-}
 
-type InstanceConfiguration struct {
-	NumTeams int
-}
-
-type UsersConfiguration struct {
-	InitialActiveUsers int
-	MaxActiveUsers     int
-}
-
-type LoggerSettings struct {
-	EnableConsole bool
-	ConsoleJson   bool
-	ConsoleLevel  string
-	EnableFile    bool
-	FileJson      bool
-	FileLevel     string
-	FileLocation  string
-}
 
 type MetricsCheckConfig struct {
-	LogSettings             LoggerSettings
+	LogSettings             logger.LoggerSettings
 	PrometheusConfiguration PrometheusConfiguration
 }
+
 
 type PrometheusConfiguration struct {
 	PrometheusURL                 string
@@ -62,7 +29,7 @@ type PrometheusConfiguration struct {
 	HealthcheckUpdateIntervalInMS int
 }
 
-func Setup(cmd *cobra.Command, args []string) {
+func setupMetricsCheck(cmd *cobra.Command, args []string) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 
 	if err := ReadConfig(configFilePath); err != nil {
@@ -70,14 +37,14 @@ func Setup(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	cfg, err := GetConfig()
+	cfg, err := GetMetricsCheckConfig()
 
 	if err != nil {
 		mlog.Error("Failed to get logging config:", mlog.Err(err))
 		os.Exit(1)
 	}
 
-	initLogger(&cfg.LogSettings)
+	logger.InitLogger(&cfg.LogSettings)
 }
 
 func ReadConfig(configFilePath string) error {
@@ -94,10 +61,12 @@ func ReadConfig(configFilePath string) error {
 	viper.SetDefault("LogSettings.EnableFile", true)
 	viper.SetDefault("LogSettings.FileLevel", "INFO")
 	viper.SetDefault("LogSettings.FileJson", true)
-	viper.SetDefault("LogSettings.FileLocation", "loadtest.log")
-	viper.SetDefault("ConnectionConfiguration.MaxIdleConns", 100)
-	viper.SetDefault("ConnectionConfiguration.MaxIdleConnsPerHost", 128)
-	viper.SetDefault("ConnectionConfiguration.IdleConnTimeoutMilliseconds", 90000)
+	viper.SetDefault("LogSettings.FileLocation", "metricscheck.log")
+
+	viper.SetDefault("PrometheusConfiguration.PrometheusURL", "http://localhost:9090")
+	viper.SetDefault("PrometheusConfiguration.MetricsUpdateIntervalInMS", 5000)
+	viper.SetDefault("PrometheusConfiguration.HealthcheckUpdateIntervalInMS", 60000)
+
 
 	if configFilePath != "" {
 		viper.SetConfigFile(configFilePath)
@@ -110,15 +79,6 @@ func ReadConfig(configFilePath string) error {
 	return nil
 }
 
-func GetConfig() (*LoadTestConfig, error) {
-	var cfg *LoadTestConfig
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
 
 func GetMetricsCheckConfig() (*MetricsCheckConfig, error) {
 	var cfg *MetricsCheckConfig

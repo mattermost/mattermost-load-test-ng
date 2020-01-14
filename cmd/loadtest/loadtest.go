@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -11,6 +10,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
+
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 )
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
@@ -49,7 +50,7 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "loadtest",
 		RunE:   RunLoadTestCmdF,
-		PreRun: config.Setup,
+		PreRun: config.SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	return cmd

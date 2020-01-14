@@ -4,9 +4,9 @@
 package loadtest
 
 import (
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"

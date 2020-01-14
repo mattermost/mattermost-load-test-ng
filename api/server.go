@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	config2 "github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"net/http"
 	"strconv"
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -26,7 +26,7 @@ func writeJsonResponse(w http.ResponseWriter, data interface{}) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config config.LoadTestConfig
+	var config config2.LoadTestConfig
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

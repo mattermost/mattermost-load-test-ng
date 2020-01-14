@@ -9,7 +9,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushelper"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -20,7 +19,7 @@ type PrometheusQuery struct {
 	Alert       bool
 }
 
-func checkMetrics(configuration *config.MetricsCheckConfig, queryFile string) {
+func checkMetrics(configuration *MetricsCheckConfig, queryFile string) {
 	var (
 		prometheusQueries = readPrometheusQueriesFile(queryFile)
 		prometheusHelper  = createPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)

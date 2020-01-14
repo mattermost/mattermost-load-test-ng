@@ -1,4 +1,4 @@
-package config
+package logger
 
 import (
 	"strings"
@@ -6,7 +6,17 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func initLogger(logSettings *LoggerSettings) {
+type LoggerSettings struct {
+	EnableConsole bool
+	ConsoleJson   bool
+	ConsoleLevel  string
+	EnableFile    bool
+	FileJson      bool
+	FileLevel     string
+	FileLocation  string
+}
+
+func InitLogger(logSettings *LoggerSettings) {
 	log := mlog.NewLogger(&mlog.LoggerConfiguration{
 		EnableConsole: logSettings.EnableConsole,
 		ConsoleJson:   logSettings.ConsoleJson,

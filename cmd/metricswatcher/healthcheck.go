@@ -6,11 +6,10 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushealthcheck"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func healthcheck(configuration *config.MetricsCheckConfig) {
+func healthcheck(configuration *MetricsCheckConfig) {
 	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"net/http"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +22,7 @@ func MakeServerCommand() *cobra.Command {
 		Use:    "server",
 		Short:  "Start API agent",
 		RunE:   RunServerCmdF,
-		PreRun: config.Setup,
+		PreRun: config.SetupLoadTest,
 	}
 	cmd.PersistentFlags().IntP("port", "p", 4000, "Port to listen on")
 

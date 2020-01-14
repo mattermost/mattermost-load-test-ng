@@ -4,9 +4,9 @@
 package main
 
 import (
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"os"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/example"
 
 	"github.com/spf13/cobra"
@@ -25,7 +25,7 @@ func main() {
 			Use:    "example",
 			Short:  "Run example implementation",
 			RunE:   RunExampleCmdF,
-			PreRun: config.Setup,
+			PreRun: config.SetupLoadTest,
 		},
 		MakeInitCommand(),
 		MakeServerCommand(),

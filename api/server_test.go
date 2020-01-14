@@ -2,13 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gavv/httpexpect"
-	"github.com/mattermost/mattermost-load-test-ng/config"
 )
 
 func TestAPI(t *testing.T) {

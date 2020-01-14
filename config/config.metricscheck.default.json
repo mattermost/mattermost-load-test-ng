@@ -10,7 +10,7 @@
     },
     "PrometheusConfiguration": {
         "PrometheusURL": "http://localhost:9090",
-        "MetricsUpdateIntervalInMS": 50000,
+        "MetricsUpdateIntervalInMS": 5000,
         "HealthcheckUpdateIntervalInMS": 60000
     }
 }
