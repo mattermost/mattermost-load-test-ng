@@ -4,6 +4,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +13,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:    "metricswatcher",
 		RunE:   runMetricsWatcher,
-		PreRun: setupMetricsCheck,
+		PreRun: config.SetupMetricsCheck,
 	}
 
 	persistentFlags := rootCmd.PersistentFlags()
@@ -25,7 +27,7 @@ func main() {
 }
 
 func runMetricsWatcher(cmd *cobra.Command, args []string) error {
-	configuration, err := GetMetricsCheckConfig()
+	configuration, err := config.GetMetricsCheckConfig()
 	jsonQueryFile, _ := cmd.Flags().GetString("queries")
 
 	if err != nil {

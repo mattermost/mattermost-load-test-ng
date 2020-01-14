@@ -1,12 +1,13 @@
 // Copyright (c) 2019 Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information
 
-package main
+package config
 
 import (
-	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"os"
 	"strings"
+
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/pkg/errors"
@@ -14,14 +15,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-
-
-
 type MetricsCheckConfig struct {
 	LogSettings             logger.LoggerSettings
 	PrometheusConfiguration PrometheusConfiguration
 }
-
 
 type PrometheusConfiguration struct {
 	PrometheusURL                 string
@@ -29,7 +26,7 @@ type PrometheusConfiguration struct {
 	HealthcheckUpdateIntervalInMS int
 }
 
-func setupMetricsCheck(cmd *cobra.Command, args []string) {
+func SetupMetricsCheck(cmd *cobra.Command, args []string) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 
 	if err := ReadConfig(configFilePath); err != nil {
@@ -64,9 +61,8 @@ func ReadConfig(configFilePath string) error {
 	viper.SetDefault("LogSettings.FileLocation", "metricscheck.log")
 
 	viper.SetDefault("PrometheusConfiguration.PrometheusURL", "http://localhost:9090")
-	viper.SetDefault("PrometheusConfiguration.MetricsUpdateIntervalInMS", 5000)
+	viper.SetDefault("PrometheusConfiguration.MetricsUpdateIntervalInMS", 1000)
 	viper.SetDefault("PrometheusConfiguration.HealthcheckUpdateIntervalInMS", 60000)
-
 
 	if configFilePath != "" {
 		viper.SetConfigFile(configFilePath)
@@ -78,7 +74,6 @@ func ReadConfig(configFilePath string) error {
 
 	return nil
 }
-
 
 func GetMetricsCheckConfig() (*MetricsCheckConfig, error) {
 	var cfg *MetricsCheckConfig

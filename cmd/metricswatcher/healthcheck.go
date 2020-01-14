@@ -4,12 +4,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
+
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushealthcheck"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func healthcheck(configuration *MetricsCheckConfig) {
+func healthcheck(configuration *config.MetricsCheckConfig) {
 	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {
