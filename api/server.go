@@ -45,15 +45,9 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if config.ConnectionConfiguration.ServerURL == "" {
+	if ok, err := config.IsValid(); !ok {
 		writeResponse(w, http.StatusBadRequest, &APIResponse{
-			Error: fmt.Errorf("ServerURL is not present in config"),
-		})
-		return
-	}
-	if config.ConnectionConfiguration.WebSocketURL == "" {
-		writeResponse(w, http.StatusBadRequest, &APIResponse{
-			Error: fmt.Errorf("WebSocketURL is not present in config"),
+			Error: err,
 		})
 		return
 	}
@@ -79,7 +73,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	a.agents[u.String()] = lt
 
 	writeResponse(w, http.StatusCreated, &APIResponse{
-		Message: fmt.Sprintf("Load-test started with agent id: %s", u.String()),
+		Message: fmt.Sprintf("load-test started with agent id: %s", u.String()),
 	})
 }
 
@@ -88,7 +82,7 @@ func (a *API) getLoadTestById(w http.ResponseWriter, r *http.Request) (*loadtest
 	id := vars["id"]
 	lt, ok := a.agents[id]
 	if !ok {
-		err := fmt.Errorf("Load-test agent with id %s not found", id)
+		err := fmt.Errorf("load-test agent with id %s not found", id)
 		writeResponse(w, http.StatusNotFound, &APIResponse{
 			Error: err,
 		})
@@ -103,14 +97,14 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Run(); err != nil {
-		writeResponse(w, http.StatusInternalServerError, &APIResponse{
+		writeResponse(w, http.StatusBadRequest, &APIResponse{
 			Error:  err,
 			Status: lt.Status(),
 		})
 		return
 	}
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: "Load-test agent started",
+		Message: "load-test agent started",
 		Status:  lt.Status(),
 	})
 }
@@ -128,7 +122,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: "Load-test agent stopped",
+		Message: "load-test agent stopped",
 		Status:  lt.Status(),
 	})
 }
@@ -143,7 +137,7 @@ func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	delete(a.agents, mux.Vars(r)["id"])
 	writeResponse(w, http.StatusOK, &APIResponse{
-		Message: "Load-test agent destroyed",
+		Message: "load-test agent destroyed",
 		Status:  lt.Status(),
 	})
 }

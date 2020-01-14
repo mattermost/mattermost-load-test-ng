@@ -21,8 +21,8 @@ const (
 	StateStopping
 )
 
-// ErrUnknownState is returned when an unknown state variable is encoded/decoded.
-var ErrUnknownState = errors.New("unknown state")
+// ErrInvalidState is returned when an unknown state variable is encoded/decoded.
+var ErrInvalidState = errors.New("unknown state")
 
 // UnmarshalJSON constructs the state from a JSON string.
 func (s *State) UnmarshalJSON(b []byte) error {
@@ -33,7 +33,7 @@ func (s *State) UnmarshalJSON(b []byte) error {
 
 	switch strings.ToLower(res) {
 	default:
-		return ErrUnknownState
+		return ErrInvalidState
 	case "stopped":
 		*s = StateStopped
 	case "starting":
@@ -52,7 +52,7 @@ func (s State) MarshalJSON() ([]byte, error) {
 	var res string
 	switch s {
 	default:
-		return nil, ErrUnknownState
+		return nil, ErrInvalidState
 	case StateStopped:
 		res = "stopped"
 	case StateStarting:
