@@ -32,10 +32,8 @@ func NewHealthProvider(server string) (*HealthProvider, error) {
 }
 
 func (h *HealthProvider) Check() HealthCheckResult {
-	var (
-		response, err = http.Get(h.healthEndpoint.String())
-		now           = time.Now()
-	)
+	response, err := http.Get(h.healthEndpoint.String())
+	now := time.Now()
 
 	if err != nil {
 		return HealthCheckResult{

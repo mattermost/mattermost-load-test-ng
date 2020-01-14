@@ -20,10 +20,8 @@ type PrometheusQuery struct {
 }
 
 func checkMetrics(configuration *MetricsCheckConfig, queryFile string) {
-	var (
-		prometheusQueries = readPrometheusQueriesFile(queryFile)
-		prometheusHelper  = createPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
-	)
+	prometheusQueries := readPrometheusQueriesFile(queryFile)
+	prometheusHelper := createPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
 
 	for {
 		checkQueries(prometheusHelper, prometheusQueries)

@@ -19,29 +19,24 @@ type PrometheusHelper struct {
 // NewPrometheusHelper creates a helper with the standard Prometheus client
 // and API inside it, encapsulating all Prometheus dependencies.
 func NewPrometheusHelper(prometheusURL string) (*PrometheusHelper, error) {
-	var (
-		config      = prometheus.Config{Address: prometheusURL}
-		client, err = prometheus.NewClient(config)
-	)
+	config := prometheus.Config{Address: prometheusURL}
+	client, err := prometheus.NewClient(config)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		api              = apiv1.NewAPI(client)
-		prometheusHelper = &PrometheusHelper{api}
-	)
+	api := apiv1.NewAPI(client)
+	prometheusHelper := &PrometheusHelper{api}
 
 	return prometheusHelper, nil
 }
 
 func (p PrometheusHelper) VectorFirst(query string) (float64, error) {
-	var (
-		context       = context.Background()
-		ts            = time.Now()
-		value, _, err = p.API.Query(context, query, ts)
-	)
+	context := context.Background()
+	ts := time.Now()
+
+	value, _, err := p.API.Query(context, query, ts)
 
 	if err != nil {
 		return 0, err
