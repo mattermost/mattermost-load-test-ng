@@ -4,13 +4,12 @@
 package loadtest
 
 import (
-	config2 "github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -18,7 +17,7 @@ import (
 type LoadTester struct {
 	mut           sync.RWMutex
 	controllers   []control.UserController
-	config        *config2.LoadTestConfig
+	config        *config.LoadTestConfig
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
 	status        Status
@@ -174,7 +173,7 @@ func (lt *LoadTester) Status() Status {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *config2.LoadTestConfig, nc NewController) *LoadTester {
+func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
 	if config == nil || nc == nil {
 		return nil
 	}

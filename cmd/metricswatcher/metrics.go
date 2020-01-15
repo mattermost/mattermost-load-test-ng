@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
-
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushelper"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
