@@ -2,6 +2,7 @@ package prometheushealthcheck
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -23,7 +24,7 @@ func NewHealthProvider(server string) (*HealthProvider, error) {
 	url, err := url.Parse(server)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while starting healthcheck: %w", err)
 	}
 
 	url.Path = path.Join(url.Path, "/-/healthy")
@@ -43,7 +44,7 @@ func (h *HealthProvider) Check() HealthCheckResult {
 		}
 	}
 
-	healthy := (response.StatusCode == http.StatusOK)
+	healthy := response.StatusCode == http.StatusOK
 
 	if !healthy {
 		defer response.Body.Close()

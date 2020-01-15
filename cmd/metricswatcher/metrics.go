@@ -47,7 +47,7 @@ func readPrometheusQueriesFile(queryFile string) ([]PrometheusQuery, error) {
 	jsonFile, err := os.Open(queryFile)
 
 	if err != nil {
-		return []PrometheusQuery{}, err
+		return []PrometheusQuery{}, fmt.Errorf("error while opening queries file: %w", err)
 	}
 
 	defer jsonFile.Close()
@@ -56,8 +56,7 @@ func readPrometheusQueriesFile(queryFile string) ([]PrometheusQuery, error) {
 	var queries []PrometheusQuery
 
 	if err := json.Unmarshal(fileBytes, &queries); err != nil {
-		mlog.Critical("Error while trying to parse queries file:", mlog.Err(err))
-		os.Exit(1)
+		return []PrometheusQuery{}, fmt.Errorf("error while trying to parse queries file: %w", err)
 	}
 
 	return queries, nil
