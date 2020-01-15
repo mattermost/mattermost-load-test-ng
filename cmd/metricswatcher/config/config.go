@@ -48,7 +48,7 @@ func ReadConfig(configFilePath string) error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config/")
-	viper.SetEnvPrefix("mmloadtest")
+	viper.SetEnvPrefix("mmmetricswatcher")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
