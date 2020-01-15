@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
@@ -11,12 +10,12 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func healthcheck(configuration *config.MetricsCheckConfig) {
+func healthcheck(errChan chan error, configuration *config.MetricsCheckConfig) {
 	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {
-		mlog.Error(err.Error())
-		os.Exit(1)
+		errChan <- err
+		return
 	}
 
 	for {
@@ -26,6 +25,6 @@ func healthcheck(configuration *config.MetricsCheckConfig) {
 			mlog.Error("Prometheus is not healthy:", mlog.Err(healthcheckResult.Error))
 		}
 
-		time.Sleep(60 * time.Second)
+		time.Sleep(time.Duration(configuration.PrometheusConfiguration.HealthcheckUpdateIntervalInMS) * time.Millisecond)
 	}
 }
