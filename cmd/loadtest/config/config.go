@@ -4,9 +4,11 @@
 package config
 
 import (
-	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"fmt"
 	"os"
 	"strings"
+
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/pkg/errors"
@@ -108,4 +110,15 @@ func GetConfig() (*LoadTestConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+// IsValid checks whether a config is valid or not.
+func (c *LoadTestConfig) IsValid() (bool, error) {
+	if c.ConnectionConfiguration.ServerURL == "" {
+		return false, fmt.Errorf("ServerURL is not present in config")
+	}
+	if c.ConnectionConfiguration.WebSocketURL == "" {
+		return false, fmt.Errorf("WebSocketURL is not present in config")
+	}
+	return true, nil
 }

@@ -6,6 +6,7 @@ package simplecontroller
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -66,6 +67,64 @@ func (c *SimpleController) logout() control.UserStatus {
 	return c.newInfoStatus("logged out")
 }
 
+func (c *SimpleController) joinChannel() control.UserStatus {
+	userStore := c.user.Store()
+	userId := userStore.Id()
+	teams, err := userStore.Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, team := range teams {
+		channels, err := userStore.Channels(team.Id)
+		for _, channel := range channels {
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			cm, err := userStore.ChannelMember(team.Id, userId)
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			if cm.UserId == "" {
+				err := c.user.AddChannelMember(channel.Id, userId)
+				if err != nil {
+					return c.newErrorStatus(err)
+				}
+				return c.newInfoStatus(fmt.Sprintf("joined channel %s", channel.Id))
+			}
+		}
+	}
+	return c.newInfoStatus("no channel to join")
+}
+
+func (c *SimpleController) leaveChannel() control.UserStatus {
+	userStore := c.user.Store()
+	userId := userStore.Id()
+	teams, err := userStore.Teams()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, team := range teams {
+		channels, err := userStore.Channels(team.Id)
+		for _, channel := range channels {
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			cm, err := userStore.ChannelMember(team.Id, userId)
+			if err != nil {
+				return c.newErrorStatus(err)
+			}
+			if cm.UserId != "" {
+				_, err := c.user.RemoveUserFromChannel(channel.Id, userId)
+				if err != nil {
+					return c.newErrorStatus(err)
+				}
+				return c.newInfoStatus(fmt.Sprintf("left channel %s", channel.Id))
+			}
+		}
+	}
+	return c.newInfoStatus("unable to leave, not member of any channel")
+}
+
 func (c *SimpleController) joinTeam() control.UserStatus {
 	userStore := c.user.Store()
 	userId := userStore.Id()
@@ -90,9 +149,20 @@ func (c *SimpleController) joinTeam() control.UserStatus {
 }
 
 func (c *SimpleController) createPost() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
 	postId, err := c.user.CreatePost(&model.Post{
-		Message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channel.Id,
 	})
+
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -159,23 +229,24 @@ func (c *SimpleController) createGroupChannel() control.UserStatus {
 }
 
 func (c *SimpleController) viewChannel() control.UserStatus {
-	return c.newErrorStatus(errors.New("not implemented"))
-	/*
-		channel, err := c.user.Store().Channel("") // TODO: fetch channel randomly?
-		if err != nil {
-			return control.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		}
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
-		channelViewResponse, err := c.user.ViewChannel(&model.ChannelView{
-			ChannelId: channel.Id,
-			PrevChannelId: "",
-		})
-		if err != nil {
-			return control.UserStatus{User: c.user, Err: err, Code: user.STATUS_ERROR}
-		}
+	channelViewResponse, err := c.user.ViewChannel(&model.ChannelView{
+		ChannelId:     channel.Id,
+		PrevChannelId: "",
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
 
-		return control.UserStatus{User: c.user, Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
-	*/
+	return c.newInfoStatus(fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson()))
 }
 
 func (c *SimpleController) searchUsers() control.UserStatus {
@@ -196,6 +267,38 @@ func (c *SimpleController) searchUsers() control.UserStatus {
 	}
 
 	return c.newInfoStatus(fmt.Sprintf("found %d users", len(users)))
+}
+
+func (c *SimpleController) updateProfile() control.UserStatus {
+	userId := c.user.Store().Id()
+	userName := fmt.Sprintf("testuserNew%d", c.id)
+	nickName := fmt.Sprintf("testNickName%d", c.id)
+	firstName := fmt.Sprintf("firstName%d", c.id)
+	lastName := fmt.Sprintf("lastName%d", c.id)
+	err := c.user.PatchUser(userId, &model.UserPatch{
+		Username:  &userName,
+		Nickname:  &nickName,
+		FirstName: &firstName,
+		LastName:  &lastName,
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus("user patched")
+}
+
+func (c *SimpleController) updateProfileImage() control.UserStatus {
+	// TODO: take this from the config later.
+	imagePath := "./testdata/test_profile.png"
+	buf, err := ioutil.ReadFile(imagePath)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	err = c.user.SetProfileImage(buf)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus("profile image updated")
 }
 
 func (c *SimpleController) searchChannels() control.UserStatus {
