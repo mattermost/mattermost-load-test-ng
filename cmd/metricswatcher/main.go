@@ -2,18 +2,20 @@ package main
 
 import (
 	"os"
-	"sync"
+
+	"github.com/mattermost/mattermost-server/v5/mlog"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
-
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:    "metricswatcher",
-		RunE:   runMetricsWatcher,
-		PreRun: config.SetupMetricsCheck,
+		Use:           "metricswatcher",
+		RunE:          runMetricsWatcher,
+		PreRun:        config.SetupMetricsCheck,
+		SilenceErrors: true, // Since we're printing our logs, we don't need cobra to print the errors
+		SilenceUsage:  true, // For some reason cobra prints the usage when some error happens in Execute()
 	}
 
 	persistentFlags := rootCmd.PersistentFlags()
@@ -34,13 +36,16 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	errChan := make(chan error, 1)
+	defer close(errChan)
 
-	go healthcheck(configuration)
-	go checkMetrics(configuration, jsonQueryFile)
+	go healthcheck(errChan, configuration)
+	go checkMetrics(errChan, configuration, jsonQueryFile)
 
-	wg.Wait()
+	err = <-errChan
 
-	return nil
+	mlog.Error(err.Error())
+
+	return err
+
 }

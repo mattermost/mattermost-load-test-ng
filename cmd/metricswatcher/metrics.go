@@ -21,9 +21,20 @@ type PrometheusQuery struct {
 	Alert       bool
 }
 
-func checkMetrics(configuration *config.MetricsCheckConfig, queryFile string) {
-	prometheusQueries := readPrometheusQueriesFile(queryFile)
-	prometheusHelper := createPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
+func checkMetrics(errChan chan error, configuration *config.MetricsCheckConfig, queryFile string) {
+	prometheusQueries, err := readPrometheusQueriesFile(queryFile)
+
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	prometheusHelper, err := prometheushelper.NewPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
+
+	if err != nil {
+		errChan <- err
+		return
+	}
 
 	for {
 		checkQueries(prometheusHelper, prometheusQueries)
@@ -32,23 +43,11 @@ func checkMetrics(configuration *config.MetricsCheckConfig, queryFile string) {
 	}
 }
 
-func createPrometheusHelper(prometheusURL string) *prometheushelper.PrometheusHelper {
-	prometheusHelper, err := prometheushelper.NewPrometheusHelper(prometheusURL)
-
-	if err != nil {
-		mlog.Critical("Error while trying to create Prometheus helper:", mlog.Err(err))
-		os.Exit(1)
-	}
-
-	return prometheusHelper
-}
-
-func readPrometheusQueriesFile(queryFile string) []PrometheusQuery {
+func readPrometheusQueriesFile(queryFile string) ([]PrometheusQuery, error) {
 	jsonFile, err := os.Open(queryFile)
 
 	if err != nil {
-		mlog.Critical("Error while trying to open queries file:", mlog.Err(err))
-		os.Exit(1)
+		return []PrometheusQuery{}, err
 	}
 
 	defer jsonFile.Close()
@@ -61,7 +60,7 @@ func readPrometheusQueriesFile(queryFile string) []PrometheusQuery {
 		os.Exit(1)
 	}
 
-	return queries
+	return queries, nil
 }
 
 func checkQueries(prometheus *prometheushelper.PrometheusHelper, queries []PrometheusQuery) {
