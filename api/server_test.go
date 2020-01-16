@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
@@ -35,38 +35,53 @@ func TestAPI(t *testing.T) {
 	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
 	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	sampleConfig.UsersConfiguration.MaxActiveUsers = 100
-	obj := e.POST("/create").WithJSON(sampleConfig).
-		Expect().
-		Status(http.StatusCreated).JSON().Object()
+	ltId := "lt0"
+	obj := e.POST("/create").WithQuery("id", ltId).WithJSON(sampleConfig).
+		Expect().Status(http.StatusCreated).
+		JSON().Object().ValueEqual("id", ltId)
 	rawMsg := obj.Value("message").String().Raw()
-	parts := strings.Split(rawMsg, ":")
-	require.Len(t, parts, 2)
-	ltId := strings.TrimSpace(parts[1])
+	require.Equal(t, rawMsg, "load-test agent created")
+
+	obj = e.POST("/create").WithQuery("id", ltId).WithJSON(sampleConfig).
+		Expect().Status(http.StatusBadRequest).
+		JSON().Object().ContainsKey("error")
+	rawMsg = obj.Value("error").String().Raw()
+	require.Equal(t, rawMsg, fmt.Sprintf("load-test agent with id %s already exists", ltId))
+
+	e.GET(ltId + "/status").
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().NotContainsKey("error")
+
+	e.GET(ltId).
+		Expect().
+		Status(http.StatusOK).
+		JSON().Object().NotContainsKey("error")
 
 	e.POST(ltId + "/run").Expect().Status(http.StatusOK)
-	e.POST(ltId+"/user/add").WithQuery("amount", 10).Expect().Status(http.StatusOK)
-	e.POST(ltId+"/user/remove").WithQuery("amount", 3).Expect().Status(http.StatusOK)
-	e.POST(ltId+"/user/add").WithQuery("amount", 0).Expect().
+	e.POST(ltId+"/addusers").WithQuery("amount", 10).Expect().Status(http.StatusOK)
+	e.POST(ltId+"/removeusers").WithQuery("amount", 3).Expect().Status(http.StatusOK)
+	e.POST(ltId+"/addusers").WithQuery("amount", 0).Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 
-	e.POST(ltId+"/user/add").WithQuery("amount", -2).Expect().
+	e.POST(ltId+"/addusers").WithQuery("amount", -2).Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 
-	e.POST(ltId+"/user/add").WithQuery("amount", "bad").Expect().
+	e.POST(ltId+"/addusers").WithQuery("amount", "bad").Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 
-	e.POST(ltId+"/user/remove").WithQuery("amount", 0).Expect().
+	e.POST(ltId+"/removeusers").WithQuery("amount", 0).Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 
-	e.POST(ltId+"/user/remove").WithQuery("amount", -2).Expect().
+	e.POST(ltId+"/removeusers").WithQuery("amount", -2).Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 
-	e.POST(ltId+"/user/remove").WithQuery("amount", "bad").Expect().
+	e.POST(ltId+"/removeusers").WithQuery("amount", "bad").Expect().
 		Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 

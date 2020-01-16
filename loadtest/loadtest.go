@@ -175,6 +175,7 @@ func (lt *LoadTester) Status() Status {
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
 func New(config *config.LoadTestConfig, nc NewController) *LoadTester {
+	// TODO: add config validation
 	if config == nil || nc == nil {
 		return nil
 	}
