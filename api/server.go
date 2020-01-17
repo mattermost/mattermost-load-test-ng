@@ -52,11 +52,11 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.FormValue("id")
+	agentId := r.FormValue("id")
 
-	if a.agents[id] != nil {
+	if a.agents[agentId] != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("load-test agent with id %s already exists", id),
+			Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
 		})
 		return
 	}
@@ -65,8 +65,8 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-user%d", u.String(), id),
-			Email:        fmt.Sprintf("%s-user%d@example.com", u.String(), id),
+			Username:     fmt.Sprintf("%s-user%d", agentId, id),
+			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
@@ -76,15 +76,15 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt := loadtest.New(&config, newSimpleController)
 	if lt == nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Id:      id,
+			Id:      agentId,
 			Message: fmt.Sprintf("load-test agent creation failed"),
 		})
 		return
 	}
-	a.agents[id] = lt
+	a.agents[agentId] = lt
 
 	writeResponse(w, http.StatusCreated, &Response{
-		Id:      id,
+		Id:      agentId,
 		Message: fmt.Sprintf("load-test agent created"),
 	})
 }
