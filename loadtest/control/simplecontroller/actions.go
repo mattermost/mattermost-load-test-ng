@@ -23,16 +23,16 @@ func (c *SimpleController) signUp() control.UserStatus {
 		return c.newInfoStatus("user already signed up")
 	}
 
-	email := fmt.Sprintf("testuser%d@example.com", c.id)
-	username := fmt.Sprintf("testuser%d", c.id)
-	password := "testPass123$"
+	email := c.user.Store().Email()
+	username := c.user.Store().Username()
+	password := c.user.Store().Password()
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
 
-	return c.newInfoStatus("signed up")
+	return c.newInfoStatus(fmt.Sprintf("signed up as %s", username))
 }
 
 func (c *SimpleController) login() control.UserStatus {

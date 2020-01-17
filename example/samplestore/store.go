@@ -37,6 +37,27 @@ func (s *SampleStore) Id() string {
 	return s.user.Id
 }
 
+func (s *SampleStore) Username() string {
+	if s.user == nil {
+		return ""
+	}
+	return s.user.Username
+}
+
+func (s *SampleStore) Email() string {
+	if s.user == nil {
+		return ""
+	}
+	return s.user.Email
+}
+
+func (s *SampleStore) Password() string {
+	if s.user == nil {
+		return ""
+	}
+	return s.user.Password
+}
+
 func (s *SampleStore) Config() model.Config {
 	return *s.config
 }

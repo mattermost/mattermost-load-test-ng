@@ -12,6 +12,13 @@ import (
 type UserStore interface {
 	// Id of the user.
 	Id() string
+	// Username of the user.
+	Username() string
+	// Email of the user.
+	Email() string
+	// Password of the user.
+	Password() string
+
 	// TODO: Move all getters to this interface
 
 	// Config return the server configuration settings.
