@@ -34,6 +34,9 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	u := New(s, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,
+		"testuser",
+		"testuser@example.com",
+		"testpassword",
 	})
 	require.NotNil(th.tb, u)
 	return u

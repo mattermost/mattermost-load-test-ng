@@ -31,6 +31,12 @@ type Config struct {
 	ServerURL string
 	// The URL of the mattermost WebSocket server.
 	WebSocketURL string
+	// The username to be used by the entity.
+	Username string
+	// The email to be used by the entity.
+	Email string
+	// The password to be used by the entity.
+	Password string
 }
 
 // Store returns the underlying store of the user.
@@ -57,6 +63,14 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	ue.client.HttpClient = &http.Client{Transport: transport}
+	err := store.SetUser(&model.User{
+		Username: config.Username,
+		Email:    config.Email,
+		Password: config.Password,
+	})
+	if err != nil {
+		return nil
+	}
 	ue.store = store
 	return &ue
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
@@ -23,6 +24,9 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     fmt.Sprintf("testuser-%d", id),
+			Email:        fmt.Sprintf("testuser-%d@example.com", id),
+			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
 		return simplecontroller.New(id, ue, status)

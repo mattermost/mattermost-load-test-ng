@@ -64,6 +64,9 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     fmt.Sprintf("%s-user%d", u.String(), id),
+			Email:        fmt.Sprintf("%s-user%d@example.com", u.String(), id),
+			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
 		return simplecontroller.New(id, ue, status)
