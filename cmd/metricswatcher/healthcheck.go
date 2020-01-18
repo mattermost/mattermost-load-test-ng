@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func healthcheck(errChan chan error, configuration *config.MetricsCheckConfig) {
+func healthcheck(errChan chan error, configuration *config.MetricsWatcherConfiguration) {
 	healthCheck, err := prometheushealthcheck.NewHealthProvider(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {

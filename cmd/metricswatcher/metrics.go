@@ -20,7 +20,7 @@ type PrometheusQuery struct {
 	Alert       bool
 }
 
-func checkMetrics(errChan chan error, configuration *config.MetricsCheckConfig, queryFile string) {
+func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfiguration, queryFile string) {
 	prometheusQueries, err := readPrometheusQueriesFile(queryFile)
 
 	if err != nil {

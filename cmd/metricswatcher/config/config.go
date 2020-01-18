@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type MetricsCheckConfig struct {
+type MetricsWatcherConfiguration struct {
 	LogSettings             logger.LoggerSettings
 	PrometheusConfiguration PrometheusConfiguration
 }
@@ -75,8 +75,8 @@ func ReadConfig(configFilePath string) error {
 	return nil
 }
 
-func GetMetricsCheckConfig() (*MetricsCheckConfig, error) {
-	var cfg *MetricsCheckConfig
+func GetMetricsCheckConfig() (*MetricsWatcherConfiguration, error) {
+	var cfg *MetricsWatcherConfiguration
 
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
