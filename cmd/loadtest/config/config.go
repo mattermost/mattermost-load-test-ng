@@ -69,7 +69,7 @@ func SetupLoadTest(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	logger.InitLogger(&cfg.LogSettings)
+	logger.Init(&cfg.LogSettings)
 }
 
 func ReadConfig(configFilePath string) error {

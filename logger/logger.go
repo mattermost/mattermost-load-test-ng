@@ -16,7 +16,7 @@ type LoggerSettings struct {
 	FileLocation  string
 }
 
-func InitLogger(logSettings *LoggerSettings) {
+func Init(logSettings *LoggerSettings) {
 	log := mlog.NewLogger(&mlog.LoggerConfiguration{
 		EnableConsole: logSettings.EnableConsole,
 		ConsoleJson:   logSettings.ConsoleJson,
