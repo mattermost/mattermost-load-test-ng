@@ -58,7 +58,7 @@ func ReadConfig(configFilePath string) error {
 	viper.SetDefault("LogSettings.EnableFile", true)
 	viper.SetDefault("LogSettings.FileLevel", "INFO")
 	viper.SetDefault("LogSettings.FileJson", true)
-	viper.SetDefault("LogSettings.FileLocation", "metricscheck.log")
+	viper.SetDefault("LogSettings.FileLocation", "metricswatcher.log")
 
 	viper.SetDefault("PrometheusConfiguration.PrometheusURL", "http://localhost:9090")
 	viper.SetDefault("PrometheusConfiguration.MetricsUpdateIntervalInMS", 1000)

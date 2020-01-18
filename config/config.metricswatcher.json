@@ -6,7 +6,7 @@
         "EnableFile": true,
         "FileLevel": "INFO",
         "FileJson": true,
-        "FileLocation": "metricscheck.log"
+        "FileLocation": "metricswatcher.log"
     },
     "PrometheusConfiguration": {
         "PrometheusURL": "http://localhost:9090",

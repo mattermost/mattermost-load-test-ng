@@ -19,7 +19,7 @@ _test
 *mattermost.log
 *npm-debug.log*
 loadtest.log
-metricscheck.log
+metricswatcher.log
 
 .tmp
 debug
