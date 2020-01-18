@@ -17,7 +17,6 @@ func main() {
 
 	persistentFlags := rootCmd.PersistentFlags()
 	persistentFlags.StringP("config", "c", "", "path to the configuration file to use")
-	cobra.MarkFlagRequired(persistentFlags, "queries")
 
 	if err := rootCmd.Execute(); err != nil {
 		mlog.Error(err.Error())

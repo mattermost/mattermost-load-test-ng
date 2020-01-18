@@ -19,8 +19,12 @@ func Test_CanCreateAHealthProvider(t *testing.T) {
 func Test_HealthProvider_ReturnsTrueWhenHealthIsUp(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Prometheus is Healthy."))
+
+		if _, err := w.Write([]byte("Prometheus is Healthy.")); err != nil {
+			assert.Fail(t, err.Error())
+		}
 	}
+
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	defer server.Close()
 
@@ -35,8 +39,12 @@ func Test_HealthProvider_ReturnsTrueWhenHealthIsUp(t *testing.T) {
 func Test_HealthProvider_ReturnsFalseWhenHealthIsDown(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte("Prometheus is a Teapot."))
+
+		if _, err := w.Write([]byte("Prometheus is a Teapot.")); err != nil {
+			assert.Fail(t, err.Error())
+		}
 	}
+
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	defer server.Close()
 
