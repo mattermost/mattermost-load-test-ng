@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
-
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +20,7 @@ func main() {
 	cobra.MarkFlagRequired(persistentFlags, "queries")
 
 	if err := rootCmd.Execute(); err != nil {
+		mlog.Error(err.Error())
 		os.Exit(1)
 	}
 }
@@ -40,8 +40,5 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 
 	err = <-errChan
 
-	mlog.Error(err.Error())
-
 	return err
-
 }
