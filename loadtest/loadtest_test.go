@@ -6,11 +6,12 @@ package loadtest
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,7 @@ var ltConfig = config.LoadTestConfig{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
 	},
-	LogSettings: config.LoggerSettings{},
+	LogSettings: logger.LoggerSettings{},
 }
 
 func newController(id int, status chan<- control.UserStatus) control.UserController {

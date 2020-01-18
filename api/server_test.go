@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"

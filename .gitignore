@@ -19,6 +19,7 @@ _test
 *mattermost.log
 *npm-debug.log*
 loadtest.log
+metricswatcher.log
 
 .tmp
 debug
@@ -65,3 +66,6 @@ config/config.json
 /terraformenv
 .idea
 mattermost-load-test.iml
+
+vendor/
+

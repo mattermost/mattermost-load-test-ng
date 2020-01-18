@@ -5,9 +5,14 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/logger"
+
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -15,7 +20,7 @@ type LoadTestConfig struct {
 	ConnectionConfiguration ConnectionConfiguration
 	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
-	LogSettings             LoggerSettings
+	LogSettings             logger.LoggerSettings
 }
 
 type ConnectionConfiguration struct {
@@ -47,6 +52,24 @@ type LoggerSettings struct {
 	FileJson      bool
 	FileLevel     string
 	FileLocation  string
+}
+
+func SetupLoadTest(cmd *cobra.Command, args []string) {
+	configFilePath, _ := cmd.Flags().GetString("config")
+
+	if err := ReadConfig(configFilePath); err != nil {
+		mlog.Error("Failed to initialize config", mlog.Err(err))
+		os.Exit(1)
+	}
+
+	cfg, err := GetConfig()
+
+	if err != nil {
+		mlog.Error("Failed to get logging config:", mlog.Err(err))
+		os.Exit(1)
+	}
+
+	logger.Init(&cfg.LogSettings)
 }
 
 func ReadConfig(configFilePath string) error {

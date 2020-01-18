@@ -11,11 +11,11 @@
         "IdleConnTimeoutMilliseconds": 90000
     },
     "InstanceConfiguration": {
-      "NumTeams": 2
+        "NumTeams": 2
     },
     "UsersConfiguration": {
-      "InitialActiveUsers": 4,
-      "MaxActiveUsers": 1000
+        "InitialActiveUsers": 4,
+        "MaxActiveUsers": 1000
     },
     "LogSettings": {
         "EnableConsole": true,

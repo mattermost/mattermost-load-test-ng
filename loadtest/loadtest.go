@@ -8,9 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 

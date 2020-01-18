@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
@@ -79,6 +79,6 @@ func MakeInitCommand() *cobra.Command {
 		Use:    "init",
 		Short:  "Initialize instance",
 		RunE:   RunInitCmdF,
-		PreRun: initLogger,
+		PreRun: config.SetupLoadTest,
 	}
 }
