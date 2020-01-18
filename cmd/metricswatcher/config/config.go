@@ -45,7 +45,7 @@ func SetupMetricsCheck(cmd *cobra.Command, args []string) {
 }
 
 func ReadConfig(configFilePath string) error {
-	viper.SetConfigName("config")
+	viper.SetConfigName("config.metricswatcher")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config/")
 	viper.SetEnvPrefix("mmmetricswatcher")
