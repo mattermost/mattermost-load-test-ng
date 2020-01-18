@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
@@ -13,21 +10,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-type PrometheusQuery struct {
-	Description string
-	Query       string
-	Threshold   float64
-	Alert       bool
-}
-
-func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfiguration, queryFile string) {
-	prometheusQueries, err := readPrometheusQueriesFile(queryFile)
-
-	if err != nil {
-		errChan <- err
-		return
-	}
-
+func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfiguration) {
 	prometheusHelper, err := prometheushelper.NewPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {
@@ -36,32 +19,13 @@ func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfig
 	}
 
 	for {
-		checkQueries(prometheusHelper, prometheusQueries)
+		checkQueries(prometheusHelper, configuration.Queries)
 
 		time.Sleep(time.Duration(configuration.PrometheusConfiguration.MetricsUpdateIntervalInMS) * time.Millisecond)
 	}
 }
 
-func readPrometheusQueriesFile(queryFile string) ([]PrometheusQuery, error) {
-	jsonFile, err := os.Open(queryFile)
-
-	if err != nil {
-		return []PrometheusQuery{}, fmt.Errorf("error while opening queries file: %w", err)
-	}
-
-	defer jsonFile.Close()
-	fileBytes, _ := ioutil.ReadAll(jsonFile)
-
-	var queries []PrometheusQuery
-
-	if err := json.Unmarshal(fileBytes, &queries); err != nil {
-		return []PrometheusQuery{}, fmt.Errorf("error while trying to parse queries file: %w", err)
-	}
-
-	return queries, nil
-}
-
-func checkQueries(prometheus *prometheushelper.PrometheusHelper, queries []PrometheusQuery) {
+func checkQueries(prometheus *prometheushelper.PrometheusHelper, queries []config.PrometheusQuery) {
 	for _, query := range queries {
 		value, err := prometheus.VectorFirst(query.Query)
 

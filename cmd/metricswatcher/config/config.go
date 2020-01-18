@@ -18,12 +18,20 @@ import (
 type MetricsWatcherConfiguration struct {
 	LogSettings             logger.LoggerSettings
 	PrometheusConfiguration PrometheusConfiguration
+	Queries                 []PrometheusQuery
 }
 
 type PrometheusConfiguration struct {
 	PrometheusURL                 string
 	MetricsUpdateIntervalInMS     int
 	HealthcheckUpdateIntervalInMS int
+}
+
+type PrometheusQuery struct {
+	Description string
+	Query       string
+	Threshold   float64
+	Alert       bool
 }
 
 func SetupMetricsCheck(cmd *cobra.Command, args []string) {

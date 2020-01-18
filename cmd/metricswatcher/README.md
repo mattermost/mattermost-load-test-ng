@@ -4,18 +4,11 @@
 
 ## Configuration
 
-Check the `PrometheusConfiguration` section of your config file:
-
-```json
-    "PrometheusConfiguration": {
-        "PrometheusURL": "http://localhost:9090",
-        "UpdateIntervalInMS": 1000
-    }
-```
+The file `config.metricswatcher.json` contains all the needed configuration, such as Prometheus server URL, interval to update the metrics, logging and Prometheus queries.
 
 ## Running
 
 ```
-metricswatcher --config config/config.default.json --queries config/prometheusqueries.sample.json
+metricswatcher --config config/config.metricswatcher.json
 ```
 

@@ -11,16 +11,13 @@ import (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:           "metricswatcher",
-		RunE:          runMetricsWatcher,
-		PreRun:        config.SetupMetricsCheck,
-		SilenceErrors: true, // Since we're printing our logs, we don't need cobra to print the errors
-		SilenceUsage:  true, // For some reason cobra prints the usage when some error happens in Execute()
+		Use:    "metricswatcher",
+		RunE:   runMetricsWatcher,
+		PreRun: config.SetupMetricsCheck,
 	}
 
 	persistentFlags := rootCmd.PersistentFlags()
 	persistentFlags.StringP("config", "c", "", "path to the configuration file to use")
-	persistentFlags.StringP("queries", "q", "", "path to the JSON file with Prometheus queries")
 	cobra.MarkFlagRequired(persistentFlags, "queries")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -30,7 +27,6 @@ func main() {
 
 func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	configuration, err := config.GetMetricsCheckConfig()
-	jsonQueryFile, _ := cmd.Flags().GetString("queries")
 
 	if err != nil {
 		return err
@@ -40,7 +36,7 @@ func runMetricsWatcher(cmd *cobra.Command, args []string) error {
 	defer close(errChan)
 
 	go healthcheck(errChan, configuration)
-	go checkMetrics(errChan, configuration, jsonQueryFile)
+	go checkMetrics(errChan, configuration)
 
 	err = <-errChan
 
