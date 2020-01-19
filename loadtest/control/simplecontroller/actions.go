@@ -271,7 +271,7 @@ func (c *SimpleController) searchUsers() control.UserStatus {
 
 func (c *SimpleController) updateProfile() control.UserStatus {
 	userId := c.user.Store().Id()
-	userName := fmt.Sprintf("testuserNew%d", c.id)
+	userName := fmt.Sprintf("%s-new", c.user.Store().Username())
 	nickName := fmt.Sprintf("testNickName%d", c.id)
 	firstName := fmt.Sprintf("firstName%d", c.id)
 	lastName := fmt.Sprintf("lastName%d", c.id)

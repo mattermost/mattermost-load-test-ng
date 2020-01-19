@@ -1,0 +1,15 @@
+{
+  "ClusterConfig": {
+    "Agents": [
+      {
+        "Id": "lt0",
+        "ApiURL": "http://localhost:4000"
+      },
+      {
+        "Id": "lt1",
+        "ApiURL": "http://localhost:4001"
+      }
+    ],
+    "MaxActiveUsers": 100
+  }
+}
