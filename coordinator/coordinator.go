@@ -29,7 +29,9 @@ func (c *Coordinator) Run() error {
 	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	if err := c.cluster.Run(); err != nil {
-		return fmt.Errorf("coordinator: running cluster failed \n%w", err)
+		fmt.Printf("coordinator: running cluster failed \n%s\n", err.Error())
+		c.cluster.Shutdown()
+		return err
 	}
 
 	for {
@@ -53,7 +55,8 @@ func (c *Coordinator) Run() error {
 		select {
 		case <-interruptChannel:
 			fmt.Printf("coordinator: shutting down\n")
-			return c.cluster.Stop()
+			c.cluster.Shutdown()
+			return nil
 		case <-time.After(1 * time.Second):
 		}
 
