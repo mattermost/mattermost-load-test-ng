@@ -147,6 +147,9 @@ func (c *SimpleController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimpleController) Stop() {
+	if err := c.user.Disconnect(); err != nil {
+		c.status <- c.newErrorStatus(err)
+	}
 	close(c.stop)
 }
 
