@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ func TestAPI(t *testing.T) {
 		Status(http.StatusNotFound)
 
 	sampleConfigBytes, _ := ioutil.ReadFile("../config/config.default.json")
-	var sampleConfig config.LoadTestConfig
+	var sampleConfig loadtest.LoadTestConfig
 	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
 	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	sampleConfig.UsersConfiguration.MaxActiveUsers = 100

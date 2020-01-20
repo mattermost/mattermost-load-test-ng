@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 package api
 
 import (
@@ -6,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -36,7 +38,7 @@ func writeResponse(w http.ResponseWriter, status int, response *Response) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config config.LoadTestConfig
+	var config loadtest.LoadTestConfig
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{

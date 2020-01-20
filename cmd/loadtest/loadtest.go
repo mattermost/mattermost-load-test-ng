@@ -11,12 +11,10 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
-
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 )
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
-	config, err := config.GetConfig()
+	config, err := loadtest.GetConfig()
 	if err != nil {
 		return err
 	}
@@ -54,7 +52,7 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "loadtest",
 		RunE:   RunLoadTestCmdF,
-		PreRun: config.SetupLoadTest,
+		PreRun: SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	return cmd

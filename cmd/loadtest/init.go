@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
+	"os"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -33,7 +35,7 @@ func createTeams(admin *userentity.UserEntity, numTeams int) error {
 func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	mlog.Info("init started")
 
-	config, err := config.GetConfig()
+	config, err := loadtest.GetConfig()
 	if err != nil {
 		return err
 	}
@@ -79,6 +81,24 @@ func MakeInitCommand() *cobra.Command {
 		Use:    "init",
 		Short:  "Initialize instance",
 		RunE:   RunInitCmdF,
-		PreRun: config.SetupLoadTest,
+		PreRun: SetupLoadTest,
 	}
+}
+
+func SetupLoadTest(cmd *cobra.Command, args []string) {
+	configFilePath, _ := cmd.Flags().GetString("config")
+
+	if err := loadtest.ReadConfig(configFilePath); err != nil {
+		mlog.Error("Failed to initialize config", mlog.Err(err))
+		os.Exit(1)
+	}
+
+	cfg, err := loadtest.GetConfig()
+
+	if err != nil {
+		mlog.Error("Failed to get logging config:", mlog.Err(err))
+		os.Exit(1)
+	}
+
+	logger.Init(&cfg.LogSettings)
 }

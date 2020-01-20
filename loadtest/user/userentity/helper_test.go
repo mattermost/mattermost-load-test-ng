@@ -3,7 +3,7 @@ package userentity
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 
 	"github.com/stretchr/testify/require"
@@ -11,14 +11,14 @@ import (
 
 type TestHelper struct {
 	User   *UserEntity
-	config *config.LoadTestConfig
+	config *loadtest.LoadTestConfig
 	tb     testing.TB
 }
 
 func Setup(tb testing.TB) *TestHelper {
 	var th TestHelper
 	th.tb = tb
-	config, err := config.GetConfig()
+	config, err := loadtest.GetConfig()
 	require.Nil(th.tb, err)
 	require.NotNil(th.tb, config)
 	th.config = config

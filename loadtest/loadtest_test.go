@@ -6,7 +6,6 @@ package loadtest
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/cmd/loadtest/config"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
@@ -17,12 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var ltConfig = config.LoadTestConfig{
-	ConnectionConfiguration: config.ConnectionConfiguration{
+var ltConfig = LoadTestConfig{
+	ConnectionConfiguration: ConnectionConfiguration{
 		ServerURL:    "http://localhost:8065",
 		WebSocketURL: "ws://localhost:8065",
 	},
-	UsersConfiguration: config.UsersConfiguration{
+	UsersConfiguration: UsersConfiguration{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
 	},
