@@ -61,10 +61,7 @@ func (a *LoadAgent) AddUsers(n int) error {
 	if err != nil {
 		return err
 	}
-	if err := a.apiRequest(req); err != nil {
-		return err
-	}
-	return nil
+	return a.apiRequest(req)
 }
 
 func (a *LoadAgent) RemoveUsers(n int) error {
@@ -73,10 +70,7 @@ func (a *LoadAgent) RemoveUsers(n int) error {
 	if err != nil {
 		return err
 	}
-	if err := a.apiRequest(req); err != nil {
-		return err
-	}
-	return nil
+	return a.apiRequest(req)
 }
 
 func (a *LoadAgent) Start() error {
@@ -96,8 +90,6 @@ func (a *LoadAgent) Start() error {
 		return err
 	}
 
-	fmt.Printf("agent: agent %s created\n", a.config.Id)
-
 	url = fmt.Sprintf("%s/loadagent/%s/run", a.config.ApiURL, a.config.Id)
 	req, err = http.NewRequest("POST", url, nil)
 	if err != nil {
@@ -106,6 +98,8 @@ func (a *LoadAgent) Start() error {
 	if err := a.apiRequest(req); err != nil {
 		return err
 	}
+
+	fmt.Printf("agent: agent %s created\n", a.config.Id)
 
 	return nil
 }
