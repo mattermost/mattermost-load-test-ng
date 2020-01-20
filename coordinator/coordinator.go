@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // Coordinator is the object used to coordinate a cluster of
@@ -23,20 +25,20 @@ type Coordinator struct {
 
 // Run starts a cluster of load-test agents.
 func (c *Coordinator) Run() error {
-	fmt.Printf("coordinator: ready to drive a cluster of %d load-test agents\n", len(c.config.ClusterConfig.Agents))
+	mlog.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)))
 
 	interruptChannel := make(chan os.Signal, 1)
 	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	if err := c.cluster.Run(); err != nil {
-		fmt.Printf("coordinator: running cluster failed \n%s\n", err.Error())
+		mlog.Error("coordinator: running cluster failed", mlog.Err(err))
 		c.cluster.Shutdown()
 		return err
 	}
 
 	for {
 		status := c.cluster.Status()
-		fmt.Printf("coordinator: cluster status: %d active users, %d errors\n", status.ActiveUsers, status.NumErrors)
+		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
 		if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
 			// TODO: make the choice of this value a bit smarter.
@@ -45,16 +47,16 @@ func (c *Coordinator) Run() error {
 			if diff < inc {
 				inc = diff
 			}
-			fmt.Printf("coordinator: incrementing active users by %d\n", inc)
+			mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
 			err := c.cluster.IncrementUsers(inc)
 			if err != nil {
-				fmt.Println(err.Error())
+				mlog.Error("coordinator: failed to increment users", mlog.Err(err))
 			}
 		}
 
 		select {
 		case <-interruptChannel:
-			fmt.Printf("coordinator: shutting down\n")
+			mlog.Info("coordinator: shutting down")
 			c.cluster.Shutdown()
 			return nil
 		case <-time.After(1 * time.Second):
@@ -75,7 +77,7 @@ func New(config *CoordinatorConfig) (*Coordinator, error) {
 	}
 	cluster, err := cluster.New(config.ClusterConfig)
 	if err != nil {
-		return nil, fmt.Errorf("coordinator: failed to create cluster \n%w", err)
+		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}
 	return &Coordinator{
 		config:  config,

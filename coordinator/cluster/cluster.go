@@ -7,6 +7,8 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
+
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // LoadAgentCluster is the object holding information about all the load-test
@@ -26,7 +28,7 @@ func New(config LoadAgentClusterConfig) (*LoadAgentCluster, error) {
 	for i := 0; i < len(agents); i++ {
 		agent, err := agent.New(config.Agents[i])
 		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to create agent \n%w", err)
+			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
 		}
 		agents[i] = agent
 	}
@@ -41,7 +43,7 @@ func (c *LoadAgentCluster) Run() error {
 	for _, agent := range c.agents {
 		err := agent.Start()
 		if err != nil {
-			return fmt.Errorf("cluster: failed to start agent.\n%w", err)
+			return fmt.Errorf("cluster: failed to start agent: %w", err)
 		}
 	}
 	return nil
@@ -52,7 +54,7 @@ func (c *LoadAgentCluster) Stop() error {
 	for _, agent := range c.agents {
 		err := agent.Stop()
 		if err != nil {
-			return fmt.Errorf("cluster: failed to stop agent.\n%w", err)
+			return fmt.Errorf("cluster: failed to stop agent: %w", err)
 		}
 	}
 	return nil
@@ -64,7 +66,7 @@ func (c *LoadAgentCluster) Stop() error {
 func (c *LoadAgentCluster) Shutdown() {
 	for _, agent := range c.agents {
 		if err := agent.Stop(); err != nil {
-			fmt.Printf("cluster: failed to stop agent.\n %s\n", err.Error())
+			mlog.Error("cluster: failed to stop agent", mlog.Err(err))
 		}
 	}
 }
@@ -80,9 +82,9 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	// agents available.
 	inc := int(n / len(c.agents))
 	for i, agent := range c.agents {
-		fmt.Printf("cluster: adding %d users to %s\n", inc, c.config.Agents[i].Id)
+		mlog.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
 		if err := agent.AddUsers(inc); err != nil {
-			return fmt.Errorf("cluster: failed to add users to agent.\n%w", err)
+			return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 		}
 	}
 	return nil

@@ -11,6 +11,8 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // LoadAgent is the object acting as a client to the load-test agent
@@ -99,7 +101,7 @@ func (a *LoadAgent) Start() error {
 		return err
 	}
 
-	fmt.Printf("agent: agent %s created\n", a.config.Id)
+	mlog.Info("agent: agent created", mlog.String("agent_id", a.config.Id))
 
 	return nil
 }
@@ -113,7 +115,9 @@ func (a *LoadAgent) Stop() error {
 	if err := a.apiRequest(req); err != nil {
 		return err
 	}
-	fmt.Printf("agent: agent %s destroyed\n", a.config.Id)
+
+	mlog.Info("agent: agent destroyed", mlog.String("agent_id", a.config.Id))
+
 	return nil
 }
 
