@@ -96,6 +96,7 @@ func (ue *UserEntity) Connect() <-chan error {
 
 // Disconnect closes the websocket connection.
 func (ue *UserEntity) Disconnect() error {
+	ue.client.HttpClient.CloseIdleConnections()
 	if !ue.connected {
 		return errors.New("user is not connected")
 	}
