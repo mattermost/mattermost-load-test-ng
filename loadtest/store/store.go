@@ -29,6 +29,8 @@ type UserStore interface {
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
 	// ChannelPosts returns all posts for given channelId
 	ChannelPosts(channelId string) ([]*model.Post, error)
+	// ChannelPostsSorted returns all posts for given channelId, sorted by CreateAt
+	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
