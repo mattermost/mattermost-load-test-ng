@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrEmptyMap   = errors.New("memstore: cannot select from an empty map")
-	ErrEmptySlice = errors.New("memstore: cannot select from an empty slice")
+	ErrEmptyMap    = errors.New("memstore: cannot select from an empty map")
+	ErrEmptySlice  = errors.New("memstore: cannot select from an empty slice")
+	ErrLenMismatch = errors.New("memstore: cannot select from a map, not enough elements")
 )
 
 // RandomChannel returns a random channel for a user.
@@ -48,6 +49,32 @@ func (s *MemStore) RandomUser() (model.User, error) {
 		return model.User{}, err
 	}
 	return *s.users[key.(string)], nil
+}
+
+// RandomUsers returns N random users from the set of users.
+func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
+	if n > len(s.users) {
+		return nil, ErrLenMismatch
+	}
+	var users []model.User
+	for len(users) < n {
+		u, err := s.RandomUser()
+		if err != nil {
+			return nil, err
+		}
+		found := false
+		for _, ou := range users {
+			if ou.Id == u.Id {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		users = append(users, u)
+	}
+	return users, nil
 }
 
 // RandomPost returns a random post.
