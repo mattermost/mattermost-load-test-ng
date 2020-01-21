@@ -278,6 +278,10 @@ func (c *SimpleController) scrollChannel() control.UserStatus {
 		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10); err != nil {
 			return c.newErrorStatus(err)
 		}
+		posts, err := c.user.Store().ChannelPosts(channel.Id)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
 		sort.Slice(posts, func(i, j int) bool { return posts[i].CreateAt < posts[j].CreateAt })
 		postId = posts[0].Id // get the newest post
 		idleTime := time.Duration(math.Round(float64(SLEEP_BETWEEN_SCROLL) * c.rate))
