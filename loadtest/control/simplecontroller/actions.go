@@ -272,7 +272,7 @@ func (c *SimpleController) createPrivateChannel() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
+	return c.newInfoStatus(fmt.Sprintf("private channel created, id %v", channelId))
 }
 
 func (c *SimpleController) createDirectChannel() control.UserStatus {
@@ -287,7 +287,7 @@ func (c *SimpleController) createDirectChannel() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
+	return c.newInfoStatus(fmt.Sprintf("direct channel  for user %v created, id %v", user.Id, channelId))
 }
 
 func (c *SimpleController) viewChannel() control.UserStatus {
