@@ -5,6 +5,7 @@ package memstore
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -120,6 +121,21 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	}
 
 	return channelPosts, nil
+}
+
+func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error) {
+	posts, err := s.ChannelPosts(channelId)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(posts, func(i, j int) bool {
+		if asc {
+			return posts[i].CreateAt < posts[j].CreateAt
+		} else {
+			return posts[i].CreateAt > posts[j].CreateAt
+		}
+	})
+	return posts, nil
 }
 
 func (s *MemStore) PostsSince(ts int64) ([]model.Post, error) {

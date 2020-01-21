@@ -130,6 +130,27 @@ func TestUser(t *testing.T) {
 		require.Equal(t, postId, channelPosts[0].Id)
 	})
 
+	t.Run("ChannelPostsSorted", func(t *testing.T) {
+		cleanStore := New()
+		channelId := model.NewId()
+		p := []*model.Post{
+			{Id: model.NewId(), ChannelId: channelId, CreateAt: 123},
+			{Id: model.NewId(), ChannelId: channelId, CreateAt: 234},
+		}
+		require.NoError(t, cleanStore.SetPosts(p))
+		channelPosts, err := cleanStore.ChannelPostsSorted(channelId, true)
+		require.NoError(t, err)
+		require.Len(t, channelPosts, 2)
+		require.Equal(t, p[0].Id, channelPosts[0].Id)
+		require.Equal(t, p[1].Id, channelPosts[1].Id)
+
+		channelPosts, err = cleanStore.ChannelPostsSorted(channelId, false)
+		require.NoError(t, err)
+		require.Len(t, channelPosts, 2)
+		require.Equal(t, p[1].Id, channelPosts[0].Id)
+		require.Equal(t, p[0].Id, channelPosts[1].Id)
+	})
+
 	t.Run("PostsSince", func(t *testing.T) {
 		posts := make([]*model.Post, 10)
 		for i := 0; i < 10; i++ {
