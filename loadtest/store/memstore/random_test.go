@@ -61,6 +61,27 @@ func TestRandomTeam(t *testing.T) {
 	})
 }
 
+func TestRandomUsers(t *testing.T) {
+	s := New()
+	id1 := model.NewId()
+	id2 := model.NewId()
+	id3 := model.NewId()
+	id4 := model.NewId()
+	err := s.SetUsers([]*model.User{
+		{Id: id1},
+		{Id: id2},
+		{Id: id3},
+		{Id: id4},
+	})
+	require.NoError(t, err)
+	u, err := s.RandomUsers(2)
+	require.NoError(t, err)
+	require.Len(t, u, 2)
+
+	_, err = s.RandomUsers(5)
+	require.Error(t, err)
+}
+
 func TestRandomUser(t *testing.T) {
 	s := New()
 	id1 := model.NewId()
