@@ -27,6 +27,8 @@ type UserStore interface {
 	Channels(teamId string) ([]model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
+	// ChannelPosts returns all posts for given channelId
+	ChannelPosts(channelId string) ([]*model.Post, error)
 	// Teams return the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
@@ -77,7 +79,6 @@ type MutableUserStore interface {
 	SetPost(post *model.Post) error
 	SetPosts(posts []*model.Post) error
 	Post(postId string) (*model.Post, error)
-	ChannelPosts(channelId string) ([]*model.Post, error)
 	SetReactions(postId string, reactions []*model.Reaction) error
 	DeleteReaction(reaction *model.Reaction) (bool, error)
 

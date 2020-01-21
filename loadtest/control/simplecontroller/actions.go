@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"sort"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -247,6 +249,41 @@ func (c *SimpleController) viewChannel() control.UserStatus {
 	}
 
 	return c.newInfoStatus(fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson()))
+}
+
+func (c *SimpleController) scrollChannel() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	err = c.user.GetPostsForChannel(channel.Id, 0, 1)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	posts, err := c.user.Store().ChannelPosts(channel.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	sort.Slice(posts, func(i, j int) bool { return posts[i].CreateAt > posts[j].CreateAt })
+
+	postId := posts[0].Id // get the oldest post
+	const NUM_OF_SCROLLS = 3
+	const SLEEP_BETWEEN_SCROLL = 1000
+	for i := 0; i < NUM_OF_SCROLLS; i++ {
+		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10); err != nil {
+			return c.newErrorStatus(err)
+		}
+		sort.Slice(posts, func(i, j int) bool { return posts[i].CreateAt < posts[j].CreateAt })
+		postId = posts[0].Id // get the newest post
+		idleTime := time.Duration(math.Round(float64(SLEEP_BETWEEN_SCROLL) * c.rate))
+		time.Sleep(time.Millisecond * idleTime)
+	}
+	return c.newInfoStatus(fmt.Sprintf("scrolled channel %v %d times", channel.Id, NUM_OF_SCROLLS))
 }
 
 func (c *SimpleController) searchUsers() control.UserStatus {

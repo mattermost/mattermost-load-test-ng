@@ -108,6 +108,10 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.scrollChannel,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.leaveChannel,
 			waitAfter: 1000,
 		},
