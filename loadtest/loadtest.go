@@ -52,7 +52,7 @@ func (lt *LoadTester) AddUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.status.State != StateRunning {
+	if lt.status.State != Running {
 		return ErrNotRunning
 	}
 	return lt.addUser()
@@ -81,7 +81,7 @@ func (lt *LoadTester) RemoveUser() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.status.State != StateRunning {
+	if lt.status.State != Running {
 		return ErrNotRunning
 	}
 	return lt.removeUser()
@@ -110,10 +110,10 @@ func (lt *LoadTester) Run() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.status.State != StateStopped {
+	if lt.status.State != Stopped {
 		return ErrNotStopped
 	}
-	lt.status.State = StateStarting
+	lt.status.State = Starting
 	lt.status.NumUsersRemoved = 0
 	lt.status.NumUsersAdded = 0
 	lt.status.NumErrors = 0
@@ -125,7 +125,7 @@ func (lt *LoadTester) Run() error {
 			mlog.Error(err.Error())
 		}
 	}
-	lt.status.State = StateRunning
+	lt.status.State = Running
 	return nil
 }
 
@@ -135,10 +135,10 @@ func (lt *LoadTester) Stop() error {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
 
-	if lt.status.State != StateRunning {
+	if lt.status.State != Running {
 		return ErrNotRunning
 	}
-	lt.status.State = StateStopping
+	lt.status.State = Stopping
 	for range lt.controllers {
 		if err := lt.removeUser(); err != nil {
 			mlog.Error(err.Error())
@@ -147,7 +147,7 @@ func (lt *LoadTester) Stop() error {
 	lt.wg.Wait()
 	close(lt.statusChan)
 	lt.status.NumUsers = 0
-	lt.status.State = StateStopped
+	lt.status.State = Stopped
 	return nil
 }
 
