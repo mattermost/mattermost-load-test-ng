@@ -79,7 +79,7 @@ func TestRandomUsers(t *testing.T) {
 	require.Len(t, u, 2)
 
 	_, err = s.RandomUsers(5)
-	require.Error(t, err)
+	require.Equal(t, err, ErrLenMismatch)
 }
 
 func TestRandomUser(t *testing.T) {
