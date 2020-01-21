@@ -50,6 +50,29 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	return *s.users[key.(string)], nil
 }
 
+// RandomUsers returns N random users from the set of users.
+func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
+	var users []model.User
+	for len(users) < n {
+		u, err := s.RandomUser()
+		if err != nil {
+			return nil, err
+		}
+		found := false
+		for _, ou := range users {
+			if ou.Id == u.Id {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
 // RandomPost returns a random post.
 func (s *MemStore) RandomPost() (model.Post, error) {
 	key, err := pickRandomKeyFromMap(s.posts)

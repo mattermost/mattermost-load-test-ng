@@ -220,12 +220,74 @@ func (c *SimpleController) removeReaction() control.UserStatus {
 }
 
 func (c *SimpleController) createGroupChannel() control.UserStatus {
-	channelId, err := c.user.CreateGroupChannel([]string{}) // TODO: populate memberIds parameter with other users
+	var userIds []string
+	users, err := c.user.Store().RandomUsers(3)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, user := range users {
+		userIds = append(userIds, user.Id)
+	}
+
+	channelId, err := c.user.CreateGroupChannel(userIds)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
 
-	return c.newInfoStatus(fmt.Sprintf("group channel created, id %v", channelId))
+	return c.newInfoStatus(fmt.Sprintf("group channel created, id %v with users %+v", channelId, userIds))
+}
+
+func (c *SimpleController) createPublicChannel() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	channelId, err := c.user.CreateChannel(&model.Channel{
+		Name:   model.NewId(),
+		TeamId: team.Id,
+		Type:   "O",
+	})
+
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
+}
+
+func (c *SimpleController) createPrivateChannel() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	channelId, err := c.user.CreateChannel(&model.Channel{
+		Name:   model.NewId(),
+		TeamId: team.Id,
+		Type:   "P",
+	})
+
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
+}
+
+func (c *SimpleController) createDirectChannel() control.UserStatus {
+	user, err := c.user.Store().RandomUser()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	channelId, err := c.user.CreateDirectChannel(user.Id)
+
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
 }
 
 func (c *SimpleController) viewChannel() control.UserStatus {

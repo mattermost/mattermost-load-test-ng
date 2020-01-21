@@ -49,6 +49,8 @@ type UserStore interface {
 	RandomTeam() (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)
+	// RandomUsers returns N random users from the set of users.
+	RandomUsers(n int) ([]model.User, error)
 	// RandomPost returns a random post.
 	RandomPost() (model.Post, error)
 	// RandomEmoji returns a random emoji.

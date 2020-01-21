@@ -207,6 +207,11 @@ func (s *SampleStore) RandomUser() (model.User, error) {
 	return model.User{}, nil
 }
 
+// RandomUser returns a random user from the set of users.
+func (s *SampleStore) RandomUsers(n int) ([]model.User, error) {
+	return []model.User{}, nil
+}
+
 // RandomPost returns a random post.
 func (s *SampleStore) RandomPost() (model.Post, error) {
 	return model.Post{}, nil
