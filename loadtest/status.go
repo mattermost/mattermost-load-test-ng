@@ -15,10 +15,10 @@ type State int
 
 // Different possible states of a loadtester.
 const (
-	StateStopped State = iota
-	StateStarting
-	StateRunning
-	StateStopping
+	Stopped State = iota
+	Starting
+	Running
+	Stopping
 )
 
 // ErrInvalidState is returned when an unknown state variable is encoded/decoded.
@@ -35,13 +35,13 @@ func (s *State) UnmarshalJSON(b []byte) error {
 	default:
 		return ErrInvalidState
 	case "stopped":
-		*s = StateStopped
+		*s = Stopped
 	case "starting":
-		*s = StateStarting
+		*s = Starting
 	case "running":
-		*s = StateRunning
+		*s = Running
 	case "stopping":
-		*s = StateStopping
+		*s = Stopping
 	}
 
 	return nil
@@ -53,13 +53,13 @@ func (s State) MarshalJSON() ([]byte, error) {
 	switch s {
 	default:
 		return nil, ErrInvalidState
-	case StateStopped:
+	case Stopped:
 		res = "stopped"
-	case StateStarting:
+	case Starting:
 		res = "starting"
-	case StateRunning:
+	case Running:
 		res = "running"
-	case StateStopping:
+	case Stopping:
 		res = "stopping"
 	}
 
