@@ -1,10 +1,5 @@
 version: 2.1
 
-executors:
-  default:
-    docker:
-      - image: circleci/golang:1.13
-
 aliases:
 - &restore_cache
   restore_cache:
@@ -47,8 +42,8 @@ commands:
 
 jobs:
   test:
-    executor:
-      name: default
+    docker:
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - install-golangci-lint
