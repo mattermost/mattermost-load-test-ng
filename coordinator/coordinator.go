@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -20,7 +21,7 @@ import (
 type Coordinator struct {
 	config  *CoordinatorConfig
 	cluster *cluster.LoadAgentCluster
-	// monitor *Monitor
+	monitor *performance.Monitor
 }
 
 // Run starts a cluster of load-test agents.

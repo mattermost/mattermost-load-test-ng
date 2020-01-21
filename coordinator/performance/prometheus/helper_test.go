@@ -1,4 +1,4 @@
-package prometheushelper
+package prometheus
 
 import (
 	"context"
@@ -30,8 +30,8 @@ func Test_VectorFirst_ReturnsFloatValue(t *testing.T) {
 		value: model.Vector(vector),
 	}
 
-	prometheus := PrometheusHelper{api}
-	actualValue, err := prometheus.VectorFirst("some PromQL query")
+	helper := Helper{api}
+	actualValue, err := helper.VectorFirst("some PromQL query")
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedValue, actualValue)
@@ -42,8 +42,8 @@ func Test_VectorFirst_FailsIfItsNotAVector(t *testing.T) {
 		value: &model.String{Value: "oh no!"},
 	}
 
-	prometheus := PrometheusHelper{api}
-	actualValue, err := prometheus.VectorFirst("some PromQL query")
+	helper := Helper{api}
+	actualValue, err := helper.VectorFirst("some PromQL query")
 
 	assert.Equal(t, "Expected a vector, got a string", err.Error())
 	assert.Equal(t, float64(0), actualValue)

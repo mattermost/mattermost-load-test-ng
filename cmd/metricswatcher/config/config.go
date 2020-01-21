@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -17,21 +18,8 @@ import (
 
 type MetricsWatcherConfiguration struct {
 	LogSettings             logger.LoggerSettings
-	PrometheusConfiguration PrometheusConfiguration
-	Queries                 []PrometheusQuery
-}
-
-type PrometheusConfiguration struct {
-	PrometheusURL                 string
-	MetricsUpdateIntervalInMS     int
-	HealthcheckUpdateIntervalInMS int
-}
-
-type PrometheusQuery struct {
-	Description string
-	Query       string
-	Threshold   float64
-	Alert       bool
+	PrometheusConfiguration prometheus.Configuration
+	Queries                 []prometheus.Query
 }
 
 func SetupMetricsCheck(cmd *cobra.Command, args []string) {

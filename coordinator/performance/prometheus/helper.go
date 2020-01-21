@@ -1,4 +1,4 @@
-package prometheushelper
+package prometheus
 
 import (
 	"context"
@@ -12,13 +12,13 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-type PrometheusHelper struct {
-	API prometheusAPI
+type Helper struct {
+	api API
 }
 
-// NewPrometheusHelper creates a helper with the standard Prometheus client
+// NewHelper creates a helper with the standard Prometheus client
 // and API inside it, encapsulating all Prometheus dependencies.
-func NewPrometheusHelper(prometheusURL string) (*PrometheusHelper, error) {
+func NewHelper(prometheusURL string) (*Helper, error) {
 	config := prometheus.Config{Address: prometheusURL}
 	client, err := prometheus.NewClient(config)
 
@@ -27,16 +27,16 @@ func NewPrometheusHelper(prometheusURL string) (*PrometheusHelper, error) {
 	}
 
 	api := apiv1.NewAPI(client)
-	prometheusHelper := &PrometheusHelper{api}
+	helper := &Helper{api}
 
-	return prometheusHelper, nil
+	return helper, nil
 }
 
-func (p PrometheusHelper) VectorFirst(query string) (float64, error) {
+func (p *Helper) VectorFirst(query string) (float64, error) {
 	context := context.Background()
 	ts := time.Now()
 
-	value, _, err := p.API.Query(context, query, ts)
+	value, _, err := p.api.Query(context, query, ts)
 
 	if err != nil {
 		return 0, err
@@ -45,7 +45,7 @@ func (p PrometheusHelper) VectorFirst(query string) (float64, error) {
 	return p.extractNumericValueFromFirstElement(value)
 }
 
-func (p PrometheusHelper) extractNumericValueFromFirstElement(value model.Value) (float64, error) {
+func (p *Helper) extractNumericValueFromFirstElement(value model.Value) (float64, error) {
 	if value.Type() != model.ValVector {
 		return 0, fmt.Errorf("Expected a vector, got a %s", value.Type().String())
 	}
