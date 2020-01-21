@@ -55,7 +55,7 @@ func TestAddUser(t *testing.T) {
 	err := lt.AddUser()
 	require.Equal(t, ErrNotRunning, err)
 
-	lt.status.State = StateRunning
+	lt.status.State = Running
 
 	ltConfig.UsersConfiguration.MaxActiveUsers = 0
 	err = lt.AddUser()
@@ -78,7 +78,7 @@ func TestRemoveUser(t *testing.T) {
 	err := lt.RemoveUser()
 	require.Equal(t, ErrNotRunning, err)
 
-	lt.status.State = StateRunning
+	lt.status.State = Running
 
 	err = lt.RemoveUser()
 	require.Equal(t, ErrNoUsersLeft, err)
@@ -95,7 +95,7 @@ func TestRun(t *testing.T) {
 	lt := New(&ltConfig, newController)
 	err := lt.Run()
 	require.NoError(t, err)
-	require.Equal(t, lt.status.State, StateRunning)
+	require.Equal(t, lt.status.State, Running)
 	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
 
 	err = lt.Run()
@@ -127,7 +127,7 @@ func TestStop(t *testing.T) {
 
 	err = lt.Run()
 	require.NoError(t, err)
-	lt.status.State = StateRunning
+	lt.status.State = Running
 
 	numUsers := 8
 	for i := 0; i < numUsers; i++ {
@@ -136,7 +136,7 @@ func TestStop(t *testing.T) {
 	}
 	err = lt.Stop()
 	require.NoError(t, err)
-	require.Equal(t, lt.status.State, StateStopped)
+	require.Equal(t, lt.status.State, Stopped)
 	require.Empty(t, lt.controllers)
 }
 
@@ -148,7 +148,7 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	st := lt.Status()
 	startTime := st.StartTime
-	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, Running, st.State)
 	assert.Equal(t, 0, st.NumUsers)
 	assert.Equal(t, 0, st.NumUsersAdded)
 	assert.Equal(t, 0, st.NumUsersRemoved)
@@ -156,7 +156,7 @@ func TestStatus(t *testing.T) {
 	err = lt.AddUser()
 	require.NoError(t, err)
 	st = lt.Status()
-	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, Running, st.State)
 	assert.Equal(t, 1, st.NumUsers)
 	assert.Equal(t, 1, st.NumUsersAdded)
 	assert.Equal(t, 0, st.NumUsersRemoved)
@@ -164,7 +164,7 @@ func TestStatus(t *testing.T) {
 	err = lt.RemoveUser()
 	require.NoError(t, err)
 	st = lt.Status()
-	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, Running, st.State)
 	assert.Equal(t, 0, st.NumUsers)
 	assert.Equal(t, 1, st.NumUsersAdded)
 	assert.Equal(t, 1, st.NumUsersRemoved)
@@ -172,7 +172,7 @@ func TestStatus(t *testing.T) {
 	err = lt.Stop()
 	require.NoError(t, err)
 	st = lt.Status()
-	assert.Equal(t, StateStopped, st.State)
+	assert.Equal(t, Stopped, st.State)
 	assert.Equal(t, 0, st.NumUsers)
 	assert.Equal(t, 1, st.NumUsersAdded)
 	assert.Equal(t, 1, st.NumUsersRemoved)
@@ -182,5 +182,5 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	st = lt.Status()
 	assert.True(t, startTime.Before(st.StartTime))
-	assert.Equal(t, StateRunning, st.State)
+	assert.Equal(t, Running, st.State)
 }
