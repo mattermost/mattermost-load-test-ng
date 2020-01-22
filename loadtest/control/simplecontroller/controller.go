@@ -88,6 +88,10 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
+			run:       c.viewUser,
+			waitAfter: 1000,
+		},
+		{
 			run:       c.createPost,
 			waitAfter: 1000,
 		},
@@ -107,14 +111,14 @@ func (c *SimpleController) Run() {
 			run:       c.createDirectChannel,
 			waitAfter: 1000,
 		},
-		{
-			run:       c.createPublicChannel,
-			waitAfter: 1000,
-		},
-		{
-			run:       c.createPrivateChannel,
-			waitAfter: 1000,
-		},
+		// {
+		// 	run:       c.createPublicChannel,
+		// 	waitAfter: 1000,
+		// },
+		// {
+		// 	run:       c.createPrivateChannel,
+		// 	waitAfter: 1000,
+		// },
 		{
 			run:       c.viewChannel,
 			waitAfter: 1000,

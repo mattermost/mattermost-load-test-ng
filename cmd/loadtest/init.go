@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -28,6 +29,32 @@ func createTeams(admin *userentity.UserEntity, numTeams int) error {
 			return err
 		}
 		mlog.Info("team created", mlog.String("team_id", id))
+		err = admin.GetTeam(id)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createChannels(admin *userentity.UserEntity, numChannels int) error {
+	channelTypes := []string{"O", "P"}
+
+	for i := 0; i < numChannels; i++ {
+		team, err := admin.Store().RandomTeam()
+		if err != nil {
+			return err
+		}
+
+		id, err := admin.CreateChannel(&model.Channel{
+			Name:   model.NewId(),
+			TeamId: team.Id,
+			Type:   channelTypes[rand.Intn(len(channelTypes))],
+		})
+		if err != nil {
+			return err
+		}
+		mlog.Info("channel created", mlog.String("channel_id", id))
 	}
 	return nil
 }
@@ -64,6 +91,10 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	if err = createTeams(admin, numTeams); err != nil {
+		return err
+	}
+
+	if err = createChannels(admin, 10); err != nil {
 		return err
 	}
 
