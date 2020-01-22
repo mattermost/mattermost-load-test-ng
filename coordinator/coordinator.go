@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
@@ -36,34 +35,50 @@ func (c *Coordinator) Run() error {
 		c.cluster.Shutdown()
 		return err
 	}
+	defer c.cluster.Shutdown()
+
+	monitorChan, err := c.monitor.Run()
+	if err != nil {
+		mlog.Error("coordinator: running monitor failed", mlog.Err(err))
+		return err
+	}
+	defer c.monitor.Stop()
+
+	perfStatus := <-monitorChan
 
 	for {
 		status := c.cluster.Status()
 		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
-		if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
-			// TODO: make the choice of this value a bit smarter.
-			inc := 10
-			diff := c.config.ClusterConfig.MaxActiveUsers - status.ActiveUsers
-			if diff < inc {
-				inc = diff
+		if !perfStatus.Alert {
+			if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
+				// TODO: make the choice of this value a bit smarter.
+				inc := 8
+				diff := c.config.ClusterConfig.MaxActiveUsers - status.ActiveUsers
+				if diff < inc {
+					inc = diff
+				}
+				mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+				err := c.cluster.IncrementUsers(inc)
+				if err != nil {
+					mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+				}
 			}
-			mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
-			err := c.cluster.IncrementUsers(inc)
+		} else {
+			mlog.Info("coordinator: performance degradation alert")
+			dec := 4
+			err := c.cluster.DecrementUsers(dec)
 			if err != nil {
-				mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+				mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
 			}
 		}
 
 		select {
 		case <-interruptChannel:
 			mlog.Info("coordinator: shutting down")
-			c.cluster.Shutdown()
 			return nil
-		case <-time.After(1 * time.Second):
+		case perfStatus = <-monitorChan:
 		}
-
-		// TODO: implement performance monitoring and act on them to complete feedback loop.
 	}
 }
 
@@ -76,12 +91,20 @@ func New(config *CoordinatorConfig) (*Coordinator, error) {
 	if ok, err := config.IsValid(); !ok {
 		return nil, err
 	}
+
 	cluster, err := cluster.New(config.ClusterConfig)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}
+
+	monitor, err := performance.NewMonitor(config.MonitorConfig)
+	if err != nil {
+		return nil, fmt.Errorf("coordinator: failed to create performance monitor: %w", err)
+	}
+
 	return &Coordinator{
 		config:  config,
 		cluster: cluster,
+		monitor: monitor,
 	}, nil
 }

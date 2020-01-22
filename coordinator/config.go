@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -17,6 +18,8 @@ import (
 type CoordinatorConfig struct {
 	// ClusterConfig defines the load-test agent cluster configuration.
 	ClusterConfig cluster.LoadAgentClusterConfig
+	// MonitorConfig holds the performance monitor configuration.
+	MonitorConfig performance.MonitorConfig
 }
 
 var v = viper.New()
