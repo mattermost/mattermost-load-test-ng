@@ -186,7 +186,7 @@ func (c *SimpleController) createPost() control.UserStatus {
 
 func (c *SimpleController) addReaction() control.UserStatus {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 - 60000)
+	posts, err := c.user.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -209,7 +209,7 @@ func (c *SimpleController) addReaction() control.UserStatus {
 
 func (c *SimpleController) removeReaction() control.UserStatus {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 - 60000)
+	posts, err := c.user.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
