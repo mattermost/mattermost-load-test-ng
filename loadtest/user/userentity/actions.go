@@ -17,7 +17,6 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 	}
 
 	newUser, resp := ue.client.CreateUser(&user)
-
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -32,9 +31,15 @@ func (ue *UserEntity) Login() error {
 		return err
 	}
 
-	_, resp := ue.client.Login(user.Email, user.Password)
+	loggedUser, resp := ue.client.Login(user.Email, user.Password)
 	if resp.Error != nil {
 		return resp.Error
+	}
+
+	// We need to set user again because the user ID does not get set
+	// if a user is already signed up.
+	if err := ue.store.SetUser(loggedUser); err != nil {
+		return err
 	}
 
 	return nil

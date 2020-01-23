@@ -45,6 +45,18 @@ func (c *SimpleController) login() control.UserStatus {
 
 	c.connect()
 
+	// Populate teams and channels.
+	teamIds, err := c.user.GetAllTeams(0, 100)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	for _, teamId := range teamIds {
+		err := c.user.GetChannelsForTeam(teamId)
+		if err != nil {
+			return c.newErrorStatus(err)
+		}
+	}
+
 	return c.newInfoStatus("logged in")
 }
 
@@ -162,6 +174,7 @@ func (c *SimpleController) createPost() control.UserStatus {
 	postId, err := c.user.CreatePost(&model.Post{
 		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 		ChannelId: channel.Id,
+		CreateAt:  time.Now().Unix() * 1000,
 	})
 
 	if err != nil {
@@ -173,7 +186,7 @@ func (c *SimpleController) createPost() control.UserStatus {
 
 func (c *SimpleController) addReaction() control.UserStatus {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 + 60000)
+	posts, err := c.user.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -196,7 +209,7 @@ func (c *SimpleController) addReaction() control.UserStatus {
 
 func (c *SimpleController) removeReaction() control.UserStatus {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := c.user.Store().PostsSince(time.Now().Unix()*1000 + 60000)
+	posts, err := c.user.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -238,43 +251,43 @@ func (c *SimpleController) createGroupChannel() control.UserStatus {
 	return c.newInfoStatus(fmt.Sprintf("group channel created, id %v with users %+v", channelId, userIds))
 }
 
-func (c *SimpleController) createPublicChannel() control.UserStatus {
-	team, err := c.user.Store().RandomTeam()
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
+// func (c *SimpleController) createPublicChannel() control.UserStatus {
+// 	team, err := c.user.Store().RandomTeam()
+// 	if err != nil {
+// 		return c.newErrorStatus(err)
+// 	}
 
-	channelId, err := c.user.CreateChannel(&model.Channel{
-		Name:   model.NewId(),
-		TeamId: team.Id,
-		Type:   "O",
-	})
+// 	channelId, err := c.user.CreateChannel(&model.Channel{
+// 		Name:   model.NewId(),
+// 		TeamId: team.Id,
+// 		Type:   "O",
+// 	})
 
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
+// 	if err != nil {
+// 		return c.newErrorStatus(err)
+// 	}
 
-	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
-}
+// 	return c.newInfoStatus(fmt.Sprintf("public channel created, id %v", channelId))
+// }
 
-func (c *SimpleController) createPrivateChannel() control.UserStatus {
-	team, err := c.user.Store().RandomTeam()
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
+// func (c *SimpleController) createPrivateChannel() control.UserStatus {
+// 	team, err := c.user.Store().RandomTeam()
+// 	if err != nil {
+// 		return c.newErrorStatus(err)
+// 	}
 
-	channelId, err := c.user.CreateChannel(&model.Channel{
-		Name:   model.NewId(),
-		TeamId: team.Id,
-		Type:   "P",
-	})
+// 	channelId, err := c.user.CreateChannel(&model.Channel{
+// 		Name:   model.NewId(),
+// 		TeamId: team.Id,
+// 		Type:   "P",
+// 	})
 
-	if err != nil {
-		return c.newErrorStatus(err)
-	}
+// 	if err != nil {
+// 		return c.newErrorStatus(err)
+// 	}
 
-	return c.newInfoStatus(fmt.Sprintf("private channel created, id %v", channelId))
-}
+// 	return c.newInfoStatus(fmt.Sprintf("private channel created, id %v", channelId))
+// }
 
 func (c *SimpleController) createDirectChannel() control.UserStatus {
 	user, err := c.user.Store().RandomUser()
@@ -402,15 +415,12 @@ func (c *SimpleController) updateProfileImage() control.UserStatus {
 }
 
 func (c *SimpleController) searchChannels() control.UserStatus {
-	teams, err := c.user.Store().Teams()
+	team, err := c.user.Store().RandomTeam()
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
-	if len(teams) == 0 {
-		return c.newInfoStatus("no teams to search for channels")
-	}
 
-	channels, err := c.user.SearchChannels(teams[0].Id, &model.ChannelSearch{
+	channels, err := c.user.SearchChannels(team.Id, &model.ChannelSearch{
 		Term: "test",
 	})
 	if err != nil {
@@ -421,15 +431,12 @@ func (c *SimpleController) searchChannels() control.UserStatus {
 }
 
 func (c *SimpleController) searchPosts() control.UserStatus {
-	teams, err := c.user.Store().Teams()
+	team, err := c.user.Store().RandomTeam()
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
-	if len(teams) == 0 {
-		return c.newInfoStatus("no teams to search for posts")
-	}
 
-	list, err := c.user.SearchPosts(teams[0].Id, "test search", false)
+	list, err := c.user.SearchPosts(team.Id, "test search", false)
 	if err != nil {
 		return c.newErrorStatus(err)
 	}
@@ -584,6 +591,34 @@ func (c *SimpleController) reload(full bool) control.UserStatus {
 	}
 
 	return c.newInfoStatus("page reloaded")
+}
+
+func (c *SimpleController) viewUser() control.UserStatus {
+	team, err := c.user.Store().RandomTeam()
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	channel, err := c.user.Store().RandomChannel(team.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	err = c.user.GetChannelMembers(channel.Id, 0, 100)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	member, err := c.user.Store().RandomChannelMember(channel.Id)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	// GetUsersByIds for that userid
+	_, err = c.user.GetUsersByIds([]string{member.UserId})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	return c.newInfoStatus(fmt.Sprintf("viewed user %s", member.UserId))
 }
 
 func (c *SimpleController) connect() {
