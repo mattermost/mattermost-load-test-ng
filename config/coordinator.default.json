@@ -14,7 +14,7 @@
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
-    "UpdateInterval": 2000,
+    "UpdateIntervalMs": 2000,
     "Queries":  [
         {
             "Description": "Request duration",

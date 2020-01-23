@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 package performance
 
 import (
@@ -16,6 +19,7 @@ type Monitor struct {
 	statusChan chan Status
 }
 
+// NewMonitor creates and initializes a new Monitor.
 func NewMonitor(config MonitorConfig) (*Monitor, error) {
 	if ok, err := config.IsValid(); !ok {
 		return nil, err
@@ -32,7 +36,8 @@ func NewMonitor(config MonitorConfig) (*Monitor, error) {
 	}, nil
 }
 
-func (m *Monitor) Run() (<-chan Status, error) {
+// Run will start the performance monitoring process.
+func (m *Monitor) Run() <-chan Status {
 	go func() {
 		mlog.Info("monitor: started")
 		for {
@@ -41,20 +46,28 @@ func (m *Monitor) Run() (<-chan Status, error) {
 			case <-m.stopChan:
 				mlog.Info("monitor: shutting down")
 				return
-			case <-time.After(time.Duration(m.config.UpdateInterval) * time.Millisecond):
+			case <-time.After(time.Duration(m.config.UpdateIntervalMs) * time.Millisecond):
 			}
 		}
 	}()
-	return m.statusChan, nil
+	return m.statusChan
 }
 
+// Stop will stop the monitoring process.
 func (m *Monitor) Stop() {
+	mlog.Info("monitor: stop")
 	close(m.stopChan)
 }
 
 func (m *Monitor) runQueries() Status {
 	var status Status
 	for _, query := range m.config.Queries {
+		select {
+		case <-m.stopChan:
+			mlog.Info("monitor: exiting query loop")
+			return Status{}
+		default:
+		}
 		value, err := m.helper.VectorFirst(query.Query)
 		if err != nil {
 			mlog.Error("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))

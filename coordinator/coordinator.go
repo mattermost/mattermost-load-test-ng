@@ -31,22 +31,16 @@ func (c *Coordinator) Run() error {
 	interruptChannel := make(chan os.Signal, 1)
 	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	defer c.cluster.Shutdown()
 	if err := c.cluster.Run(); err != nil {
 		mlog.Error("coordinator: running cluster failed", mlog.Err(err))
-		c.cluster.Shutdown()
 		return err
 	}
-	defer c.cluster.Shutdown()
 
-	monitorChan, err := c.monitor.Run()
-	if err != nil {
-		mlog.Error("coordinator: running monitor failed", mlog.Err(err))
-		return err
-	}
+	monitorChan := c.monitor.Run()
 	defer c.monitor.Stop()
 
-	var lastActionT time.Time
-	var lastAlertT time.Time
+	var lastActionTime, lastAlertTime time.Time
 	var supportedUsers int
 
 	// For now we are keeping all these values constant but in the future they
@@ -75,7 +69,7 @@ func (c *Coordinator) Run() error {
 		}
 
 		if perfStatus.Alert {
-			lastAlertT = time.Now()
+			lastAlertTime = time.Now()
 		}
 
 		status := c.cluster.Status()
@@ -84,7 +78,7 @@ func (c *Coordinator) Run() error {
 		// supportedUsers should be estimated in a more clever way in the future.
 		// For now we say that the supported number of users is the number of active users that ran
 		// for the defined timespan without causing any performance degradation alert.
-		if !lastAlertT.IsZero() && !perfStatus.Alert && hasPassed(lastAlertT, restTime) && hasPassed(lastActionT, restTime) {
+		if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
 			supportedUsers = status.ActiveUsers
 		}
 
@@ -92,20 +86,22 @@ func (c *Coordinator) Run() error {
 
 		// We give the feedback loop some rest time in case of performance
 		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
-		if lastAlertT.IsZero() || lastActionT.IsZero() || hasPassed(lastActionT, restTime) {
+		if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
 			if perfStatus.Alert {
 				if err := c.cluster.DecrementUsers(decValue); err != nil {
 					mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
+				} else {
+					lastActionTime = time.Now()
 				}
-				lastActionT = time.Now()
-			} else if lastAlertT.IsZero() || hasPassed(lastAlertT, restTime) {
+			} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
 				if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
 					inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
 					mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
 					if err := c.cluster.IncrementUsers(inc); err != nil {
 						mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+					} else {
+						lastActionTime = time.Now()
 					}
-					lastActionT = time.Now()
 				}
 			}
 		} else {
