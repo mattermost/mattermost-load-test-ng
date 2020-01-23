@@ -11,5 +11,17 @@
       }
     ],
     "MaxActiveUsers": 100
+  },
+  "MonitorConfig": {
+    "PrometheusURL": "http://localhost:9090",
+    "UpdateInterval": 2000,
+    "Queries":  [
+        {
+            "Description": "Request duration",
+            "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
+            "Threshold": 0.2,
+            "Alert": true
+        }
+    ]
   }
 }

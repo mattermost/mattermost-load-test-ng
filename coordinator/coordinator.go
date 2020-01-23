@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
@@ -44,40 +45,71 @@ func (c *Coordinator) Run() error {
 	}
 	defer c.monitor.Stop()
 
-	perfStatus := <-monitorChan
+	var lastActionT time.Time
+	var lastAlertT time.Time
+	var supportedUsers int
+
+	// For now we are keeping all these values constant but in the future they
+	// might change based on the state of the feedback loop.
+	// Ideally we want the value of users to increment/decrement to react
+	// to the speed at which metrics are changing.
+
+	// The value of users to be incremented at each iteration.
+	// It should be proportional to the maximum number of users expected to test.
+	const incValue = 8
+	// The value of users to be decremented at each iteration.
+	// It should be proportional to the maximum number of users expected to test.
+	const decValue = 8
+	// The timespan to wait after a performance degradation alert before
+	// incrementing or decrementing users again.
+	const restTime = 10 * time.Second
 
 	for {
-		status := c.cluster.Status()
-		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
-
-		if !perfStatus.Alert {
-			if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
-				// TODO: make the choice of this value a bit smarter.
-				inc := 8
-				diff := c.config.ClusterConfig.MaxActiveUsers - status.ActiveUsers
-				if diff < inc {
-					inc = diff
-				}
-				mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
-				err := c.cluster.IncrementUsers(inc)
-				if err != nil {
-					mlog.Error("coordinator: failed to increment users", mlog.Err(err))
-				}
-			}
-		} else {
-			mlog.Info("coordinator: performance degradation alert")
-			dec := 4
-			err := c.cluster.DecrementUsers(dec)
-			if err != nil {
-				mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
-			}
-		}
+		var perfStatus performance.Status
 
 		select {
 		case <-interruptChannel:
 			mlog.Info("coordinator: shutting down")
 			return nil
 		case perfStatus = <-monitorChan:
+		}
+
+		if perfStatus.Alert {
+			lastAlertT = time.Now()
+		}
+
+		status := c.cluster.Status()
+		mlog.Debug("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+
+		// supportedUsers should be estimated in a more clever way in the future.
+		// For now we say that the supported number of users is the number of active users that ran
+		// for the defined timespan without causing any performance degradation alert.
+		if !lastAlertT.IsZero() && !perfStatus.Alert && hasPassed(lastAlertT, restTime) && hasPassed(lastActionT, restTime) {
+			supportedUsers = status.ActiveUsers
+		}
+
+		mlog.Debug("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
+
+		// We give the feedback loop some rest time in case of performance
+		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
+		if lastAlertT.IsZero() || lastActionT.IsZero() || hasPassed(lastActionT, restTime) {
+			if perfStatus.Alert {
+				if err := c.cluster.DecrementUsers(decValue); err != nil {
+					mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
+				}
+				lastActionT = time.Now()
+			} else if lastAlertT.IsZero() || hasPassed(lastAlertT, restTime) {
+				if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
+					inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
+					mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+					if err := c.cluster.IncrementUsers(inc); err != nil {
+						mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+					}
+					lastActionT = time.Now()
+				}
+			}
+		} else {
+			mlog.Debug("coordinator: waiting for metrics to stabilize")
 		}
 	}
 }
