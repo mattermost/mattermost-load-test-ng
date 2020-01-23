@@ -49,10 +49,10 @@ func (c *Coordinator) Run() error {
 	// to the speed at which metrics are changing.
 
 	// The value of users to be incremented at each iteration.
-	// It should be proportional to the maximum number of users expected to test.
+	// TODO: It should be proportional to the maximum number of users expected to test.
 	const incValue = 8
 	// The value of users to be decremented at each iteration.
-	// It should be proportional to the maximum number of users expected to test.
+	// TODO: It should be proportional to the maximum number of users expected to test.
 	const decValue = 8
 	// The timespan to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
@@ -75,7 +75,7 @@ func (c *Coordinator) Run() error {
 		status := c.cluster.Status()
 		mlog.Debug("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
-		// supportedUsers should be estimated in a more clever way in the future.
+		// TODO: supportedUsers should be estimated in a more clever way in the future.
 		// For now we say that the supported number of users is the number of active users that ran
 		// for the defined timespan without causing any performance degradation alert.
 		if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
