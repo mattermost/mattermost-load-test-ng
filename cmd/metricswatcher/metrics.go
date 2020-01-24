@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
-	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushelper"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfiguration) {
-	prometheusHelper, err := prometheushelper.NewPrometheusHelper(configuration.PrometheusConfiguration.PrometheusURL)
+func checkMetrics(errChan chan error, config *config.MetricsWatcherConfiguration) {
+	helper, err := prometheus.NewHelper(config.PrometheusConfiguration.PrometheusURL)
 
 	if err != nil {
 		errChan <- err
@@ -19,15 +19,15 @@ func checkMetrics(errChan chan error, configuration *config.MetricsWatcherConfig
 	}
 
 	for {
-		checkQueries(prometheusHelper, configuration.Queries)
+		checkQueries(helper, config.Queries)
 
-		time.Sleep(time.Duration(configuration.PrometheusConfiguration.MetricsUpdateIntervalInMS) * time.Millisecond)
+		time.Sleep(time.Duration(config.PrometheusConfiguration.MetricsUpdateIntervalInMS) * time.Millisecond)
 	}
 }
 
-func checkQueries(prometheus *prometheushelper.PrometheusHelper, queries []config.PrometheusQuery) {
+func checkQueries(helper *prometheus.Helper, queries []prometheus.Query) {
 	for _, query := range queries {
-		value, err := prometheus.VectorFirst(query.Query)
+		value, err := helper.VectorFirst(query.Query)
 
 		if err != nil {
 			mlog.Error("Error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))

@@ -93,7 +93,20 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 // DecrementUsers decrements the total number of active users in the load-test
 // custer by the provided amount.
 func (c *LoadAgentCluster) DecrementUsers(n int) error {
-	return fmt.Errorf("cluster: not implemented")
+	if len(c.agents) == 0 {
+		return nil
+	}
+	// TODO: Make this smarter. Implement an algorithm to make sure users are
+	// distributed evenly across the agents regardless of the input value and number of
+	// agents available.
+	dec := int(n / len(c.agents))
+	for i, agent := range c.agents {
+		mlog.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
+		if err := agent.RemoveUsers(dec); err != nil {
+			return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
+		}
+	}
+	return nil
 }
 
 // Status returns the current status of the LoadAgentCluster.

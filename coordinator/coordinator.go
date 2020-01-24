@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -20,7 +21,7 @@ import (
 type Coordinator struct {
 	config  *CoordinatorConfig
 	cluster *cluster.LoadAgentCluster
-	// monitor *Monitor
+	monitor *performance.Monitor
 }
 
 // Run starts a cluster of load-test agents.
@@ -30,39 +31,82 @@ func (c *Coordinator) Run() error {
 	interruptChannel := make(chan os.Signal, 1)
 	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	defer c.cluster.Shutdown()
 	if err := c.cluster.Run(); err != nil {
 		mlog.Error("coordinator: running cluster failed", mlog.Err(err))
-		c.cluster.Shutdown()
 		return err
 	}
 
-	for {
-		status := c.cluster.Status()
-		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+	monitorChan := c.monitor.Run()
+	defer c.monitor.Stop()
 
-		if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
-			// TODO: make the choice of this value a bit smarter.
-			inc := 10
-			diff := c.config.ClusterConfig.MaxActiveUsers - status.ActiveUsers
-			if diff < inc {
-				inc = diff
-			}
-			mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
-			err := c.cluster.IncrementUsers(inc)
-			if err != nil {
-				mlog.Error("coordinator: failed to increment users", mlog.Err(err))
-			}
-		}
+	var lastActionTime, lastAlertTime time.Time
+	var supportedUsers int
+
+	// For now we are keeping all these values constant but in the future they
+	// might change based on the state of the feedback loop.
+	// Ideally we want the value of users to increment/decrement to react
+	// to the speed at which metrics are changing.
+
+	// The value of users to be incremented at each iteration.
+	// TODO: It should be proportional to the maximum number of users expected to test.
+	const incValue = 8
+	// The value of users to be decremented at each iteration.
+	// TODO: It should be proportional to the maximum number of users expected to test.
+	const decValue = 8
+	// The timespan to wait after a performance degradation alert before
+	// incrementing or decrementing users again.
+	const restTime = 10 * time.Second
+
+	for {
+		var perfStatus performance.Status
 
 		select {
 		case <-interruptChannel:
 			mlog.Info("coordinator: shutting down")
-			c.cluster.Shutdown()
 			return nil
-		case <-time.After(1 * time.Second):
+		case perfStatus = <-monitorChan:
 		}
 
-		// TODO: implement performance monitoring and act on them to complete feedback loop.
+		if perfStatus.Alert {
+			lastAlertTime = time.Now()
+		}
+
+		status := c.cluster.Status()
+		mlog.Debug("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+
+		// TODO: supportedUsers should be estimated in a more clever way in the future.
+		// For now we say that the supported number of users is the number of active users that ran
+		// for the defined timespan without causing any performance degradation alert.
+		if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
+			supportedUsers = status.ActiveUsers
+		}
+
+		mlog.Debug("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
+
+		// We give the feedback loop some rest time in case of performance
+		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
+		if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
+			if perfStatus.Alert {
+				if err := c.cluster.DecrementUsers(decValue); err != nil {
+					mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
+				} else {
+					lastActionTime = time.Now()
+				}
+			} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
+				if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
+					inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
+					mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+					if err := c.cluster.IncrementUsers(inc); err != nil {
+						mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+					} else {
+						lastActionTime = time.Now()
+					}
+				}
+			}
+		} else {
+			mlog.Debug("coordinator: waiting for metrics to stabilize")
+		}
 	}
 }
 
@@ -75,12 +119,20 @@ func New(config *CoordinatorConfig) (*Coordinator, error) {
 	if ok, err := config.IsValid(); !ok {
 		return nil, err
 	}
+
 	cluster, err := cluster.New(config.ClusterConfig)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}
+
+	monitor, err := performance.NewMonitor(config.MonitorConfig)
+	if err != nil {
+		return nil, fmt.Errorf("coordinator: failed to create performance monitor: %w", err)
+	}
+
 	return &Coordinator{
 		config:  config,
 		cluster: cluster,
+		monitor: monitor,
 	}, nil
 }
