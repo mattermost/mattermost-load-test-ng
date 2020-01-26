@@ -301,3 +301,6 @@ func (s *SampleStore) Users() ([]*model.User, error) {
 func (s *SampleStore) SetUsers(users []*model.User) error {
 	return errors.New("not implemented")
 }
+
+func (s *SampleStore) Clear() {
+}

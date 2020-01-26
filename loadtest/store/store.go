@@ -70,6 +70,8 @@ type UserStore interface {
 type MutableUserStore interface {
 	UserStore
 
+	Clear()
+
 	// server
 	SetConfig(*model.Config)
 
