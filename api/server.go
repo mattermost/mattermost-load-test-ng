@@ -25,10 +25,10 @@ type API struct {
 
 // Response contains the data returned by the HTTP server.
 type Response struct {
-	Id      string          `json:"id,omitempty"`      // The load-test agent unique identifier.
-	Message string          `json:"message,omitempty"` // Message contains information about the response.
-	Status  loadtest.Status `json:"status"`            // Status contains the current status of the load test.
-	Error   string          `json:"error,omitempty"`   // Error is set if there was an error during the operation.
+	Id      string           `json:"id,omitempty"`      // The load-test agent unique identifier.
+	Message string           `json:"message,omitempty"` // Message contains information about the response.
+	Status  *loadtest.Status `json:"status,omitempty"`  // Status contains the current status of the load test.
+	Error   string           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
 }
 
 func writeResponse(w http.ResponseWriter, status int, response *Response) {
@@ -112,8 +112,7 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = lt.Run(); err != nil {
 		writeResponse(w, http.StatusOK, &Response{
-			Error:  err.Error(),
-			Status: lt.Status(),
+			Error: err.Error(),
 		})
 		return
 	}
@@ -130,8 +129,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = lt.Stop(); err != nil {
 		writeResponse(w, http.StatusOK, &Response{
-			Error:  err.Error(),
-			Status: lt.Status(),
+			Error: err.Error(),
 		})
 		return
 	}
@@ -181,8 +179,7 @@ func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 	amount, err := getAmount(r)
 	if amount <= 0 || err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Status: lt.Status(),
-			Error:  fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
+			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
 		})
 		return
 	}
@@ -210,8 +207,7 @@ func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	amount, err := getAmount(r)
 	if amount <= 0 || err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Status: lt.Status(),
-			Error:  fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
+			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
 		})
 		return
 	}

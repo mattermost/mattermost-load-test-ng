@@ -19,7 +19,7 @@ import (
 // HTTP API.
 type LoadAgent struct {
 	config LoadAgentConfig
-	status loadtest.Status
+	status *loadtest.Status
 	client *http.Client
 }
 
@@ -31,7 +31,7 @@ func New(config LoadAgentConfig) (*LoadAgent, error) {
 	}
 	return &LoadAgent{
 		config: config,
-		status: loadtest.Status{},
+		status: &loadtest.Status{},
 		client: &http.Client{},
 	}, nil
 }
@@ -121,6 +121,6 @@ func (a *LoadAgent) Stop() error {
 	return nil
 }
 
-func (a *LoadAgent) Status() loadtest.Status {
+func (a *LoadAgent) Status() *loadtest.Status {
 	return a.status
 }
