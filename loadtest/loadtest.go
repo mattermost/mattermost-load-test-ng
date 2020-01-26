@@ -152,14 +152,14 @@ func (lt *LoadTester) Stop() error {
 }
 
 // Status returns information regarding the current state of the load-test.
-func (lt *LoadTester) Status() Status {
+func (lt *LoadTester) Status() *Status {
 	lt.mut.RLock()
 	defer lt.mut.RUnlock()
 	// We need to construct the struct anew because
 	// NumErrors gets incremented in a separate goroutine.
 	numErrors := atomic.LoadInt64(&lt.status.NumErrors)
 
-	return Status{
+	return &Status{
 		State:           lt.status.State,
 		NumUsers:        lt.status.NumUsers,
 		NumUsersAdded:   lt.status.NumUsersAdded,
