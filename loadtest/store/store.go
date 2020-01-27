@@ -70,6 +70,9 @@ type UserStore interface {
 type MutableUserStore interface {
 	UserStore
 
+	// Clear resets the store and removes all entries
+	Clear()
+
 	// server
 	SetConfig(*model.Config)
 

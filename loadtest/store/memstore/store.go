@@ -30,16 +30,21 @@ type MemStore struct {
 
 // New returns a new instance of MemStore.
 func New() *MemStore {
-	return &MemStore{
-		posts:          map[string]*model.Post{},
-		teams:          map[string]*model.Team{},
-		channels:       map[string]*model.Channel{},
-		channelMembers: map[string]map[string]*model.ChannelMember{},
-		teamMembers:    map[string]map[string]*model.TeamMember{},
-		users:          map[string]*model.User{},
-		reactions:      map[string][]*model.Reaction{},
-		roles:          map[string]*model.Role{},
-	}
+	s := &MemStore{}
+	s.Clear()
+	return s
+}
+
+// Clear resets the store and removes all entries
+func (s *MemStore) Clear() {
+	s.posts = map[string]*model.Post{}
+	s.teams = map[string]*model.Team{}
+	s.channels = map[string]*model.Channel{}
+	s.channelMembers = map[string]map[string]*model.ChannelMember{}
+	s.teamMembers = map[string]map[string]*model.TeamMember{}
+	s.users = map[string]*model.User{}
+	s.reactions = map[string][]*model.Reaction{}
+	s.roles = map[string]*model.Role{}
 }
 
 func (s *MemStore) Id() string {
