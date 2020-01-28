@@ -71,13 +71,11 @@ func (c *SimpleController) Run() {
 		}
 	}()
 
+	i := 0
+	const loginLogoutFrequency = 20 // login/logout once every 20 times.
 	actions := []UserAction{
 		{
 			run:       c.signUp,
-			waitAfter: 1000,
-		},
-		{
-			run:       c.login,
 			waitAfter: 1000,
 		},
 		{
@@ -158,7 +156,21 @@ func (c *SimpleController) Run() {
 			waitAfter: 1000,
 		},
 		{
-			run:       c.logout,
+			run: func() control.UserStatus {
+				if i%loginLogoutFrequency == 0 {
+					return c.logout()
+				}
+				return c.newInfoStatus("skipping logout")
+			},
+			waitAfter: 1000,
+		},
+		{
+			run: func() control.UserStatus {
+				if i%loginLogoutFrequency == 0 {
+					return c.login()
+				}
+				return c.newInfoStatus("skipping login")
+			},
 			waitAfter: 1000,
 		},
 	}
@@ -167,11 +179,14 @@ func (c *SimpleController) Run() {
 
 	defer c.sendStopStatus()
 
-	for {
-		for i := 0; i < len(actions); i++ {
-			c.status <- actions[i].run()
+	c.status <- c.signUp()
+	c.status <- c.login()
 
-			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
+	for {
+		for j := 0; j < len(actions); j++ {
+			c.status <- actions[j].run()
+
+			idleTime := time.Duration(math.Round(float64(actions[j].waitAfter) * c.rate))
 
 			select {
 			case <-c.stop:
@@ -179,6 +194,7 @@ func (c *SimpleController) Run() {
 			case <-time.After(time.Millisecond * idleTime):
 			}
 		}
+		i++
 	}
 }
 
