@@ -4,6 +4,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -30,6 +31,12 @@ type Response struct {
 	Status  *loadtest.Status `json:"status,omitempty"`  // Status contains the current status of the load test.
 	Error   string           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
 }
+
+// contextKey is a type to pass the loadtest agent in the request context.
+// It is an empty struct to prevent any allocation when assigning to interface{}.
+type contextKey struct{}
+
+var loadAgentKey contextKey = struct{}{}
 
 func writeResponse(w http.ResponseWriter, status int, response *Response) {
 	w.Header().Set("Content-Type", "application/json")
@@ -106,11 +113,13 @@ func (a *API) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtes
 }
 
 func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
-	if err = lt.Run(); err != nil {
+	if err := lt.Run(); err != nil {
 		writeResponse(w, http.StatusOK, &Response{
 			Error: err.Error(),
 		})
@@ -123,11 +132,13 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
-	if err = lt.Stop(); err != nil {
+	if err := lt.Stop(); err != nil {
 		writeResponse(w, http.StatusOK, &Response{
 			Error: err.Error(),
 		})
@@ -140,9 +151,11 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
 
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
@@ -155,9 +168,11 @@ func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
 	writeResponse(w, http.StatusOK, &Response{
 		Status: lt.Status(),
@@ -171,9 +186,11 @@ func getAmount(r *http.Request) (int, error) {
 }
 
 func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
 
 	amount, err := getAmount(r)
@@ -199,9 +216,11 @@ func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	lt, ok := r.Context().Value(loadAgentKey).(*loadtest.LoadTester)
+	if !ok {
+		writeResponse(w, http.StatusInternalServerError, &Response{
+			Error: "load-test agent not found in context",
+		})
 	}
 
 	amount, err := getAmount(r)
@@ -226,6 +245,17 @@ func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, &res)
 }
 
+func (a *API) passLoadAgent(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lt, err := a.getLoadAgentById(w, r)
+		if err != nil {
+			return
+		}
+		r = r.Clone(context.WithValue(context.Background(), loadAgentKey, lt))
+		next.ServeHTTP(w, r)
+	})
+}
+
 // SetupAPIRouter creates a router to handle load test API requests.
 func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
@@ -233,14 +263,14 @@ func SetupAPIRouter() *mux.Router {
 
 	agent := API{agents: make(map[string]*loadtest.LoadTester)}
 	r.HandleFunc("/create", agent.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
-	// TODO: add a middleware which refactors getLoadAgentById and passes the load test
-	// in a request context.
-	r.HandleFunc("/{id}/run", agent.runLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/stop", agent.stopLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}", agent.destroyLoadAgentHandler).Methods("DELETE")
-	r.HandleFunc("/{id}", agent.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/status", agent.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/addusers", agent.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
-	r.HandleFunc("/{id}/removeusers", agent.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r = r.PathPrefix("/{id}").Subrouter()
+	r.Use(agent.passLoadAgent)
+	r.HandleFunc("/run", agent.runLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/stop", agent.stopLoadAgentHandler).Methods("POST")
+	r.HandleFunc("", agent.destroyLoadAgentHandler).Methods("DELETE")
+	r.HandleFunc("", agent.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/status", agent.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/addusers", agent.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/removeusers", agent.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	return router
 }
