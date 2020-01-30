@@ -184,6 +184,30 @@ func (c *SimpleController) createPost() control.UserStatus {
 	return c.newInfoStatus(fmt.Sprintf("post created, id %v", postId))
 }
 
+func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
+	channelId := model.GetDMNameFromIds(userID, c.user.Store().Id())
+	ok, err := c.user.Store().Channel(channelId)
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+	// We check if a direct channel has been made between the users,
+	// and send the message only if it exists.
+	if ok == nil {
+		return c.newInfoStatus("skipping sending direct message")
+	}
+
+	postId, err := c.user.CreatePost(&model.Post{
+		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channelId,
+		CreateAt:  time.Now().Unix() * 1000,
+	})
+	if err != nil {
+		return c.newErrorStatus(err)
+	}
+
+	return c.newInfoStatus(fmt.Sprintf("direct post created, id %v", postId))
+}
+
 func (c *SimpleController) addReaction() control.UserStatus {
 	// get posts from UserStore that have been created in the last minute
 	posts, err := c.user.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
@@ -301,7 +325,7 @@ func (c *SimpleController) createDirectChannel() control.UserStatus {
 		return c.newErrorStatus(err)
 	}
 
-	return c.newInfoStatus(fmt.Sprintf("direct channel  for user %v created, id %v", user.Id, channelId))
+	return c.newInfoStatus(fmt.Sprintf("direct channel for user %v created, id %v", user.Id, channelId))
 }
 
 func (c *SimpleController) viewChannel() control.UserStatus {

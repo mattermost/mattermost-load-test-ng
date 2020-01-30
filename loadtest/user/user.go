@@ -13,9 +13,16 @@ import (
 type User interface {
 	Store() store.UserStore
 
+	// Cleanup is a one time method used to close any open resources
+	// that the user might have kept open throughout its lifetime.
+	Cleanup()
+
 	// connection
 	Connect() <-chan error
 	Disconnect() error
+	// Events returns the WebSocket event chan for the controller
+	// to listen and react to events.
+	Events() <-chan *model.WebSocketEvent
 	SignUp(email, username, password string) error
 	Login() error
 	Logout() (bool, error)
