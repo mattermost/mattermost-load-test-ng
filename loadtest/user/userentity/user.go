@@ -21,6 +21,7 @@ type UserEntity struct {
 	wsClosing   chan struct{}
 	wsClosed    chan struct{}
 	wsErrorChan chan error
+	wsEventChan chan *model.WebSocketEvent
 	connected   bool
 	config      Config
 }
@@ -72,6 +73,7 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 		return nil
 	}
 	ue.store = store
+	ue.wsEventChan = make(chan *model.WebSocketEvent)
 	return &ue
 }
 
@@ -110,6 +112,21 @@ func (ue *UserEntity) Disconnect() error {
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil
+}
+
+// Events returns the WebSocket event chan for the controller
+// to listen and react to events.
+func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
+	return ue.wsEventChan
+}
+
+// Cleanup is a one time method used to close any open resources
+// that the user might have kept open throughout its lifetime.
+// After calling cleanup, the user might not be used any more.
+// This is different from the Connect/Disconnect methods which
+// can be called multiple times.
+func (ue *UserEntity) Cleanup() {
+	close(ue.wsEventChan)
 }
 
 func (ue *UserEntity) IsSysAdmin() (bool, error) {

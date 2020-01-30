@@ -48,13 +48,12 @@ func (ue *UserEntity) listen(errChan chan error) {
 					chanClosed = true
 					break
 				}
-				_ = ev // TODO: handle event
-			case resp, ok := <-client.ResponseChannel:
+				ue.wsEventChan <- ev
+			case _, ok := <-client.ResponseChannel:
 				if !ok {
 					chanClosed = true
 					break
 				}
-				_ = resp // TODO: handle response
 			case <-ue.wsClosing:
 				client.Close()
 				// Explicit disconnect. Return.

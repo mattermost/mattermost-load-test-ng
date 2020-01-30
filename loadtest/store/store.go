@@ -21,9 +21,11 @@ type UserStore interface {
 
 	// TODO: Move all getters to this interface
 
-	// Config return the server configuration settings.
+	// Config returns the server configuration settings.
 	Config() model.Config
-	// Channels return the channels for a team.
+	// Channel returns the channel for a given channelId.
+	Channel(channelId string) (*model.Channel, error)
+	// Channels returns the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
@@ -31,13 +33,13 @@ type UserStore interface {
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for given channelId, sorted by CreateAt
 	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
-	// Teams return the teams a user belong to.
+	// Teams returns the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
 	TeamMember(teamdId, userId string) (model.TeamMember, error)
-	// Preferences return the preferences of the user.
+	// Preferences returns the preferences of the user.
 	Preferences() (model.Preferences, error)
-	// Roles return the roles of the user.
+	// Roles returns the roles of the user.
 	Roles() ([]model.Role, error)
 
 	// PostsSince returns posts created after a specified timestamp in milliseconds.
@@ -95,7 +97,6 @@ type MutableUserStore interface {
 	// channels
 	SetChannel(channel *model.Channel) error
 	SetChannels(channels []*model.Channel) error
-	Channel(channelId string) (*model.Channel, error)
 	// SetChannelMembers stores the given channel members in the store.
 	SetChannelMembers(channelMembers *model.ChannelMembers) error
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)
