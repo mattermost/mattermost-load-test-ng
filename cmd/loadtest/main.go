@@ -28,6 +28,7 @@ func main() {
 		},
 		MakeInitCommand(),
 		MakeServerCommand(),
+		MakeTerraformCommand(),
 	}
 
 	rootCmd.AddCommand(commands...)

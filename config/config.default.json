@@ -17,6 +17,11 @@
         "InitialActiveUsers": 4,
         "MaxActiveUsers": 1000
     },
+    "DeploymentConfiguration": {
+        "ClusterName": "loadtest",
+        "AppInstanceCount": 1,
+        "SSHPublicKey": "~/.ssh/id_rsa.pub"
+    },
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",

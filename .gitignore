@@ -64,9 +64,11 @@ sessions.db
 config/config.json
 config/coordinator.json
 
+# terraform stuff
 /terraformenv
+.terraform
+terraform.tfstate*
+
 .idea
 mattermost-load-test.iml
-
-vendor/
 
