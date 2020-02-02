@@ -28,6 +28,7 @@ func main() {
 		},
 		MakeInitCommand(),
 		MakeServerCommand(),
+		MakeDeployCommand(),
 	}
 
 	rootCmd.AddCommand(commands...)

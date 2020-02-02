@@ -17,6 +17,7 @@ type LoadTestConfig struct {
 	ConnectionConfiguration ConnectionConfiguration
 	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
+	DeploymentConfiguration DeploymentConfiguration
 	LogSettings             logger.LoggerSettings
 }
 
@@ -39,6 +40,14 @@ type InstanceConfiguration struct {
 type UsersConfiguration struct {
 	InitialActiveUsers int
 	MaxActiveUsers     int
+}
+
+// DeploymentConfiguration contains the necessary data
+// to deploy and provision a load test environment through terraform.
+type DeploymentConfiguration struct {
+	ClusterName      string // Name of the cluster.
+	AppInstanceCount int    // Number of application instances.
+	SSHPublicKey     string // Path to the SSH public key.
 }
 
 type LoggerSettings struct {
