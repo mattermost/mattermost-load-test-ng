@@ -30,7 +30,7 @@ func MakeDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "deploy",
 		Short:  "Create and deploy a load test environment",
-		RunE:   RunTerraformCmdF,
+		RunE:   RunDeployCmdF,
 		PreRun: SetupLoadTest,
 	}
 
