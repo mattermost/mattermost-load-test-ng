@@ -58,10 +58,10 @@ This removes 10 users from the load test.
 
 This stops the load test.
 
-#### Start a load test coordinator
+#### Start a load test coordinator (EE edition feature)
 
 - Start a load test agent.
-- Start a Prometheus server. (This is an EE feature and requires access to the enterprise codebase)
+- Start a Prometheus server.
 - `go run ./cmd/coordinator`
 
 The objective of the coordinator is to find the number of users that a Mattermost instance can handle without degrading performance. It will slowly ramp up the number of users through the load agent API, and check the Prometheus queries mentioned in `MonitorConfig`.
