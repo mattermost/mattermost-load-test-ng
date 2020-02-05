@@ -48,6 +48,10 @@ type DeploymentConfiguration struct {
 	ClusterName      string // Name of the cluster.
 	AppInstanceCount int    // Number of application instances.
 	SSHPublicKey     string // Path to the SSH public key.
+	InstanceCount    int    // Number of DB instances.
+	InstanceEngine   string // Type of the DB instance - postgres or mysql.
+	DBUserName       string // Username to connect to the DB.
+	DBPassword       string // Password to connect to the DB.
 }
 
 type LoggerSettings struct {

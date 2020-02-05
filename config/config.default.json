@@ -20,7 +20,11 @@
     "DeploymentConfiguration": {
         "ClusterName": "loadtest",
         "AppInstanceCount": 1,
-        "SSHPublicKey": "~/.ssh/id_rsa.pub"
+        "SSHPublicKey": "~/.ssh/id_rsa.pub",
+        "InstanceCount": 1,
+        "InstanceEngine": "mysql",
+        "DBUserName": "mmuser",
+        "DBPassword": "mostest"
     },
     "LogSettings": {
         "EnableConsole": true,

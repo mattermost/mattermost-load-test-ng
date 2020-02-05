@@ -43,6 +43,10 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.DeploymentConfiguration.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.DeploymentConfiguration.AppInstanceCount),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.DeploymentConfiguration.SSHPublicKey),
+		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DeploymentConfiguration.InstanceCount),
+		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DeploymentConfiguration.InstanceEngine),
+		"-var", fmt.Sprintf("db_username=%s", t.config.DeploymentConfiguration.DBUserName),
+		"-var", fmt.Sprintf("db_password=%s", t.config.DeploymentConfiguration.DBPassword),
 		"-auto-approve",
 		"./terraform",
 	)
