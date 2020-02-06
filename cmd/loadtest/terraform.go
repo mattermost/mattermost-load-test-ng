@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RunDeployCmdF(cmd *cobra.Command, args []string) error {
+func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	config, err := loadtest.GetConfig()
 	if err != nil {
 		mlog.Error(err.Error())
@@ -26,13 +26,42 @@ func RunDeployCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func MakeDeployCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:    "deploy",
-		Short:  "Create and deploy a load test environment",
-		RunE:   RunDeployCmdF,
-		PreRun: SetupLoadTest,
+func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
+	config, err := loadtest.GetConfig()
+	if err != nil {
+		mlog.Error(err.Error())
+		return nil
 	}
 
+	t := terraform.New(config)
+	err = t.Destroy()
+	if err != nil {
+		mlog.Error(err.Error())
+	}
+	return nil
+}
+
+func MakeEnvCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "env",
+		Short: "Create and deploy a load test environment",
+	}
+
+	commands := []*cobra.Command{
+		{
+			Use:    "create",
+			Short:  "Deploy a load test environment",
+			RunE:   RunCreateCmdF,
+			PreRun: SetupLoadTest,
+		},
+		{
+			Use:    "destroy",
+			Short:  "Destroy a load test environment",
+			RunE:   RunDestroyCmdF,
+			PreRun: SetupLoadTest,
+		},
+	}
+
+	cmd.AddCommand(commands...)
 	return cmd
 }
