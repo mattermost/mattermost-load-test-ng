@@ -48,6 +48,11 @@ type DeploymentConfiguration struct {
 	ClusterName      string // Name of the cluster.
 	AppInstanceCount int    // Number of application instances.
 	SSHPublicKey     string // Path to the SSH public key.
+	DBInstanceCount  int    // Number of DB instances.
+	DBInstanceClass  string // Type of the DB instance.
+	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
+	DBUserName       string // Username to connect to the DB.
+	DBPassword       string // Password to connect to the DB.
 }
 
 type LoggerSettings struct {
@@ -108,5 +113,14 @@ func (c *LoadTestConfig) IsValid() (bool, error) {
 	if c.ConnectionConfiguration.WebSocketURL == "" {
 		return false, fmt.Errorf("WebSocketURL is not present in config")
 	}
+
+	if c.DeploymentConfiguration.DBInstanceEngine != "" {
+		switch c.DeploymentConfiguration.DBInstanceEngine {
+		case "aurora", "aurora-postgresql", "mysql", "postgres":
+		default:
+			return false, fmt.Errorf("Invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
+		}
+	}
+
 	return true, nil
 }

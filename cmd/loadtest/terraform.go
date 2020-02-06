@@ -18,6 +18,11 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	if ok, err := config.IsValid(); !ok {
+		mlog.Error(err.Error())
+		return nil
+	}
+
 	t := terraform.New(config)
 	err = t.Create()
 	if err != nil {
@@ -29,6 +34,11 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	config, err := loadtest.GetConfig()
 	if err != nil {
+		mlog.Error(err.Error())
+		return nil
+	}
+
+	if ok, err := config.IsValid(); !ok {
 		mlog.Error(err.Error())
 		return nil
 	}
