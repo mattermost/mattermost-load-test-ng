@@ -36,7 +36,7 @@ resource "aws_db_instance" "db" {
   iops                 = 1000
   engine               = var.db_instance_engine
   engine_version       = var.db_engine_version[var.db_instance_engine]
-  instance_class       = "db.r4.large"
+  instance_class       = var.db_instance_class
   name                 = "${var.cluster_name}db"
   username             = var.db_username
   password             = var.db_password

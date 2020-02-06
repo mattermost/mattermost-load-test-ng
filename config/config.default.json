@@ -21,8 +21,9 @@
         "ClusterName": "loadtest",
         "AppInstanceCount": 1,
         "SSHPublicKey": "~/.ssh/id_rsa.pub",
-        "InstanceCount": 1,
-        "InstanceEngine": "mysql",
+        "DBInstanceCount": 1,
+        "DBInstanceEngine": "mysql",
+        "DBInstanceClass": "db.r4.large",
         "DBUserName": "mmuser",
         "DBPassword": "mostest"
     },

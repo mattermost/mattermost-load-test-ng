@@ -14,6 +14,10 @@ variable "db_instance_engine" {
   default = "mysql"
 }
 
+variable "db_instance_class" {
+  default = "db.r4.large"
+}
+
 variable "db_engine_version" {
   type = map
   default = {
