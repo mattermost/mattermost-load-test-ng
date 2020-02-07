@@ -45,14 +45,16 @@ type UsersConfiguration struct {
 // DeploymentConfiguration contains the necessary data
 // to deploy and provision a load test environment through terraform.
 type DeploymentConfiguration struct {
-	ClusterName      string // Name of the cluster.
-	AppInstanceCount int    // Number of application instances.
-	SSHPublicKey     string // Path to the SSH public key.
-	DBInstanceCount  int    // Number of DB instances.
-	DBInstanceClass  string // Type of the DB instance.
-	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
-	DBUserName       string // Username to connect to the DB.
-	DBPassword       string // Password to connect to the DB.
+	ClusterName           string // Name of the cluster.
+	AppInstanceCount      int    // Number of application instances.
+	SSHPublicKey          string // Path to the SSH public key.
+	DBInstanceCount       int    // Number of DB instances.
+	DBInstanceClass       string // Type of the DB instance.
+	DBInstanceEngine      string // Type of the DB instance - postgres or mysql.
+	DBUserName            string // Username to connect to the DB.
+	DBPassword            string // Password to connect to the DB.
+	MattermostDownloadURL string // URL from where to download Mattermost distribution.
+	MattermostLicenseFile string // Location of the mattermost EE license.
 }
 
 type LoggerSettings struct {

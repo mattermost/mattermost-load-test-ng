@@ -16,6 +16,7 @@ resource "aws_instance" "app_server" {
 
   connection {
     # The default username for our AMI
+    type = "ssh"
     user = "ubuntu"
     host = "$self.public_ip"
   }
@@ -27,21 +28,37 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids = [
     "${aws_security_group.app.id}"
   ]
+
+  provisioner "file" {
+    source      = var.mattermost_license_file
+    destination = "/opt/mattermost/config/mattermost.mattermost-license"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update",
+      "wget ${var.mattermost_download_url}",
+      "tar xzf mattermost-*.tar.gz",
+      "sudo mv mattermost /opt/",
+      "sudo mkdir -p /opt/mattermost/data",
+      "/opt/mattermost/bin/mattermost license upload /opt/mattermost/config/mattermost.mattermost-license"
+    ]
+  }
 }
 
 resource "aws_db_instance" "db" {
-  identifier           = "${var.cluster_name}-db-${count.index}"
-  allocated_storage    = 100
-  storage_type         = "io1"
-  iops                 = 1000
-  engine               = var.db_instance_engine
-  engine_version       = var.db_engine_version[var.db_instance_engine]
-  instance_class       = var.db_instance_class
-  name                 = "${var.cluster_name}db"
-  username             = var.db_username
-  password             = var.db_password
-  skip_final_snapshot  = true
-  apply_immediately    = true
+  identifier          = "${var.cluster_name}-db-${count.index}"
+  allocated_storage   = 100
+  storage_type        = "io1"
+  iops                = 1000
+  engine              = var.db_instance_engine
+  engine_version      = var.db_engine_version[var.db_instance_engine]
+  instance_class      = var.db_instance_class
+  name                = "${var.cluster_name}db"
+  username            = var.db_username
+  password            = var.db_password
+  skip_final_snapshot = true
+  apply_immediately   = true
 
   count = var.db_instance_count
   vpc_security_group_ids = [

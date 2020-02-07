@@ -37,3 +37,11 @@ variable "db_password" {
 variable "ssh_public_key" {
   default = "~/.ssh/id_rsa.pub"
 }
+
+variable "mattermost_download_url" {
+  default = ""
+}
+
+variable "mattermost_license_file" {
+  default = ""
+}

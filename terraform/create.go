@@ -48,6 +48,8 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DeploymentConfiguration.DBInstanceClass),
 		"-var", fmt.Sprintf("db_username=%s", t.config.DeploymentConfiguration.DBUserName),
 		"-var", fmt.Sprintf("db_password=%s", t.config.DeploymentConfiguration.DBPassword),
+		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.DeploymentConfiguration.MattermostDownloadURL),
+		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.DeploymentConfiguration.MattermostLicenseFile),
 		"-auto-approve",
 		"./terraform",
 	)
