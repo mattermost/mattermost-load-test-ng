@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -409,8 +408,8 @@ func (c *SimpleController) searchUsers() control.UserStatus {
 
 func (c *SimpleController) updateProfile() control.UserStatus {
 	userId := c.user.Store().Id()
-	name := strings.TrimSuffix(c.user.Store().Username(), "-new")
-	userName := fmt.Sprintf("%s-new", name)
+
+	userName := randomizeUserName(c.user.Store().Username())
 	nickName := fmt.Sprintf("testNickName%d", c.id)
 	firstName := fmt.Sprintf("firstName%d", c.id)
 	lastName := fmt.Sprintf("lastName%d", c.id)
