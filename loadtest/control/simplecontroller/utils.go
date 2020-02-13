@@ -15,10 +15,11 @@ const (
 	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-var (
-	re  = regexp.MustCompile(`-[[:alpha:]]+`)
-	src = rand.NewSource(time.Now().UnixNano())
-)
+var re = regexp.MustCompile(`-[[:alpha:]]+`)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func getErrOrigin() string {
 	var origin string
