@@ -47,9 +47,10 @@ func createChannels(admin *userentity.UserEntity, numChannels int) error {
 		}
 
 		id, err := admin.CreateChannel(&model.Channel{
-			Name:   model.NewId(),
-			TeamId: team.Id,
-			Type:   channelTypes[rand.Intn(len(channelTypes))],
+			Name:        model.NewId(),
+			DisplayName: fmt.Sprintf("ch-%d", i),
+			TeamId:      team.Id,
+			Type:        channelTypes[rand.Intn(len(channelTypes))],
 		})
 		if err != nil {
 			return err

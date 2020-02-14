@@ -2,12 +2,24 @@ package simplecontroller
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
+	"time"
 )
 
-const pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/control/"
+const (
+	pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/control/"
+	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
+
+var re = regexp.MustCompile(`-[[:alpha:]]+`)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func getErrOrigin() string {
 	var origin string
@@ -19,4 +31,14 @@ func getErrOrigin() string {
 		}
 	}
 	return origin
+}
+
+// assuming the incoming name has a pattern of {{agent-id}}-{{user-name}}-{{user-number}}
+func randomizeUserName(name string) string {
+	parts := re.FindAllString(name, -1)
+	if len(parts) > 0 {
+		random := letters[rand.Intn(len(letters))]
+		name = strings.Replace(name, parts[len(parts)-1], "-user"+string(random), 1)
+	}
+	return name
 }
