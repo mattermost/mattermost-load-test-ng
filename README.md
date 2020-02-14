@@ -30,7 +30,7 @@ This populates a Mattermost instance with some teams and channels.
 
 - `go run ./cmd/loadtest`
 
-This runs for 60 minutes and stops.
+This runs for 60 seconds and stops.
 
 #### Start a load test agent
 
