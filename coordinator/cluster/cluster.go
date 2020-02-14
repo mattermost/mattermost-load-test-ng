@@ -77,13 +77,15 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	if len(c.agents) == 0 {
 		return nil
 	}
-	// TODO: Make this smarter. Implement an algorithm to make sure users are
-	// distributed evenly across the agents regardless of the input value and number of
-	// agents available.
-	inc := int(n / len(c.agents))
-	for i, agent := range c.agents {
+
+	dist, err := additionDistribution(c.agents, n)
+	if err != nil {
+		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
+	}
+	for i, inc := range dist {
 		mlog.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
-		if err := agent.AddUsers(inc); err != nil {
+
+		if err := c.agents[i].AddUsers(inc); err != nil {
 			return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 		}
 	}
@@ -96,13 +98,14 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 	if len(c.agents) == 0 {
 		return nil
 	}
-	// TODO: Make this smarter. Implement an algorithm to make sure users are
-	// distributed evenly across the agents regardless of the input value and number of
-	// agents available.
-	dec := int(n / len(c.agents))
-	for i, agent := range c.agents {
+
+	dist, err := deletionDistribution(c.agents, n)
+	if err != nil {
+		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
+	}
+	for i, dec := range dist {
 		mlog.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
-		if err := agent.RemoveUsers(dec); err != nil {
+		if err := c.agents[i].RemoveUsers(dec); err != nil {
 			return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 		}
 	}
