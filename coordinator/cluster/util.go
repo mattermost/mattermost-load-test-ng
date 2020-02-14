@@ -19,10 +19,8 @@ func populateSortableAgents(agents []*agent.LoadAgent) ([]sortableAgent, error) 
 	}
 	sortableAgents := make([]sortableAgent, len(agents))
 	for i, a := range agents {
-		sortableAgents[i] = sortableAgent{
-			index: i,
-			users: a.Status().NumUsers,
-		}
+		sortableAgents[i].index = i
+		sortableAgents[i].users = a.Status().NumUsers
 	}
 	return sortableAgents, nil
 }
