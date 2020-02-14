@@ -8,54 +8,54 @@ import (
 )
 
 type sortableAgent struct {
-	order int
-	Users int
+	index int
+	users int
 }
 
 // gives numbers to distribute users evenly
 func populateSortableAgents(agents []*agent.LoadAgent) ([]sortableAgent, error) {
-	sortedAgents := make([]sortableAgent, 0)
 	if len(agents) == 0 {
 		return nil, errors.New("input slice length must be greater than 0")
 	}
+	sortableAgents := make([]sortableAgent, len(agents))
 	for i, a := range agents {
-		sortedAgents = append(sortedAgents, sortableAgent{
-			order: i,
-			Users: a.Status().NumUsers,
-		})
+		sortableAgents[i] = sortableAgent{
+			index: i,
+			users: a.Status().NumUsers,
+		}
 	}
-	return sortedAgents, nil
+	return sortableAgents, nil
 }
 
 func additionDistribution(agents []*agent.LoadAgent, n int) (map[int]int, error) {
-	sortedAgents, err := populateSortableAgents(agents)
+	sortableAgents, err := populateSortableAgents(agents)
 	if err != nil {
 		return nil, err
 	}
 	distMap := make(map[int]int)
 	for i := 0; i < n; i++ {
-		sort.Slice(sortedAgents, func(i, j int) bool {
-			return sortedAgents[i].Users < sortedAgents[j].Users
+		sort.Slice(sortableAgents, func(i, j int) bool {
+			return sortableAgents[i].users < sortableAgents[j].users
 		})
-		sortedAgents[0].Users++
-		distMap[sortedAgents[0].order] = distMap[sortedAgents[0].order] + 1
+		sortableAgents[0].users++
+		distMap[sortableAgents[0].index] = distMap[sortableAgents[0].index] + 1
 	}
 	return distMap, nil
 }
 
 func deletionDistribution(agents []*agent.LoadAgent, n int) (map[int]int, error) {
-	sortedAgents, err := populateSortableAgents(agents)
+	sortableAgents, err := populateSortableAgents(agents)
 	if err != nil {
 		return nil, err
 	}
 	distMap := make(map[int]int)
 	for i := 0; i < n; i++ {
-		sort.Slice(sortedAgents, func(i, j int) bool {
-			return sortedAgents[i].Users > sortedAgents[j].Users
+		sort.Slice(sortableAgents, func(i, j int) bool {
+			return sortableAgents[i].users > sortableAgents[j].users
 		})
-		if sortedAgents[0].Users > 0 {
-			sortedAgents[0].Users--
-			distMap[sortedAgents[0].order] = distMap[sortedAgents[0].order] + 1
+		if sortableAgents[0].users > 0 {
+			sortableAgents[0].users--
+			distMap[sortableAgents[0].index] = distMap[sortableAgents[0].index] + 1
 		}
 	}
 	return distMap, nil
