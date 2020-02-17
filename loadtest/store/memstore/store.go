@@ -196,8 +196,6 @@ func (s *MemStore) SetPost(post *model.Post) error {
 }
 
 func (s *MemStore) SetPosts(posts []*model.Post) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	if len(posts) == 0 {
 		return errors.New("memstore: posts should not be nil or empty")
 	}
@@ -244,9 +242,6 @@ func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 }
 
 func (s *MemStore) SetChannels(channels []*model.Channel) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	if channels == nil {
 		return errors.New("memstore: channels should not be nil")
 	}
