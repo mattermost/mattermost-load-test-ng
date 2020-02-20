@@ -15,8 +15,9 @@ import (
 )
 
 type UserAction struct {
-	run       func() control.UserStatus
-	waitAfter time.Duration
+	run          func() control.UserStatus
+	waitAfter    time.Duration
+	runFrequency int
 }
 
 func (c *SimpleController) signUp() control.UserStatus {
