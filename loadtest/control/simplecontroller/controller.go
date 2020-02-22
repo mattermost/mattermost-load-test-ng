@@ -190,7 +190,7 @@ func (c *SimpleController) Run() {
 	c.status <- c.signUp()
 	c.status <- c.login()
 
-	cycleCount := 0 // keeps a track of how many times the entire cycle of actions have been completed.
+	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
 		for i := 0; i < len(actions); i++ {
 			if cycleCount%actions[i].runFrequency == 0 {
