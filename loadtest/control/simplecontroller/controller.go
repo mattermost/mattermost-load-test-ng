@@ -73,69 +73,80 @@ func (c *SimpleController) Run() {
 
 	actions := []UserAction{
 		{
-			run:       c.signUp,
-			waitAfter: 1000,
-		},
-		{
-			run:       c.login,
-			waitAfter: 1000,
+			run:          c.signUp,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
 			run: func() control.UserStatus {
 				return c.reload(false)
 			},
+			runFrequency: 1,
 		},
 		{
-			run:       c.joinTeam,
-			waitAfter: 1000,
+			run:          c.joinTeam,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.joinChannel,
-			waitAfter: 1000,
+			run:          c.joinChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.addReaction,
-			waitAfter: 1000,
+			run:          c.addReaction,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.removeReaction,
-			waitAfter: 1000,
+			run:          c.removeReaction,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.searchPosts,
-			waitAfter: 1000,
+			run:          c.searchPosts,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.searchChannels,
-			waitAfter: 1000,
+			run:          c.searchChannels,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.searchUsers,
-			waitAfter: 1000,
+			run:          c.searchUsers,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.viewUser,
-			waitAfter: 1000,
+			run:          c.viewUser,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.createPost,
-			waitAfter: 1000,
+			run:          c.createPost,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.updateProfile,
-			waitAfter: 1000,
+			run:          c.updateProfile,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.updateProfileImage,
-			waitAfter: 1000,
+			run:          c.updateProfileImage,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.createGroupChannel,
-			waitAfter: 1000,
+			run:          c.createGroupChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.createDirectChannel,
-			waitAfter: 1000,
+			run:          c.createDirectChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		// {
 		// 	run:       c.createPublicChannel,
@@ -146,20 +157,29 @@ func (c *SimpleController) Run() {
 		// 	waitAfter: 1000,
 		// },
 		{
-			run:       c.viewChannel,
-			waitAfter: 1000,
+			run:          c.viewChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.scrollChannel,
-			waitAfter: 1000,
+			run:          c.scrollChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.leaveChannel,
-			waitAfter: 1000,
+			run:          c.leaveChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
 		},
 		{
-			run:       c.logout,
-			waitAfter: 1000,
+			run:          c.logout,
+			waitAfter:    1000,
+			runFrequency: 20,
+		},
+		{
+			run:          c.login,
+			waitAfter:    1000,
+			runFrequency: 20,
 		},
 	}
 
@@ -167,9 +187,17 @@ func (c *SimpleController) Run() {
 
 	defer c.sendStopStatus()
 
+	c.status <- c.signUp()
+	c.status <- c.login()
+
+	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
 		for i := 0; i < len(actions); i++ {
-			c.status <- actions[i].run()
+			if cycleCount%actions[i].runFrequency == 0 {
+				// run the action if runFrequency is not set, or else it's set and it's a multiple
+				// of the cycle count.
+				c.status <- actions[i].run()
+			}
 
 			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
 
@@ -179,6 +207,7 @@ func (c *SimpleController) Run() {
 			case <-time.After(time.Millisecond * idleTime):
 			}
 		}
+		cycleCount++
 	}
 }
 
