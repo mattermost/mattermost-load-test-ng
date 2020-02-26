@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
-// SimulController is a simulative implementation of a controller.
+// SimulController is a simulative implementation of a UserController.
 type SimulController struct {
 	id     int
 	user   user.User
@@ -34,8 +34,8 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SimulControl
 	}
 }
 
-// Run begins performing a set of actions in a loop with a defined wait
-// in between the actions. It keeps on doing it until Stop is invoked.
+// Run begins performing a set of user actions in a loop.
+// It keeps on doing it until Stop() is invoked.
 // This is also a blocking function, so it is recommended to invoke it
 // inside a goroutine.
 func (c *SimulController) Run() {
@@ -49,9 +49,9 @@ func (c *SimulController) Run() {
 	defer c.sendStopStatus()
 
 	for {
-		// TODO: implement picking an action and run it
+		// TODO: implement picking an action and run it.
 
-		// TODO: implement picking a non constant idle time
+		// TODO: implement picking a non constant idle time.
 		idleTime := time.Duration(math.Round(1000 * c.rate))
 
 		select {

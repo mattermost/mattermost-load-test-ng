@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See License.txt for license information.
+
 package control
 
 import (
@@ -17,10 +20,17 @@ const (
 
 var re = regexp.MustCompile(`-[[:alpha:]]+`)
 
+// TODO: this is currently unused. Should be probably called once when starting
+// the load-test cmd or API server. It should also be called only when running
+// a load-test in production.
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// GetErrOrigin returns a string indicating the location of the error that
+// just occurred. It's a utility function used to find out exactly where an
+// error has happened since actions inside a UserController might get called
+// from a single place.
 func GetErrOrigin() string {
 	var origin string
 	if pc, file, line, ok := runtime.Caller(2); ok {
@@ -33,7 +43,10 @@ func GetErrOrigin() string {
 	return origin
 }
 
-// assuming the incoming name has a pattern of {{agent-id}}-{{user-name}}-{{user-number}}
+// RandomizeUserName is a utility function used by UserController's implementations
+// to randomize a username while keeping a basic pattern unchanged.
+// Assumes the given name has a pattern of {{agent-id}}-{{user-name}}-{{user-number}}.
+// If the pattern is not found it will return the input string unaltered.
 func RandomizeUserName(name string) string {
 	parts := re.FindAllString(name, -1)
 	if len(parts) > 0 {
