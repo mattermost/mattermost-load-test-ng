@@ -150,6 +150,11 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
+			run:          c.scrollChannel,
+			waitAfter:    1000,
+			runFrequency: 1,
+		},
+		{
 			run:          control.LeaveChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
@@ -157,7 +162,7 @@ func (c *SimpleController) Run() {
 		{
 			run:          control.Logout,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 20,
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
@@ -177,13 +182,13 @@ func (c *SimpleController) Run() {
 
 	defer c.sendStopStatus()
 
-	if resp := control.SignUp(); resp.Err != nil {
+	if resp := control.SignUp(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
 	}
 
-	if resp := control.Login(); resp.Err != nil {
+	if resp := control.Login(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
