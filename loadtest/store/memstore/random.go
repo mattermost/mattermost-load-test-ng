@@ -19,8 +19,8 @@ var (
 
 // RandomChannel returns a random channel for a user.
 func (s *MemStore) RandomChannel(teamId string) (model.Channel, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	var channels []*model.Channel
 	i := 0
@@ -38,8 +38,8 @@ func (s *MemStore) RandomChannel(teamId string) (model.Channel, error) {
 
 // RandomTeam returns a random team for a user.
 func (s *MemStore) RandomTeam() (model.Team, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	key, err := pickRandomKeyFromMap(s.teams)
 	if err != nil {
@@ -50,8 +50,8 @@ func (s *MemStore) RandomTeam() (model.Team, error) {
 
 // RandomUser returns a random user from the set of users.
 func (s *MemStore) RandomUser() (model.User, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	key, err := pickRandomKeyFromMap(s.users)
 	if err != nil {
@@ -62,8 +62,8 @@ func (s *MemStore) RandomUser() (model.User, error) {
 
 // RandomUsers returns N random users from the set of users.
 func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	if n > len(s.users) {
 		return nil, ErrLenMismatch
@@ -91,8 +91,8 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 
 // RandomPost returns a random post.
 func (s *MemStore) RandomPost() (model.Post, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	key, err := pickRandomKeyFromMap(s.posts)
 	if err != nil {
@@ -103,8 +103,8 @@ func (s *MemStore) RandomPost() (model.Post, error) {
 
 // RandomEmoji returns a random emoji.
 func (s *MemStore) RandomEmoji() (model.Emoji, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	if len(s.emojis) == 0 {
 		return model.Emoji{}, ErrEmptySlice
@@ -114,8 +114,8 @@ func (s *MemStore) RandomEmoji() (model.Emoji, error) {
 
 // RandomChannelMember returns a random channel member for a channel.
 func (s *MemStore) RandomChannelMember(channelId string) (model.ChannelMember, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	var chanMemberMap map[string]*model.ChannelMember
 	for k, v := range s.channelMembers {
@@ -133,8 +133,8 @@ func (s *MemStore) RandomChannelMember(channelId string) (model.ChannelMember, e
 
 // RandomTeamMember returns a random team member for a team.
 func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	var teamMemberMap map[string]*model.TeamMember
 	for k, v := range s.teamMembers {
