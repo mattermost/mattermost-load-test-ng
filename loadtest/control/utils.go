@@ -1,4 +1,4 @@
-package simplecontroller
+package control
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/control/"
+	pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/"
 	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
@@ -21,7 +21,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func getErrOrigin() string {
+func GetErrOrigin() string {
 	var origin string
 	if pc, file, line, ok := runtime.Caller(2); ok {
 		if f := runtime.FuncForPC(pc); f != nil {
@@ -34,7 +34,7 @@ func getErrOrigin() string {
 }
 
 // assuming the incoming name has a pattern of {{agent-id}}-{{user-name}}-{{user-number}}
-func randomizeUserName(name string) string {
+func RandomizeUserName(name string) string {
 	parts := re.FindAllString(name, -1)
 	if len(parts) > 0 {
 		random := letters[rand.Intn(len(letters))]
