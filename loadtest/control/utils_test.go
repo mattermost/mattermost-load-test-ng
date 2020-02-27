@@ -14,7 +14,6 @@ import (
 )
 
 func TestRandomizeUserName(t *testing.T) {
-
 	name := RandomizeUserName("test-agent-1-user-4")
 	assert.Regexp(t, regexp.MustCompile(`user[[:alpha:]]+-4`), name)
 
