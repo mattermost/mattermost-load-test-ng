@@ -73,58 +73,54 @@ func (c *SimpleController) Run() {
 
 	actions := []UserAction{
 		{
-			run:          c.signUp,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run: func() control.UserStatus {
+			run: func(u user.User) control.UserActionResponse {
 				return c.reload(false)
 			},
-			runFrequency: 1,
-		},
-		{
-			run:          c.joinTeam,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.joinChannel,
+			run:          control.JoinTeam,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.addReaction,
+			run:          control.JoinChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.removeReaction,
+			run:          control.AddReaction,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.searchPosts,
+			run:          control.RemoveReaction,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.searchChannels,
+			run:          control.SearchPosts,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.searchUsers,
+			run:          control.SearchChannels,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.viewUser,
+			run:          control.SearchUsers,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.createPost,
+			run:          control.ViewUser,
+			waitAfter:    1000,
+			runFrequency: 1,
+		},
+		{
+			run:          control.CreatePost,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
@@ -134,30 +130,22 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
-			run:          c.updateProfileImage,
+			run:          control.UpdateProfileImage,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.createGroupChannel,
+			run:          control.CreateGroupChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.createDirectChannel,
+			run:          control.CreateDirectChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
-		// {
-		// 	run:       c.createPublicChannel,
-		// 	waitAfter: 1000,
-		// },
-		// {
-		// 	run:       c.createPrivateChannel,
-		// 	waitAfter: 1000,
-		// },
 		{
-			run:          c.viewChannel,
+			run:          control.ViewChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
@@ -167,17 +155,24 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
-			run:          c.leaveChannel,
+			run:          control.LeaveChannel,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
 		{
-			run:          c.logout,
+			run:          control.Logout,
 			waitAfter:    1000,
 			runFrequency: 20,
 		},
 		{
-			run:          c.login,
+			run: func(u user.User) control.UserActionResponse {
+				resp := control.Login(u)
+				if resp.Err != nil {
+					return resp
+				}
+				c.connect()
+				return resp
+			},
 			waitAfter:    1000,
 			runFrequency: 20,
 		},
@@ -187,8 +182,18 @@ func (c *SimpleController) Run() {
 
 	defer c.sendStopStatus()
 
-	c.status <- c.signUp()
-	c.status <- c.login()
+	if resp := control.SignUp(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	if resp := control.Login(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+		c.connect()
+	}
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
@@ -196,15 +201,19 @@ func (c *SimpleController) Run() {
 			if cycleCount%actions[i].runFrequency == 0 {
 				// run the action if runFrequency is not set, or else it's set and it's a multiple
 				// of the cycle count.
-				c.status <- actions[i].run()
-			}
+				if resp := actions[i].run(c.user); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+				}
 
-			idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
+				idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
 
-			select {
-			case <-c.stop:
-				return
-			case <-time.After(time.Millisecond * idleTime):
+				select {
+				case <-c.stop:
+					return
+				case <-time.After(time.Millisecond * idleTime):
+				}
 			}
 		}
 		cycleCount++
