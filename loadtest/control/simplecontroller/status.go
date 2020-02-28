@@ -18,7 +18,7 @@ func (c *SimpleController) newInfoStatus(info string) control.UserStatus {
 }
 
 func (c *SimpleController) newErrorStatus(err error) control.UserStatus {
-	origin := getErrOrigin()
+	origin := control.GetErrOrigin()
 	return control.UserStatus{
 		ControllerId: c.id,
 		User:         c.user,

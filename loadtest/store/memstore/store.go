@@ -6,6 +6,7 @@ package memstore
 import (
 	"errors"
 	"sort"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -13,6 +14,7 @@ import (
 // MemStore is a simple implementation of MutableUserStore
 // which holds all data in memory.
 type MemStore struct {
+	lock           sync.RWMutex
 	user           *model.User
 	preferences    *model.Preferences
 	config         *model.Config
@@ -37,6 +39,8 @@ func New() *MemStore {
 
 // Clear resets the store and removes all entries
 func (s *MemStore) Clear() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.posts = map[string]*model.Post{}
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
@@ -48,6 +52,8 @@ func (s *MemStore) Clear() {
 }
 
 func (s *MemStore) Id() string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.user == nil {
 		return ""
 	}
@@ -55,6 +61,8 @@ func (s *MemStore) Id() string {
 }
 
 func (s *MemStore) Username() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if s.user == nil {
 		return ""
 	}
@@ -62,6 +70,8 @@ func (s *MemStore) Username() string {
 }
 
 func (s *MemStore) Email() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if s.user == nil {
 		return ""
 	}
@@ -69,6 +79,8 @@ func (s *MemStore) Email() string {
 }
 
 func (s *MemStore) Password() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if s.user == nil {
 		return ""
 	}
@@ -76,18 +88,26 @@ func (s *MemStore) Password() string {
 }
 
 func (s *MemStore) Config() model.Config {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return *s.config
 }
 
 func (s *MemStore) SetConfig(config *model.Config) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.config = config
 }
 
 func (s *MemStore) User() (*model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.user, nil
 }
 
 func (s *MemStore) SetUser(user *model.User) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if user == nil {
 		return errors.New("memstore: user should not be nil")
 	}
@@ -97,6 +117,8 @@ func (s *MemStore) SetUser(user *model.User) error {
 }
 
 func (s *MemStore) Preferences() (model.Preferences, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if s.preferences == nil {
 		return nil, nil
 	}
@@ -106,11 +128,15 @@ func (s *MemStore) Preferences() (model.Preferences, error) {
 }
 
 func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.preferences = preferences
 	return nil
 }
 
 func (s *MemStore) Post(postId string) (*model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if post, ok := s.posts[postId]; ok {
 		return post, nil
 	}
@@ -118,6 +144,8 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 }
 
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	var channelPosts []*model.Post
 	for _, post := range s.posts {
 		if post.ChannelId == channelId {
@@ -129,6 +157,8 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 }
 
 func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	posts, err := s.ChannelPosts(channelId)
 	if err != nil {
 		return nil, err
@@ -144,6 +174,8 @@ func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post
 }
 
 func (s *MemStore) PostsSince(ts int64) ([]model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	var posts []model.Post
 	for _, post := range s.posts {
 		if post.CreateAt > ts {
@@ -154,6 +186,8 @@ func (s *MemStore) PostsSince(ts int64) ([]model.Post, error) {
 }
 
 func (s *MemStore) SetPost(post *model.Post) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if post == nil {
 		return errors.New("memstore: post should not be nil")
 	}
@@ -175,6 +209,8 @@ func (s *MemStore) SetPosts(posts []*model.Post) error {
 }
 
 func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if channel, ok := s.channels[channelId]; ok {
 		return channel, nil
 	}
@@ -182,6 +218,8 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 }
 
 func (s *MemStore) SetChannel(channel *model.Channel) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if channel == nil {
 		return errors.New("memstore: channel should not be nil")
 	}
@@ -191,6 +229,9 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 
 // Channels return all the channels for a team.
 func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	var channels []model.Channel
 	for _, channel := range s.channels {
 		if channel.TeamId == teamId {
@@ -213,6 +254,9 @@ func (s *MemStore) SetChannels(channels []*model.Channel) error {
 }
 
 func (s *MemStore) Team(teamId string) (*model.Team, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	if team, ok := s.teams[teamId]; ok {
 		return team, nil
 	}
@@ -220,11 +264,17 @@ func (s *MemStore) Team(teamId string) (*model.Team, error) {
 }
 
 func (s *MemStore) SetTeam(team *model.Team) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.teams[team.Id] = team
 	return nil
 }
 
 func (s *MemStore) Teams() ([]model.Team, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	teams := make([]model.Team, len(s.teams))
 	i := 0
 	for _, team := range s.teams {
@@ -235,6 +285,9 @@ func (s *MemStore) Teams() ([]model.Team, error) {
 }
 
 func (s *MemStore) SetTeams(teams []*model.Team) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.teams = make(map[string]*model.Team)
 	for _, team := range teams {
 		s.teams[team.Id] = team
@@ -244,6 +297,9 @@ func (s *MemStore) SetTeams(teams []*model.Team) error {
 
 // SetChannelMembers stores the given channel members in the store.
 func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if channelMembers == nil {
 		return errors.New("memstore: channelMembers should not be nil")
 	}
@@ -264,6 +320,9 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 }
 
 func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	channelMembers := model.ChannelMembers{}
 	for key := range s.channelMembers[channelId] {
 		channelMembers = append(channelMembers, *s.channelMembers[channelId][key])
@@ -272,6 +331,9 @@ func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, erro
 }
 
 func (s *MemStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if channelMember == nil {
 		return errors.New("memstore: channelMember should not be nil")
 	}
@@ -283,6 +345,9 @@ func (s *MemStore) SetChannelMember(channelId string, channelMember *model.Chann
 }
 
 func (s *MemStore) ChannelMember(channelId, userId string) (model.ChannelMember, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	var cm model.ChannelMember
 	if s.channelMembers[channelId][userId] != nil {
 		cm = *s.channelMembers[channelId][userId]
@@ -291,16 +356,25 @@ func (s *MemStore) ChannelMember(channelId, userId string) (model.ChannelMember,
 }
 
 func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	delete(s.channelMembers[channelId], userId)
 	return nil
 }
 
 func (s *MemStore) RemoveTeamMember(teamId string, userId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	delete(s.teamMembers[teamId], userId)
 	return nil
 }
 
 func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if teamMember == nil {
 		return errors.New("memstore: teamMember should not be nil")
 	}
@@ -312,6 +386,9 @@ func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) er
 }
 
 func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.teamMembers[teamId] = map[string]*model.TeamMember{}
 	for _, m := range teamMembers {
 		s.teamMembers[teamId][m.UserId] = m
@@ -321,6 +398,9 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 }
 
 func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	var tm model.TeamMember
 	if s.teamMembers[teamId][userId] != nil {
 		tm = *s.teamMembers[teamId][userId]
@@ -329,16 +409,25 @@ func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
 }
 
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.emojis = emoji
 	return nil
 }
 
 func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.reactions[postId] = reactions
 	return nil
 }
 
 func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	var reactions []model.Reaction
 	for _, reaction := range s.reactions[postId] {
 		reactions = append(reactions, *reaction)
@@ -347,6 +436,9 @@ func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 }
 
 func (s *MemStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if reaction == nil {
 		return false, errors.New("memstore: reaction should not be nil")
 	}
@@ -362,6 +454,9 @@ func (s *MemStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
 }
 
 func (s *MemStore) Users() ([]*model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	users := make([]*model.User, len(s.users))
 	i := 0
 	for _, user := range s.users {
@@ -372,6 +467,9 @@ func (s *MemStore) Users() ([]*model.User, error) {
 }
 
 func (s *MemStore) SetUsers(users []*model.User) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.users = make(map[string]*model.User)
 	for _, user := range users {
 		s.users[user.Id] = user
@@ -381,6 +479,9 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 
 // SetRoles stores the given roles.
 func (s *MemStore) SetRoles(roles []*model.Role) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.roles = make(map[string]*model.Role)
 	for _, role := range roles {
 		s.roles[role.Id] = role
@@ -390,6 +491,9 @@ func (s *MemStore) SetRoles(roles []*model.Role) error {
 
 // Roles return the roles of the user.
 func (s *MemStore) Roles() ([]model.Role, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	roles := make([]model.Role, len(s.roles))
 	i := 0
 	for _, role := range s.roles {
@@ -401,6 +505,9 @@ func (s *MemStore) Roles() ([]model.Role, error) {
 
 // SetLicense stores the given license in the store.
 func (s *MemStore) SetLicense(license map[string]string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	s.license = license
 	return nil
 }
