@@ -15,6 +15,8 @@ func (e *UserError) Error() string {
 	return e.Origin + " " + e.Err.Error()
 }
 
+// NewUserError returns a new UserError object with the given error
+// including location information.
 func NewUserError(err error) *UserError {
 	origin := getErrOrigin()
 	return &UserError{

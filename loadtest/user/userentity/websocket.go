@@ -18,6 +18,8 @@ const (
 	maxWebsocketFails             = 7
 )
 
+// wsEventHandler handles the given WebSocket event by calling the appropriate
+// store methods to make sure the internal user state is kept updated.
 func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 	switch ev.EventType() {
 	case model.WEBSOCKET_EVENT_REACTION_ADDED:
