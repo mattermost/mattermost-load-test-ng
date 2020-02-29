@@ -303,7 +303,8 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 		return errors.New("memstore: channelMembers should not be nil")
 	}
 
-	for idx, member := range *channelMembers {
+	for _, member := range *channelMembers {
+		member := member
 		// Initialize the maps as necessary.
 		if s.channelMembers == nil {
 			s.channelMembers = make(map[string]map[string]*model.ChannelMember)
@@ -312,7 +313,7 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 			s.channelMembers[member.ChannelId] = make(map[string]*model.ChannelMember)
 		}
 		// Set value.
-		s.channelMembers[member.ChannelId][member.UserId] = &(*channelMembers)[idx]
+		s.channelMembers[member.ChannelId][member.UserId] = &member
 	}
 
 	return nil
