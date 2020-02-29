@@ -34,7 +34,7 @@ func TestAPI(t *testing.T) {
 		Status(http.StatusNotFound)
 
 	sampleConfigBytes, _ := ioutil.ReadFile("../config/config.default.json")
-	var sampleConfig loadtest.LoadTestConfig
+	var sampleConfig loadtest.Config
 	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
 	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	sampleConfig.UsersConfiguration.MaxActiveUsers = 100

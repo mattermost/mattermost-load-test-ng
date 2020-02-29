@@ -17,7 +17,7 @@ import (
 )
 
 type MetricsWatcherConfiguration struct {
-	LogSettings             logger.LoggerSettings
+	LogSettings             logger.Settings
 	PrometheusConfiguration prometheus.Configuration
 	Queries                 []prometheus.Query
 }

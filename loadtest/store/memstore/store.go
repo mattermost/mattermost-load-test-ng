@@ -166,9 +166,8 @@ func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post
 	sort.Slice(posts, func(i, j int) bool {
 		if asc {
 			return posts[i].CreateAt < posts[j].CreateAt
-		} else {
-			return posts[i].CreateAt > posts[j].CreateAt
 		}
+		return posts[i].CreateAt > posts[j].CreateAt
 	})
 	return posts, nil
 }
@@ -305,6 +304,7 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 	}
 
 	for _, member := range *channelMembers {
+		member := member
 		// Initialize the maps as necessary.
 		if s.channelMembers == nil {
 			s.channelMembers = make(map[string]map[string]*model.ChannelMember)

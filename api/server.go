@@ -38,7 +38,7 @@ func writeResponse(w http.ResponseWriter, status int, response *Response) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config loadtest.LoadTestConfig
+	var config loadtest.Config
 	err := json.NewDecoder(r.Body).Decode(&config)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{

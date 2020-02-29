@@ -22,11 +22,11 @@ const cmdExecTimeoutMinutes = 5
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
 type Terraform struct {
-	config *loadtest.LoadTestConfig
+	config *loadtest.Config
 }
 
 // New returns a new Terraform instance.
-func New(cfg *loadtest.LoadTestConfig) *Terraform {
+func New(cfg *loadtest.Config) *Terraform {
 	return &Terraform{
 		config: cfg,
 	}

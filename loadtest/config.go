@@ -13,12 +13,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type LoadTestConfig struct {
+type Config struct {
 	ConnectionConfiguration ConnectionConfiguration
 	InstanceConfiguration   InstanceConfiguration
 	UsersConfiguration      UsersConfiguration
 	DeploymentConfiguration DeploymentConfiguration
-	LogSettings             logger.LoggerSettings
+	LogSettings             logger.Settings
 }
 
 type ConnectionConfiguration struct {
@@ -55,16 +55,6 @@ type DeploymentConfiguration struct {
 	DBPassword       string // Password to connect to the DB.
 }
 
-type LoggerSettings struct {
-	EnableConsole bool
-	ConsoleJson   bool
-	ConsoleLevel  string
-	EnableFile    bool
-	FileJson      bool
-	FileLevel     string
-	FileLocation  string
-}
-
 func ReadConfig(configFilePath string) error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
@@ -95,8 +85,8 @@ func ReadConfig(configFilePath string) error {
 	return nil
 }
 
-func GetConfig() (*LoadTestConfig, error) {
-	var cfg *LoadTestConfig
+func GetConfig() (*Config, error) {
+	var cfg *Config
 
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
@@ -106,7 +96,7 @@ func GetConfig() (*LoadTestConfig, error) {
 }
 
 // IsValid checks whether a config is valid or not.
-func (c *LoadTestConfig) IsValid() (bool, error) {
+func (c *Config) IsValid() (bool, error) {
 	if c.ConnectionConfiguration.ServerURL == "" {
 		return false, fmt.Errorf("ServerURL is not present in config")
 	}

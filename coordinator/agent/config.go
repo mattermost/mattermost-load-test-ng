@@ -16,7 +16,7 @@ type LoadAgentConfig struct {
 	// The API URL used to control the specified load-test instance.
 	ApiURL string
 	// The configuration for the load-test to run.
-	LoadTestConfig loadtest.LoadTestConfig
+	LoadTestConfig loadtest.Config
 }
 
 // IsValid checks whether a LoadAgentConfig is valid or not.
