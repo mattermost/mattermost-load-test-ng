@@ -12,9 +12,13 @@ import (
 )
 
 var (
-	ErrEmptyMap    = errors.New("memstore: cannot select from an empty map")
-	ErrEmptySlice  = errors.New("memstore: cannot select from an empty slice")
-	ErrLenMismatch = errors.New("memstore: cannot select from a map, not enough elements")
+	ErrEmptyMap       = errors.New("memstore: cannot select from an empty map")
+	ErrEmptySlice     = errors.New("memstore: cannot select from an empty slice")
+	ErrLenMismatch    = errors.New("memstore: cannot select from a map, not enough elements")
+	ErrTeamNotFound   = errors.New("memstore: team not found")
+	ErrUserNotSet     = errors.New("memstore: user is not set")
+	ErrNoTeamFound    = errors.New("memstore: no team found")
+	ErrNoChannelFound = errors.New("memstore: no channel found")
 )
 
 // RandomChannel returns a random channel for a user.
@@ -46,6 +50,65 @@ func (s *MemStore) RandomTeam() (model.Team, error) {
 		return model.Team{}, err
 	}
 	return *s.teams[key.(string)], nil
+}
+
+// RandomTeamJoined returns a random team the current user is a member of.
+func (s *MemStore) RandomTeamJoined() (model.Team, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if s.user == nil {
+		return model.Team{}, ErrUserNotSet
+	}
+
+	userId := s.user.Id
+
+	var teams []*model.Team
+	for teamId, team := range s.teams {
+		if s.teamMembers[teamId][userId] != nil {
+			teams = append(teams, team)
+		}
+	}
+
+	if len(teams) == 0 {
+		return model.Team{}, ErrNoTeamFound
+	}
+
+	idx := rand.Intn(len(teams))
+
+	return *teams[idx], nil
+}
+
+// RandomChannelJoined returns a random channel for the given teamId that the
+// current user is a member of.
+func (s *MemStore) RandomChannelJoined(teamId string) (model.Channel, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if s.user == nil {
+		return model.Channel{}, ErrUserNotSet
+	}
+
+	if s.teams[teamId] == nil {
+		return model.Channel{}, ErrTeamNotFound
+	}
+
+	userId := s.user.Id
+
+	var channels []*model.Channel
+	for channelId, channel := range s.channels {
+		if channel.TeamId == teamId && s.channelMembers[channelId][userId] != nil {
+			channels = append(channels, channel)
+		}
+	}
+
+	if len(channels) == 0 {
+		return model.Channel{}, ErrNoChannelFound
+	}
+
+	idx := rand.Intn(len(channels))
+
+	return *channels[idx], nil
 }
 
 // RandomUser returns a random user from the set of users.
