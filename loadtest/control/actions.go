@@ -246,6 +246,7 @@ func RemoveReaction(u user.User) UserActionResponse {
 
 	for _, reaction := range reactions {
 		if reaction.UserId == u.Store().Id() {
+			reaction := reaction
 			err = u.DeleteReaction(&reaction)
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
