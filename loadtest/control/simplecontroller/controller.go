@@ -90,16 +90,6 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
-			run:          control.AddReaction,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.RemoveReaction,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
 			run:          control.SearchPosts,
 			waitAfter:    1000,
 			runFrequency: 1,
@@ -125,6 +115,11 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
+			run:          control.AddReaction,
+			waitAfter:    1000,
+			runFrequency: 1,
+		},
+		{
 			run:          c.updateProfile,
 			waitAfter:    1000,
 			runFrequency: 1,
@@ -137,12 +132,12 @@ func (c *SimpleController) Run() {
 		{
 			run:          control.CreateGroupChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 8,
 		},
 		{
 			run:          control.CreateDirectChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 4,
 		},
 		{
 			run:          control.ViewChannel,
@@ -152,10 +147,15 @@ func (c *SimpleController) Run() {
 		{
 			run:          c.scrollChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 5,
 		},
 		{
 			run:          control.LeaveChannel,
+			waitAfter:    1000,
+			runFrequency: 5,
+		},
+		{
+			run:          control.RemoveReaction,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
@@ -238,7 +238,7 @@ func (c *SimpleController) Stop() {
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
-	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: &control.ControlError{Err: errors.New(reason)}}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
 func (c *SimpleController) sendStopStatus() {

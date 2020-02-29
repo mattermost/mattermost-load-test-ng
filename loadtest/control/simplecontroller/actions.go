@@ -44,22 +44,22 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 }
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
-	team, err := c.user.Store().RandomTeam()
+	team, err := c.user.Store().RandomTeamJoined()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	channel, err := c.user.Store().RandomChannel(team.Id)
+	channel, err := c.user.Store().RandomChannelJoined(team.Id)
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	err = c.user.GetPostsForChannel(channel.Id, 0, 1)
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	posts, err := c.user.Store().ChannelPostsSorted(channel.Id, true)
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	postId := posts[0].Id // get the oldest post
@@ -67,11 +67,11 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 	const SLEEP_BETWEEN_SCROLL = 1000
 	for i := 0; i < NUM_OF_SCROLLS; i++ {
 		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10); err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		postId = posts[0].Id // get the newest post
 		idleTime := time.Duration(math.Round(float64(SLEEP_BETWEEN_SCROLL) * c.rate))
@@ -94,7 +94,7 @@ func (c *SimpleController) updateProfile(u user.User) control.UserActionResponse
 		LastName:  &lastName,
 	})
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: "user patched"}
@@ -107,7 +107,7 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 	if full {
 		err := c.user.Disconnect()
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
 		c.connect()
@@ -116,19 +116,19 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 	// Getting preferences.
 	err := c.user.GetPreferences()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	prefs, _ := c.user.Store().Preferences()
 	var userIds []string
 	chanId := ""
-	teamId := ""
+	// teamId := ""
 	for _, p := range prefs {
 		switch {
 		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
 			chanId = p.Value
 		case p.Name == model.PREFERENCE_NAME_LAST_TEAM:
-			teamId = p.Value
+			// teamId = p.Value
 		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
 			userIds = append(userIds, p.Name)
 		}
@@ -141,36 +141,26 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 			PrevChannelId: "",
 		})
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
 	if ok, err := c.user.IsSysAdmin(); ok && err != nil {
 		err = c.user.GetConfig()
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
 	err = c.user.GetClientLicense()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	// Getting the user.
 	userId, err := c.user.GetMe()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
-	}
-
-	_, err = c.user.GetTeams()
-	if err != nil {
-		return control.UserActionResponse{Err: err}
-	}
-
-	err = c.user.GetTeamMembersForUser(userId)
-	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	roles, _ := c.user.Store().Roles()
@@ -181,68 +171,72 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 	if len(roleNames) > 0 {
 		_, err = c.user.GetRolesByNames(roleNames)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
 	err = c.user.GetWebappPlugins()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	_, err = c.user.GetAllTeams(0, 50)
+	teamIds, err := c.user.GetAllTeams(0, 100)
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	err = c.user.GetTeamMembersForUser(c.user.Store().Id())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if teamId != "" {
-		err = c.user.GetChannelsForTeam(teamId)
-		if err != nil {
-			return control.UserActionResponse{Err: err}
-		}
-
-		err = c.user.GetChannelMembersForUser(userId, teamId)
-		if err != nil {
-			return control.UserActionResponse{Err: err}
+	for _, teamId := range teamIds {
+		if tm, err := c.user.Store().TeamMember(teamId, c.user.Store().Id()); err == nil && tm.UserId != "" {
+			if err := c.user.GetChannelsForTeam(teamId); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			err = c.user.GetChannelMembersForUser(userId, teamId)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
 		}
 	}
 
 	// Getting unread teams.
 	_, err = c.user.GetTeamsUnread("")
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if len(userIds) > 0 {
 		// Get users by Ids.
 		_, err := c.user.GetUsersByIds(userIds)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
 		// Get user statuses by Ids.
 		err = c.user.GetUsersStatusesByIds(userIds)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
 	err = c.user.GetUserStatus()
 	if err != nil {
-		return control.UserActionResponse{Err: err}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if chanId != "" {
 		// Getting the channel stats.
 		err = c.user.GetChannelStats(chanId)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
 		// Getting channel unread.
 		_, err = c.user.GetChannelUnread(chanId)
 		if err != nil {
-			return control.UserActionResponse{Err: err}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
