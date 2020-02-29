@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// CoordinatorConfig holds the necessary information to drive a cluster of
+// Config holds the necessary information to drive a cluster of
 // load-test agents performing a load-test on a target instance.
-type CoordinatorConfig struct {
+type Config struct {
 	// ClusterConfig defines the load-test agent cluster configuration.
 	ClusterConfig cluster.LoadAgentClusterConfig
 	// MonitorConfig holds the performance monitor configuration.
@@ -42,8 +42,8 @@ func ReadConfig(configFilePath string) error {
 	return nil
 }
 
-func GetConfig() (*CoordinatorConfig, error) {
-	var cfg *CoordinatorConfig
+func GetConfig() (*Config, error) {
+	var cfg *Config
 
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
@@ -52,8 +52,8 @@ func GetConfig() (*CoordinatorConfig, error) {
 	return cfg, nil
 }
 
-// IsValid checks whether a CoordinatorConfig is valid or not.
+// IsValid checks whether a Config is valid or not.
 // Returns an error if the validtation fails.
-func (c *CoordinatorConfig) IsValid() (bool, error) {
+func (c *Config) IsValid() (bool, error) {
 	return true, nil
 }

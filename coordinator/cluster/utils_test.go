@@ -14,7 +14,7 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 	cfg := agent.LoadAgentConfig{
 		ApiURL: "api",
 		Id:     "id",
-		LoadTestConfig: loadtest.LoadTestConfig{
+		LoadTestConfig: loadtest.Config{
 			ConnectionConfiguration: loadtest.ConnectionConfiguration{
 				ServerURL:    "localhost:8065",
 				WebSocketURL: "localhost:4000",

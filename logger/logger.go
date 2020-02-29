@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-type LoggerSettings struct {
+type Settings struct {
 	EnableConsole bool
 	ConsoleJson   bool
 	ConsoleLevel  string
@@ -19,7 +19,7 @@ type LoggerSettings struct {
 	FileLocation  string
 }
 
-func Init(logSettings *LoggerSettings) {
+func Init(logSettings *Settings) {
 	log := mlog.NewLogger(&mlog.LoggerConfiguration{
 		EnableConsole: logSettings.EnableConsole,
 		ConsoleJson:   logSettings.ConsoleJson,

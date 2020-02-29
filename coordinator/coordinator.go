@@ -19,7 +19,7 @@ import (
 // Coordinator is the object used to coordinate a cluster of
 // load-test agents.
 type Coordinator struct {
-	config  *CoordinatorConfig
+	config  *Config
 	cluster *cluster.LoadAgentCluster
 	monitor *performance.Monitor
 }
@@ -112,7 +112,7 @@ func (c *Coordinator) Run() error {
 
 // New creates and initializes a new Coordinator for the given config.
 // An error is returned if the initialization fails.
-func New(config *CoordinatorConfig) (*Coordinator, error) {
+func New(config *Config) (*Coordinator, error) {
 	if config == nil {
 		return nil, fmt.Errorf("coordinator: config should not be nil")
 	}

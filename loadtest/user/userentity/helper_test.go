@@ -14,7 +14,7 @@ import (
 
 type TestHelper struct {
 	User   *UserEntity
-	config *loadtest.LoadTestConfig
+	config *loadtest.Config
 	tb     testing.TB
 }
 

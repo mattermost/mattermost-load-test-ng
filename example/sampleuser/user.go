@@ -84,7 +84,7 @@ func (u *SampleUser) GetPostsSince(channelId string, time int64) error {
 }
 
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
-func (ue *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
+func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
 	return nil
 }
 
@@ -96,11 +96,11 @@ func (u *SampleUser) GetFileInfosForPost(postId string) ([]*model.FileInfo, erro
 	return nil, nil
 }
 
-func (ue *SampleUser) GetFileThumbnail(fileId string) error {
+func (u *SampleUser) GetFileThumbnail(fileId string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetFilePreview(fileId string) error {
+func (u *SampleUser) GetFilePreview(fileId string) error {
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (u *SampleUser) CreateDirectChannel(otherUserId string) (string, error) {
 	return "", nil
 }
 
-func (ue *SampleUser) RemoveUserFromChannel(channelId, userId string) (bool, error) {
+func (u *SampleUser) RemoveUserFromChannel(channelId, userId string) (bool, error) {
 	return true, nil
 }
 
@@ -132,7 +132,7 @@ func (u *SampleUser) GetChannel(channelId string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetChannelsForTeam(teamId string) error {
+func (u *SampleUser) GetChannelsForTeam(teamId string) error {
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (u *SampleUser) AutocompleteChannelsForTeam(teamId, name string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetUserStatus() error {
+func (u *SampleUser) GetUserStatus() error {
 	return nil
 }
 
@@ -339,63 +339,63 @@ func (u *SampleUser) GetTeamStats(teamId string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
+func (u *SampleUser) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	return []*model.TeamUnread{}, nil
 }
 
-func (ue *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
+func (u *SampleUser) AddTeamMemberFromInvite(token, inviteId string) error {
 	return nil
 }
 
-func (ue *SampleUser) SetProfileImage(data []byte) error {
+func (u *SampleUser) SetProfileImage(data []byte) error {
 	return nil
 }
 
-func (ue *SampleUser) GetProfileImage() error {
+func (u *SampleUser) GetProfileImage() error {
 	return nil
 }
 
-func (ue *SampleUser) GetProfileImageForUser(userId string) error {
+func (u *SampleUser) GetProfileImageForUser(userId string) error {
 	return nil
 }
 
-func (ue *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
+func (u *SampleUser) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
 	return nil, nil
 }
 
-func (ue *SampleUser) GetEmojiList(page, perPage int) error {
+func (u *SampleUser) GetEmojiList(page, perPage int) error {
 	return nil
 }
 
-func (ue *SampleUser) GetEmojiImage(emojiId string) error {
+func (u *SampleUser) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
-func (ue *SampleUser) SaveReaction(reaction *model.Reaction) error {
+func (u *SampleUser) SaveReaction(reaction *model.Reaction) error {
 	return nil
 }
 
-func (ue *SampleUser) DeleteReaction(reaction *model.Reaction) error {
+func (u *SampleUser) DeleteReaction(reaction *model.Reaction) error {
 	return nil
 }
 
-func (ue *SampleUser) GetReactions(postId string) error {
+func (u *SampleUser) GetReactions(postId string) error {
 	return nil
 }
 
-func (ue *SampleUser) GetRolesByNames(roleNames []string) ([]string, error) {
+func (u *SampleUser) GetRolesByNames(roleNames []string) ([]string, error) {
 	return nil, nil
 }
 
-func (ue *SampleUser) GetWebappPlugins() error {
+func (u *SampleUser) GetWebappPlugins() error {
 	return nil
 }
 
 // GetClientLicense returns the client license in the old format.
-func (ue *SampleUser) GetClientLicense() error {
+func (u *SampleUser) GetClientLicense() error {
 	return nil
 }
 
-func (ue *SampleUser) IsSysAdmin() (bool, error) {
+func (u *SampleUser) IsSysAdmin() (bool, error) {
 	return false, nil
 }

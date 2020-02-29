@@ -1,5 +1,5 @@
 service:
-  golangci-lint-version: 1.23.6 # Keep this in sync with .circleci/config.yml and Jenkinsfile.pr
+  golangci-lint-version: 1.23.3 # Keep this in sync with .circleci/config.yml
 
 run:
   timeout: 5m
@@ -38,28 +38,24 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - deadcode
-    - gofmt
-    - golint
-    - gosimple
-    - govet
-    - ineffassign
-    - structcheck
-    - unconvert
-    - unused
-    - varcheck
-    - scopelint
+    - deadcode    # Finds unused code
+    - gofmt       # Checks whether code was gofmt-ed
+    - golint      # Differs from gofmt. Gofmt reformats Go source code, whereas golint prints out style mistakes
+    - gosimple    # Linter for Go source code that specializes in simplifying a code
+    - govet       # Examines Go source code and reports suspicious constructs, such as Printf calls whose arguments do not align with the format string
+    - ineffassign # Detects when assignments to existing variables are not used
+    - structcheck # Finds unused struct fields
+    - unconvert   # Removes unnecessary type conversions
+    - unused      # Checks Go code for unused constants, variables, functions and types
+    - varcheck    # Finds unused global variables and constants
+    - scopelint   # Checks for unpinned variables in go programs
 
 issues:
   exclude-rules:
     - linters:
-      # ignore unused warnings from enterprise code
-      # add more as required.
-      - unused
-      text: "RedisSupplier|LocalCacheSupplier|Enterprise"
-
-    - linters:
       # ignore golint error for a lot of packages for now
+      # This is mainly used to avoid errors regarding ids
+      # We can remove this section once we decide to fix them
       - golint
       path: "loadtest|coordinator|example|logger|cmd|api"
 

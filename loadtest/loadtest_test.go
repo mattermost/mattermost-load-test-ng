@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var ltConfig = LoadTestConfig{
+var ltConfig = Config{
 	ConnectionConfiguration: ConnectionConfiguration{
 		ServerURL:    "http://localhost:8065",
 		WebSocketURL: "ws://localhost:8065",
@@ -25,7 +25,7 @@ var ltConfig = LoadTestConfig{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
 	},
-	LogSettings: logger.LoggerSettings{},
+	LogSettings: logger.Settings{},
 }
 
 func newController(id int, status chan<- control.UserStatus) control.UserController {
