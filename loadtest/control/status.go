@@ -29,5 +29,5 @@ type UserStatus struct {
 	// Info contains any extra information attached with the status.
 	Info string
 	// Custom error containing the error encountered and location information.
-	Err *ControlError
+	Err error
 }

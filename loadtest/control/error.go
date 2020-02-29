@@ -3,15 +3,22 @@
 
 package control
 
-// ControlError is custom error type used by a UserController.
-type ControlError struct {
+// UserError is a custom error type used to report user errors.
+type UserError struct {
 	// Err contains the error encountered while performing the action.
 	Err error
-	// Origin contains information about where the error originated in the
-	// controller.
+	// Origin contains information about where the error originated.
 	Origin string
 }
 
-func (e *ControlError) Error() string {
-	return e.Err.Error()
+func (e *UserError) Error() string {
+	return e.Origin + " " + e.Err.Error()
+}
+
+func NewUserError(err error) *UserError {
+	origin := getErrOrigin()
+	return &UserError{
+		Err:    err,
+		Origin: origin,
+	}
 }
