@@ -19,6 +19,7 @@ type LoadTester struct {
 	config        *Config
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
+	quitChan      chan struct{}
 	status        Status
 	newController NewController
 }
@@ -31,19 +32,24 @@ type LoadTester struct {
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
 func (lt *LoadTester) handleStatus() {
-	for st := range lt.statusChan {
-		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
-			lt.wg.Done()
+	for {
+		select {
+		case <-lt.quitChan:
+			return
+		case st := <-lt.statusChan:
+			if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
+				lt.wg.Done()
+			}
+			if st.Code == control.USER_STATUS_ERROR {
+				mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("origin", st.Err.Origin))
+				atomic.AddInt64(&lt.status.NumErrors, 1)
+				continue
+			} else if st.Code == control.USER_STATUS_FAILED {
+				mlog.Error(st.Err.Error())
+				continue
+			}
+			mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
 		}
-		if st.Code == control.USER_STATUS_ERROR {
-			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("origin", st.Err.Origin))
-			atomic.AddInt64(&lt.status.NumErrors, 1)
-			continue
-		} else if st.Code == control.USER_STATUS_FAILED {
-			mlog.Error(st.Err.Error())
-			continue
-		}
-		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
 	}
 }
 
@@ -146,6 +152,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.wg.Wait()
 	close(lt.statusChan)
+	lt.quitChan <- struct{}{}
 	lt.status.NumUsers = 0
 	lt.status.State = Stopped
 	return nil
@@ -181,6 +188,7 @@ func New(config *Config, nc NewController) *LoadTester {
 	return &LoadTester{
 		config:        config,
 		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		quitChan:      make(chan struct{}),
 		newController: nc,
 		status:        Status{},
 	}
