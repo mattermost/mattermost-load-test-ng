@@ -21,7 +21,6 @@ type LoadTester struct {
 	statusChan    chan control.UserStatus
 	status        Status
 	newController NewController
-	quitChan      chan struct{}
 }
 
 // NewController is a factory function that returns a new
@@ -32,8 +31,10 @@ type LoadTester struct {
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
 func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
+	// Copy the channel to prevent race conditions.
+	statusChan := lt.statusChan
 	close(startedChan)
-	for st := range lt.statusChan {
+	for st := range statusChan {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
@@ -47,7 +48,6 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 		}
 		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
 	}
-	close(lt.quitChan)
 }
 
 // AddUser increments by one the number of concurrently active users.
@@ -122,7 +122,6 @@ func (lt *LoadTester) Run() error {
 	lt.status.NumErrors = 0
 	lt.status.StartTime = time.Now()
 	lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
-	lt.quitChan = make(chan struct{})
 	startedChan := make(chan struct{})
 	go lt.handleStatus(startedChan)
 	<-startedChan
@@ -152,7 +151,6 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.wg.Wait()
 	close(lt.statusChan)
-	<-lt.quitChan
 	lt.status.NumUsers = 0
 	lt.status.State = Stopped
 	return nil
@@ -190,6 +188,5 @@ func New(config *Config, nc NewController) *LoadTester {
 		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
 		status:        Status{},
-		quitChan:      make(chan struct{}),
 	}
 }
