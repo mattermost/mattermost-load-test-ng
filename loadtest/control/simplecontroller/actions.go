@@ -122,13 +122,10 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 	prefs, _ := c.user.Store().Preferences()
 	var userIds []string
 	chanId := ""
-	// teamId := ""
 	for _, p := range prefs {
 		switch {
 		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
 			chanId = p.Value
-		case p.Name == model.PREFERENCE_NAME_LAST_TEAM:
-			// teamId = p.Value
 		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
 			userIds = append(userIds, p.Name)
 		}
@@ -180,21 +177,32 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	teamIds, err := c.user.GetAllTeams(0, 100)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	err = c.user.GetTeamMembersForUser(c.user.Store().Id())
+	_, err = c.user.GetAllTeams(0, 50)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	for _, teamId := range teamIds {
-		if tm, err := c.user.Store().TeamMember(teamId, c.user.Store().Id()); err == nil && tm.UserId != "" {
-			if err := c.user.GetChannelsForTeam(teamId); err != nil {
+	_, err = c.user.GetTeamsForUser(userId)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	team, err := c.user.Store().RandomTeamJoined()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if team.Id != "" {
+		err = c.user.GetTeamMembersForUser(c.user.Store().Id())
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if tm, err := c.user.Store().TeamMember(team.Id, c.user.Store().Id()); err == nil && tm.UserId != "" {
+			if err := c.user.GetChannelsForTeam(team.Id); err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
-			err = c.user.GetChannelMembersForUser(userId, teamId)
+			err = c.user.GetChannelMembersForUser(userId, team.Id)
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}

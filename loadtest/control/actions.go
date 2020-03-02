@@ -155,21 +155,25 @@ func LeaveChannel(u user.User) UserActionResponse {
 func JoinTeam(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
-	teams, err := userStore.Teams()
+	teamIds, err := u.GetAllTeams(0, 100)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	for _, team := range teams {
-		tm, err := userStore.TeamMember(team.Id, userId)
+	for _, teamId := range teamIds {
+		tm, err := userStore.TeamMember(teamId, userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 		if tm.UserId == "" {
-			err := u.AddTeamMember(team.Id, userId)
+			err := u.AddTeamMember(teamId, userId)
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
-			return UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
+			err = u.GetChannelMembersForUser(userId, teamId)
+			if err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+			return UserActionResponse{Info: fmt.Sprintf("joined team %s", teamId)}
 		}
 	}
 	return UserActionResponse{Info: "no teams to join"}
