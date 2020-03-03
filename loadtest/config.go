@@ -95,13 +95,30 @@ func GetConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// IsValid checks whether a config is valid or not.
+// IsValid reports whether a config is valid or not.
 func (c *Config) IsValid() (bool, error) {
 	if c.ConnectionConfiguration.ServerURL == "" {
 		return false, fmt.Errorf("ServerURL is not present in config")
 	}
 	if c.ConnectionConfiguration.WebSocketURL == "" {
 		return false, fmt.Errorf("WebSocketURL is not present in config")
+	}
+	if c.ConnectionConfiguration.AdminEmail == "" {
+		return false, fmt.Errorf("AdminEmail is not present in config")
+	}
+	if c.ConnectionConfiguration.AdminPassword == "" {
+		return false, fmt.Errorf("AdminPassword is not present in config")
+	}
+
+	if c.InstanceConfiguration.NumTeams <= 0 {
+		return false, fmt.Errorf("NumTeams cannot be <= 0")
+	}
+
+	if c.UsersConfiguration.InitialActiveUsers < 0 {
+		return false, fmt.Errorf("InitialActiveUsers cannot be < 0")
+	}
+	if c.UsersConfiguration.MaxActiveUsers <= 0 {
+		return false, fmt.Errorf("MaxActiveUsers cannot be <= 0")
 	}
 
 	if c.DeploymentConfiguration.DBInstanceEngine != "" {

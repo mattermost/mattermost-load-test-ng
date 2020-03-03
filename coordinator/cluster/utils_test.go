@@ -14,10 +14,20 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 	cfg := agent.LoadAgentConfig{
 		ApiURL: "api",
 		Id:     "id",
+
 		LoadTestConfig: loadtest.Config{
 			ConnectionConfiguration: loadtest.ConnectionConfiguration{
-				ServerURL:    "localhost:8065",
-				WebSocketURL: "localhost:4000",
+				ServerURL:     "localhost:8065",
+				WebSocketURL:  "localhost:4000",
+				AdminEmail:    "user@example.com",
+				AdminPassword: "str0ngPassword##",
+			},
+			UsersConfiguration: loadtest.UsersConfiguration{
+				MaxActiveUsers:     8,
+				InitialActiveUsers: 0,
+			},
+			InstanceConfiguration: loadtest.InstanceConfiguration{
+				NumTeams: 1,
 			},
 			DeploymentConfiguration: loadtest.DeploymentConfiguration{
 				DBInstanceEngine: "mysql",
