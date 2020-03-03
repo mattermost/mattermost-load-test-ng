@@ -123,8 +123,6 @@ func (t *Terraform) Create() error {
 						}
 					}()
 
-					var b bytes.Buffer
-					session.Stdout = &b
 					buf, err := json.Marshal(v)
 					if err != nil {
 						mlog.Error("invalid config", mlog.String("key", k), mlog.Err(err))
@@ -152,8 +150,6 @@ func (t *Terraform) Create() error {
 					}
 				}()
 
-				var b bytes.Buffer
-				session.Stdout = &b
 				cmd := fmt.Sprintf(`/opt/mattermost/bin/mattermost &`) // TODO: servicify this.
 				if err := session.Run(cmd); err != nil {
 					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
