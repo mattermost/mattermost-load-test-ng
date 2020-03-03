@@ -30,8 +30,11 @@ type LoadTester struct {
 // need of those being passed from the upper layer (the user of this API).
 type NewController func(int, chan<- control.UserStatus) control.UserController
 
-func (lt *LoadTester) handleStatus() {
-	for st := range lt.statusChan {
+func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
+	// Copy the channel to prevent race conditions.
+	statusChan := lt.statusChan
+	close(startedChan)
+	for st := range statusChan {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
 			lt.wg.Done()
 		}
@@ -119,7 +122,9 @@ func (lt *LoadTester) Run() error {
 	lt.status.NumErrors = 0
 	lt.status.StartTime = time.Now()
 	lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
-	go lt.handleStatus()
+	startedChan := make(chan struct{})
+	go lt.handleStatus(startedChan)
+	<-startedChan
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.addUser(); err != nil {
 			mlog.Error(err.Error())
