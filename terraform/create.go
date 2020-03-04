@@ -165,7 +165,7 @@ func (t *Terraform) Create() error {
 
 func (t *Terraform) preFlightCheck() error {
 	if os.Getenv("SSH_AUTH_SOCK") == "" {
-		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add.")
+		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
 	if len(t.config.DeploymentConfiguration.DBPassword) < 8 {
 		return fmt.Errorf("db password needs to be at least 8 characters")
