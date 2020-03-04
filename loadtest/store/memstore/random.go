@@ -12,13 +12,13 @@ import (
 )
 
 var (
-	ErrEmptyMap       = errors.New("memstore: cannot select from an empty map")
-	ErrEmptySlice     = errors.New("memstore: cannot select from an empty slice")
-	ErrLenMismatch    = errors.New("memstore: cannot select from a map, not enough elements")
-	ErrTeamNotFound   = errors.New("memstore: team not found")
-	ErrUserNotSet     = errors.New("memstore: user is not set")
-	ErrNoTeamFound    = errors.New("memstore: no team found")
-	ErrNoChannelFound = errors.New("memstore: no channel found")
+	ErrEmptyMap          = errors.New("memstore: cannot select from an empty map")
+	ErrEmptySlice        = errors.New("memstore: cannot select from an empty slice")
+	ErrLenMismatch       = errors.New("memstore: cannot select from a map, not enough elements")
+	ErrTeamNotFound      = errors.New("memstore: team not found")
+	ErrUserNotSet        = errors.New("memstore: user is not set")
+	ErrTeamStoreEmpty    = errors.New("memstore: team store is empty")
+	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
 )
 
 // RandomChannel returns a random channel for a user.
@@ -71,7 +71,7 @@ func (s *MemStore) RandomTeamJoined() (model.Team, error) {
 	}
 
 	if len(teams) == 0 {
-		return model.Team{}, ErrNoTeamFound
+		return model.Team{}, ErrTeamStoreEmpty
 	}
 
 	idx := rand.Intn(len(teams))
@@ -103,7 +103,7 @@ func (s *MemStore) RandomChannelJoined(teamId string) (model.Channel, error) {
 	}
 
 	if len(channels) == 0 {
-		return model.Channel{}, ErrNoChannelFound
+		return model.Channel{}, ErrChannelStoreEmpty
 	}
 
 	idx := rand.Intn(len(channels))

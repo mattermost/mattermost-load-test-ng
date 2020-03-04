@@ -185,8 +185,8 @@ func CreatePost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 	channel, err := u.Store().RandomChannelJoined(team.Id)
-	if err == memstore.ErrNoChannelFound {
-		return UserActionResponse{Info: "no channel found"}
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -265,7 +265,7 @@ func RemoveReaction(u user.User) UserActionResponse {
 func CreateGroupChannel(u user.User) UserActionResponse {
 	var userIds []string
 	users, err := u.Store().RandomUsers(3)
-	if err == memstore.ErrLenMismatch {
+	if errors.Is(err, memstore.ErrLenMismatch) {
 		return UserActionResponse{Info: "not enough users to create group channel"}
 	} else if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
@@ -436,8 +436,8 @@ func ViewUser(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 	channel, err := u.Store().RandomChannelJoined(team.Id)
-	if err == memstore.ErrNoChannelFound {
-		return UserActionResponse{Info: "no channel found"}
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}

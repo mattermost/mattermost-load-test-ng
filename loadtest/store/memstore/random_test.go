@@ -277,7 +277,7 @@ func TestRandomTeamJoined(t *testing.T) {
 		team, err := s.RandomTeamJoined()
 		require.Error(t, err)
 		require.Empty(t, team)
-		require.Equal(t, ErrNoTeamFound, err)
+		require.Equal(t, ErrTeamStoreEmpty, err)
 	})
 
 	t.Run("team found", func(t *testing.T) {
@@ -377,7 +377,7 @@ func TestRandomChannelJoined(t *testing.T) {
 		channel, err := s.RandomChannelJoined(teamId)
 		require.Error(t, err)
 		require.Empty(t, channel)
-		require.Equal(t, ErrNoChannelFound, err)
+		require.Equal(t, ErrChannelStoreEmpty, err)
 	})
 
 	t.Run("channel found", func(t *testing.T) {
