@@ -10,7 +10,7 @@ func (t *Terraform) Destroy() error {
 		return err
 	}
 
-	err = t.runCommand("destroy",
+	err = t.runCommand(nil, "destroy",
 		"-auto-approve",
 		"./terraform",
 	)
