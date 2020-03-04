@@ -13,8 +13,11 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/pkg/errors"
@@ -78,7 +81,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance.
 	for _, ip := range output.InstanceIps.Value {
-		sshc, err := sshConn(ip)
+		sshc, err := ssh.NewConn(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 			continue
@@ -91,76 +94,54 @@ func (t *Terraform) Create() error {
 				}
 			}()
 
-			mlog.Info("Updating config", mlog.String("host", ip))
-			var dsn string
-			switch t.config.DeploymentConfiguration.DBInstanceEngine {
-			case "postgres":
-				dsn = "postgres://" + t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@" + output.DBEndpoint.Value + "/" + t.config.DeploymentConfiguration.ClusterName + "db?sslmode=disable"
-			case "mysql":
-				dsn = t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@tcp(" + output.DBEndpoint.Value + ")/" + t.config.DeploymentConfiguration.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-			}
-			mlog.Info("dsn: " + dsn) // TODO: remove this later.
-			for k, v := range map[string]interface{}{
-				".ServiceSettings.ListenAddress":       ":8065",
-				".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
-				".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
-				".SqlSettings.DriverName":              t.config.DeploymentConfiguration.DBInstanceEngine,
-				".SqlSettings.DataSource":              dsn,
-				".MetricsSettings.Enable":              true,
-				".PluginSettings.Enable":               true,
-				".PluginSettings.EnableUploads":        true,
-			} {
-				// TODO: wrap this functionality in a separate package.
-				session, err := sshc.NewSession()
-				if err != nil {
-					mlog.Error("failed to create session", mlog.Err(err))
-					return
-				}
-				func() {
-					defer func() {
-						err := session.Close()
-						if err != nil && err != io.EOF { // Somehow it gives an io.EOF error every time. TODO: need to debug.
-							mlog.Error("error closing ssh session", mlog.Err(err))
-						}
-					}()
-
-					buf, err := json.Marshal(v)
-					if err != nil {
-						mlog.Error("invalid config", mlog.String("key", k), mlog.Err(err))
-						return
-					}
-					cmd := fmt.Sprintf(`jq '%s = %s' /opt/mattermost/config/config.json > /tmp/mmcfg.json && mv /tmp/mmcfg.json /opt/mattermost/config/config.json`, k, string(buf))
-					if err := session.Run(cmd); err != nil {
-						mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
-						return
-					}
-				}()
-			}
+			t.updateConfig(ip, sshc, output)
 
 			// Starting mattermost.
-			session, err := sshc.NewSession()
-			if err != nil {
-				mlog.Error("failed to create session", mlog.Err(err))
+			cmd := fmt.Sprintf(`/opt/mattermost/bin/mattermost &`) // TODO: servicify this.
+			if err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
 				return
 			}
-			func() {
-				defer func() {
-					err := session.Close()
-					if err != nil && err != io.EOF { // Somehow it gives an io.EOF error every time. TODO: need to debug.
-						mlog.Error("error closing ssh session", mlog.Err(err))
-					}
-				}()
-
-				cmd := fmt.Sprintf(`/opt/mattermost/bin/mattermost &`) // TODO: servicify this.
-				if err := session.Run(cmd); err != nil {
-					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
-					return
-				}
-			}()
 		}()
 	}
 
 	return nil
+}
+
+func (t *Terraform) updateConfig(ip string, sshc *ssh.Conn, output *terraformOutput) {
+	mlog.Info("Updating config", mlog.String("host", ip))
+
+	var dsn string
+	switch t.config.DeploymentConfiguration.DBInstanceEngine {
+	case "postgres":
+		dsn = "postgres://" + t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@" + output.DBEndpoint.Value + "/" + t.config.DeploymentConfiguration.ClusterName + "db?sslmode=disable"
+	case "mysql":
+		dsn = t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@tcp(" + output.DBEndpoint.Value + ")/" + t.config.DeploymentConfiguration.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+	}
+	mlog.Info("dsn: " + dsn) // TODO: remove this later.
+
+	for k, v := range map[string]interface{}{
+		".ServiceSettings.ListenAddress":       ":8065",
+		".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
+		".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
+		".SqlSettings.DriverName":              t.config.DeploymentConfiguration.DBInstanceEngine,
+		".SqlSettings.DataSource":              dsn,
+		".MetricsSettings.Enable":              true,
+		".PluginSettings.Enable":               true,
+		".PluginSettings.EnableUploads":        true,
+	} {
+		buf, err := json.Marshal(v)
+		if err != nil {
+			mlog.Error("invalid config", mlog.String("key", k), mlog.Err(err))
+			return
+		}
+		cmd := fmt.Sprintf(`jq '%s = %s' /opt/mattermost/config/config.json > /tmp/mmcfg.json && mv /tmp/mmcfg.json /opt/mattermost/config/config.json`, k, string(buf))
+		if err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+			return
+		}
+	}
+
 }
 
 func (t *Terraform) preFlightCheck() error {
@@ -171,7 +152,8 @@ func (t *Terraform) preFlightCheck() error {
 		return fmt.Errorf("db password needs to be at least 8 characters")
 	}
 	clusterName := t.config.DeploymentConfiguration.ClusterName
-	if len(clusterName) == 0 || clusterName[0] != '-' || !isAlphanumeric(clusterName) {
+	firstRune, _ := utf8.DecodeRuneInString(clusterName)
+	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
 		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
 	}
 	if err := t.init(); err != nil {
