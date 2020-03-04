@@ -20,6 +20,9 @@ const (
 
 // wsEventHandler handles the given WebSocket event by calling the appropriate
 // store methods to make sure the internal user state is kept updated.
+// Handling the event at this layer is needed to keep the user state in
+// sync with the server. Any response to the event should be made by handling
+// the same event at the upper layer (controller).
 func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 	switch ev.EventType() {
 	case model.WEBSOCKET_EVENT_REACTION_ADDED:

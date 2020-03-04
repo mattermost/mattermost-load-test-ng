@@ -8,8 +8,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
@@ -48,28 +46,7 @@ func (c *SimpleController) Run() {
 	}
 
 	// Start listening for websocket events.
-	go func() {
-		for ev := range c.user.Events() {
-			switch ev.EventType() {
-			case model.WEBSOCKET_EVENT_USER_UPDATED:
-				// probably do something interesting ?
-			case model.WEBSOCKET_EVENT_STATUS_CHANGE:
-				// Send a message if the user has come online.
-				data := ev.Data // TODO: upgrade the server dependency and move to GetData call
-				status, ok := data["status"].(string)
-				if !ok || status != "online" {
-					continue
-				}
-				userID, ok := data["user_id"].(string)
-				if !ok {
-					continue
-				}
-				c.status <- c.sendDirectMessage(userID)
-			default:
-				// add other handlers as necessary.
-			}
-		}
-	}()
+	go c.wsEventHandler()
 
 	actions := []UserAction{
 		{
