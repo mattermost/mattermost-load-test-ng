@@ -257,3 +257,172 @@ func BenchmarkRandomTeam(b *testing.B) {
 		require.NoError(b, errG)
 	}
 }
+
+func TestRandomTeamJoined(t *testing.T) {
+	t.Run("user not set", func(t *testing.T) {
+		s := New()
+		team, err := s.RandomTeamJoined()
+		require.Error(t, err)
+		require.Empty(t, team)
+		require.Equal(t, ErrUserNotSet, err)
+	})
+
+	t.Run("team not found", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		team, err := s.RandomTeamJoined()
+		require.Error(t, err)
+		require.Empty(t, team)
+		require.Equal(t, ErrTeamStoreEmpty, err)
+	})
+
+	t.Run("team found", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId1 := model.NewId()
+		teamId2 := model.NewId()
+		teamId3 := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId1,
+			},
+			{
+				Id: teamId2,
+			},
+			{
+				Id: teamId3,
+			},
+		})
+		require.NoError(t, err)
+		err = s.SetTeamMembers(teamId1,
+			[]*model.TeamMember{
+				{
+					TeamId: teamId1,
+					UserId: user.Id,
+				},
+			},
+		)
+		require.NoError(t, err)
+		err = s.SetTeamMembers(teamId2,
+			[]*model.TeamMember{
+				{
+					TeamId: teamId2,
+					UserId: user.Id,
+				},
+			},
+		)
+		require.NoError(t, err)
+		team, err := s.RandomTeamJoined()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch team.Id {
+			case teamId1, teamId2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+}
+
+func TestRandomChannelJoined(t *testing.T) {
+	t.Run("user not set", func(t *testing.T) {
+		s := New()
+		channel, err := s.RandomChannelJoined(model.NewId())
+		require.Error(t, err)
+		require.Empty(t, channel)
+		require.Equal(t, ErrUserNotSet, err)
+	})
+
+	t.Run("team not found", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		channel, err := s.RandomChannelJoined(model.NewId())
+		require.Error(t, err)
+		require.Empty(t, channel)
+		require.Equal(t, ErrTeamNotFound, err)
+	})
+
+	t.Run("no channel found", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		err = s.SetChannels([]*model.Channel{
+			{Id: model.NewId(), TeamId: teamId},
+			{Id: model.NewId(), TeamId: teamId},
+		})
+		require.NoError(t, err)
+		channel, err := s.RandomChannelJoined(teamId)
+		require.Error(t, err)
+		require.Empty(t, channel)
+		require.Equal(t, ErrChannelStoreEmpty, err)
+	})
+
+	t.Run("channel found", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId},
+			{Id: channelId2, TeamId: teamId},
+			{Id: channelId3, TeamId: teamId},
+		})
+		require.NoError(t, err)
+		err = s.SetChannelMembers(&model.ChannelMembers{
+			{
+				ChannelId: channelId1,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId2,
+				UserId:    user.Id,
+			},
+		})
+		require.NoError(t, err)
+		channel, err := s.RandomChannelJoined(teamId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch channel.Id {
+			case channelId1, channelId2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+}

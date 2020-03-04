@@ -424,6 +424,15 @@ func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) erro
 	return nil
 }
 
+func (s *MemStore) SetReaction(reaction *model.Reaction) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.reactions[reaction.PostId] = append(s.reactions[reaction.PostId], reaction)
+
+	return nil
+}
+
 func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -432,6 +441,7 @@ func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 	for _, reaction := range s.reactions[postId] {
 		reactions = append(reactions, *reaction)
 	}
+
 	return reactions, nil
 }
 
@@ -470,7 +480,7 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.users = make(map[string]*model.User)
+	//s.users = make(map[string]*model.User)
 	for _, user := range users {
 		s.users[user.Id] = user
 	}

@@ -657,7 +657,7 @@ func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 		return resp.Error
 	}
 
-	return nil
+	return ue.store.SetReaction(reaction)
 }
 
 func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {

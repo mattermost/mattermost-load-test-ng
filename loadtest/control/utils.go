@@ -27,11 +27,11 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// GetErrOrigin returns a string indicating the location of the error that
+// getErrOrigin returns a string indicating the location of the error that
 // just occurred. It's a utility function used to find out exactly where an
 // error has happened since actions inside a UserController might get called
 // from a single place.
-func GetErrOrigin() string {
+func getErrOrigin() string {
 	var origin string
 	if pc, file, line, ok := runtime.Caller(2); ok {
 		if f := runtime.FuncForPC(pc); f != nil {

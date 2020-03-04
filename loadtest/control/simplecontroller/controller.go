@@ -8,8 +8,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
@@ -48,28 +46,7 @@ func (c *SimpleController) Run() {
 	}
 
 	// Start listening for websocket events.
-	go func() {
-		for ev := range c.user.Events() {
-			switch ev.EventType() {
-			case model.WEBSOCKET_EVENT_USER_UPDATED:
-				// probably do something interesting ?
-			case model.WEBSOCKET_EVENT_STATUS_CHANGE:
-				// Send a message if the user has come online.
-				data := ev.Data // TODO: upgrade the server dependency and move to GetData call
-				status, ok := data["status"].(string)
-				if !ok || status != "online" {
-					continue
-				}
-				userID, ok := data["user_id"].(string)
-				if !ok {
-					continue
-				}
-				c.status <- c.sendDirectMessage(userID)
-			default:
-				// add other handlers as necessary.
-			}
-		}
-	}()
+	go c.wsEventHandler()
 
 	actions := []UserAction{
 		{
@@ -86,16 +63,6 @@ func (c *SimpleController) Run() {
 		},
 		{
 			run:          control.JoinChannel,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.AddReaction,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.RemoveReaction,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
@@ -125,6 +92,11 @@ func (c *SimpleController) Run() {
 			runFrequency: 1,
 		},
 		{
+			run:          control.AddReaction,
+			waitAfter:    1000,
+			runFrequency: 1,
+		},
+		{
 			run:          c.updateProfile,
 			waitAfter:    1000,
 			runFrequency: 1,
@@ -137,12 +109,12 @@ func (c *SimpleController) Run() {
 		{
 			run:          control.CreateGroupChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 8,
 		},
 		{
 			run:          control.CreateDirectChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 4,
 		},
 		{
 			run:          control.ViewChannel,
@@ -152,10 +124,15 @@ func (c *SimpleController) Run() {
 		{
 			run:          c.scrollChannel,
 			waitAfter:    1000,
-			runFrequency: 1,
+			runFrequency: 5,
 		},
 		{
 			run:          control.LeaveChannel,
+			waitAfter:    1000,
+			runFrequency: 5,
+		},
+		{
+			run:          control.RemoveReaction,
 			waitAfter:    1000,
 			runFrequency: 1,
 		},
@@ -238,7 +215,7 @@ func (c *SimpleController) Stop() {
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
-	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: &control.ControlError{Err: errors.New(reason)}}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
 func (c *SimpleController) sendStopStatus() {
