@@ -73,7 +73,9 @@ When the metrics cross their thresholds, it will reduce the number of users and 
 - Ensure that you have [terraform](https://www.terraform.io/downloads.html) installed.
 - Ensure that you have an SSH key pair [generated](https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 - Ensure that you have CLI access to your AWS account and have setup an AWS profile using `aws configure`.
-- `go run ./cmd/loadtest deploy`
+- Ensure that you have added your credentials to your ssh agent.
+- Populate the `DeploymentConfiguration` section of config.json.
+- `go run ./cmd/loadtest env create`
 
 This will deploy a load test environment. It is currently a WIP and more detailed documentation will be added soon.
 

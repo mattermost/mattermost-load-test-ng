@@ -54,7 +54,7 @@ type DeploymentConfiguration struct {
 	DBUserName            string // Username to connect to the DB.
 	DBPassword            string // Password to connect to the DB.
 	MattermostDownloadURL string // URL from where to download Mattermost distribution.
-	MattermostLicenseFile string // Location of the mattermost EE license.
+	MattermostLicenseFile string // Path to the Mattermost EE license file.
 }
 
 type LoggerSettings struct {

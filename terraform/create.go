@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"time"
 
@@ -163,6 +164,16 @@ func (t *Terraform) Create() error {
 }
 
 func (t *Terraform) preFlightCheck() error {
+	if os.Getenv("SSH_AUTH_SOCK") == "" {
+		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add.")
+	}
+	if len(t.config.DeploymentConfiguration.DBPassword) <= 8 {
+		return fmt.Errorf("db password needs to be longer than 8 characters")
+	}
+	clusterName := t.config.DeploymentConfiguration.ClusterName
+	if len(clusterName) == 0 || clusterName[0] != '-' || !isAlphanumeric(clusterName) {
+		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
+	}
 	if err := t.init(); err != nil {
 		return err
 	}
