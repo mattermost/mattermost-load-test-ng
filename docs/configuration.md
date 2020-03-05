@@ -10,14 +10,6 @@ The URL to direct the load. Should be the public facing URL of the Mattermost in
 
 In most cases this will be the same URL as above with `http` replaced with `ws` or `https` replaced with `wss`.
 
-### DriverName
-
-One of `mysql` or `postgres` to configure the database type.
-
-### DataSource
-
-The connection string to the master database.
-
 ### MaxIdleConns
 
 The maximum number of idle connections held open from the loadtest agent to all servers.
@@ -46,7 +38,7 @@ When true, logged events are written in a machine readable JSON format. Otherwis
 
 ### EnableFile
 
-When true, logged events are written to the file specified by the `FileLocation` setting. 
+When true, logged events are written to the file specified by the `FileLocation` setting.
 
 ### FileLevel
 
@@ -54,7 +46,7 @@ Level of detail at which log events are written to log files.
 
 ### FileJson
 
-When true, logged events are written in a machine readable JSON format. Otherwise they are printed as plain text.  
+When true, logged events are written in a machine readable JSON format. Otherwise they are printed as plain text.
 
 ### FileLocation
 

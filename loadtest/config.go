@@ -16,8 +16,6 @@ import (
 type ConnectionConfiguration struct {
 	ServerURL                   string
 	WebSocketURL                string
-	DriverName                  string
-	DataSource                  string
 	AdminEmail                  string
 	AdminPassword               string
 	MaxIdleConns                int
