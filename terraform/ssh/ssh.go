@@ -4,6 +4,7 @@
 package ssh
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -55,7 +56,7 @@ func (sshc *Conn) RunCommand(cmd string) error {
 }
 
 // Upload uploads a given src object to a given destination file.
-func (sshc *Conn) Upload(src io.Reader, dst string) error {
+func (sshc *Conn) Upload(src io.Reader, sudo bool, dst string) error {
 	sess, err := sshc.client.NewSession()
 	if err != nil {
 		return err
@@ -63,7 +64,11 @@ func (sshc *Conn) Upload(src io.Reader, dst string) error {
 	defer sess.Close()
 
 	sess.Stdin = src
-	return sess.Run("cat > " + shellQuote(dst))
+	cmd := "cat > " + shellQuote(dst)
+	if sudo {
+		cmd = fmt.Sprintf("sudo su -c %q", cmd)
+	}
+	return sess.Run(cmd)
 }
 
 // Close closes the underlying connection.

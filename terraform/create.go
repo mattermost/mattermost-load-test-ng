@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -96,8 +97,15 @@ func (t *Terraform) Create() error {
 
 			t.updateConfig(ip, sshc, output)
 
+			// Upload service file
+			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
+			if err := sshc.Upload(rdr, true, "/lib/systemd/system/mattermost.service"); err != nil {
+				mlog.Error("error uploading systemd file", mlog.Err(err))
+				return
+			}
+
 			// Starting mattermost.
-			cmd := fmt.Sprintf(`/opt/mattermost/bin/mattermost &`) // TODO: servicify this.
+			cmd := fmt.Sprintf("sudo service mattermost start")
 			if err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
 				return
@@ -141,7 +149,6 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Conn, output *terraformOut
 			return
 		}
 	}
-
 }
 
 func (t *Terraform) preFlightCheck() error {
