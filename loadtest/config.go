@@ -13,14 +13,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	ConnectionConfiguration ConnectionConfiguration
-	InstanceConfiguration   InstanceConfiguration
-	UsersConfiguration      UsersConfiguration
-	DeploymentConfiguration DeploymentConfiguration
-	LogSettings             logger.Settings
-}
-
 type ConnectionConfiguration struct {
 	ServerURL                   string
 	WebSocketURL                string
@@ -33,13 +25,52 @@ type ConnectionConfiguration struct {
 	IdleConnTimeoutMilliseconds int
 }
 
+// IsValid reports whether a given ConnectionConfiguration is valid or not.
+func (cc *ConnectionConfiguration) IsValid() (bool, error) {
+	if cc.ServerURL == "" {
+		return false, fmt.Errorf("ServerURL is not present in config")
+	}
+	if cc.WebSocketURL == "" {
+		return false, fmt.Errorf("WebSocketURL is not present in config")
+	}
+	if cc.AdminEmail == "" {
+		return false, fmt.Errorf("AdminEmail is not present in config")
+	}
+	if cc.AdminPassword == "" {
+		return false, fmt.Errorf("AdminPassword is not present in config")
+	}
+	return true, nil
+}
+
 type InstanceConfiguration struct {
 	NumTeams int
+}
+
+// IsValid reports whether a given InstanceConfiguration is valid or not.
+func (ic *InstanceConfiguration) IsValid() (bool, error) {
+	if ic.NumTeams <= 0 {
+		return false, fmt.Errorf("NumTeams cannot be <= 0")
+	}
+	return true, nil
 }
 
 type UsersConfiguration struct {
 	InitialActiveUsers int
 	MaxActiveUsers     int
+}
+
+// IsValid reports whether a given UsersConfiguration is valid or not.
+func (uc *UsersConfiguration) IsValid() (bool, error) {
+	if uc.InitialActiveUsers < 0 {
+		return false, fmt.Errorf("InitialActiveUsers cannot be < 0")
+	}
+	if uc.MaxActiveUsers <= 0 {
+		return false, fmt.Errorf("MaxActiveUsers cannot be <= 0")
+	}
+	if uc.InitialActiveUsers > uc.MaxActiveUsers {
+		return false, fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
+	}
+	return true, nil
 }
 
 // DeploymentConfiguration contains the necessary data
@@ -53,6 +84,40 @@ type DeploymentConfiguration struct {
 	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
 	DBUserName       string // Username to connect to the DB.
 	DBPassword       string // Password to connect to the DB.
+}
+
+type Config struct {
+	ConnectionConfiguration ConnectionConfiguration
+	InstanceConfiguration   InstanceConfiguration
+	UsersConfiguration      UsersConfiguration
+	DeploymentConfiguration DeploymentConfiguration
+	LogSettings             logger.Settings
+}
+
+// IsValid reports whether a config is valid or not.
+func (c *Config) IsValid() (bool, error) {
+	if valid, err := c.ConnectionConfiguration.IsValid(); !valid {
+		return false, fmt.Errorf("invalid connection configuration: %w", err)
+	}
+
+	if valid, err := c.InstanceConfiguration.IsValid(); !valid {
+		return false, fmt.Errorf("invalid instance configuration: %w", err)
+	}
+
+	if valid, err := c.UsersConfiguration.IsValid(); !valid {
+		return false, fmt.Errorf("invalid users configuration: %w", err)
+	}
+
+	// TODO: to be moved to it's own config file.
+	if c.DeploymentConfiguration.DBInstanceEngine != "" {
+		switch c.DeploymentConfiguration.DBInstanceEngine {
+		case "aurora", "aurora-postgresql", "mysql", "postgres":
+		default:
+			return false, fmt.Errorf("Invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
+		}
+	}
+
+	return true, nil
 }
 
 func ReadConfig(configFilePath string) error {
@@ -93,41 +158,4 @@ func GetConfig() (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// IsValid reports whether a config is valid or not.
-func (c *Config) IsValid() (bool, error) {
-	if c.ConnectionConfiguration.ServerURL == "" {
-		return false, fmt.Errorf("ServerURL is not present in config")
-	}
-	if c.ConnectionConfiguration.WebSocketURL == "" {
-		return false, fmt.Errorf("WebSocketURL is not present in config")
-	}
-	if c.ConnectionConfiguration.AdminEmail == "" {
-		return false, fmt.Errorf("AdminEmail is not present in config")
-	}
-	if c.ConnectionConfiguration.AdminPassword == "" {
-		return false, fmt.Errorf("AdminPassword is not present in config")
-	}
-
-	if c.InstanceConfiguration.NumTeams <= 0 {
-		return false, fmt.Errorf("NumTeams cannot be <= 0")
-	}
-
-	if c.UsersConfiguration.InitialActiveUsers < 0 {
-		return false, fmt.Errorf("InitialActiveUsers cannot be < 0")
-	}
-	if c.UsersConfiguration.MaxActiveUsers <= 0 {
-		return false, fmt.Errorf("MaxActiveUsers cannot be <= 0")
-	}
-
-	if c.DeploymentConfiguration.DBInstanceEngine != "" {
-		switch c.DeploymentConfiguration.DBInstanceEngine {
-		case "aurora", "aurora-postgresql", "mysql", "postgres":
-		default:
-			return false, fmt.Errorf("Invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
-		}
-	}
-
-	return true, nil
 }
