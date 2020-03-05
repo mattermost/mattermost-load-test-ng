@@ -108,7 +108,7 @@ func (c *Config) IsValid() (bool, error) {
 		return false, fmt.Errorf("invalid users configuration: %w", err)
 	}
 
-	// TODO: to be moved to it's own config file.
+	// TODO: to be moved to its own config file.
 	if c.DeploymentConfiguration.DBInstanceEngine != "" {
 		switch c.DeploymentConfiguration.DBInstanceEngine {
 		case "aurora", "aurora-postgresql", "mysql", "postgres":
