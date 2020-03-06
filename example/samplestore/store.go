@@ -201,8 +201,16 @@ func (s *SampleStore) RandomChannel(teamId string) (model.Channel, error) {
 	return model.Channel{}, nil
 }
 
+func (s *SampleStore) RandomChannelJoined(teamId string) (model.Channel, error) {
+	return model.Channel{}, nil
+}
+
 // RandomTeam returns a random team for a user.
 func (s *SampleStore) RandomTeam() (model.Team, error) {
+	return model.Team{}, nil
+}
+
+func (s *SampleStore) RandomTeamJoined() (model.Team, error) {
 	return model.Team{}, nil
 }
 
@@ -283,6 +291,10 @@ func (s *SampleStore) SetEmojis(emoji []*model.Emoji) error {
 }
 
 func (s *SampleStore) SetReactions(postId string, reactions []*model.Reaction) error {
+	return errors.New("not implemented")
+}
+
+func (s *SampleStore) SetReaction(reaction *model.Reaction) error {
 	return errors.New("not implemented")
 }
 

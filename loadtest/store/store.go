@@ -51,8 +51,13 @@ type UserStore interface {
 	// Random things
 	// RandomChannel returns a random channel for a user.
 	RandomChannel(teamId string) (model.Channel, error)
+	// RandomChannelJoined returns a random channel for the given teamId that the
+	// current user is a member of.
+	RandomChannelJoined(teamId string) (model.Channel, error)
 	// RandomTeam returns a random team for a user.
 	RandomTeam() (model.Team, error)
+	// RandomTeamJoined returns a random team the current user is a member of.
+	RandomTeamJoined() (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.
@@ -88,7 +93,10 @@ type MutableUserStore interface {
 	SetPost(post *model.Post) error
 	SetPosts(posts []*model.Post) error
 	Post(postId string) (*model.Post, error)
+
+	// reactions
 	SetReactions(postId string, reactions []*model.Reaction) error
+	SetReaction(reaction *model.Reaction) error
 	DeleteReaction(reaction *model.Reaction) (bool, error)
 
 	// preferences

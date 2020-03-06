@@ -14,16 +14,16 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-// Conn is a wrapper type over a ssh connection
+// Client is a wrapper type over a ssh connection
 // that takes care of creating a channel and running
 // commands in a single method.
-type Conn struct {
+type Client struct {
 	client *ssh.Client
 }
 
-// NewConn returns a Conn object by dialing
+// NewClient returns a Client object by dialing
 // to the local ssh agent.
-func NewConn(ip string) (*Conn, error) {
+func NewClient(ip string) (*Client, error) {
 	conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 	if err != nil {
 		return nil, err
@@ -41,11 +41,11 @@ func NewConn(ip string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{client: sshc}, nil
+	return &Client{client: sshc}, nil
 }
 
 // RunCommand runs a given command in a new ssh session.
-func (sshc *Conn) RunCommand(cmd string) error {
+func (sshc *Client) RunCommand(cmd string) error {
 	sess, err := sshc.client.NewSession()
 	if err != nil {
 		return err
@@ -56,7 +56,13 @@ func (sshc *Conn) RunCommand(cmd string) error {
 }
 
 // Upload uploads a given src object to a given destination file.
-func (sshc *Conn) Upload(src io.Reader, sudo bool, dst string) error {
+func (sshc *Client) Upload(src io.Reader, sudo bool, dst string) error {
+	if strings.ContainsAny(dst, `'\`) {
+		// TODO: copied from load-test repo. Need to be improved
+		// by using an actual sftp library.
+		return fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
+	}
+
 	sess, err := sshc.client.NewSession()
 	if err != nil {
 		return err
@@ -64,7 +70,7 @@ func (sshc *Conn) Upload(src io.Reader, sudo bool, dst string) error {
 	defer sess.Close()
 
 	sess.Stdin = src
-	cmd := "cat > " + shellQuote(dst)
+	cmd := "cat > " + "'" + dst + "'"
 	if sudo {
 		cmd = fmt.Sprintf("sudo su -c %q", cmd)
 	}
@@ -72,15 +78,6 @@ func (sshc *Conn) Upload(src io.Reader, sudo bool, dst string) error {
 }
 
 // Close closes the underlying connection.
-func (sshc *Conn) Close() error {
+func (sshc *Client) Close() error {
 	return sshc.client.Close()
-}
-
-func shellQuote(s string) string {
-	if strings.ContainsAny(s, `'\`) {
-		// TODO: copied from load-test repo. Need to be improved
-		// by using an actual sftp library.
-		panic("shell quoting not actually implemented. don't use weird paths")
-	}
-	return "'" + s + "'"
 }

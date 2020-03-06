@@ -27,7 +27,7 @@ func TestRandomizeUserName(t *testing.T) {
 func TestGetErrOrigin(t *testing.T) {
 	var origin string
 	test := func() {
-		origin = GetErrOrigin()
+		origin = getErrOrigin()
 	}
 	test()
 	fmt.Println(origin)

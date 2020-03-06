@@ -75,11 +75,12 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return simplecontroller.New(id, ue, status)
 	}
 
-	lt := loadtest.New(&config, newSimpleController)
-	if lt == nil {
+	lt, err := loadtest.New(&config, newSimpleController)
+	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
 			Message: fmt.Sprintf("load-test agent creation failed"),
+			Error:   err.Error(),
 		})
 		return
 	}

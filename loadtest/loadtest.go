@@ -4,6 +4,7 @@
 package loadtest
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,14 +40,14 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
-			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("origin", st.Err.Origin))
+			mlog.Info(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 			atomic.AddInt64(&lt.status.NumErrors, 1)
 			continue
 		} else if st.Code == control.USER_STATUS_FAILED {
 			mlog.Error(st.Err.Error())
 			continue
 		}
-		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId))
+		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 	}
 }
 
@@ -177,10 +178,13 @@ func (lt *LoadTester) Status() *Status {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *Config, nc NewController) *LoadTester {
-	// TODO: add config validation
+func New(config *Config, nc NewController) (*LoadTester, error) {
 	if config == nil || nc == nil {
-		return nil
+		return nil, errors.New("nil params passed")
+	}
+
+	if ok, err := config.IsValid(); !ok {
+		return nil, err
 	}
 
 	return &LoadTester{
@@ -188,5 +192,5 @@ func New(config *Config, nc NewController) *LoadTester {
 		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController: nc,
 		status:        Status{},
-	}
+	}, nil
 }

@@ -79,7 +79,7 @@ func (c *SampleController) Stop() {
 }
 
 func (c *SampleController) sendFailStatus(reason string) {
-	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: &control.ControlError{Err: errors.New(reason)}}
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Code: control.USER_STATUS_FAILED, Err: errors.New(reason)}
 }
 
 func (c *SampleController) sendStopStatus() {
@@ -97,7 +97,7 @@ func (c *SampleController) signUp() control.UserStatus {
 
 	err := c.user.SignUp(email, username, password)
 	if err != nil {
-		return control.UserStatus{ControllerId: c.id, User: c.user, Err: &control.ControlError{Err: err}, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
 	return control.UserStatus{ControllerId: c.id, User: c.user, Info: fmt.Sprintf("signed up: %s", c.user.Store().Id()), Code: control.USER_STATUS_INFO}
@@ -106,7 +106,7 @@ func (c *SampleController) signUp() control.UserStatus {
 func (c *SampleController) login() control.UserStatus {
 	err := c.user.Login()
 	if err != nil {
-		return control.UserStatus{ControllerId: c.id, User: c.user, Err: &control.ControlError{Err: err}, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
 	return control.UserStatus{ControllerId: c.id, User: c.user, Info: "logged in", Code: control.USER_STATUS_INFO}
@@ -115,11 +115,11 @@ func (c *SampleController) login() control.UserStatus {
 func (c *SampleController) logout() control.UserStatus {
 	ok, err := c.user.Logout()
 	if err != nil {
-		return control.UserStatus{ControllerId: c.id, User: c.user, Err: &control.ControlError{Err: err}, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: err, Code: control.USER_STATUS_ERROR}
 	}
 
 	if !ok {
-		return control.UserStatus{ControllerId: c.id, User: c.user, Err: &control.ControlError{Err: errors.New("User did not logout")}, Code: control.USER_STATUS_ERROR}
+		return control.UserStatus{ControllerId: c.id, User: c.user, Err: errors.New("User did not logout"), Code: control.USER_STATUS_ERROR}
 	}
 
 	return control.UserStatus{ControllerId: c.id, User: c.user, Info: "logged out", Code: control.USER_STATUS_INFO}

@@ -82,7 +82,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance.
 	for _, ip := range output.InstanceIps.Value {
-		sshc, err := ssh.NewConn(ip)
+		sshc, err := ssh.NewClient(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 			continue
@@ -116,7 +116,7 @@ func (t *Terraform) Create() error {
 	return nil
 }
 
-func (t *Terraform) updateConfig(ip string, sshc *ssh.Conn, output *terraformOutput) {
+func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformOutput) {
 	mlog.Info("Updating config", mlog.String("host", ip))
 
 	var dsn string

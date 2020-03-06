@@ -34,7 +34,10 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return simplecontroller.New(id, ue, status)
 	}
 
-	lt := loadtest.New(config, newSimpleController)
+	lt, err := loadtest.New(config, newSimpleController)
+	if err != nil {
+		return fmt.Errorf("error while initializing loadtest: %w", err)
+	}
 
 	start := time.Now()
 	err = lt.Run()

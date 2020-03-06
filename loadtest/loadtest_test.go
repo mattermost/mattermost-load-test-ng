@@ -18,12 +18,17 @@ import (
 
 var ltConfig = Config{
 	ConnectionConfiguration: ConnectionConfiguration{
-		ServerURL:    "http://localhost:8065",
-		WebSocketURL: "ws://localhost:8065",
+		ServerURL:     "http://localhost:8065",
+		WebSocketURL:  "ws://localhost:8065",
+		AdminEmail:    "user@example.com",
+		AdminPassword: "str0ngPassword##",
 	},
 	UsersConfiguration: UsersConfiguration{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
+	},
+	InstanceConfiguration: InstanceConfiguration{
+		NumTeams: 1,
 	},
 	LogSettings: logger.Settings{},
 }
@@ -38,21 +43,23 @@ func newController(id int, status chan<- control.UserStatus) control.UserControl
 }
 
 func TestNew(t *testing.T) {
-	lt := New(nil, newController)
-	require.Nil(t, lt)
+	// ignore lt structs if there is an error.
+	_, err := New(nil, newController)
+	require.NotNil(t, err)
 
-	lt = New(&ltConfig, nil)
-	require.Nil(t, lt)
+	_, err = New(&ltConfig, nil)
+	require.NotNil(t, err)
 
-	lt = New(&ltConfig, newController)
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
 	require.NotNil(t, lt)
 }
 
 func TestAddUser(t *testing.T) {
-	lt := New(&ltConfig, newController)
-	require.NotNil(t, lt)
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
 
-	err := lt.AddUser()
+	err = lt.AddUser()
 	require.Equal(t, ErrNotRunning, err)
 
 	lt.status.State = Running
@@ -72,10 +79,10 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestRemoveUser(t *testing.T) {
-	lt := New(&ltConfig, newController)
-	require.NotNil(t, lt)
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
 
-	err := lt.RemoveUser()
+	err = lt.RemoveUser()
 	require.Equal(t, ErrNotRunning, err)
 
 	lt.status.State = Running
@@ -92,8 +99,9 @@ func TestRemoveUser(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	lt := New(&ltConfig, newController)
-	err := lt.Run()
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
+	err = lt.Run()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Running)
 	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
@@ -106,8 +114,9 @@ func TestRun(t *testing.T) {
 }
 
 func TestRerun(t *testing.T) {
-	lt := New(&ltConfig, newController)
-	err := lt.Run()
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
+	err = lt.Run()
 	require.NoError(t, err)
 
 	err = lt.Stop()
@@ -121,8 +130,9 @@ func TestRerun(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	lt := New(&ltConfig, newController)
-	err := lt.Stop()
+	lt, err := New(&ltConfig, newController)
+	require.Nil(t, err)
+	err = lt.Stop()
 	require.Equal(t, ErrNotRunning, err)
 
 	err = lt.Run()
@@ -141,10 +151,11 @@ func TestStop(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	lt := New(&ltConfig, newController)
+	lt, err := New(&ltConfig, newController)
 	require.NotNil(t, lt)
+	require.Nil(t, err)
 
-	err := lt.Run()
+	err = lt.Run()
 	require.NoError(t, err)
 	st := lt.Status()
 	startTime := st.StartTime
