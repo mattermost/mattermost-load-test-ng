@@ -40,17 +40,17 @@ func (cc *ConnectionConfiguration) IsValid() (bool, error) {
 	return true, nil
 }
 
-// UserControllerType describes the type of a UserController.
-type UserControllerType string
+// userControllerType describes the type of a UserController.
+type userControllerType string
 
 // Available UserController implementations.
 const (
-	UserControllerSimple     UserControllerType = "simple"
+	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 )
 
 // IsValid reports whether a given UserControllerType is valid or not.
-func (t UserControllerType) IsValid() (bool, error) {
+func (t userControllerType) IsValid() (bool, error) {
 	switch t {
 	case UserControllerSimple:
 		return true, nil
@@ -68,9 +68,9 @@ func (t UserControllerType) IsValid() (bool, error) {
 type UserControllerConfiguration struct {
 	// The type of the UserController to run.
 	// Possible values:
-	//   "simple" - The simple version of a controller.
-	//   "simulative" - A more realistic controller.
-	Type UserControllerType
+	//   UserControllerSimple - The simple version of a controller.
+	//   UserControllerSimulative - A more realistic controller.
+	Type userControllerType
 	// A rate multiplier that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.

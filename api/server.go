@@ -79,8 +79,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, status)
 		default:
-			// This should never happen if we validated the config.
-			return nil
+			panic("controller type must be valid")
 		}
 	}
 
