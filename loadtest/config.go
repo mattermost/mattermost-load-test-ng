@@ -40,6 +40,56 @@ func (cc *ConnectionConfiguration) IsValid() (bool, error) {
 	return true, nil
 }
 
+// UserControllerType describes the type of a UserController.
+type UserControllerType string
+
+// Available UserController implementations.
+const (
+	UserControllerSimple     UserControllerType = "simple"
+	UserControllerSimulative                    = "simulative"
+)
+
+// IsValid reports whether a given UserControllerType is valid or not.
+func (t UserControllerType) IsValid() (bool, error) {
+	switch t {
+	case UserControllerSimple:
+		return true, nil
+	case UserControllerSimulative:
+		return true, nil
+	case "":
+		return false, fmt.Errorf("UserControllerType cannot be empty")
+	default:
+		return false, fmt.Errorf("UserControllerType %s is not valid", t)
+	}
+}
+
+// UserControllerConfiguration holds information about the UserController to
+// run during a load-test.
+type UserControllerConfiguration struct {
+	// The type of the UserController to run.
+	// Possible values:
+	//   "simple" - The simple version of a controller.
+	//   "simulative" - A more realistic controller.
+	Type UserControllerType
+	// A rate multiplier that will affect the speed at which user actions are
+	// executed by the UserController.
+	// A Rate of < 1.0 will run actions at a faster pace.
+	// A Rate of 1.0 will run actions at the default pace.
+	// A Rate > 1.0 will run actions at a slower pace.
+	Rate float64
+}
+
+// IsValid reports whether a given UserControllerConfiguration is valid or not.
+func (ucc *UserControllerConfiguration) IsValid() (bool, error) {
+	if ok, err := ucc.Type.IsValid(); !ok {
+		return false, err
+	}
+	if ucc.Rate < 0 {
+		return false, errors.New("Rate cannot be < 0")
+	}
+	return true, nil
+}
+
 type InstanceConfiguration struct {
 	NumTeams int
 }
@@ -87,11 +137,12 @@ type DeploymentConfiguration struct {
 }
 
 type Config struct {
-	ConnectionConfiguration ConnectionConfiguration
-	InstanceConfiguration   InstanceConfiguration
-	UsersConfiguration      UsersConfiguration
-	DeploymentConfiguration DeploymentConfiguration
-	LogSettings             logger.Settings
+	ConnectionConfiguration     ConnectionConfiguration
+	UserControllerConfiguration UserControllerConfiguration
+	InstanceConfiguration       InstanceConfiguration
+	UsersConfiguration          UsersConfiguration
+	DeploymentConfiguration     DeploymentConfiguration
+	LogSettings                 logger.Settings
 }
 
 // IsValid reports whether a config is valid or not.
@@ -102,6 +153,10 @@ func (c *Config) IsValid() (bool, error) {
 
 	if valid, err := c.InstanceConfiguration.IsValid(); !valid {
 		return false, fmt.Errorf("invalid instance configuration: %w", err)
+	}
+
+	if valid, err := c.UserControllerConfiguration.IsValid(); !valid {
+		return false, fmt.Errorf("invalid user controller configuration: %w", err)
 	}
 
 	if valid, err := c.UsersConfiguration.IsValid(); !valid {

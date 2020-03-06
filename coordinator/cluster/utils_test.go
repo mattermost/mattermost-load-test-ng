@@ -22,6 +22,10 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 				AdminEmail:    "user@example.com",
 				AdminPassword: "str0ngPassword##",
 			},
+			UserControllerConfiguration: loadtest.UserControllerConfiguration{
+				Type: "simple",
+				Rate: 1.0,
+			},
 			UsersConfiguration: loadtest.UsersConfiguration{
 				MaxActiveUsers:     8,
 				InitialActiveUsers: 0,

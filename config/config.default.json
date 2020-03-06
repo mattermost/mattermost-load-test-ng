@@ -8,6 +8,10 @@
         "MaxIdleConnsPerHost": 128,
         "IdleConnTimeoutMilliseconds": 90000
     },
+    "UserControllerConfiguration": {
+      "Type": "simple",
+      "Rate": 1.0
+    },
     "InstanceConfiguration": {
         "NumTeams": 2
     },

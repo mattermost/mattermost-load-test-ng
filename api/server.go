@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
@@ -72,7 +73,15 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
-		return simplecontroller.New(id, ue, status)
+		switch config.UserControllerConfiguration.Type {
+		case loadtest.UserControllerSimple:
+			return simplecontroller.New(id, ue, status)
+		case loadtest.UserControllerSimulative:
+			return simulcontroller.New(id, ue, status)
+		default:
+			// This should never happen if we validated the config.
+			return nil
+		}
 	}
 
 	lt, err := loadtest.New(&config, newSimpleController)

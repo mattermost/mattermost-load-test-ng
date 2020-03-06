@@ -5,6 +5,7 @@ package loadtest
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -72,6 +73,9 @@ func (lt *LoadTester) addUser() error {
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
 	controller := lt.newController(activeUsers+1, lt.statusChan)
+	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
+		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
+	}
 	lt.wg.Add(1)
 	go func() {
 		controller.Run()
