@@ -375,12 +375,20 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	users, err := u.SearchUsers(&model.UserSearch{
-		Term:  "test",
-		Limit: 100,
-	})
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1E1 * time.Millisecond)
+	runes := []rune("test")
+	var term string
+	users := make([]*model.User, 0, 100)
+	for i := range runes {
+		<-ticker
+		term += string(runes[i])
+		users, err = u.SearchUsers(&model.UserSearch{
+			Term:  term,
+			Limit: 100,
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
@@ -406,11 +414,19 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
-		Term: "ch-",
-	})
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1E1 * time.Millisecond)
+	runes := []rune("ch-")
+	var term string
+	channels := make([]*model.Channel, 0)
+	for i := range runes {
+		<-ticker
+		term += string(runes[i])
+		channels, err = u.SearchChannels(team.Id, &model.ChannelSearch{
+			Term: term,
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
