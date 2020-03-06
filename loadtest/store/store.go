@@ -91,6 +91,7 @@ type MutableUserStore interface {
 
 	// posts
 	SetPost(post *model.Post) error
+	DeletePost(postId string) error
 	SetPosts(posts []*model.Post) error
 	Post(postId string) (*model.Post, error)
 
