@@ -4,6 +4,7 @@
 package control
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -35,28 +36,22 @@ func TestGetErrOrigin(t *testing.T) {
 }
 
 func TestEmulateUserTyping(t *testing.T) {
-	search := "text"
-
-	stop := make(chan bool)
-
-	var result string
-	for r := range emulateUserTyping(search, stop) {
-		fmt.Print(string(r))
-		result += string(r)
-	}
-	require.Equal(t, search, result)
-
-	result = ""
-	stop2 := make(chan bool)
-
-	for r := range emulateUserTyping(search, stop2) {
-		fmt.Print(string(r))
-		result += string(r)
-
-		if len(result) == 2 {
-			stop2 <- true
-			break
+	search := "whatever"
+	res := emulateUserTyping(search, func(term string) UserActionResponse {
+		return UserActionResponse{Info: term}
+	})
+	require.Nil(t, res.Err)
+	require.Equal(t, search, res.Info)
+	text := ""
+	i := 0
+	res = emulateUserTyping(search, func(term string) UserActionResponse {
+		text = term
+		if i == 2 {
+			return UserActionResponse{Err: errors.New("an error")}
 		}
-	}
-	require.Equal(t, search[:2], result)
+		i++
+		return UserActionResponse{Info: text}
+	})
+	require.NotNil(t, res.Err)
+	require.Equal(t, "an error", res.Err.Error())
 }

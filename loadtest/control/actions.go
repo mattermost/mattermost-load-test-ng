@@ -375,22 +375,16 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	var term string
-	stop := make(chan bool)
-	users := make([]*model.User, 0, 100)
-	for r := range emulateUserTyping("test", stop) {
-		term += string(r)
-		users, err = u.SearchUsers(&model.UserSearch{
+	return emulateUserTyping("test", func(term string) UserActionResponse {
+		users, err := u.SearchUsers(&model.UserSearch{
 			Term:  term,
 			Limit: 100,
 		})
 		if err != nil {
-			stop <- true
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-	}
-
-	return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
+		return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
+	})
 }
 
 func UpdateProfileImage(u user.User) UserActionResponse {
@@ -413,21 +407,15 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	var term string
-	stop := make(chan bool)
-	channels := make([]*model.Channel, 0)
-	for r := range emulateUserTyping("ch-", stop) {
-		term += string(r)
-		channels, err = u.SearchChannels(team.Id, &model.ChannelSearch{
+	return emulateUserTyping("ch-", func(term string) UserActionResponse {
+		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
 		if err != nil {
-			stop <- true
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-	}
-
-	return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+		return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+	})
 }
 
 func SearchPosts(u user.User) UserActionResponse {
