@@ -19,15 +19,22 @@ const (
 )
 
 func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
+	var data string
+	if el, ok := ev.Data["post"]; !ok {
+		return fmt.Errorf("post data is missing")
+	} else if data, ok = el.(string); !ok {
+		return fmt.Errorf("post data not of type string")
+	}
+
 	var post *model.Post
-	if err := json.Unmarshal([]byte(ev.Data["post"].(string)), &post); err != nil {
+	if err := json.Unmarshal([]byte(data), &post); err != nil {
 		return err
 	}
 
-	evType := ev.EventType()
-	if evType == model.WEBSOCKET_EVENT_POSTED || evType == model.WEBSOCKET_EVENT_POST_EDITED {
+	switch ev.EventType() {
+	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED:
 		return ue.store.SetPost(post)
-	} else if evType == model.WEBSOCKET_EVENT_POST_DELETED {
+	case model.WEBSOCKET_EVENT_POST_DELETED:
 		return ue.store.DeletePost(post.Id)
 	}
 
@@ -57,13 +64,8 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 		if _, err := ue.store.DeleteReaction(reaction); err != nil {
 			return err
 		}
-	case model.WEBSOCKET_EVENT_POSTED:
-		fallthrough
-	case model.WEBSOCKET_EVENT_POST_EDITED:
-		fallthrough
-	case model.WEBSOCKET_EVENT_POST_DELETED:
+	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED, model.WEBSOCKET_EVENT_POST_DELETED:
 		return ue.handlePostEvent(ev)
-	default:
 	}
 
 	return nil
