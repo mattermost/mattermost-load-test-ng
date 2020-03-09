@@ -68,7 +68,7 @@ func (t userControllerType) IsValid() (bool, error) {
 type UserControllerConfiguration struct {
 	// The type of the UserController to run.
 	// Possible values:
-	//   UserControllerSimple - The simple version of a controller.
+	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
 	Type userControllerType
 	// A rate multiplier that will affect the speed at which user actions are
