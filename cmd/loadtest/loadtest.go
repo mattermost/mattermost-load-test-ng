@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -22,7 +23,15 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	newSimpleController := func(id int, status chan<- control.UserStatus) control.UserController {
+	if ok, err := config.IsValid(); !ok {
+		return err
+	}
+
+	controllerType := config.UserControllerConfiguration.Type
+
+	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
+
+	newControllerFn := func(id int, status chan<- control.UserStatus) control.UserController {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
@@ -31,10 +40,17 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
-		return simplecontroller.New(id, ue, status)
+		switch controllerType {
+		case loadtest.UserControllerSimple:
+			return simplecontroller.New(id, ue, status)
+		case loadtest.UserControllerSimulative:
+			return simulcontroller.New(id, ue, status)
+		default:
+			panic("controller type must be valid")
+		}
 	}
 
-	lt, err := loadtest.New(config, newSimpleController)
+	lt, err := loadtest.New(config, newControllerFn)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

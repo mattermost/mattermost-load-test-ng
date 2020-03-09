@@ -23,6 +23,10 @@ var ltConfig = Config{
 		AdminEmail:    "user@example.com",
 		AdminPassword: "str0ngPassword##",
 	},
+	UserControllerConfiguration: UserControllerConfiguration{
+		Type: "simple",
+		Rate: 1.0,
+	},
 	UsersConfiguration: UsersConfiguration{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
