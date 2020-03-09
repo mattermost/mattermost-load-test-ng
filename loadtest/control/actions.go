@@ -29,6 +29,7 @@ type UserActionResponse struct {
 // user.User. It returns a UserActionResponse.
 type UserAction func(user.User) UserActionResponse
 
+// SignUp is the action that a user does when signing up to the server.
 func SignUp(u user.User) UserActionResponse {
 	if u.Store().Id() != "" {
 		return UserActionResponse{Info: "user already signed up"}
@@ -46,6 +47,8 @@ func SignUp(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("signed up as %s", username)}
 }
 
+// Login authenticates with the server and fetches teams, users and channels that
+// are related with the user.
 func Login(u user.User) UserActionResponse {
 	err := u.Login()
 	if err != nil {
@@ -72,6 +75,7 @@ func Login(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "logged in"}
 }
 
+// Logout discconects from the server and logs out from the server.
 func Logout(u user.User) UserActionResponse {
 	err := u.Disconnect()
 	if err != nil {
@@ -90,6 +94,7 @@ func Logout(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "logged out"}
 }
 
+// JoinChannel is the action that if the user tries to join a random channel.
 func JoinChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -119,6 +124,8 @@ func JoinChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "no channel to join"}
 }
 
+// LeaveChannel is the action that emulates user behavior when they try to leave
+// a channel.
 func LeaveChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -152,6 +159,7 @@ func LeaveChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "unable to leave, not member of any channel"}
 }
 
+// JoinTeam is the action that user tries to join a random team.
 func JoinTeam(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -179,6 +187,7 @@ func JoinTeam(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "no teams to join"}
 }
 
+// CreatePost creates a new post in a random channel.
 func CreatePost(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -204,6 +213,7 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+// AddReaction add a reaction to a random post.
 func AddReaction(u user.User) UserActionResponse {
 	// get posts from UserStore that have been created in the last minute
 	posts, err := u.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
@@ -229,6 +239,8 @@ func AddReaction(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("added reaction to post %s", post.Id)}
 }
 
+// RemoveReaction tries to remove a reaction from a random post which is added by
+// the user.
 func RemoveReaction(u user.User) UserActionResponse {
 	// get posts from UserStore that have been created in the last minute
 	posts, err := u.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
@@ -262,6 +274,7 @@ func RemoveReaction(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "no reactions to remove"}
 }
 
+// CreateGroupChannel creates a group channel with 3 random users.
 func CreateGroupChannel(u user.User) UserActionResponse {
 	var userIds []string
 	users, err := u.Store().RandomUsers(3)
@@ -282,6 +295,7 @@ func CreateGroupChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("group channel created, id %v with users %+v", channelId, userIds)}
 }
 
+// CreatePublicChannel creates a public channel in a random team.
 func CreatePublicChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -301,6 +315,7 @@ func CreatePublicChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("public channel created, id %v", channelId)}
 }
 
+// CreatePrivateChannel creates a private channel in a random team.
 func CreatePrivateChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -320,6 +335,8 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
 }
 
+// CreateDirectChannel creates a direct message channel to a random user form a
+// random team/channel.
 func CreateDirectChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -345,6 +362,8 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("direct channel for user %v created, id %v", u.Store().Id(), channelId)}
 }
 
+// ViewChannel performs a view action in a random team/channel for the user.
+// Which will mark all posts as read in the channel.
 func ViewChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -366,6 +385,7 @@ func ViewChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
 }
 
+// SearchUsers emulates the user action when a user is searching for a user.
 func SearchUsers(u user.User) UserActionResponse {
 	teams, err := u.Store().Teams()
 	if err != nil {
@@ -386,6 +406,7 @@ func SearchUsers(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
 }
 
+// UpdateProfileImage will try to upload a new image as a profile picture.
 func UpdateProfileImage(u user.User) UserActionResponse {
 	// TODO: take this from the config later.
 	imagePath := "./testdata/test_profile.png"
@@ -400,6 +421,7 @@ func UpdateProfileImage(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "profile image updated"}
 }
 
+// SearchChannels emulates the user action when a user is searching for a channel.
 func SearchChannels(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -416,6 +438,7 @@ func SearchChannels(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 }
 
+// SearchPosts emulates the user action when a user is searching for a post.
 func SearchPosts(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
@@ -430,6 +453,7 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
+// ViewUser emulates a user behavior when they look to random user profile.
 func ViewUser(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
