@@ -4,6 +4,7 @@
 package control
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -32,4 +33,25 @@ func TestGetErrOrigin(t *testing.T) {
 	test()
 	fmt.Println(origin)
 	require.True(t, strings.HasPrefix(origin, "control.TestGetErrOrigin"))
+}
+
+func TestEmulateUserTyping(t *testing.T) {
+	search := "whatever"
+	res := emulateUserTyping(search, func(term string) UserActionResponse {
+		return UserActionResponse{Info: term}
+	})
+	require.Nil(t, res.Err)
+	require.Equal(t, search, res.Info)
+	text := ""
+	i := 0
+	res = emulateUserTyping(search, func(term string) UserActionResponse {
+		text = term
+		if i == 2 {
+			return UserActionResponse{Err: errors.New("an error")}
+		}
+		i++
+		return UserActionResponse{Info: text}
+	})
+	require.NotNil(t, res.Err)
+	require.Equal(t, "an error", res.Err.Error())
 }

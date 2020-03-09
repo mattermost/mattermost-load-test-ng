@@ -375,15 +375,16 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	users, err := u.SearchUsers(&model.UserSearch{
-		Term:  "test",
-		Limit: 100,
+	return emulateUserTyping("test", func(term string) UserActionResponse {
+		users, err := u.SearchUsers(&model.UserSearch{
+			Term:  term,
+			Limit: 100,
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+		return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
 	})
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	return UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
 }
 
 func UpdateProfileImage(u user.User) UserActionResponse {
@@ -406,14 +407,15 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
-		Term: "ch-",
+	return emulateUserTyping("ch-", func(term string) UserActionResponse {
+		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+			Term: term,
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+		return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 	})
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	return UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 }
 
 func SearchPosts(u user.User) UserActionResponse {
