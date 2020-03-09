@@ -375,18 +375,17 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1E1 * time.Millisecond)
-	runes := []rune("test")
 	var term string
+	stop := make(chan bool)
 	users := make([]*model.User, 0, 100)
-	for i := range runes {
-		<-ticker
-		term += string(runes[i])
+	for r := range emulateUserTyping("test", stop) {
+		term += string(r)
 		users, err = u.SearchUsers(&model.UserSearch{
 			Term:  term,
 			Limit: 100,
 		})
 		if err != nil {
+			stop <- true
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 	}
@@ -414,17 +413,16 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1E1 * time.Millisecond)
-	runes := []rune("ch-")
 	var term string
+	stop := make(chan bool)
 	channels := make([]*model.Channel, 0)
-	for i := range runes {
-		<-ticker
-		term += string(runes[i])
+	for r := range emulateUserTyping("ch-", stop) {
+		term += string(r)
 		channels, err = u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
 		if err != nil {
+			stop <- true
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 	}

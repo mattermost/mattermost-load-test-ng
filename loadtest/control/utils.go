@@ -55,3 +55,24 @@ func RandomizeUserName(name string) string {
 	}
 	return name
 }
+
+func emulateUserTyping(search string, stop chan bool) <-chan rune {
+	ticker := time.NewTicker(time.Duration(100+rand.Intn(100)) * time.Millisecond)
+	runes := []rune(search)
+	rc := make(chan rune)
+
+	go func() {
+		defer close(rc)
+		defer ticker.Stop()
+
+		for i := range runes {
+			select {
+			case <-ticker.C:
+				rc <- runes[i]
+			case <-stop:
+				return
+			}
+		}
+	}()
+	return rc
+}
