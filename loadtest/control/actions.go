@@ -94,7 +94,8 @@ func Logout(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "logged out"}
 }
 
-// JoinChannel adds the user to a random channel.
+// JoinChannel adds the user to the first channel that has been found in the store
+// and which is the user is not a member of.
 func JoinChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -124,7 +125,8 @@ func JoinChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "no channel to join"}
 }
 
-// LeaveChannel removes the user from a random channel.
+// LeaveChannel removes the user from the first channel that has been found in
+// the store and which is the user is a member of.
 func LeaveChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -158,7 +160,8 @@ func LeaveChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "unable to leave, not member of any channel"}
 }
 
-// JoinTeam adds the given user to a random team.
+// JoinTeam adds the given user to the first team that has been found in the store
+// and which is the user is not a member of.
 func JoinTeam(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -333,7 +336,7 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
 }
 
-// CreateDirectChannel creates a direct message channel with a random user form a
+// CreateDirectChannel creates a direct message channel with a random user from a
 // random team/channel.
 func CreateDirectChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
@@ -451,7 +454,7 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
-// ViewUser opens a random user profile for the given user.
+// ViewUser simulates opening a random user profile for the given user.
 func ViewUser(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
