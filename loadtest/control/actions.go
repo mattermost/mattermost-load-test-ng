@@ -95,7 +95,7 @@ func Logout(u user.User) UserActionResponse {
 }
 
 // JoinChannel adds the user to the first channel that has been found in the store
-// and which is the user is not a member of.
+// and which the user is not a member of.
 func JoinChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -126,7 +126,7 @@ func JoinChannel(u user.User) UserActionResponse {
 }
 
 // LeaveChannel removes the user from the first channel that has been found in
-// the store and which is the user is a member of.
+// the store and which the user is a member of.
 func LeaveChannel(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
@@ -161,7 +161,7 @@ func LeaveChannel(u user.User) UserActionResponse {
 }
 
 // JoinTeam adds the given user to the first team that has been found in the store
-// and which is the user is not a member of.
+// and which the user is not a member of.
 func JoinTeam(u user.User) UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
