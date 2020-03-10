@@ -56,7 +56,7 @@ func (sshc *Client) RunCommand(cmd string) error {
 }
 
 // Upload uploads a given src object to a given destination file.
-func (sshc *Client) Upload(src io.Reader, dst string) error {
+func (sshc *Client) Upload(src io.Reader, sudo bool, dst string) error {
 	if strings.ContainsAny(dst, `'\`) {
 		// TODO: copied from load-test repo. Need to be improved
 		// by using an actual sftp library.
@@ -70,7 +70,11 @@ func (sshc *Client) Upload(src io.Reader, dst string) error {
 	defer sess.Close()
 
 	sess.Stdin = src
-	return sess.Run("cat > " + "'" + dst + "'")
+	cmd := "cat > " + "'" + dst + "'"
+	if sudo {
+		cmd = fmt.Sprintf("sudo su -c %q", cmd)
+	}
+	return sess.Run(cmd)
 }
 
 // Close closes the underlying connection.
