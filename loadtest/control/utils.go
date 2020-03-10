@@ -57,16 +57,31 @@ func RandomizeUserName(name string) string {
 }
 
 func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
-	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1e1 * time.Millisecond)
+	typingSpeed := time.Duration(100+rand.Intn(20)*10) * time.Millisecond // 100-300ms
+	typeCorrect := time.Tick(typingSpeed)
+	typeWrong := time.Tick(time.Duration(2+rand.Intn(8)) * typingSpeed)
 	runes := []rune(t)
 	var term string
 	var resp UserActionResponse
-	for i := range runes {
-		<-ticker
-		term += string(runes[i])
-		resp = cb(term)
-		if resp.Err != nil {
-			return resp
+	for i := 0; i < len(runes); {
+		select {
+		case <-typeCorrect:
+			term += string(runes[i])
+			resp = cb(term)
+			if resp.Err != nil {
+				return resp
+			}
+			i++
+		case <-typeWrong:
+			resp = cb(term + "a")
+			if resp.Err != nil {
+				return resp
+			}
+			time.Sleep(100 * time.Millisecond)
+			resp = cb(term)
+			if resp.Err != nil {
+				return resp
+			}
 		}
 	}
 	return resp
