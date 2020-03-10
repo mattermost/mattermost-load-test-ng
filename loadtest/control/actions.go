@@ -361,7 +361,7 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 }
 
 // ViewChannel performs a view action in a random team/channel for the given
-// user. Which will mark all posts as read in the channel.
+// user, which will mark all posts as read in the channel.
 func ViewChannel(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
