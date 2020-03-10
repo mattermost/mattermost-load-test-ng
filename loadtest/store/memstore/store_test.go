@@ -100,6 +100,18 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, uu)
 	})
 
+	t.Run("DeletePost", func(t *testing.T) {
+		s := New()
+		require.Empty(t, s.posts)
+		p := &model.Post{Id: model.NewId()}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		require.NotEmpty(t, s.posts)
+		err = s.DeletePost(p.Id)
+		require.NoError(t, err)
+		require.Empty(t, s.posts)
+	})
+
 	t.Run("SetPosts", func(t *testing.T) {
 		err := s.SetPosts(nil)
 		require.Error(t, err)

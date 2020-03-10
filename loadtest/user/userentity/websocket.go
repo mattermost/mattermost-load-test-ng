@@ -18,6 +18,29 @@ const (
 	maxWebsocketFails             = 7
 )
 
+func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
+	var data string
+	if el, ok := ev.Data["post"]; !ok {
+		return fmt.Errorf("post data is missing")
+	} else if data, ok = el.(string); !ok {
+		return fmt.Errorf("post data not of type string")
+	}
+
+	var post *model.Post
+	if err := json.Unmarshal([]byte(data), &post); err != nil {
+		return err
+	}
+
+	switch ev.EventType() {
+	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED:
+		return ue.store.SetPost(post)
+	case model.WEBSOCKET_EVENT_POST_DELETED:
+		return ue.store.DeletePost(post.Id)
+	}
+
+	return nil
+}
+
 // wsEventHandler handles the given WebSocket event by calling the appropriate
 // store methods to make sure the internal user state is kept updated.
 // Handling the event at this layer is needed to keep the user state in
@@ -41,7 +64,8 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 		if _, err := ue.store.DeleteReaction(reaction); err != nil {
 			return err
 		}
-	default:
+	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED, model.WEBSOCKET_EVENT_POST_DELETED:
+		return ue.handlePostEvent(ev)
 	}
 
 	return nil

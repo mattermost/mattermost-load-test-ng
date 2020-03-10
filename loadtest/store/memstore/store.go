@@ -194,6 +194,13 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	return nil
 }
 
+func (s *MemStore) DeletePost(postId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	delete(s.posts, postId)
+	return nil
+}
+
 func (s *MemStore) SetPosts(posts []*model.Post) error {
 	if len(posts) == 0 {
 		return errors.New("memstore: posts should not be nil or empty")
