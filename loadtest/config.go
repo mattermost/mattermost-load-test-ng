@@ -24,20 +24,20 @@ type ConnectionConfiguration struct {
 }
 
 // IsValid reports whether a given ConnectionConfiguration is valid or not.
-func (cc *ConnectionConfiguration) IsValid() (bool, error) {
+func (cc *ConnectionConfiguration) IsValid() error {
 	if cc.ServerURL == "" {
-		return false, fmt.Errorf("ServerURL is not present in config")
+		return fmt.Errorf("ServerURL is not present in config")
 	}
 	if cc.WebSocketURL == "" {
-		return false, fmt.Errorf("WebSocketURL is not present in config")
+		return fmt.Errorf("WebSocketURL is not present in config")
 	}
 	if cc.AdminEmail == "" {
-		return false, fmt.Errorf("AdminEmail is not present in config")
+		return fmt.Errorf("AdminEmail is not present in config")
 	}
 	if cc.AdminPassword == "" {
-		return false, fmt.Errorf("AdminPassword is not present in config")
+		return fmt.Errorf("AdminPassword is not present in config")
 	}
-	return true, nil
+	return nil
 }
 
 // userControllerType describes the type of a UserController.
@@ -50,16 +50,14 @@ const (
 )
 
 // IsValid reports whether a given UserControllerType is valid or not.
-func (t userControllerType) IsValid() (bool, error) {
+func (t userControllerType) IsValid() error {
 	switch t {
-	case UserControllerSimple:
-		return true, nil
-	case UserControllerSimulative:
-		return true, nil
+	case UserControllerSimple, UserControllerSimulative:
+		return nil
 	case "":
-		return false, fmt.Errorf("UserControllerType cannot be empty")
+		return fmt.Errorf("UserControllerType cannot be empty")
 	default:
-		return false, fmt.Errorf("UserControllerType %s is not valid", t)
+		return fmt.Errorf("UserControllerType %s is not valid", t)
 	}
 }
 
@@ -80,14 +78,14 @@ type UserControllerConfiguration struct {
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.
-func (ucc *UserControllerConfiguration) IsValid() (bool, error) {
-	if ok, err := ucc.Type.IsValid(); !ok {
-		return false, err
+func (ucc *UserControllerConfiguration) IsValid() error {
+	if err := ucc.Type.IsValid(); err != nil {
+		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 	if ucc.Rate < 0 {
-		return false, errors.New("Rate cannot be < 0")
+		return errors.New("rate cannot be < 0")
 	}
-	return true, nil
+	return nil
 }
 
 type InstanceConfiguration struct {
@@ -95,11 +93,11 @@ type InstanceConfiguration struct {
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.
-func (ic *InstanceConfiguration) IsValid() (bool, error) {
+func (ic *InstanceConfiguration) IsValid() error {
 	if ic.NumTeams <= 0 {
-		return false, fmt.Errorf("NumTeams cannot be <= 0")
+		return fmt.Errorf("NumTeams cannot be <= 0")
 	}
-	return true, nil
+	return nil
 }
 
 type UsersConfiguration struct {
@@ -108,17 +106,17 @@ type UsersConfiguration struct {
 }
 
 // IsValid reports whether a given UsersConfiguration is valid or not.
-func (uc *UsersConfiguration) IsValid() (bool, error) {
+func (uc *UsersConfiguration) IsValid() error {
 	if uc.InitialActiveUsers < 0 {
-		return false, fmt.Errorf("InitialActiveUsers cannot be < 0")
+		return fmt.Errorf("InitialActiveUsers cannot be < 0")
 	}
 	if uc.MaxActiveUsers <= 0 {
-		return false, fmt.Errorf("MaxActiveUsers cannot be <= 0")
+		return fmt.Errorf("MaxActiveUsers cannot be <= 0")
 	}
 	if uc.InitialActiveUsers > uc.MaxActiveUsers {
-		return false, fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
+		return fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
 	}
-	return true, nil
+	return nil
 }
 
 // DeploymentConfiguration contains the necessary data
@@ -147,19 +145,19 @@ type Config struct {
 
 // IsValid reports whether a config is valid or not.
 func (c *Config) IsValid() error {
-	if valid, err := c.ConnectionConfiguration.IsValid(); !valid {
+	if err := c.ConnectionConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid connection configuration: %w", err)
 	}
 
-	if valid, err := c.InstanceConfiguration.IsValid(); !valid {
+	if err := c.InstanceConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid instance configuration: %w", err)
 	}
 
-	if valid, err := c.UserControllerConfiguration.IsValid(); !valid {
+	if err := c.UserControllerConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid user controller configuration: %w", err)
 	}
 
-	if valid, err := c.UsersConfiguration.IsValid(); !valid {
+	if err := c.UsersConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid users configuration: %w", err)
 	}
 
