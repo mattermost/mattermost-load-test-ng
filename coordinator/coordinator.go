@@ -116,8 +116,8 @@ func New(config *Config) (*Coordinator, error) {
 	if config == nil {
 		return nil, fmt.Errorf("coordinator: config should not be nil")
 	}
-	if ok, err := config.IsValid(); !ok {
-		return nil, err
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
 	cluster, err := cluster.New(config.ClusterConfig)
