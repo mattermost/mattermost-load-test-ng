@@ -520,11 +520,13 @@ func Reload(u user.User) UserActionResponse {
 		}
 	}
 
-	if ok, err := u.IsSysAdmin(); ok && err != nil {
+	if ok, err := u.IsSysAdmin(); ok && err == nil {
 		err = u.GetConfig()
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	err = u.GetClientLicense()
@@ -565,6 +567,10 @@ func Reload(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	// NOTE: during reload, the webapp client will fetch the last viewed team.
+	// This information is persistently stored and survives reloads/restarting the browser.
+	// Here we simplify that behaviour by randomly picking a team the user is
+	// a member of.
 	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
