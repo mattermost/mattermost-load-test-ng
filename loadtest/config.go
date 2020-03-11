@@ -146,21 +146,21 @@ type Config struct {
 }
 
 // IsValid reports whether a config is valid or not.
-func (c *Config) IsValid() (bool, error) {
+func (c *Config) IsValid() error {
 	if valid, err := c.ConnectionConfiguration.IsValid(); !valid {
-		return false, fmt.Errorf("invalid connection configuration: %w", err)
+		return fmt.Errorf("invalid connection configuration: %w", err)
 	}
 
 	if valid, err := c.InstanceConfiguration.IsValid(); !valid {
-		return false, fmt.Errorf("invalid instance configuration: %w", err)
+		return fmt.Errorf("invalid instance configuration: %w", err)
 	}
 
 	if valid, err := c.UserControllerConfiguration.IsValid(); !valid {
-		return false, fmt.Errorf("invalid user controller configuration: %w", err)
+		return fmt.Errorf("invalid user controller configuration: %w", err)
 	}
 
 	if valid, err := c.UsersConfiguration.IsValid(); !valid {
-		return false, fmt.Errorf("invalid users configuration: %w", err)
+		return fmt.Errorf("invalid users configuration: %w", err)
 	}
 
 	// TODO: to be moved to its own config file.
@@ -168,11 +168,11 @@ func (c *Config) IsValid() (bool, error) {
 		switch c.DeploymentConfiguration.DBInstanceEngine {
 		case "aurora", "aurora-postgresql", "mysql", "postgres":
 		default:
-			return false, fmt.Errorf("Invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
+			return fmt.Errorf("invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
 func ReadConfig(configFilePath string) error {
