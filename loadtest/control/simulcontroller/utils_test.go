@@ -12,8 +12,23 @@ import (
 func TestPickAction(t *testing.T) {
 	t.Run("Empty slice", func(t *testing.T) {
 		actions := []userAction{}
-		action := pickAction(actions)
+		action, err := pickAction(actions)
 		require.Nil(t, action)
+		require.Error(t, err)
+	})
+
+	t.Run("Zero frequency sum", func(t *testing.T) {
+		actions := []userAction{
+			{
+				frequency: 0,
+			},
+			{
+				frequency: 0,
+			},
+		}
+		action, err := pickAction(actions)
+		require.Nil(t, action)
+		require.Error(t, err)
 	})
 
 	t.Run("Zero frequency action", func(t *testing.T) {
@@ -28,8 +43,9 @@ func TestPickAction(t *testing.T) {
 				frequency: 1,
 			},
 		}
-		action := pickAction(actions)
+		action, err := pickAction(actions)
 		require.NotNil(t, action)
+		require.NoError(t, err)
 		require.Condition(t, func() bool {
 			switch action {
 			case &actions[0], &actions[2]:
@@ -64,8 +80,9 @@ func TestPickAction(t *testing.T) {
 		}
 
 		for i := 0; i < 1000; i++ {
-			action := pickAction(actions)
+			action, err := pickAction(actions)
 			require.NotNil(t, action)
+			require.NoError(t, err)
 
 			switch action {
 			case &actions[0]:

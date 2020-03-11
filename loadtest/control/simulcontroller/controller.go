@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -140,7 +141,10 @@ func (c *SimulController) Run() {
 	}
 
 	for {
-		action := pickAction(actions)
+		action, err := pickAction(actions)
+		if err != nil {
+			panic(fmt.Errorf("simulcontroller: cannot pick action %w", err).Error())
+		}
 
 		if resp := action.run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
