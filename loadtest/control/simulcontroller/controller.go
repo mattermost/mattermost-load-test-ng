@@ -143,7 +143,7 @@ func (c *SimulController) Run() {
 	for {
 		action, err := pickAction(actions)
 		if err != nil {
-			panic(fmt.Errorf("simulcontroller: cannot pick action %w", err).Error())
+			panic(fmt.Errorf("simulcontroller: failed to pick action %w", err).Error())
 		}
 
 		if resp := action.run(c.user); resp.Err != nil {
@@ -188,6 +188,7 @@ func (c *SimulController) Stop() {
 	if err := c.user.Disconnect(); err != nil {
 		c.status <- c.newErrorStatus(err)
 	}
+	c.user.Cleanup()
 	close(c.stop)
 }
 
