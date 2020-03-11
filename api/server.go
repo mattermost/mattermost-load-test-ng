@@ -48,7 +48,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok, err := config.IsValid(); !ok {
+	if err := config.IsValid(); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: err.Error(),
 		})
