@@ -58,9 +58,9 @@ func RandomizeUserName(name string) string {
 
 func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
 	typingSpeed := time.Duration(100+rand.Intn(20)*10) * time.Millisecond // 100-300ms
+
 	typeCorrect := time.NewTicker(typingSpeed)
 	defer typeCorrect.Stop()
-
 	typeWrong := time.NewTicker(time.Duration(2+rand.Intn(8)) * typingSpeed)
 	defer typeWrong.Stop()
 
