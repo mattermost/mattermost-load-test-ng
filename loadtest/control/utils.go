@@ -57,12 +57,11 @@ func RandomizeUserName(name string) string {
 }
 
 func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
-	ticker := time.Tick(time.Duration(rand.Intn(10)) * 1e1 * time.Millisecond)
 	runes := []rune(t)
 	var term string
 	var resp UserActionResponse
 	for i := range runes {
-		<-ticker
+		time.Sleep(time.Duration(rand.Intn(10)) * 1e1 * time.Millisecond)
 		term += string(runes[i])
 		resp = cb(term)
 		if resp.Err != nil {
