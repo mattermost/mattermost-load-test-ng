@@ -211,6 +211,7 @@ func (c *SimpleController) Stop() {
 	if err := c.user.Disconnect(); err != nil {
 		c.status <- c.newErrorStatus(err)
 	}
+	c.user.Cleanup()
 	close(c.stop)
 }
 
