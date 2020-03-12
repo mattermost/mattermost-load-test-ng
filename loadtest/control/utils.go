@@ -72,7 +72,7 @@ func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserAc
 		}
 		// 0.15% probability of mistyping. Add a rune which will be overridden
 		// by next iteration.
-		if r.Float32() < 0.15 {
+		if r.Float32() < 0.15 && i < len(runes)-1 {
 			time.Sleep(typingSpeed)
 			resp = cb(term + "a")
 			if resp.Err != nil {
