@@ -20,7 +20,7 @@ type LoadAgentConfig struct {
 }
 
 // IsValid checks whether a LoadAgentConfig is valid or not.
-// Returns an error if the validtation fails.
+// Returns an error if the validation fails.
 func (c LoadAgentConfig) IsValid() error {
 	if c.Id == "" {
 		return fmt.Errorf("Id should not be empty")
