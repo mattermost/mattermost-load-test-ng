@@ -25,7 +25,7 @@ type LoadAgentClusterConfig struct {
 // Returns an error if the validation fails.
 func (c LoadAgentClusterConfig) IsValid() error {
 	if len(c.Agents) == 0 {
-		return fmt.Errorf("no agents configured. at least one agent should be provided")
+		return fmt.Errorf("no agents configured: at least one agent should be provided")
 	}
 	if c.MaxActiveUsers == 0 {
 		return fmt.Errorf("MaxActiveUsers should be greater than 0")
