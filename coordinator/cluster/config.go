@@ -28,7 +28,7 @@ func (c LoadAgentClusterConfig) IsValid() error {
 		return fmt.Errorf("no agents configured: at least one agent should be provided")
 	}
 	if c.MaxActiveUsers == 0 {
-		return fmt.Errorf("MaxActiveUsers should be greater than 0")
+		return fmt.Errorf("MaxActiveUsers should be > 0")
 	}
 	return nil
 }
