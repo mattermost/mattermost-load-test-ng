@@ -19,15 +19,17 @@ type MonitorConfig struct {
 	Queries []prometheus.Query
 }
 
-func (c MonitorConfig) IsValid() (bool, error) {
+// IsValid checks whether a MonitorConfig is valid or not.
+// Returns an error if the validation fails.
+func (c MonitorConfig) IsValid() error {
 	if c.PrometheusURL == "" {
-		return false, fmt.Errorf("PrometheusURL cannot be empty")
+		return fmt.Errorf("PrometheusURL cannot be empty")
 	}
 	if c.UpdateIntervalMs < 1000 {
-		return false, fmt.Errorf("UpdateInterval cannot be less than 1000")
+		return fmt.Errorf("UpdateInterval cannot be less than 1000")
 	}
 	if len(c.Queries) == 0 {
-		return false, fmt.Errorf("Queries cannot be empty")
+		return fmt.Errorf("Queries cannot be empty")
 	}
-	return true, nil
+	return nil
 }

@@ -22,13 +22,13 @@ type LoadAgentClusterConfig struct {
 }
 
 // IsValid checks whether a LoadAgentClusterConfig is valid or not.
-// Returns an error if the validtation fails.
-func (c LoadAgentClusterConfig) IsValid() (bool, error) {
+// Returns an error if the validation fails.
+func (c LoadAgentClusterConfig) IsValid() error {
 	if len(c.Agents) == 0 {
-		return false, fmt.Errorf("no agents configured. At least one agent should be provided.")
+		return fmt.Errorf("no agents configured: at least one agent should be provided")
 	}
 	if c.MaxActiveUsers == 0 {
-		return false, fmt.Errorf("MaxActiveUsers should be greated than 0.")
+		return fmt.Errorf("MaxActiveUsers should be > 0")
 	}
-	return true, nil
+	return nil
 }

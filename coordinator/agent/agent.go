@@ -26,8 +26,8 @@ type LoadAgent struct {
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
 func New(config LoadAgentConfig) (*LoadAgent, error) {
-	if ok, err := config.IsValid(); !ok {
-		return nil, err
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("could not validate configartion: %w", err)
 	}
 	return &LoadAgent{
 		config: config,
