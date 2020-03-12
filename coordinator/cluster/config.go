@@ -22,7 +22,7 @@ type LoadAgentClusterConfig struct {
 }
 
 // IsValid checks whether a LoadAgentClusterConfig is valid or not.
-// Returns an error if the validtation fails.
+// Returns an error if the validation fails.
 func (c LoadAgentClusterConfig) IsValid() error {
 	if len(c.Agents) == 0 {
 		return fmt.Errorf("no agents configured. at least one agent should be provided")
