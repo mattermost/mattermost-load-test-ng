@@ -96,6 +96,7 @@ type InstanceConfiguration struct {
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.
+// Returns an error if the validation fails.
 func (ic *InstanceConfiguration) IsValid() error {
 	if ic.NumTeams <= 0 {
 		return fmt.Errorf("NumTeams cannot be <= 0")
