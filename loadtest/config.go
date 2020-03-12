@@ -24,6 +24,7 @@ type ConnectionConfiguration struct {
 }
 
 // IsValid reports whether a given ConnectionConfiguration is valid or not.
+// Returns an error if the validation fails.
 func (cc *ConnectionConfiguration) IsValid() error {
 	if cc.ServerURL == "" {
 		return fmt.Errorf("ServerURL is not present in config")
