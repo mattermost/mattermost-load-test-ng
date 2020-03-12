@@ -148,6 +148,7 @@ type Config struct {
 }
 
 // IsValid reports whether a config is valid or not.
+// Returns an error if the validation fails.
 func (c *Config) IsValid() error {
 	if err := c.ConnectionConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid connection configuration: %w", err)
