@@ -57,32 +57,24 @@ func RandomizeUserName(name string) string {
 }
 
 func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
-	typingSpeed := time.Duration(100+rand.Intn(20)*10) * time.Millisecond // 100-300ms
-
-	typeCorrect := time.NewTicker(typingSpeed)
-	defer typeCorrect.Stop()
-	typeWrong := time.NewTicker(time.Duration(2+rand.Intn(8)) * typingSpeed)
-	defer typeWrong.Stop()
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	typingSpeed := time.Duration(100+r.Intn(200)) * time.Millisecond // 100-300ms
 
 	runes := []rune(t)
 	var term string
 	var resp UserActionResponse
-	for i := 0; i < len(runes); {
-		select {
-		case <-typeCorrect.C:
-			term += string(runes[i])
-			resp = cb(term)
-			if resp.Err != nil {
-				return resp
-			}
-			i++
-		case <-typeWrong.C:
+	for i := 0; i < len(runes); i++ {
+		time.Sleep(typingSpeed)
+		term += string(runes[i])
+		resp = cb(term)
+		if resp.Err != nil {
+			return resp
+		}
+		// %15 probability of mistyping, adds a rune than it will be overridden by
+		// next iteration.
+		if r.Float32() < 0.15 {
+			time.Sleep(typingSpeed)
 			resp = cb(term + "a")
-			if resp.Err != nil {
-				return resp
-			}
-			time.Sleep(100 * time.Millisecond)
-			resp = cb(term)
 			if resp.Err != nil {
 				return resp
 			}
