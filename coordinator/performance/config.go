@@ -19,6 +19,8 @@ type MonitorConfig struct {
 	Queries []prometheus.Query
 }
 
+// IsValid checks whether a MonitorConfig is valid or not.
+// Returns an error if the validation fails.
 func (c MonitorConfig) IsValid() error {
 	if c.PrometheusURL == "" {
 		return fmt.Errorf("PrometheusURL cannot be empty")
