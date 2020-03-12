@@ -80,6 +80,7 @@ type UserControllerConfiguration struct {
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.
+// Returns an error if the validation fails.
 func (ucc *UserControllerConfiguration) IsValid() error {
 	if err := ucc.Type.IsValid(); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
