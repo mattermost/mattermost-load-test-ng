@@ -21,8 +21,8 @@ type Monitor struct {
 
 // NewMonitor creates and initializes a new Monitor.
 func NewMonitor(config MonitorConfig) (*Monitor, error) {
-	if ok, err := config.IsValid(); !ok {
-		return nil, err
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	helper, err := prometheus.NewHelper(config.PrometheusURL)
 	if err != nil {

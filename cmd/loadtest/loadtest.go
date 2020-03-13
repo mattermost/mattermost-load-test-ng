@@ -23,8 +23,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if ok, err := config.IsValid(); !ok {
-		return err
+	if err := config.IsValid(); err != nil {
+		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
 	controllerType := config.UserControllerConfiguration.Type

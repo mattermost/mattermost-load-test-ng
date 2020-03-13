@@ -53,7 +53,7 @@ func GetConfig() (*Config, error) {
 }
 
 // IsValid checks whether a Config is valid or not.
-// Returns an error if the validtation fails.
-func (c *Config) IsValid() (bool, error) {
-	return true, nil
+// Returns an error if the validation fails.
+func (c *Config) IsValid() error {
+	return nil
 }

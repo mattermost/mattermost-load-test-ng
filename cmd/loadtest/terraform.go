@@ -18,7 +18,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if ok, err := config.IsValid(); !ok {
+	if err := config.IsValid(); err != nil {
 		mlog.Error(err.Error())
 		return nil
 	}
@@ -38,7 +38,7 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if ok, err := config.IsValid(); !ok {
+	if err := config.IsValid(); err != nil {
 		mlog.Error(err.Error())
 		return nil
 	}

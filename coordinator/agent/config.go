@@ -20,13 +20,13 @@ type LoadAgentConfig struct {
 }
 
 // IsValid checks whether a LoadAgentConfig is valid or not.
-// Returns an error if the validtation fails.
-func (c LoadAgentConfig) IsValid() (bool, error) {
+// Returns an error if the validation fails.
+func (c LoadAgentConfig) IsValid() error {
 	if c.Id == "" {
-		return false, fmt.Errorf("Id should not be empty")
+		return fmt.Errorf("Id should not be empty")
 	}
 	if c.ApiURL == "" {
-		return false, fmt.Errorf("ApiURL should not be empty")
+		return fmt.Errorf("ApiURL should not be empty")
 	}
 	return c.LoadTestConfig.IsValid()
 }
