@@ -26,6 +26,11 @@ import (
 
 const cmdExecTimeoutMinutes = 5
 
+// TODO: fetch this dynamically. See IS-327.
+const latestReleaseURL = "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz"
+
+const filePrefix = "file://"
+
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
 type Terraform struct {
@@ -55,6 +60,22 @@ func (t *Terraform) Create() error {
 	err := t.preFlightCheck()
 	if err != nil {
 		return err
+	}
+
+	var uploadBinary bool
+	var binaryPath string
+	if strings.HasPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix) {
+		binaryPath = strings.TrimPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(binaryPath)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
+		}
+
+		t.config.DeploymentConfiguration.MattermostDownloadURL = latestReleaseURL
+		uploadBinary = true
 	}
 
 	err = t.runCommand(nil, "apply",
@@ -102,6 +123,20 @@ func (t *Terraform) Create() error {
 			if err := sshc.Upload(rdr, true, "/lib/systemd/system/mattermost.service"); err != nil {
 				mlog.Error("error uploading systemd file", mlog.Err(err))
 				return
+			}
+
+			// Upload binary if needed.
+			if uploadBinary {
+				f, err := os.Open(binaryPath)
+				if err != nil {
+					mlog.Error("error opening file", mlog.String("file", binaryPath), mlog.Err(err))
+					return
+				}
+				defer f.Close()
+				if err := sshc.Upload(f, false, "/opt/mattermost/bin/mattermost"); err != nil {
+					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.Err(err))
+					return
+				}
 			}
 
 			// Starting mattermost.
