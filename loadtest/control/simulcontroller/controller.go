@@ -5,7 +5,9 @@ package simulcontroller
 
 import (
 	"errors"
+	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -48,16 +50,126 @@ func (c *SimulController) Run() {
 
 	defer c.sendStopStatus()
 
-	for {
-		// TODO: implement picking an action and run it.
+	if resp := control.SignUp(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
 
-		// TODO: implement picking a non constant idle time.
-		idleTime := time.Duration(math.Round(1000 * c.rate))
+	if resp := control.Login(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+		c.connect()
+	}
+
+	if resp := c.reload(false); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	if resp := control.JoinTeam(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	actions := []userAction{
+		{
+			run: func(u user.User) control.UserActionResponse {
+				return c.reload(false)
+			},
+			frequency: 1,
+		},
+		{
+			run:       control.JoinTeam,
+			frequency: 1,
+		},
+		{
+			run:       control.JoinChannel,
+			frequency: 1,
+		},
+		{
+			run:       control.SearchPosts,
+			frequency: 1,
+		},
+		{
+			run:       control.SearchChannels,
+			frequency: 1,
+		},
+		{
+			run:       control.SearchUsers,
+			frequency: 1,
+		},
+		{
+			run:       control.ViewUser,
+			frequency: 1,
+		},
+		{
+			run:       control.CreatePost,
+			frequency: 1,
+		},
+		{
+			run:       control.AddReaction,
+			frequency: 1,
+		},
+		{
+			run:       control.UpdateProfileImage,
+			frequency: 1,
+		},
+		{
+			run:       control.CreateGroupChannel,
+			frequency: 1,
+		},
+		{
+			run:       control.CreateDirectChannel,
+			frequency: 1,
+		},
+		{
+			run:       control.ViewChannel,
+			frequency: 1,
+		},
+		{
+			run:       control.LeaveChannel,
+			frequency: 1,
+		},
+		{
+			run:       control.RemoveReaction,
+			frequency: 1,
+		},
+	}
+
+	for {
+		action, err := pickAction(actions)
+		if err != nil {
+			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
+		}
+
+		if resp := action.run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+
+		// TODO: make the following values configurable.
+		// Minimum idle time value in milliseconds.
+		minIdleMs := 1000
+		// Average idle time value in milliseconds.
+		avgIdleMs := 10000
+
+		// Randomly selecting a value in the interval [minIdleMs, avgIdleMs*2 - minIdleMs).
+		// This will give us an expected value equal to avgIdleMs.
+		// TODO: consider if it makes more sense to select this value using
+		// a truncated normal distribution.
+		idleMs := rand.Intn(avgIdleMs*2-minIdleMs*2) + minIdleMs
+
+		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
 
 		select {
 		case <-c.stop:
 			return
-		case <-time.After(time.Millisecond * idleTime):
+		case <-time.After(time.Millisecond * idleTimeMs):
 		}
 	}
 }
@@ -76,6 +188,7 @@ func (c *SimulController) Stop() {
 	if err := c.user.Disconnect(); err != nil {
 		c.status <- c.newErrorStatus(err)
 	}
+	c.user.Cleanup()
 	close(c.stop)
 }
 
