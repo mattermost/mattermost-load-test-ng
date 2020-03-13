@@ -12,11 +12,17 @@ import (
 )
 
 func TestSetRate(t *testing.T) {
-	c := New(1, &userentity.UserEntity{}, make(chan control.UserStatus))
+	require.Nil(t, ReadConfig(""))
+
+	cfg, err := GetConfig()
+	require.Nil(t, err)
+
+	c, err := New(1, &userentity.UserEntity{}, cfg, make(chan control.UserStatus))
+	require.Nil(t, err)
 
 	require.Equal(t, 1.0, c.rate)
 
-	err := c.SetRate(-1.0)
+	err = c.SetRate(-1.0)
 	require.NotNil(t, err)
 	require.Equal(t, 1.0, c.rate)
 

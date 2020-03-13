@@ -37,13 +37,24 @@ var ltConfig = Config{
 	LogSettings: logger.Settings{},
 }
 
-func newController(id int, status chan<- control.UserStatus) control.UserController {
+func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
 	ueConfig := userentity.Config{
 		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
 	}
 	ue := userentity.New(memstore.New(), ueConfig)
-	return simplecontroller.New(id, ue, status)
+
+	if err := simplecontroller.ReadConfig(""); err != nil {
+		return nil, err
+	}
+
+	cfg, err := simplecontroller.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return simplecontroller.New(id, ue, cfg, status)
+
 }
 
 func TestNew(t *testing.T) {

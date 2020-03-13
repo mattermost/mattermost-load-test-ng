@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -23,20 +22,19 @@ type SimpleController struct {
 	stop   chan struct{}
 	status chan<- control.UserStatus
 	rate   float64
-	cfg    *Config
+	config *Config
 }
 
 // New creates and initializes a new SimpleController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, status chan<- control.UserStatus) *SimpleController {
-	if err := ReadConfig(""); err != nil {
-		panic(err)
+func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*SimpleController, error) {
+	if config == nil || user == nil {
+		return nil, errors.New("nil params passed")
 	}
 
-	cfg, err := GetConfig()
-	if err != nil {
-		panic(err)
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
 	return &SimpleController{
@@ -45,8 +43,8 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SimpleContro
 		stop:   make(chan struct{}),
 		status: status,
 		rate:   1.0,
-		cfg:    cfg,
-	}
+		config: config,
+	}, nil
 }
 
 // Run begins performing a set of actions in a loop with a defined wait
@@ -62,7 +60,7 @@ func (c *SimpleController) Run() {
 	// Start listening for websocket events.
 	go c.wsEventHandler()
 
-	actions, err := parseActions(c, c.cfg.Actions)
+	actions, err := parseActions(c, c.config.Actions)
 	if err != nil {
 		c.sendFailStatus(fmt.Sprintf("could not parse actions: %s", err.Error()))
 		return
@@ -135,36 +133,4 @@ func (c *SimpleController) sendFailStatus(reason string) {
 
 func (c *SimpleController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
-}
-
-func parseActions(c *SimpleController, definitions []actionDefinition) ([]*UserAction, error) {
-	actions := make([]*UserAction, 0)
-	for _, def := range definitions {
-		s := strings.Split(def.ActionId, ".")
-		if len(s) != 2 {
-			return nil, fmt.Errorf("invalid action ID: %q", def.ActionId)
-		}
-		var run control.UserAction
-		var ok bool
-		switch s[0] {
-		case "simplecontroller":
-			run = actionByName(c, s[1])
-			if run == nil {
-				return nil, fmt.Errorf("could not find function %q", s[1])
-			}
-		case "control":
-			run, ok = control.Actions[s[1]]
-			if !ok {
-				return nil, fmt.Errorf("could not find function %q", s[1])
-			}
-		default:
-			return nil, fmt.Errorf("invalid action package: %q", s[0])
-		}
-		actions = append(actions, &UserAction{
-			run:          run,
-			waitAfter:    time.Duration(def.WaitAfterMs),
-			runFrequency: def.RunFrequency,
-		})
-	}
-	return actions, nil
 }
