@@ -134,7 +134,7 @@ type DeploymentConfiguration struct {
 	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
 	DBUserName       string // Username to connect to the DB.
 	DBPassword       string // Password to connect to the DB.
-	// URL from where to download Mattermost distribution.
+	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
 	// only the binary gets replaced, and the rest of the build comes from the latest

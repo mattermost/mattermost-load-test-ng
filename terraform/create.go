@@ -62,8 +62,8 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
-	uploadBinary := false
-	binaryPath := ""
+	var uploadBinary bool
+	var binaryPath string
 	if strings.HasPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix) {
 		binaryPath = strings.TrimPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix)
 		info, err := os.Stat(binaryPath)
