@@ -11,7 +11,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // SimpleController is a very basic implementation of a controller.
@@ -84,7 +83,6 @@ func (c *SimpleController) Run() {
 	}
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
-	mlog.Info(fmt.Sprintf("FREAKING ACTIONS: %d", len(actions)))
 	for {
 		for i := 0; i < len(actions); i++ {
 			if cycleCount%actions[i].runFrequency == 0 {
