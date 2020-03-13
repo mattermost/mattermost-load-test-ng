@@ -5,7 +5,7 @@ provider "aws" {
 }
 
 resource "aws_key_pair" "key" {
-  key_name   = "loadtest"
+  key_name   = "${var.cluster_name}-keypair"
   public_key = file(var.ssh_public_key)
 }
 
