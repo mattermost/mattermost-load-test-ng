@@ -143,7 +143,7 @@ func (c *SimulController) Run() {
 	for {
 		action, err := pickAction(actions)
 		if err != nil {
-			panic(fmt.Errorf("simulcontroller: failed to pick action %w", err).Error())
+			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 		}
 
 		if resp := action.run(c.user); resp.Err != nil {
