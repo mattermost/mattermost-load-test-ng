@@ -29,6 +29,29 @@ type UserActionResponse struct {
 // user.User. It returns a UserActionResponse.
 type UserAction func(user.User) UserActionResponse
 
+// Actions is the map for the provided user actions by control package
+var Actions = map[string]UserAction{
+	"AddReaction":          AddReaction,
+	"CreateDirectChannel":  CreateDirectChannel,
+	"CreateGroupChannel":   CreateGroupChannel,
+	"CreatePost":           CreatePost,
+	"CreatePrivateChannel": CreatePrivateChannel,
+	"CreatePublicChannel":  CreatePublicChannel,
+	"JoinChannel":          JoinChannel,
+	"JoinTeam":             JoinTeam,
+	"LeaveChannel":         LeaveChannel,
+	"Login":                Login,
+	"Logout":               Logout,
+	"RemoveReaction":       RemoveReaction,
+	"SearchChannels":       SearchChannels,
+	"SearchPosts":          SearchPosts,
+	"SearchUsers":          SearchUsers,
+	"SignUp":               SignUp,
+	"UpdateProfileImage":   UpdateProfileImage,
+	"ViewChannel":          ViewChannel,
+	"ViewUser":             ViewUser,
+}
+
 // SignUp signs up the given user to the server.
 func SignUp(u user.User) UserActionResponse {
 	if u.Store().Id() != "" {

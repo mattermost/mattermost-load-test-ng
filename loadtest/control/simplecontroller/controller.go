@@ -5,11 +5,14 @@ package simplecontroller
 
 import (
 	"errors"
+	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // SimpleController is a very basic implementation of a controller.
@@ -20,18 +23,29 @@ type SimpleController struct {
 	stop   chan struct{}
 	status chan<- control.UserStatus
 	rate   float64
+	cfg    *Config
 }
 
 // New creates and initializes a new SimpleController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
 func New(id int, user user.User, status chan<- control.UserStatus) *SimpleController {
+	if err := ReadConfig(""); err != nil {
+		panic(err)
+	}
+
+	cfg, err := GetConfig()
+	if err != nil {
+		panic(err)
+	}
+
 	return &SimpleController{
 		id:     id,
 		user:   user,
 		stop:   make(chan struct{}),
 		status: status,
 		rate:   1.0,
+		cfg:    cfg,
 	}
 }
 
@@ -48,111 +62,10 @@ func (c *SimpleController) Run() {
 	// Start listening for websocket events.
 	go c.wsEventHandler()
 
-	actions := []UserAction{
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(false)
-			},
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.JoinTeam,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.JoinChannel,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.SearchPosts,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.SearchChannels,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.SearchUsers,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.ViewUser,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.CreatePost,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.AddReaction,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          c.updateProfile,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.UpdateProfileImage,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.CreateGroupChannel,
-			waitAfter:    1000,
-			runFrequency: 8,
-		},
-		{
-			run:          control.CreateDirectChannel,
-			waitAfter:    1000,
-			runFrequency: 4,
-		},
-		{
-			run:          control.ViewChannel,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          c.scrollChannel,
-			waitAfter:    1000,
-			runFrequency: 5,
-		},
-		{
-			run:          control.LeaveChannel,
-			waitAfter:    1000,
-			runFrequency: 5,
-		},
-		{
-			run:          control.RemoveReaction,
-			waitAfter:    1000,
-			runFrequency: 1,
-		},
-		{
-			run:          control.Logout,
-			waitAfter:    1000,
-			runFrequency: 20,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				resp := control.Login(u)
-				if resp.Err != nil {
-					return resp
-				}
-				c.connect()
-				return resp
-			},
-			waitAfter:    1000,
-			runFrequency: 20,
-		},
+	actions, err := parseActions(c, c.cfg.Actions)
+	if err != nil {
+		c.sendFailStatus(fmt.Sprintf("could not parse actions: %s", err.Error()))
+		return
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -173,6 +86,7 @@ func (c *SimpleController) Run() {
 	}
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
+	mlog.Info(fmt.Sprintf("FREAKING ACTIONS: %d", len(actions)))
 	for {
 		for i := 0; i < len(actions); i++ {
 			if cycleCount%actions[i].runFrequency == 0 {
@@ -221,4 +135,36 @@ func (c *SimpleController) sendFailStatus(reason string) {
 
 func (c *SimpleController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+}
+
+func parseActions(c *SimpleController, definitions []actionDefinition) ([]*UserAction, error) {
+	actions := make([]*UserAction, 0)
+	for _, def := range definitions {
+		s := strings.Split(def.ActionId, ".")
+		if len(s) != 2 {
+			return nil, fmt.Errorf("invalid action ID: %q", def.ActionId)
+		}
+		var run control.UserAction
+		var ok bool
+		switch s[0] {
+		case "simplecontroller":
+			run = actionByName(c, s[1])
+			if run == nil {
+				return nil, fmt.Errorf("could not find function %q", s[1])
+			}
+		case "control":
+			run, ok = control.Actions[s[1]]
+			if !ok {
+				return nil, fmt.Errorf("could not find function %q", s[1])
+			}
+		default:
+			return nil, fmt.Errorf("invalid action package: %q", s[0])
+		}
+		actions = append(actions, &UserAction{
+			run:          run,
+			waitAfter:    time.Duration(def.WaitAfterMs),
+			runFrequency: def.RunFrequency,
+		})
+	}
+	return actions, nil
 }

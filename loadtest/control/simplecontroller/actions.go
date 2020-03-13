@@ -19,6 +19,29 @@ type UserAction struct {
 	runFrequency int
 }
 
+func actionByName(c *SimpleController, method string) control.UserAction {
+	switch method {
+	case "scrollChannel":
+		return c.scrollChannel
+	case "updateProfile":
+		return c.updateProfile
+	case "reload":
+		return func(u user.User) control.UserActionResponse {
+			return c.reload(false)
+		}
+	case "login":
+		return func(u user.User) control.UserActionResponse {
+			resp := control.Login(u)
+			if resp.Err != nil {
+				return resp
+			}
+			c.connect()
+			return resp
+		}
+	}
+	return nil
+}
+
 func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 	channelId := model.GetDMNameFromIds(userID, c.user.Store().Id())
 	ok, err := c.user.Store().Channel(channelId)
