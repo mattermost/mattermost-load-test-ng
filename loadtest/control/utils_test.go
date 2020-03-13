@@ -36,7 +36,7 @@ func TestGetErrOrigin(t *testing.T) {
 }
 
 func TestEmulateUserTyping(t *testing.T) {
-	search := "whatever"
+	search := "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
 	res := emulateUserTyping(search, func(term string) UserActionResponse {
 		return UserActionResponse{Info: term}
 	})

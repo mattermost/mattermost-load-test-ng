@@ -509,3 +509,151 @@ func ViewUser(u user.User) UserActionResponse {
 	}
 	return UserActionResponse{Info: fmt.Sprintf("viewed user %s", member.UserId)}
 }
+
+// Reload simulates the given user reloading the page
+// while connected to the server by executing the API
+// calls seen during a real page reload.
+func Reload(u user.User) UserActionResponse {
+	// Getting preferences.
+	err := u.GetPreferences()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	prefs, _ := u.Store().Preferences()
+	var userIds []string
+	chanId := ""
+	for _, p := range prefs {
+		switch {
+		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
+			chanId = p.Value
+		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
+			userIds = append(userIds, p.Name)
+		}
+	}
+
+	if chanId != "" {
+		// Marking the channel as viewed
+		_, err := u.ViewChannel(&model.ChannelView{
+			ChannelId:     chanId,
+			PrevChannelId: "",
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	if ok, err := u.IsSysAdmin(); ok && err == nil {
+		err = u.GetConfig()
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	err = u.GetClientLicense()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	// Getting the user.
+	userId, err := u.GetMe()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	roles, _ := u.Store().Roles()
+	var roleNames []string
+	for _, role := range roles {
+		roleNames = append(roleNames, role.Name)
+	}
+	if len(roleNames) > 0 {
+		_, err = u.GetRolesByNames(roleNames)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	err = u.GetWebappPlugins()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	_, err = u.GetAllTeams(0, 50)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	_, err = u.GetTeamsForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	// NOTE: during reload, the webapp client will fetch the last viewed team.
+	// This information is persistently stored and survives reloads/restarting the browser.
+	// Here we simplify that behaviour by randomly picking a team the user is
+	// a member of.
+	team, err := u.Store().RandomTeamJoined()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if team.Id != "" {
+		err = u.GetTeamMembersForUser(u.Store().Id())
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		if tm, err := u.Store().TeamMember(team.Id, u.Store().Id()); err == nil && tm.UserId != "" {
+			if err := u.GetChannelsForTeam(team.Id); err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+			err = u.GetChannelMembersForUser(userId, team.Id)
+			if err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+		}
+	}
+
+	// Getting unread teams.
+	_, err = u.GetTeamsUnread("")
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if len(userIds) > 0 {
+		// Get users by Ids.
+		_, err := u.GetUsersByIds(userIds)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		// Get user statuses by Ids.
+		err = u.GetUsersStatusesByIds(userIds)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	err = u.GetUserStatus()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if chanId != "" {
+		// Getting the channel stats.
+		err = u.GetChannelStats(chanId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		// Getting channel unread.
+		_, err = u.GetChannelUnread(chanId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	return UserActionResponse{Info: "page reloaded"}
+}
