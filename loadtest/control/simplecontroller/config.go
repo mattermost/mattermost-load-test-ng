@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -64,27 +65,46 @@ func (c *Config) IsValid() error {
 
 func parseActions(c *SimpleController, definitions []actionDefinition) ([]*UserAction, error) {
 	actions := make([]*UserAction, 0)
+	actionMap := map[string]control.UserAction{
+		"AddReaction":          control.AddReaction,
+		"CreateDirectChannel":  control.CreateDirectChannel,
+		"CreateGroupChannel":   control.CreateGroupChannel,
+		"CreatePost":           control.CreatePost,
+		"CreatePrivateChannel": control.CreatePrivateChannel,
+		"CreatePublicChannel":  control.CreatePublicChannel,
+		"JoinChannel":          control.JoinChannel,
+		"JoinTeam":             control.JoinTeam,
+		"LeaveChannel":         control.LeaveChannel,
+		"Login": func(u user.User) control.UserActionResponse {
+			resp := control.Login(u)
+			if resp.Err != nil {
+				return resp
+			}
+			c.connect()
+			return resp
+		},
+		"Logout": control.Logout,
+		"Reload": func(u user.User) control.UserActionResponse {
+			return c.reload(false)
+		},
+		"RemoveReaction":     control.RemoveReaction,
+		"ScrollChannel":      c.scrollChannel,
+		"SearchChannels":     control.SearchChannels,
+		"SearchPosts":        control.SearchPosts,
+		"SearchUsers":        control.SearchUsers,
+		"SignUp":             control.SignUp,
+		"UpdateProfile":      c.updateProfile,
+		"UpdateProfileImage": control.UpdateProfileImage,
+		"ViewChannel":        control.ViewChannel,
+		"ViewUser":           control.ViewUser,
+	}
+
 	for _, def := range definitions {
-		s := strings.Split(def.ActionId, ".")
-		if len(s) != 2 {
-			return nil, fmt.Errorf("invalid action ID: %q", def.ActionId)
+		run, ok := actionMap[def.ActionId]
+		if !ok {
+			return nil, fmt.Errorf("could not find action %q", def.ActionId)
 		}
-		var run control.UserAction
-		var ok bool
-		switch s[0] {
-		case "simplecontroller":
-			run = actionByName(c, s[1])
-			if run == nil {
-				return nil, fmt.Errorf("could not find function %q", s[1])
-			}
-		case "control":
-			run, ok = control.Actions[s[1]]
-			if !ok {
-				return nil, fmt.Errorf("could not find function %q", s[1])
-			}
-		default:
-			return nil, fmt.Errorf("invalid action package: %q", s[0])
-		}
+
 		actions = append(actions, &UserAction{
 			run:          run,
 			waitAfter:    time.Duration(def.WaitAfterMs),

@@ -2,97 +2,97 @@
     "Rate": 1,
     "Actions": [
       {
-        "ActionId": "simplecontroller.reload",
+        "ActionId": "Reload",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.JoinTeam",
+        "ActionId": "JoinTeam",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.JoinChannel",
+        "ActionId": "JoinChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.SearchPosts",
+        "ActionId": "SearchPosts",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.SearchChannels",
+        "ActionId": "SearchChannels",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.SearchUsers",
+        "ActionId": "SearchUsers",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.ViewUser",
+        "ActionId": "ViewUser",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.CreatePost",
+        "ActionId": "CreatePost",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.AddReaction",
+        "ActionId": "AddReaction",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "simplecontroller.updateProfile",
+        "ActionId": "UpdateProfile",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.UpdateProfileImage",
+        "ActionId": "UpdateProfileImage",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.CreateGroupChannel",
+        "ActionId": "CreateGroupChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 8
       },
       {
-        "ActionId": "control.CreateDirectChannel",
+        "ActionId": "CreateDirectChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 4
       },
       {
-        "ActionId": "control.ViewChannel",
+        "ActionId": "ViewChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "simplecontroller.scrollChannel",
+        "ActionId": "ScrollChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 5
       },
       {
-        "ActionId": "control.LeaveChannel",
+        "ActionId": "LeaveChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 5
       },
       {
-        "ActionId": "control.RemoveReaction",
+        "ActionId": "RemoveReaction",
         "WaitAfterMs": 1000,
         "RunFrequency": 1
       },
       {
-        "ActionId": "control.Logout",
+        "ActionId": "Logout",
         "WaitAfterMs": 1000,
         "RunFrequency": 20
       },
       {
-        "ActionId": "simplecontroller.login",
+        "ActionId": "Login",
         "WaitAfterMs": 1000,
         "RunFrequency": 20
       }
