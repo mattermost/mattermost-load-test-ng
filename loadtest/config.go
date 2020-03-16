@@ -48,6 +48,7 @@ type userControllerType string
 const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
+	UserControllerNoop                          = "noop"
 )
 
 // IsValid reports whether a given UserControllerType is valid or not.
@@ -126,15 +127,20 @@ func (uc *UsersConfiguration) IsValid() error {
 // DeploymentConfiguration contains the necessary data
 // to deploy and provision a load test environment through terraform.
 type DeploymentConfiguration struct {
-	ClusterName           string // Name of the cluster.
-	AppInstanceCount      int    // Number of application instances.
-	SSHPublicKey          string // Path to the SSH public key.
-	DBInstanceCount       int    // Number of DB instances.
-	DBInstanceClass       string // Type of the DB instance.
-	DBInstanceEngine      string // Type of the DB instance - postgres or mysql.
-	DBUserName            string // Username to connect to the DB.
-	DBPassword            string // Password to connect to the DB.
-	MattermostDownloadURL string // URL from where to download Mattermost distribution.
+	ClusterName      string // Name of the cluster.
+	AppInstanceCount int    // Number of application instances.
+	SSHPublicKey     string // Path to the SSH public key.
+	DBInstanceCount  int    // Number of DB instances.
+	DBInstanceClass  string // Type of the DB instance.
+	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
+	DBUserName       string // Username to connect to the DB.
+	DBPassword       string // Password to connect to the DB.
+	// URL from where to download Mattermost release.
+	// This can also point to a local binary path if the user wants to run loadtest
+	// on a custom build. The path should be prefixed with "file://". In that case,
+	// only the binary gets replaced, and the rest of the build comes from the latest
+	// stable release.
+	MattermostDownloadURL string
 	MattermostLicenseFile string // Path to the Mattermost EE license file.
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
@@ -53,6 +54,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			return simplecontroller.New(id, ue, cfg, status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, status)
+		case loadtest.UserControllerNoop:
+			return noopcontroller.New(id, ue, status)
 		default:
 			panic("controller type must be valid")
 		}
