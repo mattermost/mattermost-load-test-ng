@@ -76,10 +76,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			// TODO: pass simplecontroller path appropriately
-			if err := simplecontroller.ReadConfig(""); err != nil {
-				return nil, err
-			}
-			cfg, err := simplecontroller.GetConfig()
+			cfg, err := simplecontroller.ReadConfig("")
 			if err != nil {
 				return nil, err
 			}

@@ -3,28 +3,28 @@ package simplecontroller
 import (
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
-var v = viper.New()
-
+// Config holds the the rate and user actions definitions that will be runned by
+// the SimpleController
 type Config struct {
-	Rate    float32            `json:"Rate"`
-	Actions []actionDefinition `json:"Actions"`
+	Rate    float64
+	Actions []actionDefinition
 }
 
 type actionDefinition struct {
-	ActionId     string `josn:"ActionId"`
-	RunFrequency int    `json:"RunFrequency"`
-	WaitAfterMs  int    `json:"WaitAfterMs"`
+	ActionId     string
+	RunFrequency int
+	WaitAfterMs  int
 }
 
-func ReadConfig(configFilePath string) error {
+// ReadConfig reads the configuration file from the given string. If the string
+// is empty, it will search a config file in predefined folders.
+func ReadConfig(configFilePath string) (*Config, error) {
+	v := viper.New()
+
 	v.SetConfigName("simplecontroller")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
@@ -38,13 +38,8 @@ func ReadConfig(configFilePath string) error {
 	}
 
 	if err := v.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "unable to read configuration file")
+		return nil, fmt.Errorf("unable to read configuration file: %w", err)
 	}
-
-	return nil
-}
-
-func GetConfig() (*Config, error) {
 	var cfg *Config
 
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -52,64 +47,4 @@ func GetConfig() (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// IsValid checks whether a Config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if _, err := parseActions(&SimpleController{}, c.Actions); err != nil {
-		return fmt.Errorf("actions are not valid: %w", err)
-	}
-	return nil
-}
-
-func parseActions(c *SimpleController, definitions []actionDefinition) ([]*UserAction, error) {
-	actions := make([]*UserAction, 0)
-	actionMap := map[string]control.UserAction{
-		"AddReaction":          control.AddReaction,
-		"CreateDirectChannel":  control.CreateDirectChannel,
-		"CreateGroupChannel":   control.CreateGroupChannel,
-		"CreatePost":           control.CreatePost,
-		"CreatePrivateChannel": control.CreatePrivateChannel,
-		"CreatePublicChannel":  control.CreatePublicChannel,
-		"JoinChannel":          control.JoinChannel,
-		"JoinTeam":             control.JoinTeam,
-		"LeaveChannel":         control.LeaveChannel,
-		"Login": func(u user.User) control.UserActionResponse {
-			resp := control.Login(u)
-			if resp.Err != nil {
-				return resp
-			}
-			c.connect()
-			return resp
-		},
-		"Logout": control.Logout,
-		"Reload": func(u user.User) control.UserActionResponse {
-			return c.reload(false)
-		},
-		"RemoveReaction":     control.RemoveReaction,
-		"ScrollChannel":      c.scrollChannel,
-		"SearchChannels":     control.SearchChannels,
-		"SearchPosts":        control.SearchPosts,
-		"SearchUsers":        control.SearchUsers,
-		"SignUp":             control.SignUp,
-		"UpdateProfile":      c.updateProfile,
-		"UpdateProfileImage": control.UpdateProfileImage,
-		"ViewChannel":        control.ViewChannel,
-		"ViewUser":           control.ViewUser,
-	}
-
-	for _, def := range definitions {
-		run, ok := actionMap[def.ActionId]
-		if !ok {
-			return nil, fmt.Errorf("could not find action %q", def.ActionId)
-		}
-
-		actions = append(actions, &UserAction{
-			run:          run,
-			waitAfter:    time.Duration(def.WaitAfterMs),
-			runFrequency: def.RunFrequency,
-		})
-	}
-	return actions, nil
 }

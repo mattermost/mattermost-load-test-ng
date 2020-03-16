@@ -1,5 +1,5 @@
 {
-    "Rate": 1,
+    "Rate": 1.0,
     "Actions": [
       {
         "ActionId": "Reload",

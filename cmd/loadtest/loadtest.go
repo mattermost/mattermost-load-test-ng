@@ -46,10 +46,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return nil, err
 			}
-			if err := simplecontroller.ReadConfig(path); err != nil {
-				return nil, err
-			}
-			cfg, err := simplecontroller.GetConfig()
+			cfg, err := simplecontroller.ReadConfig(path)
 			if err != nil {
 				return nil, err
 			}

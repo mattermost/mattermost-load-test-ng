@@ -16,12 +16,12 @@ import (
 // SimpleController is a very basic implementation of a controller.
 // Currently, it just performs a pre-defined set of actions in a loop.
 type SimpleController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
-	config *Config
+	id      int
+	user    user.User
+	stop    chan struct{}
+	status  chan<- control.UserStatus
+	rate    float64
+	actions []*UserAction
 }
 
 // New creates and initializes a new SimpleController with given parameters.
@@ -32,18 +32,17 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := config.IsValid(); err != nil {
-		return nil, fmt.Errorf("could not validate configuration: %w", err)
-	}
-
-	return &SimpleController{
+	sc := &SimpleController{
 		id:     id,
 		user:   user,
 		stop:   make(chan struct{}),
 		status: status,
-		rate:   1.0,
-		config: config,
-	}, nil
+		rate:   config.Rate,
+	}
+	if err := sc.createActions(config.Actions); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
+	}
+	return sc, nil
 }
 
 // Run begins performing a set of actions in a loop with a defined wait
@@ -58,12 +57,6 @@ func (c *SimpleController) Run() {
 
 	// Start listening for websocket events.
 	go c.wsEventHandler()
-
-	actions, err := parseActions(c, c.config.Actions)
-	if err != nil {
-		c.sendFailStatus(fmt.Sprintf("could not parse actions: %s", err.Error()))
-		return
-	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
@@ -84,17 +77,17 @@ func (c *SimpleController) Run() {
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
-		for i := 0; i < len(actions); i++ {
-			if cycleCount%actions[i].runFrequency == 0 {
+		for i := 0; i < len(c.actions); i++ {
+			if cycleCount%c.actions[i].runFrequency == 0 {
 				// run the action if runFrequency is not set, or else it's set and it's a multiple
 				// of the cycle count.
-				if resp := actions[i].run(c.user); resp.Err != nil {
+				if resp := c.actions[i].run(c.user); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
 				} else {
 					c.status <- c.newInfoStatus(resp.Info)
 				}
 
-				idleTime := time.Duration(math.Round(float64(actions[i].waitAfter) * c.rate))
+				idleTime := time.Duration(math.Round(float64(c.actions[i].waitAfter) * c.rate))
 
 				select {
 				case <-c.stop:
@@ -131,4 +124,56 @@ func (c *SimpleController) sendFailStatus(reason string) {
 
 func (c *SimpleController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+}
+
+func (c *SimpleController) createActions(definitions []actionDefinition) error {
+	actions := make([]*UserAction, 0)
+	actionMap := map[string]control.UserAction{
+		"AddReaction":          control.AddReaction,
+		"CreateDirectChannel":  control.CreateDirectChannel,
+		"CreateGroupChannel":   control.CreateGroupChannel,
+		"CreatePost":           control.CreatePost,
+		"CreatePrivateChannel": control.CreatePrivateChannel,
+		"CreatePublicChannel":  control.CreatePublicChannel,
+		"JoinChannel":          control.JoinChannel,
+		"JoinTeam":             control.JoinTeam,
+		"LeaveChannel":         control.LeaveChannel,
+		"Login": func(u user.User) control.UserActionResponse {
+			resp := control.Login(u)
+			if resp.Err != nil {
+				return resp
+			}
+			c.connect()
+			return resp
+		},
+		"Logout": control.Logout,
+		"Reload": func(u user.User) control.UserActionResponse {
+			return c.reload(false)
+		},
+		"RemoveReaction":     control.RemoveReaction,
+		"ScrollChannel":      c.scrollChannel,
+		"SearchChannels":     control.SearchChannels,
+		"SearchPosts":        control.SearchPosts,
+		"SearchUsers":        control.SearchUsers,
+		"SignUp":             control.SignUp,
+		"UpdateProfile":      c.updateProfile,
+		"UpdateProfileImage": control.UpdateProfileImage,
+		"ViewChannel":        control.ViewChannel,
+		"ViewUser":           control.ViewUser,
+	}
+
+	for _, def := range definitions {
+		run, ok := actionMap[def.ActionId]
+		if !ok {
+			return fmt.Errorf("could not find action %q", def.ActionId)
+		}
+
+		actions = append(actions, &UserAction{
+			run:          run,
+			waitAfter:    time.Duration(def.WaitAfterMs),
+			runFrequency: def.RunFrequency,
+		})
+	}
+	c.actions = actions
+	return nil
 }
