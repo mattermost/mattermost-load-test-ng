@@ -77,6 +77,11 @@
         "RunFrequency": 5
       },
       {
+        "ActionId": "CreatePostReply",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
         "ActionId": "LeaveChannel",
         "WaitAfterMs": 1000,
         "RunFrequency": 5

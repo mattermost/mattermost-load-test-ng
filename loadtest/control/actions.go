@@ -215,6 +215,40 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+// CreatePostReply replies to a randomly picked post.
+func CreatePostReply(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeamJoined()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannelJoined(team.Id)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: "no channels in store"}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return UserActionResponse{Info: "no post to reply to"}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().Unix() * 1000,
+		RootId:    post.Id,
+	})
+
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", postId)}
+}
+
 // AddReaction adds a reaction by the user to a random post.
 func AddReaction(u user.User) UserActionResponse {
 	// get posts from UserStore that have been created in the last minute
