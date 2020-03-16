@@ -43,7 +43,6 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
 	}
 	ue := userentity.New(memstore.New(), ueConfig)
-
 	cfg, err := simplecontroller.ReadConfig("")
 	if err != nil {
 		return nil, err
