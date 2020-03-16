@@ -127,7 +127,7 @@ func (c *SimpleController) sendStopStatus() {
 }
 
 func (c *SimpleController) createActions(definitions []actionDefinition) error {
-	actions := make([]*UserAction, 0)
+	var actions []*UserAction
 	actionMap := map[string]control.UserAction{
 		"AddReaction":          control.AddReaction,
 		"CreateDirectChannel":  control.CreateDirectChannel,
