@@ -48,6 +48,7 @@ type userControllerType string
 const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
+	UserControllerNoop                          = "noop"
 )
 
 // IsValid reports whether a given UserControllerType is valid or not.

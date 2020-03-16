@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
@@ -64,7 +65,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newSimpleController := func(id int, status chan<- control.UserStatus) control.UserController {
+	newControllerFn := func(id int, status chan<- control.UserStatus) control.UserController {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
@@ -78,12 +79,14 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			return simplecontroller.New(id, ue, status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, status)
+		case loadtest.UserControllerNoop:
+			return noopcontroller.New(id, ue, status)
 		default:
 			panic("controller type must be valid")
 		}
 	}
 
-	lt, err := loadtest.New(&config, newSimpleController)
+	lt, err := loadtest.New(&config, newControllerFn)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
