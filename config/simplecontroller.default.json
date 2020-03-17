@@ -1,0 +1,100 @@
+{
+    "Rate": 1.0,
+    "Actions": [
+      {
+        "ActionId": "Reload",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "JoinTeam",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "JoinChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "SearchPosts",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "SearchChannels",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "SearchUsers",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "ViewUser",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "CreatePost",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "AddReaction",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "UpdateProfile",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "UpdateProfileImage",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "CreateGroupChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 8
+      },
+      {
+        "ActionId": "CreateDirectChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 4
+      },
+      {
+        "ActionId": "ViewChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "ScrollChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 5
+      },
+      {
+        "ActionId": "LeaveChannel",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 5
+      },
+      {
+        "ActionId": "RemoveReaction",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 1
+      },
+      {
+        "ActionId": "Logout",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 20
+      },
+      {
+        "ActionId": "Login",
+        "WaitAfterMs": 1000,
+        "RunFrequency": 20
+      }
+    ]
+  }

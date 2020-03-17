@@ -25,14 +25,14 @@ type NoopController struct {
 // New creates and initializes a new SimpleController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, status chan<- control.UserStatus) *NoopController {
+func New(id int, user user.User, status chan<- control.UserStatus) (*NoopController, error) {
 	return &NoopController{
 		id:     id,
 		user:   user,
 		stop:   make(chan struct{}),
 		status: status,
 		rate:   1.0,
-	}
+	}, nil
 }
 
 // Run begins performing a set of actions in a loop with a defined wait

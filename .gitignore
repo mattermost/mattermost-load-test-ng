@@ -63,6 +63,7 @@ sessions.db
 # ignore local config
 config/config.json
 config/coordinator.json
+config/simplecontroller.json
 
 # terraform stuff
 /terraformenv

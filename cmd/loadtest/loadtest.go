@@ -32,7 +32,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
 
-	newControllerFn := func(id int, status chan<- control.UserStatus) control.UserController {
+	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
@@ -43,7 +43,15 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		ue := userentity.New(memstore.New(), ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, status)
+			path, err := cmd.Flags().GetString("simplecontroller-config")
+			if err != nil {
+				return nil, err
+			}
+			cfg, err := simplecontroller.ReadConfig(path)
+			if err != nil {
+				return nil, err
+			}
+			return simplecontroller.New(id, ue, cfg, status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, status)
 		case loadtest.UserControllerNoop:
@@ -79,6 +87,7 @@ func MakeLoadTestCommand() *cobra.Command {
 		RunE:   RunLoadTestCmdF,
 		PreRun: SetupLoadTest,
 	}
+	cmd.PersistentFlags().StringP("simplecontroller-config", "s", "", "path to the simplecontroller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	return cmd
 }

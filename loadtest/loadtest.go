@@ -30,7 +30,7 @@ type LoadTester struct {
 // It is passed during LoadTester initialization to provide a way to create
 // concrete UserController values from within the loadtest package without the
 // need of those being passed from the upper layer (the user of this API).
-type NewController func(int, chan<- control.UserStatus) control.UserController
+type NewController func(int, chan<- control.UserStatus) (control.UserController, error)
 
 func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 	// Copy the channel to prevent race conditions.
@@ -72,7 +72,10 @@ func (lt *LoadTester) addUser() error {
 	}
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	controller := lt.newController(activeUsers+1, lt.statusChan)
+	controller, err := lt.newController(activeUsers+1, lt.statusChan)
+	if err != nil {
+		return fmt.Errorf("could not create controller: %w", err)
+	}
 	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
 		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
 	}

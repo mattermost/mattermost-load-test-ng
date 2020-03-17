@@ -65,7 +65,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newControllerFn := func(id int, status chan<- control.UserStatus) control.UserController {
+	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
@@ -76,7 +76,12 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ue := userentity.New(memstore.New(), ueConfig)
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, status)
+			// TODO: pass simplecontroller path appropriately
+			cfg, err := simplecontroller.ReadConfig("")
+			if err != nil {
+				return nil, err
+			}
+			return simplecontroller.New(id, ue, cfg, status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, status)
 		case loadtest.UserControllerNoop:
