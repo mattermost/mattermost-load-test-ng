@@ -86,7 +86,7 @@ func (sshc *Client) UploadFile(src, dst string, sudo bool) error {
 		return err
 	}
 	defer f.Close()
-	if err := sshc.Upload(f, false, "/opt/mattermost/bin/mattermost"); err != nil {
+	if err := sshc.Upload(f, "/opt/mattermost/bin/mattermost", false); err != nil {
 		return err
 	}
 	return nil

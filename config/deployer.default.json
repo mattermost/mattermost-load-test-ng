@@ -12,7 +12,7 @@
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",
-        "ConsoleJson": true,
+        "ConsoleJson": false,
         "EnableFile": true,
         "FileLevel": "INFO",
         "FileJson": true,
