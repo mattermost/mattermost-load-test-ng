@@ -5,6 +5,7 @@ package control
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -80,4 +81,30 @@ func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserAc
 		}
 	}
 	return resp
+}
+
+// GenerateRandomSentences generates random string from test_text file.
+func GenerateRandomSentences(count int) string {
+	if count <= 0 {
+		return "🙂" // if there is nothing to say, an emoji worths for thousands
+	}
+	paths := []string{"./testdata/test_text.txt", "./../../testdata/test_text.txt"}
+	var buf []byte
+	var err error
+
+	for _, p := range paths {
+		buf, err = ioutil.ReadFile(p)
+		if err != nil {
+			continue
+		}
+	}
+
+	var random string
+	words := strings.Split(string(buf), " ")
+	for i := 0; i < count; i++ {
+		n := rand.Int() % len(words)
+		random += words[n] + " "
+	}
+
+	return random[:len(random)-1] + "."
 }
