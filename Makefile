@@ -72,6 +72,9 @@ golangci-lint:
 	golangci-lint run ./...
 
 test:
+	@if ! [ -e config/simplecontroller.json ]; then \
+    	cp config/simplecontroller.default.json config/simplecontroller.json; \
+ 	fi;\
 	$(GO) test -v -mod=readonly -failfast ./...
 
 clean:
