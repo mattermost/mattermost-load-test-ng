@@ -240,6 +240,26 @@ func TestChannel(t *testing.T) {
 	})
 }
 
+func TestCurrentChannel(t *testing.T) {
+	s := New()
+	channel, err := s.CurrentChannel()
+	require.Nil(t, channel)
+	require.NoError(t, err)
+	err = s.SetCurrentChannel(nil)
+	require.Error(t, err)
+	c := &model.Channel{
+		Id: "ch" + model.NewId(),
+	}
+	err = s.SetCurrentChannel(c)
+	require.NoError(t, err)
+	channel, err = s.CurrentChannel()
+	require.Nil(t, err)
+	require.Equal(t, c, channel)
+	require.Condition(t, func() bool {
+		return channel != c
+	})
+}
+
 func TestReactions(t *testing.T) {
 	t.Run("SetReactions", func(t *testing.T) {
 		s := New()
@@ -401,6 +421,26 @@ func TestChannelMembers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 1, len(s.channelMembers[channel.Id]))
 		require.Equal(t, channelMember2, (*members)[0])
+	})
+}
+
+func TestCurrentTeam(t *testing.T) {
+	s := New()
+	team, err := s.CurrentTeam()
+	require.Nil(t, team)
+	require.NoError(t, err)
+	err = s.SetCurrentTeam(nil)
+	require.Error(t, err)
+	tm := &model.Team{
+		Id: "tm" + model.NewId(),
+	}
+	err = s.SetCurrentTeam(tm)
+	require.NoError(t, err)
+	team, err = s.CurrentTeam()
+	require.Nil(t, err)
+	require.Equal(t, tm, team)
+	require.Condition(t, func() bool {
+		return team != tm
 	})
 }
 
