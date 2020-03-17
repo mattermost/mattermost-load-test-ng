@@ -1,0 +1,21 @@
+{
+    "ClusterName": "loadtest",
+    "AppInstanceCount": 1,
+    "SSHPublicKey": "~/.ssh/id_rsa.pub",
+    "DBInstanceCount": 1,
+    "DBInstanceEngine": "mysql",
+    "DBInstanceClass": "db.r4.large",
+    "DBUserName": "mmuser",
+    "DBPassword": "mostest80098bigpass_",
+    "MattermostDownloadURL": "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz",
+    "MattermostLicenseFile": "",
+    "LogSettings": {
+        "EnableConsole": true,
+        "ConsoleLevel": "INFO",
+        "ConsoleJson": false,
+        "EnableFile": true,
+        "FileLevel": "INFO",
+        "FileJson": true,
+        "FileLocation": "loadtest.log"
+    }
+}
