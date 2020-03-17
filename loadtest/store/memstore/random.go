@@ -19,6 +19,7 @@ var (
 	ErrUserNotSet        = errors.New("memstore: user is not set")
 	ErrTeamStoreEmpty    = errors.New("memstore: team store is empty")
 	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
+	ErrPostNotFound      = errors.New("memstore: post not found")
 )
 
 // RandomChannel returns a random channel for a user.
@@ -162,6 +163,25 @@ func (s *MemStore) RandomPost() (model.Post, error) {
 		return model.Post{}, err
 	}
 	return *s.posts[key.(string)], nil
+}
+
+// RandomPostForChannel returns a random post for the given channel.
+func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var postIds []string
+	for _, p := range s.posts {
+		if p.ChannelId == channelId {
+			postIds = append(postIds, p.Id)
+		}
+	}
+
+	if len(postIds) == 0 {
+		return model.Post{}, ErrPostNotFound
+	}
+
+	return *s.posts[postIds[rand.Intn(len(postIds))]], nil
 }
 
 // RandomEmoji returns a random emoji.
