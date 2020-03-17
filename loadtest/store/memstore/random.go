@@ -22,7 +22,7 @@ var (
 )
 
 // RandomChannel returns a random channel for a user.
-func (s *MemStore) RandomChannel(teamId string) (model.Channel, error) {
+func (s *MemStore) RandomAnyChannel(teamId string) (model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -79,9 +79,9 @@ func (s *MemStore) RandomTeamJoined() (model.Team, error) {
 	return *teams[idx], nil
 }
 
-// RandomChannelJoined returns a random channel for the given teamId that the
-// current user is a member of.
-func (s *MemStore) RandomChannelJoined(teamId string) (model.Channel, error) {
+// RandomChannel returns a random channel for the given teamId that the
+// current user is not a member of.
+func (s *MemStore) RandomChannel(teamId string, memberOf bool) (model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -97,7 +97,10 @@ func (s *MemStore) RandomChannelJoined(teamId string) (model.Channel, error) {
 
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
-		if channel.TeamId == teamId && s.channelMembers[channelId][userId] != nil {
+		if channel.TeamId != teamId {
+			continue
+		}
+		if (s.channelMembers[channelId][userId] != nil) == memberOf {
 			channels = append(channels, channel)
 		}
 	}

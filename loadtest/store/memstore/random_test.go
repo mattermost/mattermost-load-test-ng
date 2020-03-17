@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRandomChannel(t *testing.T) {
+func TestRandomAnyChannel(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		s := New()
 		id1 := model.NewId()
@@ -22,7 +22,7 @@ func TestRandomChannel(t *testing.T) {
 			{Id: id2, TeamId: "t1"},
 		})
 		require.NoError(t, err)
-		ch, err := s.RandomChannel("t1")
+		ch, err := s.RandomAnyChannel("t1")
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch ch.Id {
@@ -35,7 +35,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 	t.Run("emptyslice", func(t *testing.T) {
 		s := New()
-		_, err := s.RandomChannel("t1")
+		_, err := s.RandomAnyChannel("t1")
 		require.Equal(t, ErrEmptySlice, err)
 	})
 }
@@ -333,10 +333,10 @@ func TestRandomTeamJoined(t *testing.T) {
 	})
 }
 
-func TestRandomChannelJoined(t *testing.T) {
+func TestRandomChannel(t *testing.T) {
 	t.Run("user not set", func(t *testing.T) {
 		s := New()
-		channel, err := s.RandomChannelJoined(model.NewId())
+		channel, err := s.RandomChannel(model.NewId(), true)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrUserNotSet, err)
@@ -349,7 +349,7 @@ func TestRandomChannelJoined(t *testing.T) {
 		}
 		err := s.SetUser(user)
 		require.NoError(t, err)
-		channel, err := s.RandomChannelJoined(model.NewId())
+		channel, err := s.RandomChannel(model.NewId(), true)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrTeamNotFound, err)
@@ -374,13 +374,13 @@ func TestRandomChannelJoined(t *testing.T) {
 			{Id: model.NewId(), TeamId: teamId},
 		})
 		require.NoError(t, err)
-		channel, err := s.RandomChannelJoined(teamId)
+		channel, err := s.RandomChannel(teamId, true)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrChannelStoreEmpty, err)
 	})
 
-	t.Run("channel found", func(t *testing.T) {
+	t.Run("channel found member of", func(t *testing.T) {
 		s := New()
 		user := &model.User{
 			Id: model.NewId(),
@@ -414,7 +414,51 @@ func TestRandomChannelJoined(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		channel, err := s.RandomChannelJoined(teamId)
+		channel, err := s.RandomChannel(teamId, true)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch channel.Id {
+			case channelId1, channelId2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("channel found not member of", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId},
+			{Id: channelId2, TeamId: teamId},
+			{Id: channelId3, TeamId: teamId},
+		})
+		require.NoError(t, err)
+		err = s.SetChannelMembers(&model.ChannelMembers{
+			{
+				ChannelId: channelId1,
+			},
+			{
+				ChannelId: channelId2,
+			},
+		})
+		require.NoError(t, err)
+		channel, err := s.RandomChannel(teamId, false)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch channel.Id {

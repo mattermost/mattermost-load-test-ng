@@ -49,11 +49,11 @@ type UserStore interface {
 	Reactions(postId string) ([]model.Reaction, error)
 
 	// Random things
-	// RandomChannel returns a random channel for a user.
-	RandomChannel(teamId string) (model.Channel, error)
+	// RandomAnyChannel returns a random channel for a user.
+	RandomAnyChannel(teamId string) (model.Channel, error)
 	// RandomChannelJoined returns a random channel for the given teamId that the
 	// current user is a member of.
-	RandomChannelJoined(teamId string) (model.Channel, error)
+	RandomChannel(teamId string, memberOf bool) (model.Channel, error)
 	// RandomTeam returns a random team for a user.
 	RandomTeam() (model.Team, error)
 	// RandomTeamJoined returns a random team the current user is a member of.

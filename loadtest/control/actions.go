@@ -195,7 +195,7 @@ func CreatePost(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, true)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -344,7 +344,7 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, true)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -370,7 +370,7 @@ func ViewChannel(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, true)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -462,7 +462,7 @@ func ViewUser(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, true)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {

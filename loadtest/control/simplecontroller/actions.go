@@ -48,7 +48,7 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	channel, err := c.user.Store().RandomChannelJoined(team.Id)
+	channel, err := c.user.Store().RandomChannel(team.Id, true)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

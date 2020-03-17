@@ -201,12 +201,12 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
-// RandomChannel returns a random channel for a user.
-func (s *SampleStore) RandomChannel(teamId string) (model.Channel, error) {
+// RandomAnyChannel returns a random channel for a user.
+func (s *SampleStore) RandomAnyChannel(teamId string) (model.Channel, error) {
 	return model.Channel{}, nil
 }
 
-func (s *SampleStore) RandomChannelJoined(teamId string) (model.Channel, error) {
+func (s *SampleStore) RandomChannel(teamId string, memberOf bool) (model.Channel, error) {
 	return model.Channel{}, nil
 }
 
