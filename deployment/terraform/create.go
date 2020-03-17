@@ -118,14 +118,14 @@ func (t *Terraform) Create() error {
 
 			// Upload service file
 			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if err := sshc.Upload(rdr, true, "/lib/systemd/system/mattermost.service"); err != nil {
+			if err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
 				mlog.Error("error uploading systemd file", mlog.Err(err))
 				return
 			}
 
 			// Upload binary if needed.
 			if uploadBinary {
-				if err := sshc.UploadFile(binaryPath, false, "/opt/mattermost/bin/mattermost"); err != nil {
+				if err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.Err(err))
 					return
 				}

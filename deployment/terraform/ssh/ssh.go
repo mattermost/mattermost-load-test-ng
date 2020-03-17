@@ -58,7 +58,7 @@ func (sshc *Client) RunCommand(cmd string) error {
 }
 
 // Upload uploads a given src object to a given destination file.
-func (sshc *Client) Upload(src io.Reader, sudo bool, dst string) error {
+func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) error {
 	if strings.ContainsAny(dst, `'\`) {
 		// TODO: copied from load-test repo. Need to be improved
 		// by using an actual sftp library.
@@ -80,7 +80,7 @@ func (sshc *Client) Upload(src io.Reader, sudo bool, dst string) error {
 }
 
 // UploadFile uploads a given file path to a given destination file.
-func (sshc *Client) UploadFile(src string, sudo bool, dst string) error {
+func (sshc *Client) UploadFile(src, dst string, sudo bool) error {
 	f, err := os.Open(src)
 	if err != nil {
 		return err
