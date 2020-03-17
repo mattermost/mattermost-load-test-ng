@@ -1,6 +1,8 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+// Package ssh is a simple wrapper around an ssh.Client
+// which implements utilities to be performed with a remote server.
 package ssh
 
 import (
@@ -75,6 +77,19 @@ func (sshc *Client) Upload(src io.Reader, sudo bool, dst string) error {
 		cmd = fmt.Sprintf("sudo su -c %q", cmd)
 	}
 	return sess.Run(cmd)
+}
+
+// UploadFile uploads a given file path to a given destination file.
+func (sshc *Client) UploadFile(src string, sudo bool, dst string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := sshc.Upload(f, false, "/opt/mattermost/bin/mattermost"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Close closes the underlying connection.

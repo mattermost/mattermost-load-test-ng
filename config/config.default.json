@@ -19,18 +19,6 @@
         "InitialActiveUsers": 4,
         "MaxActiveUsers": 1000
     },
-    "DeploymentConfiguration": {
-        "ClusterName": "loadtest",
-        "AppInstanceCount": 1,
-        "SSHPublicKey": "~/.ssh/id_rsa.pub",
-        "DBInstanceCount": 1,
-        "DBInstanceEngine": "mysql",
-        "DBInstanceClass": "db.r4.large",
-        "DBUserName": "mmuser",
-        "DBPassword": "mostestBigPass123",
-        "MattermostDownloadURL": "https://releases.mattermost.com/5.19.1/mattermost-5.19.1-linux-amd64.tar.gz",
-        "MattermostLicenseFile": ""
-    },
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",

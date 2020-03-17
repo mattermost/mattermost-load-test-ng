@@ -33,9 +33,6 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 			InstanceConfiguration: loadtest.InstanceConfiguration{
 				NumTeams: 1,
 			},
-			DeploymentConfiguration: loadtest.DeploymentConfiguration{
-				DBInstanceEngine: "mysql",
-			},
 		},
 	}
 	agent1, err := agent.New(cfg)

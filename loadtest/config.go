@@ -124,32 +124,11 @@ func (uc *UsersConfiguration) IsValid() error {
 	return nil
 }
 
-// DeploymentConfiguration contains the necessary data
-// to deploy and provision a load test environment through terraform.
-type DeploymentConfiguration struct {
-	ClusterName      string // Name of the cluster.
-	AppInstanceCount int    // Number of application instances.
-	SSHPublicKey     string // Path to the SSH public key.
-	DBInstanceCount  int    // Number of DB instances.
-	DBInstanceClass  string // Type of the DB instance.
-	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
-	DBUserName       string // Username to connect to the DB.
-	DBPassword       string // Password to connect to the DB.
-	// URL from where to download Mattermost release.
-	// This can also point to a local binary path if the user wants to run loadtest
-	// on a custom build. The path should be prefixed with "file://". In that case,
-	// only the binary gets replaced, and the rest of the build comes from the latest
-	// stable release.
-	MattermostDownloadURL string
-	MattermostLicenseFile string // Path to the Mattermost EE license file.
-}
-
 type Config struct {
 	ConnectionConfiguration     ConnectionConfiguration
 	UserControllerConfiguration UserControllerConfiguration
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
-	DeploymentConfiguration     DeploymentConfiguration
 	LogSettings                 logger.Settings
 }
 
@@ -170,15 +149,6 @@ func (c *Config) IsValid() error {
 
 	if err := c.UsersConfiguration.IsValid(); err != nil {
 		return fmt.Errorf("invalid users configuration: %w", err)
-	}
-
-	// TODO: to be moved to its own config file.
-	if c.DeploymentConfiguration.DBInstanceEngine != "" {
-		switch c.DeploymentConfiguration.DBInstanceEngine {
-		case "aurora", "aurora-postgresql", "mysql", "postgres":
-		default:
-			return fmt.Errorf("invalid value %s for DBInstanceEngine", c.DeploymentConfiguration.DBInstanceEngine)
-		}
 	}
 
 	return nil
