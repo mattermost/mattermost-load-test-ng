@@ -7,17 +7,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds the the rate and user actions definitions that will be runned by
-// the SimpleController
+// Config holds the the rate and user actions definitions that will be run by
+// the SimpleController.
 type Config struct {
-	Rate    float64
+	// Rate is the idle time coefficient for user actions that will be performed
+	// sequentially.
+	Rate float64
+	// Actions are the user action definitions that will be run by the controller.
 	Actions []actionDefinition
 }
 
 type actionDefinition struct {
-	ActionId     string
+	// ActionId is the key of an action which is mapped to a user action
+	// implementation.
+	ActionId string
+	// RunFrequency determines how often the action will be performed.
 	RunFrequency int
-	WaitAfterMs  int
+	// WaitAfterMs is the wait time after the action is performed.
+	WaitAfterMs int
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
