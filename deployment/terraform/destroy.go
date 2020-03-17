@@ -12,7 +12,7 @@ func (t *Terraform) Destroy() error {
 		return err
 	}
 
-	err = t.runCommand(nil, "destroy",
+	return t.runCommand(nil, "destroy",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
@@ -26,8 +26,4 @@ func (t *Terraform) Destroy() error {
 		"-auto-approve",
 		"./deployment/terraform",
 	)
-	if err != nil {
-		return err
-	}
-	return nil
 }
