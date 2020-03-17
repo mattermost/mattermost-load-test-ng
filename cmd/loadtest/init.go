@@ -44,7 +44,7 @@ func createChannels(admin *userentity.UserEntity, numChannels int) error {
 	channelTypes := []string{"O", "P"}
 
 	for i := 0; i < numChannels; i++ {
-		team, err := admin.Store().RandomTeam()
+		team, err := admin.Store().RandomAnyTeam()
 		if err != nil {
 			return err
 		}

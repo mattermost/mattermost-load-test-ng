@@ -210,12 +210,12 @@ func (s *SampleStore) RandomChannel(teamId string, memberOf bool) (model.Channel
 	return model.Channel{}, nil
 }
 
-// RandomTeam returns a random team for a user.
-func (s *SampleStore) RandomTeam() (model.Team, error) {
+// RandomAnyTeam returns a random team for a user.
+func (s *SampleStore) RandomAnyTeam() (model.Team, error) {
 	return model.Team{}, nil
 }
 
-func (s *SampleStore) RandomTeamJoined() (model.Team, error) {
+func (s *SampleStore) RandomTeam(memberOf bool) (model.Team, error) {
 	return model.Team{}, nil
 }
 

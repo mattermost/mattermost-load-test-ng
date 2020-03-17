@@ -40,7 +40,7 @@ func TestRandomAnyChannel(t *testing.T) {
 	})
 }
 
-func TestRandomTeam(t *testing.T) {
+func TestRandomAnyTeam(t *testing.T) {
 	s := New()
 	id1 := model.NewId()
 	id2 := model.NewId()
@@ -49,7 +49,7 @@ func TestRandomTeam(t *testing.T) {
 		{Id: id2},
 	})
 	require.NoError(t, err)
-	team, err := s.RandomTeam()
+	team, err := s.RandomAnyTeam()
 	require.NoError(t, err)
 	assert.Condition(t, func() bool {
 		switch team.Id {
@@ -242,7 +242,7 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 
 var errG error
 
-func BenchmarkRandomTeam(b *testing.B) {
+func BenchmarkRandomAnyTeam(b *testing.B) {
 	s := New()
 	id1 := model.NewId()
 	id2 := model.NewId()
@@ -253,15 +253,15 @@ func BenchmarkRandomTeam(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, errG = s.RandomTeam()
+		_, errG = s.RandomAnyTeam()
 		require.NoError(b, errG)
 	}
 }
 
-func TestRandomTeamJoined(t *testing.T) {
+func TestRandomTeam(t *testing.T) {
 	t.Run("user not set", func(t *testing.T) {
 		s := New()
-		team, err := s.RandomTeamJoined()
+		team, err := s.RandomTeam(true)
 		require.Error(t, err)
 		require.Empty(t, team)
 		require.Equal(t, ErrUserNotSet, err)
@@ -274,13 +274,13 @@ func TestRandomTeamJoined(t *testing.T) {
 		}
 		err := s.SetUser(user)
 		require.NoError(t, err)
-		team, err := s.RandomTeamJoined()
+		team, err := s.RandomTeam(true)
 		require.Error(t, err)
 		require.Empty(t, team)
 		require.Equal(t, ErrTeamStoreEmpty, err)
 	})
 
-	t.Run("team found", func(t *testing.T) {
+	t.Run("team found which user is a member of", func(t *testing.T) {
 		s := New()
 		user := &model.User{
 			Id: model.NewId(),
@@ -320,7 +320,37 @@ func TestRandomTeamJoined(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		team, err := s.RandomTeamJoined()
+		team, err := s.RandomTeam(true)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch team.Id {
+			case teamId1, teamId2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("team found which user is not a member of", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId1 := model.NewId()
+		teamId2 := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId1,
+			},
+			{
+				Id: teamId2,
+			},
+		})
+		require.NoError(t, err)
+		team, err := s.RandomTeam(false)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch team.Id {
@@ -380,7 +410,7 @@ func TestRandomChannel(t *testing.T) {
 		require.Equal(t, ErrChannelStoreEmpty, err)
 	})
 
-	t.Run("channel found member of", func(t *testing.T) {
+	t.Run("channel found which is the user a member of", func(t *testing.T) {
 		s := New()
 		user := &model.User{
 			Id: model.NewId(),
@@ -426,7 +456,7 @@ func TestRandomChannel(t *testing.T) {
 		})
 	})
 
-	t.Run("channel found not member of", func(t *testing.T) {
+	t.Run("channel found which is the user is not a member of", func(t *testing.T) {
 		s := New()
 		user := &model.User{
 			Id: model.NewId(),
@@ -442,20 +472,9 @@ func TestRandomChannel(t *testing.T) {
 		require.NoError(t, err)
 		channelId1 := model.NewId()
 		channelId2 := model.NewId()
-		channelId3 := model.NewId()
 		err = s.SetChannels([]*model.Channel{
 			{Id: channelId1, TeamId: teamId},
 			{Id: channelId2, TeamId: teamId},
-			{Id: channelId3, TeamId: teamId},
-		})
-		require.NoError(t, err)
-		err = s.SetChannelMembers(&model.ChannelMembers{
-			{
-				ChannelId: channelId1,
-			},
-			{
-				ChannelId: channelId2,
-			},
 		})
 		require.NoError(t, err)
 		channel, err := s.RandomChannel(teamId, false)

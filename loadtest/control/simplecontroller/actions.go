@@ -44,7 +44,7 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 }
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
-	team, err := c.user.Store().RandomTeamJoined()
+	team, err := c.user.Store().RandomTeam(true)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

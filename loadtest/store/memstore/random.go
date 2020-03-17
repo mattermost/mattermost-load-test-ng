@@ -40,8 +40,8 @@ func (s *MemStore) RandomAnyChannel(teamId string) (model.Channel, error) {
 	return *channels[rand.Intn(len(channels))], nil
 }
 
-// RandomTeam returns a random team for a user.
-func (s *MemStore) RandomTeam() (model.Team, error) {
+// RandomAnyTeam returns a random team for a user.
+func (s *MemStore) RandomAnyTeam() (model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -52,8 +52,8 @@ func (s *MemStore) RandomTeam() (model.Team, error) {
 	return *s.teams[key.(string)], nil
 }
 
-// RandomTeamJoined returns a random team the current user is a member of.
-func (s *MemStore) RandomTeamJoined() (model.Team, error) {
+// RandomTeam returns a random team the current user is a member of or not.
+func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -65,7 +65,7 @@ func (s *MemStore) RandomTeamJoined() (model.Team, error) {
 
 	var teams []*model.Team
 	for teamId, team := range s.teams {
-		if s.teamMembers[teamId][userId] != nil {
+		if (s.teamMembers[teamId][userId] != nil) == memberOf {
 			teams = append(teams, team)
 		}
 	}
