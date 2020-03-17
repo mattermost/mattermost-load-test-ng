@@ -52,11 +52,12 @@ type UserStore interface {
 	// RandomAnyChannel returns a random channel for a user.
 	RandomAnyChannel(teamId string) (model.Channel, error)
 	// RandomChannel returns a random channel for the given teamId that the
-	// current user is a member of or not.
+	// current user is a member of or not a member of.
 	RandomChannel(teamId string, memberOf bool) (model.Channel, error)
 	// RandomAnyTeam returns a random team for a user.
 	RandomAnyTeam() (model.Team, error)
-	// RandomTeam returns a random team the current user is a member of or not.
+	// RandomTeam returns a random team the current user is a member of or not
+	// not a member of.
 	RandomTeam(memberOf bool) (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)

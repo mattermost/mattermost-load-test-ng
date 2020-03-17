@@ -52,7 +52,8 @@ func (s *MemStore) RandomAnyTeam() (model.Team, error) {
 	return *s.teams[key.(string)], nil
 }
 
-// RandomTeam returns a random team the current user is a member of or not.
+// RandomTeam returns a random team the current user is a member of or not a
+// a member of.
 func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -80,7 +81,7 @@ func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
 }
 
 // RandomChannel returns a random channel for the given teamId that the
-// current user is not a member of.
+// current user is a member of or not a member of.
 func (s *MemStore) RandomChannel(teamId string, memberOf bool) (model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
