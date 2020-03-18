@@ -12,9 +12,10 @@ type SelectionType uint8
 
 // Defines the membership rules for a store entity
 const (
-	SelectMemberOf SelectionType = iota + 1
-	SelectNotMemberOf
-	SelectAny
+	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member
+	SelectNotMemberOf                           // Select cases where the user is not a member
+
+	SelectAny = SelectMemberOf | SelectNotMemberOf
 )
 
 // UserStore is a read-only interface which provides access to various
