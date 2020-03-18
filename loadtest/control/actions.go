@@ -192,11 +192,9 @@ func JoinTeam(u user.User) UserActionResponse {
 
 // CreatePost creates a new post in a random channel by the given user.
 func CreatePost(u user.User) UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	} else if team == nil {
-		return UserActionResponse{Err: NewUserError(fmt.Errorf("current team should be set"))}
 	}
 	channel, err := u.Store().RandomChannelJoined(team.Id)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
@@ -403,11 +401,9 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 // ViewChannel performs a view action in a random team/channel for the given
 // user, which will mark all posts as read in the channel.
 func ViewChannel(u user.User) UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	} else if team == nil {
-		return UserActionResponse{Err: NewUserError(fmt.Errorf("current team should be set"))}
 	}
 	channel, err := u.Store().RandomChannelJoined(team.Id)
 	if err != nil {
@@ -497,11 +493,9 @@ func SearchPosts(u user.User) UserActionResponse {
 
 // ViewUser simulates opening a random user profile for the given user.
 func ViewUser(u user.User) UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+	team, err := u.Store().RandomTeamJoined()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	} else if team == nil {
-		return UserActionResponse{Err: NewUserError(fmt.Errorf("current team should be set"))}
 	}
 
 	channel, err := u.Store().RandomChannelJoined(team.Id)
