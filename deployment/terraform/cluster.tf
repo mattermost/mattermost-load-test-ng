@@ -46,26 +46,6 @@ resource "aws_instance" "app_server" {
   }
 }
 
-resource "aws_db_instance" "db" {
-  identifier          = "${var.cluster_name}-db"
-  allocated_storage   = 100
-  storage_type        = "io1"
-  iops                = 1000
-  engine              = var.db_instance_engine
-  engine_version      = var.db_engine_version[var.db_instance_engine]
-  instance_class      = var.db_instance_class
-  name                = "${var.cluster_name}db"
-  username            = var.db_username
-  password            = var.db_password
-  skip_final_snapshot = true
-  apply_immediately   = true
-
-  # count = var.db_instance_count # needs aws_rds_cluster to work
-  vpc_security_group_ids = [
-    "${aws_security_group.db.id}"
-  ]
-}
-
 resource "aws_security_group" "app" {
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"

@@ -211,12 +211,25 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 
-	var output terraformOutput
-	err = json.Unmarshal(buf.Bytes(), &output)
-	if err != nil {
-		return nil, err
+	return t.parseOutputJSON(buf.Bytes())
+}
+
+func (t *Terraform) parseOutputJSON(buf []byte) (*terraformOutput, error) {
+	// XXX: Hack to remove anything after the last }
+	// We have to do things like this because we are interacting with the
+	// terraform CLI instead of using an API.
+	//
+	// This will inevitably break if the TF_LOG output contains a } too.
+	// Then we can resort to even nastier hacks. :)
+	index := bytes.LastIndexByte(buf, '}')
+	if index == -1 {
+		return nil, fmt.Errorf("invalid json: %s", string(buf))
 	}
-	return &output, nil
+	// reslice the buffer cutting off everything after the last }.
+	buf = buf[:index+1]
+	output := &terraformOutput{}
+	err := json.Unmarshal(buf, output)
+	return output, err
 }
 
 // runCommand runs terraform with the args supplied. If dst is not nil, it writes the output there.
