@@ -5,12 +5,16 @@ package userentity
 
 import (
 	"errors"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"golang.org/x/net/html"
+	"golang.org/x/sync/errgroup"
 )
 
 // UserEntity is an implementation of the User interface
@@ -94,6 +98,76 @@ func (ue *UserEntity) Connect() <-chan error {
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan
+}
+
+// DownloadFile will download a url into a buffer
+func downloadFile(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("File not found: " + url)
+	}
+
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
+}
+
+func extractLinks(data []byte) []string {
+	tokenizer := html.NewTokenizer(strings.NewReader(string(data)))
+	links := []string{}
+	for {
+		switch tokenizer.Next() {
+		case html.ErrorToken:
+			// End of the document, we're done
+			return links
+		case html.StartTagToken:
+			tag, _ := tokenizer.TagName()
+			nodeType := ""
+			nodeValue := ""
+			if string(tag) != "script" {
+				continue
+			}
+			for {
+				key, val, more := tokenizer.TagAttr()
+				if string(key) == "src" {
+					nodeValue = string(val)
+				}
+				if string(key) == "type" {
+					nodeType = string(val)
+				}
+				if !more {
+					break
+				}
+			}
+			if nodeType == "text/javascript" {
+				links = append(links, nodeValue)
+			}
+		}
+	}
+}
+
+// FetchStaticAssets parses index.html and fetches static assets mentioned in it
+func (ue *UserEntity) FetchStaticAssets() error {
+	indexHTML, err := downloadFile(ue.client.Url)
+	if err != nil {
+		return err
+	}
+
+	var g errgroup.Group
+
+	for _, url := range extractLinks(indexHTML) {
+		// Launch a goroutine to fetch the URL.
+		url := url // https://golang.org/doc/faq#closures_and_goroutines
+		g.Go(func() error {
+			_, err := downloadFile(ue.client.Url + "/" + url)
+			return err
+		})
+	}
+	// Wait for all HTTP fetches to complete.
+	return g.Wait()
 }
 
 // Disconnect closes the websocket connection.

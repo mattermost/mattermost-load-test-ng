@@ -490,6 +490,15 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
+// FetchStaticAssets parses index.html and fetches static assets mentioned in it
+func FetchStaticAssets(u user.User) UserActionResponse {
+	err := u.FetchStaticAssets()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	return UserActionResponse{Info: "static assets fetched"}
+}
+
 // ViewUser simulates opening a random user profile for the given user.
 func ViewUser(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()

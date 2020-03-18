@@ -28,6 +28,11 @@ func Setup(tb testing.TB) *TestHelper {
 	return &th
 }
 
+func (th *TestHelper) SetConfig(config *loadtest.Config) *TestHelper {
+	th.config = config
+	return th
+}
+
 func (th *TestHelper) Init() *TestHelper {
 	th.User = th.CreateUser()
 	return th
