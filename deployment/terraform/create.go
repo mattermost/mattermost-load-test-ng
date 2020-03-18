@@ -13,12 +13,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
-	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/pkg/errors"
@@ -34,7 +33,7 @@ const filePrefix = "file://"
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
 type Terraform struct {
-	config *loadtest.Config
+	config *deployment.Config
 }
 
 // terraformOutput contains the output variables which are
@@ -49,7 +48,7 @@ type terraformOutput struct {
 }
 
 // New returns a new Terraform instance.
-func New(cfg *loadtest.Config) *Terraform {
+func New(cfg *deployment.Config) *Terraform {
 	return &Terraform{
 		config: cfg,
 	}
@@ -62,10 +61,15 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
 	var uploadBinary bool
 	var binaryPath string
-	if strings.HasPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix) {
-		binaryPath = strings.TrimPrefix(t.config.DeploymentConfiguration.MattermostDownloadURL, filePrefix)
+	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
+		binaryPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
 		info, err := os.Stat(binaryPath)
 		if err != nil {
 			return err
@@ -74,23 +78,23 @@ func (t *Terraform) Create() error {
 			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
 		}
 
-		t.config.DeploymentConfiguration.MattermostDownloadURL = latestReleaseURL
+		t.config.MattermostDownloadURL = latestReleaseURL
 		uploadBinary = true
 	}
 
 	err = t.runCommand(nil, "apply",
-		"-var", fmt.Sprintf("cluster_name=%s", t.config.DeploymentConfiguration.ClusterName),
-		"-var", fmt.Sprintf("app_instance_count=%d", t.config.DeploymentConfiguration.AppInstanceCount),
-		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.DeploymentConfiguration.SSHPublicKey),
-		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DeploymentConfiguration.DBInstanceCount),
-		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DeploymentConfiguration.DBInstanceEngine),
-		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DeploymentConfiguration.DBInstanceClass),
-		"-var", fmt.Sprintf("db_username=%s", t.config.DeploymentConfiguration.DBUserName),
-		"-var", fmt.Sprintf("db_password=%s", t.config.DeploymentConfiguration.DBPassword),
-		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.DeploymentConfiguration.MattermostDownloadURL),
-		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.DeploymentConfiguration.MattermostLicenseFile),
+		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
+		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
+		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
+		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
+		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
+		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DBInstanceClass),
+		"-var", fmt.Sprintf("db_username=%s", t.config.DBUserName),
+		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
+		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
+		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-auto-approve",
-		"./terraform",
+		"./deployment/terraform",
 	)
 	if err != nil {
 		return err
@@ -103,7 +107,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance.
 	for _, ip := range output.InstanceIps.Value {
-		sshc, err := ssh.NewClient(ip)
+		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 			continue
@@ -120,20 +124,14 @@ func (t *Terraform) Create() error {
 
 			// Upload service file
 			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if err := sshc.Upload(rdr, true, "/lib/systemd/system/mattermost.service"); err != nil {
+			if err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
 				mlog.Error("error uploading systemd file", mlog.Err(err))
 				return
 			}
 
 			// Upload binary if needed.
 			if uploadBinary {
-				f, err := os.Open(binaryPath)
-				if err != nil {
-					mlog.Error("error opening file", mlog.String("file", binaryPath), mlog.Err(err))
-					return
-				}
-				defer f.Close()
-				if err := sshc.Upload(f, false, "/opt/mattermost/bin/mattermost"); err != nil {
+				if err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.Err(err))
 					return
 				}
@@ -155,11 +153,11 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 	mlog.Info("Updating config", mlog.String("host", ip))
 
 	var dsn string
-	switch t.config.DeploymentConfiguration.DBInstanceEngine {
+	switch t.config.DBInstanceEngine {
 	case "postgres":
-		dsn = "postgres://" + t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@" + output.DBEndpoint.Value + "/" + t.config.DeploymentConfiguration.ClusterName + "db?sslmode=disable"
+		dsn = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBEndpoint.Value + "/" + t.config.ClusterName + "db?sslmode=disable"
 	case "mysql":
-		dsn = t.config.DeploymentConfiguration.DBUserName + ":" + t.config.DeploymentConfiguration.DBPassword + "@tcp(" + output.DBEndpoint.Value + ")/" + t.config.DeploymentConfiguration.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+		dsn = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBEndpoint.Value + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
 	}
 	mlog.Info("dsn: " + dsn) // TODO: remove this later.
 
@@ -167,7 +165,7 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 		".ServiceSettings.ListenAddress":       ":8065",
 		".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
 		".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
-		".SqlSettings.DriverName":              t.config.DeploymentConfiguration.DBInstanceEngine,
+		".SqlSettings.DriverName":              t.config.DBInstanceEngine,
 		".SqlSettings.DataSource":              dsn,
 		".MetricsSettings.Enable":              true,
 		".PluginSettings.Enable":               true,
@@ -190,14 +188,7 @@ func (t *Terraform) preFlightCheck() error {
 	if os.Getenv("SSH_AUTH_SOCK") == "" {
 		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
-	if len(t.config.DeploymentConfiguration.DBPassword) < 8 {
-		return fmt.Errorf("db password needs to be at least 8 characters")
-	}
-	clusterName := t.config.DeploymentConfiguration.ClusterName
-	firstRune, _ := utf8.DecodeRuneInString(clusterName)
-	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
-		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
-	}
+
 	if err := t.init(); err != nil {
 		return err
 	}
@@ -210,12 +201,12 @@ func (t *Terraform) preFlightCheck() error {
 
 func (t *Terraform) init() error {
 	return t.runCommand(nil, "init",
-		"./terraform")
+		"./deployment/terraform")
 }
 
 func (t *Terraform) validate() error {
 	return t.runCommand(nil, "validate",
-		"./terraform")
+		"./deployment/terraform")
 }
 
 func (t *Terraform) getOutput() (*terraformOutput, error) {
@@ -247,6 +238,20 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 
 	mlog.Info("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
+
+	// If dst is set, that means we want to capture the output.
+	// We write a simple case to handle that using CombinedOutput.
+	if dst != nil {
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		_, err = dst.Write(out)
+		return err
+	}
+
+	// From here, we want to stream the output concurrently from stderr and stdout
+	// to mlog.
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
@@ -260,19 +265,22 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 		return err
 	}
 
-	rdr := io.MultiReader(stdout, stderr)
-	if dst != nil {
-		_, err = io.Copy(dst, rdr)
-		if err != nil {
-			return err
-		}
-	} else {
-		scanner := bufio.NewScanner(rdr)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			mlog.Info(scanner.Text())
 		}
-		// No need to check for scanner.Error as cmd.Wait() already does that.
+	}()
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		mlog.Info(scanner.Text())
 	}
+	// No need to check for scanner.Error as cmd.Wait() already does that.
+	wg.Wait()
 
 	if err := cmd.Wait(); err != nil {
 		return err

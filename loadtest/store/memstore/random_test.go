@@ -77,6 +77,52 @@ func TestRandomPost(t *testing.T) {
 	})
 }
 
+func TestRandomPostForChannel(t *testing.T) {
+	s := New()
+	post, err := s.RandomPostForChannel("someId")
+	require.Empty(t, post)
+	require.Equal(t, ErrPostNotFound, err)
+
+	channelId := "ch-" + model.NewId()
+
+	id1 := model.NewId()
+	id2 := model.NewId()
+	err = s.SetPosts([]*model.Post{
+		{
+			Id:        id1,
+			ChannelId: channelId,
+		},
+		{Id: id2},
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomPostForChannel(channelId)
+		require.NoError(t, err)
+		require.Equal(t, id1, p.Id)
+	}
+
+	id3 := model.NewId()
+	err = s.SetPost(&model.Post{
+		Id:        id3,
+		ChannelId: channelId,
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomPostForChannel(channelId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch p.Id {
+			case id1, id3:
+				return true
+			default:
+				return false
+			}
+		})
+	}
+}
+
 func TestRandomEmoji(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		s := New()

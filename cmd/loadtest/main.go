@@ -28,7 +28,6 @@ func main() {
 		},
 		MakeInitCommand(),
 		MakeServerCommand(),
-		MakeEnvCommand(),
 	}
 
 	rootCmd.AddCommand(commands...)
