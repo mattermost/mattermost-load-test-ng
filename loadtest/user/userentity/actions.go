@@ -185,6 +185,9 @@ func (ue *UserEntity) GetPostsSince(channelId string, time int64) error {
 	if resp.Error != nil {
 		return resp.Error
 	}
+	if len(postlist.Posts) == 0 {
+		return nil
+	}
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
@@ -525,7 +528,10 @@ func (ue *UserEntity) GetUserStatus() error {
 
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	_, resp := ue.client.GetUsersStatusesByIds(userIds)
-	return resp.Error
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
 }
 
 func (ue *UserEntity) GetTeamStats(teamId string) error {
@@ -737,4 +743,12 @@ func (ue *UserEntity) GetClientLicense() error {
 		return err
 	}
 	return nil
+}
+
+func (ue *UserEntity) SetCurrentTeam(team *model.Team) error {
+	return ue.store.SetCurrentTeam(team)
+}
+
+func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
+	return ue.store.SetCurrentChannel(channel)
 }

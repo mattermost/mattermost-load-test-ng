@@ -117,4 +117,6 @@ type User interface {
 	// utils
 	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise.
 	IsSysAdmin() (bool, error)
+	SetCurrentTeam(team *model.Team) error
+	SetCurrentChannel(channel *model.Channel) error
 }
