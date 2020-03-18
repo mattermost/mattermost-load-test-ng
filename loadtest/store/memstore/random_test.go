@@ -395,6 +395,7 @@ func TestRandomChannel(t *testing.T) {
 				Id: "t1",
 			},
 		})
+		require.NoError(t, err)
 		err = s.SetChannels([]*model.Channel{
 			{Id: id1, TeamId: "t1"},
 			{Id: id2, TeamId: "t1"},
@@ -420,6 +421,7 @@ func TestRandomChannel(t *testing.T) {
 				Id: "t1",
 			},
 		})
+		require.NoError(t, err)
 		_, err = s.RandomChannel("t1", store.SelectMemberOf|store.SelectNotMemberOf)
 		require.True(t, errors.Is(err, ErrChannelStoreEmpty))
 	})
