@@ -218,11 +218,11 @@ func CreatePost(u user.User) UserActionResponse {
 
 // CreatePostReply replies to a randomly picked post.
 func CreatePostReply(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
