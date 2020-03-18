@@ -176,12 +176,13 @@ func JoinTeam(u user.User) UserActionResponse {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 		if tm.UserId == "" {
-			err := u.AddTeamMember(teamId, userId)
-			if err != nil {
+			if err := u.AddTeamMember(teamId, userId); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
-			err = u.GetChannelMembersForUser(userId, teamId)
-			if err != nil {
+			if err := u.GetChannelsForTeam(teamId); err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+			if err := u.GetChannelMembersForUser(userId, teamId); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 			return UserActionResponse{Info: fmt.Sprintf("joined team %s", teamId)}
@@ -410,7 +411,7 @@ func ViewChannel(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channelViewResponse, err := u.ViewChannel(&model.ChannelView{
+	_, err = u.ViewChannel(&model.ChannelView{
 		ChannelId:     channel.Id,
 		PrevChannelId: "",
 	})
@@ -418,7 +419,7 @@ func ViewChannel(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	return UserActionResponse{Info: fmt.Sprintf("channel viewed. result: %v", channelViewResponse.ToJson())}
+	return UserActionResponse{Info: fmt.Sprintf("viewed channel %s", channel.Id)}
 }
 
 // SearchUsers searches for users by the given user.
@@ -497,7 +498,12 @@ func ViewUser(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
+<<<<<<< HEAD
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+=======
+
+	channel, err := u.Store().RandomChannelJoined(team.Id)
+>>>>>>> origin/master
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -534,13 +540,22 @@ func Reload(u user.User) UserActionResponse {
 
 	prefs, _ := u.Store().Preferences()
 	var userIds []string
-	chanId := ""
+	var chanId string
+	// TODO: possibly remove this. Data should probably come from the store.
 	for _, p := range prefs {
 		switch {
 		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
 			chanId = p.Value
 		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
 			userIds = append(userIds, p.Name)
+		}
+	}
+
+	if chanId == "" {
+		if c, err := u.Store().CurrentChannel(); err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		} else if c != nil {
+			chanId = c.Id
 		}
 	}
 
@@ -602,26 +617,33 @@ func Reload(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+<<<<<<< HEAD
 	// NOTE: during reload, the webapp client will fetch the last viewed team.
 	// This information is persistently stored and survives reloads/restarting the browser.
 	// Here we simplify that behaviour by randomly picking a team the user is
 	// a member of.
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
+=======
+	var teamId string
+	if team, err := u.Store().CurrentTeam(); err != nil {
+>>>>>>> origin/master
 		return UserActionResponse{Err: NewUserError(err)}
+	} else if team != nil {
+		teamId = team.Id
 	}
 
-	if team.Id != "" {
+	if teamId != "" {
 		err = u.GetTeamMembersForUser(u.Store().Id())
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 
-		if tm, err := u.Store().TeamMember(team.Id, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(team.Id); err != nil {
+		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
+			if err := u.GetChannelsForTeam(teamId); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
-			err = u.GetChannelMembersForUser(userId, team.Id)
+			err = u.GetChannelMembersForUser(userId, teamId)
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}

@@ -399,3 +399,11 @@ func (u *SampleUser) GetClientLicense() error {
 func (u *SampleUser) IsSysAdmin() (bool, error) {
 	return false, nil
 }
+
+func (u *SampleUser) SetCurrentTeam(team *model.Team) error {
+	return nil
+}
+
+func (u *SampleUser) SetCurrentChannel(channel *model.Channel) error {
+	return nil
+}

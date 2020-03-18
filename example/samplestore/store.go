@@ -130,6 +130,14 @@ func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 	return nil, nil
 }
 
+func (s *SampleStore) CurrentChannel() (*model.Channel, error) {
+	return nil, nil
+}
+
+func (s *SampleStore) SetCurrentChannel(channel *model.Channel) error {
+	return nil
+}
+
 // Channels return all the channels for a team.
 func (s *SampleStore) Channels(teamId string) ([]model.Channel, error) {
 	var channels []model.Channel
@@ -179,6 +187,14 @@ func (s *SampleStore) SetTeams(teams []*model.Team) error {
 	for _, team := range teams {
 		s.teams[team.Id] = team
 	}
+	return nil
+}
+
+func (s *SampleStore) CurrentTeam() (*model.Team, error) {
+	return nil, nil
+}
+
+func (s *SampleStore) SetCurrentTeam(team *model.Team) error {
 	return nil
 }
 

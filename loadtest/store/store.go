@@ -37,6 +37,8 @@ type UserStore interface {
 	Channel(channelId string) (*model.Channel, error)
 	// Channels returns the channels for a team.
 	Channels(teamId string) ([]model.Channel, error)
+	// CurrentChannel gets the channel the user is currently viewing.
+	CurrentChannel() (*model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
 	// ChannelPosts returns all posts for given channelId
@@ -45,6 +47,8 @@ type UserStore interface {
 	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
 	// Teams returns the teams a user belong to.
 	Teams() ([]model.Team, error)
+	// CurrentTeam gets the currently selected team for the user.
+	CurrentTeam() (*model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
 	TeamMember(teamdId, userId string) (model.TeamMember, error)
 	// Preferences returns the preferences of the user.
@@ -113,6 +117,8 @@ type MutableUserStore interface {
 	// channels
 	SetChannel(channel *model.Channel) error
 	SetChannels(channels []*model.Channel) error
+	// SetCurrentChannel sets the channel the user is currently viewing.
+	SetCurrentChannel(channel *model.Channel) error
 	// SetChannelMembers stores the given channel members in the store.
 	SetChannelMembers(channelMembers *model.ChannelMembers) error
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)
@@ -123,6 +129,8 @@ type MutableUserStore interface {
 	SetTeam(team *model.Team) error
 	Team(teamId string) (*model.Team, error)
 	SetTeams(teams []*model.Team) error
+	// SetCurrentTeam sets the currently selected team for the user.
+	SetCurrentTeam(team *model.Team) error
 	SetTeamMember(teamId string, teamMember *model.TeamMember) error
 	RemoveTeamMember(teamId, memberId string) error
 	SetTeamMembers(teamId string, teamMember []*model.TeamMember) error

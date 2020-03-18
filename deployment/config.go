@@ -71,7 +71,7 @@ func ReadConfig(filePath string) (*Config, error) {
 
 	v.SetDefault("LogSettings.EnableConsole", true)
 	v.SetDefault("LogSettings.ConsoleLevel", "INFO")
-	v.SetDefault("LogSettings.ConsoleJson", true)
+	v.SetDefault("LogSettings.ConsoleJson", false)
 	v.SetDefault("LogSettings.EnableFile", true)
 	v.SetDefault("LogSettings.FileLevel", "INFO")
 	v.SetDefault("LogSettings.FileJson", true)

@@ -28,6 +28,8 @@ type MemStore struct {
 	reactions      map[string][]*model.Reaction
 	roles          map[string]*model.Role
 	license        map[string]string
+	currentChannel *model.Channel
+	currentTeam    *model.Team
 }
 
 // New returns a new instance of MemStore.
@@ -233,6 +235,26 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+func (s *MemStore) CurrentChannel() (*model.Channel, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if s.currentChannel == nil {
+		return nil, nil
+	}
+	chanCopy := *s.currentChannel
+	return &chanCopy, nil
+}
+
+func (s *MemStore) SetCurrentChannel(channel *model.Channel) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if channel == nil {
+		return errors.New("memstore: channel should not be nil")
+	}
+	s.currentChannel = channel
+	return nil
+}
+
 // Channels return all the channels for a team.
 func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 	s.lock.RLock()
@@ -274,6 +296,26 @@ func (s *MemStore) SetTeam(team *model.Team) error {
 	defer s.lock.Unlock()
 
 	s.teams[team.Id] = team
+	return nil
+}
+
+func (s *MemStore) CurrentTeam() (*model.Team, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if s.currentTeam == nil {
+		return nil, nil
+	}
+	teamCopy := *s.currentTeam
+	return &teamCopy, nil
+}
+
+func (s *MemStore) SetCurrentTeam(team *model.Team) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if team == nil {
+		return errors.New("memstore: team should not be nil")
+	}
+	s.currentTeam = team
 	return nil
 }
 
