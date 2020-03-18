@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -60,6 +61,11 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
 	var uploadBinary bool
 	var binaryPath string
 	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
@@ -101,7 +107,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance.
 	for _, ip := range output.InstanceIps.Value {
-		sshc, err := ssh.NewClient(ip)
+		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 			continue
@@ -232,6 +238,20 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 
 	mlog.Info("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
+
+	// If dst is set, that means we want to capture the output.
+	// We write a simple case to handle that using CombinedOutput.
+	if dst != nil {
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		_, err = dst.Write(out)
+		return err
+	}
+
+	// From here, we want to stream the output concurrently from stderr and stdout
+	// to mlog.
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
@@ -245,19 +265,22 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 		return err
 	}
 
-	rdr := io.MultiReader(stdout, stderr)
-	if dst != nil {
-		_, err = io.Copy(dst, rdr)
-		if err != nil {
-			return err
-		}
-	} else {
-		scanner := bufio.NewScanner(rdr)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			mlog.Info(scanner.Text())
 		}
-		// No need to check for scanner.Error as cmd.Wait() already does that.
+	}()
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		mlog.Info(scanner.Text())
 	}
+	// No need to check for scanner.Error as cmd.Wait() already does that.
+	wg.Wait()
 
 	if err := cmd.Wait(); err != nil {
 		return err
