@@ -12,6 +12,7 @@ type SelectionType uint8
 const (
 	SelectMemberOf SelectionType = iota + 1
 	SelectNotMemberOf
+	SelectAny
 )
 
 // UserStore is a read-only interface which provides access to various

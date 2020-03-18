@@ -243,6 +243,7 @@ var errG error
 
 func BenchmarkRandomTeam(b *testing.B) {
 	s := New()
+	s.SetUser(&model.User{})
 	id1 := model.NewId()
 	id2 := model.NewId()
 	err := s.SetTeams([]*model.Team{
@@ -252,7 +253,7 @@ func BenchmarkRandomTeam(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, errG = s.RandomTeam(store.SelectMemberOf | store.SelectNotMemberOf)
+		_, errG = s.RandomTeam(store.SelectAny)
 		require.NoError(b, errG)
 	}
 }
@@ -289,7 +290,7 @@ func TestRandomTeam(t *testing.T) {
 			{Id: id2},
 		})
 		require.NoError(t, err)
-		team, err := s.RandomTeam(store.SelectMemberOf | store.SelectNotMemberOf)
+		team, err := s.RandomTeam(store.SelectAny)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch team.Id {
