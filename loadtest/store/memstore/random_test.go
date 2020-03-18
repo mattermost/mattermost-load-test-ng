@@ -4,62 +4,15 @@
 package memstore
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestRandomAnyChannel(t *testing.T) {
-	t.Run("basic", func(t *testing.T) {
-		s := New()
-		id1 := model.NewId()
-		id2 := model.NewId()
-		err := s.SetChannels([]*model.Channel{
-			{Id: id1, TeamId: "t1"},
-			{Id: id2, TeamId: "t1"},
-		})
-		require.NoError(t, err)
-		ch, err := s.RandomAnyChannel("t1")
-		require.NoError(t, err)
-		assert.Condition(t, func() bool {
-			switch ch.Id {
-			case id1, id2:
-				return true
-			default:
-				return false
-			}
-		})
-	})
-	t.Run("emptyslice", func(t *testing.T) {
-		s := New()
-		_, err := s.RandomAnyChannel("t1")
-		require.Equal(t, ErrEmptySlice, err)
-	})
-}
-
-func TestRandomAnyTeam(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetTeams([]*model.Team{
-		{Id: id1},
-		{Id: id2},
-	})
-	require.NoError(t, err)
-	team, err := s.RandomAnyTeam()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch team.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
-	})
-}
 
 func TestRandomUsers(t *testing.T) {
 	s := New()
@@ -242,7 +195,7 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 
 var errG error
 
-func BenchmarkRandomAnyTeam(b *testing.B) {
+func BenchmarkRandomTeam(b *testing.B) {
 	s := New()
 	id1 := model.NewId()
 	id2 := model.NewId()
@@ -253,7 +206,7 @@ func BenchmarkRandomAnyTeam(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, errG = s.RandomAnyTeam()
+		_, errG = s.RandomTeam(store.SelectMemberOf | store.SelectNotMemberOf)
 		require.NoError(b, errG)
 	}
 }
@@ -261,7 +214,7 @@ func BenchmarkRandomAnyTeam(b *testing.B) {
 func TestRandomTeam(t *testing.T) {
 	t.Run("user not set", func(t *testing.T) {
 		s := New()
-		team, err := s.RandomTeam(true)
+		team, err := s.RandomTeam(store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, team)
 		require.Equal(t, ErrUserNotSet, err)
@@ -274,10 +227,32 @@ func TestRandomTeam(t *testing.T) {
 		}
 		err := s.SetUser(user)
 		require.NoError(t, err)
-		team, err := s.RandomTeam(true)
+		team, err := s.RandomTeam(store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, team)
 		require.Equal(t, ErrTeamStoreEmpty, err)
+	})
+
+	t.Run("select rom any", func(t *testing.T) {
+		s := New()
+		s.SetUser(&model.User{})
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetTeams([]*model.Team{
+			{Id: id1},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+		team, err := s.RandomTeam(store.SelectMemberOf | store.SelectNotMemberOf)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch team.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
 	})
 
 	t.Run("team found which user is a member of", func(t *testing.T) {
@@ -320,7 +295,7 @@ func TestRandomTeam(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		team, err := s.RandomTeam(true)
+		team, err := s.RandomTeam(store.SelectMemberOf)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch team.Id {
@@ -350,7 +325,7 @@ func TestRandomTeam(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		team, err := s.RandomTeam(false)
+		team, err := s.RandomTeam(store.SelectNotMemberOf)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch team.Id {
@@ -364,9 +339,48 @@ func TestRandomTeam(t *testing.T) {
 }
 
 func TestRandomChannel(t *testing.T) {
+	t.Run("basic any channel", func(t *testing.T) {
+		s := New()
+		s.SetUser(&model.User{})
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetTeams([]*model.Team{
+			{
+				Id: "t1",
+			},
+		})
+		err = s.SetChannels([]*model.Channel{
+			{Id: id1, TeamId: "t1"},
+			{Id: id2, TeamId: "t1"},
+		})
+		require.NoError(t, err)
+		ch, err := s.RandomChannel("t1", store.SelectMemberOf|store.SelectNotMemberOf)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch ch.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("emptyslice", func(t *testing.T) {
+		s := New()
+		s.SetUser(&model.User{})
+		err := s.SetTeams([]*model.Team{
+			{
+				Id: "t1",
+			},
+		})
+		_, err = s.RandomChannel("t1", store.SelectMemberOf|store.SelectNotMemberOf)
+		require.True(t, errors.Is(err, ErrChannelStoreEmpty))
+	})
+
 	t.Run("user not set", func(t *testing.T) {
 		s := New()
-		channel, err := s.RandomChannel(model.NewId(), true)
+		channel, err := s.RandomChannel(model.NewId(), store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrUserNotSet, err)
@@ -379,7 +393,7 @@ func TestRandomChannel(t *testing.T) {
 		}
 		err := s.SetUser(user)
 		require.NoError(t, err)
-		channel, err := s.RandomChannel(model.NewId(), true)
+		channel, err := s.RandomChannel(model.NewId(), store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrTeamNotFound, err)
@@ -404,7 +418,7 @@ func TestRandomChannel(t *testing.T) {
 			{Id: model.NewId(), TeamId: teamId},
 		})
 		require.NoError(t, err)
-		channel, err := s.RandomChannel(teamId, true)
+		channel, err := s.RandomChannel(teamId, store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, channel)
 		require.Equal(t, ErrChannelStoreEmpty, err)
@@ -444,7 +458,7 @@ func TestRandomChannel(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		channel, err := s.RandomChannel(teamId, true)
+		channel, err := s.RandomChannel(teamId, store.SelectMemberOf)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch channel.Id {
@@ -477,7 +491,7 @@ func TestRandomChannel(t *testing.T) {
 			{Id: channelId2, TeamId: teamId},
 		})
 		require.NoError(t, err)
-		channel, err := s.RandomChannel(teamId, false)
+		channel, err := s.RandomChannel(teamId, store.SelectNotMemberOf)
 		require.NoError(t, err)
 		assert.Condition(t, func() bool {
 			switch channel.Id {

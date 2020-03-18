@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"reflect"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -21,40 +22,8 @@ var (
 	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
 )
 
-// RandomChannel returns a random channel for a user.
-func (s *MemStore) RandomAnyChannel(teamId string) (model.Channel, error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	var channels []*model.Channel
-	i := 0
-	for _, channel := range s.channels {
-		if channel.TeamId == teamId {
-			channels = append(channels, channel)
-		}
-		i++
-	}
-	if len(channels) == 0 {
-		return model.Channel{}, ErrEmptySlice
-	}
-	return *channels[rand.Intn(len(channels))], nil
-}
-
-// RandomAnyTeam returns a random team for a user.
-func (s *MemStore) RandomAnyTeam() (model.Team, error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	key, err := pickRandomKeyFromMap(s.teams)
-	if err != nil {
-		return model.Team{}, err
-	}
-	return *s.teams[key.(string)], nil
-}
-
-// RandomTeam returns a random team the current user is a member of or not a
-// a member of.
-func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
+// RandomTeam returns a random team for the current user.
+func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -66,7 +35,11 @@ func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
 
 	var teams []*model.Team
 	for teamId, team := range s.teams {
-		if (s.teamMembers[teamId][userId] != nil) == memberOf {
+		_, ok := s.teamMembers[teamId][userId]
+		if ok && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+			teams = append(teams, team)
+		}
+		if !ok && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
 			teams = append(teams, team)
 		}
 	}
@@ -80,9 +53,9 @@ func (s *MemStore) RandomTeam(memberOf bool) (model.Team, error) {
 	return *teams[idx], nil
 }
 
-// RandomChannel returns a random channel for the given teamId that the
-// current user is a member of or not a member of.
-func (s *MemStore) RandomChannel(teamId string, memberOf bool) (model.Channel, error) {
+// RandomChannel returns a random channel for the given teamId for the current
+// user.
+func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -98,10 +71,14 @@ func (s *MemStore) RandomChannel(teamId string, memberOf bool) (model.Channel, e
 
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
+		_, ok := s.channelMembers[channelId][userId]
 		if channel.TeamId != teamId {
 			continue
 		}
-		if (s.channelMembers[channelId][userId] != nil) == memberOf {
+		if ok && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+			channels = append(channels, channel)
+		}
+		if !ok && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
 			channels = append(channels, channel)
 		}
 	}
