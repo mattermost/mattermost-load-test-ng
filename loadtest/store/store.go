@@ -7,8 +7,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// SelectionType is the selection parameter for a store entity
 type SelectionType uint8
 
+// Defines the membership rules for a store entity
 const (
 	SelectMemberOf SelectionType = iota + 1
 	SelectNotMemberOf
