@@ -60,6 +60,11 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
 	var uploadBinary bool
 	var binaryPath string
 	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
@@ -101,7 +106,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance.
 	for _, ip := range output.InstanceIps.Value {
-		sshc, err := ssh.NewClient(ip)
+		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 			continue

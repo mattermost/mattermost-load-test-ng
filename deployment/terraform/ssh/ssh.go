@@ -6,6 +6,7 @@
 package ssh
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -16,6 +17,12 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+// ExtAgent is a wrapper type over agent.ExtendedAgent
+// provding a method to return a Client.
+type ExtAgent struct {
+	agent agent.ExtendedAgent
+}
+
 // Client is a wrapper type over a ssh connection
 // that takes care of creating a channel and running
 // commands in a single method.
@@ -23,18 +30,35 @@ type Client struct {
 	client *ssh.Client
 }
 
-// NewClient returns a Client object by dialing
-// to the local ssh agent.
-func NewClient(ip string) (*Client, error) {
+// NewAgent connects to the local ssh agent and validates
+// that it has atleast one key added. It returns the agent
+// if everything looks good.
+func NewAgent() (*ExtAgent, error) {
 	conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 	if err != nil {
 		return nil, err
 	}
 
+	extAgent := agent.NewClient(conn)
+	// Check if keys are added.
+	keys, err := extAgent.List()
+	if err != nil {
+		return nil, err
+	}
+	if len(keys) == 0 {
+		return nil, errors.New("no identities have been added to the agent. Please run ssh-add")
+	}
+
+	return &ExtAgent{agent: extAgent}, nil
+}
+
+// NewClient returns a Client object by dialing
+// the ssh agent.
+func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
 	config := &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: []ssh.AuthMethod{
-			ssh.PublicKeysCallback(agent.NewClient(conn).Signers),
+			ssh.PublicKeysCallback(ea.agent.Signers),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
@@ -86,10 +110,7 @@ func (sshc *Client) UploadFile(src, dst string, sudo bool) error {
 		return err
 	}
 	defer f.Close()
-	if err := sshc.Upload(f, "/opt/mattermost/bin/mattermost", false); err != nil {
-		return err
-	}
-	return nil
+	return sshc.Upload(f, "/opt/mattermost/bin/mattermost", false)
 }
 
 // Close closes the underlying connection.
