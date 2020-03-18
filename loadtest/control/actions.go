@@ -498,12 +498,7 @@ func ViewUser(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-<<<<<<< HEAD
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-=======
-
-	channel, err := u.Store().RandomChannelJoined(team.Id)
->>>>>>> origin/master
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -617,17 +612,8 @@ func Reload(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-<<<<<<< HEAD
-	// NOTE: during reload, the webapp client will fetch the last viewed team.
-	// This information is persistently stored and survives reloads/restarting the browser.
-	// Here we simplify that behaviour by randomly picking a team the user is
-	// a member of.
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
-	if err != nil {
-=======
 	var teamId string
 	if team, err := u.Store().CurrentTeam(); err != nil {
->>>>>>> origin/master
 		return UserActionResponse{Err: NewUserError(err)}
 	} else if team != nil {
 		teamId = team.Id
