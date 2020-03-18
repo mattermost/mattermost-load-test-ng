@@ -61,10 +61,6 @@ func TestGenerateRandomSentences(t *testing.T) {
 	s := strings.Split(randomize, " ")
 	require.Len(t, s, 8)
 
-	randomize = GenerateRandomSentences(206)
-	s = strings.Split(randomize, " ")
-	require.Len(t, s, 206)
-
 	randomize = GenerateRandomSentences(0)
 	s = strings.Split(randomize, " ")
 	require.Len(t, s, 1)
