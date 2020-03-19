@@ -5,7 +5,6 @@ package userentity
 
 import (
 	"errors"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -96,21 +95,6 @@ func (ue *UserEntity) Connect() <-chan error {
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan
-}
-
-// DownloadFile will download a url into a buffer
-func downloadFile(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("File not found: " + url)
-	}
-
-	defer resp.Body.Close()
-
-	return ioutil.ReadAll(resp.Body)
 }
 
 // FetchStaticAssets parses index.html and fetches static assets mentioned in link/script tags.
