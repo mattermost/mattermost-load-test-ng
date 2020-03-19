@@ -69,7 +69,7 @@ func (c *SimulController) Run() {
 		c.status <- c.newInfoStatus(resp.Info)
 	}
 
-	if resp := control.JoinTeam(c.user); resp.Err != nil {
+	if resp := c.joinTeam(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
@@ -136,6 +136,14 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       control.RemoveReaction,
+			frequency: 1,
+		},
+		{
+			run:       c.switchTeam,
+			frequency: 1,
+		},
+		{
+			run:       switchChannel,
 			frequency: 1,
 		},
 	}

@@ -7,13 +7,14 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-// SelectionType is the selection parameter for a store entity
+// SelectionType is the selection parameter for a store entity.
 type SelectionType uint8
 
-// Defines the membership rules for a store entity
+// Defines the membership rules for a store entity.
 const (
-	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member
-	SelectNotMemberOf                           // Select cases where the user is not a member
+	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member.
+	SelectNotMemberOf                           // Select cases where the user is not a member.
+	SelectNotCurrent                            // When set the selection won't return current team/channel.
 
 	SelectAny = SelectMemberOf | SelectNotMemberOf
 )
