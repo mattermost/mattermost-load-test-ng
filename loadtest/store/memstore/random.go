@@ -20,6 +20,7 @@ var (
 	ErrUserNotSet        = errors.New("memstore: user is not set")
 	ErrTeamStoreEmpty    = errors.New("memstore: team store is empty")
 	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
+	ErrChannelNotFound   = errors.New("memstore: channel not found")
 	ErrPostNotFound      = errors.New("memstore: post not found")
 )
 

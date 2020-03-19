@@ -492,6 +492,21 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
+// GetPinnedPosts fetches the pinned posts in a channel that user is a member of.
+func GetPinnedPosts(u user.User) UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	list, err := u.GetPinnedPosts(channel.Id)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
 // ViewUser simulates opening a random user profile for the given user.
 func ViewUser(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
@@ -547,11 +562,11 @@ func Reload(u user.User) UserActionResponse {
 	}
 
 	if chanId == "" {
-		if c, err := u.Store().CurrentChannel(); err != nil {
+		c, err := u.Store().CurrentChannel()
+		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		} else if c != nil {
-			chanId = c.Id
 		}
+		chanId = c.Id
 	}
 
 	if chanId != "" {

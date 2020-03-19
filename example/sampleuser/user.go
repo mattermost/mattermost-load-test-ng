@@ -83,6 +83,10 @@ func (u *SampleUser) GetPostsSince(channelId string, time int64) error {
 	return nil
 }
 
+func (u *SampleUser) GetPinnedPosts(channelId string) (*model.PostList, error) {
+	return nil, nil
+}
+
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
 func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
 	return nil
