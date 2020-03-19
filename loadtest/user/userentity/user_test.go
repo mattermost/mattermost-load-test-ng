@@ -39,14 +39,16 @@ func TestFetchStaticAssets(t *testing.T) {
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 	indexFetched := false
-	assetFetched := false
+	jsFetched := false
+	cssFetched := false
 	indexHandler := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `
 		<html>
 		<head>
-			<script src="./test.js" type="text/javascript">
+			<script src="/static/test.js" type="text/javascript">
 			 // stuff
 			</script>
+			<link href="/static/test.css" rel="stylesheet" />
 		</head>
 		<body>
 		yo
@@ -54,19 +56,22 @@ func TestFetchStaticAssets(t *testing.T) {
 		</html>`)
 		indexFetched = true
 	}
-	assetHandler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, `javascript!`)
-		assetFetched = true
+	jsHandler := func(w http.ResponseWriter, r *http.Request) {
+		jsFetched = true
+	}
+	cssHandler := func(w http.ResponseWriter, r *http.Request) {
+		cssFetched = true
 	}
 	mux.HandleFunc("/", indexHandler)
-	mux.HandleFunc("/test.js", assetHandler)
-
+	mux.HandleFunc("/static/test.js", jsHandler)
+	mux.HandleFunc("/static/test.css", cssHandler)
 	config.ConnectionConfiguration.ServerURL = ts.URL
 	th := Setup(t).SetConfig(config).Init()
 	err = th.User.FetchStaticAssets()
 	require.NoError(t, err)
 	require.True(t, indexFetched)
-	require.True(t, assetFetched)
+	require.True(t, jsFetched)
+	require.True(t, cssFetched)
 }
 
 func TestIsSysAdmin(t *testing.T) {
