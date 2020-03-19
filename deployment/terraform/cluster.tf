@@ -36,12 +36,48 @@ resource "aws_instance" "app_server" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt-get update",
+      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "sudo apt-get update -y",
       "sudo apt-get install -y jq",
+      "sudo apt-get install -y prometheus-node-exporter",
       "wget ${var.mattermost_download_url}",
       "tar xzf mattermost-*.tar.gz",
       "sudo mv mattermost /opt/",
       "sudo mkdir -p /opt/mattermost/data"
+    ]
+  }
+}
+
+resource "aws_instance" "metrics_server" {
+  tags = {
+    Name = "${var.cluster_name}-metrics"
+  }
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
+  instance_type = "t2.large"
+  key_name      = aws_key_pair.key.id
+
+  vpc_security_group_ids = [
+    "${aws_security_group.metrics.id}",
+  ]
+
+  provisioner "remote-exec" {
+    inline = [
+      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "sudo apt-get update -y",
+      # Weird black magic hack. Running it two times lets
+      # apt-get install find prometheus package. Otherwise it fails.
+      # MM-23422.
+      "sudo apt-get update -y && sync",
+      "sudo apt-get install -y prometheus",
+      "sudo systemctl daemon-reload"
     ]
   }
 }
@@ -82,6 +118,20 @@ resource "aws_security_group" "app" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    from_port = 8067
+    to_port   = 8067
+    protocol  = "tcp"
+    # Maybe restrict only from Prometheus server ?
+    # But handy while taking profiles without manually ssh-ing into the server.
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port       = 9100
+    to_port         = 9100
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.metrics.id}"]
+  }
   egress {
     from_port   = 0
     to_port     = 0
@@ -105,5 +155,28 @@ resource "aws_security_group" "db" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = ["${aws_security_group.app.id}"]
+  }
+}
+
+resource "aws_security_group" "metrics" {
+  name = "{var.cluster_name}-metrics-security-group"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
