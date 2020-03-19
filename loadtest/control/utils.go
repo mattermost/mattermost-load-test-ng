@@ -5,6 +5,7 @@ package control
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -13,12 +14,29 @@ import (
 	"time"
 )
 
+func init() {
+	paths := []string{"./testdata/test_text.txt", "./../../testdata/test_text.txt"}
+	var buf []byte
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			buf, err = ioutil.ReadFile(p)
+			if err == nil {
+				break
+			}
+		}
+	}
+	// if the buf is empty we will have a non-nil string slice, some kind of
+	// graceful degradation.
+	words = strings.Split(string(buf), "\n")
+}
+
 const (
 	pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/"
 	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 var re = regexp.MustCompile(`-[[:alpha:]]+`)
+var words []string
 
 // TODO: this is currently unused. Should be probably called once when starting
 // the load-test cmd or API server. It should also be called only when running
@@ -80,4 +98,19 @@ func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserAc
 		}
 	}
 	return resp
+}
+
+// GenerateRandomSentences generates random string from test_text file.
+func GenerateRandomSentences(count int) string {
+	if count <= 0 {
+		return "🙂" // if there is nothing to say, an emoji worths for thousands
+	}
+
+	var random string
+	for i := 0; i < count; i++ {
+		n := rand.Int() % len(words)
+		random += words[n] + " "
+	}
+
+	return random[:len(random)-1] + "."
 }

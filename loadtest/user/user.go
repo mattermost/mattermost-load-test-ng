@@ -53,6 +53,7 @@ type User interface {
 	GetPostsBefore(channelId, postId string, page, perPage int) error
 	GetPostsAfter(channelId, postId string, page, perPage int) error
 	GetPostsSince(channelId string, time int64) error
+	GetPinnedPosts(channelId string) (*model.PostList, error)
 	// GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
 	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error
 	SaveReaction(reaction *model.Reaction) error
@@ -118,4 +119,6 @@ type User interface {
 	// utils
 	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise.
 	IsSysAdmin() (bool, error)
+	SetCurrentTeam(team *model.Team) error
+	SetCurrentChannel(channel *model.Channel) error
 }

@@ -6,6 +6,7 @@ package samplestore
 import (
 	"errors"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -129,6 +130,14 @@ func (s *SampleStore) Channel(channelId string) (*model.Channel, error) {
 	return nil, nil
 }
 
+func (s *SampleStore) CurrentChannel() (*model.Channel, error) {
+	return nil, nil
+}
+
+func (s *SampleStore) SetCurrentChannel(channel *model.Channel) error {
+	return nil
+}
+
 // Channels return all the channels for a team.
 func (s *SampleStore) Channels(teamId string) ([]model.Channel, error) {
 	var channels []model.Channel
@@ -181,6 +190,14 @@ func (s *SampleStore) SetTeams(teams []*model.Team) error {
 	return nil
 }
 
+func (s *SampleStore) CurrentTeam() (*model.Team, error) {
+	return nil, nil
+}
+
+func (s *SampleStore) SetCurrentTeam(team *model.Team) error {
+	return nil
+}
+
 // SetRoles stores the given roles.
 func (s *SampleStore) SetRoles(roles []*model.Role) error {
 	s.roles = make(map[string]*model.Role)
@@ -201,21 +218,13 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
-// RandomChannel returns a random channel for a user.
-func (s *SampleStore) RandomChannel(teamId string) (model.Channel, error) {
+// RandomChannel returns a random channel for the user.
+func (s *SampleStore) RandomChannel(teamId string, st store.SelectionType) (model.Channel, error) {
 	return model.Channel{}, nil
 }
 
-func (s *SampleStore) RandomChannelJoined(teamId string) (model.Channel, error) {
-	return model.Channel{}, nil
-}
-
-// RandomTeam returns a random team for a user.
-func (s *SampleStore) RandomTeam() (model.Team, error) {
-	return model.Team{}, nil
-}
-
-func (s *SampleStore) RandomTeamJoined() (model.Team, error) {
+// RandomTeam returns a random team for the user.
+func (s *SampleStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	return model.Team{}, nil
 }
 
