@@ -494,12 +494,12 @@ func SearchPosts(u user.User) UserActionResponse {
 
 // GetPinnedPosts fetches the pinned posts in a channel that user is a member of.
 func GetPinnedPosts(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	list, err := u.GetPinnedPosts(team.Id)
+	list, err := u.GetPinnedPosts(channel.Id)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}

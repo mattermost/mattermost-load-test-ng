@@ -191,8 +191,8 @@ func (ue *UserEntity) GetPostsSince(channelId string, time int64) error {
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
-func (ue *UserEntity) GetPinnedPosts(teamId string) (*model.PostList, error) {
-	postList, resp := ue.client.GetPinnedPosts(teamId, "")
+func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) {
+	postList, resp := ue.client.GetPinnedPosts(channelId, "")
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
