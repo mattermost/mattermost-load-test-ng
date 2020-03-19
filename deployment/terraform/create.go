@@ -32,12 +32,25 @@ type Terraform struct {
 // terraformOutput contains the output variables which are
 // created after a deployment.
 type terraformOutput struct {
-	InstanceIps struct {
-		Value []string `json:"value"`
-	} `json:"instanceIPs"`
+	Instances struct {
+		Value []struct {
+			PrivateIP  string `json:"private_ip"`
+			PublicIP   string `json:"public_ip"`
+			PublicDNS  string `json:"public_dns"`
+			PrivateDNS string `json:"private_dns"`
+		} `json:"value"`
+	} `json:"instances"`
 	DBEndpoint struct {
 		Value string `json:"value"`
 	} `json:"dbEndpoint"`
+	MetricsServer struct {
+		Value struct {
+			PrivateIP  string `json:"private_ip"`
+			PublicIP   string `json:"public_ip"`
+			PublicDNS  string `json:"public_dns"`
+			PrivateDNS string `json:"private_dns"`
+		} `json:"value"`
+	} `json:"metricsServer"`
 }
 
 // New returns a new Terraform instance.
@@ -98,8 +111,14 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
+	// Setting up metrics server.
+	if err := t.setupMetrics(extAgent, output); err != nil {
+		return fmt.Errorf("error setting up metrics server: %w", err)
+	}
+
 	// Updating the config.json for each instance.
-	for _, ip := range output.InstanceIps.Value {
+	for _, val := range output.Instances.Value {
+		ip := val.PublicIP
 		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
 			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
