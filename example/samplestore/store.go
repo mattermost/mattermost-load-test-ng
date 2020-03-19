@@ -6,6 +6,7 @@ package samplestore
 import (
 	"errors"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -217,21 +218,13 @@ func (s *SampleStore) Roles() ([]model.Role, error) {
 	return roles, nil
 }
 
-// RandomChannel returns a random channel for a user.
-func (s *SampleStore) RandomChannel(teamId string) (model.Channel, error) {
+// RandomChannel returns a random channel for the user.
+func (s *SampleStore) RandomChannel(teamId string, st store.SelectionType) (model.Channel, error) {
 	return model.Channel{}, nil
 }
 
-func (s *SampleStore) RandomChannelJoined(teamId string) (model.Channel, error) {
-	return model.Channel{}, nil
-}
-
-// RandomTeam returns a random team for a user.
-func (s *SampleStore) RandomTeam() (model.Team, error) {
-	return model.Team{}, nil
-}
-
-func (s *SampleStore) RandomTeamJoined() (model.Team, error) {
+// RandomTeam returns a random team for the user.
+func (s *SampleStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	return model.Team{}, nil
 }
 

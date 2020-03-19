@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -192,11 +193,11 @@ func JoinTeam(u user.User) UserActionResponse {
 
 // CreatePost creates a new post in a random channel by the given user.
 func CreatePost(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -218,11 +219,11 @@ func CreatePost(u user.User) UserActionResponse {
 
 // CreatePostReply replies to a randomly picked post.
 func CreatePostReply(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -333,7 +334,7 @@ func CreateGroupChannel(u user.User) UserActionResponse {
 
 // CreatePublicChannel creates a public channel in a random team.
 func CreatePublicChannel(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -353,7 +354,7 @@ func CreatePublicChannel(u user.User) UserActionResponse {
 
 // CreatePrivateChannel creates a private channel in a random team.
 func CreatePrivateChannel(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -374,12 +375,12 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 // CreateDirectChannel creates a direct message channel with a random user from a
 // random team/channel.
 func CreateDirectChannel(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -401,11 +402,11 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 // ViewChannel performs a view action in a random team/channel for the given
 // user, which will mark all posts as read in the channel.
 func ViewChannel(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -460,7 +461,7 @@ func UpdateProfileImage(u user.User) UserActionResponse {
 
 // SearchChannels searches for channels by the given user.
 func SearchChannels(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -478,7 +479,7 @@ func SearchChannels(u user.User) UserActionResponse {
 
 // SearchPosts searches for posts by the given user.
 func SearchPosts(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -491,14 +492,28 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
-// ViewUser simulates opening a random user profile for the given user.
-func ViewUser(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeamJoined()
+// GetPinnedPosts fetches the pinned posts in a channel that user is a member of.
+func GetPinnedPosts(u user.User) UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	list, err := u.GetPinnedPosts(channel.Id)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+// ViewUser simulates opening a random user profile for the given user.
+func ViewUser(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
 		return UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
@@ -547,11 +562,11 @@ func Reload(u user.User) UserActionResponse {
 	}
 
 	if chanId == "" {
-		if c, err := u.Store().CurrentChannel(); err != nil {
+		c, err := u.Store().CurrentChannel()
+		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		} else if c != nil {
-			chanId = c.Id
 		}
+		chanId = c.Id
 	}
 
 	if chanId != "" {
