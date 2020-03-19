@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -44,11 +45,11 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 }
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
-	team, err := c.user.Store().RandomTeamJoined()
+	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	channel, err := c.user.Store().RandomChannelJoined(team.Id)
+	channel, err := c.user.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

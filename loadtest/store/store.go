@@ -7,6 +7,17 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// SelectionType is the selection parameter for a store entity
+type SelectionType uint8
+
+// Defines the membership rules for a store entity
+const (
+	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member
+	SelectNotMemberOf                           // Select cases where the user is not a member
+
+	SelectAny = SelectMemberOf | SelectNotMemberOf
+)
+
 // UserStore is a read-only interface which provides access to various
 // data belonging to a user.
 type UserStore interface {
@@ -52,16 +63,11 @@ type UserStore interface {
 	// Reactions returns reactions for a given postId.
 	Reactions(postId string) ([]model.Reaction, error)
 
-	// Random things
-	// RandomChannel returns a random channel for a user.
-	RandomChannel(teamId string) (model.Channel, error)
-	// RandomChannelJoined returns a random channel for the given teamId that the
-	// current user is a member of.
-	RandomChannelJoined(teamId string) (model.Channel, error)
-	// RandomTeam returns a random team for a user.
-	RandomTeam() (model.Team, error)
-	// RandomTeamJoined returns a random team the current user is a member of.
-	RandomTeamJoined() (model.Team, error)
+	// RandomChannel returns a random channel for the given teamId for the
+	// current user.
+	RandomChannel(teamId string, st SelectionType) (model.Channel, error)
+	// RandomTeam returns a random team for the current user.
+	RandomTeam(st SelectionType) (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -44,7 +45,7 @@ func createChannels(admin *userentity.UserEntity, numChannels int) error {
 	channelTypes := []string{"O", "P"}
 
 	for i := 0; i < numChannels; i++ {
-		team, err := admin.Store().RandomTeam()
+		team, err := admin.Store().RandomTeam(store.SelectAny)
 		if err != nil {
 			return err
 		}
