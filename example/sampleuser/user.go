@@ -63,6 +63,10 @@ func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }
 
+func (u *SampleUser) PatchPost(postId string, patch *model.PostPatch) (string, error) {
+	return "", nil
+}
+
 func (u *SampleUser) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
 	return nil, nil
 }
