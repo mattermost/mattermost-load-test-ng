@@ -136,6 +136,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"CreatePostReply":      control.CreatePostReply,
 		"CreatePrivateChannel": control.CreatePrivateChannel,
 		"CreatePublicChannel":  control.CreatePublicChannel,
+		"GetPinnedPosts":       control.GetPinnedPosts,
 		"JoinChannel":          control.JoinChannel,
 		"JoinTeam":             control.JoinTeam,
 		"LeaveChannel":         control.LeaveChannel,
@@ -147,7 +148,8 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			c.connect()
 			return resp
 		},
-		"Logout": control.Logout,
+		"Logout":    control.Logout,
+		"PatchPost": control.PatchPost,
 		"Reload": func(u user.User) control.UserActionResponse {
 			return c.reload(false)
 		},
