@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -118,7 +119,7 @@ func switchChannel(u user.User) control.UserActionResponse {
 		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-	} else {
+	} else if err != memstore.ErrChannelNotFound {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

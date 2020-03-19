@@ -599,11 +599,11 @@ func Reload(u user.User) UserActionResponse {
 	}
 
 	if chanId == "" {
-		c, err := u.Store().CurrentChannel()
-		if err != nil {
+		if c, err := u.Store().CurrentChannel(); err == nil {
+			chanId = c.Id
+		} else if err != nil && err != memstore.ErrChannelNotFound {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-		chanId = c.Id
 	}
 
 	if chanId != "" {
