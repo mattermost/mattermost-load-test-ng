@@ -14,6 +14,7 @@ type SelectionType uint8
 const (
 	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member
 	SelectNotMemberOf                           // Select cases where the user is not a member
+	SelectNotCurrent
 
 	SelectAny = SelectMemberOf | SelectNotMemberOf
 )

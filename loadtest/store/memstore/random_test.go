@@ -383,6 +383,61 @@ func TestRandomTeam(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("no current team", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+
+		teamId1 := model.NewId()
+		teamId2 := model.NewId()
+		teamId3 := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId1,
+			},
+			{
+				Id: teamId2,
+			},
+			{
+				Id: teamId3,
+			},
+		})
+		require.NoError(t, err)
+		err = s.SetTeamMembers(teamId1,
+			[]*model.TeamMember{
+				{
+					TeamId: teamId1,
+					UserId: user.Id,
+				},
+			},
+		)
+		require.NoError(t, err)
+		err = s.SetTeamMembers(teamId3,
+			[]*model.TeamMember{
+				{
+					TeamId: teamId3,
+					UserId: user.Id,
+				},
+			},
+		)
+		require.NoError(t, err)
+
+		err = s.SetCurrentTeam(&model.Team{
+			Id: teamId1,
+		})
+		require.NoError(t, err)
+
+		for i := 0; i < 10; i++ {
+			team, err := s.RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
+			require.NoError(t, err)
+			require.NotNil(t, team)
+			require.Equal(t, teamId3, team.Id)
+		}
+	})
 }
 
 func TestRandomChannel(t *testing.T) {
@@ -550,5 +605,53 @@ func TestRandomChannel(t *testing.T) {
 				return false
 			}
 		})
+	})
+
+	t.Run("no current channel", func(t *testing.T) {
+		s := New()
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId},
+			{Id: channelId2, TeamId: teamId},
+			{Id: channelId3, TeamId: teamId},
+		})
+		require.NoError(t, err)
+		err = s.SetChannelMembers(&model.ChannelMembers{
+			{
+				ChannelId: channelId1,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId3,
+				UserId:    user.Id,
+			},
+		})
+		require.NoError(t, err)
+
+		err = s.SetCurrentChannel(&model.Channel{
+			Id: channelId1,
+		})
+		require.NoError(t, err)
+
+		for i := 0; i < 10; i++ {
+			channel, err := s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotCurrent)
+			require.NoError(t, err)
+			require.NotNil(t, channel)
+			require.Equal(t, channelId3, channel.Id)
+		}
 	})
 }

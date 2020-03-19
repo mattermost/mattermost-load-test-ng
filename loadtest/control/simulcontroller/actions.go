@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -64,9 +65,7 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 }
 
 func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
-	// TODO: change this to make sure we don't pick the same team we are
-	// currently in.
-	team, err := u.Store().RandomTeamJoined()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -110,19 +109,18 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
 	}
 
-	// TODO: change this to make sure we don't pick the same channel we are
-	// currently in.
-	channel, err := u.Store().RandomChannelJoined(team.Id)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if current, err := u.Store().CurrentChannel(); err != nil {
-	} else if current != nil {
+	if current, err := u.Store().CurrentChannel(); err == nil {
 		// Somehow the webapp does a view to the current channel before switching.
 		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+	} else {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if err := u.SetCurrentChannel(&channel); err != nil {

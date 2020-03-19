@@ -35,8 +35,16 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 
 	userId := s.user.Id
 
+	var currTeamId string
+	if s.currentTeam != nil {
+		currTeamId = s.currentTeam.Id
+	}
+
 	var teams []*model.Team
 	for teamId, team := range s.teams {
+		if (currTeamId == teamId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+			continue
+		}
 		_, isMember := s.teamMembers[teamId][userId]
 		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
 			teams = append(teams, team)
@@ -71,8 +79,16 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 
 	userId := s.user.Id
 
+	var currChanId string
+	if s.currentChannel != nil {
+		currChanId = s.currentChannel.Id
+	}
+
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
+		if (currChanId == channelId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+			continue
+		}
 		_, isMember := s.channelMembers[channelId][userId]
 		if channel.TeamId != teamId {
 			continue
