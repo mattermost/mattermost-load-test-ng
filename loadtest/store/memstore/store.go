@@ -239,7 +239,7 @@ func (s *MemStore) CurrentChannel() (*model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if s.currentChannel == nil {
-		return nil, nil
+		return nil, ErrChannelNotFound
 	}
 	chanCopy := *s.currentChannel
 	return &chanCopy, nil

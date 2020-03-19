@@ -244,7 +244,7 @@ func TestCurrentChannel(t *testing.T) {
 	s := New()
 	channel, err := s.CurrentChannel()
 	require.Nil(t, channel)
-	require.NoError(t, err)
+	require.EqualError(t, err, ErrChannelNotFound.Error())
 	err = s.SetCurrentChannel(nil)
 	require.Error(t, err)
 	c := &model.Channel{
