@@ -35,6 +35,5 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value.PublicIP))
-	cmd := fmt.Sprintf("sudo service prometheus restart && sudo systemctl enable prometheus")
-	return sshc.RunCommand(cmd)
+	return sshc.RunCommand("sudo service prometheus restart && sudo systemctl enable prometheus")
 }

@@ -159,7 +159,7 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_security_group" "metrics" {
-  name = "{var.cluster_name}-metrics-security-group"
+  name = "${var.cluster_name}-metrics-security-group"
 
   ingress {
     from_port   = 22
