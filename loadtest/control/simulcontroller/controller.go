@@ -61,6 +61,7 @@ func (c *SimulController) Run() {
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
 		c.connect()
+		go c.wsEventHandler()
 	}
 
 	if resp := c.reload(false); resp.Err != nil {
@@ -75,76 +76,29 @@ func (c *SimulController) Run() {
 		c.status <- c.newInfoStatus(resp.Info)
 	}
 
+	go func() {
+		for {
+			select {
+			case <-time.After(60 * time.Second):
+				if resp := c.getUsersStatuses(); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+				}
+			case <-c.stop:
+				return
+			}
+		}
+	}()
+
 	actions := []userAction{
 		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(false)
-			},
-			frequency: 1,
-		},
-		{
-			run:       control.JoinTeam,
-			frequency: 1,
-		},
-		{
-			run:       control.JoinChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchPosts,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchChannels,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchUsers,
-			frequency: 1,
-		},
-		{
-			run:       control.ViewUser,
-			frequency: 1,
-		},
-		{
-			run:       control.CreatePost,
-			frequency: 1,
-		},
-		{
-			run:       control.AddReaction,
-			frequency: 1,
-		},
-		{
-			run:       control.UpdateProfileImage,
-			frequency: 1,
-		},
-		{
-			run:       control.CreateGroupChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.CreateDirectChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.ViewChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.LeaveChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.RemoveReaction,
+			run:       switchChannel,
 			frequency: 1,
 		},
 		{
 			run:       c.switchTeam,
-			frequency: 1,
-		},
-		{
-			run:       switchChannel,
-			frequency: 1,
+			frequency: 7,
 		},
 	}
 

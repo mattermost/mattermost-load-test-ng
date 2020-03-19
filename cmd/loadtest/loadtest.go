@@ -73,7 +73,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	mlog.Info("loadtest started")
-	time.Sleep(60 * time.Second)
+	time.Sleep(1800 * time.Second)
 
 	err = lt.Stop()
 	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))

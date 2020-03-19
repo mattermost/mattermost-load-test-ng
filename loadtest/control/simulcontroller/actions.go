@@ -34,7 +34,6 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-
 		c.connect()
 	}
 
@@ -141,4 +140,13 @@ func switchChannel(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
+}
+
+func (c *SimulController) getUsersStatuses() control.UserActionResponse {
+	err := c.user.GetUsersStatusesByIds([]string{c.user.Store().Id()})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("got statuses")}
 }

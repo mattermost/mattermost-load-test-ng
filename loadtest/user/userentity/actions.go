@@ -552,6 +552,7 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	if resp.Error != nil {
 		return resp.Error
 	}
+
 	return nil
 }
 
