@@ -17,14 +17,16 @@ import (
 func init() {
 	paths := []string{"./testdata/test_text.txt", "./../../testdata/test_text.txt"}
 	var buf []byte
-	var err error
-
 	for _, p := range paths {
-		buf, err = ioutil.ReadFile(p)
-		if err != nil {
-			continue
+		if _, err := os.Stat(p); err == nil {
+			buf, err = ioutil.ReadFile(p)
+			if err == nil {
+				break
+			}
 		}
 	}
+	// if the buf is empty we will have a non-nil string slice, some kind of
+	// graceful degradation.
 	words = strings.Split(string(buf), "\n")
 }
 
