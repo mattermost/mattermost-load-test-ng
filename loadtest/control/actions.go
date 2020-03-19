@@ -491,6 +491,21 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
+// GetPinnedPosts fetches the pinned posts in a channel that user is a member of.
+func GetPinnedPosts(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeamJoined()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	list, err := u.GetPinnedPosts(team.Id)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
 // ViewUser simulates opening a random user profile for the given user.
 func ViewUser(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeamJoined()
