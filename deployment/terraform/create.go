@@ -185,6 +185,8 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 		".ServiceSettings.ListenAddress":       ":8065",
 		".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
 		".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
+		".TeamSettings.MaxUsersPerTeam":        50000,
+		".TeamSettings.EnableOpenServer":       true,
 		".SqlSettings.DriverName":              t.config.DBInstanceEngine,
 		".SqlSettings.DataSource":              dsn,
 		".MetricsSettings.Enable":              true,
