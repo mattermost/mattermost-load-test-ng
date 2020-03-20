@@ -23,6 +23,7 @@ type UserEntity struct {
 	wsClosed    chan struct{}
 	wsErrorChan chan error
 	wsEventChan chan *model.WebSocketEvent
+	wsTyping    chan userTypingMsg
 	connected   bool
 	config      Config
 }
@@ -39,6 +40,11 @@ type Config struct {
 	Email string
 	// The password to be used by the entity.
 	Password string
+}
+
+type userTypingMsg struct {
+	channelId string
+	parentId  string
 }
 
 // Store returns the underlying store of the user.
@@ -83,6 +89,7 @@ func (ue *UserEntity) Connect() <-chan error {
 	ue.wsClosing = make(chan struct{})
 	ue.wsClosed = make(chan struct{})
 	ue.wsErrorChan = make(chan error, 1)
+	ue.wsTyping = make(chan userTypingMsg)
 	if ue.client.AuthToken == "" {
 		ue.wsErrorChan <- errors.New("user is not authenticated")
 		return ue.wsErrorChan

@@ -125,4 +125,8 @@ type User interface {
 
 	// Clear clears the underlying UserStore
 	ClearUserData()
+
+	// SendTypingEvent will push a user_typing event out to all connected users
+	// who are in the specified channel.
+	SendTypingEvent(channelId, parentId string)
 }

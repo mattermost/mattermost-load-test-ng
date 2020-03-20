@@ -422,3 +422,6 @@ func (u *SampleUser) SetCurrentChannel(channel *model.Channel) error {
 
 func (u *SampleUser) ClearUserData() {
 }
+
+func (u *SampleUser) SendTypingEvent(channelId, parentId string) {
+}

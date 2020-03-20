@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -177,9 +178,19 @@ func createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	// TODO: possibly add some additional idle time here to simulate the
+	// user actually taking time to type a post message.
+	u.SendTypingEvent(channel.Id, "")
+
 	// This is an estimate that comes from stats on community servers.
 	// The average length (in words) for a root post (not a reply).
-	wordCount := 34
+	// TODO: should be part of some advanced configuration.
+	avgWordCount := 34
+	minWordCount := 1
+
+	// TODO: make a util function out of this behaviour.
+	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
+
 	postId, err := u.CreatePost(&model.Post{
 		Message:   control.GenerateRandomSentences(wordCount),
 		ChannelId: channel.Id,
