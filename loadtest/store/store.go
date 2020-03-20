@@ -50,6 +50,9 @@ type UserStore interface {
 	// ChannelView return the timestamp of the last view for the given channelId.
 	ChannelView(channelId string) (int64, error)
 
+	// Status returns the status for the given userId.
+	Status(userId string) (model.Status, error)
+
 	// Teams returns the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// CurrentTeam gets the currently selected team for the user.
@@ -104,6 +107,9 @@ type MutableUserStore interface {
 	User() (*model.User, error)
 	SetUsers(users []*model.User) error
 	Users() ([]*model.User, error)
+
+	// statuses
+	SetStatus(userId string, status *model.Status) error
 
 	// posts
 	SetPost(post *model.Post) error

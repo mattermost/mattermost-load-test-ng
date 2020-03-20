@@ -342,3 +342,11 @@ func (s *SampleStore) SetChannelView(channelId string) error {
 func (s *SampleStore) ChannelView(channelId string) (int64, error) {
 	return 0, nil
 }
+
+func (s *SampleStore) Status(userId string) (model.Status, error) {
+	return model.Status{}, nil
+}
+
+func (s *SampleStore) SetStatus(userId string, status *model.Status) error {
+	return nil
+}

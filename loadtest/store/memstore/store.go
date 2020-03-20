@@ -26,6 +26,7 @@ type MemStore struct {
 	channelMembers map[string]map[string]*model.ChannelMember
 	teamMembers    map[string]map[string]*model.TeamMember
 	users          map[string]*model.User
+	statuses       map[string]*model.Status
 	reactions      map[string][]*model.Reaction
 	roles          map[string]*model.Role
 	license        map[string]string
@@ -54,6 +55,7 @@ func (s *MemStore) Clear() {
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
 	s.teamMembers = map[string]map[string]*model.TeamMember{}
 	s.users = map[string]*model.User{}
+	s.statuses = map[string]*model.Status{}
 	s.reactions = map[string][]*model.Reaction{}
 	s.roles = map[string]*model.Role{}
 	s.license = map[string]string{}
@@ -564,6 +566,39 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 	for _, user := range users {
 		s.users[user.Id] = user
 	}
+	return nil
+}
+
+func (s *MemStore) Status(userId string) (model.Status, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var status model.Status
+
+	if len(userId) == 0 {
+		return status, errors.New("memstore: userId should not be empty")
+	}
+
+	if st, ok := s.statuses[userId]; ok {
+		status = *st
+	}
+	return status, nil
+}
+
+func (s *MemStore) SetStatus(userId string, status *model.Status) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if len(userId) == 0 {
+		return errors.New("memstore: userId should not be empty")
+	}
+
+	if status == nil {
+		return errors.New("memstore: status should not be nil")
+	}
+
+	s.statuses[userId] = status
+
 	return nil
 }
 
