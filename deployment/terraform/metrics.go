@@ -4,13 +4,19 @@
 package terraform
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
+
+const defaultGrafanaUsernamePass = "admin:admin"
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput) error {
 	// Updating Prometheus config
@@ -35,5 +41,40 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value.PublicIP))
-	return sshc.RunCommand("sudo service prometheus restart && sudo systemctl enable prometheus")
+	if err := sshc.RunCommand("sudo service prometheus restart"); err != nil {
+		return err
+	}
+
+	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/datasources"
+	payload := struct {
+		Name     string `json:"name"`
+		DataType string `json:"type"`
+		URL      string `json:"url"`
+		Access   string `json:"access"`
+	}{
+		Name:     "loadtest-source",
+		DataType: "prometheus",
+		URL:      "http://" + output.MetricsServer.Value.PublicIP + ":9090",
+		Access:   "proxy",
+	}
+	buf, err := json.Marshal(&payload)
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(url, "application/json", bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	// Dump body.
+	buf, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("non 200 response: %s", string(buf))
+	}
+	mlog.Info("Response: " + string(buf))
+	return nil
 }

@@ -38,6 +38,10 @@ resource "aws_instance" "app_server" {
     inline = [
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
       "sudo apt-get update -y",
+      # Weird black magic hack. Running it two times lets
+      # apt-get install find the packages. Otherwise it fails.
+      # MM-23422.
+      "sudo apt-get update -y && sync",
       "sudo apt-get install -y jq",
       "sudo apt-get install -y prometheus-node-exporter",
       "wget ${var.mattermost_download_url}",
@@ -77,7 +81,13 @@ resource "aws_instance" "metrics_server" {
       # MM-23422.
       "sudo apt-get update -y && sync",
       "sudo apt-get install -y prometheus",
-      "sudo systemctl daemon-reload"
+      "sudo systemctl enable prometheus",
+      "sudo apt-get install -y adduser libfontconfig1",
+      "wget https://dl.grafana.com/oss/release/grafana_6.6.2_amd64.deb",
+      "sudo dpkg -i grafana_6.6.2_amd64.deb",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable grafana-server",
+      "sudo service grafana-server start"
     ]
   }
 }
@@ -170,6 +180,12 @@ resource "aws_security_group" "metrics" {
   ingress {
     from_port   = 9090
     to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
