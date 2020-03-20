@@ -29,6 +29,7 @@ type User interface {
 
 	//server
 	GetConfig() error
+	FetchStaticAssets() error
 
 	// user
 	GetMe() (string, error)

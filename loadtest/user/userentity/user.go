@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -94,6 +95,21 @@ func (ue *UserEntity) Connect() <-chan error {
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan
+}
+
+// FetchStaticAssets parses index.html and fetches static assets mentioned in link/script tags.
+func (ue *UserEntity) FetchStaticAssets() error {
+	c := colly.NewCollector(colly.MaxDepth(1))
+
+	c.OnHTML("link[href]", func(e *colly.HTMLElement) {
+		link := e.Attr("href")
+		c.Visit(e.Request.AbsoluteURL(link))
+	})
+	c.OnHTML("script[src]", func(e *colly.HTMLElement) {
+		link := e.Attr("src")
+		c.Visit(e.Request.AbsoluteURL(link))
+	})
+	return c.Visit(ue.client.Url)
 }
 
 // Disconnect closes the websocket connection.
