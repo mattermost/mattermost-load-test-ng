@@ -217,8 +217,8 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
-// PatchPost updates a post.
-func PatchPost(u user.User) UserActionResponse {
+// EditPost updates a post.
+func EditPost(u user.User) UserActionResponse {
 	post, err := u.Store().RandomPost()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}

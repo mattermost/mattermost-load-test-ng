@@ -148,8 +148,8 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			c.connect()
 			return resp
 		},
-		"Logout":    control.Logout,
-		"PatchPost": control.PatchPost,
+		"Logout":   control.Logout,
+		"EditPost": control.EditPost,
 		"Reload": func(u user.User) control.UserActionResponse {
 			return c.reload(false)
 		},

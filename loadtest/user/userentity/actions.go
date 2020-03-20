@@ -154,10 +154,6 @@ func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, 
 		return "", resp.Error
 	}
 
-	if err := ue.store.DeletePost(postId); err != nil {
-		return "", err
-	}
-
 	if err := ue.store.SetPost(post); err != nil {
 		return "", err
 	}
