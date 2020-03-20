@@ -148,6 +148,19 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, error) {
+	post, resp := ue.client.PatchPost(postId, patch)
+	if resp.Error != nil {
+		return "", resp.Error
+	}
+
+	if err := ue.store.SetPost(post); err != nil {
+		return "", err
+	}
+
+	return post.Id, nil
+}
+
 func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
 	postList, resp := ue.client.SearchPosts(teamId, terms, isOrSearch)
 	if resp.Error != nil {

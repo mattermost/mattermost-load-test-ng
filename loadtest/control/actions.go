@@ -217,6 +217,34 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+// EditPost updates a post.
+func EditPost(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	message := GenerateRandomSentences(rand.Intn(10))
+	postId, err := u.PatchPost(post.Id, &model.PostPatch{
+		Message: &message,
+	})
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("post updated, id %v -> %v", post.Id, postId)}
+}
+
 // CreatePostReply replies to a randomly picked post.
 func CreatePostReply(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)

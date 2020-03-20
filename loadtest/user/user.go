@@ -48,6 +48,7 @@ type User interface {
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
+	PatchPost(postId string, patch *model.PostPatch) (string, error)
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	GetPostsForChannel(channelId string, page, perPage int) error
 	GetPostsBefore(channelId, postId string, page, perPage int) error
