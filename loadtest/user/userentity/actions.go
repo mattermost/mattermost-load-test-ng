@@ -359,6 +359,10 @@ func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewRe
 		return nil, resp.Error
 	}
 
+	if err := ue.store.SetChannelView(view.ChannelId); err != nil {
+		return nil, err
+	}
+
 	return channelViewResponse, nil
 }
 
@@ -773,4 +777,8 @@ func (ue *UserEntity) SetCurrentTeam(team *model.Team) error {
 
 func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
 	return ue.store.SetCurrentChannel(channel)
+}
+
+func (ue *UserEntity) ClearUserData() {
+	ue.store.Clear()
 }

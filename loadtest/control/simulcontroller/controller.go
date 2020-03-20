@@ -94,11 +94,41 @@ func (c *SimulController) Run() {
 	actions := []userAction{
 		{
 			run:       switchChannel,
-			frequency: 1,
+			frequency: 165,
 		},
 		{
 			run:       c.switchTeam,
-			frequency: 7,
+			frequency: 60,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				u.ClearUserData()
+				return c.reload(true)
+			},
+			frequency: 20,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				// logout
+				if resp := control.Logout(c.user); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+				}
+
+				// login
+				if resp := control.Login(c.user); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+					c.connect()
+					go c.wsEventHandler()
+				}
+
+				// reload
+				return c.reload(false)
+			},
+			frequency: 1,
 		},
 	}
 
@@ -118,7 +148,7 @@ func (c *SimulController) Run() {
 		// Minimum idle time value in milliseconds.
 		minIdleMs := 1000
 		// Average idle time value in milliseconds.
-		avgIdleMs := 10000
+		avgIdleMs := 5000
 
 		// Randomly selecting a value in the interval [minIdleMs, avgIdleMs*2 - minIdleMs).
 		// This will give us an expected value equal to avgIdleMs.

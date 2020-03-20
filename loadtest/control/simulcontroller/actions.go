@@ -70,7 +70,12 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.SetCurrentTeam(&team); err != nil {
+	if current, err := u.Store().CurrentChannel(); err == nil {
+		// Somehow the webapp does a view to the current channel before switching.
+		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else if err != memstore.ErrChannelNotFound {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -90,6 +95,10 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 	var userIds []string
 	userIds = append(userIds, u.Store().Id())
 	if err := u.GetUsersStatusesByIds(userIds); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.SetCurrentTeam(&team); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -114,7 +123,9 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	var currentChanId string
 	if current, err := u.Store().CurrentChannel(); err == nil {
+		currentChanId = current.Id
 		// Somehow the webapp does a view to the current channel before switching.
 		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -123,20 +134,28 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.SetCurrentChannel(&channel); err != nil {
+	// TODO: use the information returned here to figure out how to properly fetch posts.
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: use the information returned here to figure out how to properly fetch posts.
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id}); err != nil {
+	if view, err := u.Store().ChannelView(channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if view == 0 {
+		if err := u.GetPostsAroundLastUnread(channel.Id, 30, 30); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		if err := u.GetPostsSince(channel.Id, time.Now().Add(-1*time.Minute).Unix()*1000); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	if err := u.GetChannelStats(channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetPostsSince(channel.Id, time.Now().Add(-1*time.Minute).Unix()*1000); err != nil {
+	if err := u.SetCurrentChannel(&channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

@@ -334,3 +334,11 @@ func (s *SampleStore) SetUsers(users []*model.User) error {
 
 func (s *SampleStore) Clear() {
 }
+
+func (s *SampleStore) SetChannelView(channelId string) error {
+	return nil
+}
+
+func (s *SampleStore) ChannelView(channelId string) (int64, error) {
+	return 0, nil
+}

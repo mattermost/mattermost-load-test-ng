@@ -122,4 +122,7 @@ type User interface {
 	IsSysAdmin() (bool, error)
 	SetCurrentTeam(team *model.Team) error
 	SetCurrentChannel(channel *model.Channel) error
+
+	// Clear clears the underlying UserStore
+	ClearUserData()
 }

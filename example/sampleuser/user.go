@@ -419,3 +419,6 @@ func (u *SampleUser) SetCurrentTeam(team *model.Team) error {
 func (u *SampleUser) SetCurrentChannel(channel *model.Channel) error {
 	return nil
 }
+
+func (u *SampleUser) ClearUserData() {
+}
