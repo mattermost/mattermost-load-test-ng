@@ -36,12 +36,9 @@ resource "aws_instance" "app_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo apt-get -y update",
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
-      "sudo apt-get update -y",
-      # Weird black magic hack. Running it two times lets
-      # apt-get install find the packages. Otherwise it fails.
-      # MM-23422.
-      "sudo apt-get update -y && sync",
+      "sudo apt-get -y update && sudo apt-get -y check",
       "sudo apt-get install -y jq",
       "sudo apt-get install -y prometheus-node-exporter",
       "wget ${var.mattermost_download_url}",
@@ -74,12 +71,9 @@ resource "aws_instance" "metrics_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "sudo apt-get -y update",
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
-      "sudo apt-get update -y",
-      # Weird black magic hack. Running it two times lets
-      # apt-get install find prometheus package. Otherwise it fails.
-      # MM-23422.
-      "sudo apt-get update -y && sync",
+      "sudo apt-get -y update && sudo apt-get -y check",
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
       "sudo apt-get install -y adduser libfontconfig1",
