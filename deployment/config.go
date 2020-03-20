@@ -39,7 +39,7 @@ type Config struct {
 func (c *Config) IsValid() error {
 	if c.DBInstanceEngine != "" {
 		switch c.DBInstanceEngine {
-		case "aurora", "aurora-postgresql", "mysql", "postgres":
+		case "aurora-mysql", "aurora-postgresql":
 		default:
 			return fmt.Errorf("invalid value %s for DBInstanceEngine", c.DBInstanceEngine)
 		}

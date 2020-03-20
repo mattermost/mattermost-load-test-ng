@@ -86,24 +86,26 @@ resource "aws_instance" "metrics_server" {
   }
 }
 
-resource "aws_db_instance" "db" {
-  identifier          = "${var.cluster_name}-db"
-  allocated_storage   = 100
-  storage_type        = "io1"
-  iops                = 1000
-  engine              = var.db_instance_engine
-  engine_version      = var.db_engine_version[var.db_instance_engine]
-  instance_class      = var.db_instance_class
-  name                = "${var.cluster_name}db"
-  username            = var.db_username
-  password            = var.db_password
+resource "aws_rds_cluster_instance" "cluster_instances" {
+  count              = var.db_instance_count
+  identifier         = "${var.cluster_name}-db-${count.index}"
+  cluster_identifier = aws_rds_cluster.db_cluster.id
+  instance_class     = var.db_instance_class
+  engine             = var.db_instance_engine
+  apply_immediately  = true
+}
+
+resource "aws_rds_cluster" "db_cluster" {
+  cluster_identifier  = "${var.cluster_name}-db"
+  database_name       = "${var.cluster_name}db"
+  master_username     = var.db_username
+  master_password     = var.db_password
   skip_final_snapshot = true
   apply_immediately   = true
+  engine              = var.db_instance_engine
+  engine_version      = var.db_engine_version[var.db_instance_engine]
 
-  # count = var.db_instance_count # needs aws_rds_cluster to work
-  vpc_security_group_ids = [
-    "${aws_security_group.db.id}"
-  ]
+  vpc_security_group_ids = ["${aws_security_group.db.id}"]
 }
 
 resource "aws_security_group" "app" {

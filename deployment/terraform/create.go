@@ -40,9 +40,12 @@ type terraformOutput struct {
 			PrivateDNS string `json:"private_dns"`
 		} `json:"value"`
 	} `json:"instances"`
-	DBEndpoint struct {
-		Value string `json:"value"`
-	} `json:"dbEndpoint"`
+	DBCluster struct {
+		Value struct {
+			ClusterEndpoint string `json:"endpoint"`
+			ReaderEndpoint  string `json:"reader_endpoint"`
+		} `json:"value"`
+	} `json:"dbCluster"`
 	MetricsServer struct {
 		Value struct {
 			PrivateIP  string `json:"private_ip"`
@@ -173,20 +176,26 @@ func (t *Terraform) Create() error {
 }
 
 func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {
-	var dsn string
+	var clusterDSN, driverName string
+	var readerDSN []string
 	switch t.config.DBInstanceEngine {
-	case "postgres":
-		dsn = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBEndpoint.Value + "/" + t.config.ClusterName + "db?sslmode=disable"
-	case "mysql":
-		dsn = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBEndpoint.Value + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+	case "aurora-postgres":
+		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
+		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+		driverName = "postgres"
+	case "aurora-mysql":
+		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+		driverName = "mysql"
 	}
 
 	for k, v := range map[string]interface{}{
 		".ServiceSettings.ListenAddress":       ":8065",
 		".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
 		".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
-		".SqlSettings.DriverName":              t.config.DBInstanceEngine,
-		".SqlSettings.DataSource":              dsn,
+		".SqlSettings.DriverName":              driverName,
+		".SqlSettings.DataSource":              clusterDSN,
+		".SqlSettings.DataSourceReplicas":      readerDSN,
 		".MetricsSettings.Enable":              true,
 		".PluginSettings.Enable":               true,
 		".PluginSettings.EnableUploads":        true,

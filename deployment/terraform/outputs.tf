@@ -2,8 +2,8 @@ output "instances" {
   value = "${aws_instance.app_server.*}"
 }
 
-output "dbEndpoint" {
-  value = "${aws_db_instance.db.endpoint}"
+output "dbCluster" {
+  value = "${aws_rds_cluster.db_cluster}"
 }
 
 output "metricsServer" {
