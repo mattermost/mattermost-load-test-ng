@@ -101,6 +101,10 @@ func (c *SimulController) Run() {
 			frequency: 60,
 		},
 		{
+			run:       createPost,
+			frequency: 55,
+		},
+		{
 			run: func(u user.User) control.UserActionResponse {
 				u.ClearUserData()
 				return c.reload(true)

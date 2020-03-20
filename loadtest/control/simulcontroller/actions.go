@@ -170,3 +170,24 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 
 	return control.UserActionResponse{Info: fmt.Sprintf("got statuses")}
 }
+
+func createPost(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// This is an estimate that comes from stats on community servers.
+	// The average length (in words) for a root post (not a reply).
+	wordCount := 34
+	postId, err := u.CreatePost(&model.Post{
+		Message:   control.GenerateRandomSentences(wordCount),
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().Unix() * 1000,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
+}
