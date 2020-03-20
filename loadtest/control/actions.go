@@ -219,7 +219,12 @@ func CreatePost(u user.User) UserActionResponse {
 
 // EditPost updates a post.
 func EditPost(u user.User) UserActionResponse {
-	channel, err := u.Store().CurrentChannel()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
