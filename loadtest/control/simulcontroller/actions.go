@@ -4,6 +4,7 @@
 package simulcontroller
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -207,7 +208,9 @@ func createDirectChannel(u user.User) control.UserActionResponse {
 	// TODO: make the selection a bit smarter and pick someone
 	// we don't have a direct channel with already.
 	user, err := u.Store().RandomUser()
-	if err != nil {
+	if errors.Is(err, memstore.ErrLenMismatch) {
+		return control.UserActionResponse{Info: "not enough users to create direct channel"}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -231,5 +234,45 @@ func createDirectChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("direct channel %s created")}
+	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
+}
+
+func createGroupChannel(u user.User) control.UserActionResponse {
+	// TODO: consider making this number range between an interval.
+	numUsers := 2
+	users, err := u.Store().RandomUsers(numUsers)
+	if errors.Is(err, memstore.ErrLenMismatch) {
+		return control.UserActionResponse{Info: "not enough users to create group channel"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// TODO: this transformation should be done at the store layer
+	// by providing something like RandomUsersIds().
+	userIds := make([]string, numUsers)
+	for i := range users {
+		userIds[i] = users[i].Id
+	}
+
+	channelId, err := u.CreateGroupChannel(userIds)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// We need to update the user's preferences so that
+	// on next reload we can properly fetch opened DMs.
+	pref := &model.Preferences{
+		model.Preference{
+			UserId:   u.Store().Id(),
+			Category: "group_channel_show", // It looks like there's no constant for this in the model.
+			Name:     channelId,
+			Value:    "true",
+		},
+	}
+
+	if err := u.UpdatePreferences(pref); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds)}
 }

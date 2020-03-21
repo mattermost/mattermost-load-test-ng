@@ -109,6 +109,10 @@ func (c *SimulController) Run() {
 			frequency: 1,
 		},
 		{
+			run:       createGroupChannel,
+			frequency: 1,
+		},
+		{
 			run: func(u user.User) control.UserActionResponse {
 				u.ClearUserData()
 				return c.reload(true)
