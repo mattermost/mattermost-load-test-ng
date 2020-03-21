@@ -16,8 +16,8 @@ variable "db_instance_class" {
 variable "db_engine_version" {
   type = map
   default = {
-    "mysql"    = "5.7"
-    "postgres" = "9.6"
+    "aurora-mysql"      = "5.7.mysql_aurora.2.03.2"
+    "aurora-postgresql" = "9.6.3"
   }
 }
 
