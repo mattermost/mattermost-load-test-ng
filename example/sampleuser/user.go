@@ -429,3 +429,11 @@ func (u *SampleUser) SendTypingEvent(channelId, parentId string) {
 func (u *SampleUser) UpdatePreferences(pref *model.Preferences) error {
 	return nil
 }
+
+func (u *SampleUser) GetUsersInChannel(channelId string, page, perPage int) error {
+	return nil
+}
+
+func (u *SampleUser) GetUsers(page, perPage int) error {
+	return nil
+}

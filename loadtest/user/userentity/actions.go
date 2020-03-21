@@ -586,6 +586,28 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }
 
+func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) error {
+	if len(channelId) == 0 {
+		return errors.New("userentity: channelId should not be empty")
+	}
+
+	users, resp := ue.client.GetUsersInChannel(channelId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetUsers(users)
+}
+
+func (ue *UserEntity) GetUsers(page, perPage int) error {
+	users, resp := ue.client.GetUsers(page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetUsers(users)
+}
+
 func (ue *UserEntity) GetTeamStats(teamId string) error {
 	_, resp := ue.client.GetTeamStats(teamId, "")
 	if resp.Error != nil {

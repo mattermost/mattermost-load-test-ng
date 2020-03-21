@@ -42,6 +42,8 @@ type User interface {
 	GetUsersByUsernames(usernames []string) ([]string, error)
 	GetUserStatus() error
 	GetUsersStatusesByIds(userIds []string) error
+	GetUsersInChannel(channelId string, page, perPage int) error
+	GetUsers(page, perPage int) error
 	SetProfileImage(data []byte) error
 	GetProfileImage() error
 	GetProfileImageForUser(userId string) error
