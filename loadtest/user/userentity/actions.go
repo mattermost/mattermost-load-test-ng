@@ -93,6 +93,26 @@ func (ue *UserEntity) GetPreferences() error {
 	return nil
 }
 
+func (ue *UserEntity) UpdatePreferences(pref *model.Preferences) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	if pref == nil {
+		return errors.New("userentity: pref should not be nil")
+	}
+
+	ok, resp := ue.client.UpdatePreferences(user.Id, pref)
+	if resp.Error != nil {
+		return resp.Error
+	} else if !ok {
+		return errors.New("userentity: failed to update preferences")
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	user, resp := ue.client.CreateUser(user)
 	if resp.Error != nil {

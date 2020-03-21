@@ -34,6 +34,7 @@ type User interface {
 	// user
 	GetMe() (string, error)
 	GetPreferences() error
+	UpdatePreferences(pref *model.Preferences) error
 	CreateUser(user *model.User) (string, error)
 	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error

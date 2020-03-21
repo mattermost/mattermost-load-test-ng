@@ -425,3 +425,7 @@ func (u *SampleUser) ClearUserData() {
 
 func (u *SampleUser) SendTypingEvent(channelId, parentId string) {
 }
+
+func (u *SampleUser) UpdatePreferences(pref *model.Preferences) error {
+	return nil
+}
