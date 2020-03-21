@@ -116,7 +116,11 @@ func (ue *UserEntity) listen(errChan chan error) {
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return
-			case msg := <-ue.wsTyping:
+			case msg, ok := <-ue.wsTyping:
+				if !ok {
+					chanClosed = true
+					break
+				}
 				client.UserTyping(msg.channelId, msg.parentId)
 			}
 			if chanClosed {

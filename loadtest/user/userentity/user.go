@@ -81,6 +81,7 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 	}
 	ue.store = store
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsTyping = make(chan userTypingMsg)
 	return &ue
 }
 
@@ -89,7 +90,6 @@ func (ue *UserEntity) Connect() <-chan error {
 	ue.wsClosing = make(chan struct{})
 	ue.wsClosed = make(chan struct{})
 	ue.wsErrorChan = make(chan error, 1)
-	ue.wsTyping = make(chan userTypingMsg)
 	if ue.client.AuthToken == "" {
 		ue.wsErrorChan <- errors.New("user is not authenticated")
 		return ue.wsErrorChan
@@ -150,6 +150,7 @@ func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 // can be called multiple times.
 func (ue *UserEntity) Cleanup() {
 	close(ue.wsEventChan)
+	close(ue.wsTyping)
 }
 
 func (ue *UserEntity) IsSysAdmin() (bool, error) {
