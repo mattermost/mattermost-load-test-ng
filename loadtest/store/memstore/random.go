@@ -115,11 +115,23 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	key, err := pickRandomKeyFromMap(s.users)
-	if err != nil {
-		return model.User{}, err
+	if len(s.users) < 1 {
+		return model.User{}, ErrLenMismatch
 	}
-	return *s.users[key.(string)], nil
+
+	for {
+		key, err := pickRandomKeyFromMap(s.users)
+		if err != nil {
+			return model.User{}, err
+		}
+		user := s.users[key.(string)]
+		// We don't want to pick ourselves.
+		if user.Id == s.user.Id {
+			continue
+		}
+
+		return *user, nil
+	}
 }
 
 // RandomUsers returns N random users from the set of users.
