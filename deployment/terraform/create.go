@@ -196,6 +196,8 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 		".SqlSettings.DriverName":              driverName,
 		".SqlSettings.DataSource":              clusterDSN,
 		".SqlSettings.DataSourceReplicas":      readerDSN,
+		".TeamSettings.MaxUsersPerTeam":        50000,
+		".TeamSettings.EnableOpenServer":       true,
 		".MetricsSettings.Enable":              true,
 		".PluginSettings.Enable":               true,
 		".PluginSettings.EnableUploads":        true,
