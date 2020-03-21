@@ -230,7 +230,8 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if channel, ok := s.channels[channelId]; ok {
-		return channel, nil
+		channelCopy := *channel
+		return &channelCopy, nil
 	}
 	return nil, nil
 }

@@ -112,19 +112,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 	return switchChannel(u)
 }
 
-func switchChannel(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
-	}
-
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
+func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
 	var currentChanId string
 	if current, err := u.Store().CurrentChannel(); err == nil {
 		currentChanId = current.Id
@@ -157,7 +145,27 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.SetCurrentChannel(&channel); err != nil {
+	if err := u.SetCurrentChannel(channel); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed channel %s", channel.Id)}
+}
+
+func switchChannel(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if resp := viewChannel(u, &channel); resp.Err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -205,6 +213,12 @@ func createPost(u user.User) control.UserActionResponse {
 }
 
 func createDirectChannel(u user.User) control.UserActionResponse {
+	// Here we make a call to GetUsers to simulate the user opening the users
+	// list when creating a direct channel.
+	if err := u.GetUsers(0, 100); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	// TODO: make the selection a bit smarter and pick someone
 	// we don't have a direct channel with already.
 	user, err := u.Store().RandomUser()
@@ -216,6 +230,14 @@ func createDirectChannel(u user.User) control.UserActionResponse {
 
 	channelId, err := u.CreateDirectChannel(user.Id)
 	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetChannel(channelId); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetChannelMember(channelId, u.Store().Id()); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -234,10 +256,25 @@ func createDirectChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	channel, err := u.Store().Channel(channelId)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if resp := viewChannel(u, channel); resp.Err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
 }
 
 func createGroupChannel(u user.User) control.UserActionResponse {
+	// Here we make a call to GetUsers to simulate the user opening the users
+	// list when creating a group channel.
+	if err := u.GetUsers(0, 100); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	// TODO: consider making this number range between an interval.
 	numUsers := 2
 	users, err := u.Store().RandomUsers(numUsers)
@@ -271,6 +308,15 @@ func createGroupChannel(u user.User) control.UserActionResponse {
 	}
 
 	if err := u.UpdatePreferences(pref); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channel, err := u.Store().Channel(channelId)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if resp := viewChannel(u, channel); resp.Err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
