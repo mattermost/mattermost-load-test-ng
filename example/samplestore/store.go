@@ -350,3 +350,7 @@ func (s *SampleStore) Status(userId string) (model.Status, error) {
 func (s *SampleStore) SetStatus(userId string, status *model.Status) error {
 	return nil
 }
+
+func (s *SampleStore) GetUser(userId string) (model.User, error) {
+	return model.User{}, nil
+}

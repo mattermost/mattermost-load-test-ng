@@ -113,6 +113,7 @@ func (s *MemStore) SetConfig(config *model.Config) {
 func (s *MemStore) User() (*model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
+
 	return s.user, nil
 }
 
@@ -556,6 +557,23 @@ func (s *MemStore) Users() ([]*model.User, error) {
 		i++
 	}
 	return users, nil
+}
+
+func (s *MemStore) GetUser(userId string) (model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var user model.User
+
+	if len(userId) == 0 {
+		return user, errors.New("memstore: userId should not be empty")
+	}
+
+	if u, ok := s.users[userId]; ok {
+		user = *u
+	}
+
+	return user, nil
 }
 
 func (s *MemStore) SetUsers(users []*model.User) error {

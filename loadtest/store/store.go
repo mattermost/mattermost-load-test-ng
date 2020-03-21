@@ -50,6 +50,9 @@ type UserStore interface {
 	// ChannelView return the timestamp of the last view for the given channelId.
 	ChannelView(channelId string) (int64, error)
 
+	// GetUser returns the user for the given userId.
+	GetUser(userId string) (model.User, error)
+
 	// Status returns the status for the given userId.
 	Status(userId string) (model.Status, error)
 
