@@ -202,3 +202,34 @@ func createPost(u user.User) control.UserActionResponse {
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
+
+func createDirectChannel(u user.User) control.UserActionResponse {
+	// TODO: make the selection a bit smarter and pick someone
+	// we don't have a direct channel with already.
+	user, err := u.Store().RandomUser()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channelId, err := u.CreateDirectChannel(user.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// We need to update the user's preferences so that
+	// on next reload we can properly fetch opened DMs.
+	pref := &model.Preferences{
+		model.Preference{
+			UserId:   u.Store().Id(),
+			Category: model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW,
+			Name:     channelId,
+			Value:    "true",
+		},
+	}
+
+	if err := u.UpdatePreferences(pref); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("direct channel %s created")}
+}

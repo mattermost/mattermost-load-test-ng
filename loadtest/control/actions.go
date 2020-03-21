@@ -585,25 +585,24 @@ func Reload(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	prefs, _ := u.Store().Preferences()
+	prefs, err := u.Store().Preferences()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
 	var userIds []string
-	var chanId string
-	// TODO: possibly remove this. Data should probably come from the store.
 	for _, p := range prefs {
 		switch {
-		case p.Name == model.PREFERENCE_NAME_LAST_CHANNEL:
-			chanId = p.Value
 		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
 			userIds = append(userIds, p.Name)
 		}
 	}
 
-	if chanId == "" {
-		if c, err := u.Store().CurrentChannel(); err == nil {
-			chanId = c.Id
-		} else if err != nil && err != memstore.ErrChannelNotFound {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
+	var chanId string
+	if c, err := u.Store().CurrentChannel(); err == nil {
+		chanId = c.Id
+	} else if err != nil && err != memstore.ErrChannelNotFound {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	if chanId != "" {

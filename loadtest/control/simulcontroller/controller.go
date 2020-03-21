@@ -94,22 +94,26 @@ func (c *SimulController) Run() {
 	actions := []userAction{
 		{
 			run:       switchChannel,
-			frequency: 165,
+			frequency: 300,
 		},
 		{
 			run:       c.switchTeam,
-			frequency: 60,
+			frequency: 110,
 		},
 		{
 			run:       createPost,
-			frequency: 55,
+			frequency: 100,
+		},
+		{
+			run:       createDirectChannel,
+			frequency: 1,
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
 				u.ClearUserData()
 				return c.reload(true)
 			},
-			frequency: 20,
+			frequency: 40,
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
@@ -132,7 +136,7 @@ func (c *SimulController) Run() {
 				// reload
 				return c.reload(false)
 			},
-			frequency: 1,
+			frequency: 3,
 		},
 	}
 
