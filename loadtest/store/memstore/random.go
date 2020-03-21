@@ -126,10 +126,9 @@ func (s *MemStore) RandomUser() (model.User, error) {
 		}
 		user := s.users[key.(string)]
 		// We don't want to pick ourselves.
-		if user.Id == s.user.Id {
+		if s.user != nil && user.Id == s.user.Id {
 			continue
 		}
-
 		return *user, nil
 	}
 }
