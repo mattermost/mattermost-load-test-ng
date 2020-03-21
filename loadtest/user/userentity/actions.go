@@ -318,7 +318,7 @@ func (ue *UserEntity) GetChannelsForTeam(teamId string) error {
 	if err != nil {
 		return err
 	}
-	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, user.Id, "")
+	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, user.Id, false, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -335,7 +335,7 @@ func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch)
 }
 
 func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error) {
-	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, "")
+	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, false, "")
 	if resp.Error != nil {
 		return nil, resp.Error
 	}

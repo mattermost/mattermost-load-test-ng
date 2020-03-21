@@ -11,7 +11,8 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
-	github.com/mattermost/mattermost-server/v5 v5.18.0-rc1
+	github.com/mattermost/ldap v3.0.4+incompatible // indirect
+	github.com/mattermost/mattermost-server/v5 v5.21.0
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
@@ -29,9 +30,8 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
+	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
