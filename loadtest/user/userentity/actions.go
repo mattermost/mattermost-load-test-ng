@@ -552,9 +552,15 @@ func (ue *UserEntity) GetUserStatus() error {
 }
 
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
-	_, resp := ue.client.GetUsersStatusesByIds(userIds)
+	statusList, resp := ue.client.GetUsersStatusesByIds(userIds)
 	if resp.Error != nil {
 		return resp.Error
+	}
+
+	for _, status := range statusList {
+		if err := ue.store.SetStatus(status.UserId, status); err != nil {
+			return err
+		}
 	}
 
 	return nil
