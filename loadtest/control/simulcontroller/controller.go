@@ -16,11 +16,12 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
+	id      int
+	user    user.User
+	stop    chan struct{}
+	stopped chan struct{}
+	status  chan<- control.UserStatus
+	rate    float64
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -28,11 +29,12 @@ type SimulController struct {
 // a UserStatus channel is passed to communicate errors and information about the user's status.
 func New(id int, user user.User, status chan<- control.UserStatus) (*SimulController, error) {
 	return &SimulController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   1.0,
+		id:      id,
+		user:    user,
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		status:  status,
+		rate:    1.0,
 	}, nil
 }
 
@@ -48,32 +50,53 @@ func (c *SimulController) Run() {
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus()
-
-	if resp := control.SignUp(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
+	initActions := []userAction{
+		{
+			run: control.SignUp,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				resp := control.Login(u)
+				if resp.Err != nil {
+					return resp
+				}
+				c.connect()
+				go c.wsEventHandler()
+				return resp
+			},
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				return c.reload(false)
+			},
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				return c.joinTeam(u)
+			},
+		},
 	}
 
-	if resp := control.Login(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-		c.connect()
-		go c.wsEventHandler()
-	}
+	defer func() {
+		if err := c.user.Disconnect(); err != nil {
+			c.status <- c.newErrorStatus(err)
+		}
+		c.user.Cleanup()
+		c.sendStopStatus()
+		close(c.stopped)
+	}()
 
-	if resp := c.reload(false); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-	}
-
-	if resp := c.joinTeam(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
+	for _, action := range initActions {
+		if resp := action.run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+		select {
+		case <-c.stop:
+			return
+		default:
+		}
 	}
 
 	go func() {
@@ -102,7 +125,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       createPost,
-			frequency: 100,
+			frequency: 55,
 		},
 		{
 			run:       createDirectChannel,
@@ -189,11 +212,8 @@ func (c *SimulController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimulController) Stop() {
-	if err := c.user.Disconnect(); err != nil {
-		c.status <- c.newErrorStatus(err)
-	}
-	c.user.Cleanup()
 	close(c.stop)
+	<-c.stopped
 }
 
 func (c *SimulController) sendFailStatus(reason string) {
