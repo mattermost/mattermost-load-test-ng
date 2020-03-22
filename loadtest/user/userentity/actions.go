@@ -313,12 +313,12 @@ func (ue *UserEntity) GetChannel(channelId string) error {
 	return ue.store.SetChannel(channel)
 }
 
-func (ue *UserEntity) GetChannelsForTeam(teamId string) error {
+func (ue *UserEntity) GetChannelsForTeam(teamId string, includeDeleted bool) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return err
 	}
-	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, user.Id, "")
+	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, user.Id, includeDeleted, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -334,8 +334,8 @@ func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch)
 	return channels, nil
 }
 
-func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error) {
-	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, "")
+func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error) {
+	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, includeDeleted, "")
 	if resp.Error != nil {
 		return nil, resp.Error
 	}

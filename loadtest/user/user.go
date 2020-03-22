@@ -72,7 +72,7 @@ type User interface {
 	CreateGroupChannel(memberIds []string) (string, error)
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
-	GetChannelsForTeam(teamId string) error
+	GetChannelsForTeam(teamId string, includeDeleted bool) error
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
@@ -83,7 +83,7 @@ type User interface {
 	GetChannelMember(channelId string, userId string) error
 	GetChannelStats(channelId string) error
 	AddChannelMember(channelId, userId string) error
-	GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error)
+	GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error)
 	// AutocompleteChannelsForTeam returns an ordered list of channels for a given name.
 	AutocompleteChannelsForTeam(teamId, name string) error
 

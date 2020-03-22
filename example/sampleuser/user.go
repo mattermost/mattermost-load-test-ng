@@ -144,7 +144,7 @@ func (u *SampleUser) GetChannel(channelId string) error {
 	return nil
 }
 
-func (u *SampleUser) GetChannelsForTeam(teamId string) error {
+func (u *SampleUser) GetChannelsForTeam(teamId string, includeDeleted bool) error {
 	return nil
 }
 
@@ -173,7 +173,7 @@ func (u *SampleUser) GetChannelStats(channelId string) error {
 	return nil
 }
 
-func (u *SampleUser) GetChannelsForTeamForUser(teamId, userId string) ([]*model.Channel, error) {
+func (u *SampleUser) GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error) {
 	return nil, nil
 }
 
