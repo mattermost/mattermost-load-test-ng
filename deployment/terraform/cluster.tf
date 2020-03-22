@@ -26,7 +26,9 @@ resource "aws_instance" "app_server" {
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
   vpc_security_group_ids = [
-    "${aws_security_group.app.id}"
+    "${aws_security_group.app.id}",
+    "${aws_security_group.app_gossip.id}"
+
   ]
 
   provisioner "file" {
@@ -85,6 +87,30 @@ resource "aws_instance" "metrics_server" {
     ]
   }
 }
+
+resource "aws_instance" "proxy_server" {
+  tags = {
+    Name = "${var.cluster_name}-proxy-${count.index}"
+  }
+  ami                         = "ami-43a15f3e"
+  instance_type               = "m4.xlarge"
+  associate_public_ip_address = true
+  vpc_security_group_ids = [
+    "${aws_security_group.proxy.id}"
+  ]
+  key_name          = "${aws_key_pair.key.id}"
+  count             = "${var.proxy_instance_count}"
+  availability_zone = "us-east-1a"
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get install -y nginx"
+    ]
+  }
+}
+
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
   count              = var.db_instance_count
@@ -146,6 +172,42 @@ resource "aws_security_group" "app" {
   }
 }
 
+resource "aws_security_group" "app_gossip" {
+  name        = "${var.cluster_name}-app-security-group-gossip"
+  description = "App security group for gossip loadtest cluster ${var.cluster_name}"
+  ingress {
+    from_port       = 8074
+    to_port         = 8074
+    protocol        = "udp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8074
+    to_port         = 8074
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8075
+    to_port         = 8075
+    protocol        = "udp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8075
+    to_port         = 8075
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
 resource "aws_security_group" "db" {
   name = "${var.cluster_name}-db-security-group"
 
@@ -185,6 +247,32 @@ resource "aws_security_group" "metrics" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "proxy" {
+  name        = "${var.cluster_name}-proxy-security-group"
+  description = "Proxy security group for loadtest cluster ${var.cluster_name}"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
