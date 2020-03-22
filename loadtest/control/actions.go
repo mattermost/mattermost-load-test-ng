@@ -67,7 +67,7 @@ func Login(u user.User) UserActionResponse {
 	}
 	for _, teamId := range teamIds {
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(teamId); err != nil {
+			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
@@ -179,7 +179,7 @@ func JoinTeam(u user.User) UserActionResponse {
 			if err := u.AddTeamMember(teamId, userId); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
-			if err := u.GetChannelsForTeam(teamId); err != nil {
+			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 			if err := u.GetChannelMembersForUser(userId, teamId); err != nil {
@@ -678,7 +678,7 @@ func Reload(u user.User) UserActionResponse {
 		}
 
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(teamId); err != nil {
+			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 			err = u.GetChannelMembersForUser(userId, teamId)

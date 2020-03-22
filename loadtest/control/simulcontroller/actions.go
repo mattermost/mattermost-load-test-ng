@@ -74,7 +74,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id()); err != nil {
+	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
