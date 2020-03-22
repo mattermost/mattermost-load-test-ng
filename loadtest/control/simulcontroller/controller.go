@@ -56,18 +56,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
-				resp := control.Login(u)
-				if resp.Err != nil {
-					return resp
-				}
-				c.connect()
-				go c.wsEventHandler()
-				return resp
-			},
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(false)
+				return c.login()
 			},
 		},
 		{
@@ -137,7 +126,6 @@ func (c *SimulController) Run() {
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
-				u.ClearUserData()
 				return c.reload(true)
 			},
 			frequency: 40,
@@ -145,19 +133,19 @@ func (c *SimulController) Run() {
 		{
 			run: func(u user.User) control.UserActionResponse {
 				// logout
-				if resp := control.Logout(c.user); resp.Err != nil {
+				if resp := control.Logout(u); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
 				} else {
 					c.status <- c.newInfoStatus(resp.Info)
 				}
 
+				u.ClearUserData()
+
 				// login
-				if resp := control.Login(c.user); resp.Err != nil {
+				if resp := c.login(); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
 				} else {
 					c.status <- c.newInfoStatus(resp.Info)
-					c.connect()
-					go c.wsEventHandler()
 				}
 
 				// reload

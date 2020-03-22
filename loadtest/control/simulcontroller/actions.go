@@ -37,10 +37,35 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		c.user.ClearUserData()
 		c.connect()
 	}
 
-	return control.Reload(c.user)
+	if resp := control.Reload(c.user); resp.Err != nil {
+		return resp
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	team, err := c.user.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		// If the current team is not set we switch to a random one.
+		return c.switchTeam(c.user)
+	}
+
+	return loadTeam(c.user, team)
+}
+
+func (c *SimulController) login() control.UserActionResponse {
+	if resp := control.Login(c.user); resp.Err != nil {
+		return resp
+	} else {
+		c.connect()
+		go c.wsEventHandler()
+		return resp
+	}
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
@@ -66,21 +91,7 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 	return c.switchTeam(u)
 }
 
-func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
-	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if current, err := u.Store().CurrentChannel(); err == nil {
-		// Somehow the webapp does a view to the current channel before switching.
-		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	} else if err != memstore.ErrChannelNotFound {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
+func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -100,11 +111,26 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	return control.UserActionResponse{Info: fmt.Sprintf("loaded team %s", team.Id)}
+}
+
+func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no other team to switch to")}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	if err := u.SetCurrentTeam(&team); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
+
+	if resp := loadTeam(u, &team); resp.Err != nil {
+		return resp
+	}
 
 	// We should probably keep track of the last channel viewed in the team but
 	// for now we can simplify and randomly pick one each time.
