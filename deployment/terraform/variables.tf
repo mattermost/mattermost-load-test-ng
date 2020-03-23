@@ -4,6 +4,9 @@ variable "cluster_name" {
 variable "app_instance_count" {
 }
 
+variable "loadtest_agent_count" {
+}
+
 variable "db_instance_count" {
 }
 
@@ -34,4 +37,10 @@ variable "mattermost_download_url" {
 }
 
 variable "mattermost_license_file" {
+}
+
+variable "go_binary_file" {
+}
+
+variable "loadtest_source_code_ref" {
 }

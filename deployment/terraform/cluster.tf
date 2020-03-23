@@ -108,6 +108,36 @@ resource "aws_rds_cluster" "db_cluster" {
   vpc_security_group_ids = ["${aws_security_group.db.id}"]
 }
 
+resource "aws_instance" "loadtest_agent" {
+  tags = {
+    Name = "${var.cluster_name}-agent-${count.index}"
+  }
+
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = "ami-0fc20dd1da406780b"
+  instance_type = "t2.medium"
+  key_name      = aws_key_pair.key.id
+  count         = var.loadtest_agent_count
+
+  vpc_security_group_ids = ["${aws_security_group.agent.id}"]
+
+  provisioner "remote-exec" {
+      inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "wget https://dl.google.com/go/${var.go_binary_file}",
+      "tar -C /usr/local -xzf ${var.go_binary_file}",
+      "export PATH=$PATH:/usr/local/go/bin",
+      "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
+      "tar -xzf ${var.loadtest_source_code_ref}.tar.gz"
+    ] 
+  }
+}
+
 resource "aws_security_group" "app" {
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
@@ -161,6 +191,32 @@ resource "aws_security_group" "db" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = ["${aws_security_group.app.id}"]
+  }
+}
+
+resource "aws_security_group" "agent" {
+  name        = "${var.cluster_name}-agent-security-group"
+  description = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 4000
+    to_port     = 4000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 

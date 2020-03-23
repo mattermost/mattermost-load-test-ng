@@ -19,6 +19,9 @@ import (
 type Config struct {
 	ClusterName      string // Name of the cluster.
 	AppInstanceCount int    // Number of application instances.
+	// Number of agents; at least 2 agents required so that one of them will work
+	// as a coordinator.
+	AgentCount       int
 	SSHPublicKey     string // Path to the SSH public key.
 	DBInstanceCount  int    // Number of DB instances.
 	DBInstanceClass  string // Type of the DB instance.
@@ -32,6 +35,8 @@ type Config struct {
 	// stable release.
 	MattermostDownloadURL string
 	MattermostLicenseFile string // Path to the Mattermost EE license file.
+	GoBinaryFile          string // Go binaries to compile loadtest-agents.
+	SourceCodeRef         string // loadtest-ng head reference
 	LogSettings           logger.Settings
 }
 
@@ -52,6 +57,9 @@ func (c *Config) IsValid() error {
 	firstRune, _ := utf8.DecodeRuneInString(clusterName)
 	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
 		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
+	}
+	if c.AgentCount < 2 {
+		return fmt.Errorf("number of agents must be greater than 2")
 	}
 
 	return nil
@@ -76,6 +84,9 @@ func ReadConfig(filePath string) (*Config, error) {
 	v.SetDefault("LogSettings.FileLevel", "INFO")
 	v.SetDefault("LogSettings.FileJson", true)
 	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
+
+	v.SetDefault("GoBinaryFile", "go1.14.1.linux-amd64.tar.gz")
+	v.SetDefault("SourceCodeRef", "master")
 
 	if filePath != "" {
 		v.SetConfigFile(filePath)
