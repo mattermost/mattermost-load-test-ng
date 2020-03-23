@@ -16,7 +16,7 @@ commands:
     parameters:
       version:
         type: string
-        default: 1.23.3 # Keep this in sync with .golangci.yml
+        default: 1.23.6
       gobin:
         type: string
         default: /go/bin
@@ -43,7 +43,7 @@ commands:
 jobs:
   test:
     docker:
-      - image: circleci/golang:1.13
+      - image: circleci/golang:1.14.1
     steps:
       - checkout
       - install-golangci-lint
