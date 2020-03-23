@@ -73,7 +73,12 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	mlog.Info("loadtest started")
-	time.Sleep(60 * time.Second)
+
+	durationSec, err := cmd.Flags().GetInt("duration")
+	if err != nil {
+		return err
+	}
+	time.Sleep(time.Duration(durationSec) * time.Second)
 
 	err = lt.Stop()
 	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
@@ -89,5 +94,6 @@ func MakeLoadTestCommand() *cobra.Command {
 	}
 	cmd.PersistentFlags().StringP("simplecontroller-config", "s", "", "path to the simplecontroller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
+	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	return cmd
 }
