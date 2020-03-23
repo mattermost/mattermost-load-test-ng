@@ -97,7 +97,6 @@ func (t *Terraform) Create() error {
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
-		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
@@ -125,8 +124,8 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance of app server
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-	// Updating the nginx config for each instance of proxy server
-	t.setupProxyServers(output, extAgent)
+	// Updating the nginx config on proxy server
+	t.setupProxyServer(output, extAgent)
 	// TODO: display the entire cluster info from terraformOutput later
 	// when we have cluster support.
 	mlog.Info("Deployment complete.")
@@ -184,63 +183,57 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 	}
 }
 
-func (t *Terraform) setupProxyServers(output *terraformOutput, extAgent *ssh.ExtAgent) {
-	for _, ip := range output.ProxyIP.Value {
-		sshc, err := extAgent.NewClient(ip)
-		if err != nil {
-			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
-			continue
-		}
-		func() {
-			defer func() {
-				err := sshc.Close()
-				if err != nil {
-					mlog.Error("error closing ssh connection", mlog.Err(err))
-				}
-			}()
-
-			// Upload service file
-			mlog.Info("Uploading nginx config", mlog.String("host", ip))
-
-			backends := ""
-			for _, addr := range output.Instances.Value {
-				backends += "server " + addr.PrivateIP + ":8065;\n"
-			}
-
-			files := []struct {
-				path    string
-				content string
-			}{
-				{content: strings.TrimSpace(fmt.Sprintf(nginxConfig, backends)), path: "/etc/nginx/sites-available/mattermost"},
-				{content: strings.TrimSpace(sysctlConfig), path: "/etc/sysctl.conf"},
-				{content: strings.TrimSpace(limitsConfig), path: "/etc/security/limits.conf"},
-			}
-			for _, fileInfo := range files {
-				rdr := strings.NewReader(fileInfo.content)
-				if err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
-					mlog.Error("error uploading file", mlog.Err(err), mlog.String("file", fileInfo.path))
-					return
-				}
-			}
-
-			for _, cmd := range []string{
-				"sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost",
-				"sudo rm -f /etc/nginx/sites-enabled/default",
-				"sudo grep -q -F 'worker_rlimit_nofile' /etc/nginx/nginx.conf || echo 'worker_rlimit_nofile 65536;' | sudo tee -a /etc/nginx/nginx.conf",
-				"sudo sed -i 's/worker_connections.*/worker_connections 200000;/g' /etc/nginx/nginx.conf",
-				"sudo systemctl daemon-reload",
-				"sudo systemctl restart nginx",
-				"sudo systemctl enable nginx",
-				"shutdown -r now &",
-			} {
-				if err := sshc.RunCommand(cmd); err != nil {
-					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
-					return
-				}
-			}
-
-		}()
+func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
+	if len(output.ProxyIP.Value) == 0 {
+		mlog.Error("no proxy server ip found in terraform output. proxy server will not be configured")
+		return
 	}
+	ip := output.ProxyIP.Value[0]
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
+		return
+	}
+	func() {
+		defer func() {
+			err := sshc.Close()
+			if err != nil {
+				mlog.Error("error closing ssh connection", mlog.Err(err))
+			}
+		}()
+
+		// Upload service file
+		mlog.Info("Uploading nginx config", mlog.String("host", ip))
+
+		backends := ""
+		for _, addr := range output.Instances.Value {
+			backends += "server " + addr.PrivateIP + ":8065;\n"
+		}
+
+		files := []struct {
+			path    string
+			content string
+		}{
+			{content: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), path: "/etc/nginx/sites-available/mattermost"},
+			{content: strings.TrimSpace(sysctlConfig), path: "/etc/sysctl.conf"},
+			{content: strings.TrimSpace(nginxConfig), path: "/etc/nginx/nginx.conf"},
+			{content: strings.TrimSpace(limitsConfig), path: "/etc/security/limits.conf"},
+		}
+		for _, fileInfo := range files {
+			rdr := strings.NewReader(fileInfo.content)
+			if err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
+				mlog.Error("error uploading file", mlog.Err(err), mlog.String("file", fileInfo.path))
+				return
+			}
+		}
+
+		cmd := "sudo shutdown -r now &"
+		if err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+			return
+		}
+
+	}()
 }
 
 func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {

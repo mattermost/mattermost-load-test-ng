@@ -90,7 +90,7 @@ resource "aws_instance" "metrics_server" {
 
 resource "aws_instance" "proxy_server" {
   tags = {
-    Name = "${var.cluster_name}-proxy-${count.index}"
+    Name = "${var.cluster_name}-proxy"
   }
   ami                         = "ami-0fc20dd1da406780b"
   instance_type               = "m4.xlarge"
@@ -99,7 +99,6 @@ resource "aws_instance" "proxy_server" {
     "${aws_security_group.proxy.id}"
   ]
   key_name          = aws_key_pair.key.id
-  count             = var.proxy_instance_count
 
   connection {
     # The default username for our AMI
@@ -107,12 +106,16 @@ resource "aws_instance" "proxy_server" {
     user = "ubuntu"
     host = self.public_ip
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "sudo apt-get install -y nginx"
+      "sudo apt-get install -y nginx",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable nginx",
+      "sudo rm -f /etc/nginx/sites-enabled/default",
+      "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
     ]
   }
 }

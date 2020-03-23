@@ -1,9 +1,6 @@
 variable "cluster_name" {
 }
 
-variable "proxy_instance_count" {
-}
-
 variable "app_instance_count" {
 }
 
