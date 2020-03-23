@@ -74,9 +74,7 @@ func (c *SimulController) Run() {
 			},
 		},
 		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.joinTeam(u)
-			},
+			run: c.joinTeam,
 		},
 	}
 
