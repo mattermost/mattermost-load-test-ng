@@ -10,6 +10,9 @@
     "DBPassword": "mostest80098bigpass_",
     "MattermostDownloadURL": "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz",
     "MattermostLicenseFile": "",
+    "AdminEmail": "sysadmin@sample.mattermost.com",
+    "AdminUsername": "sysadmin",
+    "AdminPassword": "Sys@dmin-sample1",
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",

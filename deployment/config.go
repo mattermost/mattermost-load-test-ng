@@ -35,6 +35,9 @@ type Config struct {
 	// stable release.
 	MattermostDownloadURL string
 	MattermostLicenseFile string // Path to the Mattermost EE license file.
+	AdminEmail            string // Mattermost instance sysadmin e-mail.
+	AdminUsername         string // Mattermost instance sysadmin user name.
+	AdminPassword         string // Mattermost instance sysadmin password.
 	GoBinaryFile          string // Go binaries to compile loadtest-agents.
 	SourceCodeRef         string // loadtest-ng head reference
 	LogSettings           logger.Settings

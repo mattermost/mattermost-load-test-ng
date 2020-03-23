@@ -52,6 +52,9 @@ type terraformOutput struct {
 			PublicIP   string `json:"public_ip"`
 			PublicDNS  string `json:"public_dns"`
 			PrivateDNS string `json:"private_dns"`
+			Tags       struct {
+				Name string `json:"Name"`
+			} `json:"tags"`
 		} `json:"value"`
 	} `json:"agents"`
 	MetricsServer struct {
@@ -179,9 +182,36 @@ func (t *Terraform) Create() error {
 		}()
 	}
 
-	for _, val := range output.Agents.Value {
-		ip := val.PublicIP
-		mlog.Info("Agent: ", mlog.String("IP", ip))
+	// Creating the sysadmin user.
+
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
+		t.config.AdminEmail,
+		t.config.AdminUsername,
+		t.config.AdminPassword,
+	)
+	sshc, err := extAgent.NewClient("PROXY")
+	if err != nil {
+		return err
+	}
+	if err := sshc.RunCommand(cmd); err != nil {
+		return err
+	}
+
+	for i := 1; i < len(output.Agents.Value); i++ {
+		val := output.Agents.Value[i]
+
+		if err := t.runAgent(extAgent, val.PublicIP); err != nil {
+			mlog.Error("error while setting up an agent", mlog.String("agent name", val.Tags.Name), mlog.Err(err))
+			continue
+		}
+	}
+
+	if err := t.updateCoordinatorConfig(extAgent, output); err != nil {
+		return err
+	}
+
+	if err := t.startCoordinator(extAgent, output.Agents.Value[0].PublicIP); err != nil {
+		return err
 	}
 
 	// TODO: display the entire cluster info from terraformOutput later

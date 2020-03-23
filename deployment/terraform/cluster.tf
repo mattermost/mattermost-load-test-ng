@@ -129,11 +129,16 @@ resource "aws_instance" "loadtest_agent" {
   provisioner "remote-exec" {
       inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "sudo apt-get -y update",
+      "sudo apt-get install -y jq",
       "wget https://dl.google.com/go/${var.go_binary_file}",
-      "tar -C /usr/local -xzf ${var.go_binary_file}",
+      "sudo tar -C /usr/local -xzf ${var.go_binary_file}",
       "export PATH=$PATH:/usr/local/go/bin",
       "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
-      "tar -xzf ${var.loadtest_source_code_ref}.tar.gz"
+      "tar -xzf ${var.loadtest_source_code_ref}.tar.gz",
+      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.json",
+      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.json"
     ] 
   }
 }
