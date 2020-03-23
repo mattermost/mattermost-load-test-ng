@@ -1,6 +1,3 @@
-service:
-  golangci-lint-version: 1.23.3 # Keep this in sync with .circleci/config.yml
-
 run:
   timeout: 5m
   modules-download-mode: readonly
