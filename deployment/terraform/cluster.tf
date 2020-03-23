@@ -92,16 +92,22 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy-${count.index}"
   }
-  ami                         = "ami-43a15f3e"
+  ami                         = "ami-0fc20dd1da406780b"
   instance_type               = "m4.xlarge"
   associate_public_ip_address = true
   vpc_security_group_ids = [
     "${aws_security_group.proxy.id}"
   ]
-  key_name          = "${aws_key_pair.key.id}"
-  count             = "${var.proxy_instance_count}"
-  availability_zone = "us-east-1a"
+  key_name          = aws_key_pair.key.id
+  count             = var.proxy_instance_count
 
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+  
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",

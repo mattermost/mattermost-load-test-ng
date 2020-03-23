@@ -204,7 +204,7 @@ func (t *Terraform) setupProxyServers(output *terraformOutput, extAgent *ssh.Ext
 
 			backends := ""
 			for _, addr := range output.Instances.Value {
-				backends += "server " + addr.PrivateIP + ";\n"
+				backends += "server " + addr.PrivateIP + ":8065;\n"
 			}
 
 			files := []struct {

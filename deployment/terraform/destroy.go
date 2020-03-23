@@ -15,6 +15,7 @@ func (t *Terraform) Destroy() error {
 	return t.runCommand(nil, "destroy",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
+		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
