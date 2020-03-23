@@ -36,13 +36,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	prometheusConfigFile := fmt.Sprintf(prometheusConfig, mmConfig, nodeExporterConfig)
 	rdr := strings.NewReader(prometheusConfigFile)
 	mlog.Info("Updating Prometheus config", mlog.String("host", output.MetricsServer.Value.PublicIP))
-	if err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
-		return err
+	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
+		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value.PublicIP))
-	if err := sshc.RunCommand("sudo service prometheus restart"); err != nil {
-		return err
+	cmd := "sudo service prometheus restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value.PublicIP))

@@ -144,16 +144,16 @@ func (t *Terraform) Create() error {
 			// Upload service file
 			mlog.Info("Uploading service file", mlog.String("host", ip))
 			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
-				mlog.Error("error uploading systemd file", mlog.Err(err))
+			if out, err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
+				mlog.Error("error uploading systemd file", mlog.String("output", out), mlog.Err(err))
 				return
 			}
 
 			// Upload binary if needed.
 			if uploadBinary {
 				mlog.Info("Uploading binary", mlog.String("host", ip))
-				if err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.Err(err))
+				if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.String("output", out), mlog.Err(err))
 					return
 				}
 			}
@@ -161,8 +161,8 @@ func (t *Terraform) Create() error {
 			// Starting mattermost.
 			mlog.Info("Starting mattermost", mlog.String("host", ip))
 			cmd := fmt.Sprintf("sudo service mattermost start")
-			if err := sshc.RunCommand(cmd); err != nil {
-				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", out), mlog.Err(err))
 				return
 			}
 		}()
@@ -207,8 +207,8 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 			return fmt.Errorf("invalid config: key: %s, err: %v", k, err)
 		}
 		cmd := fmt.Sprintf(`jq '%s = %s' /opt/mattermost/config/config.json > /tmp/mmcfg.json && mv /tmp/mmcfg.json /opt/mattermost/config/config.json`, k, string(buf))
-		if err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running ssh command: cmd: %s, err: %v", cmd, err)
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
 	}
 	return nil
