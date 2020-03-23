@@ -47,6 +47,15 @@ type UserStore interface {
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for given channelId, sorted by CreateAt
 	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
+	// ChannelView returns the timestamp of the last view for the given channelId.
+	ChannelView(channelId string) (int64, error)
+
+	// GetUser returns the user for the given userId.
+	GetUser(userId string) (model.User, error)
+
+	// Status returns the status for the given userId.
+	Status(userId string) (model.Status, error)
+
 	// Teams returns the teams a user belong to.
 	Teams() ([]model.Team, error)
 	// CurrentTeam gets the currently selected team for the user.
@@ -102,6 +111,9 @@ type MutableUserStore interface {
 	SetUsers(users []*model.User) error
 	Users() ([]*model.User, error)
 
+	// statuses
+	SetStatus(userId string, status *model.Status) error
+
 	// posts
 	SetPost(post *model.Post) error
 	DeletePost(postId string) error
@@ -121,6 +133,9 @@ type MutableUserStore interface {
 	SetChannels(channels []*model.Channel) error
 	// SetCurrentChannel sets the channel the user is currently viewing.
 	SetCurrentChannel(channel *model.Channel) error
+	// SetChannelView marks a channel as viewed and updates the store with the
+	// current timestamp.
+	SetChannelView(channelId string) error
 	// SetChannelMembers stores the given channel members in the store.
 	SetChannelMembers(channelMembers *model.ChannelMembers) error
 	ChannelMembers(channelId string) (*model.ChannelMembers, error)

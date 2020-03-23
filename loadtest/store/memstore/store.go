@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -25,11 +26,13 @@ type MemStore struct {
 	channelMembers map[string]map[string]*model.ChannelMember
 	teamMembers    map[string]map[string]*model.TeamMember
 	users          map[string]*model.User
+	statuses       map[string]*model.Status
 	reactions      map[string][]*model.Reaction
 	roles          map[string]*model.Role
 	license        map[string]string
 	currentChannel *model.Channel
 	currentTeam    *model.Team
+	channelViews   map[string]int64
 }
 
 // New returns a new instance of MemStore.
@@ -43,14 +46,20 @@ func New() *MemStore {
 func (s *MemStore) Clear() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	s.preferences = nil
+	s.config = nil
+	s.emojis = []*model.Emoji{}
 	s.posts = map[string]*model.Post{}
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
 	s.teamMembers = map[string]map[string]*model.TeamMember{}
 	s.users = map[string]*model.User{}
+	s.statuses = map[string]*model.Status{}
 	s.reactions = map[string][]*model.Reaction{}
 	s.roles = map[string]*model.Role{}
+	s.license = map[string]string{}
+	s.channelViews = map[string]int64{}
 }
 
 func (s *MemStore) Id() string {
@@ -104,6 +113,7 @@ func (s *MemStore) SetConfig(config *model.Config) {
 func (s *MemStore) User() (*model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
+
 	return s.user, nil
 }
 
@@ -220,7 +230,8 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if channel, ok := s.channels[channelId]; ok {
-		return channel, nil
+		channelCopy := *channel
+		return &channelCopy, nil
 	}
 	return nil, nil
 }
@@ -279,6 +290,30 @@ func (s *MemStore) SetChannels(channels []*model.Channel) error {
 		}
 	}
 	return nil
+}
+
+func (s *MemStore) SetChannelView(channelId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if len(channelId) == 0 {
+		return errors.New("memstore: channelId should not be empty")
+	}
+
+	s.channelViews[channelId] = time.Now().Unix() * 1000
+
+	return nil
+}
+
+func (s *MemStore) ChannelView(channelId string) (int64, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if len(channelId) == 0 {
+		return 0, errors.New("memstore: channelId should not be empty")
+	}
+
+	return s.channelViews[channelId], nil
 }
 
 func (s *MemStore) Team(teamId string) (*model.Team, error) {
@@ -525,6 +560,23 @@ func (s *MemStore) Users() ([]*model.User, error) {
 	return users, nil
 }
 
+func (s *MemStore) GetUser(userId string) (model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var user model.User
+
+	if len(userId) == 0 {
+		return user, errors.New("memstore: userId should not be empty")
+	}
+
+	if u, ok := s.users[userId]; ok {
+		user = *u
+	}
+
+	return user, nil
+}
+
 func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -533,6 +585,39 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 	for _, user := range users {
 		s.users[user.Id] = user
 	}
+	return nil
+}
+
+func (s *MemStore) Status(userId string) (model.Status, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var status model.Status
+
+	if len(userId) == 0 {
+		return status, errors.New("memstore: userId should not be empty")
+	}
+
+	if st, ok := s.statuses[userId]; ok {
+		status = *st
+	}
+	return status, nil
+}
+
+func (s *MemStore) SetStatus(userId string, status *model.Status) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if len(userId) == 0 {
+		return errors.New("memstore: userId should not be empty")
+	}
+
+	if status == nil {
+		return errors.New("memstore: status should not be nil")
+	}
+
+	s.statuses[userId] = status
+
 	return nil
 }
 

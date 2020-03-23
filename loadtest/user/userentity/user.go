@@ -23,6 +23,7 @@ type UserEntity struct {
 	wsClosed    chan struct{}
 	wsErrorChan chan error
 	wsEventChan chan *model.WebSocketEvent
+	wsTyping    chan userTypingMsg
 	connected   bool
 	config      Config
 }
@@ -39,6 +40,11 @@ type Config struct {
 	Email string
 	// The password to be used by the entity.
 	Password string
+}
+
+type userTypingMsg struct {
+	channelId string
+	parentId  string
 }
 
 // Store returns the underlying store of the user.
@@ -75,6 +81,7 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 	}
 	ue.store = store
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsTyping = make(chan userTypingMsg)
 	return &ue
 }
 
@@ -143,6 +150,7 @@ func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 // can be called multiple times.
 func (ue *UserEntity) Cleanup() {
 	close(ue.wsEventChan)
+	close(ue.wsTyping)
 }
 
 func (ue *UserEntity) IsSysAdmin() (bool, error) {
