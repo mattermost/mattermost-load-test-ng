@@ -132,6 +132,6 @@ const limitsConfig = `
 `
 
 const sysctlConfig = `
-net.ipv4.ip_local_port_range="1024 65000"
-net.ipv4.tcp_fin_timeout=30
+net.ipv4.ip_local_port_range = 1024 65000
+net.ipv4.tcp_fin_timeout = 30
 `

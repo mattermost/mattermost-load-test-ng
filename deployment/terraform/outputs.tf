@@ -11,5 +11,5 @@ output "metricsServer" {
 }
 
 output "proxyIP" {
-    value = "${aws_instance.proxy_server.*.public_dns}"
+    value = "${aws_instance.proxy_server.public_dns}"
 }

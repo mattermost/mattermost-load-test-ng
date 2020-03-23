@@ -33,7 +33,7 @@ type Terraform struct {
 // created after a deployment.
 type terraformOutput struct {
 	ProxyIP struct {
-		Value []string
+		Value string
 	} `json:"proxyIP"`
 	Instances struct {
 		Value []struct {
@@ -184,11 +184,7 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 }
 
 func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
-	if len(output.ProxyIP.Value) == 0 {
-		mlog.Error("no proxy server ip found in terraform output. proxy server will not be configured")
-		return
-	}
-	ip := output.ProxyIP.Value[0]
+	ip := output.ProxyIP.Value
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
@@ -211,8 +207,8 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 		}
 
 		files := []struct {
-			path    string
 			content string
+			path    string
 		}{
 			{content: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), path: "/etc/nginx/sites-available/mattermost"},
 			{content: strings.TrimSpace(sysctlConfig), path: "/etc/sysctl.conf"},
@@ -227,7 +223,7 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 			}
 		}
 
-		cmd := "sudo shutdown -r now &"
+		cmd := "sudo sysctl -p && sudo service nginx reload"
 		if err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
 			return
@@ -262,7 +258,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terrafo
 		".ClusterSettings.GossipPort":          8074,
 		".ClusterSettings.StreamingPort":       8075,
 		".ClusterSettings.Enable":              true,
-		".ClusterSettings.ClusterName":         "load-test",
+		".ClusterSettings.ClusterName":         t.config.ClusterName,
 		".ClusterSettings.ReadOnlyConfig":      false,
 		".MetricsSettings.Enable":              true,
 		".PluginSettings.Enable":               true,
