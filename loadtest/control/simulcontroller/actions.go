@@ -41,11 +41,12 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		c.connect()
 	}
 
-	if resp := control.Reload(c.user); resp.Err != nil {
+	resp := control.Reload(c.user)
+	if resp.Err != nil {
 		return resp
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
 	}
+
+	c.status <- c.newInfoStatus(resp.Info)
 
 	team, err := c.user.Store().CurrentTeam()
 	if err != nil {
@@ -59,13 +60,14 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 }
 
 func (c *SimulController) login() control.UserActionResponse {
-	if resp := control.Login(c.user); resp.Err != nil {
-		return resp
-	} else {
-		c.connect()
-		go c.wsEventHandler()
+	resp := control.Login(c.user)
+	if resp.Err != nil {
 		return resp
 	}
+
+	c.connect()
+
+	return resp
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {

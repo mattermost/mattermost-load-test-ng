@@ -50,22 +50,6 @@ func (c *SimulController) Run() {
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	initActions := []userAction{
-		{
-			run: control.SignUp,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.login()
-			},
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.joinTeam(u)
-			},
-		},
-	}
-
 	defer func() {
 		if err := c.user.Disconnect(); err != nil {
 			c.status <- c.newErrorStatus(err)
@@ -74,6 +58,27 @@ func (c *SimulController) Run() {
 		c.sendStopStatus()
 		close(c.stopped)
 	}()
+
+	initActions := []userAction{
+		{
+			run: control.SignUp,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				resp := c.login()
+				if resp.Err != nil {
+					return resp
+				}
+				go c.wsEventHandler()
+				return resp
+			},
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				return c.joinTeam(u)
+			},
+		},
+	}
 
 	for _, action := range initActions {
 		if resp := action.run(c.user); resp.Err != nil {
@@ -88,20 +93,7 @@ func (c *SimulController) Run() {
 		}
 	}
 
-	go func() {
-		for {
-			select {
-			case <-time.After(60 * time.Second):
-				if resp := c.getUsersStatuses(); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-			case <-c.stop:
-				return
-			}
-		}
-	}()
+	go c.periodicActions()
 
 	actions := []userAction{
 		{

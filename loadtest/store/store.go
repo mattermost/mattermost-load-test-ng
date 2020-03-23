@@ -47,7 +47,7 @@ type UserStore interface {
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for given channelId, sorted by CreateAt
 	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
-	// ChannelView return the timestamp of the last view for the given channelId.
+	// ChannelView returns the timestamp of the last view for the given channelId.
 	ChannelView(channelId string) (int64, error)
 
 	// GetUser returns the user for the given userId.
