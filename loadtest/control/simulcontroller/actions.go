@@ -240,7 +240,7 @@ func createPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
-func createDirectChannel(u user.User) control.UserActionResponse {
+func (c *SimulController) createDirectChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
 	if err := u.GetUsers(0, 100); err != nil {
@@ -293,10 +293,12 @@ func createDirectChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
+	c.status <- c.newInfoStatus(fmt.Sprintf("direct channel created, id %s", channelId))
+
+	return createPost(u)
 }
 
-func createGroupChannel(u user.User) control.UserActionResponse {
+func (c *SimulController) createGroupChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a group channel.
 	if err := u.GetUsers(0, 100); err != nil {
@@ -348,5 +350,7 @@ func createGroupChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds)}
+	c.status <- c.newInfoStatus(fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds))
+
+	return createPost(u)
 }

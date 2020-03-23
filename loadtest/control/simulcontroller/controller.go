@@ -109,11 +109,11 @@ func (c *SimulController) Run() {
 			frequency: 55,
 		},
 		{
-			run:       createDirectChannel,
+			run:       c.createDirectChannel,
 			frequency: 1,
 		},
 		{
-			run:       createGroupChannel,
+			run:       c.createGroupChannel,
 			frequency: 1,
 		},
 		{
