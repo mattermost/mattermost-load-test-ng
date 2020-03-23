@@ -194,7 +194,7 @@ func switchChannel(u user.User) control.UserActionResponse {
 	}
 
 	if resp := viewChannel(u, &channel); resp.Err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
@@ -290,7 +290,7 @@ func (c *SimulController) createDirectChannel(u user.User) control.UserActionRes
 	}
 
 	if resp := viewChannel(u, channel); resp.Err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
 	}
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("direct channel created, id %s", channelId))
@@ -347,7 +347,7 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 	}
 
 	if resp := viewChannel(u, channel); resp.Err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
 	}
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds))
