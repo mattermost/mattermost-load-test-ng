@@ -9,3 +9,7 @@ output "dbCluster" {
 output "metricsServer" {
   value = "${aws_instance.metrics_server}"
 }
+
+output "proxyIP" {
+    value = "${aws_instance.proxy_server.public_dns}"
+}
