@@ -48,6 +48,9 @@ func (c *SimulController) Run() {
 		return
 	}
 
+	// Start listening for websocket events.
+	go c.wsEventHandler()
+
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
@@ -69,7 +72,6 @@ func (c *SimulController) Run() {
 				if resp.Err != nil {
 					return resp
 				}
-				go c.wsEventHandler()
 				return resp
 			},
 		},
