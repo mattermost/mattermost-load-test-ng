@@ -3,8 +3,13 @@ package terraform
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -13,6 +18,7 @@ import (
 func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtest.Config {
 	return loadtest.Config{
 		ConnectionConfiguration: loadtest.ConnectionConfiguration{
+			// TODO: replace with reverse nginx ip
 			ServerURL:                   "http://" + output.Instances.Value[0].PrivateIP + ":8065",
 			WebSocketURL:                "ws://" + output.Instances.Value[0].PrivateIP + ":8065",
 			AdminEmail:                  t.config.AdminEmail,
@@ -39,19 +45,18 @@ func (t *Terraform) startCoordinator(extAgent *ssh.ExtAgent, ip string) error {
 		return err
 	}
 
-	srcPath := "$HOME/mattermost-load-test-ng-" + t.config.SourceCodeRef
-
 	// Populate the DB.
 	mlog.Info("Populating DB")
-	cmd := fmt.Sprintf("cd %s && go run ./cmd/loadtest init", srcPath)
+	cmd := fmt.Sprintf("agent init")
 	if err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error(cmd)
 		return err
 	}
 
 	// Starting coordinator.
 	mlog.Info("Starting coordinator", mlog.String("ip", ip))
-	cmd = fmt.Sprintf("cd %s && go run ./cmd/loadtest coordinator &", srcPath)
-	if err := sshc.RunCommand(cmd); err != nil {
+	if err := sshc.RunCommand("agent coordinator &"); err != nil {
+		mlog.Error(cmd)
 		return err
 	}
 
@@ -64,12 +69,9 @@ func (t *Terraform) runAgent(extAgent *ssh.ExtAgent, ip string) error {
 		return err
 	}
 
-	srcPath := "$HOME/mattermost-load-test-ng-" + t.config.SourceCodeRef
-
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
-	cmd := fmt.Sprintf("cd %s && go run ./cmd/loadtest server &", srcPath)
-	if err := sshc.RunCommand(cmd); err != nil {
+	if err := sshc.RunCommand("agent server &"); err != nil {
 		return err
 	}
 	return nil
@@ -93,24 +95,42 @@ func (t *Terraform) updateCoordinatorConfig(extAgent *ssh.ExtAgent, output *terr
 		return err
 	}
 
-	srcPath := "$HOME/mattermost-load-test-ng-" + t.config.SourceCodeRef
-	data, err := json.Marshal(loadAgentConfigs)
+	clusterConfig := coordinator.Config{
+		ClusterConfig: cluster.LoadAgentClusterConfig{
+			Agents:         loadAgentConfigs,
+			MaxActiveUsers: 100,
+		},
+		MonitorConfig: performance.MonitorConfig{
+			PrometheusURL:    "http://" + output.MetricsServer.Value.PrivateIP + ":9090",
+			UpdateIntervalMs: 2000,
+			Queries: []prometheus.Query{
+				{
+					Description: "Request Duration",
+					Query:       "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
+					Threshold:   2.0,
+					Alert:       true,
+				},
+			},
+		},
+	}
+
+	data, err := json.Marshal(loadtestConfig)
 	if err != nil {
 		return err
 	}
-	for k, v := range map[string]interface{}{
-		"ClusterConfig.Agents": string(data),
-		".PrometheusURL":       output.MetricsServer.Value.PrivateIP,
-	} {
-		buf, err := json.Marshal(v)
-		if err != nil {
-			return fmt.Errorf("invalid config: key: %s, err: %v", k, err)
-		}
-		cmd := fmt.Sprintf(`jq '%s = %s' %s/config/config.json > /tmp/agent.json && mv /tmp/agent.json %s/config/config.json`, k, string(buf), srcPath, srcPath)
-		fmt.Println(cmd)
-		if err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running ssh command: cmd: %s, err: %v", cmd, err)
-		}
+	dstPath := "/home/ubuntu/config.json"
+	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: %w", err)
 	}
+
+	data, err = json.Marshal(clusterConfig)
+	if err != nil {
+		return err
+	}
+	dstPath = "/home/ubuntu/coordinator.json"
+	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: %w", err)
+	}
+
 	return nil
 }

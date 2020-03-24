@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -183,13 +184,16 @@ func (t *Terraform) Create() error {
 	}
 
 	// Creating the sysadmin user.
-
+	// should wait the server to start
+	time.Sleep(30 * time.Second)
 	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
 		t.config.AdminPassword,
 	)
-	sshc, err := extAgent.NewClient("PROXY")
+	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
+	// TODO: replace with reverse nginx ip
+	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
 	if err != nil {
 		return err
 	}
