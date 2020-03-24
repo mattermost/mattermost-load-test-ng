@@ -39,7 +39,7 @@ variable "mattermost_download_url" {
 variable "mattermost_license_file" {
 }
 
-variable "go_binary_file" {
+variable "go_version" {
 }
 
 variable "loadtest_source_code_ref" {

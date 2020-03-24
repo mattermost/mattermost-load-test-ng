@@ -123,7 +123,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("go_binary_file=%s", t.config.GoBinaryFile),
+		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
 		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
 		"-auto-approve",
 		"./deployment/terraform",
@@ -146,6 +146,21 @@ func (t *Terraform) Create() error {
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
+
+	time.Sleep(30 * time.Second)
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
+		t.config.AdminEmail,
+		t.config.AdminUsername,
+		t.config.AdminPassword,
+	)
+	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
+	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
+	if err != nil {
+		return err
+	}
+	if err := sshc.RunCommand(cmd); err != nil {
+		return err
+	}
 
 	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
@@ -210,22 +225,8 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
 	// Creating the sysadmin user.
 	// should wait the server to start
-	time.Sleep(30 * time.Second)
-	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
-		t.config.AdminEmail,
-		t.config.AdminUsername,
-		t.config.AdminPassword,
-	)
-	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(output.Proxy.Value.PublicDNS)
-	if err != nil {
-		return err
-	}
-	if err := sshc.RunCommand(cmd); err != nil {
-		return err
-	}
 
-	for i := 1; i < len(output.Agents.Value); i++ {
+	for i := 0; i < len(output.Agents.Value); i++ {
 		val := output.Agents.Value[i]
 
 		if err := t.runAgent(extAgent, val.PublicIP); err != nil {
@@ -235,11 +236,13 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 	}
 
 	if err := t.updateCoordinatorConfig(extAgent, output); err != nil {
-		return err
+		mlog.Error(err.Error())
+		// return err
 	}
 
 	if err := t.startCoordinator(extAgent, output.Agents.Value[0].PublicIP); err != nil {
-		return err
+		mlog.Error(err.Error())
+		// return err
 	}
 
 	return nil

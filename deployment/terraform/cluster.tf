@@ -164,14 +164,13 @@ resource "aws_instance" "loadtest_agent" {
   provisioner "remote-exec" {
       inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "wget https://dl.google.com/go/${var.go_binary_file}",
-      "sudo tar -C /usr/local -xzf ${var.go_binary_file}",
+      "wget https://dl.google.com/go/go${var.go_version}.linux-amd64.tar.gz",
+      "sudo tar -C /usr/local -xzf go${var.go_version}.linux-amd64.tar.gz",
+      "sudo sh -c \"echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile\"",
       "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
       "tar -xzf ${var.loadtest_source_code_ref}.tar.gz",
-      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.default.json simplecontroller.json",
-      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.default.json config.json",
-      "cp -r mattermost-load-test-ng-${var.loadtest_source_code_ref}/testdata testdata",
-      "cd mattermost-load-test-ng-${var.loadtest_source_code_ref} && export PATH=$PATH:/usr/local/go/bin && go build -o agent ./cmd/loadtest && sudo mv agent /usr/local/bin"
+      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.json",
+      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.json",
     ] 
   }
 }
@@ -275,13 +274,6 @@ resource "aws_security_group" "agent" {
   ingress {
     from_port   = 22
     to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 4000
-    to_port     = 4000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

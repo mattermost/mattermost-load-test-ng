@@ -38,7 +38,7 @@ type Config struct {
 	AdminEmail            string // Mattermost instance sysadmin e-mail.
 	AdminUsername         string // Mattermost instance sysadmin user name.
 	AdminPassword         string // Mattermost instance sysadmin password.
-	GoBinaryFile          string // Go binaries to compile loadtest-agents.
+	GoVersion             string // Go version to download for compiling loadtest-agents.
 	SourceCodeRef         string // loadtest-ng head reference
 	LogSettings           logger.Settings
 }
@@ -88,7 +88,7 @@ func ReadConfig(filePath string) (*Config, error) {
 	v.SetDefault("LogSettings.FileJson", true)
 	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
 
-	v.SetDefault("GoBinaryFile", "go1.14.1.linux-amd64.tar.gz")
+	v.SetDefault("GoVersion", "1.14.1")
 	v.SetDefault("SourceCodeRef", "master")
 
 	if filePath != "" {
