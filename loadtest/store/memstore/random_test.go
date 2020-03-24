@@ -5,7 +5,11 @@ package memstore
 
 import (
 	"errors"
+	"math/rand"
+	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -13,6 +17,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	s := os.Getenv("LOADTEST_SEED")
+	if s != "" {
+		seed, err := strconv.Atoi(s)
+		if err != nil {
+			panic(err)
+		}
+		rand.Seed(int64(seed))
+	} else {
+		rand.Seed(time.Now().Unix())
+	}
+	os.Exit(m.Run())
+}
 
 func TestRandomUsers(t *testing.T) {
 	s := New()

@@ -31,11 +31,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 	controllerType := config.UserControllerConfiguration.Type
 
-	seed, err := cmd.Flags().GetInt64("seed")
-	if err != nil {
-		return err
-	}
-	rand.Seed(seed)
+	rand.Seed(time.Now().Unix())
 
 	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
 
@@ -94,7 +90,6 @@ func MakeLoadTestCommand() *cobra.Command {
 		RunE:   RunLoadTestCmdF,
 		PreRun: SetupLoadTest,
 	}
-	cmd.PersistentFlags().Int64("seed", time.Now().UnixNano(), "random seed value to seed rand")
 	cmd.PersistentFlags().StringP("simplecontroller-config", "s", "", "path to the simplecontroller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	return cmd

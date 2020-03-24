@@ -4,10 +4,28 @@
 package simulcontroller
 
 import (
+	"math/rand"
+	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	s := os.Getenv("LOADTEST_SEED")
+	if s != "" {
+		seed, err := strconv.Atoi(s)
+		if err != nil {
+			panic(err)
+		}
+		rand.Seed(int64(seed))
+	} else {
+		rand.Seed(time.Now().Unix())
+	}
+	os.Exit(m.Run())
+}
 
 func TestPickAction(t *testing.T) {
 	t.Run("Empty slice", func(t *testing.T) {
