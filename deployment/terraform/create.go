@@ -126,10 +126,8 @@ func (t *Terraform) Create() error {
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
-	// TODO: display the entire cluster info from terraformOutput later
-	// when we have cluster support.
-	mlog.Info("Deployment complete.")
 
+	t.displayInfo(output)
 	return nil
 }
 
@@ -315,4 +313,16 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 	return &output, nil
+}
+
+func (t *Terraform) displayInfo(output *terraformOutput) {
+	mlog.Info("Deployment complete. Here is the setup information:")
+	mlog.Info("Proxy server: " + output.ProxyIP.Value)
+	mlog.Info("Instances:")
+	for _, instance := range output.Instances.Value {
+		mlog.Info(instance.PublicIP)
+	}
+	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
+	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
+	mlog.Info("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
 }
