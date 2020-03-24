@@ -18,7 +18,6 @@ import (
 func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtest.Config {
 	return loadtest.Config{
 		ConnectionConfiguration: loadtest.ConnectionConfiguration{
-			// TODO: replace with reverse nginx ip
 			ServerURL:                   "http://" + output.Proxy.Value.PrivateIP,
 			WebSocketURL:                "ws://" + output.Proxy.Value.PrivateIP,
 			AdminEmail:                  t.config.AdminEmail,
@@ -46,15 +45,15 @@ func (t *Terraform) startCoordinator(extAgent *ssh.ExtAgent, ip string) error {
 	}
 
 	// Populate the DB.
-	mlog.Info("Populating DB")
-	cmd := fmt.Sprintf("cd mattermost-load-test-ng-%s && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest init", t.config.SourceCodeRef)
+	mlog.Info("Populating DB", mlog.String("ip", ip))
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest init"
 	if err := sshc.RunCommand(cmd); err != nil {
 		return err
 	}
 
 	// Starting coordinator.
 	mlog.Info("Starting coordinator", mlog.String("ip", ip))
-	cmd = fmt.Sprintf("cd mattermost-load-test-ng-%s && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/coordinator", t.config.SourceCodeRef)
+	cmd = "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/coordinator"
 	go func() {
 		if err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running command: " + err.Error())
@@ -72,7 +71,7 @@ func (t *Terraform) runAgent(extAgent *ssh.ExtAgent, ip string) error {
 
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
-	cmd := fmt.Sprintf("cd mattermost-load-test-ng-%s && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server", t.config.SourceCodeRef)
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server"
 	go func() {
 		if err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running command: " + err.Error())
@@ -85,8 +84,7 @@ func (t *Terraform) updateCoordinatorConfig(extAgent *ssh.ExtAgent, output *terr
 	loadtestConfig := t.generateLoadtestAgentConfig(output)
 
 	var loadAgentConfigs []agent.LoadAgentConfig
-	for i := 0; i < len(output.Agents.Value); i++ {
-		val := output.Agents.Value[i]
+	for _, val := range output.Agents.Value {
 		loadAgentConfigs = append(loadAgentConfigs, agent.LoadAgentConfig{
 			Id:             val.Tags.Name,
 			ApiURL:         "http://" + val.PrivateIP + ":4000",
@@ -122,7 +120,7 @@ func (t *Terraform) updateCoordinatorConfig(extAgent *ssh.ExtAgent, output *terr
 	if err != nil {
 		return err
 	}
-	dstPath := fmt.Sprintf("/home/ubuntu/mattermost-load-test-ng-%s/config/config.json", t.config.SourceCodeRef)
+	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
 	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: %w", err)
 	}
@@ -131,7 +129,7 @@ func (t *Terraform) updateCoordinatorConfig(extAgent *ssh.ExtAgent, output *terr
 	if err != nil {
 		return err
 	}
-	dstPath = fmt.Sprintf("/home/ubuntu/mattermost-load-test-ng-%s/config/coordinator.json", t.config.SourceCodeRef)
+	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
 	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: %w", err)
 	}

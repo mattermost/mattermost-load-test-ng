@@ -147,19 +147,8 @@ func (t *Terraform) Create() error {
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
 
-	time.Sleep(30 * time.Second)
-	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
-		t.config.AdminEmail,
-		t.config.AdminUsername,
-		t.config.AdminPassword,
-	)
-	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
-	if err != nil {
-		return err
-	}
-	if err := sshc.RunCommand(cmd); err != nil {
-		return err
+	if err := t.createAdminUser(extAgent, output); err != nil {
+		return fmt.Errorf("could not create admin user: %w", err)
 	}
 
 	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
@@ -221,12 +210,7 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
-	// Creating the sysadmin user.
-	// should wait the server to start
-
-	for i := 0; i < len(output.Agents.Value); i++ {
-		val := output.Agents.Value[i]
-
+	for _, val := range output.Agents.Value {
 		if err := t.runAgent(extAgent, val.PublicIP); err != nil {
 			mlog.Error("error while setting up an agent", mlog.String("agent name", val.Tags.Name), mlog.Err(err))
 			continue
@@ -234,13 +218,11 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 	}
 
 	if err := t.updateCoordinatorConfig(extAgent, output); err != nil {
-		mlog.Error(err.Error())
-		// return err
+		return err
 	}
 
 	if err := t.startCoordinator(extAgent, output.Agents.Value[0].PublicIP); err != nil {
-		mlog.Error(err.Error())
-		// return err
+		return err
 	}
 
 	return nil
@@ -293,6 +275,25 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 		}
 
 	}()
+}
+
+func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+	time.Sleep(30 * time.Second)
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
+		t.config.AdminEmail,
+		t.config.AdminUsername,
+		t.config.AdminPassword,
+	)
+	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
+	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
+	if err != nil {
+		return err
+	}
+	if err := sshc.RunCommand(cmd); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {

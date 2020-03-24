@@ -169,8 +169,9 @@ resource "aws_instance" "loadtest_agent" {
       "sudo sh -c \"echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile\"",
       "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
       "tar -xzf ${var.loadtest_source_code_ref}.tar.gz",
-      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/simplecontroller.json",
-      "cp mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.default.json mattermost-load-test-ng-${var.loadtest_source_code_ref}/config/config.json",
+      "mv mattermost-load-test-ng-${var.loadtest_source_code_ref} mattermost-load-test-ng",
+      "cp mattermost-load-test-ng/config/simplecontroller.default.json mattermost-load-test-ng/config/simplecontroller.json",
+      "cp mattermost-load-test-ng/config/config.default.json mattermost-load-test-ng/config/config.json",
     ] 
   }
 }
