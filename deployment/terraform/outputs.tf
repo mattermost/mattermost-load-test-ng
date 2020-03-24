@@ -13,3 +13,7 @@ output "agents" {
 output "metricsServer" {
   value = "${aws_instance.metrics_server}"
 }
+
+output "proxy" {
+  value = "${aws_instance.proxy_server}"
+}

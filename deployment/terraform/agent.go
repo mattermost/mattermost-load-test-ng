@@ -19,8 +19,8 @@ func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtes
 	return loadtest.Config{
 		ConnectionConfiguration: loadtest.ConnectionConfiguration{
 			// TODO: replace with reverse nginx ip
-			ServerURL:                   "http://" + output.Instances.Value[0].PrivateIP + ":8065",
-			WebSocketURL:                "ws://" + output.Instances.Value[0].PrivateIP + ":8065",
+			ServerURL:                   "http://" + output.Proxy.Value.PrivateDNS + ":8065",
+			WebSocketURL:                "ws://" + output.Proxy.Value.PrivateDNS + ":8065",
 			AdminEmail:                  t.config.AdminEmail,
 			AdminPassword:               t.config.AdminPassword,
 			IdleConnTimeoutMilliseconds: 90000,
@@ -81,7 +81,7 @@ func (t *Terraform) updateCoordinatorConfig(extAgent *ssh.ExtAgent, output *terr
 	loadtestConfig := t.generateLoadtestAgentConfig(output)
 
 	var loadAgentConfigs []agent.LoadAgentConfig
-	for i := 1; i < len(output.Agents.Value); i++ {
+	for i := 0; i < len(output.Agents.Value); i++ {
 		val := output.Agents.Value[i]
 		loadAgentConfigs = append(loadAgentConfigs, agent.LoadAgentConfig{
 			Id:             val.Tags.Name,
