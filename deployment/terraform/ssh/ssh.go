@@ -81,6 +81,18 @@ func (sshc *Client) RunCommand(cmd string) error {
 	return sess.Run(cmd)
 }
 
+// StartCommand starts a given command in a new ssh session. Unlike RunCommand
+// this command does not wait command to finish.
+func (sshc *Client) StartCommand(cmd string) error {
+	sess, err := sshc.client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	return sess.Start(cmd)
+}
+
 // Upload uploads a given src object to a given destination file.
 func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) error {
 	if strings.ContainsAny(dst, `'\`) {
