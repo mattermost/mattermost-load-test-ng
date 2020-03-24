@@ -165,10 +165,8 @@ func (t *Terraform) Create() error {
 	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
-	// TODO: display the entire cluster info from terraformOutput later
-	// when we have cluster support.
-	mlog.Info("Deployment complete.")
 
+	t.displayInfo(output)
 	return nil
 }
 
@@ -380,4 +378,19 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 	return &output, nil
+}
+
+func (t *Terraform) displayInfo(output *terraformOutput) {
+	mlog.Info("Deployment complete. Here is the setup information:")
+	mlog.Info("Proxy server: " + output.Proxy.Value.PublicDNS)
+	mlog.Info("Instances:")
+	for _, instance := range output.Instances.Value {
+		mlog.Info(instance.PublicIP)
+	}
+	for _, agent := range output.Agents.Value {
+		mlog.Info(agent.Tags.Name + ": " + agent.PublicIP)
+	}
+	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
+	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
+	mlog.Info("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
 }
