@@ -147,6 +147,7 @@ func (t *Terraform) Create() error {
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
 
+	time.Sleep(30 * time.Second)
 	if err := t.createAdminUser(extAgent, output); err != nil {
 		return fmt.Errorf("could not create admin user: %w", err)
 	}
@@ -212,8 +213,7 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
 	for _, val := range output.Agents.Value {
 		if err := t.runAgent(extAgent, val.PublicIP); err != nil {
-			mlog.Error("error while setting up an agent", mlog.String("agent name", val.Tags.Name), mlog.Err(err))
-			continue
+			return fmt.Errorf("error while setting up an agent (%s) : %w", val.Tags.Name, err)
 		}
 	}
 
@@ -278,7 +278,6 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 }
 
 func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOutput) error {
-	time.Sleep(30 * time.Second)
 	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
@@ -388,6 +387,7 @@ func (t *Terraform) displayInfo(output *terraformOutput) {
 	for _, instance := range output.Instances.Value {
 		mlog.Info(instance.PublicIP)
 	}
+	mlog.Info("Agents:")
 	for _, agent := range output.Agents.Value {
 		mlog.Info(agent.Tags.Name + ": " + agent.PublicIP)
 	}
