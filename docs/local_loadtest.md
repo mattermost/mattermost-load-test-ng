@@ -1,20 +1,20 @@
-# How to run a load-test locally
+# Running a load-test locally
 
 ## Introduction
 
-This is a short guide on how to run a load-test locally (and mostly manually).
-Doing this is particularly useful when testing changes to the load-test tool
-itself and it's also a great way to learn how the whole load-testing process works before trying more advanced deployments.
+This guide describes how to run a load-test locally (and mostly manually).  
+Doing this is particularly useful when testing changes to the load-test tool itself.  
+It's also a great way to learn how the whole load-testing process works before trying with more advanced deployments.
 
-There are a few ways to run a load-test locally:
+There are a few ways to run a load-test locally, in order of complexity:
 
-- Run the `loadtest` command directly. This is the simplest way to quickly start a load-test.
+- Run the `loadtest` command directly. 
 - Run a load-test through the load-test agent API server.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
 ## Prerequisites
 
-Before beginning a new load-test, a newly created and running Mattermost instance with system admin credentials is required.  
+Before starting a new load-test, a newly created (and running) Mattermost instance with system admin credentials is required.  
 
 ### Clone the repository
 
@@ -22,15 +22,8 @@ Before beginning a new load-test, a newly created and running Mattermost instanc
 git clone https://github.com/mattermost/mattermost-load-test-ng
 ```
 
-## Run a basic load-test
+### Copy and modify needed configuration files
 
-A new load-test can be started with the following command:
-
-```sh
-go run ./cmd/loadtest -c config/config.default.json -s config/simplecontroller.json -d 60
-```
-
-This will run a load-test with default configs for 60 seconds.  
 It's suggested to copy the required config files and edit them accordingly.
 
 ```sh
@@ -38,22 +31,39 @@ cp config/config.default.json config/config.json
 cp config/simplecontroller.default.json config/simplecontroller.json
 ```
 
-The default [`UserController`](controllers.md) is the `SimpleController` hence
-the need for the additional configuration file.
+The load-test config file is documented [here](loadtest_config.md).  
+The default [`UserController`](controllers.md) is the `SimpleController`. Its config file is documented [here](simplecontroller_config.md).  
 
-## Run a load-test through the load-test agent API server
+### Run the initialization
 
-A more advanced way to run a load-test is to use the provided load-agent API
-server.
+```sh
+go run ./cmd/loadtest init
+```
 
-### Start the server
+Running this command will create initial teams and channels for the users to join on the target MM instance.
+
+## Running a basic load-test
+
+A new load-test can be started with the following command:
+
+```sh
+go run ./cmd/loadtest -c config/config.json -s config/simplecontroller.json -d 60
+```
+
+This will run a load-test with the given configs for 60 seconds.
+
+## Running a load-test through the load-test agent API server
+
+A more advanced way to run a load-test is to use the provided load-test agent API server.
+
+### Start the API server
 
 ```sh
 go run ./cmd/loadtest server
 ```
 
-This will expose an HTTP API on port 4000 (default).
-Using another terminal it's possible to issue commands to create and manage a load-test agent.
+This will start the server and expose the HTTP API on port 4000 (default).  
+Using a different terminal it's possible to issue commands to create and run a load-test agent:
 
 ### Create a new load-test agent
 
@@ -67,13 +77,13 @@ curl -d @config/config.json http://localhost:4000/loadagent/create?id=lt0
 curl -X POST http://localhost:4000/loadagent/lt0/run
 ```
 
-### Add users
+### Add active users
 
 ```sh
 curl -X POST http://localhost:4000/loadagent/lt0/addusers?amount=10
 ```
 
-### Remove users
+### Remove active users
 
 ```sh
 curl -X POST http://localhost:4000/loadagent/lt0/removeusers?amount=10
@@ -85,23 +95,36 @@ curl -X POST http://localhost:4000/loadagent/lt0/removeusers?amount=10
 curl -X POST http://localhost:4000/loadagent/lt0/stop
 ```
 
-## Run a load-test through the [`coordinator`](coordinator.md)
+### Destroy the load-test agent
 
-A slightly more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).
+```sh
+curl -X DELETE http://localhost:4000/loadagent/lt0
+```
+
+## Running a load-test through the `coordinator`
+
+An even more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).  
+This is especially needed when we need to figure out the maximum amount of users the target instance supports.  
+The [`coordinator`](coordinator.md) does also help running a load-test across a cluster of agents.
 
 ### Prerequisites 
 
-In order to run the `coordinator` a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
+In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
 correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.  
-Before running, the default configuration file `config/coordinator.default.json` should also be copied and modified accordingly.
+Before starting the [`coordinator`](coordinator.md), the default configuration file `config/coordinator.default.json` should also be copied and modified accordingly.
+Its documentation can be found [here](coordinator_config.md).
 
 ### Start the load-test agent API server
+
+The first step is having the server running.
 
 ```sh
 go run ./cmd/loadtest server
 ```
 
 ### Run the `coordinator`
+
+From a different terminal we can then run the [`coordinator`](coordinator.md).
 
 ```sh
 go test -v ./cmd/coordinator -c config/coordinator.json -l config/config.json
