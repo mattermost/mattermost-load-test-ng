@@ -15,8 +15,7 @@ We currently provide and support the following implementations:
 ### `SimpleController`
 
 This is a simple version of a controller. It will run a pre-defined (and
-configurable) set of actions in a loop.
-
+configurable) set of actions in a loop.  
 It's configurability and granularity make it a good choice to test performance
 changes for single API calls.  
 This is the recommended controller when the goal of the load-test is to figure
@@ -26,8 +25,7 @@ to a specific subset of actions.
 ### `SimulController`
 
 This is the most simulative version of a controller. It will try and mimic real
-user behaviour.
-
+user behaviour.  
 It's the recommended version to use when the goal of the
 load-test is finding out how many concurrently active users the target instance
 supports.  
@@ -35,8 +33,7 @@ It can also be used as a way of doing smoke testing around the backend code.
 
 ### `NoopController`
 
-This is a controller that runs the minimum amount of actions needed to connect a user.
-
+This is a controller that runs the minimum amount of actions needed to connect a user.  
 It is used to calculate what is the ideal performance of a Mattermost instance.  
 It's sole purpose is to have the user login once, open a WebSocket connection and perform just one request.  
 Running this controller will serve as a baseline against which to compare other results.  
