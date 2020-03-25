@@ -78,11 +78,9 @@ func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string, outp
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server"
-	go func() {
-		if err := sshc.RunCommand(cmd); err != nil {
-			mlog.Error("error running command: " + err.Error())
-		}
-	}()
+	if err := sshc.StartCommand(cmd); err != nil {
+		mlog.Error("error running command: " + err.Error())
+	}
 	return nil
 }
 
@@ -134,11 +132,9 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 	// Starting coordinator.
 	mlog.Info("Starting coordinator", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/coordinator"
-	go func() {
-		if err := sshc.RunCommand(cmd); err != nil {
-			mlog.Error("error running command: " + err.Error())
-		}
-	}()
+	if err := sshc.StartCommand(cmd); err != nil {
+		mlog.Error("error running command: " + err.Error())
+	}
 
 	return nil
 }
