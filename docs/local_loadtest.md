@@ -3,13 +3,12 @@
 ## Introduction
 
 This is a short guide on how to run a load-test locally (and mostly manually).
-This is particularly useful when testing changes to the load-test tool itself.
-It's also a great way to learn how the whole load-testing process works before
-trying more advanced deployments.
+Doing this is particularly useful when testing changes to the load-test tool
+itself and it's also a great way to learn how the whole load-testing process works before trying more advanced deployments.
 
-There are a few of ways to run a load-test locally:
+There are a few ways to run a load-test locally:
 
-- Run the `loadtest` command. This is the simplest way to quickly start a load-test.
+- Run the `loadtest` command directly. This is the simplest way to quickly start a load-test.
 - Run a load-test through the load-test agent API server.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
@@ -17,7 +16,7 @@ There are a few of ways to run a load-test locally:
 
 Before beginning a new load-test, a newly created and running Mattermost instance with system admin credentials is required.  
 
-### Clone the `load-test-ng` repository
+### Clone the repository
 
 ```sh
 git clone https://github.com/mattermost/mattermost-load-test-ng
@@ -31,8 +30,8 @@ A new load-test can be started with the following command:
 go run ./cmd/loadtest -c config/config.default.json -s config/simplecontroller.json -d 60
 ```
 
-This will run a load-test with default values for 60 seconds.  
-It's suggested to copy the required config files and edit accordingly.
+This will run a load-test with default configs for 60 seconds.  
+It's suggested to copy the required config files and edit them accordingly.
 
 ```sh
 cp config/config.default.json config/config.json
@@ -86,7 +85,7 @@ curl -X POST http://localhost:4000/loadagent/lt0/removeusers?amount=10
 curl -X POST http://localhost:4000/loadagent/lt0/stop
 ```
 
-## Run a load-test through the [`coordinator`](coordinator.md).
+## Run a load-test through the [`coordinator`](coordinator.md)
 
 A slightly more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).
 
