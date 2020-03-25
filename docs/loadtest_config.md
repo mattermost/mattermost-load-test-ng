@@ -64,8 +64,8 @@ Possible values:
 
 A rate multiplier that will affect the speed at which user actions are executed by the `UserController`.
 
-A rate < 1.0 will run actions at a faster pace.  
-A rate == 1.0 will run actions at the default pace.  
+A rate < 1.0 will run actions at a faster pace.   
+A rate == 1.0 will run actions at the default pace.    
 A rate > 1.0 will run actions at a slower pace.  
 
 ## InstanceConfiguration
@@ -74,7 +74,7 @@ A rate > 1.0 will run actions at a slower pace.
 
 *integer*
 
-The number of teams the target Mattermost instance should have.
+The number of teams the target Mattermost instance should have.  
 These will be created during the `init` process.
 
 ## UsersConfiguration
