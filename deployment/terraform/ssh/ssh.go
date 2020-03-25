@@ -82,7 +82,8 @@ func (sshc *Client) RunCommand(cmd string) error {
 }
 
 // StartCommand starts a given command in a new ssh session. Unlike RunCommand
-// this command does not wait command to finish.
+// this command does not wait command to finish. This is needed for running
+// commands in the background.
 func (sshc *Client) StartCommand(cmd string) error {
 	sess, err := sshc.client.NewSession()
 	if err != nil {
