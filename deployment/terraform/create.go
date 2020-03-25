@@ -212,16 +212,19 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
 	for _, val := range output.Agents.Value {
-		if err := t.runAgent(extAgent, val.PublicIP); err != nil {
+		if err := t.configureAndRunAgent(extAgent, val.PublicIP, output); err != nil {
 			return fmt.Errorf("error while setting up an agent (%s) : %w", val.Tags.Name, err)
 		}
 	}
 
-	if err := t.updateCoordinatorConfig(extAgent, output); err != nil {
+	coordinator := output.Agents.Value[0]
+	// TODO: make this optional
+	if err := t.initLoadtest(extAgent, coordinator.PublicIP); err != nil {
 		return err
 	}
 
-	if err := t.startCoordinator(extAgent, output.Agents.Value[0].PublicIP); err != nil {
+	// TODO: start this independently with "start" command
+	if err := t.configureAndRunCoordinator(extAgent, coordinator.PublicIP, output); err != nil {
 		return err
 	}
 

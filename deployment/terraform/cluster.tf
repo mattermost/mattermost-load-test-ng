@@ -164,6 +164,8 @@ resource "aws_instance" "loadtest_agent" {
   provisioner "remote-exec" {
       inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "sudo apt-get -y update",
       "wget https://dl.google.com/go/go${var.go_version}.linux-amd64.tar.gz",
       "sudo tar -C /usr/local -xzf go${var.go_version}.linux-amd64.tar.gz",
       "sudo sh -c \"echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile\"",
