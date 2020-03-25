@@ -12,7 +12,7 @@ The URL to direct the load. Should be the public facing URL of the target Matter
 
 *string*
 
-The URL to the WebSocket endpoint the users will connect to.
+The URL to the WebSocket endpoint the users will connect to.  
 In most cases this will be the same as `ServerURL` with `http` replaced with `ws` or `https` replaced with `wss`.
 
 ### AdminEmail
@@ -64,9 +64,9 @@ Possible values:
 
 A rate multiplier that will affect the speed at which user actions are executed by the `UserController`.
 
-A rate < 1.0 will run actions at a faster pace.
-A rate == 1.0 will run actions at the default pace.
-A rate > 1.0 will run actions at a slower pace.
+A rate < 1.0 will run actions at a faster pace.  
+A rate == 1.0 will run actions at the default pace.  
+A rate > 1.0 will run actions at a slower pace.  
 
 ## InstanceConfiguration
 
