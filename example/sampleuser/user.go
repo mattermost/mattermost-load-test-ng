@@ -44,8 +44,8 @@ func New(store store.MutableUserStore, serverURL string) *SampleUser {
 	}
 }
 
-func (u *SampleUser) Connect() <-chan error {
-	return nil
+func (u *SampleUser) Connect() (<-chan error, error) {
+	return nil, nil
 }
 
 func (u *SampleUser) Disconnect() error {
@@ -423,7 +423,8 @@ func (u *SampleUser) SetCurrentChannel(channel *model.Channel) error {
 func (u *SampleUser) ClearUserData() {
 }
 
-func (u *SampleUser) SendTypingEvent(channelId, parentId string) {
+func (u *SampleUser) SendTypingEvent(channelId, parentId string) error {
+	return nil
 }
 
 func (u *SampleUser) UpdatePreferences(pref *model.Preferences) error {
