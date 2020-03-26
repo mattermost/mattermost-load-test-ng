@@ -104,7 +104,7 @@ curl -X DELETE http://localhost:4000/loadagent/lt0
 ## Running a load-test through the `coordinator`
 
 An even more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).  
-This is especially needed when we need to figure out the maximum amount of users the target instance supports.  
+This is especially needed when we need to figure out the maximum number of users the target instance supports.  
 The [`coordinator`](coordinator.md) does also help running a load-test across a cluster of agents.
 
 ### Prerequisites 
@@ -127,6 +127,6 @@ go run ./cmd/loadtest server
 From a different terminal we can then run the [`coordinator`](coordinator.md).
 
 ```sh
-go test -v ./cmd/coordinator -c config/coordinator.json -l config/config.json
+go run ./cmd/coordinator -c config/coordinator.json -l config/config.json
 ```
 
