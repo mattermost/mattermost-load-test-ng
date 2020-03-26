@@ -37,7 +37,7 @@ type Config struct {
 	AdminUsername         string // Mattermost instance sysadmin user name.
 	AdminPassword         string // Mattermost instance sysadmin password.
 	GoVersion             string // Go version to download for compiling loadtest-agents.
-	SourceCodeRef         string // loadtest-ng head reference
+	SourceCodeRef         string // load-test-ng head reference.
 	LogSettings           logger.Settings
 }
 
@@ -59,8 +59,8 @@ func (c *Config) IsValid() error {
 	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
 		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
 	}
-	if c.AgentCount < 2 {
-		return fmt.Errorf("number of agents must be greater than 2")
+	if c.AgentCount < 1 {
+		return fmt.Errorf("at least 1 agent is required to run load tests")
 	}
 
 	return nil
