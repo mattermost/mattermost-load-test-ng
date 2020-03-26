@@ -50,11 +50,7 @@ jobs:
       - *restore_cache
       - run:          
           command: |
-            git status 
             make assets
-            cat deployment/terraform/assets/bindata.go
-            cat   loadtest/control/bindata.go
-            git status
             git diff
             if [[ -n $(git status --porcelain) ]]; then echo "Please update the assets `make assets`"; exit 1; fi
       - run: make verify-gomod

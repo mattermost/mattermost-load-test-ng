@@ -1,4 +1,4 @@
-//go:generate go-bindata -pkg control -o ./bindata.go -prefix "../../testdata/" ../../testdata/
+//go:generate go-bindata -nometadata -pkg control -o ./bindata.go -prefix "../../testdata/" ../../testdata/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
