@@ -10,7 +10,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 
 	"github.com/spf13/cobra"
 )
@@ -18,31 +17,21 @@ import (
 func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
-		mlog.Error(err.Error())
-		return nil
+		return err
 	}
 
 	t := terraform.New(config)
-	err = t.Create()
-	if err != nil {
-		mlog.Error(err.Error())
-	}
-	return nil
+	return t.Create()
 }
 
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
-		mlog.Error(err.Error())
-		return nil
+		return err
 	}
 
 	t := terraform.New(config)
-	err = t.Destroy()
-	if err != nil {
-		mlog.Error(err.Error())
-	}
-	return nil
+	return t.Destroy()
 }
 
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
@@ -62,8 +51,9 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "deployer",
-		Short: "Create and destroy load test environments",
+		Use:          "deployer",
+		SilenceUsage: true,
+		Short:        "Create and destroy load test environments",
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 

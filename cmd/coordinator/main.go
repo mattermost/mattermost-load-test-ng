@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -28,8 +29,7 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 	}
 	c, err := coordinator.New(cfg)
 	if err != nil {
-		mlog.Error("failed to create coordinator", mlog.Err(err))
-		return err
+		return fmt.Errorf("failed to create coordinator %w", err)
 	}
 	return c.Run()
 }
