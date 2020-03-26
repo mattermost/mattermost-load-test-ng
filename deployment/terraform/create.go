@@ -223,6 +223,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 		return err
 	}
 
+	time.Sleep(30 * time.Second)
 	// TODO: start this independently with "start" command
 	if err := t.configureAndRunCoordinator(extAgent, coordinator.PublicIP, output); err != nil {
 		return err

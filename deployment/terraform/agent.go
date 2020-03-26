@@ -1,9 +1,9 @@
 package terraform
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
@@ -55,7 +55,6 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string) error {
 	if err := sshc.RunCommand(cmd); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -71,7 +70,7 @@ func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string, outp
 		return err
 	}
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
-	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
+	if err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: %w", err)
 	}
 
@@ -125,15 +124,19 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 		return err
 	}
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
-	if err := sshc.Upload(strings.NewReader(string(data)), dstPath, false); err != nil {
+	if err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: %w", err)
 	}
 
 	// Starting coordinator.
-	mlog.Info("Starting coordinator", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/coordinator"
-	if err := sshc.StartCommand(cmd); err != nil {
+	mlog.Info("Compiling coordinator", mlog.String("ip", ip))
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/coordinator"
+	if err := sshc.RunCommand(cmd); err != nil {
 		mlog.Error("error running command: " + err.Error())
+	}
+	mlog.Info("Starting coordinator", mlog.String("ip", ip))
+	if err := sshc.StartCommand("cd mattermost-load-test-ng && ./lt-coordinator"); err != nil {
+		mlog.Error("error starting command: " + err.Error())
 	}
 
 	return nil
