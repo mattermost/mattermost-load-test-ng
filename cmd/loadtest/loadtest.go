@@ -88,9 +88,10 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 func MakeLoadTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "loadtest",
-		RunE:   RunLoadTestCmdF,
-		PreRun: SetupLoadTest,
+		Use:          "loadtest",
+		RunE:         RunLoadTestCmdF,
+		SilenceUsage: true,
+		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("simplecontroller-config", "s", "", "path to the simplecontroller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")

@@ -21,10 +21,11 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 
 func MakeServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "server",
-		Short:  "Start API agent",
-		RunE:   RunServerCmdF,
-		PreRun: SetupLoadTest,
+		Use:          "server",
+		Short:        "Start API agent",
+		SilenceUsage: true,
+		RunE:         RunServerCmdF,
+		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().IntP("port", "p", 4000, "Port to listen on")
 
