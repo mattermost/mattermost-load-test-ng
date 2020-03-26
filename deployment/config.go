@@ -5,6 +5,7 @@ package deployment
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -37,6 +38,12 @@ type Config struct {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if c.MattermostLicenseFile != "" {
+		if _, err := os.Stat(c.MattermostLicenseFile); err != nil {
+			return fmt.Errorf("license file %s doesn't exist", c.MattermostLicenseFile)
+		}
+	}
+
 	if c.DBInstanceEngine != "" {
 		switch c.DBInstanceEngine {
 		case "aurora-mysql", "aurora-postgresql":
