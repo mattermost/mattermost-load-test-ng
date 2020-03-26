@@ -3,11 +3,15 @@
 
 package terraform
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // Destroy destroys the created load-test environment.
 func (t *Terraform) Destroy() error {
 	err := t.preFlightCheck()
+	defer os.RemoveAll(t.dir)
 	if err != nil {
 		return err
 	}
@@ -24,6 +28,6 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-auto-approve",
-		"./deployment/terraform",
+		t.dir,
 	)
 }

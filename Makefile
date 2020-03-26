@@ -23,7 +23,11 @@ build-windows:
 	@echo Build Windows amd64
 	env GOOS=windows GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
 
-build: build-linux build-windows build-osx
+assets:
+	go get github.com/kevinburke/go-bindata/go-bindata/...
+	go generate ./...
+
+build: assets build-linux build-windows build-osx
 
 # Build and install for the current platform
 install:

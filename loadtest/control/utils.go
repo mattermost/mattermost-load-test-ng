@@ -1,3 +1,4 @@
+//go:generate go-bindata -pkg control -o ./bindata.go -prefix "../../testdata/" ../../testdata/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
@@ -5,7 +6,6 @@ package control
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -15,19 +15,7 @@ import (
 )
 
 func init() {
-	paths := []string{"./testdata/test_text.txt", "./../../testdata/test_text.txt"}
-	var buf []byte
-	for _, p := range paths {
-		if _, err := os.Stat(p); err == nil {
-			buf, err = ioutil.ReadFile(p)
-			if err == nil {
-				break
-			}
-		}
-	}
-	// if the buf is empty we will have a non-nil string slice, some kind of
-	// graceful degradation.
-	words = strings.Split(string(buf), "\n")
+	words = strings.Split(MustAssetString("test_text.txt"), "\n")
 }
 
 const (

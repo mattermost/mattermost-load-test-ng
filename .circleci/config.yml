@@ -48,6 +48,10 @@ jobs:
       - checkout
       - install-golangci-lint
       - *restore_cache
+      - run:
+          command: |
+            make assets
+            if [[ -n $(git status --porcelain) ]]; then echo "Please update the assets `make assets`"; exit 1; fi
       - run: make verify-gomod
       - run: make check-style
       - run: make test
