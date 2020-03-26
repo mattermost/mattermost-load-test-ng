@@ -48,11 +48,14 @@ jobs:
       - checkout
       - install-golangci-lint
       - *restore_cache
-      - run:
+      - run:          
           command: |
-            git status
+            git status 
             make assets
+            cat deployment/terraform/assets/bindata.go
+            cat   loadtest/control/bindata.go
             git status
+            git diff
             if [[ -n $(git status --porcelain) ]]; then echo "Please update the assets `make assets`"; exit 1; fi
       - run: make verify-gomod
       - run: make check-style
