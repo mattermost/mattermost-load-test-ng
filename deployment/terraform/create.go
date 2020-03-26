@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 const cmdExecTimeoutMinutes = 10
@@ -234,7 +235,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terrafo
 	var clusterDSN, driverName string
 	var readerDSN []string
 	switch t.config.DBInstanceEngine {
-	case "aurora-postgres":
+	case "aurora-postgresql":
 		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
 		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
 		driverName = "postgres"
@@ -244,33 +245,39 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terrafo
 		driverName = "mysql"
 	}
 
-	for k, v := range map[string]interface{}{
-		".ServiceSettings.ListenAddress":       ":8065",
-		".ServiceSettings.LicenseFileLocation": "/home/ubuntu/mattermost.mattermost-license",
-		".ServiceSettings.SiteURL":             "http://" + ip + ":8065",
-		".SqlSettings.DriverName":              driverName,
-		".SqlSettings.DataSource":              clusterDSN,
-		".SqlSettings.DataSourceReplicas":      readerDSN,
-		".TeamSettings.MaxUsersPerTeam":        50000,
-		".TeamSettings.EnableOpenServer":       true,
-		".ClusterSettings.GossipPort":          8074,
-		".ClusterSettings.StreamingPort":       8075,
-		".ClusterSettings.Enable":              true,
-		".ClusterSettings.ClusterName":         t.config.ClusterName,
-		".ClusterSettings.ReadOnlyConfig":      false,
-		".MetricsSettings.Enable":              true,
-		".PluginSettings.Enable":               true,
-		".PluginSettings.EnableUploads":        true,
-	} {
-		buf, err := json.Marshal(v)
-		if err != nil {
-			return fmt.Errorf("invalid config: key: %s, err: %v", k, err)
-		}
-		cmd := fmt.Sprintf(`jq '%s = %s' /opt/mattermost/config/config.json > /tmp/mmcfg.json && mv /tmp/mmcfg.json /opt/mattermost/config/config.json`, k, string(buf))
-		if err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running ssh command: cmd: %s, err: %v", cmd, err)
-		}
+	cfg := &model.Config{}
+	cfg.SetDefaults()
+	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
+	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
+	cfg.ServiceSettings.SiteURL = model.NewString("http://" + ip + ":8065")
+
+	cfg.SqlSettings.DriverName = model.NewString(driverName)
+	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
+	cfg.SqlSettings.DataSourceReplicas = readerDSN
+
+	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
+	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
+
+	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
+	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
+	cfg.ClusterSettings.Enable = model.NewBool(true)
+	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
+
+	cfg.MetricsSettings.Enable = model.NewBool(true)
+
+	cfg.PluginSettings.Enable = model.NewBool(true)
+	cfg.PluginSettings.EnableUploads = model.NewBool(true)
+
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error in marshalling config: %w", err)
 	}
+
+	if err := sshc.Upload(bytes.NewReader(b), "/opt/mattermost/config/config.json", false); err != nil {
+		return fmt.Errorf("error uploading config.json: %w", err)
+	}
+
 	return nil
 }
 
