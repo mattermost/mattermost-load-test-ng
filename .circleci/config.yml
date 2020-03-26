@@ -50,7 +50,9 @@ jobs:
       - *restore_cache
       - run:
           command: |
+            git status
             make assets
+            git status
             if [[ -n $(git status --porcelain) ]]; then echo "Please update the assets `make assets`"; exit 1; fi
       - run: make verify-gomod
       - run: make check-style
