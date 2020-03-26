@@ -19,7 +19,7 @@ import (
 type Config struct {
 	ClusterName      string // Name of the cluster.
 	AppInstanceCount int    // Number of application instances.
-	AgentCount       int    // Number of agents, first agent will also be the coordinator.
+	AgentCount       int    // Number of agents, first agent and coordinator will share the same instance.
 	SSHPublicKey     string // Path to the SSH public key.
 	DBInstanceCount  int    // Number of DB instances.
 	DBInstanceClass  string // Type of the DB instance.
