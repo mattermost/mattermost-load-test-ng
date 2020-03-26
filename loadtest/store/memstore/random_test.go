@@ -5,6 +5,7 @@ package memstore
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -19,16 +20,19 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	s := os.Getenv("LOADTEST_SEED")
+	s := os.Getenv("MM_LOADTEST_SEED")
+	var seed int64
 	if s != "" {
-		seed, err := strconv.Atoi(s)
+		v, err := strconv.Atoi(s)
 		if err != nil {
 			panic(err)
 		}
-		rand.Seed(int64(seed))
+		seed = int64(v)
 	} else {
-		rand.Seed(time.Now().Unix())
+		seed = time.Now().Unix()
 	}
+	rand.Seed(seed)
+	fmt.Printf("Seed value is: %d\n", seed)
 	os.Exit(m.Run())
 }
 
