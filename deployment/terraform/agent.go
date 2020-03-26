@@ -128,7 +128,7 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 		return fmt.Errorf("error running ssh command: %w", err)
 	}
 
-	// Starting coordinator.
+	// TODO: This is a hack to overcome an issue with go run command.
 	mlog.Info("Compiling coordinator", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/coordinator"
 	if err := sshc.RunCommand(cmd); err != nil {
