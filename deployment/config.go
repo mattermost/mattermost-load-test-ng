@@ -38,10 +38,8 @@ type Config struct {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
-	if c.MattermostLicenseFile != "" {
-		if _, err := os.Stat(c.MattermostLicenseFile); err != nil {
-			return fmt.Errorf("license file %s doesn't exist", c.MattermostLicenseFile)
-		}
+	if _, err := os.Stat(c.MattermostLicenseFile); os.IsNotExist(err) {
+		return fmt.Errorf("license file %q doesn't exist", c.MattermostLicenseFile)
 	}
 
 	if c.DBInstanceEngine != "" {
