@@ -36,9 +36,10 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:     "coordinator",
-		RunE:    RunCoordinatorCmdF,
-		PreRunE: initConfig,
+		Use:          "coordinator",
+		SilenceUsage: true,
+		RunE:         RunCoordinatorCmdF,
+		PreRunE:      initConfig,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	rootCmd.PersistentFlags().StringP("ltconfig", "l", "", "path to the load-test configuration file to use")
