@@ -32,6 +32,9 @@ type Terraform struct {
 // terraformOutput contains the output variables which are
 // created after a deployment.
 type terraformOutput struct {
+	ProxyIP struct {
+		Value string
+	} `json:"proxyIP"`
 	Instances struct {
 		Value []struct {
 			PrivateIP  string `json:"private_ip"`
@@ -119,7 +122,16 @@ func (t *Terraform) Create() error {
 		return fmt.Errorf("error setting up metrics server: %w", err)
 	}
 
-	// Updating the config.json for each instance.
+	// Updating the config.json for each instance of app server
+	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
+	// Updating the nginx config on proxy server
+	t.setupProxyServer(output, extAgent)
+
+	t.displayInfo(output)
+	return nil
+}
+
+func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
 	for _, val := range output.Instances.Value {
 		ip := val.PublicIP
 		sshc, err := extAgent.NewClient(ip)
@@ -136,7 +148,7 @@ func (t *Terraform) Create() error {
 			}()
 
 			mlog.Info("Updating config", mlog.String("host", ip))
-			if err := t.updateConfig(ip, sshc, output); err != nil {
+			if err := t.updateAppConfig(ip, sshc, output); err != nil {
 				mlog.Error("error updating config", mlog.Err(err))
 				return
 			}
@@ -160,22 +172,65 @@ func (t *Terraform) Create() error {
 
 			// Starting mattermost.
 			mlog.Info("Starting mattermost", mlog.String("host", ip))
-			cmd := fmt.Sprintf("sudo service mattermost start")
+			cmd := "sudo service mattermost start"
 			if err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
 				return
 			}
 		}()
 	}
-
-	// TODO: display the entire cluster info from terraformOutput later
-	// when we have cluster support.
-	mlog.Info("Deployment complete.")
-
-	return nil
 }
 
-func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {
+func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
+	ip := output.ProxyIP.Value
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
+		return
+	}
+	func() {
+		defer func() {
+			err := sshc.Close()
+			if err != nil {
+				mlog.Error("error closing ssh connection", mlog.Err(err))
+			}
+		}()
+
+		// Upload service file
+		mlog.Info("Uploading nginx config", mlog.String("host", ip))
+
+		backends := ""
+		for _, addr := range output.Instances.Value {
+			backends += "server " + addr.PrivateIP + ":8065;\n"
+		}
+
+		files := []struct {
+			content string
+			path    string
+		}{
+			{content: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), path: "/etc/nginx/sites-available/mattermost"},
+			{content: strings.TrimSpace(sysctlConfig), path: "/etc/sysctl.conf"},
+			{content: strings.TrimSpace(nginxConfig), path: "/etc/nginx/nginx.conf"},
+			{content: strings.TrimSpace(limitsConfig), path: "/etc/security/limits.conf"},
+		}
+		for _, fileInfo := range files {
+			rdr := strings.NewReader(fileInfo.content)
+			if err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
+				mlog.Error("error uploading file", mlog.Err(err), mlog.String("file", fileInfo.path))
+				return
+			}
+		}
+
+		cmd := "sudo sysctl -p && sudo service nginx reload"
+		if err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+			return
+		}
+
+	}()
+}
+
+func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
 	switch t.config.DBInstanceEngine {
@@ -198,6 +253,11 @@ func (t *Terraform) updateConfig(ip string, sshc *ssh.Client, output *terraformO
 		".SqlSettings.DataSourceReplicas":      readerDSN,
 		".TeamSettings.MaxUsersPerTeam":        50000,
 		".TeamSettings.EnableOpenServer":       true,
+		".ClusterSettings.GossipPort":          8074,
+		".ClusterSettings.StreamingPort":       8075,
+		".ClusterSettings.Enable":              true,
+		".ClusterSettings.ClusterName":         t.config.ClusterName,
+		".ClusterSettings.ReadOnlyConfig":      false,
 		".MetricsSettings.Enable":              true,
 		".PluginSettings.Enable":               true,
 		".PluginSettings.EnableUploads":        true,
@@ -253,4 +313,16 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 	return &output, nil
+}
+
+func (t *Terraform) displayInfo(output *terraformOutput) {
+	mlog.Info("Deployment complete. Here is the setup information:")
+	mlog.Info("Proxy server: " + output.ProxyIP.Value)
+	mlog.Info("Instances:")
+	for _, instance := range output.Instances.Value {
+		mlog.Info(instance.PublicIP)
+	}
+	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
+	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
+	mlog.Info("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
 }

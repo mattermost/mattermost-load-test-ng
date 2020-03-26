@@ -15,11 +15,12 @@ import (
 // NoopController is a very basic implementation of a controller.
 // NoopController, it just performs a pre-defined set of actions in a loop.
 type NoopController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
+	id      int
+	user    user.User
+	stop    chan struct{}
+	stopped chan struct{}
+	status  chan<- control.UserStatus
+	rate    float64
 }
 
 // New creates and initializes a new SimpleController with given parameters.
@@ -50,6 +51,15 @@ func (c *NoopController) Run() {
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
+	defer func() {
+		if err := c.user.Disconnect(); err != nil {
+			c.status <- c.newErrorStatus(err)
+		}
+		c.user.Cleanup()
+		c.sendStopStatus()
+		close(c.stopped)
+	}()
+
 	if resp := control.SignUp(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
@@ -67,8 +77,6 @@ func (c *NoopController) Run() {
 			}
 		}()
 	}
-
-	defer c.sendStopStatus()
 
 	for {
 
@@ -99,11 +107,8 @@ func (c *NoopController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *NoopController) Stop() {
-	if err := c.user.Disconnect(); err != nil {
-		c.status <- c.newErrorStatus(err)
-	}
-	c.user.Cleanup()
 	close(c.stop)
+	<-c.stopped
 }
 
 func (c *NoopController) sendFailStatus(reason string) {

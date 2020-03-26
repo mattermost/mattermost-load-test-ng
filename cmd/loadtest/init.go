@@ -114,10 +114,11 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 
 func MakeInitCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:    "init",
-		Short:  "Initialize instance",
-		RunE:   RunInitCmdF,
-		PreRun: SetupLoadTest,
+		Use:          "init",
+		Short:        "Initialize instance",
+		SilenceUsage: true,
+		RunE:         RunInitCmdF,
+		PreRun:       SetupLoadTest,
 	}
 }
 

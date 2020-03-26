@@ -93,6 +93,26 @@ func (ue *UserEntity) GetPreferences() error {
 	return nil
 }
 
+func (ue *UserEntity) UpdatePreferences(pref *model.Preferences) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	if pref == nil {
+		return errors.New("userentity: pref should not be nil")
+	}
+
+	ok, resp := ue.client.UpdatePreferences(user.Id, pref)
+	if resp.Error != nil {
+		return resp.Error
+	} else if !ok {
+		return errors.New("userentity: failed to update preferences")
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	user, resp := ue.client.CreateUser(user)
 	if resp.Error != nil {
@@ -359,6 +379,10 @@ func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewRe
 		return nil, resp.Error
 	}
 
+	if err := ue.store.SetChannelView(view.ChannelId); err != nil {
+		return nil, err
+	}
+
 	return channelViewResponse, nil
 }
 
@@ -548,11 +572,40 @@ func (ue *UserEntity) GetUserStatus() error {
 }
 
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
-	_, resp := ue.client.GetUsersStatusesByIds(userIds)
+	statusList, resp := ue.client.GetUsersStatusesByIds(userIds)
 	if resp.Error != nil {
 		return resp.Error
 	}
+
+	for _, status := range statusList {
+		if err := ue.store.SetStatus(status.UserId, status); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) error {
+	if len(channelId) == 0 {
+		return errors.New("userentity: channelId should not be empty")
+	}
+
+	users, resp := ue.client.GetUsersInChannel(channelId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetUsers(users)
+}
+
+func (ue *UserEntity) GetUsers(page, perPage int) error {
+	users, resp := ue.client.GetUsers(page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return ue.store.SetUsers(users)
 }
 
 func (ue *UserEntity) GetTeamStats(teamId string) error {
@@ -772,4 +825,8 @@ func (ue *UserEntity) SetCurrentTeam(team *model.Team) error {
 
 func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
 	return ue.store.SetCurrentChannel(channel)
+}
+
+func (ue *UserEntity) ClearUserData() {
+	ue.store.Clear()
 }
