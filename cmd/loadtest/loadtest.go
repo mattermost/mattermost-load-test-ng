@@ -30,6 +30,9 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 	controllerType := config.UserControllerConfiguration.Type
 
+	seed := memstore.SetRandomSeed()
+	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
+
 	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
 
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {

@@ -38,13 +38,6 @@ const (
 var re = regexp.MustCompile(`-[[:alpha:]]+`)
 var words []string
 
-// TODO: this is currently unused. Should be probably called once when starting
-// the load-test cmd or API server. It should also be called only when running
-// a load-test in production.
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // getErrOrigin returns a string indicating the location of the error that
 // just occurred. It's a utility function used to find out exactly where an
 // error has happened since actions inside a UserController might get called
