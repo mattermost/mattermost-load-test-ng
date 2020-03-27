@@ -5,28 +5,15 @@ package simulcontroller
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
-	"strconv"
 	"testing"
-	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
-	s := os.Getenv("MM_LOADTEST_SEED")
-	var seed int64
-	if s != "" {
-		v, err := strconv.Atoi(s)
-		if err != nil {
-			panic(err)
-		}
-		seed = int64(v)
-	} else {
-		seed = time.Now().Unix()
-	}
-	rand.Seed(seed)
+	seed := memstore.SetRandomSeed()
 	fmt.Printf("Seed value is: %d\n", seed)
 	os.Exit(m.Run())
 }
