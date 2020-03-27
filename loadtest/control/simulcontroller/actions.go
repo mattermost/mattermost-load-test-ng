@@ -68,7 +68,6 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 func (c *SimulController) login() control.UserActionResponse {
 	resp := control.Login(c.user)
 	if resp.Err != nil {
-		fmt.Println(resp.Err.Error())
 		return resp
 	}
 
