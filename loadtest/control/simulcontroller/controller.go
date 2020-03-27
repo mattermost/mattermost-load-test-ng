@@ -67,13 +67,7 @@ func (c *SimulController) Run() {
 			run: control.SignUp,
 		},
 		{
-			run: func(u user.User) control.UserActionResponse {
-				resp := c.login()
-				if resp.Err != nil {
-					return resp
-				}
-				return resp
-			},
+			run: c.login,
 		},
 		{
 			run: c.joinTeam,
@@ -134,7 +128,7 @@ func (c *SimulController) Run() {
 				u.ClearUserData()
 
 				// login
-				if resp := c.login(); resp.Err != nil {
+				if resp := c.login(c.user); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
 				} else {
 					c.status <- c.newInfoStatus(resp.Info)
@@ -176,7 +170,7 @@ func (c *SimulController) Run() {
 		select {
 		case <-c.stop:
 			return
-		case <-time.After(time.Millisecond * idleTimeMs):
+		case <-time.After(idleTimeMs * time.Millisecond):
 		}
 	}
 }
