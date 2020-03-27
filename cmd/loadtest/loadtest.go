@@ -6,6 +6,8 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -31,7 +33,19 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 	controllerType := config.UserControllerConfiguration.Type
 
-	rand.Seed(time.Now().Unix())
+	s := os.Getenv("MM_LOADTEST_SEED")
+	var seed int64
+	if s != "" {
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			mlog.Error(fmt.Sprintf("could not convert %q to a numeric value", s))
+		}
+		seed = int64(v)
+	} else {
+		seed = time.Now().Unix()
+	}
+	rand.Seed(seed)
+	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
 
 	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
 
