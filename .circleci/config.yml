@@ -51,8 +51,8 @@ jobs:
       - run:          
           command: |
             make assets
-            git diff
-            if [[ -n $(git status --porcelain) ]]; then echo "Please update the assets `make assets`"; exit 1; fi
+            echo "Checking if 'make assets' was ran after adding files..."
+            git diff --exit-code
       - run: make verify-gomod
       - run: make check-style
       - run: make test

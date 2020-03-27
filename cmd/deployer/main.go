@@ -21,6 +21,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	t := terraform.New(config)
+	defer t.Cleanup()
 	return t.Create()
 }
 
@@ -31,6 +32,7 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	t := terraform.New(config)
+	defer t.Cleanup()
 	return t.Destroy()
 }
 

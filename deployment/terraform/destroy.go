@@ -5,13 +5,11 @@ package terraform
 
 import (
 	"fmt"
-	"os"
 )
 
 // Destroy destroys the created load-test environment.
 func (t *Terraform) Destroy() error {
 	err := t.preFlightCheck()
-	defer os.RemoveAll(t.dir)
 	if err != nil {
 		return err
 	}

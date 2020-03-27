@@ -72,7 +72,6 @@ func New(cfg *deployment.Config) *Terraform {
 // Create creates a new load test environment.
 func (t *Terraform) Create() error {
 	err := t.preFlightCheck()
-	defer os.RemoveAll(t.dir)
 
 	if err != nil {
 		return err
