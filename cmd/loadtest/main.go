@@ -21,10 +21,11 @@ func main() {
 
 	commands := []*cobra.Command{
 		{
-			Use:    "example",
-			Short:  "Run example implementation",
-			RunE:   RunExampleCmdF,
-			PreRun: SetupLoadTest,
+			Use:          "example",
+			Short:        "Run example implementation",
+			SilenceUsage: true,
+			RunE:         RunExampleCmdF,
+			PreRun:       SetupLoadTest,
 		},
 		MakeInitCommand(),
 		MakeServerCommand(),
