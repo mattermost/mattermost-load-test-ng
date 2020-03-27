@@ -70,7 +70,11 @@ func (c *NoopController) Run() {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
-		errChan := c.user.Connect()
+		errChan, err := c.user.Connect()
+		if err != nil {
+			c.status <- c.newErrorStatus(err)
+			return
+		}
 		go func() {
 			for err := range errChan {
 				c.status <- c.newErrorStatus(err)

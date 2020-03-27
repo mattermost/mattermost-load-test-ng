@@ -86,22 +86,23 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 }
 
 // Connect creates a websocket connection to the server and starts listening for messages.
-func (ue *UserEntity) Connect() <-chan error {
+func (ue *UserEntity) Connect() (<-chan error, error) {
+	if ue.connected {
+		return nil, errors.New("user is already connected")
+	}
 	ue.wsClosing = make(chan struct{})
 	ue.wsClosed = make(chan struct{})
 	ue.wsErrorChan = make(chan error, 1)
 	if ue.client.AuthToken == "" {
-		ue.wsErrorChan <- errors.New("user is not authenticated")
-		return ue.wsErrorChan
+		return nil, errors.New("user is not authenticated")
 	}
 	if ue.connected {
-		ue.wsErrorChan <- errors.New("user is already connected")
-		return ue.wsErrorChan
+		return nil, errors.New("user is already connected")
 	}
 
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
-	return ue.wsErrorChan
+	return ue.wsErrorChan, nil
 }
 
 // FetchStaticAssets parses index.html and fetches static assets mentioned in link/script tags.

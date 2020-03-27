@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
@@ -35,9 +36,14 @@ type Terraform struct {
 // terraformOutput contains the output variables which are
 // created after a deployment.
 type terraformOutput struct {
-	ProxyIP struct {
-		Value string
-	} `json:"proxyIP"`
+	Proxy struct {
+		Value struct {
+			PrivateIP  string `json:"private_ip"`
+			PublicIP   string `json:"public_ip"`
+			PublicDNS  string `json:"public_dns"`
+			PrivateDNS string `json:"private_dns"`
+		} `json:"value"`
+	} `json:"proxy"`
 	Instances struct {
 		Value []struct {
 			PrivateIP  string `json:"private_ip"`
@@ -52,6 +58,17 @@ type terraformOutput struct {
 			ReaderEndpoint  string `json:"reader_endpoint"`
 		} `json:"value"`
 	} `json:"dbCluster"`
+	Agents struct {
+		Value []struct {
+			PrivateIP  string `json:"private_ip"`
+			PublicIP   string `json:"public_ip"`
+			PublicDNS  string `json:"public_dns"`
+			PrivateDNS string `json:"private_dns"`
+			Tags       struct {
+				Name string `json:"Name"`
+			} `json:"tags"`
+		} `json:"value"`
+	} `json:"agents"`
 	MetricsServer struct {
 		Value struct {
 			PrivateIP  string `json:"private_ip"`
@@ -101,6 +118,7 @@ func (t *Terraform) Create() error {
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
+		"-var", fmt.Sprintf("loadtest_agent_count=%d", t.config.AgentCount),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
@@ -109,6 +127,8 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
+		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
+		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
 		"-auto-approve",
 		t.dir,
 	)
@@ -130,6 +150,15 @@ func (t *Terraform) Create() error {
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
+
+	time.Sleep(30 * time.Second)
+	if err := t.createAdminUser(extAgent, output); err != nil {
+		return fmt.Errorf("could not create admin user: %w", err)
+	}
+
+	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
+		return fmt.Errorf("error setting up loadtest agents: %w", err)
+	}
 
 	t.displayInfo(output)
 	return nil
@@ -185,8 +214,29 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 	}
 }
 
+func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+	for _, val := range output.Agents.Value {
+		if err := t.configureAndRunAgent(extAgent, val.PublicIP, output); err != nil {
+			return fmt.Errorf("error while setting up an agent (%s) : %w", val.Tags.Name, err)
+		}
+	}
+
+	coordinator := output.Agents.Value[0]
+	// TODO: make this optional
+	if err := t.initLoadtest(extAgent, coordinator.PublicIP); err != nil {
+		return err
+	}
+
+	// TODO: start this independently with "start" command
+	if err := t.configureAndRunCoordinator(extAgent, coordinator.PublicIP, output); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
-	ip := output.ProxyIP.Value
+	ip := output.Proxy.Value.PublicDNS
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
@@ -232,6 +282,24 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 		}
 
 	}()
+}
+
+func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
+		t.config.AdminEmail,
+		t.config.AdminUsername,
+		t.config.AdminPassword,
+	)
+	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
+	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
+	if err != nil {
+		return err
+	}
+	if err := sshc.RunCommand(cmd); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {
@@ -327,10 +395,14 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 
 func (t *Terraform) displayInfo(output *terraformOutput) {
 	mlog.Info("Deployment complete. Here is the setup information:")
-	mlog.Info("Proxy server: " + output.ProxyIP.Value)
+	mlog.Info("Proxy server: " + output.Proxy.Value.PublicDNS)
 	mlog.Info("Instances:")
 	for _, instance := range output.Instances.Value {
 		mlog.Info(instance.PublicIP)
+	}
+	mlog.Info("Agents:")
+	for _, agent := range output.Agents.Value {
+		mlog.Info(agent.Tags.Name + ": " + agent.PublicIP)
 	}
 	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
 	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
