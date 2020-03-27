@@ -7,11 +7,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -28,6 +30,7 @@ const filePrefix = "file://"
 // an AWS environment using Terraform.
 type Terraform struct {
 	config *deployment.Config
+	dir    string
 }
 
 // terraformOutput contains the output variables which are
@@ -86,6 +89,7 @@ func New(cfg *deployment.Config) *Terraform {
 // Create creates a new load test environment.
 func (t *Terraform) Create() error {
 	err := t.preFlightCheck()
+
 	if err != nil {
 		return err
 	}
@@ -126,7 +130,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
 		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
 		"-auto-approve",
-		"./deployment/terraform",
+		t.dir,
 	)
 	if err != nil {
 		return err
@@ -358,19 +362,25 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	return t.runCommand(nil, "init",
-		"./deployment/terraform")
+	dir, err := ioutil.TempDir("", "terraform")
+	if err != nil {
+		return err
+	}
+	t.dir = dir
+	assets.RestoreAssets(dir, "outputs.tf")
+	assets.RestoreAssets(dir, "variables.tf")
+	assets.RestoreAssets(dir, "cluster.tf")
+
+	return t.runCommand(nil, "init", t.dir)
 }
 
 func (t *Terraform) validate() error {
-	return t.runCommand(nil, "validate",
-		"./deployment/terraform")
+	return t.runCommand(nil, "validate", t.dir)
 }
 
 func (t *Terraform) getOutput() (*terraformOutput, error) {
 	var buf bytes.Buffer
-	err := t.runCommand(&buf, "output",
-		"-json")
+	err := t.runCommand(&buf, "output", "-json")
 	if err != nil {
 		return nil, err
 	}

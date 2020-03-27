@@ -3,7 +3,9 @@
 
 package terraform
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Destroy destroys the created load-test environment.
 func (t *Terraform) Destroy() error {
@@ -27,6 +29,6 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
 		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
 		"-auto-approve",
-		"./deployment/terraform",
+		t.dir,
 	)
 }
