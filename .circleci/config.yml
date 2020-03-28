@@ -48,6 +48,11 @@ jobs:
       - checkout
       - install-golangci-lint
       - *restore_cache
+      - run:          
+          command: |
+            make assets
+            echo "Checking if 'make assets' was ran after adding files..."
+            git diff --exit-code
       - run: make verify-gomod
       - run: make check-style
       - run: make test

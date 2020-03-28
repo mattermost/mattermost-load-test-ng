@@ -74,3 +74,4 @@ terraform.tfstate*
 .idea
 mattermost-load-test.iml
 
+.terraform.tfstate.lock.info

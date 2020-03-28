@@ -5,6 +5,7 @@ package deployment
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -19,6 +20,7 @@ import (
 type Config struct {
 	ClusterName      string // Name of the cluster.
 	AppInstanceCount int    // Number of application instances.
+	AgentCount       int    // Number of agents, first agent and coordinator will share the same instance.
 	SSHPublicKey     string // Path to the SSH public key.
 	DBInstanceCount  int    // Number of DB instances.
 	DBInstanceClass  string // Type of the DB instance.
@@ -32,11 +34,20 @@ type Config struct {
 	// stable release.
 	MattermostDownloadURL string
 	MattermostLicenseFile string // Path to the Mattermost EE license file.
+	AdminEmail            string // Mattermost instance sysadmin e-mail.
+	AdminUsername         string // Mattermost instance sysadmin user name.
+	AdminPassword         string // Mattermost instance sysadmin password.
+	GoVersion             string // Go version to download for compiling loadtest-agents.
+	SourceCodeRef         string // load-test-ng head reference.
 	LogSettings           logger.Settings
 }
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if _, err := os.Stat(c.MattermostLicenseFile); os.IsNotExist(err) {
+		return fmt.Errorf("license file %q doesn't exist", c.MattermostLicenseFile)
+	}
+
 	if c.DBInstanceEngine != "" {
 		switch c.DBInstanceEngine {
 		case "aurora-mysql", "aurora-postgresql":
@@ -52,6 +63,9 @@ func (c *Config) IsValid() error {
 	firstRune, _ := utf8.DecodeRuneInString(clusterName)
 	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
 		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
+	}
+	if c.AgentCount < 1 {
+		return fmt.Errorf("at least 1 agent is required to run load tests")
 	}
 
 	return nil
@@ -76,6 +90,9 @@ func ReadConfig(filePath string) (*Config, error) {
 	v.SetDefault("LogSettings.FileLevel", "INFO")
 	v.SetDefault("LogSettings.FileJson", true)
 	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
+
+	v.SetDefault("GoVersion", "1.14.1")
+	v.SetDefault("SourceCodeRef", "master")
 
 	if filePath != "" {
 		v.SetConfigFile(filePath)

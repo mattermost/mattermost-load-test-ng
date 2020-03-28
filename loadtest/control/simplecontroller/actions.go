@@ -111,17 +111,25 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
-		c.connect()
+		if err := c.connect(); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	return control.Reload(c.user)
 }
 
-func (c *SimpleController) connect() {
-	errChan := c.user.Connect()
+func (c *SimpleController) connect() error {
+	errChan, err := c.user.Connect()
+	if err != nil {
+		return fmt.Errorf("connect failed %w", err)
+	}
+
 	go func() {
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+
+	return nil
 }

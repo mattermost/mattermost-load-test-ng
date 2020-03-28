@@ -22,23 +22,29 @@ type userAction struct {
 	frequency int
 }
 
-func (c *SimulController) connect() {
-	errChan := c.user.Connect()
+func (c *SimulController) connect() error {
+	errChan, err := c.user.Connect()
+	if err != nil {
+		return fmt.Errorf("connect failed %w", err)
+	}
 	go func() {
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+
+	return nil
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
 	if full {
-		err := c.user.Disconnect()
-		if err != nil {
+		if err := c.user.Disconnect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		c.user.ClearUserData()
-		c.connect()
+		if err := c.connect(); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	resp := control.Reload(c.user)
@@ -65,7 +71,9 @@ func (c *SimulController) login() control.UserActionResponse {
 		return resp
 	}
 
-	c.connect()
+	if err := c.connect(); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
 
 	return resp
 }
@@ -217,7 +225,9 @@ func createPost(u user.User) control.UserActionResponse {
 
 	// TODO: possibly add some additional idle time here to simulate the
 	// user actually taking time to type a post message.
-	u.SendTypingEvent(channel.Id, "")
+	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
 
 	// This is an estimate that comes from stats on community servers.
 	// The average length (in words) for a root post (not a reply).

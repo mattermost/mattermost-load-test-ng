@@ -18,7 +18,7 @@ type User interface {
 	Cleanup()
 
 	// connection
-	Connect() <-chan error
+	Connect() (<-chan error, error)
 	Disconnect() error
 	// Events returns the WebSocket event chan for the controller
 	// to listen and react to events.
@@ -131,5 +131,5 @@ type User interface {
 
 	// SendTypingEvent will push a user_typing event out to all connected users
 	// who are in the specified channel.
-	SendTypingEvent(channelId, parentId string)
+	SendTypingEvent(channelId, parentId string) error
 }

@@ -4,10 +4,19 @@
 package simulcontroller
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	seed := memstore.SetRandomSeed()
+	fmt.Printf("Seed value is: %d\n", seed)
+	os.Exit(m.Run())
+}
 
 func TestPickAction(t *testing.T) {
 	t.Run("Empty slice", func(t *testing.T) {
