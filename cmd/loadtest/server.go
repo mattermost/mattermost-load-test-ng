@@ -25,7 +25,6 @@ func MakeServerCommand() *cobra.Command {
 		Short:        "Start API agent",
 		SilenceUsage: true,
 		RunE:         RunServerCmdF,
-		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().IntP("port", "p", 4000, "Port to listen on")
 

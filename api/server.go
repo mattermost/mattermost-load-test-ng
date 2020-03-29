@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gorilla/mux"
 )
@@ -55,9 +56,9 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	logger.Init(&config.LogSettings)
 
 	agentId := r.FormValue("id")
-
 	if a.agents[agentId] != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
