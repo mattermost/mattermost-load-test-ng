@@ -6,13 +6,21 @@ package control
 import (
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	seed := memstore.SetRandomSeed()
+	fmt.Printf("Seed value is: %d\n", seed)
+	os.Exit(m.Run())
+}
 
 func TestRandomizeUserName(t *testing.T) {
 	name := RandomizeUserName("test-agent-1-user-4")

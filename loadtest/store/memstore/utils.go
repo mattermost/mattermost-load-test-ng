@@ -4,6 +4,12 @@
 package memstore
 
 import (
+	"fmt"
+	"math/rand"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -43,4 +49,21 @@ func restorePrivateData(old, new *model.User) {
 	if new.MfaSecret == "" {
 		new.MfaSecret = old.MfaSecret
 	}
+}
+
+// SetRandomSeed sets the global random seed and returns it's value.
+func SetRandomSeed() int64 {
+	s := os.Getenv("MM_LOADTEST_SEED")
+	var seed int64
+	if s != "" {
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			panic(fmt.Sprintf("could not convert %q to a numeric value", s))
+		}
+		seed = int64(v)
+	} else {
+		seed = time.Now().Unix()
+	}
+	rand.Seed(seed)
+	return seed
 }

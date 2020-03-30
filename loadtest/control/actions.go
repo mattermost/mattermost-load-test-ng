@@ -6,7 +6,6 @@ package control
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"time"
 
@@ -475,12 +474,7 @@ func SearchUsers(u user.User) UserActionResponse {
 // UpdateProfileImage uploads a new profile picture for the given user.
 func UpdateProfileImage(u user.User) UserActionResponse {
 	// TODO: take this from the config later.
-	imagePath := "./testdata/test_profile.png"
-	buf, err := ioutil.ReadFile(imagePath)
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-	err = u.SetProfileImage(buf)
+	err := u.SetProfileImage(MustAsset("test_profile.png"))
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}

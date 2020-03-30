@@ -5,6 +5,8 @@ package memstore
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -13,6 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	seed := SetRandomSeed()
+	fmt.Printf("Seed value is: %d\n", seed)
+	os.Exit(m.Run())
+}
 
 func TestRandomUsers(t *testing.T) {
 	s := New()

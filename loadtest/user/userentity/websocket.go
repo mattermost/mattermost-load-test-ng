@@ -159,9 +159,13 @@ func getWaitTime(failCount int) time.Duration {
 
 // SendTypingEvent will push a user_typing event out to all connected users
 // who are in the specified channel.
-func (ue *UserEntity) SendTypingEvent(channelId, parentId string) {
+func (ue *UserEntity) SendTypingEvent(channelId, parentId string) error {
+	if !ue.connected {
+		return fmt.Errorf("user is not connected")
+	}
 	ue.wsTyping <- userTypingMsg{
 		channelId,
 		parentId,
 	}
+	return nil
 }

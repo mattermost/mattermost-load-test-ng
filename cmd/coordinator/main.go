@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -28,17 +29,17 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 	}
 	c, err := coordinator.New(cfg)
 	if err != nil {
-		mlog.Error("failed to create coordinator", mlog.Err(err))
-		return err
+		return fmt.Errorf("failed to create coordinator %w", err)
 	}
 	return c.Run()
 }
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:     "coordinator",
-		RunE:    RunCoordinatorCmdF,
-		PreRunE: initConfig,
+		Use:          "coordinator",
+		SilenceUsage: true,
+		RunE:         RunCoordinatorCmdF,
+		PreRunE:      initConfig,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	rootCmd.PersistentFlags().StringP("ltconfig", "l", "", "path to the load-test configuration file to use")

@@ -6,6 +6,7 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -22,23 +23,29 @@ type userAction struct {
 	frequency int
 }
 
-func (c *SimulController) connect() {
-	errChan := c.user.Connect()
+func (c *SimulController) connect() error {
+	errChan, err := c.user.Connect()
+	if err != nil {
+		return fmt.Errorf("connect failed %w", err)
+	}
 	go func() {
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+
+	return nil
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
 	if full {
-		err := c.user.Disconnect()
-		if err != nil {
+		if err := c.user.Disconnect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		c.user.ClearUserData()
-		c.connect()
+		if err := c.connect(); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	resp := control.Reload(c.user)
@@ -59,15 +66,27 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	return loadTeam(c.user, team)
 }
 
-func (c *SimulController) login() control.UserActionResponse {
-	resp := control.Login(c.user)
-	if resp.Err != nil {
-		return resp
+func (c *SimulController) login(u user.User) control.UserActionResponse {
+	for {
+		resp := control.Login(u)
+		if resp.Err == nil {
+			err := c.connect()
+			if err == nil {
+				return resp
+			}
+			c.status <- c.newErrorStatus(err)
+		}
+
+		c.status <- c.newErrorStatus(resp.Err)
+
+		idleTimeMs := time.Duration(math.Round(1000 * c.rate))
+
+		select {
+		case <-c.stop:
+			return control.UserActionResponse{Info: "login canceled"}
+		case <-time.After(idleTimeMs * time.Millisecond):
+		}
 	}
-
-	c.connect()
-
-	return resp
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
@@ -217,7 +236,9 @@ func createPost(u user.User) control.UserActionResponse {
 
 	// TODO: possibly add some additional idle time here to simulate the
 	// user actually taking time to type a post message.
-	u.SendTypingEvent(channel.Id, "")
+	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
 
 	// This is an estimate that comes from stats on community servers.
 	// The average length (in words) for a root post (not a reply).
