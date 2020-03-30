@@ -6,6 +6,7 @@
 package ssh
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -71,14 +72,18 @@ func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
 }
 
 // RunCommand runs a given command in a new ssh session.
-func (sshc *Client) RunCommand(cmd string) error {
+func (sshc *Client) RunCommand(cmd string) ([]byte, error) {
 	sess, err := sshc.client.NewSession()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer sess.Close()
+	var out bytes.Buffer
+	sess.Stdout = &out
+	sess.Stderr = &out
 
-	return sess.Run(cmd)
+	err = sess.Run(cmd)
+	return out.Bytes(), err
 }
 
 // StartCommand starts a given command in a new ssh session. Unlike RunCommand
@@ -95,32 +100,36 @@ func (sshc *Client) StartCommand(cmd string) error {
 }
 
 // Upload uploads a given src object to a given destination file.
-func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) error {
+func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error) {
 	if strings.ContainsAny(dst, `'\`) {
 		// TODO: copied from load-test repo. Need to be improved
 		// by using an actual sftp library.
-		return fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
+		return nil, fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
 	}
 
 	sess, err := sshc.client.NewSession()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer sess.Close()
 
+	var out bytes.Buffer
 	sess.Stdin = src
+	sess.Stdout = &out
+	sess.Stderr = &out
 	cmd := "cat > " + "'" + dst + "'"
 	if sudo {
 		cmd = fmt.Sprintf("sudo su -c %q", cmd)
 	}
-	return sess.Run(cmd)
+	err = sess.Run(cmd)
+	return out.Bytes(), err
 }
 
 // UploadFile uploads a given file path to a given destination file.
-func (sshc *Client) UploadFile(src, dst string, sudo bool) error {
+func (sshc *Client) UploadFile(src, dst string, sudo bool) ([]byte, error) {
 	f, err := os.Open(src)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 	return sshc.Upload(f, "/opt/mattermost/bin/mattermost", false)

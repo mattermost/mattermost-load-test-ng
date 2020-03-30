@@ -190,25 +190,25 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 			// Upload service file
 			mlog.Info("Uploading service file", mlog.String("host", ip))
 			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
-				mlog.Error("error uploading systemd file", mlog.Err(err))
+			if out, err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
+				mlog.Error("error uploading systemd file", mlog.String("output", string(out)), mlog.Err(err))
 				return
 			}
 
 			// Upload binary if needed.
 			if uploadBinary {
 				mlog.Info("Uploading binary", mlog.String("host", ip))
-				if err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.Err(err))
+				if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.String("output", string(out)), mlog.Err(err))
 					return
 				}
 			}
 
 			// Starting mattermost.
 			mlog.Info("Starting mattermost", mlog.String("host", ip))
-			cmd := "sudo service mattermost start"
-			if err := sshc.RunCommand(cmd); err != nil {
-				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+			cmd := fmt.Sprintf("sudo service mattermost start")
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
 			}
 		}()
@@ -270,15 +270,15 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 		}
 		for _, fileInfo := range files {
 			rdr := strings.NewReader(fileInfo.content)
-			if err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
-				mlog.Error("error uploading file", mlog.Err(err), mlog.String("file", fileInfo.path))
+			if out, err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
+				mlog.Error("error uploading file", mlog.String("output", string(out)), mlog.Err(err), mlog.String("file", fileInfo.path))
 				return
 			}
 		}
 
 		cmd := "sudo sysctl -p && sudo service nginx reload"
-		if err := sshc.RunCommand(cmd); err != nil {
-			mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.Err(err))
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
 		}
 
@@ -296,8 +296,8 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOut
 	if err != nil {
 		return err
 	}
-	if err := sshc.RunCommand(cmd); err != nil {
-		return err
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
 
 	return nil
@@ -346,8 +346,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terrafo
 		return fmt.Errorf("error in marshalling config: %w", err)
 	}
 
-	if err := sshc.Upload(bytes.NewReader(b), "/opt/mattermost/config/config.json", false); err != nil {
-		return fmt.Errorf("error uploading config.json: %w", err)
+	if out, err := sshc.Upload(bytes.NewReader(b), "/opt/mattermost/config/config.json", false); err != nil {
+		return fmt.Errorf("error uploading config.json: output: %s,  error: %w", out, err)
 	}
 
 	return nil

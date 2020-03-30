@@ -52,8 +52,8 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string) error {
 
 	mlog.Info("Populating DB", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest init"
-	if err := sshc.RunCommand(cmd); err != nil {
-		return err
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, out: %s, error: %w", cmd, out, err)
 	}
 	return nil
 }
@@ -70,15 +70,15 @@ func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string, outp
 		return err
 	}
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
-	if err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error running ssh command: %w", err)
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server"
 	if err := sshc.StartCommand(cmd); err != nil {
-		mlog.Error("error running command: " + err.Error())
+		mlog.Error("error running ssh command: " + err.Error())
 	}
 	return nil
 }
@@ -124,15 +124,15 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 		return err
 	}
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
-	if err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error running ssh command: %w", err)
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
 	// TODO: This is a hack to overcome an issue with go run command.
 	mlog.Info("Compiling coordinator", mlog.String("ip", ip))
 	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/coordinator"
-	if err := sshc.RunCommand(cmd); err != nil {
-		mlog.Error("error running command: " + err.Error())
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error("error running ssh command: ", mlog.String("output", string(out)), mlog.Err(err))
 	}
 	mlog.Info("Starting coordinator", mlog.String("ip", ip))
 	if err := sshc.StartCommand("cd mattermost-load-test-ng && ./lt-coordinator"); err != nil {
