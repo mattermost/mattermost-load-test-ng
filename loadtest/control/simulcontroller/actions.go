@@ -6,6 +6,7 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -65,17 +66,27 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	return loadTeam(c.user, team)
 }
 
-func (c *SimulController) login() control.UserActionResponse {
-	resp := control.Login(c.user)
-	if resp.Err != nil {
-		return resp
-	}
+func (c *SimulController) login(u user.User) control.UserActionResponse {
+	for {
+		resp := control.Login(u)
+		if resp.Err == nil {
+			err := c.connect()
+			if err == nil {
+				return resp
+			}
+			c.status <- c.newErrorStatus(err)
+		}
 
-	if err := c.connect(); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+		c.status <- c.newErrorStatus(resp.Err)
 
-	return resp
+		idleTimeMs := time.Duration(math.Round(1000 * c.rate))
+
+		select {
+		case <-c.stop:
+			return control.UserActionResponse{Info: "login canceled"}
+		case <-time.After(idleTimeMs * time.Millisecond):
+		}
+	}
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
