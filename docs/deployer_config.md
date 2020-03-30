@@ -14,7 +14,7 @@ The number of Mattermost application instances.
 
 ## AgentCount
 
-*integer*
+*int*
 
 The number of load-test agent instances. The first instance will also host the [coordinator](coordinator.md).
 
