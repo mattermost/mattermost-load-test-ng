@@ -118,7 +118,7 @@ When true, logged events are written in a machine-readable JSON format. Otherwis
 
 ### EnableFile
 
-*boolean*
+*bool*
 
 When true, logged events are written to the file specified by the `FileLocation` setting.
 
