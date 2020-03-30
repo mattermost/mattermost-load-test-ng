@@ -94,8 +94,6 @@ test:
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
-	rm -f $(COORDINATOR)
-	rm -f $(LOADTEST)
 	rm -f .installdeps
 	rm -f loadtest.log
 	rm -rf $(DIST_ROOT)
