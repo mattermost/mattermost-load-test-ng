@@ -8,7 +8,7 @@ Name of the cluster. This will be prefixed to all instances in AWS that built wi
 
 ## AppInstanceCount
 
-*integer*
+*int*
 
 The number of Mattermost application instances.
 
