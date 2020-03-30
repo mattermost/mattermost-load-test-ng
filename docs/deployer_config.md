@@ -100,7 +100,7 @@ load-test-ng head reference.
 
 ### EnableConsole
 
-*boolean*
+*bool*
 
 If true, the server outputs log messages to the console based on the ConsoleLevel option.
 
