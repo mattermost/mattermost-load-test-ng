@@ -10,6 +10,7 @@ ifeq ($(shell git describe --tags $(git rev-parse @) >&/dev/null; echo $$?), 0)
 	DIST_VER=$(shell git describe --tags $(git rev-parse @))
 endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
+STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 COORDINATOR=lt-coordinator
 LOADTEST=lt-agent
@@ -59,7 +60,7 @@ install-gopath: ; mv $(COORDINATOR) $(GOPATH)/bin; mv $(LOADTEST) $(GOPATH)/bin
 
 # We only support Linux to package for now. Package manually for other targets.
 package:
-ifneq ($(git diff --shortstat 2> /dev/null | tail -n1),"")
+ifneq ($(STATUS), 0)
 	@echo Warning: Repository has uncommitted changes.
 endif
 	@$(MAKE) build-linux
