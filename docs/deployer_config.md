@@ -130,7 +130,7 @@ Level of detail at which log events are written to log files.
 
 ### FileJson
 
-*boolean*
+*bool*
 
 When true, logged events are written in a machine-readable JSON format. Otherwise, they are printed as plain text.
 
