@@ -94,7 +94,7 @@ The Go version to download for compiling load-test source.
 
 *string*
 
-The load-test-ng head reference.
+The load-test-ng head reference. This value indicates the branch/tag name (e.g. `master`) that will be downloaded and compiled.
 
 ## LogSettings
 
