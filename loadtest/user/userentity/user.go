@@ -23,6 +23,7 @@ type UserEntity struct {
 	wsClosed    chan struct{}
 	wsErrorChan chan error
 	wsEventChan chan *model.WebSocketEvent
+	wsTyping    chan userTypingMsg
 	connected   bool
 	config      Config
 }
@@ -39,6 +40,11 @@ type Config struct {
 	Email string
 	// The password to be used by the entity.
 	Password string
+}
+
+type userTypingMsg struct {
+	channelId string
+	parentId  string
 }
 
 // Store returns the underlying store of the user.
@@ -75,26 +81,28 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 	}
 	ue.store = store
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsTyping = make(chan userTypingMsg)
 	return &ue
 }
 
 // Connect creates a websocket connection to the server and starts listening for messages.
-func (ue *UserEntity) Connect() <-chan error {
+func (ue *UserEntity) Connect() (<-chan error, error) {
+	if ue.connected {
+		return nil, errors.New("user is already connected")
+	}
 	ue.wsClosing = make(chan struct{})
 	ue.wsClosed = make(chan struct{})
 	ue.wsErrorChan = make(chan error, 1)
 	if ue.client.AuthToken == "" {
-		ue.wsErrorChan <- errors.New("user is not authenticated")
-		return ue.wsErrorChan
+		return nil, errors.New("user is not authenticated")
 	}
 	if ue.connected {
-		ue.wsErrorChan <- errors.New("user is already connected")
-		return ue.wsErrorChan
+		return nil, errors.New("user is already connected")
 	}
 
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
-	return ue.wsErrorChan
+	return ue.wsErrorChan, nil
 }
 
 // FetchStaticAssets parses index.html and fetches static assets mentioned in link/script tags.
@@ -143,6 +151,7 @@ func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 // can be called multiple times.
 func (ue *UserEntity) Cleanup() {
 	close(ue.wsEventChan)
+	close(ue.wsTyping)
 }
 
 func (ue *UserEntity) IsSysAdmin() (bool, error) {

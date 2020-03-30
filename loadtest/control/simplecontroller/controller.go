@@ -19,6 +19,7 @@ type SimpleController struct {
 	id      int
 	user    user.User
 	stop    chan struct{}
+	stopped chan struct{}
 	status  chan<- control.UserStatus
 	rate    float64
 	actions []*UserAction
@@ -33,11 +34,12 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	sc := &SimpleController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   config.Rate,
+		id:      id,
+		user:    user,
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		status:  status,
+		rate:    config.Rate,
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
@@ -60,7 +62,14 @@ func (c *SimpleController) Run() {
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus()
+	defer func() {
+		if err := c.user.Disconnect(); err != nil {
+			c.status <- c.newErrorStatus(err)
+		}
+		c.user.Cleanup()
+		c.sendStopStatus()
+		close(c.stopped)
+	}()
 
 	if resp := control.SignUp(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
@@ -111,11 +120,8 @@ func (c *SimpleController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimpleController) Stop() {
-	if err := c.user.Disconnect(); err != nil {
-		c.status <- c.newErrorStatus(err)
-	}
-	c.user.Cleanup()
 	close(c.stop)
+	<-c.stopped
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {

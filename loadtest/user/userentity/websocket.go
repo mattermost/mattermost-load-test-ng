@@ -116,6 +116,12 @@ func (ue *UserEntity) listen(errChan chan error) {
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return
+			case msg, ok := <-ue.wsTyping:
+				if !ok {
+					chanClosed = true
+					break
+				}
+				client.UserTyping(msg.channelId, msg.parentId)
 			}
 			if chanClosed {
 				break
@@ -149,4 +155,17 @@ func getWaitTime(failCount int) time.Duration {
 		}
 	}
 	return waitTime
+}
+
+// SendTypingEvent will push a user_typing event out to all connected users
+// who are in the specified channel.
+func (ue *UserEntity) SendTypingEvent(channelId, parentId string) error {
+	if !ue.connected {
+		return fmt.Errorf("user is not connected")
+	}
+	ue.wsTyping <- userTypingMsg{
+		channelId,
+		parentId,
+	}
+	return nil
 }

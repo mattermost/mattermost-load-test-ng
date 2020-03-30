@@ -16,11 +16,12 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
+	id      int
+	user    user.User
+	stop    chan struct{}
+	stopped chan struct{}
+	status  chan<- control.UserStatus
+	rate    float64
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -28,11 +29,12 @@ type SimulController struct {
 // a UserStatus channel is passed to communicate errors and information about the user's status.
 func New(id int, user user.User, status chan<- control.UserStatus) (*SimulController, error) {
 	return &SimulController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   1.0,
+		id:      id,
+		user:    user,
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		status:  status,
+		rate:    1.0,
 	}, nil
 }
 
@@ -46,105 +48,102 @@ func (c *SimulController) Run() {
 		return
 	}
 
+	// Start listening for websocket events.
+	go c.wsEventHandler()
+
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
-	defer c.sendStopStatus()
+	defer func() {
+		if err := c.user.Disconnect(); err != nil {
+			c.status <- c.newErrorStatus(err)
+		}
+		c.user.Cleanup()
+		c.sendStopStatus()
+		close(c.stopped)
+	}()
 
-	if resp := control.SignUp(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
+	initActions := []userAction{
+		{
+			run: control.SignUp,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				resp := c.login()
+				if resp.Err != nil {
+					return resp
+				}
+				return resp
+			},
+		},
+		{
+			run: c.joinTeam,
+		},
 	}
 
-	if resp := control.Login(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-		c.connect()
+	for _, action := range initActions {
+		if resp := action.run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+		select {
+		case <-c.stop:
+			return
+		default:
+		}
 	}
 
-	if resp := c.reload(false); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-	}
-
-	if resp := c.joinTeam(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-	}
+	go c.periodicActions()
 
 	actions := []userAction{
 		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(false)
-			},
-			frequency: 1,
-		},
-		{
-			run:       control.JoinTeam,
-			frequency: 1,
-		},
-		{
-			run:       control.JoinChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchPosts,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchChannels,
-			frequency: 1,
-		},
-		{
-			run:       control.SearchUsers,
-			frequency: 1,
-		},
-		{
-			run:       control.ViewUser,
-			frequency: 1,
-		},
-		{
-			run:       control.CreatePost,
-			frequency: 1,
-		},
-		{
-			run:       control.AddReaction,
-			frequency: 1,
-		},
-		{
-			run:       control.UpdateProfileImage,
-			frequency: 1,
-		},
-		{
-			run:       control.CreateGroupChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.CreateDirectChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.ViewChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.LeaveChannel,
-			frequency: 1,
-		},
-		{
-			run:       control.RemoveReaction,
-			frequency: 1,
+			run:       switchChannel,
+			frequency: 300,
 		},
 		{
 			run:       c.switchTeam,
+			frequency: 110,
+		},
+		{
+			run:       createPost,
+			frequency: 55,
+		},
+		{
+			run:       c.createDirectChannel,
 			frequency: 1,
 		},
 		{
-			run:       switchChannel,
+			run:       c.createGroupChannel,
 			frequency: 1,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				return c.reload(true)
+			},
+			frequency: 40,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				// logout
+				if resp := control.Logout(u); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+				}
+
+				u.ClearUserData()
+
+				// login
+				if resp := c.login(); resp.Err != nil {
+					c.status <- c.newErrorStatus(resp.Err)
+				} else {
+					c.status <- c.newInfoStatus(resp.Info)
+				}
+
+				// reload
+				return c.reload(false)
+			},
+			frequency: 3,
 		},
 	}
 
@@ -164,7 +163,7 @@ func (c *SimulController) Run() {
 		// Minimum idle time value in milliseconds.
 		minIdleMs := 1000
 		// Average idle time value in milliseconds.
-		avgIdleMs := 10000
+		avgIdleMs := 5000
 
 		// Randomly selecting a value in the interval [minIdleMs, avgIdleMs*2 - minIdleMs).
 		// This will give us an expected value equal to avgIdleMs.
@@ -193,11 +192,8 @@ func (c *SimulController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimulController) Stop() {
-	if err := c.user.Disconnect(); err != nil {
-		c.status <- c.newErrorStatus(err)
-	}
-	c.user.Cleanup()
 	close(c.stop)
+	<-c.stopped
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

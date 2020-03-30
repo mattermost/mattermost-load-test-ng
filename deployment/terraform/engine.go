@@ -8,12 +8,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
+
+// Cleanup is called at the end of each command to clean temporary files
+func (t *Terraform) Cleanup() {
+	if t.dir != "" {
+		os.RemoveAll(t.dir)
+	}
+}
 
 // runCommand runs terraform with the args supplied. If dst is not nil, it writes the output there.
 // Otherwise, it logs the output to console.

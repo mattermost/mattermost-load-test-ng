@@ -18,7 +18,7 @@ type User interface {
 	Cleanup()
 
 	// connection
-	Connect() <-chan error
+	Connect() (<-chan error, error)
 	Disconnect() error
 	// Events returns the WebSocket event chan for the controller
 	// to listen and react to events.
@@ -34,6 +34,7 @@ type User interface {
 	// user
 	GetMe() (string, error)
 	GetPreferences() error
+	UpdatePreferences(pref *model.Preferences) error
 	CreateUser(user *model.User) (string, error)
 	UpdateUser(user *model.User) error
 	PatchUser(userId string, patch *model.UserPatch) error
@@ -41,6 +42,8 @@ type User interface {
 	GetUsersByUsernames(usernames []string) ([]string, error)
 	GetUserStatus() error
 	GetUsersStatusesByIds(userIds []string) error
+	GetUsersInChannel(channelId string, page, perPage int) error
+	GetUsers(page, perPage int) error
 	SetProfileImage(data []byte) error
 	GetProfileImage() error
 	GetProfileImageForUser(userId string) error
@@ -122,4 +125,11 @@ type User interface {
 	IsSysAdmin() (bool, error)
 	SetCurrentTeam(team *model.Team) error
 	SetCurrentChannel(channel *model.Channel) error
+
+	// Clear clears the underlying UserStore
+	ClearUserData()
+
+	// SendTypingEvent will push a user_typing event out to all connected users
+	// who are in the specified channel.
+	SendTypingEvent(channelId, parentId string) error
 }

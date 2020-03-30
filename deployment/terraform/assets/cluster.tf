@@ -26,7 +26,9 @@ resource "aws_instance" "app_server" {
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
   vpc_security_group_ids = [
-    "${aws_security_group.app.id}"
+    "${aws_security_group.app.id}",
+    "${aws_security_group.app_gossip.id}"
+
   ]
 
   provisioner "file" {
@@ -39,7 +41,6 @@ resource "aws_instance" "app_server" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
       "sudo apt-get -y update",
-      "sudo apt-get install -y jq",
       "sudo apt-get install -y prometheus-node-exporter",
       "wget ${var.mattermost_download_url}",
       "tar xzf mattermost-*.tar.gz",
@@ -86,6 +87,39 @@ resource "aws_instance" "metrics_server" {
   }
 }
 
+resource "aws_instance" "proxy_server" {
+  tags = {
+    Name = "${var.cluster_name}-proxy"
+  }
+  ami                         = "ami-0fc20dd1da406780b"
+  instance_type               = "m4.xlarge"
+  associate_public_ip_address = true
+  vpc_security_group_ids = [
+    "${aws_security_group.proxy.id}"
+  ]
+  key_name          = aws_key_pair.key.id
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get install -y nginx",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable nginx",
+      "sudo rm -f /etc/nginx/sites-enabled/default",
+      "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
+    ]
+  }
+}
+
+
 resource "aws_rds_cluster_instance" "cluster_instances" {
   count              = var.db_instance_count
   identifier         = "${var.cluster_name}-db-${count.index}"
@@ -106,6 +140,40 @@ resource "aws_rds_cluster" "db_cluster" {
   engine_version      = var.db_engine_version[var.db_instance_engine]
 
   vpc_security_group_ids = ["${aws_security_group.db.id}"]
+}
+
+resource "aws_instance" "loadtest_agent" {
+  tags = {
+    Name = "${var.cluster_name}-agent-${count.index}"
+  }
+
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = "ami-0fc20dd1da406780b"
+  instance_type = "t2.medium"
+  key_name      = aws_key_pair.key.id
+  count         = var.loadtest_agent_count
+
+  vpc_security_group_ids = ["${aws_security_group.agent.id}"]
+
+  provisioner "remote-exec" {
+      inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "wget https://dl.google.com/go/go${var.go_version}.linux-amd64.tar.gz",
+      "sudo tar -C /usr/local -xzf go${var.go_version}.linux-amd64.tar.gz",
+      "sudo sh -c \"echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile\"",
+      "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
+      "tar -xzf ${var.loadtest_source_code_ref}.tar.gz",
+      "mv mattermost-load-test-ng-${var.loadtest_source_code_ref} mattermost-load-test-ng",
+      "cp mattermost-load-test-ng/config/simplecontroller.default.json mattermost-load-test-ng/config/simplecontroller.json",
+      "cp mattermost-load-test-ng/config/config.default.json mattermost-load-test-ng/config/config.json",
+    ] 
+  }
 }
 
 resource "aws_security_group" "app" {
@@ -146,6 +214,42 @@ resource "aws_security_group" "app" {
   }
 }
 
+resource "aws_security_group" "app_gossip" {
+  name        = "${var.cluster_name}-app-security-group-gossip"
+  description = "App security group for gossip loadtest cluster ${var.cluster_name}"
+  ingress {
+    from_port       = 8074
+    to_port         = 8074
+    protocol        = "udp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8074
+    to_port         = 8074
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8075
+    to_port         = 8075
+    protocol        = "udp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  ingress {
+    from_port       = 8075
+    to_port         = 8075
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.app.id}"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
 resource "aws_security_group" "db" {
   name = "${var.cluster_name}-db-security-group"
 
@@ -161,6 +265,32 @@ resource "aws_security_group" "db" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = ["${aws_security_group.app.id}"]
+  }
+}
+
+resource "aws_security_group" "agent" {
+  name        = "${var.cluster_name}-agent-security-group"
+  description = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 4000
+    to_port   = 4000
+    protocol  = "tcp"
+    self      = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -185,6 +315,32 @@ resource "aws_security_group" "metrics" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "proxy" {
+  name        = "${var.cluster_name}-proxy-security-group"
+  description = "Proxy security group for loadtest cluster ${var.cluster_name}"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

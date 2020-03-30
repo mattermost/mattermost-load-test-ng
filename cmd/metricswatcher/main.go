@@ -13,9 +13,10 @@ import (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:    "metricswatcher",
-		RunE:   runMetricsWatcher,
-		PreRun: config.SetupMetricsCheck,
+		Use:          "metricswatcher",
+		RunE:         runMetricsWatcher,
+		SilenceUsage: true,
+		PreRun:       config.SetupMetricsCheck,
 	}
 
 	persistentFlags := rootCmd.PersistentFlags()
