@@ -26,7 +26,7 @@ The path the SSH public key, this key is used for establishing an SSH connection
 
 ## DBInstanceCount
 
-*integer*
+*int*
 
 The number of Database instances.
 
