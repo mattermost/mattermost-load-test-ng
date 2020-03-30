@@ -16,7 +16,7 @@ The number of Mattermost application instances.
 
 *integer*
 
-The number of load-test agent instances. The first agent instance will also run the coordinator.
+The number of load-test agent instances. The first instance will also host the [coordinator](coordinator.md).
 
 ## SSHPublicKey
 
