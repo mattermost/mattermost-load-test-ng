@@ -87,6 +87,9 @@ func (c *SimpleController) Run() {
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
 		for i := 0; i < len(c.actions); i++ {
+			if c.actions[i].runFrequency == 0 {
+				break
+			}
 			if cycleCount%c.actions[i].runFrequency == 0 {
 				// run the action if runFrequency is not set, or else it's set and it's a multiple
 				// of the cycle count.

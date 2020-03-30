@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
@@ -44,42 +46,66 @@ func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtes
 	}
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string) error {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string, output *terraformOutput) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return err
 	}
 
+	cfg := t.generateLoadtestAgentConfig(output)
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	dstPath := "/opt/mattermost/config/config.json"
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, true); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+	}
+
 	mlog.Info("Populating DB", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest init"
+	cmd := "cd /opt/mattermost && sudo ./bin/lt-agent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: %s, out: %s, error: %w", cmd, out, err)
 	}
 	return nil
 }
 
-func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string, output *terraformOutput) error {
+func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return err
 	}
 
-	loadtestConfig := t.generateLoadtestAgentConfig(output)
-	data, err := json.Marshal(loadtestConfig)
+	file, err := os.Open("/Users/ibrahim/lt-agent")
 	if err != nil {
 		return err
 	}
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+	dstPath := "/opt/mattermost/bin/lt-agent"
+	if out, err := sshc.Upload(file, dstPath, true); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+	}
+	cmd := "sudo chmod +x /opt/mattermost/bin/lt-agent"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
+		return err
+	}
+
+	// Upload service file.
+	mlog.Info("Uploading service file", mlog.String("ip", ip))
+	rdr := strings.NewReader(strings.TrimSpace(agentServiceFile))
+	if out, err := sshc.Upload(rdr, "/lib/systemd/system/lt-agent.service", true); err != nil {
+		mlog.Error("error uploading systemd file", mlog.String("output", string(out)), mlog.Err(err))
+		return err
 	}
 
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server"
-	if err := sshc.StartCommand(cmd); err != nil {
-		mlog.Error("error running ssh command: " + err.Error())
+	cmd = fmt.Sprintf("sudo service lt-agent start")
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
+		return err
 	}
+	// TODO: copy simplecontroller.json
 	return nil
 }
 
@@ -123,20 +149,29 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 	if err != nil {
 		return err
 	}
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+	dstPath := "/opt/mattermost/config/coordinator.json"
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, true); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
-	// TODO: This is a hack to overcome an issue with go run command.
-	mlog.Info("Compiling coordinator", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/coordinator"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		mlog.Error("error running ssh command: ", mlog.String("output", string(out)), mlog.Err(err))
+	file, err := os.Open("/Users/ibrahim/lt-coordinator")
+	if err != nil {
+		return err
 	}
-	mlog.Info("Starting coordinator", mlog.String("ip", ip))
-	if err := sshc.StartCommand("cd mattermost-load-test-ng && ./lt-coordinator"); err != nil {
-		mlog.Error("error starting command: " + err.Error())
+	dstPath = "/opt/mattermost/bin/lt-coordinator"
+	if out, err := sshc.Upload(file, dstPath, true); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+	}
+
+	cmd := "sudo chmod +x /opt/mattermost/bin/lt-coordinator"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
+		return err
+	}
+
+	cmd = "cd /opt/mattermost && sudo ./bin/lt-coordinator"
+	if err := sshc.StartCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, error: %w", cmd, err)
 	}
 
 	return nil

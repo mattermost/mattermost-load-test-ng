@@ -135,3 +135,21 @@ const sysctlConfig = `
 net.ipv4.ip_local_port_range = 1024 65000
 net.ipv4.tcp_fin_timeout = 30
 `
+
+const agentServiceFile = `
+[Unit]
+Description=Mattermost Load Test Agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mattermost/bin/lt-agent server
+Restart=always
+RestartSec=1
+WorkingDirectory=/opt/mattermost
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
