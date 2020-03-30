@@ -76,7 +76,7 @@ The e-mail that will be used when creating a sysadmin user during the deployment
 
 *string*
 
-The user name that will be used when creating a sysadmin user at the deployment process.
+The user name that will be used when creating a sysadmin user during the deployment process.
 
 ## AdminPassword
 
