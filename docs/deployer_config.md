@@ -82,7 +82,7 @@ The user name that will be used when creating a sysadmin user during the deploym
 
 *string*
 
-The password that will be used when creating a sysadmin user at the deployment process.
+The password that will be used when creating a sysadmin user during the deployment process.
 
 ## GoVersion
 
