@@ -32,7 +32,7 @@ Action name which is mapped to SimpleController's actions. Available actions can
 
 Wait time in milliseconds after the action is performed.
 
-#### RunFrequency
+#### RunPeriod
 
 *int*
 
