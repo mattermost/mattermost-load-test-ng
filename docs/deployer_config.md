@@ -70,7 +70,7 @@ The location of the Mattermost Enterprise Edition license file.
 
 *string*
 
-The e-mail will be used when creating a sysadmin user at the deployment process.
+The e-mail that will be used when creating a sysadmin user during the deployment process.
 
 ## AdminUsername
 
