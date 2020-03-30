@@ -21,8 +21,8 @@ type actionDefinition struct {
 	// ActionId is the key of an action which is mapped to a user action
 	// implementation.
 	ActionId string
-	// RunFrequency determines how often the action will be performed.
-	RunFrequency int
+	// RunPeriod determines how often the action will be performed.
+	RunPeriod int
 	// WaitAfterMs is the wait time after the action is performed.
 	WaitAfterMs int
 }

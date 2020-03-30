@@ -87,8 +87,8 @@ func (c *SimpleController) Run() {
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
 		for i := 0; i < len(c.actions); i++ {
-			if cycleCount%c.actions[i].runFrequency == 0 {
-				// run the action if runFrequency is not set, or else it's set and it's a multiple
+			if cycleCount%c.actions[i].runPeriod == 0 {
+				// run the action if runPeriod is not set, or else it's set and it's a multiple
 				// of the cycle count.
 				if resp := c.actions[i].run(c.user); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
@@ -179,9 +179,9 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		}
 
 		actions = append(actions, &UserAction{
-			run:          run,
-			waitAfter:    time.Duration(def.WaitAfterMs),
-			runFrequency: def.RunFrequency,
+			run:       run,
+			waitAfter: time.Duration(def.WaitAfterMs),
+			runPeriod: def.RunPeriod,
 		})
 	}
 	c.actions = actions
