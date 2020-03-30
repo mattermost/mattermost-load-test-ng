@@ -28,12 +28,12 @@ Action name which is mapped to SimpleController's actions. Available actions can
 
 #### WaitAfterMs
 
-*integer*
+*int*
 
 Wait time in milliseconds after the action is performed.
 
 #### RunFrequency
 
-*integer*
+*int*
 
 The value of how often the action will be performed. The higher the value the lesser possibility to run the action.
