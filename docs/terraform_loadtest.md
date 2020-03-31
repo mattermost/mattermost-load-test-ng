@@ -42,7 +42,7 @@ eval $(ssh-agent -s)
 ssh-add PATH_TO_KEY
 ```
 
-`PATH_TO_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previosly [configured](deployer_config.md).
+`PATH_TO_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
 
 ### Create a new deployment
 
@@ -51,7 +51,7 @@ go run ./cmd/deployer create
 ```
 
 This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.  
-Once done, everything will be ready to start a new load-test.
+Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
 ### Run the coordinator
 
