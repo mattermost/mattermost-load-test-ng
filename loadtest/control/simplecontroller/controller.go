@@ -11,7 +11,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // SimpleController is a very basic implementation of a controller.
@@ -180,7 +179,6 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		}
 
 		if def.RunPeriod == 0 {
-			mlog.Warn(fmt.Sprintf("skipping action %s, run period is: %d", def.ActionId, def.RunPeriod))
 			continue
 		} else if def.RunPeriod < 0 {
 			return fmt.Errorf("could not create action from %s, run period needs to be > 0", def.ActionId)
