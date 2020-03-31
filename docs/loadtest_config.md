@@ -29,19 +29,19 @@ The password for the system admin of the target Mattermost instance.
 
 ### MaxIdleConns
 
-*integer*
+*int*
 
 The maximum number of idle connections held open from the load-test agent to all servers.
 
 ### MaxIdleConnsPerHost
 
-*integer*
+*int*
 
 The maximum number of idle connections held open from the load-test agent to any given server.
 
 ### IdleConnTimeoutMilliseconds
 
-*integer*
+*int*
 
 The number of milliseconds to leave an idle connection open between the load-test agent an another server.
 
@@ -72,7 +72,7 @@ A rate > 1.0 will run actions at a slower pace.
 
 ### NumTeams
 
-*integer*
+*int*
 
 The number of teams the target Mattermost instance should have.  
 These will be created during the `init` process.
@@ -81,13 +81,13 @@ These will be created during the `init` process.
 
 ### InitialActiveUsers
 
-*integer*
+*int*
 
 The amount of active users to run when the load-test starts.
 
 ### MaxActiveUsers
 
-*integer*
+*int*
 
 The maximum amount of concurrently active users the load-test agent will run.
 
@@ -95,7 +95,7 @@ The maximum amount of concurrently active users the load-test agent will run.
 
 ### EnableConsole
 
-*boolean*
+*bool*
 
 If true, the server outputs log messages to the console based on ConsoleLevel option.
 
@@ -107,13 +107,13 @@ Level of detail at which log events are written to the console.
 
 ### ConsoleJson
 
-*boolean*
+*bool*
 
 When true, logged events are written in a machine readable JSON format. Otherwise they are printed as plain text.
 
 ### EnableFile
 
-*boolean*
+*bool*
 
 When true, logged events are written to the file specified by the `FileLocation` setting.
 
@@ -125,7 +125,7 @@ Level of detail at which log events are written to log files.
 
 ### FileJson
 
-*boolean*
+*bool*
 
 When true, logged events are written in a machine readable JSON format. Otherwise they are printed as plain text.
 
