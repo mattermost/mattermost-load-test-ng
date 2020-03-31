@@ -179,9 +179,11 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			return fmt.Errorf("could not find action %q", def.ActionId)
 		}
 
-		if def.RunPeriod < 1 {
-			mlog.Warn(fmt.Sprintf("could not create action from %q, run period needs to be >= 1", def.ActionId))
+		if def.RunPeriod == 0 {
+			mlog.Warn(fmt.Sprintf("skipping action %s, run period is: %d", def.ActionId, def.RunPeriod))
 			continue
+		} else if def.RunPeriod < 0 {
+			return fmt.Errorf("could not create action from %s, run period needs to be > 0", def.ActionId)
 		}
 
 		actions = append(actions, &UserAction{

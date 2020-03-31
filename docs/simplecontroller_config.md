@@ -37,3 +37,7 @@ Wait time in milliseconds after the action is performed.
 *int*
 
 The value of how often the action will be performed. The higher the value the lesser possibility to run the action.
+
+- A RunPeriod > 0 is expected to run the action.
+- A RunPeriod == 0 will cause the action to be skipped.
+- A RunPeriod < 0 will cause an error while validating the configuration.
