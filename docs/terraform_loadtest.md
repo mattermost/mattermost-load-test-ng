@@ -61,7 +61,7 @@ Once done, it will output information about the entire cluster. Everything will 
 ### Run the coordinator
 
 Connect via SSH to the instance hosting the [coordinator](coordinator.md).  
-Optionally configure the [coordinator](coordinator_config.md) by editing `config/coordinator.json` and the [load-test agents](loadtest_config.md) by editing `config/config.json`
+Optionally configure the [coordinator](coordinator_config.md) by editing `config/coordinator.json` and the [load-test agents](loadtest_config.md) by editing `config/config.json`.
 
 ```sh
 go run ./cmd/coordinator
