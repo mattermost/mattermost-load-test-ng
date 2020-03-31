@@ -18,6 +18,11 @@ If authenticating using the [AWS credentials file](https://www.terraform.io/docs
 
 ```sh
 git clone https://github.com/mattermost/mattermost-load-test-ng
+```
+
+### Enter the source directory
+
+```sh
 cd mattermost-load-test-ng
 ```
 
@@ -56,7 +61,7 @@ Once done, it will output information about the entire cluster. Everything will 
 ### Run the coordinator
 
 Connect via SSH to the instance hosting the [coordinator](coordinator.md).  
-Optionally [configure](coordinator_config.md) it by editing `config/coordinator.json`.
+Optionally configure the [coordinator](coordinator_config.md) by editing `config/coordinator.json` and the [load-test agents](loadtest_config.md) by editing `config/config.json`
 
 ```sh
 go run ./cmd/coordinator
