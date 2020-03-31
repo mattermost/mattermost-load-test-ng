@@ -1,5 +1,5 @@
 provider "aws" {
-  profile = "default"
+  profile = "mm-loadtest"
   region  = "us-east-2"
   version = "~> 2.47"
 }
