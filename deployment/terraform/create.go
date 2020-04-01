@@ -128,8 +128,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
-		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
+		"-var", fmt.Sprintf("load_test_download_url=%s", ""),
 		"-auto-approve",
 		t.dir,
 	)
@@ -216,10 +215,8 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
-	for _, val := range output.Agents.Value {
-		if err := t.configureAndRunAgent(extAgent, val.PublicIP); err != nil {
-			return fmt.Errorf("error while setting up an agent (%s) : %w", val.Tags.Name, err)
-		}
+	if err := t.configureAndRunAgents(extAgent, output); err != nil {
+		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
 	coordinator := output.Agents.Value[0]

@@ -37,9 +37,11 @@ type Config struct {
 	AdminEmail            string // Mattermost instance sysadmin e-mail.
 	AdminUsername         string // Mattermost instance sysadmin user name.
 	AdminPassword         string // Mattermost instance sysadmin password.
-	GoVersion             string // Go version to download for compiling loadtest-agents.
-	SourceCodeRef         string // load-test-ng head reference.
-	LogSettings           logger.Settings
+	// URL from where to download load-test-ng binaries and configuration files.
+	// The configuration files provided in the package will be overridden in
+	// the deployment process.
+	LoadTestDownloadURL string
+	LogSettings         logger.Settings
 }
 
 // IsValid reports whether a given deployment config is valid or not.
@@ -67,6 +69,9 @@ func (c *Config) IsValid() error {
 	if c.AgentCount < 1 {
 		return fmt.Errorf("at least 1 agent is required to run load tests")
 	}
+	if strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {
+		return fmt.Errorf("load-test package file must be a tar.gz file")
+	}
 
 	return nil
 }
@@ -90,9 +95,6 @@ func ReadConfig(filePath string) (*Config, error) {
 	v.SetDefault("LogSettings.FileLevel", "INFO")
 	v.SetDefault("LogSettings.FileJson", true)
 	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
-
-	v.SetDefault("GoVersion", "1.14.1")
-	v.SetDefault("SourceCodeRef", "master")
 
 	if filePath != "" {
 		v.SetConfigFile(filePath)

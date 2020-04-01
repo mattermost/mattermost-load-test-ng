@@ -160,12 +160,14 @@ resource "aws_instance" "loadtest_agent" {
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
+  # TODO: uncomment the lines below when the binaries provided in the github repository.
   provisioner "remote-exec" {
       inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "sudo mkdir -p /opt/mattermost/bin",
-      "sudo mkdir -p /opt/mattermost/config"
+      #"wget ${var.load_test_download_url}",
+      #"mkdir mattermost-load-test-ng",
+      #"tar xzf mattermost-load-test-ng*.tar.gz -C mattermost-load-test-ng"
     ] 
   }
 }
