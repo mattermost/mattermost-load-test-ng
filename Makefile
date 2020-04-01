@@ -55,7 +55,7 @@ ifneq ($(STATUS), 0)
 endif
 	@$(MAKE) build-linux
 	rm -rf $(DIST_ROOT)
-	$(eval PLATFORM=linux_amd64)
+	$(eval PLATFORM=linux-amd64)
 	$(eval PLATFORM_DIST_PATH=$(DIST_PATH)/$(PLATFORM))
 	mkdir -p $(PLATFORM_DIST_PATH)
 	mkdir -p $(PLATFORM_DIST_PATH)/config
@@ -68,7 +68,10 @@ endif
 
 	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
 	mv $(LOADTEST) $(PLATFORM_DIST_PATH)/bin
-	tar -C $(PLATFORM_DIST_PATH) -czf $(DIST_PATH)/mattermost-load-test-ng_$(DIST_VER)_$(PLATFORM).tar.gz ./
+	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
+	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
+	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)
+	rm -rf $(DIST_PATH)/$(PACKAGE_NAME)
 
 verify-gomod:
 	$(GO) mod download
