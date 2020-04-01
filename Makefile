@@ -3,8 +3,19 @@
 GO=go
 
 DIST_ROOT=dist
-DIST_FOLDER_NAME=mattermost-load-test-ng
-DIST_PATH=$(DIST_ROOT)/$(DIST_FOLDER_NAME)
+# We specify version for the build; it is the branch-name by default, also we try
+# to find if there is a tag pointed to the current commit. If so, we use the tag.
+DIST_VER=$(shell git rev-parse --abbrev-ref HEAD)
+ifeq ($(shell git describe --tags $(git rev-parse @) >&/dev/null; echo $$?), 0)
+	DIST_VER=$(shell git describe --tags $(git rev-parse @))
+endif
+DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
+STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
+
+COORDINATOR=lt-coordinator
+COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/coordinator
+LOADTEST=lt-agent
+LOADTEST_ARGS=-mod=readonly -trimpath ./cmd/loadtest
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
@@ -13,15 +24,18 @@ all: install
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
+	env GOOS=linux GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
+	env GOOS=linux GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=darwin GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
 
 build-windows:
 	@echo Build Windows amd64
-	env GOOS=windows GOARCH=amd64 $(GO) install -mod=readonly -trimpath ./...
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
 
 assets:
 	go get github.com/kevinburke/go-bindata/go-bindata/...
@@ -31,33 +45,30 @@ build: assets build-linux build-windows build-osx
 
 # Build and install for the current platform
 install:
-ifeq ($(BUILDER_GOOS_GOARCH),"darwin_amd64")
-	@$(MAKE) build-osx
+	$(GO) install $(COORDINATOR_ARGS)
+	$(GO) install $(LOADTEST_ARGS)
+
+# We only support Linux to package for now. Package manually for other targets.
+package:
+ifneq ($(STATUS), 0)
+	@echo Warning: Repository has uncommitted changes.
 endif
-ifeq ($(BUILDER_GOOS_GOARCH),"windows_amd64")
-	@$(MAKE) build-windows
-endif
-ifeq ($(BUILDER_GOOS_GOARCH),"linux_amd64")
 	@$(MAKE) build-linux
-endif
-
-package: build-linux
 	rm -rf $(DIST_ROOT)
-	mkdir -p $(DIST_PATH)/bin
+	$(eval PLATFORM=linux_amd64)
+	$(eval PLATFORM_DIST_PATH=$(DIST_PATH)/$(PLATFORM))
+	mkdir -p $(PLATFORM_DIST_PATH)
+	mkdir -p $(PLATFORM_DIST_PATH)/config
+	mkdir -p $(PLATFORM_DIST_PATH)/bin
 
-	cp config.default.json $(DIST_PATH)/config/config.json
-	cp README.md $(DIST_PATH)
-	#cp -r testfiles $(DIST_PATH)
+	cp config/config.default.json $(PLATFORM_DIST_PATH)/config/config.json
+	cp config/coordinator.default.json $(PLATFORM_DIST_PATH)/config/coordinator.json
+	cp config/simplecontroller.default.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
+	cp README.md $(PLATFORM_DIST_PATH)
 
-	@# ----- PLATFORM SPECIFIC -----
-
-	@# Linux, the only supported package version for now. Build manually for other targets.
-ifeq ($(BUILDER_GOOS_GOARCH),"linux_amd64")
-	cp $(GOPATH)/bin/loadtest-ng $(DIST_PATH)/bin # from native bin dir, not cross-compiled
-else
-	cp $(GOPATH)/bin/linux_amd64/loadtest-ng $(DIST_PATH)/bin # from cross-compiled bin dir
-endif
-	tar -C $(DIST_ROOT) -czf $(DIST_PATH).tar.gz $(DIST_FOLDER_NAME)
+	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
+	mv $(LOADTEST) $(PLATFORM_DIST_PATH)/bin
+	tar -C $(PLATFORM_DIST_PATH) -czf $(DIST_PATH)/mattermost-load-test-ng_$(DIST_VER)_$(PLATFORM).tar.gz ./
 
 verify-gomod:
 	$(GO) mod download
@@ -83,7 +94,6 @@ test:
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
-	rm -f ./cmd/loadtest/loadtest-ng
 	rm -f .installdeps
 	rm -f loadtest.log
 	rm -rf $(DIST_ROOT)

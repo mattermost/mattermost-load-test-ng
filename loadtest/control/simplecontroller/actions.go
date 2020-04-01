@@ -15,9 +15,9 @@ import (
 )
 
 type UserAction struct {
-	run          control.UserAction
-	waitAfter    time.Duration
-	runFrequency int
+	run       control.UserAction
+	waitAfter time.Duration
+	runPeriod int
 }
 
 func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
