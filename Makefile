@@ -64,7 +64,7 @@ endif
 	cp config/config.default.json $(PLATFORM_DIST_PATH)/config/config.json
 	cp config/coordinator.default.json $(PLATFORM_DIST_PATH)/config/coordinator.json
 	cp config/simplecontroller.default.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
-	cp README.md $(PLATFORM_DIST_PATH)
+	cp LICENSE.txt $(PLATFORM_DIST_PATH)
 
 	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
