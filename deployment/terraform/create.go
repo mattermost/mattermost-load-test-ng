@@ -24,6 +24,7 @@ const cmdExecTimeoutMinutes = 10
 
 // TODO: fetch this dynamically. See IS-327.
 const latestReleaseURL = "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz"
+const defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.1-alpha/mattermost-load-test-ng-v0.1-alpha-linux-amd64.tar.gz"
 
 const filePrefix = "file://"
 
@@ -116,6 +117,11 @@ func (t *Terraform) Create() error {
 		uploadBinary = true
 	}
 
+	loadTestDownloadURL := t.config.LoadTestDownloadURL
+	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
+		loadTestDownloadURL = defaultLoadTestDownloadURL
+	}
+
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
@@ -128,7 +134,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("load_test_download_url=%s", ""),
+		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
 		"-auto-approve",
 		t.dir,
 	)

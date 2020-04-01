@@ -68,12 +68,16 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 		}
 		mlog.Info("configuring agent", mlog.String("ip", val.PublicIP))
 		if uploadBinary {
-			dstFile := "/home/ubuntu/mattermost-load-test-ng.tar.gz"
+			// upload the local file with a -local prefix to avoid collision
+			// with the previously downloaded file
+			dstFile := "/home/ubuntu/mattermost-load-test-ng-local.tar.gz"
 			mlog.Info(fmt.Sprintf("Uploading binary file %s", packagePath))
 			if out, err := sshc.UploadFile(packagePath, dstFile, false); err != nil {
 				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, string(out), err)
 			}
-			if out, err := sshc.RunCommand("mkdir -p mattermost-load-test-ng && tar xzf mattermost-load-test-ng.tar.gz -C mattermost-load-test-ng"); err != nil {
+			if out, err := sshc.RunCommand("rm -rf mattermost-load-test-ng && " +
+				"tar xzf mattermost-load-test-ng-local.tar.gz && " +
+				"mv $(ls -d */ | grep mattermost-load-test-ng) mattermost-load-test-ng"); err != nil {
 				return fmt.Errorf("error running command, got output: %q: %w", string(out), err)
 			}
 		}
