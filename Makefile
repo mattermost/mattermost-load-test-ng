@@ -13,9 +13,9 @@ DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 COORDINATOR=lt-coordinator
-COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/coordinator
-LOADTEST=lt-agent
-LOADTEST_ARGS=-mod=readonly -trimpath ./cmd/loadtest
+COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/lt-coordinator
+AGENT=lt-agent
+AGENT_ARGS=-mod=readonly -trimpath ./cmd/lt-agent
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
@@ -25,17 +25,17 @@ all: install
 build-linux:
 	@echo Build Linux amd64
 	env GOOS=linux GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
+	env GOOS=linux GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 
 build-osx:
 	@echo Build OSX amd64
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
-	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 
 build-windows:
 	@echo Build Windows amd64
 	env GOOS=windows GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
-	env GOOS=windows GOARCH=amd64 $(GO) build -o $(LOADTEST) $(LOADTEST_ARGS)
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 
 assets:
 	go get github.com/kevinburke/go-bindata/go-bindata/...
@@ -46,7 +46,7 @@ build: assets build-linux build-windows build-osx
 # Build and install for the current platform
 install:
 	$(GO) install $(COORDINATOR_ARGS)
-	$(GO) install $(LOADTEST_ARGS)
+	$(GO) install $(AGENT_ARGS)
 
 # We only support Linux to package for now. Package manually for other targets.
 package:
@@ -67,7 +67,7 @@ endif
 	cp README.md $(PLATFORM_DIST_PATH)
 
 	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
-	mv $(LOADTEST) $(PLATFORM_DIST_PATH)/bin
+	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)

@@ -53,7 +53,7 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:          "deployer",
+		Use:          "lt-deployer",
 		SilenceUsage: true,
 		Short:        "Create and destroy load test environments",
 	}

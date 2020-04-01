@@ -51,7 +51,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string) error {
 	}
 
 	mlog.Info("Populating DB", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest init"
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/lt-agent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: %s, out: %s, error: %w", cmd, out, err)
 	}
@@ -76,7 +76,7 @@ func (t *Terraform) configureAndRunAgent(extAgent *ssh.ExtAgent, ip string, outp
 
 	// Starting agent.
 	mlog.Info("Starting agent", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/loadtest server"
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go run ./cmd/lt-agent server"
 	if err := sshc.StartCommand(cmd); err != nil {
 		mlog.Error("error running ssh command: " + err.Error())
 	}
@@ -130,7 +130,7 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 
 	// TODO: This is a hack to overcome an issue with go run command.
 	mlog.Info("Compiling coordinator", mlog.String("ip", ip))
-	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/coordinator"
+	cmd := "cd mattermost-load-test-ng && export PATH=$PATH:/usr/local/go/bin && go build -o lt-coordinator ./cmd/lt-coordinator"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		mlog.Error("error running ssh command: ", mlog.String("output", string(out)), mlog.Err(err))
 	}
