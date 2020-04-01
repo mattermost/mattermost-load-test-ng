@@ -153,3 +153,21 @@ Group=ubuntu
 [Install]
 WantedBy=multi-user.target
 `
+
+const coordinatorServiceFile = `
+[Unit]
+Description=Mattermost Load Test Coordinator
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltcoordinator
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
