@@ -55,13 +55,18 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:          "ltctl",
 		SilenceUsage: true,
-		Short:        "Control load-test deployments",
+		Short:        "Manage and control load-test deployments",
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
-	commands := []*cobra.Command{
+	deploymentCmd := &cobra.Command{
+		Use:   "deployment",
+		Short: "Manage a load-test deployment",
+	}
+
+	deploymentCommands := []*cobra.Command{
 		{
-			Use:   "deploy",
+			Use:   "create",
 			Short: "Create a new load-test deployment",
 			RunE:  RunCreateCmdF,
 		},
@@ -72,7 +77,8 @@ func main() {
 		},
 	}
 
-	rootCmd.AddCommand(commands...)
+	deploymentCmd.AddCommand(deploymentCommands...)
+	rootCmd.AddCommand(deploymentCmd)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
