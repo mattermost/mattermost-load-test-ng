@@ -33,6 +33,17 @@ func TestRandomizeUserName(t *testing.T) {
 	assert.Equal(t, name, "testuser")
 }
 
+func TestRandomizeTeamDisplayName(t *testing.T) {
+	name :=  RandomizeTeamDisplayName("badname")
+	assert.Equal(t, "badname", name)
+
+	name = RandomizeTeamDisplayName("team9")
+	assert.True(t, strings.HasPrefix(name, "team9-"))
+
+	name = RandomizeTeamDisplayName("team9-k")
+	assert.True(t, strings.HasPrefix(name, "team9-"))
+}
+
 func TestGetErrOrigin(t *testing.T) {
 	var origin string
 	test := func() {

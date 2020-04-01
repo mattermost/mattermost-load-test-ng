@@ -23,8 +23,11 @@ const (
 	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-var re = regexp.MustCompile(`-[[:alpha:]]+`)
-var words []string
+var (
+	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
+	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
+	words             []string
+)
 
 // getErrOrigin returns a string indicating the location of the error that
 // just occurred. It's a utility function used to find out exactly where an
@@ -47,10 +50,21 @@ func getErrOrigin() string {
 // Assumes the given name has a pattern of {{agent-id}}-{{user-name}}-{{user-number}}.
 // If the pattern is not found it will return the input string unaltered.
 func RandomizeUserName(name string) string {
-	parts := re.FindAllString(name, -1)
+	parts := userNameRe.FindAllString(name, -1)
 	if len(parts) > 0 {
 		random := letters[rand.Intn(len(letters))]
 		name = strings.Replace(name, parts[len(parts)-1], "-user"+string(random), 1)
+	}
+	return name
+}
+
+// RandomizeTeamDisplayName is a utility function to set a random team display name
+// while keeping the basic pattern unchanged.
+// Assumes the given name has a pattern of team{{number}}[-letter].
+func RandomizeTeamDisplayName(name string) string {
+	matches := teamDisplayNameRe.FindStringSubmatch(name)
+	if len(matches) == 2 {
+		name = matches[0] + "-" + string(letters[rand.Intn(len(letters))])
 	}
 	return name
 }
