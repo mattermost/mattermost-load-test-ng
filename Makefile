@@ -68,7 +68,7 @@ endif
 
 	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
 	mv $(LOADTEST) $(PLATFORM_DIST_PATH)/bin
-	tar -czf $(DIST_PATH)/mattermost-load-test-ng_$(DIST_VER)_$(PLATFORM).tar.gz $(PLATFORM_DIST_PATH)
+	tar -C $(PLATFORM_DIST_PATH) -czf $(DIST_PATH)/mattermost-load-test-ng_$(DIST_VER)_$(PLATFORM).tar.gz ./
 
 verify-gomod:
 	$(GO) mod download
