@@ -36,7 +36,7 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:          "lt-coordinator",
+		Use:          "ltcoordinator",
 		SilenceUsage: true,
 		RunE:         RunCoordinatorCmdF,
 		PreRunE:      initConfig,

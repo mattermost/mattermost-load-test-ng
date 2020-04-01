@@ -12,10 +12,10 @@ endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
-COORDINATOR=lt-coordinator
-COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/lt-coordinator
-AGENT=lt-agent
-AGENT_ARGS=-mod=readonly -trimpath ./cmd/lt-agent
+COORDINATOR=ltcoordinator
+COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/ltcoordinator
+AGENT=ltagent
+AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"

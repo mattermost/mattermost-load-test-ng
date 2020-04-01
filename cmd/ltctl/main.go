@@ -53,21 +53,21 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:          "lt-deployer",
+		Use:          "ltctl",
 		SilenceUsage: true,
-		Short:        "Create and destroy load test environments",
+		Short:        "Control load-test deployments",
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 
 	commands := []*cobra.Command{
 		{
-			Use:   "create",
-			Short: "Deploy a load test environment",
+			Use:   "deploy",
+			Short: "Create a new load-test deployment",
 			RunE:  RunCreateCmdF,
 		},
 		{
 			Use:   "destroy",
-			Short: "Destroy a load test environment",
+			Short: "Destroy the current load-test deployment",
 			RunE:  RunDestroyCmdF,
 		},
 	}
