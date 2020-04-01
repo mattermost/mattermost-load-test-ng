@@ -143,7 +143,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/lt-agent server
+ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltagent server
 Restart=always
 RestartSec=1
 WorkingDirectory=/home/ubuntu/mattermost-load-test-ng

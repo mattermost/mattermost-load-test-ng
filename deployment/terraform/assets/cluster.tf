@@ -165,7 +165,7 @@ resource "aws_instance" "loadtest_agent" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "wget ${var.load_test_download_url}",
-      "tar xzf mattermost-load-test-ng*.tar.gz"
+      "tar xzf mattermost-load-test-ng*.tar.gz",
       "mv $(ls -d */ | grep mattermost-load-test-ng) mattermost-load-test-ng"
     ] 
   }

@@ -69,7 +69,7 @@ func (c *Config) IsValid() error {
 	if c.AgentCount < 1 {
 		return fmt.Errorf("at least 1 agent is required to run load tests")
 	}
-	if strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {
+	if !strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
 	}
 

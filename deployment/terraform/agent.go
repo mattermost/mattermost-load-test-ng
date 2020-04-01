@@ -82,19 +82,23 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 			}
 		}
 
-		cmd := "chmod +x /home/ubuntu/mattermost-load-test-ng/bin/lt-agent"
+		cmd := "chmod +x /home/ubuntu/mattermost-load-test-ng/bin/ltagent"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", string(out), err)
+		}
+		cmd = "chmod +x /home/ubuntu/mattermost-load-test-ng/bin/ltcoordinator"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command, out: %s, error: %w", out, err)
 		}
 
 		mlog.Info("Uploading service file")
 		rdr := strings.NewReader(strings.TrimSpace(agentServiceFile))
-		if out, err := sshc.Upload(rdr, "/lib/systemd/system/lt-agent.service", true); err != nil {
+		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltagent.service", true); err != nil {
 			return fmt.Errorf("error uploading file, output: %q: %w", string(out), err)
 		}
 
 		mlog.Info("Starting agent")
-		cmd = fmt.Sprintf("sudo service lt-agent start")
+		cmd = fmt.Sprintf("sudo service ltagent start")
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", string(out), err)
 		}
@@ -120,7 +124,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string, output *terr
 	}
 
 	mlog.Info("Running init command")
-	cmd := "cd mattermost-load-test-ng && ./bin/lt-agent init"
+	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command, out: %s, error: %w", out, err)
 	}
@@ -174,13 +178,8 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
-	cmd := "chmod +x /home/ubuntu/mattermost-load-test-ng/bin/lt-coordinator"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command, out: %s, error: %w", out, err)
-	}
-
 	mlog.Info("Starting the coordinator")
-	cmd = "cd mattermost-load-test-ng && ./bin/lt-coordinator"
+	cmd := "cd mattermost-load-test-ng && ./bin/ltcoordinator"
 	if err := sshc.StartCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: %s, error: %w", cmd, err)
 	}

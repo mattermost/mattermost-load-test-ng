@@ -24,7 +24,7 @@ const cmdExecTimeoutMinutes = 10
 
 // TODO: fetch this dynamically. See IS-327.
 const latestReleaseURL = "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz"
-const defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.1-alpha/mattermost-load-test-ng-v0.1-alpha-linux-amd64.tar.gz"
+const defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.1.0-alpha/mattermost-load-test-ng-v0.1.0-alpha-linux-amd64.tar.gz"
 
 const filePrefix = "file://"
 
