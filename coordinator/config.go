@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -21,7 +22,6 @@ type Config struct {
 	ClusterConfig cluster.LoadAgentClusterConfig
 	// MonitorConfig holds the performance monitor configuration.
 	MonitorConfig performance.MonitorConfig
-
 	// The number of active users to increment at each iteration of the feedback loop.
 	// It should be proportional to the maximum number of users expected to test.
 	NumUsersInc int
@@ -31,6 +31,7 @@ type Config struct {
 	// The number of seconds to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
 	RestTimeSec int
+	LogSettings logger.Settings
 }
 
 func ReadConfig(configFilePath string) (*Config, error) {

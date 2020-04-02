@@ -40,7 +40,7 @@ func main() {
 		Use:          "ltcoordinator",
 		SilenceUsage: true,
 		RunE:         RunCoordinatorCmdF,
-		PreRunE:      initLoadTestConfig,
+		PreRunE:      initConfig,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	rootCmd.PersistentFlags().StringP("ltagent-config", "l", "", "path to the load-test agent configuration file to use")
@@ -50,17 +50,24 @@ func main() {
 	}
 }
 
-func initLoadTestConfig(cmd *cobra.Command, args []string) error {
+func initConfig(cmd *cobra.Command, args []string) error {
 	configFilePath, _ := cmd.Flags().GetString("ltagent-config")
 	if err := loadtest.ReadConfig(configFilePath); err != nil {
 		return err
 	}
 
-	cfg, err := loadtest.GetConfig()
+	configFilePath, _ = cmd.Flags().GetString("config")
+	cfg, err := coordinator.ReadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
 
+	initLogger(cfg)
+
+	return nil
+}
+
+func initLogger(cfg *coordinator.Config) {
 	// Initalize logging
 	log := mlog.NewLogger(&mlog.LoggerConfiguration{
 		EnableConsole: cfg.LogSettings.EnableConsole,
@@ -77,6 +84,4 @@ func initLoadTestConfig(cmd *cobra.Command, args []string) error {
 
 	// Use this app logger as the global logger
 	mlog.InitGlobalLogger(log)
-
-	return nil
 }
