@@ -6,6 +6,7 @@ package loadtest
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -72,7 +73,14 @@ func (lt *LoadTester) addUser() error {
 	}
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	controller, err := lt.newController(activeUsers+1, lt.statusChan)
+	// Randomly login with the same user again, to simulate multiple sessions
+	// from the same user.
+	nextUser := rand.Int()%2 == 0
+	userID := activeUsers
+	if nextUser {
+		userID++
+	}
+	controller, err := lt.newController(userID, lt.statusChan)
 	if err != nil {
 		return fmt.Errorf("could not create controller: %w", err)
 	}
