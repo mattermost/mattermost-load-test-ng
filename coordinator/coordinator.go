@@ -50,13 +50,13 @@ func (c *Coordinator) Run() error {
 
 	// The value of users to be incremented at each iteration.
 	// TODO: It should be proportional to the maximum number of users expected to test.
-	const incValue = 8
+	incValue := c.config.NumUsersInc
 	// The value of users to be decremented at each iteration.
 	// TODO: It should be proportional to the maximum number of users expected to test.
-	const decValue = 8
+	decValue := c.config.NumUsersDec
 	// The timespan to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
-	const restTime = 10 * time.Second
+	restTime := time.Duration(c.config.RestTimeSec) * time.Second
 
 	for {
 		var perfStatus performance.Status
@@ -73,7 +73,7 @@ func (c *Coordinator) Run() error {
 		}
 
 		status := c.cluster.Status()
-		mlog.Debug("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
 		// TODO: supportedUsers should be estimated in a more clever way in the future.
 		// For now we say that the supported number of users is the number of active users that ran
@@ -82,12 +82,13 @@ func (c *Coordinator) Run() error {
 			supportedUsers = status.ActiveUsers
 		}
 
-		mlog.Debug("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
+		mlog.Info("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
 
 		// We give the feedback loop some rest time in case of performance
 		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
 		if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
 			if perfStatus.Alert {
+				mlog.Info("coordinator: decrementing active users", mlog.Int("num_users", decValue))
 				if err := c.cluster.DecrementUsers(decValue); err != nil {
 					mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
 				} else {
@@ -105,7 +106,7 @@ func (c *Coordinator) Run() error {
 				}
 			}
 		} else {
-			mlog.Debug("coordinator: waiting for metrics to stabilize")
+			mlog.Info("coordinator: waiting for metrics to stabilize")
 		}
 	}
 }

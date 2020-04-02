@@ -27,8 +27,20 @@ func (c LoadAgentClusterConfig) IsValid() error {
 	if len(c.Agents) == 0 {
 		return fmt.Errorf("no agents configured: at least one agent should be provided")
 	}
+	var maxUsers int
+	for _, ac := range c.Agents {
+		if err := ac.IsValid(); err != nil {
+			return fmt.Errorf("agent config validation failed: %w", err)
+		}
+		maxUsers += ac.LoadTestConfig.UsersConfiguration.MaxActiveUsers
+	}
+
 	if c.MaxActiveUsers == 0 {
 		return fmt.Errorf("MaxActiveUsers should be > 0")
+	}
+
+	if c.MaxActiveUsers > maxUsers {
+		return fmt.Errorf("MaxActiveUsers should be less or equal to the sum of active users supported by the agents in the cluster")
 	}
 	return nil
 }

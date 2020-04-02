@@ -29,6 +29,6 @@
         "EnableFile": true,
         "FileLevel": "INFO",
         "FileJson": true,
-        "FileLocation": "loadtest.log"
+        "FileLocation": "ltagent.log"
     }
 }
