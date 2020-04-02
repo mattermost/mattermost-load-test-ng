@@ -23,9 +23,11 @@ import (
 const cmdExecTimeoutMinutes = 10
 
 // TODO: fetch this dynamically. See IS-327.
-const latestReleaseURL = "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz"
-
-const filePrefix = "file://"
+const (
+	latestReleaseURL           = "https://releases.mattermost.com/5.20.1/mattermost-5.20.1-linux-amd64.tar.gz"
+	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.1.0-alpha/mattermost-load-test-ng-v0.1.0-alpha-linux-amd64.tar.gz"
+	filePrefix                 = "file://"
+)
 
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
@@ -116,6 +118,11 @@ func (t *Terraform) Create() error {
 		uploadBinary = true
 	}
 
+	loadTestDownloadURL := t.config.LoadTestDownloadURL
+	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
+		loadTestDownloadURL = defaultLoadTestDownloadURL
+	}
+
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
@@ -128,8 +135,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("go_version=%s", t.config.GoVersion),
-		"-var", fmt.Sprintf("loadtest_source_code_ref=%s", t.config.SourceCodeRef),
+		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
 		"-auto-approve",
 		t.dir,
 	)
@@ -216,15 +222,13 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
-	for _, val := range output.Agents.Value {
-		if err := t.configureAndRunAgent(extAgent, val.PublicIP, output); err != nil {
-			return fmt.Errorf("error while setting up an agent (%s) : %w", val.Tags.Name, err)
-		}
+	if err := t.configureAndRunAgents(extAgent, output); err != nil {
+		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
 	coordinator := output.Agents.Value[0]
 	// TODO: make this optional
-	if err := t.initLoadtest(extAgent, coordinator.PublicIP); err != nil {
+	if err := t.initLoadtest(extAgent, coordinator.PublicIP, output); err != nil {
 		return err
 	}
 
