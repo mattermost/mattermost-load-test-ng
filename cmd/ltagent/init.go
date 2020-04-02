@@ -83,7 +83,7 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 		}
 		id := u.Store().Id()
 
-		if err = admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID); err != nil {
+		if err := admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID); err != nil {
 			return err
 		}
 		mlog.Info("user created", mlog.String("user_id", id))
