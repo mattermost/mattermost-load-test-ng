@@ -73,10 +73,14 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 			if out, err := sshc.UploadFile(packagePath, dstFile, false); err != nil {
 				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
 			}
-			if out, err := sshc.RunCommand("rm -rf mattermost-load-test-ng && " +
-				"tar xzf tmp.tar.gz && " +
-				"mv mattermost-load-test-ng* mattermost-load-test-ng &&" +
-				"rm tmp.tar.gz"); err != nil {
+			commands := []string{
+				"rm -rf mattermost-load-test-ng",
+				"tar xzf tmp.tar.gz",
+				"mv mattermost-load-test-ng* mattermost-load-test-ng",
+				"rm tmp.tar.gz",
+			}
+			cmd := strings.Join(commands, " && ")
+			if out, err := sshc.RunCommand(cmd); err != nil {
 				return fmt.Errorf("error running command, got output: %q: %w", out, err)
 			}
 		}
@@ -107,7 +111,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string, output *terr
 	if err != nil {
 		return err
 	}
-	mlog.Info("Creating teams and channels for load-test", mlog.String("agent", ip))
+	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
 	cfg := t.generateLoadtestAgentConfig(output)
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
