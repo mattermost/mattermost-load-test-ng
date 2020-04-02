@@ -226,14 +226,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
-	coordinator := output.Agents.Value[0]
-	// TODO: make this optional
-	if err := t.initLoadtest(extAgent, coordinator.PublicIP, output); err != nil {
-		return err
-	}
-
-	// TODO: start this independently with "start" command
-	if err := t.configureAndRunCoordinator(extAgent, coordinator.PublicIP, output); err != nil {
+	if err := t.initLoadtest(extAgent, output); err != nil {
 		return err
 	}
 
