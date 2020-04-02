@@ -91,7 +91,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 func MakeLoadTestCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "loadtest",
+		Use:          "ltagent",
 		RunE:         RunLoadTestCmdF,
 		SilenceUsage: true,
 		PreRun:       SetupLoadTest,

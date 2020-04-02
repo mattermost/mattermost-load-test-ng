@@ -135,6 +135,15 @@ func (ue *UserEntity) UpdateUser(user *model.User) error {
 	return nil
 }
 
+func (ue *UserEntity) UpdateUserRoles(userId, roles string) error {
+	_, resp := ue.client.UpdateUserRoles(userId, roles)
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
 func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
 	user, resp := ue.client.PatchUser(userId, patch)
 
@@ -458,6 +467,14 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 
 func (ue *UserEntity) GetTeam(teamId string) error {
 	team, resp := ue.client.GetTeam(teamId, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetTeam(team)
+}
+
+func (ue *UserEntity) UpdateTeam(team *model.Team) error {
+	team, resp := ue.client.UpdateTeam(team)
 	if resp.Error != nil {
 		return resp.Error
 	}

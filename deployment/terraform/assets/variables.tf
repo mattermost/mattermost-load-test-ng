@@ -39,8 +39,5 @@ variable "mattermost_download_url" {
 variable "mattermost_license_file" {
 }
 
-variable "go_version" {
-}
-
-variable "loadtest_source_code_ref" {
+variable "load_test_download_url" {
 }
