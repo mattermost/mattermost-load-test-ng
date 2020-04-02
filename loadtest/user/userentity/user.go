@@ -163,6 +163,15 @@ func (ue *UserEntity) IsSysAdmin() (bool, error) {
 	return user.IsInRole(model.SYSTEM_ADMIN_ROLE_ID), nil
 }
 
+func (ue *UserEntity) IsTeamAdmin() (bool, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return false, err
+	}
+
+	return user.IsInRole(model.TEAM_ADMIN_ROLE_ID), nil
+}
+
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {
 	user, err := ue.store.User()
 

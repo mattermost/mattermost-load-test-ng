@@ -37,6 +37,8 @@ type User interface {
 	UpdatePreferences(pref *model.Preferences) error
 	CreateUser(user *model.User) (string, error)
 	UpdateUser(user *model.User) error
+	// UpdateUserRoles updates the given userId with the given role ids.
+	UpdateUserRoles(userId, roles string) error
 	PatchUser(userId string, patch *model.UserPatch) error
 	GetUsersByIds(userIds []string) ([]string, error)
 	GetUsersByUsernames(usernames []string) ([]string, error)
@@ -104,6 +106,8 @@ type User interface {
 	GetTeamStats(teamId string) error
 	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
 	AddTeamMemberFromInvite(token, inviteId string) error
+	// UpdateTeam updates the given team.
+	UpdateTeam(team *model.Team) error
 
 	// roles
 	// GetRolesByNames returns a list of role ids based on the provided role names.
@@ -121,8 +125,10 @@ type User interface {
 	GetClientLicense() error
 
 	// utils
-	// IsSysAdmin will return true if the user is a SystemAdmin, false otherwise.
+	// IsSysAdmin returns whether a user is a SysAdmin or not.
 	IsSysAdmin() (bool, error)
+	// IsTeamAdmin returns whether a user is a TeamAdmin or not.
+	IsTeamAdmin() (bool, error)
 	SetCurrentTeam(team *model.Team) error
 	SetCurrentChannel(channel *model.Channel) error
 

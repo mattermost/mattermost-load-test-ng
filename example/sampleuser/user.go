@@ -280,6 +280,10 @@ func (u *SampleUser) UpdateUser(user *model.User) error {
 	return nil
 }
 
+func (u *SampleUser) UpdateUserRoles(userId, roles string) error {
+	return nil
+}
+
 func (u *SampleUser) PatchUser(userId string, patch *model.UserPatch) error {
 	return nil
 }
@@ -303,6 +307,10 @@ func (u *SampleUser) CreateTeam(team *model.Team) (string, error) {
 }
 
 func (u *SampleUser) GetTeam(teamId string) error {
+	return nil
+}
+
+func (u *SampleUser) UpdateTeam(team *model.Team) error {
 	return nil
 }
 
@@ -409,6 +417,10 @@ func (u *SampleUser) GetClientLicense() error {
 }
 
 func (u *SampleUser) IsSysAdmin() (bool, error) {
+	return false, nil
+}
+
+func (u *SampleUser) IsTeamAdmin() (bool, error) {
 	return false, nil
 }
 

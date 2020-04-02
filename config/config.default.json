@@ -13,7 +13,10 @@
       "Rate": 1.0
     },
     "InstanceConfiguration": {
-        "NumTeams": 2
+        "NumTeams": 2,
+        "NumChannels": 10,
+        "NumTeamAdmins": 10,
+        "TeamAdminInterval": 10
     },
     "UsersConfiguration": {
         "InitialActiveUsers": 4,

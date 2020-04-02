@@ -64,6 +64,33 @@ func createChannels(admin *userentity.UserEntity, numChannels int) error {
 	return nil
 }
 
+func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadtest.Config) error {
+	for i := 0; i < numUsers; i++ {
+		index := i * config.InstanceConfiguration.TeamAdminInterval
+		ueConfig := userentity.Config{
+			ServerURL:    config.ConnectionConfiguration.ServerURL,
+			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     fmt.Sprintf("testuser-%d", index),
+			Email:        fmt.Sprintf("testuser-%d@example.com", index),
+			Password:     "testPass123$",
+		}
+		store := memstore.New()
+		u := userentity.New(store, ueConfig)
+
+		if err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password); err != nil {
+			mlog.Warn("error while signing up", mlog.Err(err)) // Possibly, user already exists.
+			continue
+		}
+		id := u.Store().Id()
+
+		if err := admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID); err != nil {
+			return err
+		}
+		mlog.Info("user created", mlog.String("user_id", id))
+	}
+	return nil
+}
+
 func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	mlog.Info("init started")
 
@@ -73,6 +100,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	numTeams := config.InstanceConfiguration.NumTeams
+	numChannels := config.InstanceConfiguration.NumChannels
+	numTeamAdmins := config.InstanceConfiguration.NumTeamAdmins
 
 	ueConfig := userentity.Config{
 		ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -99,7 +128,11 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err = createChannels(admin, 10); err != nil {
+	if err = createChannels(admin, numChannels); err != nil {
+		return err
+	}
+
+	if err = createTeamAdmins(admin, numTeamAdmins, config); err != nil {
 		return err
 	}
 
