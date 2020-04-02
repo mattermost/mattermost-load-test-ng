@@ -77,8 +77,7 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 		store := memstore.New()
 		u := userentity.New(store, ueConfig)
 
-		err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password)
-		if err != nil {
+		if err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password); err != nil {
 			mlog.Warn("error while signing up", mlog.Err(err)) // Possibly, user already exists.
 			continue
 		}

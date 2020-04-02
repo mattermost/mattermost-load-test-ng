@@ -15,7 +15,8 @@
     "InstanceConfiguration": {
         "NumTeams": 2,
         "NumChannels": 10,
-        "NumTeamAdmins": 10
+        "NumTeamAdmins": 10,
+        "TeamAdminInterval": 10
     },
     "UsersConfiguration": {
         "InitialActiveUsers": 4,
