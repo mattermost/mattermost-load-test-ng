@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-// Start starts the coordinator that is deployed.
+// StartCoordinator starts the coordinator in the current load-test deployment.
 func (t *Terraform) StartCoordinator() error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
@@ -30,14 +30,11 @@ func (t *Terraform) StartCoordinator() error {
 	}
 	ip := output.Agents.Value[0].PublicIP
 
-	loadtestConfig := t.generateLoadtestAgentConfig(output)
-
 	var loadAgentConfigs []agent.LoadAgentConfig
 	for _, val := range output.Agents.Value {
 		loadAgentConfigs = append(loadAgentConfigs, agent.LoadAgentConfig{
-			Id:             val.Tags.Name,
-			ApiURL:         "http://" + val.PrivateIP + ":4000",
-			LoadTestConfig: loadtestConfig,
+			Id:     val.Tags.Name,
+			ApiURL: "http://" + val.PrivateIP + ":4000",
 		})
 	}
 
@@ -90,6 +87,7 @@ func (t *Terraform) StartCoordinator() error {
 	return nil
 }
 
+// StopCoordinator stops the coordinator in the current load-test deployment.
 func (t *Terraform) StopCoordinator() error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
