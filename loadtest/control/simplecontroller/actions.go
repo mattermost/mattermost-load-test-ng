@@ -102,6 +102,14 @@ func (c *SimpleController) updateProfile(u user.User) control.UserActionResponse
 }
 
 func (c *SimpleController) updateTeam(user.User) control.UserActionResponse {
+	ok, err := c.user.IsTeamAdmin()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !ok {
+		return control.UserActionResponse{Info: "user doesn't have permission to update"}
+	}
+
 	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}

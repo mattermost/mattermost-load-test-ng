@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -83,6 +84,14 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 			continue
 		}
 		id := u.Store().Id()
+
+		ok, err := admin.IsSysAdmin()
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("admin user is not a sysadmin")
+		}
 
 		err = admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID)
 		if err != nil {

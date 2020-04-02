@@ -136,13 +136,6 @@ func (ue *UserEntity) UpdateUser(user *model.User) error {
 }
 
 func (ue *UserEntity) UpdateUserRoles(userId, roles string) error {
-	ok, err := ue.IsSysAdmin()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
-	}
 	_, resp := ue.client.UpdateUserRoles(userId, roles)
 	if resp.Error != nil {
 		return resp.Error
@@ -481,13 +474,6 @@ func (ue *UserEntity) GetTeam(teamId string) error {
 }
 
 func (ue *UserEntity) UpdateTeam(team *model.Team) error {
-	ok, err := ue.IsTeamAdmin()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
-	}
 	team, resp := ue.client.UpdateTeam(team)
 	if resp.Error != nil {
 		return resp.Error
