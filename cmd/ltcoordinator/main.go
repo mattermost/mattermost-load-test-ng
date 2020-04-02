@@ -16,7 +16,10 @@ import (
 )
 
 func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
-	configFilePath, _ := cmd.Flags().GetString("config")
+	configFilePath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
 	cfg, err := coordinator.ReadConfig(configFilePath)
 	if err != nil {
 		return err
@@ -51,12 +54,18 @@ func main() {
 }
 
 func initConfig(cmd *cobra.Command, args []string) error {
-	configFilePath, _ := cmd.Flags().GetString("ltagent-config")
+	configFilePath, err := cmd.Flags().GetString("ltagent-config")
+	if err != nil {
+		return err
+	}
 	if err := loadtest.ReadConfig(configFilePath); err != nil {
 		return err
 	}
 
-	configFilePath, _ = cmd.Flags().GetString("config")
+	configFilePath, err = cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
 	cfg, err := coordinator.ReadConfig(configFilePath)
 	if err != nil {
 		return err
