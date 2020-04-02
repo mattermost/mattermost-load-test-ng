@@ -16,7 +16,8 @@ import (
 )
 
 func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
-	cfg, err := coordinator.GetConfig()
+	configFilePath, _ := cmd.Flags().GetString("config")
+	cfg, err := coordinator.ReadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 	}
 	c, err := coordinator.New(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to create coordinator %w", err)
+		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
 	return c.Run()
 }
@@ -39,26 +40,18 @@ func main() {
 		Use:          "ltcoordinator",
 		SilenceUsage: true,
 		RunE:         RunCoordinatorCmdF,
-		PreRunE:      initConfig,
+		PreRunE:      initLoadTestConfig,
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
-	rootCmd.PersistentFlags().StringP("ltconfig", "l", "", "path to the load-test configuration file to use")
+	rootCmd.PersistentFlags().StringP("ltagent-config", "l", "", "path to the load-test agent configuration file to use")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func initConfig(cmd *cobra.Command, args []string) error {
-	configFilePath, _ := cmd.Flags().GetString("config")
-	if err := coordinator.ReadConfig(configFilePath); err != nil {
-		return err
-	}
-	return initLoadTestConfig(cmd, args)
-}
-
 func initLoadTestConfig(cmd *cobra.Command, args []string) error {
-	configFilePath, _ := cmd.Flags().GetString("ltconfig")
+	configFilePath, _ := cmd.Flags().GetString("ltagent-config")
 	if err := loadtest.ReadConfig(configFilePath); err != nil {
 		return err
 	}

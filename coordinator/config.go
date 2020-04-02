@@ -4,6 +4,7 @@
 package coordinator
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
@@ -20,11 +21,21 @@ type Config struct {
 	ClusterConfig cluster.LoadAgentClusterConfig
 	// MonitorConfig holds the performance monitor configuration.
 	MonitorConfig performance.MonitorConfig
+
+	// The number of active users to increment at each iteration of the feedback loop.
+	// It should be proportional to the maximum number of users expected to test.
+	NumUsersInc int
+	// The number of users to decrement at each iteration of the feedback loop.
+	// It should be proportional to the maximum number of users expected to test.
+	NumUsersDec int
+	// The number of seconds to wait after a performance degradation alert before
+	// incrementing or decrementing users again.
+	RestTimeSec int
 }
 
-var v = viper.New()
+func ReadConfig(configFilePath string) (*Config, error) {
+	v := viper.New()
 
-func ReadConfig(configFilePath string) error {
 	v.SetConfigName("coordinator")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
@@ -36,15 +47,10 @@ func ReadConfig(configFilePath string) error {
 	}
 
 	if err := v.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "unable to read configuration file")
+		return nil, errors.Wrap(err, "unable to read configuration file")
 	}
 
-	return nil
-}
-
-func GetConfig() (*Config, error) {
 	var cfg *Config
-
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
@@ -55,5 +61,25 @@ func GetConfig() (*Config, error) {
 // IsValid checks whether a Config is valid or not.
 // Returns an error if the validation fails.
 func (c *Config) IsValid() error {
+	if err := c.ClusterConfig.IsValid(); err != nil {
+		return fmt.Errorf("cluster config validation failed: %w", err)
+	}
+
+	if err := c.MonitorConfig.IsValid(); err != nil {
+		return fmt.Errorf("monitor config validation failed: %w", err)
+	}
+
+	if c.NumUsersInc <= 0 {
+		return fmt.Errorf("NumUsersInc cannot be less than 1")
+	}
+
+	if c.NumUsersDec <= 0 {
+		return fmt.Errorf("NumUsersDec cannot be less than 1")
+	}
+
+	if c.RestTimeSec <= 0 {
+		return fmt.Errorf("RestTimeSec cannot be less than 1")
+	}
+
 	return nil
 }

@@ -23,5 +23,8 @@
             "Alert": true
         }
     ]
-  }
+  },
+  "NumUsersInc": 8,
+  "NumUsersDec": 8,
+  "RestTimeSec": 10
 }
