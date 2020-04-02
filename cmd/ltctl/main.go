@@ -44,7 +44,7 @@ func RunStartCmdF(cmd *cobra.Command, args []string) error {
 
 	t := terraform.New(config)
 	defer t.Cleanup()
-	return nil
+	return t.StartCoordinator()
 }
 
 func RunStopCmdF(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func RunStopCmdF(cmd *cobra.Command, args []string) error {
 
 	t := terraform.New(config)
 	defer t.Cleanup()
-	return nil
+	return t.StopCoordinator()
 }
 
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
@@ -103,8 +103,8 @@ func main() {
 	rootCmd.AddCommand(deploymentCmd)
 
 	loadtestCmd := &cobra.Command{
-		Use:   "",
-		Short: "",
+		Use:   "loadtest",
+		Short: "Manage the load-test",
 	}
 
 	loadtestComands := []*cobra.Command{
