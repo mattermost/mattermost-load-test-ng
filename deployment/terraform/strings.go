@@ -135,3 +135,39 @@ const sysctlConfig = `
 net.ipv4.ip_local_port_range = 1024 65000
 net.ipv4.tcp_fin_timeout = 30
 `
+
+const agentServiceFile = `
+[Unit]
+Description=Mattermost Load Test Agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltagent server
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const coordinatorServiceFile = `
+[Unit]
+Description=Mattermost Load Test Coordinator
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltcoordinator
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
