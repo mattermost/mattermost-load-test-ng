@@ -102,11 +102,9 @@ func (c *SimpleController) updateProfile(u user.User) control.UserActionResponse
 }
 
 func (c *SimpleController) updateTeam(user.User) control.UserActionResponse {
-	ok, err := c.user.IsTeamAdmin()
-	if err != nil {
+	if ok, err := c.user.IsTeamAdmin(); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if !ok {
+	} else if !ok {
 		return control.UserActionResponse{Info: "user doesn't have permission to update"}
 	}
 
@@ -116,8 +114,7 @@ func (c *SimpleController) updateTeam(user.User) control.UserActionResponse {
 	}
 	team.DisplayName = control.RandomizeTeamDisplayName(team.DisplayName)
 
-	err = c.user.UpdateTeam(&team)
-	if err != nil {
+	if err := c.user.UpdateTeam(&team); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

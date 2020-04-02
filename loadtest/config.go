@@ -93,7 +93,10 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 }
 
 type InstanceConfiguration struct {
-	NumTeams int
+	NumTeams          int
+	NumChannels       int
+	NumTeamAdmins     int
+	TeamAdminInterval int
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.

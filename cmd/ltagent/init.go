@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -67,7 +66,7 @@ func createChannels(admin *userentity.UserEntity, numChannels int) error {
 
 func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadtest.Config) error {
 	for i := 0; i < numUsers; i++ {
-		index := i * 10 // making every 10th user to be a team admin
+		index := i * config.InstanceConfiguration.TeamAdminInterval
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
@@ -85,16 +84,7 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 		}
 		id := u.Store().Id()
 
-		ok, err := admin.IsSysAdmin()
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return errors.New("admin user is not a sysadmin")
-		}
-
-		err = admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID)
-		if err != nil {
+		if err = admin.UpdateUserRoles(id, model.SYSTEM_USER_ROLE_ID+" "+model.TEAM_ADMIN_ROLE_ID); err != nil {
 			return err
 		}
 		mlog.Info("user created", mlog.String("user_id", id))
@@ -111,6 +101,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	numTeams := config.InstanceConfiguration.NumTeams
+	numChannels := config.InstanceConfiguration.NumChannels
+	numTeamAdmins := config.InstanceConfiguration.NumTeamAdmins
 
 	ueConfig := userentity.Config{
 		ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -137,11 +129,11 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err = createChannels(admin, 10); err != nil {
+	if err = createChannels(admin, numChannels); err != nil {
 		return err
 	}
 
-	if err = createTeamAdmins(admin, 10, config); err != nil {
+	if err = createTeamAdmins(admin, numTeamAdmins, config); err != nil {
 		return err
 	}
 
