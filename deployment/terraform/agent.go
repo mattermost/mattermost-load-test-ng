@@ -66,38 +66,37 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 		if err != nil {
 			return err
 		}
-		mlog.Info("configuring agent", mlog.String("ip", val.PublicIP))
+		mlog.Info("Configuring agent", mlog.String("ip", val.PublicIP))
 		if uploadBinary {
-			// upload the local file with a -local prefix to avoid collision
-			// with the previously downloaded file
-			dstFile := "/home/ubuntu/mattermost-load-test-ng-local.tar.gz"
-			mlog.Info(fmt.Sprintf("Uploading binary file %s", packagePath))
+			dstFile := "/home/ubuntu/tmp.tar.gz"
+			mlog.Info("Uploading binary", mlog.String("file", packagePath))
 			if out, err := sshc.UploadFile(packagePath, dstFile, false); err != nil {
-				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, string(out), err)
+				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
 			}
 			if out, err := sshc.RunCommand("rm -rf mattermost-load-test-ng && " +
-				"tar xzf mattermost-load-test-ng-local.tar.gz && " +
-				"mv $(ls -d */ | grep mattermost-load-test-ng) mattermost-load-test-ng"); err != nil {
-				return fmt.Errorf("error running command, got output: %q: %w", string(out), err)
+				"tar xzf tmp.tar.gz && " +
+				"mv mattermost-load-test-ng* mattermost-load-test-ng &&" +
+				"rm tmp.tar.gz"); err != nil {
+				return fmt.Errorf("error running command, got output: %q: %w", out, err)
 			}
 		}
 
 		mlog.Info("Uploading agent service file")
 		rdr := strings.NewReader(strings.TrimSpace(agentServiceFile))
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltagent.service", true); err != nil {
-			return fmt.Errorf("error uploading file, output: %q: %w", string(out), err)
+			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 		}
 
 		mlog.Info("Uploading coordinator service file")
 		rdr = strings.NewReader(strings.TrimSpace(coordinatorServiceFile))
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltcoordinator.service", true); err != nil {
-			return fmt.Errorf("error uploading file, output: %q: %w", string(out), err)
+			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 		}
 
 		mlog.Info("Starting agent")
 		cmd := fmt.Sprintf("sudo service ltagent start")
 		if out, err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running command, got output: %q: %w", string(out), err)
+			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 	}
 	return nil
@@ -108,22 +107,22 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, ip string, output *terr
 	if err != nil {
 		return err
 	}
-	mlog.Info("Populating DB", mlog.String("agent", ip))
+	mlog.Info("Creating teams and channels for load-test", mlog.String("agent", ip))
 	cfg := t.generateLoadtestAgentConfig(output)
-	data, err := json.Marshal(cfg)
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
 	mlog.Info("Uploading updated config file")
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error uploading file, output: %q: %w", string(out), err)
+		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 	}
 
 	mlog.Info("Running init command")
 	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command, out: %s, error: %w", out, err)
+		return fmt.Errorf("error running ssh command, output: %q, error: %w", out, err)
 	}
 	return nil
 }
@@ -165,7 +164,7 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 		},
 	}
 
-	data, err := json.Marshal(clusterConfig)
+	data, err := json.MarshalIndent(clusterConfig, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -177,8 +176,8 @@ func (t *Terraform) configureAndRunCoordinator(extAgent *ssh.ExtAgent, ip string
 
 	mlog.Info("Starting the coordinator")
 	cmd := "sudo service ltcoordinator start"
-	if err := sshc.StartCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: %s, error: %w", cmd, err)
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: output: %q, error: %w", out, err)
 	}
 
 	return nil
