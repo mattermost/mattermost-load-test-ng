@@ -34,7 +34,7 @@ func TestRandomizeUserName(t *testing.T) {
 }
 
 func TestRandomizeTeamDisplayName(t *testing.T) {
-	name :=  RandomizeTeamDisplayName("badname")
+	name := RandomizeTeamDisplayName("badname")
 	assert.Equal(t, "badname", name)
 
 	name = RandomizeTeamDisplayName("team9")
