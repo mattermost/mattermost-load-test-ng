@@ -20,7 +20,7 @@ There are mainly two ways to run a load-test:
 ## Documentation
 
 Documentation and implementation details can be found in the [docs](docs/) folder.  
-Code specific documentation can be found [here](https://godoc.org/github.com/mattermost/mattermost-load-test-ng).
+Code specific documentation can be found on [GoDoc](https://godoc.org/github.com/mattermost/mattermost-load-test-ng).
 
 ## Development
 
