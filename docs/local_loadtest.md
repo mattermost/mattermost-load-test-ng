@@ -8,7 +8,7 @@ It's also a great way to learn how the whole load-testing process works before t
 
 There are a few ways to run a load-test locally, in order of complexity:
 
-- Run the `loadtest` command directly. 
+- Run the `ltagent` command directly. 
 - Run a load-test through the load-test agent API server.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
@@ -37,7 +37,7 @@ The default [`UserController`](controllers.md) is the `SimpleController`. Its co
 ### Run the initialization
 
 ```sh
-go run ./cmd/loadtest init
+go run ./cmd/ltagent init
 ```
 
 Running this command will create initial teams and channels for the users to join on the target MM instance.
@@ -47,7 +47,7 @@ Running this command will create initial teams and channels for the users to joi
 A new load-test can be started with the following command:
 
 ```sh
-go run ./cmd/loadtest -c config/config.json -s config/simplecontroller.json -d 60
+go run ./cmd/ltagent -c config/config.json -s config/simplecontroller.json -d 60
 ```
 
 This will run a load-test with the given configs for 60 seconds.
@@ -59,7 +59,7 @@ A more advanced way to run a load-test is to use the provided load-test agent AP
 ### Start the API server
 
 ```sh
-go run ./cmd/loadtest server
+go run ./cmd/ltagent server
 ```
 
 This will start the server and expose the HTTP API on port 4000 (default).  
@@ -119,7 +119,7 @@ Its documentation can be found [here](coordinator_config.md).
 The first step is having the server running.
 
 ```sh
-go run ./cmd/loadtest server
+go run ./cmd/ltagent server
 ```
 
 ### Run the `coordinator`
@@ -127,6 +127,7 @@ go run ./cmd/loadtest server
 From a different terminal we can then run the [`coordinator`](coordinator.md).
 
 ```sh
-go run ./cmd/coordinator -c config/coordinator.json -l config/config.json
+go run ./cmd/ltcoordinator -c config/coordinator.json -l config/config.json
 ```
 
+This will start running a load-test across the configured cluster of load-test agents.
