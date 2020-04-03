@@ -76,8 +76,7 @@ func (lt *LoadTester) addUser() error {
 	userID := activeUsers + 1
 	// If specified by the config, we login with the same user again,
 	// to simulate multiple sessions.
-	if lt.config.UsersConfiguration.UseMultipleSessionsPerUser &&
-		rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
+	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
 		userID = rand.Intn(activeUsers)
 	}
 	controller, err := lt.newController(userID, lt.statusChan)
