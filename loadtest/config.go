@@ -161,40 +161,36 @@ func (c *Config) IsValid() error {
 	return nil
 }
 
-func ReadConfig(configFilePath string) error {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("./config/")
-	viper.SetEnvPrefix("mmloadtest")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+func ReadConfig(configFilePath string) (*Config, error) {
+	v := viper.New()
+	v.SetConfigName("config")
+	v.AddConfigPath(".")
+	v.AddConfigPath("./config/")
+	v.SetEnvPrefix("mmloadtest")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
 
-	viper.SetDefault("LogSettings.EnableConsole", true)
-	viper.SetDefault("LogSettings.ConsoleLevel", "INFO")
-	viper.SetDefault("LogSettings.ConsoleJson", true)
-	viper.SetDefault("LogSettings.EnableFile", true)
-	viper.SetDefault("LogSettings.FileLevel", "INFO")
-	viper.SetDefault("LogSettings.FileJson", true)
-	viper.SetDefault("LogSettings.FileLocation", "loadtest.log")
-	viper.SetDefault("ConnectionConfiguration.MaxIdleConns", 100)
-	viper.SetDefault("ConnectionConfiguration.MaxIdleConnsPerHost", 128)
-	viper.SetDefault("ConnectionConfiguration.IdleConnTimeoutMilliseconds", 90000)
+	v.SetDefault("LogSettings.EnableConsole", true)
+	v.SetDefault("LogSettings.ConsoleLevel", "INFO")
+	v.SetDefault("LogSettings.ConsoleJson", true)
+	v.SetDefault("LogSettings.EnableFile", true)
+	v.SetDefault("LogSettings.FileLevel", "INFO")
+	v.SetDefault("LogSettings.FileJson", true)
+	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
+	v.SetDefault("ConnectionConfiguration.MaxIdleConns", 100)
+	v.SetDefault("ConnectionConfiguration.MaxIdleConnsPerHost", 128)
+	v.SetDefault("ConnectionConfiguration.IdleConnTimeoutMilliseconds", 90000)
 
 	if configFilePath != "" {
-		viper.SetConfigFile(configFilePath)
+		v.SetConfigFile(configFilePath)
 	}
 
-	if err := viper.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "unable to read configuration file")
+	if err := v.ReadInConfig(); err != nil {
+		return nil, errors.Wrap(err, "unable to read configuration file")
 	}
 
-	return nil
-}
-
-func GetConfig() (*Config, error) {
 	var cfg *Config
-
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
 

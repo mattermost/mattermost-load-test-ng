@@ -33,7 +33,7 @@ func TestGetUserFromStore(t *testing.T) {
 }
 
 func TestFetchStaticAssets(t *testing.T) {
-	config, err := loadtest.GetConfig()
+	config, err := loadtest.ReadConfig("../../../config/config.default.json")
 	require.Nil(t, err)
 	mux := http.NewServeMux()
 	ts := httptest.NewServer(mux)
