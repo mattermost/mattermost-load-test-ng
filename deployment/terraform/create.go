@@ -408,6 +408,14 @@ func (t *Terraform) displayInfo(output *terraformOutput) {
 	for _, agent := range output.Agents.Value {
 		mlog.Info(agent.Tags.Name + ": " + agent.PublicIP)
 	}
+	if len(output.Agents.Value) > 0 {
+		mlog.Info("Coordinator:" + output.Agents.Value[0].PublicIP)
+		runcmd := "go run ./cmd/ltctl"
+		if strings.HasSuffix(os.Args[0], "ltctl") {
+			runcmd = "ltctl"
+		}
+		mlog.Info(fmt.Sprintf("To start coordinator, you can use %q command.", runcmd+" loadtest start"))
+	}
 	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
 	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
 	mlog.Info("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
