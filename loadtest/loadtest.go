@@ -73,12 +73,11 @@ func (lt *LoadTester) addUser() error {
 	}
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	// Randomly login with the same user again, to simulate multiple sessions
-	// from the same user.
-	nextUser := rand.Int()%2 == 0
-	userID := activeUsers
-	if nextUser {
-		userID++
+	userID := activeUsers + 1
+	// If specified by the config, we login with the same user again,
+	// to simulate multiple sessions.
+	if lt.config.UsersConfiguration.UseMultipleSessionsPerUser && rand.Int()%2 == 0 {
+		userID--
 	}
 	controller, err := lt.newController(userID, lt.statusChan)
 	if err != nil {

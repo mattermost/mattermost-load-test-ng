@@ -106,8 +106,9 @@ func (ic *InstanceConfiguration) IsValid() error {
 }
 
 type UsersConfiguration struct {
-	InitialActiveUsers int
-	MaxActiveUsers     int
+	InitialActiveUsers         int
+	MaxActiveUsers             int
+	UseMultipleSessionsPerUser bool
 }
 
 // IsValid reports whether a given UsersConfiguration is valid or not.
