@@ -410,7 +410,11 @@ func (t *Terraform) displayInfo(output *terraformOutput) {
 	}
 	if len(output.Agents.Value) > 0 {
 		mlog.Info("Coordinator:" + output.Agents.Value[0].PublicIP)
-		mlog.Info(fmt.Sprintf("To start coordinator, you can use %q command.", "ltctl loadtest start"))
+		runcmd := "go run ./cmd/ltctl"
+		if strings.HasSuffix(os.Args[0], "ltctl") {
+			runcmd = "ltctl"
+		}
+		mlog.Info(fmt.Sprintf("To start coordinator, you can use %q command.", runcmd+" loadtest start"))
 	}
 	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
 	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
