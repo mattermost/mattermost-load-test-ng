@@ -84,7 +84,6 @@ func ReadConfig(filePath string) (*Config, error) {
 	v.SetConfigName("deployer")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
-	v.AddConfigPath("./../../../config/")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 

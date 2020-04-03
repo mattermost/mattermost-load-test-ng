@@ -9,37 +9,21 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtest.Config {
-	return loadtest.Config{
-		ConnectionConfiguration: loadtest.ConnectionConfiguration{
-			ServerURL:                   "http://" + output.Proxy.Value.PrivateIP,
-			WebSocketURL:                "ws://" + output.Proxy.Value.PrivateIP,
-			AdminEmail:                  t.config.AdminEmail,
-			AdminPassword:               t.config.AdminPassword,
-			IdleConnTimeoutMilliseconds: 90000,
-		},
-		UserControllerConfiguration: loadtest.UserControllerConfiguration{
-			Type: "simple",
-			Rate: 1.0,
-		},
-		InstanceConfiguration: loadtest.InstanceConfiguration{
-			NumTeams: 2,
-		},
-		UsersConfiguration: loadtest.UsersConfiguration{
-			InitialActiveUsers: 4,
-			MaxActiveUsers:     1000,
-			AvgSessionsPerUser: 1,
-		},
-		LogSettings: logger.Settings{
-			EnableFile:   true,
-			FileLevel:    "INFO",
-			FileLocation: "loadtest.log",
-		},
+func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) (*loadtest.Config, error) {
+	cfg, err := loadtest.ReadConfig("")
+	if err != nil {
+		return nil, err
 	}
+
+	cfg.ConnectionConfiguration.ServerURL = "http://" + output.Proxy.Value.PrivateIP
+	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + output.Proxy.Value.PrivateIP
+	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
+	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
+
+	return cfg, nil
 }
 
 func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
@@ -112,7 +96,10 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput
 		return err
 	}
 	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-	cfg := t.generateLoadtestAgentConfig(output)
+	cfg, err := t.generateLoadtestAgentConfig(output)
+	if err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err

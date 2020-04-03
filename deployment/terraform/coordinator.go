@@ -7,9 +7,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
-	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
-	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
-	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -48,26 +45,14 @@ func (t *Terraform) StartCoordinator() error {
 	}
 
 	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
-	clusterConfig := coordinator.Config{
-		ClusterConfig: cluster.LoadAgentClusterConfig{
-			Agents:         loadAgentConfigs,
-			MaxActiveUsers: 100,
-		},
-		MonitorConfig: performance.MonitorConfig{
-			PrometheusURL:    "http://" + output.MetricsServer.Value.PrivateIP + ":9090",
-			UpdateIntervalMs: 2000,
-			Queries: []prometheus.Query{
-				{
-					Description: "Request Duration",
-					Query:       "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
-					Threshold:   2.0,
-					Alert:       true,
-				},
-			},
-		},
-	}
 
-	data, err := json.MarshalIndent(clusterConfig, "", "  ")
+	coordinatorConfig, err := coordinator.ReadConfig("")
+	if err != nil {
+		return err
+	}
+	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
+
+	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
 		return err
 	}

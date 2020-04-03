@@ -40,6 +40,8 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	v.SetConfigName("coordinator")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
+	// This is needed for the calls from the terraform package to find the config.
+	v.AddConfigPath("../../config")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 

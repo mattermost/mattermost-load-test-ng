@@ -166,6 +166,8 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	v.SetConfigName("config")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
+	// This is needed for the calls from the terraform package to find the config.
+	v.AddConfigPath("../../config")
 	v.SetEnvPrefix("mmloadtest")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
