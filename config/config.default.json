@@ -18,7 +18,8 @@
     "UsersConfiguration": {
         "InitialActiveUsers": 4,
         "MaxActiveUsers": 1000,
-        "UseMultipleSessionsPerUser": false
+        "UseMultipleSessionsPerUser": false,
+        "AvgSessionsPerUser": 4,
     },
     "LogSettings": {
         "EnableConsole": true,

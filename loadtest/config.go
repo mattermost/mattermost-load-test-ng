@@ -109,6 +109,7 @@ type UsersConfiguration struct {
 	InitialActiveUsers         int
 	MaxActiveUsers             int
 	UseMultipleSessionsPerUser bool
+	AvgSessionsPerUser         int
 }
 
 // IsValid reports whether a given UsersConfiguration is valid or not.
@@ -121,6 +122,9 @@ func (uc *UsersConfiguration) IsValid() error {
 	}
 	if uc.InitialActiveUsers > uc.MaxActiveUsers {
 		return fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
+	}
+	if uc.UseMultipleSessionsPerUser && uc.AvgSessionsPerUser <= 1 {
+		return fmt.Errorf("AvgSessionsPerUser cannot be <= 1 if UseMultipleSessionsPerUser is enabled")
 	}
 	return nil
 }
