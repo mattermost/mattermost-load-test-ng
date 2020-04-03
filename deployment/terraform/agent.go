@@ -32,6 +32,7 @@ func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) loadtes
 		UsersConfiguration: loadtest.UsersConfiguration{
 			InitialActiveUsers: 4,
 			MaxActiveUsers:     1000,
+			AvgSessionsPerUser: 1,
 		},
 		LogSettings: logger.Settings{
 			EnableFile:   true,

@@ -29,6 +29,7 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 			UsersConfiguration: loadtest.UsersConfiguration{
 				MaxActiveUsers:     8,
 				InitialActiveUsers: 0,
+				AvgSessionsPerUser: 1,
 			},
 			InstanceConfiguration: loadtest.InstanceConfiguration{
 				NumTeams: 1,
