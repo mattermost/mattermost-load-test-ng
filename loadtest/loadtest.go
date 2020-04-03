@@ -73,8 +73,8 @@ func (lt *LoadTester) addUser() error {
 	}
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	userID := activeUsers + 1
-	// If specified by the config, we login with the same user again,
+	userId := activeUsers + 1
+	// If specified by the config, we randomly pick an existing user again,
 	// to simulate multiple sessions.
 	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
 		userID = rand.Intn(activeUsers)
