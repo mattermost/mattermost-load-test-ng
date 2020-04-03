@@ -22,6 +22,12 @@ Before starting a new load-test, a newly created (and running) Mattermost instan
 git clone https://github.com/mattermost/mattermost-load-test-ng
 ```
 
+### Enter the source directory
+
+```sh
+cd mattermost-load-test-ng
+```
+
 ### Copy and modify needed configuration files
 
 It's suggested to copy the required config files and edit them accordingly.
@@ -101,7 +107,7 @@ curl -X POST http://localhost:4000/loadagent/lt0/stop
 curl -X DELETE http://localhost:4000/loadagent/lt0
 ```
 
-## Running a load-test through the `coordinator`
+## Running a load-test through the coordinator
 
 An even more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).  
 This is especially needed when we need to figure out the maximum number of users the target instance supports.  
@@ -111,8 +117,6 @@ The [`coordinator`](coordinator.md) does also help running a load-test across a 
 
 In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
 correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.  
-Before starting the [`coordinator`](coordinator.md), the default configuration file `config/coordinator.default.json` should also be copied and modified accordingly.
-Its documentation can be found [here](coordinator_config.md).
 
 ### Start the load-test agent API server
 
@@ -122,7 +126,17 @@ The first step is having the server running.
 go run ./cmd/ltagent server
 ```
 
-### Run the `coordinator`
+### Configure the coordinator
+
+Before starting the [`coordinator`](coordinator.md), the default configuration file should be copied and modified accordingly.
+
+```sh
+cp config/coordinator.default.json config/coordinator.json
+```
+
+Its documentation can be found [here](coordinator_config.md).
+
+### Run the coordinator
 
 From a different terminal we can then run the [`coordinator`](coordinator.md).
 
