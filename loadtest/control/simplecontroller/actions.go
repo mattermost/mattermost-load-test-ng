@@ -101,6 +101,26 @@ func (c *SimpleController) updateProfile(u user.User) control.UserActionResponse
 	return control.UserActionResponse{Info: "user patched"}
 }
 
+func (c *SimpleController) updateTeam(user.User) control.UserActionResponse {
+	if ok, err := c.user.IsTeamAdmin(); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if !ok {
+		return control.UserActionResponse{Info: "user doesn't have permission to update"}
+	}
+
+	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	team.DisplayName = control.RandomizeTeamDisplayName(team.DisplayName)
+
+	if err := c.user.UpdateTeam(&team); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: "team updated"}
+}
+
 // reload performs all actions done when a user reloads the browser.
 // If full parameter is enabled, it also disconnects and reconnects
 // the WebSocket connection.

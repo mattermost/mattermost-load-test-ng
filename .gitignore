@@ -20,6 +20,8 @@ _test
 *npm-debug.log*
 loadtest.log
 metricswatcher.log
+ltagent.log
+ltcoordinator.log
 
 .tmp
 debug

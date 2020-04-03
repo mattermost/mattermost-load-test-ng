@@ -23,5 +23,17 @@
             "Alert": true
         }
     ]
+  },
+  "NumUsersInc": 8,
+  "NumUsersDec": 8,
+  "RestTimeSec": 10,
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "INFO",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileJson": true,
+    "FileLocation": "ltcoordinator.log"
   }
 }

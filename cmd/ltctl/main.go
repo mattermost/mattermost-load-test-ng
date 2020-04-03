@@ -36,6 +36,28 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	return t.Destroy()
 }
 
+func RunStartCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New(config)
+	defer t.Cleanup()
+	return t.StartCoordinator()
+}
+
+func RunStopCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New(config)
+	defer t.Cleanup()
+	return t.StopCoordinator()
+}
+
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
@@ -79,6 +101,28 @@ func main() {
 
 	deploymentCmd.AddCommand(deploymentCommands...)
 	rootCmd.AddCommand(deploymentCmd)
+
+	loadtestCmd := &cobra.Command{
+		Use:   "loadtest",
+		Short: "Manage the load-test",
+	}
+
+	loadtestComands := []*cobra.Command{
+		{
+			Use:   "start",
+			Short: "Start the coordinator in the current load-test deployment",
+			RunE:  RunStartCmdF,
+		},
+		{
+			Use:   "stop",
+			Short: "Stop the coordinator in the current load-test deployment",
+			RunE:  RunStopCmdF,
+		},
+	}
+
+	loadtestCmd.AddCommand(loadtestComands...)
+	rootCmd.AddCommand(loadtestCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
