@@ -95,7 +95,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput
 	if err != nil {
 		return err
 	}
-	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
+	mlog.Info("Generating load-test config")
 	cfg, err := t.generateLoadtestAgentConfig(output)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput
 		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 	}
 
-	mlog.Info("Running init command")
+	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
 	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command, output: %q, error: %w", out, err)

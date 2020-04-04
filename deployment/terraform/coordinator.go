@@ -44,6 +44,20 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
+	agentConfig, err := t.generateLoadtestAgentConfig(output)
+	if err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(agentConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
+	mlog.Info("Uploading updated load-test agent config file")
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
+	}
+
 	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
 
 	coordinatorConfig, err := coordinator.ReadConfig("")
@@ -52,12 +66,12 @@ func (t *Terraform) StartCoordinator() error {
 	}
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
 
-	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
+	data, err = json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
 		return err
 	}
-	mlog.Info("Uploading updated config file")
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	mlog.Info("Uploading updated coordinator config file")
+	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
