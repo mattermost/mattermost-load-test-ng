@@ -66,6 +66,20 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var ucConfig control.Config
+	switch config.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		// TODO: pass simplecontroller path appropriately
+		ucConfig, err = simplecontroller.ReadConfig("")
+	case loadtest.UserControllerSimulative:
+		ucConfig, err = simulcontroller.ReadConfig("")
+	}
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, &Response{
+			Error: fmt.Errorf("failed to read controller configuration: %w", err).Error(),
+		})
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -77,14 +91,9 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ue := userentity.New(memstore.New(), ueConfig)
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
-			// TODO: pass simplecontroller path appropriately
-			cfg, err := simplecontroller.ReadConfig("")
-			if err != nil {
-				return nil, err
-			}
-			return simplecontroller.New(id, ue, cfg, status)
+			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, status)
+			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		default:

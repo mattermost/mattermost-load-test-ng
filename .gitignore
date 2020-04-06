@@ -67,6 +67,7 @@ sessions.db
 config/config.json
 config/coordinator.json
 config/simplecontroller.json
+config/simulcontroller.json
 config/deployer.json
 
 # terraform stuff

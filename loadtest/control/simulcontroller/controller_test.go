@@ -13,7 +13,11 @@ import (
 )
 
 func TestSetRate(t *testing.T) {
-	c, err := New(1, &userentity.UserEntity{}, make(chan control.UserStatus))
+	config, err := ReadConfig("../../../config/simulcontroller.default.json")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	c, err := New(1, &userentity.UserEntity{}, config, make(chan control.UserStatus))
 	require.Nil(t, err)
 	require.Equal(t, 1.0, c.rate)
 
@@ -38,7 +42,12 @@ func TestRunStop(t *testing.T) {
 		WebSocketURL: "ws://localhost:8065",
 	})
 	statusChan := make(chan control.UserStatus)
-	c, err := New(1, user, statusChan)
+
+	config, err := ReadConfig("../../../config/simulcontroller.default.json")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	c, err := New(1, user, config, statusChan)
 	require.Nil(t, err)
 
 	doneRunning := make(chan struct{})
