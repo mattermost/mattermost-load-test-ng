@@ -9,7 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
-	"github.com/pkg/errors"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/viper"
 )
 
@@ -87,7 +87,7 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 	if ucc.Rate < 0 {
-		return errors.New("rate cannot be < 0")
+		return fmt.Errorf("rate cannot be < 0")
 	}
 	return nil
 }
@@ -188,7 +188,16 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	if err := v.ReadInConfig(); err != nil {
-		return nil, errors.Wrap(err, "unable to read configuration file")
+		// If we can't find the config let's rely on the default one.
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			mlog.Info("falling back to default configuration file")
+			v.SetConfigName("config.default")
+			if err := v.ReadInConfig(); err != nil {
+				return nil, fmt.Errorf("unable to read configuration file: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read configuration file: %w", err)
+		}
 	}
 
 	var cfg *Config

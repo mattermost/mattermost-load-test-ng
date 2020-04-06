@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/viper"
 )
 
@@ -48,8 +49,18 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("unable to read configuration file: %w", err)
+		// If we can't find the config let's rely on the default one.
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			mlog.Info("falling back to default configuration file")
+			v.SetConfigName("simplecontroller.default")
+			if err := v.ReadInConfig(); err != nil {
+				return nil, fmt.Errorf("unable to read configuration file: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read configuration file: %w", err)
+		}
 	}
+
 	var cfg *Config
 
 	if err := v.Unmarshal(&cfg); err != nil {
