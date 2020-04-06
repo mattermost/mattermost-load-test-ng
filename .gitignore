@@ -22,6 +22,7 @@ loadtest.log
 metricswatcher.log
 ltagent.log
 ltcoordinator.log
+deployer.log
 
 .tmp
 debug

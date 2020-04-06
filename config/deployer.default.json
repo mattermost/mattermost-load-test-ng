@@ -13,7 +13,7 @@
     "AdminEmail": "sysadmin@sample.mattermost.com",
     "AdminUsername": "sysadmin",
     "AdminPassword": "Sys@dmin-sample1",
-    "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.1.0-alpha/mattermost-load-test-ng-v0.1.0-alpha-linux-amd64.tar.gz",
+    "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.2.0-alpha/mattermost-load-test-ng-v0.2.0-alpha-linux-amd64.tar.gz",
     "LogSettings": {
         "EnableConsole": true,
         "ConsoleLevel": "INFO",
@@ -21,6 +21,6 @@
         "EnableFile": true,
         "FileLevel": "INFO",
         "FileJson": true,
-        "FileLocation": "loadtest.log"
+        "FileLocation": "deployer.log"
     }
 }
