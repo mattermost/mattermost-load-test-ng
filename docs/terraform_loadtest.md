@@ -60,12 +60,12 @@ Once done, it will output information about the entire cluster. Everything will 
 
 ### Optionally configure coordinator and load-test
 
-When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md).  
+When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md). 
 If no files are found, defaults will be used.
 
 #### Copy default config
 
-To configure the [coordinator](coordinator.md) `config/coordinator.json` should be created and/or edited. 
+To configure the [coordinator](coordinator.md), `config/coordinator.json` should be created and/or edited. 
 
 ```sh
 cp config/coordinator.default.json config/coordinator.json
@@ -75,7 +75,7 @@ Its documentation can be found [here](coordinator_config.md).
 
 #### Copy default config
 
-To configure the load-test `config/config.json` should be created and/or edited.
+To configure the load-test `config/config.json`, should be created and/or edited.
 
 ```sh
 cp config/config.default.json config/config.json
