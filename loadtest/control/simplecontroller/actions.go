@@ -130,6 +130,7 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		c.user.ClearUserData()
 
 		if err := c.connect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
