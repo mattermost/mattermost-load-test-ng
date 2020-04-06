@@ -22,12 +22,21 @@ type SimulController struct {
 	stopped chan struct{}
 	status  chan<- control.UserStatus
 	rate    float64
+	config  *Config
 }
 
 // New creates and initializes a new SimulController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, status chan<- control.UserStatus) (*SimulController, error) {
+func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*SimulController, error) {
+	if config == nil || user == nil {
+		return nil, errors.New("nil params passed")
+	}
+
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
+	}
+
 	return &SimulController{
 		id:      id,
 		user:    user,
@@ -35,6 +44,7 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*SimulContro
 		stopped: make(chan struct{}),
 		status:  status,
 		rate:    1.0,
+		config:  config,
 	}, nil
 }
 
@@ -153,17 +163,12 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 
-		// TODO: make the following values configurable.
-		// Minimum idle time value in milliseconds.
-		minIdleMs := 1000
-		// Average idle time value in milliseconds.
-		avgIdleMs := 5000
-
-		// Randomly selecting a value in the interval [minIdleMs, avgIdleMs*2 - minIdleMs).
-		// This will give us an expected value equal to avgIdleMs.
+		// Randomly selecting a value in the interval
+		// [MinIdleTimeMs, AvgIdleTimeMs*2 - MinIdleTimeMs).
+		// This will give us an expected value equal to AvgIdleTimeMs.
 		// TODO: consider if it makes more sense to select this value using
 		// a truncated normal distribution.
-		idleMs := rand.Intn(avgIdleMs*2-minIdleMs*2) + minIdleMs
+		idleMs := rand.Intn(c.config.AvgIdleTimeMs*2-c.config.MinIdleTimeMs*2) + c.config.MinIdleTimeMs
 
 		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
 

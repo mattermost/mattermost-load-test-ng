@@ -40,6 +40,23 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 
 	mlog.Info(fmt.Sprintf("will run load-test with UserController of type %s", controllerType))
 
+	ucConfigPath, err := cmd.Flags().GetString("controller-config")
+	if err != nil {
+		return err
+	}
+
+	var ucConfig control.Config
+	switch controllerType {
+	case loadtest.UserControllerSimple:
+		ucConfig, err = simplecontroller.ReadConfig(ucConfigPath)
+	case loadtest.UserControllerSimulative:
+		ucConfig, err = simulcontroller.ReadConfig(ucConfigPath)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to read controller configuration: %w", err)
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -51,17 +68,9 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		ue := userentity.New(memstore.New(), ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
-			path, err := cmd.Flags().GetString("simplecontroller-config")
-			if err != nil {
-				return nil, err
-			}
-			cfg, err := simplecontroller.ReadConfig(path)
-			if err != nil {
-				return nil, err
-			}
-			return simplecontroller.New(id, ue, cfg, status)
+			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, status)
+			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		default:
@@ -101,7 +110,7 @@ func MakeLoadTestCommand() *cobra.Command {
 		SilenceUsage: true,
 		PreRun:       SetupLoadTest,
 	}
-	cmd.PersistentFlags().StringP("simplecontroller-config", "s", "", "path to the simplecontroller configuration file to use")
+	cmd.PersistentFlags().StringP("controller-config", "", "", "path to the controller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	return cmd

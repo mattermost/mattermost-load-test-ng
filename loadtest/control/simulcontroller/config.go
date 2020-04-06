@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-package simplecontroller
+package simulcontroller
 
 import (
 	"fmt"
@@ -10,24 +10,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds the the rate and user actions definitions that will be run by
-// the SimpleController.
+// Config holds information needed to run a SimulController.
 type Config struct {
-	// Rate is the idle time coefficient for user actions that will be performed
-	// sequentially.
-	Rate float64
-	// Actions are the user action definitions that will be run by the controller.
-	Actions []actionDefinition
-}
-
-type actionDefinition struct {
-	// ActionId is the key of an action which is mapped to a user action
-	// implementation.
-	ActionId string
-	// RunPeriod determines how often the action will be performed.
-	RunPeriod int
-	// WaitAfterMs is the wait time after the action is performed.
-	WaitAfterMs int
+	// The minium amount of time (in milliseconds) the controlled users
+	// will wait between actions.
+	MinIdleTimeMs int
+	// The average amount of time (in milliseconds) the controlled users
+	// will wait between actions.
+	AvgIdleTimeMs int
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -35,11 +25,9 @@ type actionDefinition struct {
 func ReadConfig(configFilePath string) (*Config, error) {
 	v := viper.New()
 
-	v.SetConfigName("simplecontroller")
+	v.SetConfigName("simulcontroller")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
-	v.AddConfigPath("./../config/")
-	v.AddConfigPath("./../../../config/")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
@@ -59,6 +47,16 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	return cfg, nil
 }
 
+// IsValid reports whether a given simulcontroller.Config is valid or not.
+// Returns an error if the validation fails.
 func (c *Config) IsValid() error {
+	if c.MinIdleTimeMs <= 0 {
+		return fmt.Errorf("MinIdleTimeMs should be greater than zero")
+	}
+
+	if c.AvgIdleTimeMs <= c.MinIdleTimeMs {
+		return fmt.Errorf("AvgIdleTimeMs should be greater than MinIdleTimeMs")
+	}
+
 	return nil
 }
