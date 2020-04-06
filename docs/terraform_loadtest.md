@@ -89,7 +89,7 @@ Its documentation can be found [here](loadtest_config.md).
 go run ./cmd/ltctl loadtest start
 ```
 
-This will begin to run the load-test across the whole load-test agent cluster.
+This will begin to run the load-test across the whole cluster of load-test agents.
 
 ### Stop the running load-test
 
