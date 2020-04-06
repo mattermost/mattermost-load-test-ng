@@ -94,7 +94,12 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	mlog.Info("init started")
 
-	config, err := loadtest.GetConfig()
+	configFilePath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+
+	config, err := loadtest.ReadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
@@ -156,17 +161,15 @@ func MakeInitCommand() *cobra.Command {
 }
 
 func SetupLoadTest(cmd *cobra.Command, args []string) {
-	configFilePath, _ := cmd.Flags().GetString("config")
-
-	if err := loadtest.ReadConfig(configFilePath); err != nil {
-		mlog.Error("Failed to initialize config", mlog.Err(err))
+	configFilePath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		mlog.Error("failed to get config flag", mlog.Err(err))
 		os.Exit(1)
 	}
 
-	cfg, err := loadtest.GetConfig()
-
+	cfg, err := loadtest.ReadConfig(configFilePath)
 	if err != nil {
-		mlog.Error("Failed to get logging config:", mlog.Err(err))
+		mlog.Error("failed to read config", mlog.Err(err))
 		os.Exit(1)
 	}
 

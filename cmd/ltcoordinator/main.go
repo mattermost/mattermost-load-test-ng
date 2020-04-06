@@ -24,17 +24,25 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ltConfig, err := loadtest.GetConfig()
+
+	ltConfigFilePath, err := cmd.Flags().GetString("ltagent-config")
 	if err != nil {
 		return err
 	}
+	ltConfig, err := loadtest.ReadConfig(ltConfigFilePath)
+	if err != nil {
+		return err
+	}
+
 	for i := 0; i < len(cfg.ClusterConfig.Agents); i++ {
 		cfg.ClusterConfig.Agents[i].LoadTestConfig = *ltConfig
 	}
+
 	c, err := coordinator.New(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
+
 	return c.Run()
 }
 
@@ -54,15 +62,7 @@ func main() {
 }
 
 func initConfig(cmd *cobra.Command, args []string) error {
-	configFilePath, err := cmd.Flags().GetString("ltagent-config")
-	if err != nil {
-		return err
-	}
-	if err := loadtest.ReadConfig(configFilePath); err != nil {
-		return err
-	}
-
-	configFilePath, err = cmd.Flags().GetString("config")
+	configFilePath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return err
 	}

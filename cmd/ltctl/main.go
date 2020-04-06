@@ -79,7 +79,7 @@ func main() {
 		SilenceUsage: true,
 		Short:        "Manage and control load-test deployments",
 	}
-	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the deployer configuration file to use")
 
 	deploymentCmd := &cobra.Command{
 		Use:   "deployment",

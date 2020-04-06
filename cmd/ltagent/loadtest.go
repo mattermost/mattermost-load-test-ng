@@ -19,7 +19,12 @@ import (
 )
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
-	config, err := loadtest.GetConfig()
+	configFilePath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+
+	config, err := loadtest.ReadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
