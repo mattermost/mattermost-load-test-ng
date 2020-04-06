@@ -26,9 +26,9 @@ git clone https://github.com/mattermost/mattermost-load-test-ng
 cd mattermost-load-test-ng
 ```
 
-### Copy and modify required config
+### Copy and modify the required configuration
 
-In order to start the deployment process it is required to configure the deployer appropriately.
+In order to start the deployment process, it is required to configure the deployer appropriately.
 
 ```sh
 cp config/deployer.default.json config/deployer.json
@@ -52,29 +52,59 @@ ssh-add PATH_TO_KEY
 ### Create a new deployment
 
 ```sh
-go run ./cmd/deployer create
+go run ./cmd/ltctl deployment create
 ```
 
 This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.  
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
-### Run the coordinator
+### Optionally configure coordinator and load-test
 
-Connect via SSH to the instance hosting the [coordinator](coordinator.md).  
-Optionally configure the [coordinator](coordinator_config.md) by editing `config/coordinator.json` and the [load-test agents](loadtest_config.md) by editing `config/config.json`.
+When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md).  
+If no files are found, defaults will be used.
+
+#### Copy default config
+
+To configure the [coordinator](coordinator.md) `config/coordinator.json` should be created and/or edited. 
 
 ```sh
-go run ./cmd/coordinator
+cp config/coordinator.default.json config/coordinator.json
+```
+
+Its documentation can be found [here](coordinator_config.md).
+
+#### Copy default config
+
+To configure the load-test `config/config.json` should be created and/or edited.
+
+```sh
+cp config/config.default.json config/config.json
+```
+
+Its documentation can be found [here](loadtest_config.md).
+
+### Run the coordinator
+
+```sh
+go run ./cmd/ltctl loadtest start
 ```
 
 This will begin to run the load-test across the whole load-test agent cluster.
+
+### Stop the running load-test
+
+```sh
+go run ./cmd/ltctl loadtest stop
+```
+
+This will stop the currently running load-test.
 
 ### Destroy the current deployment
 
 When done with a deployment, it's suggested to run:
 
 ```sh
-go run ./cmd/deployer destroy
+go run ./cmd/ltctl deployment destroy
 ```
 
 This will permanently destroy all resources for the current deployment.
