@@ -74,7 +74,6 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	case loadtest.UserControllerSimulative:
 		ucConfig, err = simulcontroller.ReadConfig("")
 	}
-
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: fmt.Errorf("failed to read controller configuration: %w", err).Error(),

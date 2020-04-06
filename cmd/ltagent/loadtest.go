@@ -44,7 +44,6 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
 	var ucConfig control.Config
 	switch controllerType {
 	case loadtest.UserControllerSimple:
@@ -52,7 +51,6 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	case loadtest.UserControllerSimulative:
 		ucConfig, err = simulcontroller.ReadConfig(ucConfigPath)
 	}
-
 	if err != nil {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
 	}
