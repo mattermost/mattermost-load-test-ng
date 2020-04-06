@@ -13,11 +13,15 @@
       "Rate": 1.0
     },
     "InstanceConfiguration": {
-        "NumTeams": 2
+        "NumTeams": 2,
+        "NumChannels": 10,
+        "NumTeamAdmins": 10,
+        "TeamAdminInterval": 10
     },
     "UsersConfiguration": {
         "InitialActiveUsers": 4,
-        "MaxActiveUsers": 1000
+        "MaxActiveUsers": 1000,
+        "AvgSessionsPerUser": 1
     },
     "LogSettings": {
         "EnableConsole": true,
@@ -26,6 +30,6 @@
         "EnableFile": true,
         "FileLevel": "INFO",
         "FileJson": true,
-        "FileLocation": "loadtest.log"
+        "FileLocation": "ltagent.log"
     }
 }

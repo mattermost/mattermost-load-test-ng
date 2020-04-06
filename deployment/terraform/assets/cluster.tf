@@ -1,5 +1,5 @@
 provider "aws" {
-  profile = "default"
+  profile = "mm-loadtest"
   region  = "us-east-2"
   version = "~> 2.47"
 }
@@ -164,14 +164,10 @@ resource "aws_instance" "loadtest_agent" {
       inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "wget https://dl.google.com/go/go${var.go_version}.linux-amd64.tar.gz",
-      "sudo tar -C /usr/local -xzf go${var.go_version}.linux-amd64.tar.gz",
-      "sudo sh -c \"echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile\"",
-      "wget https://github.com/mattermost/mattermost-load-test-ng/archive/${var.loadtest_source_code_ref}.tar.gz",
-      "tar -xzf ${var.loadtest_source_code_ref}.tar.gz",
-      "mv mattermost-load-test-ng-${var.loadtest_source_code_ref} mattermost-load-test-ng",
-      "cp mattermost-load-test-ng/config/simplecontroller.default.json mattermost-load-test-ng/config/simplecontroller.json",
-      "cp mattermost-load-test-ng/config/config.default.json mattermost-load-test-ng/config/config.json",
+      "wget -O tmp.tar.gz ${var.load_test_download_url}",
+      "tar xzf tmp.tar.gz",
+      "mv mattermost-load-test-ng* mattermost-load-test-ng",
+      "rm tmp.tar.gz"
     ] 
   }
 }

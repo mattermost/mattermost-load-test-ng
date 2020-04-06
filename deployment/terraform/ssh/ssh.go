@@ -132,7 +132,7 @@ func (sshc *Client) UploadFile(src, dst string, sudo bool) ([]byte, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return sshc.Upload(f, "/opt/mattermost/bin/mattermost", false)
+	return sshc.Upload(f, dst, sudo)
 }
 
 // Close closes the underlying connection.

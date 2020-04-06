@@ -93,7 +93,10 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 }
 
 type InstanceConfiguration struct {
-	NumTeams int
+	NumTeams          int
+	NumChannels       int
+	NumTeamAdmins     int
+	TeamAdminInterval int
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.
@@ -108,6 +111,7 @@ func (ic *InstanceConfiguration) IsValid() error {
 type UsersConfiguration struct {
 	InitialActiveUsers int
 	MaxActiveUsers     int
+	AvgSessionsPerUser int
 }
 
 // IsValid reports whether a given UsersConfiguration is valid or not.
@@ -120,6 +124,9 @@ func (uc *UsersConfiguration) IsValid() error {
 	}
 	if uc.InitialActiveUsers > uc.MaxActiveUsers {
 		return fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
+	}
+	if uc.AvgSessionsPerUser < 1 {
+		return fmt.Errorf("AvgSessionsPerUser cannot be < 1")
 	}
 	return nil
 }
