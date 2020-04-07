@@ -39,7 +39,7 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		stop:    make(chan struct{}),
 		stopped: make(chan struct{}),
 		status:  status,
-		rate:    config.Rate,
+		rate:    1.0,
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
