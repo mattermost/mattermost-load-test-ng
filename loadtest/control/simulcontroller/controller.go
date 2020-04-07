@@ -68,6 +68,7 @@ func (c *SimulController) Run() {
 			c.status <- c.newErrorStatus(err)
 		}
 		c.user.Cleanup()
+		c.user.ClearUserData()
 		c.sendStopStatus()
 		close(c.stopped)
 	}()

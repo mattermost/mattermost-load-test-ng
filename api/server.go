@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -253,6 +254,21 @@ func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, &res)
 }
 
+func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
+	html := `
+		<html>
+			<body>
+				<div><a href="/debug/pprof/">Profiling Root</a></div>
+				<div><a href="/debug/pprof/heap">Heap profile</a></div>
+				<div><a href="/debug/pprof/profile">CPU profile</a></div>
+				<div><a href="/debug/pprof/trace">Trace profile</a></div>
+			</body>
+		</html>
+	`
+
+	w.Write([]byte(html))
+}
+
 // SetupAPIRouter creates a router to handle load test API requests.
 func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
@@ -269,5 +285,12 @@ func SetupAPIRouter() *mux.Router {
 	r.HandleFunc("/{id}/status", agent.getLoadAgentStatusHandler).Methods("GET")
 	r.HandleFunc("/{id}/addusers", agent.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	r.HandleFunc("/{id}/removeusers", agent.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+
+	// Add profile endpoints
+	p := router.PathPrefix("/debug/pprof").Subrouter()
+	p.HandleFunc("/", agent.pprofIndexHandler).Methods("Get")
+	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
+	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
+	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
 	return router
 }

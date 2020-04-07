@@ -67,6 +67,7 @@ func (c *SimpleController) Run() {
 			c.status <- c.newErrorStatus(err)
 		}
 		c.user.Cleanup()
+		c.user.ClearUserData()
 		c.sendStopStatus()
 		close(c.stopped)
 	}()
@@ -154,10 +155,17 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			c.connect()
 			return resp
 		},
-		"Logout":   control.Logout,
+		"Logout": func(u user.User) control.UserActionResponse {
+			resp := control.Logout(u)
+			if resp.Err != nil {
+				return resp
+			}
+			u.ClearUserData()
+			return resp
+		},
 		"EditPost": control.EditPost,
 		"Reload": func(u user.User) control.UserActionResponse {
-			return c.reload(false)
+			return c.reload(true)
 		},
 		"RemoveReaction":     control.RemoveReaction,
 		"ScrollChannel":      c.scrollChannel,
