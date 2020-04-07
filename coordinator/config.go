@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -37,7 +37,8 @@ type Config struct {
 func ReadConfig(configFilePath string) (*Config, error) {
 	v := viper.New()
 
-	v.SetConfigName("coordinator")
+	configName := "coordinator"
+	v.SetConfigName(configName)
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
 	// This is needed for the calls from the terraform package to find the config.
@@ -49,8 +50,8 @@ func ReadConfig(configFilePath string) (*Config, error) {
 		v.SetConfigFile(configFilePath)
 	}
 
-	if err := v.ReadInConfig(); err != nil {
-		return nil, errors.Wrap(err, "unable to read configuration file")
+	if err := config.ReadConfigFile(v, configName); err != nil {
+		return nil, err
 	}
 
 	var cfg *Config

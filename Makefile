@@ -64,6 +64,7 @@ endif
 	cp config/config.default.json $(PLATFORM_DIST_PATH)/config/config.json
 	cp config/coordinator.default.json $(PLATFORM_DIST_PATH)/config/coordinator.json
 	cp config/simplecontroller.default.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
+	cp config/simulcontroller.default.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
 	cp LICENSE.txt $(PLATFORM_DIST_PATH)
 
 	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
@@ -90,9 +91,6 @@ golangci-lint:
 	golangci-lint run ./...
 
 test:
-	@if ! [ -e config/simplecontroller.json ]; then \
-    	cp config/simplecontroller.default.json config/simplecontroller.json; \
- 	fi;\
 	$(GO) test -v -mod=readonly -failfast ./...
 
 clean:

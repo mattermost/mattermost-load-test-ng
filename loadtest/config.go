@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -87,7 +87,7 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 	if ucc.Rate < 0 {
-		return errors.New("rate cannot be < 0")
+		return fmt.Errorf("rate cannot be < 0")
 	}
 	return nil
 }
@@ -163,7 +163,9 @@ func (c *Config) IsValid() error {
 
 func ReadConfig(configFilePath string) (*Config, error) {
 	v := viper.New()
-	v.SetConfigName("config")
+
+	configName := "config"
+	v.SetConfigName(configName)
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
 	// This is needed for the calls from the terraform package to find the config.
@@ -187,8 +189,8 @@ func ReadConfig(configFilePath string) (*Config, error) {
 		v.SetConfigFile(configFilePath)
 	}
 
-	if err := v.ReadInConfig(); err != nil {
-		return nil, errors.Wrap(err, "unable to read configuration file")
+	if err := config.ReadConfigFile(v, configName); err != nil {
+		return nil, err
 	}
 
 	var cfg *Config
