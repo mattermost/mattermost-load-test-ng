@@ -119,6 +119,6 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("controller-config", "", "", "path to the controller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
-	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run")
+	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
 	return cmd
 }
