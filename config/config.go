@@ -21,9 +21,8 @@ func ReadConfigFile(v *viper.Viper, configName string) error {
 
 	if err := v.ReadInConfig(); err != nil {
 		// If we can't find the config let's rely on the default one.
-		// var configErr *viper.ConfigFileNotFoundError
 		if errors.As(err, &viper.ConfigFileNotFoundError{}) {
-			mlog.Warn("config: falling back to default configuration file")
+			mlog.Warn("config: falling back to default configuration file", mlog.String("config_name", configName))
 			v.SetConfigName(fmt.Sprintf("%s.default", configName))
 			if err := v.ReadInConfig(); err != nil {
 				return fmt.Errorf("config: unable to read configuration file: %w", err)
