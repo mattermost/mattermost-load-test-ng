@@ -165,7 +165,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		},
 		"EditPost": control.EditPost,
 		"Reload": func(u user.User) control.UserActionResponse {
-			return c.reload(false)
+			return c.reload(true)
 		},
 		"RemoveReaction":     control.RemoveReaction,
 		"ScrollChannel":      c.scrollChannel,
