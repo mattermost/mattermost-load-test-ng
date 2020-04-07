@@ -1,17 +1,5 @@
 # SimpleControllerConfiguration
 
-## Rate
-
-*float64*
-
-Rate is the idle time coefficient for user actions that will be performed sequentially.
-
-- A rate < 1.0 will run actions at a faster pace.
-- A rate == 1.0 will run actions at the default pace.
-- A rate > 1.0 will run actions at a slower pace.
-
-This value is multiplied with [WaitAfterMs](#WaitAfterMs).
-
 ## Actions
 
 *[]ActionDefinition*

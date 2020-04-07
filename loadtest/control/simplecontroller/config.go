@@ -14,9 +14,6 @@ import (
 // Config holds the the rate and user actions definitions that will be run by
 // the SimpleController.
 type Config struct {
-	// Rate is the idle time coefficient for user actions that will be performed
-	// sequentially.
-	Rate float64
 	// Actions are the user action definitions that will be run by the controller.
 	Actions []actionDefinition
 }
