@@ -58,7 +58,7 @@
     {
       "ActionId": "UpdateProfileImage",
       "WaitAfterMs": 1000,
-      "RunPeriod": 1
+      "RunPeriod": 25
     },
     {
       "ActionId": "CreateGroupChannel",
