@@ -80,7 +80,10 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	config.UsersConfiguration.InitialActiveUsers = numUsers
+	if numUsers > 0 {
+		config.UsersConfiguration.InitialActiveUsers = numUsers
+	}
+
 	lt, err := loadtest.New(config, newControllerFn)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
