@@ -4,28 +4,24 @@
       {
         "Id": "lt0",
         "ApiURL": "http://localhost:4000"
-      },
-      {
-        "Id": "lt1",
-        "ApiURL": "http://localhost:4001"
       }
     ],
-    "MaxActiveUsers": 100
+    "MaxActiveUsers": 10000
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
     "UpdateIntervalMs": 2000,
-    "Queries":  [
-        {
-            "Description": "Request duration",
-            "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
-            "Threshold": 0.2,
-            "Alert": true
-        }
+    "Queries": [
+      {
+        "Description": "Request duration",
+        "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
+        "Threshold": 0.2,
+        "Alert": true
+      }
     ]
   },
-  "NumUsersInc": 8,
-  "NumUsersDec": 8,
+  "NumUsersInc": 16,
+  "NumUsersDec": 16,
   "RestTimeSec": 10,
   "LogSettings": {
     "EnableConsole": true,
