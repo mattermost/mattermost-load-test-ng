@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/config"
+
 	"github.com/spf13/viper"
 )
 
@@ -25,7 +27,8 @@ type Config struct {
 func ReadConfig(configFilePath string) (*Config, error) {
 	v := viper.New()
 
-	v.SetConfigName("simulcontroller")
+	configName := "simulcontroller"
+	v.SetConfigName(configName)
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config/")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -35,11 +38,11 @@ func ReadConfig(configFilePath string) (*Config, error) {
 		v.SetConfigFile(configFilePath)
 	}
 
-	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("unable to read configuration file: %w", err)
+	if err := config.ReadConfigFile(v, configName); err != nil {
+		return nil, err
 	}
-	var cfg *Config
 
+	var cfg *Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
