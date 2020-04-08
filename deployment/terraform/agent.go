@@ -114,7 +114,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput
 	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
 	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
-		// TODO: make this fully atomic.
+		// TODO: make this fully atomic. See MM-23998.
 		// ltagent init should drop teams and channels before creating them.
 		// This needs additional delete actions to be added.
 		if strings.Contains(string(out), "with that name already exists") {
