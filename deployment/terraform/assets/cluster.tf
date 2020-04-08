@@ -42,8 +42,8 @@ resource "aws_instance" "app_server" {
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
-      "wget ${var.mattermost_download_url}",
-      "tar xzf mattermost-*.tar.gz",
+      "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
+      "tar xzf mattermost-dist.tar.gz",
       "sudo mv mattermost /opt/",
       "sudo mkdir -p /opt/mattermost/data"
     ]
