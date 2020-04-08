@@ -5,18 +5,23 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-const defaultGrafanaUsernamePass = "admin:admin"
+const (
+	defaultGrafanaUsernamePass = "admin:admin"
+	defaultRequestTimeout      = 10 * time.Second
+)
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput) error {
 	// Updating Prometheus config
@@ -47,6 +52,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	}
 
 	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
+	defer cancel()
 	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/datasources"
 	payload := struct {
 		Name     string `json:"name"`
@@ -63,7 +70,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(url, "application/json", bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -73,8 +85,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("non 200 response: %s", string(buf))
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusConflict {
+		return fmt.Errorf("bad response: %s", string(buf))
 	}
 	mlog.Info("Response: " + string(buf))
 	return nil
