@@ -5,12 +5,12 @@ GO=go
 DIST_ROOT=dist
 # We specify version for the build; it is the branch-name by default, also we try
 # to find if there is a tag pointed to the current commit. If so, we use the tag.
-DIST_VER=$(git rev-parse --abbrev-ref HEAD)
-ifeq ($(git describe --tags $(git rev-parse @) >&/dev/null; echo $$?), 0)
-	DIST_VER=$(git describe --tags $(git rev-parse @))
+DIST_VER=$(shell git rev-parse --abbrev-ref HEAD)
+ifeq ($(shell git describe --tags $(git rev-parse @) 2>&1 >/dev/null; echo $$?), 0)
+	DIST_VER=$(shell git describe --tags $(git rev-parse @))
 endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
-STATUS=$(git diff-index --quiet HEAD --; echo $$?)
+STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 COORDINATOR=ltcoordinator
 COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/ltcoordinator
@@ -18,7 +18,7 @@ AGENT=ltagent
 AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
-BUILDER_GOOS_GOARCH="$($(GO) env GOOS)_$($(GO) env GOARCH)"
+BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
 
 all: install
 
