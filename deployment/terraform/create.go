@@ -294,6 +294,9 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOut
 		return err
 	}
 	if out, err := sshc.RunCommand(cmd); err != nil {
+		if strings.Contains(string(out), "account with that username already exists") {
+			return nil
+		}
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
 

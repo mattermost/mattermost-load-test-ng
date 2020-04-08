@@ -97,7 +97,7 @@ resource "aws_instance" "proxy_server" {
   vpc_security_group_ids = [
     "${aws_security_group.proxy.id}"
   ]
-  key_name          = aws_key_pair.key.id
+  key_name = aws_key_pair.key.id
 
   connection {
     # The default username for our AMI
@@ -121,12 +121,13 @@ resource "aws_instance" "proxy_server" {
 
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
-  count              = var.db_instance_count
-  identifier         = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier = aws_rds_cluster.db_cluster.id
-  instance_class     = var.db_instance_class
-  engine             = var.db_instance_engine
-  apply_immediately  = true
+  count                      = var.db_instance_count
+  identifier                 = "${var.cluster_name}-db-${count.index}"
+  cluster_identifier         = aws_rds_cluster.db_cluster.id
+  instance_class             = var.db_instance_class
+  engine                     = var.db_instance_engine
+  apply_immediately          = true
+  auto_minor_version_upgrade = false
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -161,14 +162,14 @@ resource "aws_instance" "loadtest_agent" {
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
   provisioner "remote-exec" {
-      inline = [
+    inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "wget -O tmp.tar.gz ${var.load_test_download_url}",
       "tar xzf tmp.tar.gz",
       "mv mattermost-load-test-ng* mattermost-load-test-ng",
       "rm tmp.tar.gz"
-    ] 
+    ]
   }
 }
 

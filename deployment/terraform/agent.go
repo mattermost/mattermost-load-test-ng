@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -113,6 +114,12 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput
 	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
 	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
 	if out, err := sshc.RunCommand(cmd); err != nil {
+		// TODO: make this fully atomic. See MM-23998.
+		// ltagent init should drop teams and channels before creating them.
+		// This needs additional delete actions to be added.
+		if strings.Contains(string(out), "with that name already exists") {
+			return nil
+		}
 		return fmt.Errorf("error running ssh command, output: %q, error: %w", out, err)
 	}
 	return nil
