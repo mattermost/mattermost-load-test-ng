@@ -212,7 +212,7 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 
 			// Starting mattermost.
 			mlog.Info("Starting mattermost", mlog.String("host", ip))
-			cmd := fmt.Sprintf("sudo service mattermost start")
+			cmd := "sudo service mattermost start"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return

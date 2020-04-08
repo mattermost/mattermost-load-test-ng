@@ -138,7 +138,7 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
 	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
-		return control.UserActionResponse{Info: fmt.Sprintf("no other team to switch to")}
+		return control.UserActionResponse{Info: "no other team to switch to"}
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -225,7 +225,7 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("got statuses")}
+	return control.UserActionResponse{Info: "got statuses"}
 }
 
 func createPost(u user.User) control.UserActionResponse {
