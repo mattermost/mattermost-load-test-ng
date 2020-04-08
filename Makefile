@@ -6,7 +6,7 @@ DIST_ROOT=dist
 # We specify version for the build; it is the branch-name by default, also we try
 # to find if there is a tag pointed to the current commit. If so, we use the tag.
 DIST_VER=$(shell git rev-parse --abbrev-ref HEAD)
-ifeq ($(shell git describe --tags $(git rev-parse @) >&/dev/null; echo $$?), 0)
+ifeq ($(shell git describe --tags $(git rev-parse @) 2>&1 >/dev/null; echo $$?), 0)
 	DIST_VER=$(shell git describe --tags $(git rev-parse @))
 endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
