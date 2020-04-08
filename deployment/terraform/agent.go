@@ -78,7 +78,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 		}
 
 		mlog.Info("Starting agent")
-		cmd := fmt.Sprintf("sudo service ltagent start")
+		cmd := "sudo service ltagent start"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}

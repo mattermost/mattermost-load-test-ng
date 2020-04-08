@@ -106,7 +106,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
-			Message: fmt.Sprintf("load-test agent creation failed"),
+			Message: "load-test agent creation failed",
 			Error:   err.Error(),
 		})
 		return
@@ -115,7 +115,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(w, http.StatusCreated, &Response{
 		Id:      agentId,
-		Message: fmt.Sprintf("load-test agent created"),
+		Message: "load-test agent created",
 	})
 }
 
