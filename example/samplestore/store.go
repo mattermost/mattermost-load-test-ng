@@ -97,8 +97,8 @@ func (s *SampleStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.P
 	return nil, nil
 }
 
-func (s *SampleStore) PostsSince(ts int64) ([]model.Post, error) {
-	return []model.Post{}, nil
+func (s *SampleStore) PostsIdsSince(ts int64) ([]string, error) {
+	return nil, nil
 }
 
 func (s *SampleStore) SetUser(user *model.User) error {

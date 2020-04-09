@@ -47,6 +47,16 @@ func RunStartCmdF(cmd *cobra.Command, args []string) error {
 	return t.StartCoordinator()
 }
 
+func RunInfoCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New(config)
+	return t.Info()
+}
+
 func RunStopCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
@@ -96,6 +106,11 @@ func main() {
 			Use:   "destroy",
 			Short: "Destroy the current load-test deployment",
 			RunE:  RunDestroyCmdF,
+		},
+		{
+			Use:   "info",
+			Short: "Display information about the current load-test deployment",
+			RunE:  RunInfoCmdF,
 		},
 	}
 

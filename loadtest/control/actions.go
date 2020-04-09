@@ -281,19 +281,19 @@ func CreatePostReply(u user.User) UserActionResponse {
 // AddReaction adds a reaction by the user to a random post.
 func AddReaction(u user.User) UserActionResponse {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := u.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
+	postsIds, err := u.Store().PostsIdsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	if len(posts) == 0 {
+	if len(postsIds) == 0 {
 		return UserActionResponse{Info: "no posts to add reaction to"}
 	}
 
-	post := posts[rand.Intn(len(posts))]
+	postId := postsIds[rand.Intn(len(postsIds))]
 
 	err = u.SaveReaction(&model.Reaction{
 		UserId:    u.Store().Id(),
-		PostId:    post.Id,
+		PostId:    postId,
 		EmojiName: "grinning",
 	})
 
@@ -301,22 +301,22 @@ func AddReaction(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	return UserActionResponse{Info: fmt.Sprintf("added reaction to post %s", post.Id)}
+	return UserActionResponse{Info: fmt.Sprintf("added reaction to post %s", postId)}
 }
 
 // RemoveReaction removes a reaction from a random post which is added by the user.
 func RemoveReaction(u user.User) UserActionResponse {
 	// get posts from UserStore that have been created in the last minute
-	posts, err := u.Store().PostsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
+	postsIds, err := u.Store().PostsIdsSince(time.Now().Add(-1*time.Minute).Unix() * 1000)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
-	if len(posts) == 0 {
+	if len(postsIds) == 0 {
 		return UserActionResponse{Info: "no posts to remove reaction from"}
 	}
 
-	post := posts[rand.Intn(len(posts))]
-	reactions, err := u.Store().Reactions(post.Id)
+	postId := postsIds[rand.Intn(len(postsIds))]
+	reactions, err := u.Store().Reactions(postId)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -331,7 +331,7 @@ func RemoveReaction(u user.User) UserActionResponse {
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
-			return UserActionResponse{Info: "removed reaction"}
+			return UserActionResponse{Info: fmt.Sprintf("removed reaction from post %s", postId)}
 		}
 	}
 
