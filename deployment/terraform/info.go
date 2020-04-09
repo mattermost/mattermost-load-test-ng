@@ -21,7 +21,7 @@ func (t *Terraform) Info() error {
 
 func (t *Terraform) displayInfo(output *terraformOutput) {
 	fmt.Println("==================================================")
-	fmt.Println("Here is the setup information:")
+	fmt.Println("Deployment information:")
 	fmt.Println("Mattermost URL: http://" + output.Proxy.Value.PublicDNS)
 	fmt.Println("App Servers:")
 	for _, instance := range output.Instances.Value {
