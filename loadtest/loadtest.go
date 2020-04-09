@@ -53,15 +53,23 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 	}
 }
 
-// AddUser increments by one the number of concurrently active users.
-func (lt *LoadTester) AddUser() error {
+// AddUsers attempts to increment by numUsers the number of concurrently active users.
+// Returns the number of users successfully added.
+func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
-
-	if lt.status.State != Running {
-		return ErrNotRunning
+	if numUsers <= 0 {
+		return 0, ErrInvalidNumUsers
 	}
-	return lt.addUser()
+	if lt.status.State != Running {
+		return 0, ErrNotRunning
+	}
+	for i := 0; i < numUsers; i++ {
+		if err := lt.addUser(); err != nil {
+			return i, err
+		}
+	}
+	return numUsers, nil
 }
 
 // addUser is an internal API called from Run and AddUser both.
@@ -71,8 +79,6 @@ func (lt *LoadTester) addUser() error {
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
-	lt.status.NumUsers++
-	lt.status.NumUsersAdded++
 	userId := activeUsers + 1
 	// If specified by the config, we randomly pick an existing user again,
 	// to simulate multiple sessions.
@@ -86,40 +92,58 @@ func (lt *LoadTester) addUser() error {
 	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
 		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
 	}
+	lt.controllers = append(lt.controllers, controller)
+	lt.status.NumUsers++
+	lt.status.NumUsersAdded++
 	lt.wg.Add(1)
 	go func() {
 		controller.Run()
 	}()
-	lt.controllers = append(lt.controllers, controller)
 	return nil
 }
 
-// RemoveUser decrements by one the number of concurrently active users.
-func (lt *LoadTester) RemoveUser() error {
+// RemoveUsers attempts to decrement by numUsers the number of concurrently active users.
+// Returns the number of users successfully removed.
+func (lt *LoadTester) RemoveUsers(numUsers int) (int, error) {
 	lt.mut.Lock()
 	defer lt.mut.Unlock()
-
-	if lt.status.State != Running {
-		return ErrNotRunning
+	if numUsers <= 0 {
+		return 0, ErrInvalidNumUsers
 	}
-	return lt.removeUser()
+	if lt.status.State != Running {
+		return 0, ErrNotRunning
+	}
+	return lt.removeUsers(numUsers)
 }
 
-// removeUser is an internal API called from Stop and RemoveUser both.
+// removeUsers is an internal API called from Stop and RemoveUser both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
-func (lt *LoadTester) removeUser() error {
+func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	activeUsers := len(lt.controllers)
-	if activeUsers == 0 {
-		return ErrNoUsersLeft
+
+	var err error
+	if numUsers > activeUsers {
+		numUsers = activeUsers
+		err = ErrNoUsersLeft
 	}
-	lt.status.NumUsers--
-	lt.status.NumUsersRemoved++
+
+	var wg sync.WaitGroup
+	wg.Add(numUsers)
 	// TODO: Add a way to make how a user is removed decidable from the upper layer (the user of this API),
 	// for example by passing a typed constant (e.g. random, first, last).
-	controller := lt.controllers[activeUsers-1]
-	controller.Stop()
-	lt.controllers = lt.controllers[:activeUsers-1]
-	return nil
+	for i := 0; i < numUsers; i++ {
+		go func(i int) {
+			defer wg.Done()
+			lt.controllers[activeUsers-1-i].Stop()
+		}(i)
+	}
+	wg.Wait()
+
+	lt.controllers = lt.controllers[:activeUsers-numUsers]
+	lt.status.NumUsers -= numUsers
+	lt.status.NumUsersRemoved += numUsers
+
+	return numUsers, err
 }
 
 // Run starts the execution of a new load-test.
@@ -159,11 +183,11 @@ func (lt *LoadTester) Stop() error {
 		return ErrNotRunning
 	}
 	lt.status.State = Stopping
-	for range lt.controllers {
-		if err := lt.removeUser(); err != nil {
-			mlog.Error(err.Error())
-		}
+
+	if _, err := lt.removeUsers(len(lt.controllers)); err != nil {
+		mlog.Error(err.Error())
 	}
+
 	lt.wg.Wait()
 	close(lt.statusChan)
 	lt.status.NumUsers = 0
