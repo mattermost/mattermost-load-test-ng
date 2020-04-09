@@ -288,7 +288,7 @@ func SetupAPIRouter() *mux.Router {
 
 	// Add profile endpoints
 	p := router.PathPrefix("/debug/pprof").Subrouter()
-	p.HandleFunc("/", agent.pprofIndexHandler).Methods("Get")
+	p.HandleFunc("/", agent.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
