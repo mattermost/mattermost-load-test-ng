@@ -184,16 +184,16 @@ func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post
 	return posts, nil
 }
 
-func (s *MemStore) PostsSince(ts int64) ([]model.Post, error) {
+func (s *MemStore) PostsIdsSince(ts int64) ([]string, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	var posts []model.Post
+	var postsIds []string
 	for _, post := range s.posts {
 		if post.CreateAt > ts {
-			posts = append(posts, *post)
+			postsIds = append(postsIds, post.Id)
 		}
 	}
-	return posts, nil
+	return postsIds, nil
 }
 
 func (s *MemStore) SetPost(post *model.Post) error {
@@ -387,17 +387,16 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 		return errors.New("memstore: channelMembers should not be nil")
 	}
 
-	for _, member := range *channelMembers {
-		member := member
-		// Initialize the maps as necessary.
+	cms := *channelMembers
+	for i := range cms {
+		cm := &cms[i]
 		if s.channelMembers == nil {
 			s.channelMembers = make(map[string]map[string]*model.ChannelMember)
 		}
-		if s.channelMembers[member.ChannelId] == nil {
-			s.channelMembers[member.ChannelId] = make(map[string]*model.ChannelMember)
+		if s.channelMembers[cm.ChannelId] == nil {
+			s.channelMembers[cm.ChannelId] = make(map[string]*model.ChannelMember)
 		}
-		// Set value.
-		s.channelMembers[member.ChannelId][member.UserId] = &member
+		s.channelMembers[cm.ChannelId][cm.UserId] = cm
 	}
 
 	return nil

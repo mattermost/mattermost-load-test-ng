@@ -67,8 +67,8 @@ type UserStore interface {
 	// Roles returns the roles of the user.
 	Roles() ([]model.Role, error)
 
-	// PostsSince returns posts created after a specified timestamp in milliseconds.
-	PostsSince(ts int64) ([]model.Post, error)
+	// PostsIdsSince returns a slice of ids for posts created after a specified timestamp in milliseconds.
+	PostsIdsSince(ts int64) ([]string, error)
 
 	// Reactions returns reactions for a given postId.
 	Reactions(postId string) ([]model.Reaction, error)
