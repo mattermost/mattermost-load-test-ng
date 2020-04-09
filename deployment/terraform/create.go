@@ -53,6 +53,9 @@ type terraformOutput struct {
 			PublicIP   string `json:"public_ip"`
 			PublicDNS  string `json:"public_dns"`
 			PrivateDNS string `json:"private_dns"`
+			Tags       struct {
+				Name string `json:"Name"`
+			} `json:"tags"`
 		} `json:"value"`
 	} `json:"instances"`
 	DBCluster struct {
@@ -167,7 +170,13 @@ func (t *Terraform) Create() error {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
+	mlog.Info("Deployment complete.")
 	t.displayInfo(output)
+	runcmd := "go run ./cmd/ltctl"
+	if strings.HasPrefix(os.Args[0], "ltctl") {
+		runcmd = "ltctl"
+	}
+	fmt.Println(fmt.Sprintf("To start coordinator, you can use %q command.", runcmd+" loadtest start"))
 	return nil
 }
 
@@ -398,28 +407,4 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 	return &output, nil
-}
-
-func (t *Terraform) displayInfo(output *terraformOutput) {
-	mlog.Info("Deployment complete. Here is the setup information:")
-	mlog.Info("Proxy server: " + output.Proxy.Value.PublicDNS)
-	mlog.Info("Instances:")
-	for _, instance := range output.Instances.Value {
-		mlog.Info(instance.PublicIP)
-	}
-	mlog.Info("Agents:")
-	for _, agent := range output.Agents.Value {
-		mlog.Info(agent.Tags.Name + ": " + agent.PublicIP)
-	}
-	if len(output.Agents.Value) > 0 {
-		mlog.Info("Coordinator:" + output.Agents.Value[0].PublicIP)
-		runcmd := "go run ./cmd/ltctl"
-		if strings.HasPrefix(os.Args[0], "ltctl") {
-			runcmd = "ltctl"
-		}
-		mlog.Info(fmt.Sprintf("To start coordinator, you can use %q command.", runcmd+" loadtest start"))
-	}
-	mlog.Info("Metrics server: " + output.MetricsServer.Value.PublicIP)
-	mlog.Info("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
-	mlog.Info("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
 }
