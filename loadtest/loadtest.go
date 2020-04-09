@@ -72,7 +72,7 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 	return numUsers, nil
 }
 
-// addUser is an internal API called from Run and AddUser both.
+// addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.controllers)
@@ -116,7 +116,7 @@ func (lt *LoadTester) RemoveUsers(numUsers int) (int, error) {
 	return lt.removeUsers(numUsers)
 }
 
-// removeUsers is an internal API called from Stop and RemoveUser both.
+// removeUsers is an internal API called from Stop and RemoveUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	activeUsers := len(lt.controllers)
