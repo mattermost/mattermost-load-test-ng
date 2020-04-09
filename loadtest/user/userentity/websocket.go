@@ -76,7 +76,8 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 
 	switch ev.EventType() {
 	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED:
-		if currentChannel, err := ue.store.CurrentChannel(); err == nil && currentChannel.Id == post.ChannelId {
+		currentChannel, err := ue.store.CurrentChannel()
+		if err == nil && currentChannel.Id == post.ChannelId {
 			return ue.store.SetPost(post)
 		} else if !errors.Is(err, memstore.ErrChannelNotFound) {
 			return fmt.Errorf("failed to get current channel from store: %w", err)
