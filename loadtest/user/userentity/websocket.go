@@ -5,8 +5,11 @@ package userentity
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -17,6 +20,46 @@ const (
 	maxWebsocketReconnectDuration = 5 * time.Minute
 	maxWebsocketFails             = 7
 )
+
+func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
+	var data string
+	if el, ok := ev.Data["reaction"]; !ok {
+		return fmt.Errorf("reaction data is missing")
+	} else if data, ok = el.(string); !ok {
+		return fmt.Errorf("reaction data not of type string")
+	}
+
+	var reaction *model.Reaction
+	if err := json.Unmarshal([]byte(data), &reaction); err != nil {
+		return err
+	}
+
+	currentChannel, err := ue.store.CurrentChannel()
+	if !errors.Is(err, memstore.ErrChannelNotFound) {
+		return fmt.Errorf("failed to get current channel from store: %w", err)
+	} else if currentChannel == nil {
+		return nil
+	}
+
+	if post, err := ue.store.Post(reaction.PostId); err != nil {
+		return fmt.Errorf("failed to get post from store: %w", err)
+	} else if post == nil || post.ChannelId != currentChannel.Id {
+		return nil
+	}
+
+	switch ev.EventType() {
+	case model.WEBSOCKET_EVENT_REACTION_ADDED:
+		return ue.store.SetReaction(reaction)
+	case model.WEBSOCKET_EVENT_REACTION_REMOVED:
+		if ok, err := ue.store.DeleteReaction(reaction); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("failed to delete reaction")
+		}
+	}
+
+	return nil
+}
 
 func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	var data string
@@ -33,7 +76,11 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 
 	switch ev.EventType() {
 	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED:
-		return ue.store.SetPost(post)
+		if currentChannel, err := ue.store.CurrentChannel(); err == nil && currentChannel.Id == post.ChannelId {
+			return ue.store.SetPost(post)
+		} else if !errors.Is(err, memstore.ErrChannelNotFound) {
+			return fmt.Errorf("failed to get current channel from store: %w", err)
+		}
 	case model.WEBSOCKET_EVENT_POST_DELETED:
 		return ue.store.DeletePost(post.Id)
 	}
@@ -48,22 +95,8 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 // the same event at the upper layer (controller).
 func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 	switch ev.EventType() {
-	case model.WEBSOCKET_EVENT_REACTION_ADDED:
-		var reaction *model.Reaction
-		if err := json.Unmarshal([]byte(ev.Data["reaction"].(string)), &reaction); err != nil {
-			return err
-		}
-		if err := ue.store.SetReaction(reaction); err != nil {
-			return err
-		}
-	case model.WEBSOCKET_EVENT_REACTION_REMOVED:
-		var reaction *model.Reaction
-		if err := json.Unmarshal([]byte(ev.Data["reaction"].(string)), &reaction); err != nil {
-			return err
-		}
-		if _, err := ue.store.DeleteReaction(reaction); err != nil {
-			return err
-		}
+	case model.WEBSOCKET_EVENT_REACTION_ADDED, model.WEBSOCKET_EVENT_REACTION_REMOVED:
+		return ue.handleReactionEvent(ev)
 	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED, model.WEBSOCKET_EVENT_POST_DELETED:
 		return ue.handlePostEvent(ev)
 	}
