@@ -72,6 +72,16 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 		}
 
+		rdr = strings.NewReader(strings.TrimPrefix(limitsConfig, "\n"))
+		if out, err := sshc.Upload(rdr, "/etc/security/limits.conf", true); err != nil {
+			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
+		}
+
+		cmd := "sudo sysctl -p"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running command, got output: %q: %w", out, err)
+		}
+
 		mlog.Info("Uploading coordinator service file")
 		rdr = strings.NewReader(strings.TrimSpace(coordinatorServiceFile))
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltcoordinator.service", true); err != nil {
@@ -79,7 +89,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 		}
 
 		mlog.Info("Starting agent")
-		cmd := "sudo service ltagent start"
+		cmd = "sudo service ltagent start"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
