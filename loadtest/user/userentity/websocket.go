@@ -26,7 +26,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	if el, ok := ev.Data["reaction"]; !ok {
 		return fmt.Errorf("reaction data is missing")
 	} else if data, ok = el.(string); !ok {
-		return fmt.Errorf("reaction data not of type string")
+		return fmt.Errorf("type of the reaction data should be a string, but it is %T", el)
 	}
 
 	var reaction *model.Reaction
@@ -54,7 +54,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 		if ok, err := ue.store.DeleteReaction(reaction); err != nil {
 			return err
 		} else if !ok {
-			return fmt.Errorf("failed to delete reaction")
+			return fmt.Errorf("could not find reaction in the store")
 		}
 	}
 
@@ -66,7 +66,7 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	if el, ok := ev.Data["post"]; !ok {
 		return fmt.Errorf("post data is missing")
 	} else if data, ok = el.(string); !ok {
-		return fmt.Errorf("post data not of type string")
+		return fmt.Errorf("type of the post data should be a string, but it is %T", el)
 	}
 
 	var post *model.Post
