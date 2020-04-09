@@ -176,7 +176,7 @@ func (t *Terraform) Create() error {
 	if strings.HasPrefix(os.Args[0], "ltctl") {
 		runcmd = "ltctl"
 	}
-	fmt.Println(fmt.Sprintf("To start coordinator, you can use %q command.", runcmd+" loadtest start"))
+	fmt.Printf("To start coordinator, you can use %q command.\n", runcmd+" loadtest start")
 	return nil
 }
 
