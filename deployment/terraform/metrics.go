@@ -92,12 +92,15 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/user/preferences"
 	payload := struct {
 		Theme           string `json:"theme"`
-		HomeDashboardId int    `json:"homeDashboardId"`
+		HomeDashboardID int    `json:"homeDashboardId"`
 		Timezone        string `json:"timezone"`
 	}{
-		HomeDashboardId: 1,
+		HomeDashboardID: 1,
 	}
 	buf, err = json.Marshal(&payload)
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(buf))
 	if err != nil {
 		return err
