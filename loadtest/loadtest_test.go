@@ -50,7 +50,6 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 	}
 
 	return simplecontroller.New(id, ue, cfg, status)
-
 }
 
 func TestNew(t *testing.T) {
@@ -66,47 +65,76 @@ func TestNew(t *testing.T) {
 	require.NotNil(t, lt)
 }
 
-func TestAddUser(t *testing.T) {
+func TestAddUsers(t *testing.T) {
 	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 
-	err = lt.AddUser()
+	n, err := lt.AddUsers(0)
+	require.Equal(t, ErrInvalidNumUsers, err)
+	require.Zero(t, n)
+
+	n, err = lt.AddUsers(1)
 	require.Equal(t, ErrNotRunning, err)
+	require.Zero(t, n)
 
 	lt.status.State = Running
 
-	ltConfig.UsersConfiguration.MaxActiveUsers = 0
-	err = lt.AddUser()
+	ltConfig.UsersConfiguration.MaxActiveUsers = 4
+	n, err = lt.AddUsers(8)
 	require.Equal(t, ErrMaxUsersReached, err)
+	require.Equal(t, 4, n)
 	ltConfig.UsersConfiguration.MaxActiveUsers = 8
 
-	numUsers := 8
-	for i := 0; i < numUsers; i++ {
-		err = lt.AddUser()
-		require.NoError(t, err)
-	}
+	n, err = lt.AddUsers(4)
+	require.NoError(t, err)
+	require.Equal(t, 4, n)
 
-	require.Len(t, lt.controllers, numUsers)
+	require.Len(t, lt.controllers, 8)
 }
 
-func TestRemoveUser(t *testing.T) {
+func TestRemoveUsers(t *testing.T) {
 	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 
-	err = lt.RemoveUser()
+	n, err := lt.RemoveUsers(0)
+	require.Equal(t, ErrInvalidNumUsers, err)
+	require.Zero(t, n)
+
+	n, err = lt.RemoveUsers(1)
 	require.Equal(t, ErrNotRunning, err)
+	require.Zero(t, n)
 
 	lt.status.State = Running
+	// This is needed to avoid the controllers deadlocking
+	// on sending data into the status channel.
+	go func() {
+		for range lt.statusChan {
+		}
+	}()
 
-	err = lt.RemoveUser()
+	n, err = lt.RemoveUsers(1)
 	require.Equal(t, ErrNoUsersLeft, err)
+	require.Zero(t, n)
 
-	err = lt.AddUser()
+	n, err = lt.AddUsers(1)
 	require.NoError(t, err)
+	require.Equal(t, 1, n)
 
-	err = lt.RemoveUser()
+	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
+	require.Equal(t, 1, n)
 	require.Empty(t, lt.controllers)
+
+	n, err = lt.AddUsers(2)
+	require.NoError(t, err)
+	require.Equal(t, 2, n)
+
+	n, err = lt.RemoveUsers(3)
+	require.Equal(t, err, ErrNoUsersLeft)
+	require.Equal(t, 2, n)
+	require.Empty(t, lt.controllers)
+
+	close(lt.statusChan)
 }
 
 func TestRun(t *testing.T) {
@@ -151,10 +179,10 @@ func TestStop(t *testing.T) {
 	lt.status.State = Running
 
 	numUsers := 8
-	for i := 0; i < numUsers; i++ {
-		err = lt.AddUser()
-		require.NoError(t, err)
-	}
+	n, err := lt.AddUsers(numUsers)
+	require.NoError(t, err)
+	require.Equal(t, numUsers, n)
+
 	err = lt.Stop()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Stopped)
@@ -175,16 +203,18 @@ func TestStatus(t *testing.T) {
 	assert.Equal(t, 0, st.NumUsersAdded)
 	assert.Equal(t, 0, st.NumUsersRemoved)
 
-	err = lt.AddUser()
+	n, err := lt.AddUsers(1)
 	require.NoError(t, err)
+	require.Equal(t, 1, n)
 	st = lt.Status()
 	assert.Equal(t, Running, st.State)
 	assert.Equal(t, 1, st.NumUsers)
 	assert.Equal(t, 1, st.NumUsersAdded)
 	assert.Equal(t, 0, st.NumUsersRemoved)
 
-	err = lt.RemoveUser()
+	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
+	require.Equal(t, 1, n)
 	st = lt.Status()
 	assert.Equal(t, Running, st.State)
 	assert.Equal(t, 0, st.NumUsers)

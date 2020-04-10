@@ -72,17 +72,34 @@ func (c *SimpleController) Run() {
 		close(c.stopped)
 	}()
 
-	if resp := control.SignUp(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
+	initActions := []UserAction{
+		{
+			run: control.SignUp,
+		},
+		{
+			run: func(u user.User) control.UserActionResponse {
+				resp := control.Login(u)
+				if resp.Err != nil {
+					return resp
+				}
+				c.connect()
+				return resp
+			},
+		},
 	}
 
-	if resp := control.Login(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-		c.connect()
+	for _, action := range initActions {
+		if resp := action.run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+
+		select {
+		case <-c.stop:
+			return
+		default:
+		}
 	}
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
