@@ -44,8 +44,7 @@ resource "aws_instance" "app_server" {
       "sudo apt-get install -y prometheus-node-exporter",
       "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
       "tar xzf mattermost-dist.tar.gz",
-      "sudo mv mattermost /opt/",
-      "sudo mkdir -p /opt/mattermost/data"
+      "sudo mv mattermost /opt/"
     ]
   }
 }
