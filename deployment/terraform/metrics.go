@@ -86,6 +86,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
+	// Restart grafana
+	cmd = "sudo service grafana-server restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
 	// Set preference to new dashboard.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
 	defer cancel()
@@ -95,7 +101,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 		HomeDashboardID int    `json:"homeDashboardId"`
 		Timezone        string `json:"timezone"`
 	}{
-		HomeDashboardID: 1,
+		HomeDashboardID: 2,
 	}
 	buf, err = json.Marshal(&payload)
 	if err != nil {
@@ -121,12 +127,6 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 		return fmt.Errorf("bad response: %s", string(buf))
 	}
 	mlog.Info("Response: " + string(buf))
-
-	// Restart grafana
-	cmd = "sudo service grafana-server restart"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
-	}
 
 	return nil
 }
