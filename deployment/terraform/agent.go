@@ -66,31 +66,23 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 			}
 		}
 
-		mlog.Info("Uploading agent service file")
-		rdr := strings.NewReader(strings.TrimSpace(agentServiceFile))
-		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltagent.service", true); err != nil {
-			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
+		batch := []uploadInfo{
+			{srcData: strings.TrimPrefix(agentServiceFile, "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
+			{srcData: strings.TrimPrefix(sysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+			{srcData: strings.TrimPrefix(coordinatorServiceFile, "\n"), dstPath: "/lib/systemd/system/ltcoordinator.service", msg: "Uploading coordinator service file"},
 		}
 
-		rdr = strings.NewReader(strings.TrimPrefix(limitsConfig, "\n"))
-		if out, err := sshc.Upload(rdr, "/etc/security/limits.conf", true); err != nil {
-			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
+		if err := uploadBatch(sshc, batch); err != nil {
+			return fmt.Errorf("batch upload failed: %w", err)
 		}
 
-		cmd := "sudo sysctl -p"
-		if out, err := sshc.RunCommand(cmd); err != nil {
+		if out, err := sshc.RunCommand("sudo sysctl -p"); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 
-		mlog.Info("Uploading coordinator service file")
-		rdr = strings.NewReader(strings.TrimSpace(coordinatorServiceFile))
-		if out, err := sshc.Upload(rdr, "/lib/systemd/system/ltcoordinator.service", true); err != nil {
-			return fmt.Errorf("error uploading file, output: %q: %w", out, err)
-		}
-
 		mlog.Info("Starting agent")
-		cmd = "sudo service ltagent start"
-		if out, err := sshc.RunCommand(cmd); err != nil {
+		if out, err := sshc.RunCommand("sudo service ltagent start"); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 	}

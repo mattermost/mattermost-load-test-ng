@@ -267,21 +267,15 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 			backends += "server " + addr.PrivateIP + ":8065;\n"
 		}
 
-		files := []struct {
-			content string
-			path    string
-		}{
-			{content: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), path: "/etc/nginx/sites-available/mattermost"},
-			{content: strings.TrimSpace(sysctlConfig), path: "/etc/sysctl.conf"},
-			{content: strings.TrimSpace(nginxConfig), path: "/etc/nginx/nginx.conf"},
-			{content: strings.TrimSpace(limitsConfig), path: "/etc/security/limits.conf"},
+		batch := []uploadInfo{
+			{srcData: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), dstPath: "/etc/nginx/sites-available/mattermost"},
+			{srcData: strings.TrimSpace(sysctlConfig), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimSpace(nginxConfig), dstPath: "/etc/nginx/nginx.conf"},
+			{srcData: strings.TrimSpace(limitsConfig), dstPath: "/etc/security/limits.conf"},
 		}
-		for _, fileInfo := range files {
-			rdr := strings.NewReader(fileInfo.content)
-			if out, err := sshc.Upload(rdr, fileInfo.path, true); err != nil {
-				mlog.Error("error uploading file", mlog.String("output", string(out)), mlog.Err(err), mlog.String("file", fileInfo.path))
-				return
-			}
+		if err := uploadBatch(sshc, batch); err != nil {
+			mlog.Error("batch upload failed", mlog.Err(err))
+			return
 		}
 
 		cmd := "sudo sysctl -p && sudo service nginx reload"

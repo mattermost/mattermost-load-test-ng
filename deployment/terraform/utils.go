@@ -31,7 +31,7 @@ func uploadBatch(sshc *ssh.Client, batch []uploadInfo) error {
 		if info.msg != "" {
 			mlog.Info(info.msg)
 		}
-		rdr := strings.NewReader(strings.TrimPrefix(info.srcData, "\n"))
+		rdr := strings.NewReader(info.srcData)
 		if out, err := sshc.Upload(rdr, info.dstPath, true); err != nil {
 			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
 		}
