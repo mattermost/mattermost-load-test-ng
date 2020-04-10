@@ -6,7 +6,6 @@
 package ssh
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -78,12 +77,8 @@ func (sshc *Client) RunCommand(cmd string) ([]byte, error) {
 		return nil, err
 	}
 	defer sess.Close()
-	var out bytes.Buffer
-	sess.Stdout = &out
-	sess.Stderr = &out
 
-	err = sess.Run(cmd)
-	return out.Bytes(), err
+	return sess.CombinedOutput(cmd)
 }
 
 // StartCommand starts a given command in a new ssh session. Unlike RunCommand
@@ -112,17 +107,14 @@ func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error)
 		return nil, err
 	}
 	defer sess.Close()
-
-	var out bytes.Buffer
 	sess.Stdin = src
-	sess.Stdout = &out
-	sess.Stderr = &out
-	cmd := "cat > " + "'" + dst + "'"
+
+	cmd := fmt.Sprintf("cat > '%s'", dst)
 	if sudo {
 		cmd = fmt.Sprintf("sudo su -c %q", cmd)
 	}
-	err = sess.Run(cmd)
-	return out.Bytes(), err
+
+	return sess.CombinedOutput(cmd)
 }
 
 // UploadFile uploads a given file path to a given destination file.
