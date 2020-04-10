@@ -14,13 +14,10 @@ import (
 )
 
 type ConnectionConfiguration struct {
-	ServerURL                   string
-	WebSocketURL                string
-	AdminEmail                  string
-	AdminPassword               string
-	MaxIdleConns                int
-	MaxIdleConnsPerHost         int
-	IdleConnTimeoutMilliseconds int
+	ServerURL     string
+	WebSocketURL  string
+	AdminEmail    string
+	AdminPassword string
 }
 
 // IsValid reports whether a given ConnectionConfiguration is valid or not.
@@ -181,9 +178,6 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	v.SetDefault("LogSettings.FileLevel", "INFO")
 	v.SetDefault("LogSettings.FileJson", true)
 	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
-	v.SetDefault("ConnectionConfiguration.MaxIdleConns", 100)
-	v.SetDefault("ConnectionConfiguration.MaxIdleConnsPerHost", 128)
-	v.SetDefault("ConnectionConfiguration.IdleConnTimeoutMilliseconds", 90000)
 
 	if configFilePath != "" {
 		v.SetConfigFile(configFilePath)
