@@ -421,13 +421,15 @@ func pingServer(addr string) error {
 		select {
 		case <-timeout:
 			return fmt.Errorf("timeout after 30 seconds, server is not responding")
-		case <-time.Tick(3 * time.Second):
+		case <-time.After(3 * time.Second):
 			_, resp := client.GetPingWithServerStatus()
-			if resp.Header.Get("database_status") == "OK" {
-				mlog.Info("Database status is OK")
-				return nil
+			if resp.Error != nil {
+				mlog.Debug("got error", mlog.Err(resp.Error))
+				mlog.Info("Waiting for the server...")
+				continue
 			}
-			mlog.Info("Waiting for the server...")
+			mlog.Info("Server status is OK")
+			return nil
 		}
 	}
 }
