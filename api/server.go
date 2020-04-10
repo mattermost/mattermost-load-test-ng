@@ -213,15 +213,11 @@ func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var res Response
-	i := 0
-	for ; i < amount; i++ {
-		if err := lt.AddUser(); err != nil {
-			res.Error = err.Error()
-			break // stop on first error, result is reported as part of status
-		}
+	n, err := lt.AddUsers(amount)
+	if err != nil {
+		res.Error = err.Error()
 	}
-
-	res.Message = fmt.Sprintf("%d users added", i)
+	res.Message = fmt.Sprintf("%d users added", n)
 	res.Status = lt.Status()
 	writeResponse(w, http.StatusOK, &res)
 }
@@ -241,15 +237,12 @@ func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var res Response
-	i := 0
-	for ; i < amount; i++ {
-		if err = lt.RemoveUser(); err != nil {
-			res.Error = err.Error()
-			break // stop on first error, result is reported as part of status
-		}
+	n, err := lt.RemoveUsers(amount)
+	if err != nil {
+		res.Error = err.Error()
 	}
 
-	res.Message = fmt.Sprintf("%d users removed", i)
+	res.Message = fmt.Sprintf("%d users removed", n)
 	res.Status = lt.Status()
 	writeResponse(w, http.StatusOK, &res)
 }
@@ -288,7 +281,7 @@ func SetupAPIRouter() *mux.Router {
 
 	// Add profile endpoints
 	p := router.PathPrefix("/debug/pprof").Subrouter()
-	p.HandleFunc("/", agent.pprofIndexHandler).Methods("Get")
+	p.HandleFunc("/", agent.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
