@@ -5,14 +5,23 @@ package terraform
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
+)
+
+const (
+	defaultGrafanaUsernamePass = "admin:admin"
+	defaultRequestTimeout      = 10 * time.Second
 )
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput) error {
@@ -76,6 +85,39 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
+
+	// Set preference to new dashboard.
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
+	defer cancel()
+	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/user/preferences"
+	payload := struct {
+		Theme           string `json:"theme"`
+		HomeDashboardId int    `json:"homeDashboardId"`
+		Timezone        string `json:"timezone"`
+	}{
+		HomeDashboardId: 1,
+	}
+	buf, err = json.Marshal(&payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Dump body.
+	buf, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad response: %s", string(buf))
+	}
+	mlog.Info("Response: " + string(buf))
 
 	// Restart grafana
 	cmd = "sudo service grafana-server restart"
