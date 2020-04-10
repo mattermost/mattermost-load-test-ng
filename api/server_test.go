@@ -4,14 +4,14 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -33,23 +33,33 @@ func TestAPI(t *testing.T) {
 		Expect().
 		Status(http.StatusNotFound)
 
-	sampleConfigBytes, _ := ioutil.ReadFile("../config/config.default.json")
-	var sampleConfig loadtest.Config
-	_ = json.Unmarshal(sampleConfigBytes, &sampleConfig)
-	sampleConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
-	sampleConfig.UsersConfiguration.MaxActiveUsers = 100
+	ltConfig, err := loadtest.ReadConfig("../config/config.default.json")
+	require.NoError(t, err)
+	ucConfig, err := simplecontroller.ReadConfig("../config/simplecontroller.default.json")
+	require.NoError(t, err)
+
+	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	ltConfig.UsersConfiguration.MaxActiveUsers = 100
+
+	var data = struct {
+		LoadTestConfig   loadtest.Config
+		ControllerConfig control.Config
+	}{
+		LoadTestConfig:   *ltConfig,
+		ControllerConfig: ucConfig,
+	}
 	ltId := "lt0"
-	obj := e.POST("/create").WithQuery("id", ltId).WithJSON(sampleConfig).
+	obj := e.POST("/create").WithQuery("id", ltId).WithJSON(data).
 		Expect().Status(http.StatusCreated).
 		JSON().Object().ValueEqual("id", ltId)
 	rawMsg := obj.Value("message").String().Raw()
 	require.Equal(t, rawMsg, "load-test agent created")
 
-	obj = e.POST("/create").WithQuery("id", ltId).WithJSON(sampleConfig).
+	obj = e.POST("/create").WithQuery("id", ltId).WithJSON(data).
 		Expect().Status(http.StatusBadRequest).
 		JSON().Object().ContainsKey("error")
 	rawMsg = obj.Value("error").String().Raw()
-	require.Equal(t, rawMsg, fmt.Sprintf("load-test agent with id %s already exists", ltId))
+	require.Equal(t, fmt.Sprintf("load-test agent with id %s already exists", ltId), rawMsg)
 
 	e.GET(ltId + "/status").
 		Expect().

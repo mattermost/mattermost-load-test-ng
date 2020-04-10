@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -42,22 +43,52 @@ func writeResponse(w http.ResponseWriter, status int, response *Response) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config loadtest.Config
-	err := json.NewDecoder(r.Body).Decode(&config)
+	var data struct {
+		LoadTestConfig   loadtest.Config
+		ControllerConfig json.RawMessage
+	}
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: err.Error(),
 		})
 		return
 	}
-
-	if err := config.IsValid(); err != nil {
+	ltConfig := data.LoadTestConfig
+	if err := ltConfig.IsValid(); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: err.Error(),
 		})
 		return
 	}
-	logger.Init(&config.LogSettings)
+
+	var ucConfig control.Config
+	switch ltConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		var scc simplecontroller.Config
+		err = json.NewDecoder(bytes.NewReader(data.ControllerConfig)).Decode(&scc)
+		ucConfig = &scc
+	case loadtest.UserControllerSimulative:
+		var scc simulcontroller.Config
+		err = json.NewDecoder(bytes.NewReader(data.ControllerConfig)).Decode(&scc)
+		ucConfig = &scc
+	}
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, &Response{
+			Error: err.Error(),
+		})
+		return
+	}
+	if ucConfig != nil {
+		if err := ucConfig.IsValid(); err != nil {
+			writeResponse(w, http.StatusBadRequest, &Response{
+				Error: err.Error(),
+			})
+			return
+		}
+	}
+
+	logger.Init(&ltConfig.LogSettings)
 
 	agentId := r.FormValue("id")
 	if a.agents[agentId] != nil {
@@ -67,30 +98,16 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ucConfig control.Config
-	switch config.UserControllerConfiguration.Type {
-	case loadtest.UserControllerSimple:
-		// TODO: pass simplecontroller path appropriately
-		ucConfig, err = simplecontroller.ReadConfig("")
-	case loadtest.UserControllerSimulative:
-		ucConfig, err = simulcontroller.ReadConfig("")
-	}
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Errorf("failed to read controller configuration: %w", err).Error(),
-		})
-	}
-
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
+			WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
 			Username:     fmt.Sprintf("%s-user%d", agentId, id),
 			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
-		switch config.UserControllerConfiguration.Type {
+		switch ltConfig.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
@@ -102,7 +119,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	lt, err := loadtest.New(&config, newControllerFn)
+	lt, err := loadtest.New(&ltConfig, newControllerFn)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
