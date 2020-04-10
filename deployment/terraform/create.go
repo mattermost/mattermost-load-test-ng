@@ -160,7 +160,10 @@ func (t *Terraform) Create() error {
 	// Updating the nginx config on proxy server
 	t.setupProxyServer(output, extAgent)
 
-	time.Sleep(30 * time.Second)
+	if err := pingServer("http://" + output.Proxy.Value.PublicDNS); err != nil {
+		return fmt.Errorf("error whiling pinging server: %w", err)
+	}
+
 	if err := t.createAdminUser(extAgent, output); err != nil {
 		return fmt.Errorf("could not create admin user: %w", err)
 	}
@@ -406,4 +409,27 @@ func (t *Terraform) getOutput() (*terraformOutput, error) {
 		return nil, err
 	}
 	return &output, nil
+}
+
+func pingServer(addr string) error {
+	mlog.Info("Checking server status:", mlog.String("host", addr))
+	client := model.NewAPIv4Client(addr)
+	client.HttpClient.Timeout = 10 * time.Second
+	timeout := time.After(30 * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout after 30 seconds, server is not responding")
+		case <-time.After(3 * time.Second):
+			_, resp := client.GetPingWithServerStatus()
+			if resp.Error != nil {
+				mlog.Debug("got error", mlog.Err(resp.Error))
+				mlog.Info("Waiting for the server...")
+				continue
+			}
+			mlog.Info("Server status is OK")
+			return nil
+		}
+	}
 }
