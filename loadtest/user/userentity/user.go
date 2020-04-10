@@ -66,7 +66,7 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 		}).DialContext,
 		MaxIdleConns:          1000,
 		MaxIdleConnsPerHost:   1000,
-		IdleConnTimeout:       30 * time.Second,
+		IdleConnTimeout:       15 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
