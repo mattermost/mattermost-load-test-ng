@@ -27,24 +27,6 @@ The e-mail for the system admin of the target Mattermost instance.
 
 The password for the system admin of the target Mattermost instance.
 
-### MaxIdleConns
-
-*int*
-
-The maximum number of idle connections held open from the load-test agent to all servers.
-
-### MaxIdleConnsPerHost
-
-*int*
-
-The maximum number of idle connections held open from the load-test agent to any given server.
-
-### IdleConnTimeoutMilliseconds
-
-*int*
-
-The number of milliseconds to leave an idle connection open between the load-test agent an another server.
-
 ## UserControllerConfiguration
 
 ### Type

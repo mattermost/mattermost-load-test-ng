@@ -3,10 +3,7 @@
     "ServerURL": "http://localhost:8065",
     "WebSocketURL": "ws://localhost:8065",
     "AdminEmail": "sysadmin@sample.mattermost.com",
-    "AdminPassword": "Sys@dmin-sample1",
-    "MaxIdleConns": 100,
-    "MaxIdleConnsPerHost": 128,
-    "IdleConnTimeoutMilliseconds": 90000
+    "AdminPassword": "Sys@dmin-sample1"
   },
   "UserControllerConfiguration": {
     "Type": "simple",
