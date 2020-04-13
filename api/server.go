@@ -17,9 +17,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
-	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // API contains information about all load tests.
@@ -42,22 +42,55 @@ func writeResponse(w http.ResponseWriter, status int, response *Response) {
 }
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var config loadtest.Config
-	err := json.NewDecoder(r.Body).Decode(&config)
-	if err != nil {
+	var data struct {
+		LoadTestConfig         loadtest.Config
+		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: err.Error(),
+			Error: fmt.Sprintf("could not read request: %s", err),
+		})
+		return
+	}
+	ltConfig := data.LoadTestConfig
+	if err := ltConfig.IsValid(); err != nil {
+		writeResponse(w, http.StatusBadRequest, &Response{
+			Error: fmt.Sprintf("could not validate config: %s", err),
 		})
 		return
 	}
 
-	if err := config.IsValid(); err != nil {
+	var ucConfig control.Config
+	var err error
+	switch ltConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		ucConfig = data.SimpleControllerConfig
+		if ucConfig == nil {
+			mlog.Warn("could not read controller config from the request")
+			ucConfig, err = simplecontroller.ReadConfig("")
+		}
+	case loadtest.UserControllerSimulative:
+		ucConfig = data.SimulControllerConfig
+		if ucConfig == nil {
+			mlog.Warn("clould not read controller config from the request")
+			ucConfig, err = simulcontroller.ReadConfig("")
+		}
+	}
+	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: err.Error(),
+			Error: fmt.Sprintf("could not read controller configuration: %s", err),
 		})
 		return
 	}
-	logger.Init(&config.LogSettings)
+	if ucConfig != nil {
+		if err := ucConfig.IsValid(); err != nil {
+			writeResponse(w, http.StatusBadRequest, &Response{
+				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
+			})
+			return
+		}
+	}
 
 	agentId := r.FormValue("id")
 	if a.agents[agentId] != nil {
@@ -67,30 +100,16 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ucConfig control.Config
-	switch config.UserControllerConfiguration.Type {
-	case loadtest.UserControllerSimple:
-		// TODO: pass simplecontroller path appropriately
-		ucConfig, err = simplecontroller.ReadConfig("")
-	case loadtest.UserControllerSimulative:
-		ucConfig, err = simulcontroller.ReadConfig("")
-	}
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Errorf("failed to read controller configuration: %w", err).Error(),
-		})
-	}
-
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
+			WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
 			Username:     fmt.Sprintf("%s-user%d", agentId, id),
 			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
-		switch config.UserControllerConfiguration.Type {
+		switch ltConfig.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
@@ -102,12 +121,12 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	lt, err := loadtest.New(&config, newControllerFn)
+	lt, err := loadtest.New(&ltConfig, newControllerFn)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
 			Message: "load-test agent creation failed",
-			Error:   err.Error(),
+			Error:   fmt.Sprintf("could not create agent: %s", err),
 		})
 		return
 	}

@@ -73,8 +73,26 @@ Using a different terminal it's possible to issue commands to create and run a l
 
 ### Create a new load-test agent
 
+To start a new load-test agent via API, the request structure should be in the form of:
+
+```json
+{
+  "LoadTestConfig": {
+    ...
+  },
+  "SimpleControllerConfig": {
+    ...
+  },
+  "SimulControllerConfig": {
+    ...
+  }
+}
+```
+
+The API will create controller specific configuration from the request. However, if there is no controller configuration or errors while reading it from the request, the server will read the default controller configuration locally.
+
 ```sh
-curl -d @config/config.json http://localhost:4000/loadagent/create?id=lt0
+curl -d "{\"LoadTestConfig\": $(cat config/config.json)}" http://localhost:4000/loadagent/create\?id\=lt0
 ```
 
 ### Start the load-test agent

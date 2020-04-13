@@ -11,6 +11,8 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -77,7 +79,30 @@ func (a *LoadAgent) RemoveUsers(n int) error {
 
 func (a *LoadAgent) Start() error {
 	a.config.LoadTestConfig.UsersConfiguration.InitialActiveUsers = 0
-	configData, err := json.Marshal(a.config.LoadTestConfig)
+	var data = struct {
+		LoadTestConfig         loadtest.Config
+		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+	}{
+		LoadTestConfig: a.config.LoadTestConfig,
+	}
+
+	var err error
+	switch a.config.LoadTestConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		var scc *simplecontroller.Config
+		scc, err = simplecontroller.ReadConfig("")
+		data.SimpleControllerConfig = scc
+	case loadtest.UserControllerSimulative:
+		var scc *simulcontroller.Config
+		scc, err = simulcontroller.ReadConfig("")
+		data.SimulControllerConfig = scc
+	}
+	if err != nil {
+		return err
+	}
+
+	configData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return err
 	}
