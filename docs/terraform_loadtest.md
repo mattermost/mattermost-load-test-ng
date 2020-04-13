@@ -58,6 +58,14 @@ go run ./cmd/ltctl deployment create
 This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.  
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
+### Get information on the current deployment
+
+```sh
+go run ./cmd/ltctl deployment info
+```
+
+This will show information about the current deployment.
+
 ### Optionally configure coordinator and load-test
 
 When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md). 
