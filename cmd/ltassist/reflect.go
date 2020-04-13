@@ -7,17 +7,16 @@ import (
 	"strings"
 )
 
-// create a struct from its value, this function is called recursively so that
-// we can walk on every value for it.
-func createStruct(v reflect.Value, docPath string, dryRun bool) (reflect.Value, error) {
-	val := reflect.New(v.Type()).Elem()
-	for i := 0; i < v.Type().NumField(); i++ {
-		f := v.Type().Field(i)
+// create a struct from a type, this function is called recursively so that
+// we can walk on every field of it.
+func createStruct(t reflect.Type, docPath string, dryRun bool) (reflect.Value, error) {
+	val := reflect.New(t).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
 		if f.Type.Kind() == reflect.Struct {
-			nv := reflect.New(f.Type).Elem()
-			sv, err := createStruct(nv, docPath, dryRun)
+			sv, err := createStruct(f.Type, docPath, dryRun)
 			if err != nil {
-				return val, err
+				return reflect.Zero(t), err
 			}
 			val.Field(i).Set(sv)
 			continue
@@ -25,14 +24,14 @@ func createStruct(v reflect.Value, docPath string, dryRun bool) (reflect.Value, 
 		if f.Type.Kind() == reflect.Slice {
 			values, err := createSlice(f.Type.Elem(), docPath, dryRun)
 			if err != nil {
-				return val, err
+				return reflect.Zero(t), err
 			}
 			val.Field(i).Set(values)
 			continue
 		}
 		fv, err := createField(f, docPath, dryRun)
 		if err != nil {
-			return val, err
+			return reflect.Zero(t), err
 		}
 		val.Field(i).Set(fv)
 	}
@@ -43,7 +42,7 @@ func createStruct(v reflect.Value, docPath string, dryRun bool) (reflect.Value, 
 // TODO: add support for primitive types (e.g. []int, []string etc.)
 func createSlice(t reflect.Type, docPath string, dryRun bool) (reflect.Value, error) {
 	if dryRun {
-		_, err := createStruct(reflect.Zero(t), docPath, dryRun)
+		_, err := createStruct(t, docPath, dryRun)
 		return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
 	}
 	inp := readInput(fmt.Sprintf("Enter the size of []%s", t), "integer")
@@ -53,8 +52,7 @@ func createSlice(t reflect.Type, docPath string, dryRun bool) (reflect.Value, er
 	}
 	values := reflect.Zero(reflect.SliceOf(t))
 	for i := 0; i < size; i++ {
-		nv := reflect.Zero(t)
-		v, err := createStruct(nv, docPath, dryRun)
+		v, err := createStruct(t, docPath, dryRun)
 		if err != nil {
 			panic(err)
 		}
@@ -71,7 +69,7 @@ func toValue(data string, t reflect.Type) (reflect.Value, error) {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(data)
 		if err != nil {
-			return v, err
+			return reflect.Zero(t), err
 		}
 		v.SetBool(b)
 	case reflect.String:
@@ -79,19 +77,13 @@ func toValue(data string, t reflect.Type) (reflect.Value, error) {
 	case reflect.Int:
 		i, err := strconv.Atoi(data)
 		if err != nil {
-			return v, err
+			return reflect.Zero(t), err
 		}
 		v.SetInt(int64(i))
-	case reflect.Float32:
-		f, err := strconv.ParseFloat(data, 32)
-		if err != nil {
-			return v, err
-		}
-		v.SetFloat(f)
 	case reflect.Float64:
 		f, err := strconv.ParseFloat(data, 64)
 		if err != nil {
-			return v, err
+			return reflect.Zero(t), err
 		}
 		v.SetFloat(f)
 	}

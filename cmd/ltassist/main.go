@@ -10,18 +10,19 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/spf13/cobra"
 )
 
 var (
-	cMap = map[string]interface{}{
-		"./docs/loadtest_config.md":         loadtest.Config{},
-		"./docs/coordinator_config.md":      coordinator.Config{},
-		"./docs/deployer_config.md":         deployment.Config{},
-		"./docs/simplecontroller_config.md": simplecontroller.Config{},
-		"./docs/simulcontroller_config.md":  simulcontroller.Config{},
+	cMap = map[string]control.Config{
+		"./docs/loadtest_config.md":         &loadtest.Config{},
+		"./docs/coordinator_config.md":      &coordinator.Config{},
+		"./docs/deployer_config.md":         &deployment.Config{},
+		"./docs/simplecontroller_config.md": &simplecontroller.Config{},
+		"./docs/simulcontroller_config.md":  &simulcontroller.Config{},
 	}
 )
 
@@ -60,13 +61,17 @@ func main() {
 
 func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 	for f, cfg := range cMap {
-		p := reflect.ValueOf(cfg).Type().PkgPath()
+		t := reflect.Indirect(reflect.ValueOf(cfg)).Type()
+		p := t.PkgPath()
 		if strings.HasSuffix(p, args[0]) {
-			t := reflect.ValueOf(cfg).Type()
 			fmt.Printf("Creating %s:\n\n", t.Name())
 
-			v, err := createStruct(reflect.ValueOf(cfg), f, false)
+			v, err := createStruct(t, f, false)
 			if err != nil {
+				return err
+			}
+
+			if err := v.Addr().Interface().(control.Config).IsValid(); err != nil {
 				return err
 			}
 
@@ -85,7 +90,7 @@ func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
 	for f, cfg := range cMap {
 		t := reflect.ValueOf(cfg).Type()
 		p := t.PkgPath()
-		_, err := createStruct(reflect.ValueOf(cfg), f, true)
+		_, err := createStruct(t, f, true)
 		if err != nil {
 			fmt.Printf("docs for %s.%s is not consistent: %s\n", p, t.Name(), err)
 		}
