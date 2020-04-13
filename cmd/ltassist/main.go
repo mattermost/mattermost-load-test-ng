@@ -23,7 +23,6 @@ var (
 		"./docs/simplecontroller_config.md": simplecontroller.Config{},
 		"./docs/simulcontroller_config.md":  simulcontroller.Config{},
 	}
-	docFile string
 )
 
 func main() {
@@ -63,11 +62,10 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 	for f, cfg := range cMap {
 		p := reflect.ValueOf(cfg).Type().PkgPath()
 		if strings.HasSuffix(p, args[0]) {
-			docFile = f
 			t := reflect.ValueOf(cfg).Type()
 			fmt.Printf("Creating %s:\n\n", t.Name())
 
-			v, err := createStruct(reflect.ValueOf(cfg), false)
+			v, err := createStruct(reflect.ValueOf(cfg), f, false)
 			if err != nil {
 				return err
 			}
@@ -85,10 +83,9 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 
 func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
 	for f, cfg := range cMap {
-		docFile = f
 		t := reflect.ValueOf(cfg).Type()
 		p := t.PkgPath()
-		_, err := createStruct(reflect.ValueOf(cfg), true)
+		_, err := createStruct(reflect.ValueOf(cfg), f, true)
 		if err != nil {
 			fmt.Printf("docs for %s.%s is not consistent: %s\n", p, t.Name(), err)
 		}

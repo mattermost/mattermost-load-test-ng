@@ -28,8 +28,8 @@ type fieldDoc struct {
 }
 
 // TODO: find docs with proper markdown ast library :)
-func findDoc(name string) (*fieldDoc, error) {
-	file, err := os.Open(docFile)
+func findDoc(name, docPath string) (*fieldDoc, error) {
+	file, err := os.Open(docPath)
 	if err != nil {
 		return nil, err
 	}
