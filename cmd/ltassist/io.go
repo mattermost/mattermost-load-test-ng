@@ -27,6 +27,7 @@ type fieldDoc struct {
 	dataType string
 }
 
+// TODO: find docs with proper markdown ast library :)
 func findDoc(name string) (*fieldDoc, error) {
 	file, err := os.Open(docFile)
 	if err != nil {
@@ -58,6 +59,7 @@ func findDoc(name string) (*fieldDoc, error) {
 	}, nil
 }
 
+// get user input
 func readInput(name, kind string) string {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("%s (%s): ", name, kind)
@@ -65,6 +67,7 @@ func readInput(name, kind string) string {
 	return text
 }
 
+// delete lines from the output
 func rewind(n int) {
 	// TODO: check for non-POSIX systems
 	rewind := []byte("\033[1A\033[2K\r")

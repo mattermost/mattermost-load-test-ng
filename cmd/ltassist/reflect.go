@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// create a struct from its value, this function is called recursively so that
+// we can walk on every value for it.
 func createStruct(v reflect.Value, dryRun bool) (reflect.Value, error) {
 	val := reflect.New(v.Type()).Elem()
 	for i := 0; i < v.Type().NumField(); i++ {
@@ -21,7 +23,11 @@ func createStruct(v reflect.Value, dryRun bool) (reflect.Value, error) {
 			continue
 		}
 		if f.Type.Kind() == reflect.Slice {
-			fmt.Printf("slices are not supported yet, skipping %q\n", f.Name)
+			values, err := createSlice(f.Type.Elem(), dryRun)
+			if err != nil {
+				return val, err
+			}
+			val.Field(i).Set(values)
 			continue
 		}
 		fv, err := createField(f, dryRun)
@@ -33,6 +39,32 @@ func createStruct(v reflect.Value, dryRun bool) (reflect.Value, error) {
 	return val, nil
 }
 
+// this function creates a slice for the given type
+// TODO: add support for primitive types (e.g. []int, []string etc.)
+func createSlice(t reflect.Type, dryRun bool) (reflect.Value, error) {
+	if dryRun {
+		_, err := createStruct(reflect.Zero(t), dryRun)
+		return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
+	}
+	inp := readInput(fmt.Sprintf("Enter the size of []%s", t), "integer")
+	size, err := strconv.Atoi(strings.TrimSpace(inp))
+	if err != nil {
+		panic(err)
+	}
+	values := reflect.Zero(reflect.SliceOf(t))
+	for i := 0; i < size; i++ {
+		nv := reflect.Zero(t)
+		v, err := createStruct(nv, dryRun)
+		if err != nil {
+			panic(err)
+		}
+		values = reflect.Append(values, v)
+	}
+	return values, nil
+}
+
+// converts given string into reflect.Value, the value is assignable to struct
+// field.
 func toValue(data string, t reflect.Type) (reflect.Value, error) {
 	v := reflect.New(t).Elem()
 	switch t.Kind() {
@@ -55,7 +87,7 @@ func toValue(data string, t reflect.Type) (reflect.Value, error) {
 		if err != nil {
 			return v, err
 		}
-		v.SetFloat(float64(f))
+		v.SetFloat(f)
 	case reflect.Float64:
 		f, err := strconv.ParseFloat(data, 64)
 		if err != nil {
@@ -66,6 +98,7 @@ func toValue(data string, t reflect.Type) (reflect.Value, error) {
 	return v, nil
 }
 
+// this is a glue function to find doc, get user input and assign to a value
 func createField(f reflect.StructField, dryRun bool) (reflect.Value, error) {
 	doc, _ := findDoc(f.Name)
 	if dryRun && (f.Type.Kind().String() != doc.dataType || doc.text == "") {

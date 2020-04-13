@@ -84,22 +84,14 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
-
-	errCh := make(chan error)
-	go func() {
-		for err := range errCh {
-			fmt.Printf("error: %s\n", err)
-		}
-	}()
 	for f, cfg := range cMap {
 		docFile = f
 		t := reflect.ValueOf(cfg).Type()
 		p := t.PkgPath()
 		_, err := createStruct(reflect.ValueOf(cfg), true)
 		if err != nil {
-			errCh <- fmt.Errorf("docs for %s.%s is not consistent: %w", p, t.Name(), err)
+			fmt.Printf("docs for %s.%s is not consistent: %s\n", p, t.Name(), err)
 		}
 	}
-	close(errCh)
 	return nil
 }
