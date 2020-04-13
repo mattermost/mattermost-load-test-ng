@@ -4,7 +4,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 
 	"github.com/gorilla/mux"
 )
@@ -44,51 +44,60 @@ func writeResponse(w http.ResponseWriter, status int, response *Response) {
 
 func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		LoadTestConfig   loadtest.Config
-		ControllerConfig json.RawMessage
+		LoadTestConfig         loadtest.Config
+		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: err.Error(),
+			Error: fmt.Sprintf("could not read request: %s", err),
 		})
 		return
 	}
 	ltConfig := data.LoadTestConfig
 	if err := ltConfig.IsValid(); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: err.Error(),
+			Error: fmt.Sprintf("could not validate config: %s", err),
 		})
 		return
 	}
 
+	logger.Init(&ltConfig.LogSettings)
+
 	var ucConfig control.Config
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
-		var scc simplecontroller.Config
-		err = json.NewDecoder(bytes.NewReader(data.ControllerConfig)).Decode(&scc)
-		ucConfig = &scc
+		var scc *simplecontroller.Config
+		scc = data.SimpleControllerConfig
+		if scc == nil {
+			mlog.Error("clould not read controller config from the request")
+			scc, err = simplecontroller.ReadConfig("")
+		}
+		ucConfig = scc
 	case loadtest.UserControllerSimulative:
-		var scc simulcontroller.Config
-		err = json.NewDecoder(bytes.NewReader(data.ControllerConfig)).Decode(&scc)
-		ucConfig = &scc
+		var scc *simulcontroller.Config
+		scc = data.SimulControllerConfig
+		if scc == nil {
+			mlog.Error("clould not read controller config from the request")
+			scc, err = simulcontroller.ReadConfig("")
+		}
+		ucConfig = scc
 	}
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: err.Error(),
+			Error: fmt.Sprintf("could not read controller configuration: %s", err),
 		})
 		return
 	}
 	if ucConfig != nil {
 		if err := ucConfig.IsValid(); err != nil {
 			writeResponse(w, http.StatusBadRequest, &Response{
-				Error: err.Error(),
+				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
 			})
 			return
 		}
 	}
-
-	logger.Init(&ltConfig.LogSettings)
 
 	agentId := r.FormValue("id")
 	if a.agents[agentId] != nil {
@@ -124,7 +133,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
 			Message: "load-test agent creation failed",
-			Error:   err.Error(),
+			Error:   fmt.Sprintf("could not create agent: %s", err),
 		})
 		return
 	}

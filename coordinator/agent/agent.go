@@ -11,7 +11,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
@@ -80,25 +79,27 @@ func (a *LoadAgent) RemoveUsers(n int) error {
 
 func (a *LoadAgent) Start() error {
 	a.config.LoadTestConfig.UsersConfiguration.InitialActiveUsers = 0
+	var data = struct {
+		LoadTestConfig         loadtest.Config
+		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+	}{
+		LoadTestConfig: a.config.LoadTestConfig,
+	}
 
-	var ucConfig control.Config
 	var err error
 	switch a.config.LoadTestConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
-		ucConfig, err = simplecontroller.ReadConfig("")
+		var scc *simplecontroller.Config
+		scc, err = simplecontroller.ReadConfig("")
+		data.SimpleControllerConfig = scc
 	case loadtest.UserControllerSimulative:
-		ucConfig, err = simulcontroller.ReadConfig("")
+		var scc *simulcontroller.Config
+		scc, err = simulcontroller.ReadConfig("")
+		data.SimulControllerConfig = scc
 	}
 	if err != nil {
 		return err
-	}
-
-	var data = struct {
-		LoadTestConfig   loadtest.Config
-		ControllerConfig control.Config
-	}{
-		LoadTestConfig:   a.config.LoadTestConfig,
-		ControllerConfig: ucConfig,
 	}
 
 	configData, err := json.MarshalIndent(data, "", "  ")
