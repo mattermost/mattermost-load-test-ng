@@ -17,7 +17,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
-	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -48,8 +47,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
 		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 	}
-	err := json.NewDecoder(r.Body).Decode(&data)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: fmt.Sprintf("could not read request: %s", err),
 		})
@@ -63,26 +61,21 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Init(&ltConfig.LogSettings)
-
 	var ucConfig control.Config
+	var err error
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
-		var scc *simplecontroller.Config
-		scc = data.SimpleControllerConfig
-		if scc == nil {
-			mlog.Error("could not read controller config from the request")
-			scc, err = simplecontroller.ReadConfig("")
+		ucConfig = data.SimpleControllerConfig
+		if ucConfig == nil {
+			mlog.Warn("could not read controller config from the request")
+			ucConfig, err = simplecontroller.ReadConfig("")
 		}
-		ucConfig = scc
 	case loadtest.UserControllerSimulative:
-		var scc *simulcontroller.Config
-		scc = data.SimulControllerConfig
-		if scc == nil {
-			mlog.Error("clould not read controller config from the request")
-			scc, err = simulcontroller.ReadConfig("")
+		ucConfig = data.SimulControllerConfig
+		if ucConfig == nil {
+			mlog.Warn("clould not read controller config from the request")
+			ucConfig, err = simulcontroller.ReadConfig("")
 		}
-		ucConfig = scc
 	}
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
