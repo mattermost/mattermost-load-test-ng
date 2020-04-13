@@ -18,9 +18,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // API contains information about all load tests.
@@ -71,7 +71,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		var scc *simplecontroller.Config
 		scc = data.SimpleControllerConfig
 		if scc == nil {
-			mlog.Error("clould not read controller config from the request")
+			mlog.Error("could not read controller config from the request")
 			scc, err = simplecontroller.ReadConfig("")
 		}
 		ucConfig = scc
