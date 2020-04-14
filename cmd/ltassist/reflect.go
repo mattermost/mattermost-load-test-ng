@@ -102,19 +102,17 @@ func createField(f reflect.StructField, docPath string, dryRun bool) (reflect.Va
 		return reflect.Zero(f.Type), nil
 	}
 	// print the doc
-	text := adjustToWindow(doc.text)
-	fmt.Println(text)
-	lines := strings.Count(text, "\n")
+	fmt.Println(doc.text)
 	for {
 		inp := readInput(f.Name, f.Type.Kind().String())
 		v, err := toValue(strings.TrimSpace(inp), f.Type)
 		// TODO: add skip
 		if err != nil {
 			fmt.Println("invalid type. Retry:")
-			lines += 2 // we added 2 new lines for reading the the input
 			continue
 		}
-		rewind(lines + 2)
+		fmt.Println()
 		return v, nil
 	}
+
 }

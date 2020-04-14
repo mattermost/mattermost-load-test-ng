@@ -16,41 +16,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	cMap = map[string]control.Config{
-		"./docs/loadtest_config.md":         &loadtest.Config{},
-		"./docs/coordinator_config.md":      &coordinator.Config{},
-		"./docs/deployer_config.md":         &deployment.Config{},
-		"./docs/simplecontroller_config.md": &simplecontroller.Config{},
-		"./docs/simulcontroller_config.md":  &simulcontroller.Config{},
-	}
-)
+var cMap = map[string]control.Config{
+	"loadtest":         &loadtest.Config{},
+	"coordinator":      &coordinator.Config{},
+	"deployer":         &deployment.Config{},
+	"simplecontroller": &simplecontroller.Config{},
+	"simulcontroller":  &simulcontroller.Config{},
+}
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:          "ltassist",
-		SilenceUsage: true,
-		Short:        "Tool for load test utilities.",
+		Use:   "ltassist",
+		Short: "Tool for load test utilities.",
 	}
 
 	configCmd := &cobra.Command{
-		Use:          "config [type]",
-		SilenceUsage: true,
-		RunE:         runConfigAssistCmdF,
-		Short:        "Create config interactively",
-		Long:         "Interactively create specified config type and save the file.",
-		Example:      "ltassist config simplecontroller",
-		Args:         cobra.ExactArgs(1),
+		Use:     "config [type]",
+		RunE:    runConfigAssistCmdF,
+		Short:   "Create config interactively",
+		Long:    "Interactively create specified config type and save the file.",
+		Example: "ltassist config simplecontroller",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return cobra.ExactArgs(1)(cmd, args)
+			}
+			if _, ok := cMap[args[0]]; ok {
+				return nil
+			}
+			fmt.Println("Valid arguments are:")
+			for name := range cMap {
+				fmt.Println(" - " + name)
+			}
+			return cobra.OnlyValidArgs(cmd, args)
+		},
 	}
 	rootCmd.AddCommand(configCmd)
 
 	checkCmd := &cobra.Command{
-		Use:          "check",
-		SilenceUsage: true,
-		RunE:         runCheckConfigsCmdF,
-		Short:        "Verify configs with the docs",
-		Long:         "Checks if the specific configs properly documented.",
-		Example:      "ltassist check",
+		Use:     "check",
+		RunE:    runCheckConfigsCmdF,
+		Short:   "Verify configs with the docs",
+		Long:    "Checks if the specific configs properly documented.",
+		Example: "ltassist check",
 	}
 	rootCmd.AddCommand(checkCmd)
 
@@ -60,25 +67,20 @@ func main() {
 }
 
 func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
-	for f, cfg := range cMap {
+	for name, cfg := range cMap {
 		t := reflect.Indirect(reflect.ValueOf(cfg)).Type()
 		p := t.PkgPath()
 		if strings.HasSuffix(p, args[0]) {
 			fmt.Printf("Creating %s:\n\n", t.Name())
-
+			f := fmt.Sprintf("./docs/%s_config.md", name)
 			v, err := createStruct(t, f, false)
-			if err != nil {
-				return err
-			}
+			checkError(err)
 
-			if err := v.Addr().Interface().(control.Config).IsValid(); err != nil {
-				return err
-			}
+			err = v.Addr().Interface().(control.Config).IsValid()
+			checkError(err)
 
 			data, err := json.MarshalIndent(v.Addr().Interface(), "", "  ")
-			if err != nil {
-				return err
-			}
+			checkError(err)
 			fmt.Printf("%s\n", data)
 			return nil
 		}
@@ -87,13 +89,21 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
-	for f, cfg := range cMap {
+	for name, cfg := range cMap {
 		t := reflect.ValueOf(cfg).Type()
 		p := t.PkgPath()
+		f := fmt.Sprintf("./docs/%s_config.md", name)
 		_, err := createStruct(t, f, true)
 		if err != nil {
 			fmt.Printf("docs for %s.%s is not consistent: %s\n", p, t.Name(), err)
 		}
 	}
 	return nil
+}
+
+func checkError(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
+	}
 }
