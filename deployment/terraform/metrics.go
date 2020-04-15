@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
@@ -52,25 +53,61 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 	}
 
 	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value.PublicIP))
-	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
-	defer cancel()
-	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/datasources"
-	payload := struct {
-		Name     string `json:"name"`
-		DataType string `json:"type"`
-		URL      string `json:"url"`
-		Access   string `json:"access"`
-	}{
-		Name:     "loadtest-source",
-		DataType: "prometheus",
-		URL:      "http://" + output.MetricsServer.Value.PublicIP + ":9090",
-		Access:   "proxy",
-	}
-	buf, err := json.Marshal(&payload)
+
+	// Upload datasource file
+	buf, err := ioutil.ReadFile(path.Join(t.dir, "datasource.yaml"))
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(buf))
+	dataSource := fmt.Sprintf(string(buf), "http://"+output.MetricsServer.Value.PublicIP+":9090")
+	if out, err := sshc.Upload(strings.NewReader(dataSource), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
+		return fmt.Errorf("error while uploading datasource: output: %s, error: %w", out, err)
+	}
+
+	// Upload dashboard file
+	buf, err = ioutil.ReadFile(path.Join(t.dir, "dashboard.yaml"))
+	if err != nil {
+		return err
+	}
+	if out, err := sshc.Upload(bytes.NewReader(buf), "/etc/grafana/provisioning/dashboards/dashboard.yaml", true); err != nil {
+		return fmt.Errorf("error while uploading dashboard: output: %s, error: %w", out, err)
+	}
+
+	// Upload dashboard json
+	buf, err = ioutil.ReadFile(path.Join(t.dir, "dashboard_data.json"))
+	if err != nil {
+		return err
+	}
+	cmd = "sudo mkdir -p /var/lib/grafana/dashboards"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
+		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
+	// Restart grafana
+	cmd = "sudo service grafana-server restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
+	// Set preference to new dashboard.
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
+	defer cancel()
+	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/user/preferences"
+	payload := struct {
+		Theme           string `json:"theme"`
+		HomeDashboardID int    `json:"homeDashboardId"`
+		Timezone        string `json:"timezone"`
+	}{
+		HomeDashboardID: 2,
+	}
+	buf, err = json.Marshal(&payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(buf))
 	if err != nil {
 		return err
 	}
@@ -80,14 +117,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput
 		return err
 	}
 	defer resp.Body.Close()
+
 	// Dump body.
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusConflict {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("bad response: %s", string(buf))
 	}
 	mlog.Info("Response: " + string(buf))
+
 	return nil
 }
