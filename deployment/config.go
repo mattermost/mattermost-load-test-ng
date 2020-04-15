@@ -18,15 +18,18 @@ import (
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	ClusterName      string // Name of the cluster.
-	AppInstanceCount int    // Number of application instances.
-	AgentCount       int    // Number of agents, first agent and coordinator will share the same instance.
-	SSHPublicKey     string // Path to the SSH public key.
-	DBInstanceCount  int    // Number of DB instances.
-	DBInstanceClass  string // Type of the DB instance.
-	DBInstanceEngine string // Type of the DB instance - postgres or mysql.
-	DBUserName       string // Username to connect to the DB.
-	DBPassword       string // Password to connect to the DB.
+	ClusterName        string // Name of the cluster.
+	AppInstanceCount   int    // Number of application instances.
+	AppInstanceType    string // Type of the EC2 instance for app.
+	AgentInstanceCount int    // Number of agents, first agent and coordinator will share the same instance.
+	AgentInstanceType  string // Type of the EC2 instance for agent.
+	ProxyInstanceType  string // Type of the EC2 instance for proxy.
+	SSHPublicKey       string // Path to the SSH public key.
+	DBInstanceCount    int    // Number of DB instances.
+	DBInstanceClass    string // Type of the DB instance.
+	DBInstanceEngine   string // Type of the DB instance - postgres or mysql.
+	DBUserName         string // Username to connect to the DB.
+	DBPassword         string // Password to connect to the DB.
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -66,7 +69,7 @@ func (c *Config) IsValid() error {
 	if len(clusterName) == 0 || !unicode.IsLetter(firstRune) || !isAlphanumeric(clusterName) {
 		return fmt.Errorf("db cluster name must begin with a letter and contain only alphanumeric characters")
 	}
-	if c.AgentCount < 1 {
+	if c.AgentInstanceCount < 1 {
 		return fmt.Errorf("at least 1 agent is required to run load tests")
 	}
 	if !strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {

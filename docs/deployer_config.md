@@ -12,11 +12,29 @@ The name of the cluster. This will be prefixed to all resources in AWS that are 
 
 The number of Mattermost application instances.
 
-## AgentCount
+## AppInstanceType
+
+*int*
+
+The type of the EC2 instance of the application server. See type [here](https://aws.amazon.com/ec2/instance-types/). It is recommended to use c5 instances for consistent performance.
+
+## AgentInstanceCount
 
 *int*
 
 The number of load-test agent instances. The first instance will also host the [coordinator](coordinator.md).
+
+## AgentInstanceType
+
+*int*
+
+The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
+## ProxyInstanceType
+
+*int*
+
+The type of the EC2 instance of the proxy server. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ## SSHPublicKey
 

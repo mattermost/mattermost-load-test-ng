@@ -22,7 +22,7 @@ resource "aws_instance" "app_server" {
   }
 
   ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
-  instance_type = "c5.xlarge"             # Always use c5.xlarge for consistency
+  instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
   vpc_security_group_ids = [
@@ -91,7 +91,7 @@ resource "aws_instance" "proxy_server" {
     Name = "${var.cluster_name}-proxy"
   }
   ami                         = "ami-0fc20dd1da406780b"
-  instance_type               = "m4.xlarge"
+  instance_type               = var.proxy_instance_type
   associate_public_ip_address = true
   vpc_security_group_ids = [
     "${aws_security_group.proxy.id}"
@@ -154,9 +154,9 @@ resource "aws_instance" "loadtest_agent" {
   }
 
   ami           = "ami-0fc20dd1da406780b"
-  instance_type = "t2.medium"
+  instance_type = var.agent_instance_type
   key_name      = aws_key_pair.key.id
-  count         = var.loadtest_agent_count
+  count         = var.agent_instance_count
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
