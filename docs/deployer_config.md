@@ -48,7 +48,7 @@ The path to the SSH public key, this key is used for establishing an SSH connect
 
 The number of database instances.
 
-## DBInstanceClass
+## DBInstanceType
 
 *string*
 

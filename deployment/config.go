@@ -26,7 +26,7 @@ type Config struct {
 	ProxyInstanceType  string // Type of the EC2 instance for proxy.
 	SSHPublicKey       string // Path to the SSH public key.
 	DBInstanceCount    int    // Number of DB instances.
-	DBInstanceClass    string // Type of the DB instance.
+	DBInstanceType     string // Type of the DB instance.
 	DBInstanceEngine   string // Type of the DB instance - postgres or mysql.
 	DBUserName         string // Username to connect to the DB.
 	DBPassword         string // Password to connect to the DB.

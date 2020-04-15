@@ -24,7 +24,7 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
-		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DBInstanceClass),
+		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DBInstanceType),
 		"-var", fmt.Sprintf("db_username=%s", t.config.DBUserName),
 		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),

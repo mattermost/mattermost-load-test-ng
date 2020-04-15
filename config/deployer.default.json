@@ -8,7 +8,7 @@
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "DBInstanceCount": 1,
   "DBInstanceEngine": "aurora-mysql",
-  "DBInstanceClass": "db.r4.large",
+  "DBInstanceType": "db.r4.large",
   "DBUserName": "mmuser",
   "DBPassword": "mostest80098bigpass_",
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
