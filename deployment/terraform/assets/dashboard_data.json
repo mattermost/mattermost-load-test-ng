@@ -238,9 +238,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "irate(mattermost_post_total{instance=~\"$server\"}[1m])",
+          "expr": "increase(mattermost_post_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "mattermost_post_total",
@@ -248,9 +247,8 @@
           "step": 5
         },
         {
-          "expr": "sum(irate(mattermost_post_total{instance=~\"$server\"}[1m]))",
+          "expr": "sum(increase(mattermost_post_total{instance=~\"$server\"}[1m]))",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Total",
           "metric": "mattermost_post_total",
@@ -344,9 +342,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "irate(mattermost_http_requests_total{instance=~\"$server\"}[1m])",
+          "expr": "increase(mattermost_http_requests_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "mattermost_http_errors_total",
@@ -354,9 +351,8 @@
           "step": 5
         },
         {
-          "expr": "sum(irate(mattermost_http_requests_total{instance=~\"$server\"}[1m]))",
+          "expr": "sum(increase(mattermost_http_requests_total{instance=~\"$server\"}[1m]))",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Total",
           "metric": "mattermost_http_errors_total",
@@ -452,7 +448,6 @@
         {
           "expr": "mattermost_http_websockets_total{instance=~\"$server\"}",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "mattermost_http_websockets_total",
@@ -462,7 +457,6 @@
         {
           "expr": "sum(mattermost_http_websockets_total{instance=~\"$server\"})",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Total",
           "refId": "B",
@@ -557,7 +551,6 @@
         {
           "expr": "mattermost_db_master_connections_total{instance=~\"$server\"}",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "mattermost_db_master_connections_total",
@@ -567,7 +560,6 @@
         {
           "expr": "sum(mattermost_db_master_connections_total{instance=~\"$server\"})",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Total",
           "metric": "mattermost_db_master_connections_total",
@@ -661,9 +653,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(mattermost_http_request_duration_seconds_sum{instance=~\"$server\"}[5m]) /   rate(mattermost_http_request_duration_seconds_count{instance=~\"$server\"}[5m])",
+          "expr": "increase(mattermost_http_request_duration_seconds_sum{instance=~\"$server\"}[5m]) /   increase(mattermost_http_request_duration_seconds_count{instance=~\"$server\"}[5m])",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "mattermost_http_request_duration_seconds_sum",
@@ -759,7 +750,6 @@
         {
           "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}/1024/1024",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Alloc-{{instance}}",
           "metric": "go_memstats_alloc_bytes_total",
@@ -770,7 +760,6 @@
           "expr": "go_memstats_stack_inuse_bytes{instance=~\"$server\"}/1024/1024",
           "format": "time_series",
           "hide": false,
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "StackAlloc-{{instance}}",
           "metric": "go_memstats_alloc_bytes_total",
@@ -781,7 +770,6 @@
           "expr": "go_memstats_heap_inuse_bytes{instance=~\"$server\"}/1024/1024",
           "format": "time_series",
           "hide": false,
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "HeapAlloc-{{instance}}",
           "metric": "go_memstats_alloc_bytes_total",
@@ -875,9 +863,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "irate(mattermost_process_cpu_seconds_total{instance=~\"$server\"}[1m])* 100",
+          "expr": "increase(mattermost_process_cpu_seconds_total{instance=~\"$server\"}[1m])* 100",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "refId": "A",
@@ -972,7 +959,6 @@
         {
           "expr": "go_goroutines{instance=~\"$server\"}",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
           "metric": "go_goroutines",
@@ -982,7 +968,6 @@
         {
           "expr": "sum(go_goroutines{instance=~\"$server\"})",
           "format": "time_series",
-          "interval": "5s",
           "intervalFactor": 1,
           "legendFormat": "Total",
           "metric": "go_goroutines",
