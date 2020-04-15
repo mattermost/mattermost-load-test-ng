@@ -4,7 +4,16 @@ variable "cluster_name" {
 variable "app_instance_count" {
 }
 
-variable "loadtest_agent_count" {
+variable "app_instance_type" {
+}
+
+variable "agent_instance_count" {
+}
+
+variable "agent_instance_type" {
+}
+
+variable "proxy_instance_type" {
 }
 
 variable "db_instance_count" {
