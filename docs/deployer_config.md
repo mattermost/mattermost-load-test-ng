@@ -14,7 +14,7 @@ The number of Mattermost application instances.
 
 ## AppInstanceType
 
-*int*
+*string*
 
 The type of the EC2 instance of the application server. See type [here](https://aws.amazon.com/ec2/instance-types/). It is recommended to use c5 instances for consistent performance.
 
@@ -26,13 +26,13 @@ The number of load-test agent instances. The first instance will also host the [
 
 ## AgentInstanceType
 
-*int*
+*string*
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ## ProxyInstanceType
 
-*int*
+*string*
 
 The type of the EC2 instance of the proxy server. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
