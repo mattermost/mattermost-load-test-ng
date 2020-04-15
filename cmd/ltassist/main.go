@@ -90,7 +90,7 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 
 func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
 	for name, cfg := range cMap {
-		t := reflect.ValueOf(cfg).Type()
+		t := reflect.Indirect(reflect.ValueOf(cfg)).Type()
 		p := t.PkgPath()
 		f := fmt.Sprintf("./docs/%s_config.md", name)
 		_, err := createStruct(t, f, true)
