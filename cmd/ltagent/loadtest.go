@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -50,6 +51,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		ucConfig, err = simplecontroller.ReadConfig(ucConfigPath)
 	case loadtest.UserControllerSimulative:
 		ucConfig, err = simulcontroller.ReadConfig(ucConfigPath)
+	case loadtest.UserControllerGenerative:
+		ucConfig, err = gencontroller.ReadConfig(ucConfigPath)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
@@ -69,6 +72,13 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
+		case loadtest.UserControllerGenerative:
+			if id == 0 {
+				ueConfig.Username = "sysadmin"
+				ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+				ueConfig.Password = config.ConnectionConfiguration.AdminPassword
+			}
+			return gencontroller.New(id, ue, ucConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		default:
