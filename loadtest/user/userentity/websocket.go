@@ -35,7 +35,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	}
 
 	currentChannel, err := ue.store.CurrentChannel()
-	if !errors.Is(err, memstore.ErrChannelNotFound) {
+	if err != nil && !errors.Is(err, memstore.ErrChannelNotFound) {
 		return fmt.Errorf("failed to get current channel from store: %w", err)
 	} else if currentChannel == nil {
 		return nil
