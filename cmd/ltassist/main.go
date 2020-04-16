@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
-	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -13,15 +11,47 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+
 	"github.com/spf13/cobra"
 )
 
-var cMap = map[string]control.Config{
-	"loadtest":         &loadtest.Config{},
-	"coordinator":      &coordinator.Config{},
-	"deployer":         &deployment.Config{},
-	"simplecontroller": &simplecontroller.Config{},
-	"simulcontroller":  &simulcontroller.Config{},
+func init() {
+	for k, c := range configs {
+		cfg, err := readDefaultConfig(k, c.defaultPath)
+		checkError(err)
+
+		c.defaultValue = cfg
+		configs[k] = c
+	}
+}
+
+var configs = map[string]config{
+	"loadtest": {
+		docPath:     "./docs/loadtest_config.md",
+		defaultPath: "./config/config.default.json",
+	},
+	"coordinator": {
+		docPath:     "./docs/coordinator_config.md",
+		defaultPath: "./config/coordinator.default.json",
+	},
+	"deployer": {
+		docPath:     "./docs/deployer_config.md",
+		defaultPath: "./config/deployer.default.json",
+	},
+	"simplecontroller": {
+		docPath:     "./docs/simplecontroller_config.md",
+		defaultPath: "./config/simplecontroller.default.json",
+	},
+	"simulcontroller": {
+		docPath:     "./docs/simulcontroller_config.md",
+		defaultPath: "./config/simulcontroller.default.json",
+	},
+}
+
+type config struct {
+	docPath      string
+	defaultPath  string
+	defaultValue control.Config
 }
 
 func main() {
@@ -34,19 +64,16 @@ func main() {
 		Use:     "config [type]",
 		RunE:    runConfigAssistCmdF,
 		Short:   "Create config interactively",
-		Long:    "Interactively create specified config type and save the file.",
+		Long:    "Interactively create specified config type and save the file.\n" + validTypes(),
 		Example: "ltassist config simplecontroller",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return cobra.ExactArgs(1)(cmd, args)
 			}
-			if _, ok := cMap[args[0]]; ok {
+			if _, ok := configs[args[0]]; ok {
 				return nil
 			}
-			fmt.Println("Valid arguments are:")
-			for name := range cMap {
-				fmt.Println(" - " + name)
-			}
+			fmt.Println(validTypes())
 			return cobra.OnlyValidArgs(cmd, args)
 		},
 	}
@@ -67,35 +94,33 @@ func main() {
 }
 
 func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
-	for name, cfg := range cMap {
-		t := reflect.Indirect(reflect.ValueOf(cfg)).Type()
-		p := t.PkgPath()
-		if strings.HasSuffix(p, args[0]) {
-			fmt.Printf("Creating %s:\n\n", t.Name())
-			f := fmt.Sprintf("./docs/%s_config.md", name)
-			v, err := createStruct(t, f, false)
-			checkError(err)
-
-			err = v.Addr().Interface().(control.Config).IsValid()
-			checkError(err)
-
-			data, err := json.MarshalIndent(v.Addr().Interface(), "", "  ")
-			checkError(err)
-			fmt.Printf("%s\n", data)
-			return nil
-		}
+	config, ok := configs[args[0]]
+	if !ok {
+		return fmt.Errorf("couldn't find a config for %q", args[0])
 	}
-	return fmt.Errorf("couldn't find a config for %q", args[0])
+
+	fmt.Printf("Creating %s.Config:\n\n", args[0])
+	f := config.docPath
+	v, err := createStruct(config.defaultValue, f, false)
+
+	checkError(err)
+
+	err = v.Addr().Interface().(control.Config).IsValid()
+	checkError(err)
+
+	data, err := json.MarshalIndent(v.Addr().Interface(), "", "  ")
+	checkError(err)
+
+	fmt.Printf("%s\n", data)
+	return nil
 }
 
 func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
-	for name, cfg := range cMap {
-		t := reflect.Indirect(reflect.ValueOf(cfg)).Type()
-		p := t.PkgPath()
-		f := fmt.Sprintf("./docs/%s_config.md", name)
-		_, err := createStruct(t, f, true)
+	for name, config := range configs {
+		f := config.docPath
+		_, err := createStruct(config.defaultValue, f, true)
 		if err != nil {
-			fmt.Printf("docs for %s.%s is not consistent: %s\n", p, t.Name(), err)
+			fmt.Printf("docs for %s.Config is not consistent: %s\n", name, err)
 		}
 	}
 	return nil
@@ -106,4 +131,28 @@ func checkError(err error) {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
 	}
+}
+
+func validTypes() string {
+	s := "Valid types are:"
+	for name := range configs {
+		s += "\n - " + name
+	}
+	return s
+}
+
+func readDefaultConfig(configType, defaultPath string) (control.Config, error) {
+	switch configType {
+	case "loadtest":
+		return loadtest.ReadConfig(defaultPath)
+	case "coordinator":
+		return coordinator.ReadConfig(defaultPath)
+	case "deployer":
+		return deployment.ReadConfig(defaultPath)
+	case "simplecontroller":
+		return simplecontroller.ReadConfig(defaultPath)
+	case "simulcontroller":
+		return simulcontroller.ReadConfig(defaultPath)
+	}
+	return nil, fmt.Errorf("could not find: %q", configType)
 }

@@ -18,7 +18,7 @@ type fieldDoc struct {
 	dataType string
 }
 
-// TODO: find docs with proper markdown ast library :)
+// TODO: find docs with proper markdown ast library
 func findDoc(name, docPath string) (*fieldDoc, error) {
 	file, err := os.Open(docPath)
 	if err != nil {
@@ -36,7 +36,7 @@ func findDoc(name, docPath string) (*fieldDoc, error) {
 						break
 					}
 					if rs.MatchString(text) {
-						dataType = strings.ReplaceAll(rs.FindString(text), "*", "")
+						dataType = strings.Trim(rs.FindString(text), "*")
 						continue
 					}
 					doc += text + "\n"
@@ -50,10 +50,31 @@ func findDoc(name, docPath string) (*fieldDoc, error) {
 	}, nil
 }
 
-// get user input
-func readInput(name, kind string) string {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("\033[1;33m%s\033[0m (%s): ", name, kind)
-	text, _ := reader.ReadString('\n')
+// get user input, returns default on empty input
+func readInput(kind, defaultValue string) string {
+	r := bufio.NewReader(os.Stdin)
+	fmt.Printf("%s (%s): ", yellow("Enter a value"), kind)
+	text, err := r.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	if text == "\n" {
+		text = defaultValue
+		moveLineUp := "\033[1A\033[2K\r"
+		fmt.Printf("%s%s (%s): %s\n", moveLineUp, yellow("Enter a value"), kind, text)
+	}
+	fmt.Println()
 	return text
+}
+
+func yellow(v ...interface{}) string {
+	return fmt.Sprintf("\033[1;33m%s\033[0m", v...)
+}
+
+func green(v ...interface{}) string {
+	return fmt.Sprintf("\033[1;32m%s\033[0m", v...)
+}
+
+func red(v ...interface{}) string {
+	return fmt.Sprintf("\033[1;31m%s\033[0m", v...)
 }

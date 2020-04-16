@@ -9,61 +9,100 @@ import (
 
 // create a struct from a type, this function is called recursively so that
 // we can walk on every field of it.
-func createStruct(t reflect.Type, docPath string, dryRun bool) (reflect.Value, error) {
-	val := reflect.New(t).Elem()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if f.Type.Kind() == reflect.Struct {
-			sv, err := createStruct(f.Type, docPath, dryRun)
+func createStruct(defaultValue interface{}, docPath string, dryRun bool) (reflect.Value, error) {
+	v := reflect.Indirect(reflect.ValueOf(defaultValue))
+	t := v.Type()
+
+	str := reflect.New(t).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		defaultField := v.Field(i)
+		switch defaultField.Type().Kind() {
+		case reflect.Struct:
+			dv := defaultField.Interface()
+			newStruct, err := createStruct(dv, docPath, dryRun)
 			if err != nil {
 				return reflect.Zero(t), err
 			}
-			val.Field(i).Set(sv)
-			continue
-		}
-		if f.Type.Kind() == reflect.Slice {
-			values, err := createSlice(f.Type.Elem(), docPath, dryRun)
+			str.Field(i).Set(newStruct)
+		case reflect.Slice:
+			dv := defaultField.Interface()
+			newSlice, err := createSlice(dv, docPath, dryRun)
 			if err != nil {
 				return reflect.Zero(t), err
 			}
-			val.Field(i).Set(values)
-			continue
+			str.Field(i).Set(newSlice)
+		case reflect.Bool, reflect.Int, reflect.Float64, reflect.String:
+			dvs := valueToString(defaultField)
+			newField, err := createField(t.Field(i), docPath, dvs, dryRun)
+			if err != nil {
+				return reflect.Zero(t), err
+			}
+			str.Field(i).Set(newField)
+		default:
+			panic(fmt.Sprintf("unimplemented struct field %q", defaultField.Type().Name()))
 		}
-		fv, err := createField(f, docPath, dryRun)
-		if err != nil {
-			return reflect.Zero(t), err
-		}
-		val.Field(i).Set(fv)
 	}
-	return val, nil
+	return str, nil
 }
 
-// this function creates a slice for the given type
-// TODO: add support for primitive types (e.g. []int, []string etc.)
-func createSlice(t reflect.Type, docPath string, dryRun bool) (reflect.Value, error) {
+// this function creates a slice for the given slice type
+// does not support for some types (e.g. []int, []string etc.)
+func createSlice(defaultValue interface{}, docPath string, dryRun bool) (reflect.Value, error) {
+	t := reflect.ValueOf(defaultValue).Type().Elem()
 	if dryRun {
-		_, err := createStruct(t, docPath, dryRun)
-		return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
+		_, err := createStruct(reflect.New(t).Interface(), docPath, dryRun)
+		return reflect.ValueOf(defaultValue), err
 	}
-	inp := readInput(fmt.Sprintf("Enter the size of []%s", t), "integer")
+
+	inp := readInput(fmt.Sprintf("size of %T", defaultValue), "1")
 	size, err := strconv.Atoi(strings.TrimSpace(inp))
 	if err != nil {
-		panic(err)
+		return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
 	}
 	values := reflect.Zero(reflect.SliceOf(t))
 	for i := 0; i < size; i++ {
-		v, err := createStruct(t, docPath, dryRun)
+		dv := reflect.New(t).Interface()
+		s, err := createStruct(dv, docPath, dryRun)
 		if err != nil {
-			panic(err)
+			return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
 		}
-		values = reflect.Append(values, v)
+		values = reflect.Append(values, s)
 	}
 	return values, nil
 }
 
+// this is a glue function to find doc, get user input and assign to a value
+func createField(f reflect.StructField, docPath, defaultValue string, dryRun bool) (reflect.Value, error) {
+	doc, err := findDoc(f.Name, docPath)
+	if err != nil {
+		return reflect.Zero(f.Type), err
+	}
+	if dryRun && (f.Type.Kind().String() != doc.dataType || doc.text == "") {
+		return reflect.Zero(f.Type), fmt.Errorf("check the docs for %q data type: %q", f.Name, doc.dataType)
+	} else if dryRun {
+		return reflect.Zero(f.Type), nil
+	}
+	// print the name and doc
+	fmt.Printf("%s\n", green(f.Name))
+	fmt.Println(doc.text)
+	if defaultValue != "" { // display default value, if there is any
+		fmt.Printf("Default: %s\n", green(defaultValue))
+	}
+	for {
+		inp := readInput(f.Type.Kind().String(), defaultValue)
+		v, err := setValue(f.Type, inp)
+		if err != nil {
+			fmt.Println(red("invalid type. Retry:"))
+			continue
+		}
+		return v, nil
+	}
+}
+
 // converts given string into reflect.Value, the value is assignable to struct
 // field.
-func toValue(data string, t reflect.Type) (reflect.Value, error) {
+func setValue(t reflect.Type, data string) (reflect.Value, error) {
+	data = strings.TrimSpace(data)
 	v := reflect.New(t).Elem()
 	switch t.Kind() {
 	case reflect.Bool:
@@ -90,29 +129,17 @@ func toValue(data string, t reflect.Type) (reflect.Value, error) {
 	return v, nil
 }
 
-// this is a glue function to find doc, get user input and assign to a value
-func createField(f reflect.StructField, docPath string, dryRun bool) (reflect.Value, error) {
-	doc, err := findDoc(f.Name, docPath)
-	if err != nil {
-		return reflect.Zero(f.Type), err
+func valueToString(v reflect.Value) string {
+	switch v.Type().Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Int:
+		return fmt.Sprintf("%d", v.Int())
+	case reflect.Bool:
+		return fmt.Sprintf("%t", v.Bool())
+	case reflect.Float64:
+		return fmt.Sprintf("%f", v.Float())
+	default:
+		return ""
 	}
-	if dryRun && (f.Type.Kind().String() != doc.dataType || doc.text == "") {
-		return reflect.Zero(f.Type), fmt.Errorf("check the docs for %q", f.Name)
-	} else if dryRun {
-		return reflect.Zero(f.Type), nil
-	}
-	// print the doc
-	fmt.Println(doc.text)
-	for {
-		inp := readInput(f.Name, f.Type.Kind().String())
-		v, err := toValue(strings.TrimSpace(inp), f.Type)
-		// TODO: add skip
-		if err != nil {
-			fmt.Println("invalid type. Retry:")
-			continue
-		}
-		fmt.Println()
-		return v, nil
-	}
-
 }
