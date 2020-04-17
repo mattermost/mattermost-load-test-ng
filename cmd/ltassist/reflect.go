@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
 // create a struct from a type, this function is called recursively so that
@@ -12,6 +14,11 @@ import (
 func createStruct(defaultValue interface{}, docPath string, dryRun bool) (reflect.Value, error) {
 	v := reflect.Indirect(reflect.ValueOf(defaultValue))
 	t := v.Type()
+
+	switch defaultValue.(type) { // skip logging settings, and rely on defaults
+	case logger.Settings:
+		return v, nil
+	}
 
 	str := reflect.New(t).Elem()
 	for i := 0; i < v.NumField(); i++ {

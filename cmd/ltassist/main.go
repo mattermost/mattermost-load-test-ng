@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -61,21 +64,11 @@ func main() {
 	}
 
 	configCmd := &cobra.Command{
-		Use:     "config [type]",
+		Use:     "config",
 		RunE:    runConfigAssistCmdF,
-		Short:   "Create config interactively",
-		Long:    "Interactively create specified config type and save the file.\n" + validTypes(),
-		Example: "ltassist config simplecontroller",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return cobra.ExactArgs(1)(cmd, args)
-			}
-			if _, ok := configs[args[0]]; ok {
-				return nil
-			}
-			fmt.Println(validTypes())
-			return cobra.OnlyValidArgs(cmd, args)
-		},
+		Short:   "Create a config interactively",
+		Long:    "Interactively create selected config type and save the file.\n" + validTypes(),
+		Example: "ltassist config",
 	}
 	rootCmd.AddCommand(configCmd)
 
@@ -93,13 +86,38 @@ func main() {
 	}
 }
 
-func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
-	config, ok := configs[args[0]]
-	if !ok {
-		return fmt.Errorf("couldn't find a config for %q", args[0])
+func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		if _, ok := configs[args[0]]; ok {
+			return createConfig(args[0])
+		}
+	}
+	var configNames []string
+	fmt.Printf("Pick one of the configuration type you want to create:\n")
+	for name := range configs {
+		configNames = append(configNames, name)
+	}
+	sort.Strings(configNames)
+	for i := range configNames {
+		fmt.Printf("%d. %s\n", i+1, configNames[i])
+	}
+	inp := readInput("int", "1")
+	i, err := strconv.Atoi(strings.TrimSpace(inp))
+	checkError(err)
+	if i < 1 || i > len(configNames) {
+		return fmt.Errorf("the selection must be in the range of 0 < i < %d", len(configNames))
 	}
 
-	fmt.Printf("Creating %s.Config:\n\n", args[0])
+	return createConfig(configNames[i-1])
+}
+
+func createConfig(name string) error {
+	config, ok := configs[name]
+	if !ok {
+		return fmt.Errorf("couldn't find a config for %q", name)
+	}
+
+	fmt.Printf("Creating %s.Config:\n\n", name)
 	f := config.docPath
 	v, err := createStruct(config.defaultValue, f, false)
 
@@ -115,7 +133,7 @@ func runConfigAssistCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runCheckConfigsCmdF(cmd *cobra.Command, args []string) error {
+func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 	for name, config := range configs {
 		f := config.docPath
 		_, err := createStruct(config.defaultValue, f, true)
