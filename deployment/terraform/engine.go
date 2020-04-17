@@ -10,6 +10,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -82,6 +84,27 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 
 	if err := cmd.Wait(); err != nil {
 		return err
+	}
+	return nil
+}
+
+func checkTerraformVersion() error {
+	cmd := exec.Command("terraform", "version")
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("could not run terraform version command: %w", err)
+	}
+	re := regexp.MustCompile(`v\d+.?\d+`)
+	if !re.Match(out) {
+		return fmt.Errorf("could not parse terraform command output: %s", out)
+	}
+	match := re.FindAll(out, 1)[0]
+	version, err := strconv.ParseFloat(string(match[1:]), 64)
+	if err != nil {
+		return fmt.Errorf("could not parse terraform command output: %w", err)
+	}
+	if version < 0.12 {
+		return fmt.Errorf("at least terraform v0.12 is required, you have %s", match)
 	}
 	return nil
 }

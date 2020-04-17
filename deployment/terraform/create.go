@@ -366,6 +366,10 @@ func (t *Terraform) preFlightCheck() error {
 		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
 
+	if err := checkTerraformVersion(); err != nil {
+		return fmt.Errorf("failed when checking terraform version: %w", err)
+	}
+
 	if err := t.init(); err != nil {
 		return err
 	}
