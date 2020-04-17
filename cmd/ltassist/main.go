@@ -60,7 +60,7 @@ type config struct {
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "ltassist",
-		Short: "Tool for load test utilities.",
+		Short: "Helper tool for load-test configuration and documentation.",
 	}
 
 	configCmd := &cobra.Command{
@@ -76,7 +76,7 @@ func main() {
 		Use:     "check",
 		RunE:    runCheckConfigsCmdF,
 		Short:   "Verify configs with the docs",
-		Long:    "Checks if the specific configs properly documented.",
+		Long:    "Checks if the specific configs are properly documented.",
 		Example: "ltassist check",
 	}
 	rootCmd.AddCommand(checkCmd)
@@ -93,7 +93,7 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 		}
 	}
 	var configNames []string
-	fmt.Printf("Pick one of the configuration type you want to create:\n")
+	fmt.Printf("Select the configuration type you want to create:\n")
 	for name := range configs {
 		configNames = append(configNames, name)
 	}
@@ -105,7 +105,7 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 	i, err := strconv.Atoi(strings.TrimSpace(inp))
 	checkError(err)
 	if i < 1 || i > len(configNames) {
-		return fmt.Errorf("the selection must be in the range of 0 < i < %d", len(configNames))
+		return fmt.Errorf("the selection must be in the range 1-%d", len(configNames))
 	}
 
 	return createConfig(configNames[i-1])
