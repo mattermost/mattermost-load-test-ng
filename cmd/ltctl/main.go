@@ -138,6 +138,28 @@ func main() {
 	loadtestCmd.AddCommand(loadtestComands...)
 	rootCmd.AddCommand(loadtestCmd)
 
+	sshCmd := &cobra.Command{
+		Use:     "ssh [instance]",
+		Short:   "ssh into instance",
+		Example: "ltctl ssh agent-0",
+		RunE: func(_ *cobra.Command, args []string) error {
+			return terraform.New(nil).OpenSSHFor(args[0])
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
+	rootCmd.AddCommand(sshCmd)
+
+	goCmd := &cobra.Command{
+		Use:     "go [instance]",
+		Short:   "Open browser for instance",
+		Example: "ltctl go grafana",
+		RunE: func(_ *cobra.Command, args []string) error {
+			return terraform.New(nil).OpenBrowserFor(args[0])
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
+	rootCmd.AddCommand(goCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
