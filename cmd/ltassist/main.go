@@ -18,6 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type config struct {
+	docPath      string
+	defaultPath  string
+	defaultValue control.Config
+}
+
 func init() {
 	for k, c := range configs {
 		cfg, err := readDefaultConfig(k, c.defaultPath)
@@ -49,12 +55,6 @@ var configs = map[string]config{
 		docPath:     "./docs/simulcontroller_config.md",
 		defaultPath: "./config/simulcontroller.default.json",
 	},
-}
-
-type config struct {
-	docPath      string
-	defaultPath  string
-	defaultValue control.Config
 }
 
 func main() {
@@ -92,6 +92,7 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 			return createConfig(args[0])
 		}
 	}
+
 	var configNames []string
 	fmt.Printf("Select the configuration type you want to create:\n")
 	for name := range configs {
@@ -101,13 +102,21 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 	for i := range configNames {
 		fmt.Printf("%d. %s\n", i+1, configNames[i])
 	}
-	inp := readInput("int", "1")
-	i, err := strconv.Atoi(strings.TrimSpace(inp))
-	checkError(err)
-	if i < 1 || i > len(configNames) {
-		return fmt.Errorf("the selection must be in the range 1-%d", len(configNames))
-	}
 
+	var i int
+	var err error
+	for {
+		inp := readInput("int", "")
+		i, err = strconv.Atoi(strings.TrimSpace(inp))
+		if err != nil {
+			fmt.Println(red("invalid type. Retry:"))
+			continue
+		}
+		break
+	}
+	if i < 1 || i > len(configNames) {
+		checkError(fmt.Errorf("the selection must be in the range 1-%d", len(configNames)))
+	}
 	return createConfig(configNames[i-1])
 }
 
