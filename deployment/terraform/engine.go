@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"sync"
 	"time"
 
@@ -98,13 +97,9 @@ func checkTerraformVersion() error {
 	if !re.Match(out) {
 		return fmt.Errorf("could not parse terraform command output: %s", out)
 	}
-	match := re.FindAll(out, 1)[0]
-	version, err := strconv.ParseFloat(string(match[1:]), 64)
-	if err != nil {
-		return fmt.Errorf("could not parse terraform command output: %w", err)
-	}
-	if version < 0.12 {
-		return fmt.Errorf("at least terraform v0.12 is required, you have %s", match)
+	version := string(re.FindAll(out, 1)[0])
+	if version != "v0.12" {
+		return fmt.Errorf("terraform v0.12 is required, you have %s", version)
 	}
 	return nil
 }
