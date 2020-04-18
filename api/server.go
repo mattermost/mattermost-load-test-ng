@@ -65,17 +65,19 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
-		ucConfig = data.SimpleControllerConfig
-		if ucConfig == nil {
+		if data.SimpleControllerConfig == nil {
 			mlog.Warn("could not read controller config from the request")
 			ucConfig, err = simplecontroller.ReadConfig("")
+			break
 		}
+		ucConfig = data.SimpleControllerConfig
 	case loadtest.UserControllerSimulative:
-		ucConfig = data.SimulControllerConfig
-		if ucConfig == nil {
-			mlog.Warn("clould not read controller config from the request")
+		if data.SimulControllerConfig == nil {
+			mlog.Warn("could not read controller config from the request")
 			ucConfig, err = simulcontroller.ReadConfig("")
+			break
 		}
+		ucConfig = data.SimulControllerConfig
 	}
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
