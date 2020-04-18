@@ -88,17 +88,13 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 }
 
 func checkTerraformVersion() error {
-	cmd := exec.Command("terraform", "version")
-	out, err := cmd.Output()
+	out, err := exec.Command("terraform", "version").Output()
 	if err != nil {
 		return fmt.Errorf("could not run terraform version command: %w", err)
 	}
-	re := regexp.MustCompile(`v\d+.?\d+`)
-	if !re.Match(out) {
+	if re := regexp.MustCompile(`v\d+.?\d+`); !re.Match(out) {
 		return fmt.Errorf("could not parse terraform command output: %s", out)
-	}
-	version := string(re.FindAll(out, 1)[0])
-	if version != "v0.12" {
+	} else if version := string(re.FindAll(out, 1)[0]); version != "v0.12" {
 		return fmt.Errorf("terraform v0.12 is required, you have %s", version)
 	}
 	return nil
