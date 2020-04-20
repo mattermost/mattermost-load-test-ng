@@ -39,7 +39,7 @@ type Terraform struct {
 // created after a deployment.
 type terraformOutput struct {
 	Proxy struct {
-		Value struct {
+		Value []struct {
 			PrivateIP  string `json:"private_ip"`
 			PublicIP   string `json:"public_ip"`
 			PublicDNS  string `json:"public_dns"`
@@ -158,12 +158,17 @@ func (t *Terraform) Create() error {
 		return fmt.Errorf("error setting up metrics server: %w", err)
 	}
 
+	url := output.Instances.Value[0].PublicDNS + ":8065"
+
 	// Updating the config.json for each instance of app server
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-	// Updating the nginx config on proxy server
-	t.setupProxyServer(output, extAgent)
+	if len(output.Proxy.Value) > 0 {
+		// Updating the nginx config on proxy server
+		t.setupProxyServer(output, extAgent)
+		url = output.Proxy.Value[0].PublicDNS
+	}
 
-	if err := pingServer("http://" + output.Proxy.Value.PublicDNS); err != nil {
+	if err := pingServer("http://" + url); err != nil {
 		return fmt.Errorf("error whiling pinging server: %w", err)
 	}
 
@@ -248,7 +253,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 }
 
 func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
-	ip := output.Proxy.Value.PublicDNS
+	ip := output.Proxy.Value[0].PublicDNS
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
