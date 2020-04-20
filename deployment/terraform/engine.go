@@ -34,7 +34,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
 	defer cancel()
 
-	mlog.Info("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
+	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
 	// If dst is set, that means we want to capture the output.
