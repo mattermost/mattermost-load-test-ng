@@ -28,7 +28,10 @@ type config struct {
 func init() {
 	for k, c := range configs {
 		cfg, err := readDefaultConfig(k, c.defaultPath)
-		checkError(err)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not read default configuration files: %s\n", err)
+			os.Exit(1)
+		}
 
 		c.defaultValue = cfg
 		configs[k] = c
@@ -60,8 +63,9 @@ var configs = map[string]config{
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "ltassist",
-		Short: "Helper tool for load-test configuration and documentation.",
+		Use:          "ltassist",
+		SilenceUsage: true,
+		Short:        "Helper tool for load-test configuration and documentation.",
 	}
 
 	configCmd := &cobra.Command{
@@ -119,7 +123,7 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 		break
 	}
 	if i < 1 || i > len(configNames) {
-		checkError(fmt.Errorf("the selection must be in the range 1-%d", len(configNames)))
+		return fmt.Errorf("the selection must be in the range 1-%d", len(configNames))
 	}
 	return createConfig(configNames[i-1])
 }
@@ -133,14 +137,18 @@ func createConfig(name string) error {
 	fmt.Printf("Creating %s.Config:\n\n", name)
 	f := config.docPath
 	v, err := createStruct(config.defaultValue, f, false)
+	if err != nil {
+		return fmt.Errorf("could not create struct: %w", err)
+	}
 
-	checkError(err)
-
-	err = v.Addr().Interface().(control.Config).IsValid()
-	checkError(err)
+	if err = v.Addr().Interface().(control.Config).IsValid(); err != nil {
+		return fmt.Errorf("could not validate configuration: %w", err)
+	}
 
 	data, err := json.MarshalIndent(v.Addr().Interface(), "", "  ")
-	checkError(err)
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
 
 	fmt.Printf("%s\n", data)
 	return nil
@@ -155,13 +163,6 @@ func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 		}
 	}
 	return nil
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		os.Exit(1)
-	}
 }
 
 func validTypes() string {
