@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -35,7 +36,7 @@ func init() {
 }
 
 var configs = map[string]config{
-	"loadtest": {
+	"agent": {
 		docPath:     "./docs/loadtest_config.md",
 		defaultPath: "./config/config.default.json",
 	},
@@ -106,10 +107,13 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 	var i int
 	var err error
 	for {
-		inp := readInput("int", "")
+		inp, er := readInput("int", "")
+		if er != nil {
+			return er
+		}
 		i, err = strconv.Atoi(strings.TrimSpace(inp))
 		if err != nil {
-			fmt.Println(red("invalid type. Retry:"))
+			fmt.Println(color.RedString("invalid type. Retry:"))
 			continue
 		}
 		break
@@ -170,7 +174,7 @@ func validTypes() string {
 
 func readDefaultConfig(configType, defaultPath string) (control.Config, error) {
 	switch configType {
-	case "loadtest":
+	case "agent":
 		return loadtest.ReadConfig(defaultPath)
 	case "coordinator":
 		return coordinator.ReadConfig(defaultPath)

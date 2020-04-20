@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
@@ -46,7 +47,7 @@ func createStruct(defaultValue interface{}, docPath string, dryRun bool) (reflec
 			}
 			str.Field(i).Set(newField)
 		default:
-			panic(fmt.Sprintf("unimplemented struct field %q", defaultField.Type().Name()))
+			return reflect.Zero(t), fmt.Errorf("unimplemented struct field: %q", defaultField.Type().Name())
 		}
 	}
 	return str, nil
@@ -61,17 +62,20 @@ func createSlice(defaultValue interface{}, docPath string, dryRun bool) (reflect
 		return reflect.ValueOf(defaultValue), err
 	}
 
-	inp := readInput(fmt.Sprintf("size of %T", defaultValue), "1")
+	inp, err := readInput(fmt.Sprintf("size of %T", defaultValue), "1")
+	if err != nil {
+		return reflect.ValueOf(nil), err
+	}
 	size, err := strconv.Atoi(strings.TrimSpace(inp))
 	if err != nil {
-		return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
+		return reflect.ValueOf(nil), err
 	}
 	values := reflect.Zero(reflect.SliceOf(t))
 	for i := 0; i < size; i++ {
 		dv := reflect.New(t).Interface()
 		s, err := createStruct(dv, docPath, dryRun)
 		if err != nil {
-			return reflect.MakeSlice(reflect.SliceOf(t), 0, 0), err
+			return reflect.ValueOf(nil), err
 		}
 		values = reflect.Append(values, s)
 	}
@@ -85,21 +89,24 @@ func createField(f reflect.StructField, docPath, defaultValue string, dryRun boo
 		return reflect.Zero(f.Type), err
 	}
 	if dryRun && (f.Type.Kind().String() != doc.dataType || doc.text == "") {
-		return reflect.Zero(f.Type), fmt.Errorf("check the docs for %q data type: %q", f.Name, doc.dataType)
+		return reflect.ValueOf(nil), fmt.Errorf("check the docs for %q data type: %q", f.Name, doc.dataType)
 	} else if dryRun {
 		return reflect.Zero(f.Type), nil
 	}
 	// print the name and doc
-	fmt.Printf("%s\n", green(f.Name))
+	fmt.Println(color.GreenString(f.Name))
 	fmt.Println(doc.text)
 	if defaultValue != "" { // display default value, if there is any
-		fmt.Printf("Default: %s\n", green(defaultValue))
+		fmt.Printf("Default: %s\n", color.GreenString(defaultValue))
 	}
 	for {
-		inp := readInput(f.Type.Kind().String(), defaultValue)
+		inp, err := readInput(f.Type.Kind().String(), defaultValue)
+		if err != nil {
+			return reflect.Zero(f.Type), err
+		}
 		v, err := setValue(f.Type, inp)
 		if err != nil {
-			fmt.Println(red("invalid type. Retry:"))
+			fmt.Println(color.RedString("invalid type. Retry:"))
 			continue
 		}
 		return v, nil
