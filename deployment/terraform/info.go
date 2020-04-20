@@ -24,15 +24,15 @@ func (t *Terraform) displayInfo(output *terraformOutput) {
 	fmt.Println("Deployment information:")
 	if len(output.Proxy.Value) > 0 {
 		fmt.Println("Mattermost URL: http://" + output.Proxy.Value[0].PublicDNS)
-		fmt.Println("App Servers:")
-		for _, instance := range output.Instances.Value {
-			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
-		}
 	} else {
 		fmt.Println("Mattermost URL: http://" + output.Instances.Value[0].PublicDNS + ":8065")
 	}
+	fmt.Println("App Server(s):")
+	for _, instance := range output.Instances.Value {
+		fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+	}
 
-	fmt.Println("Load Agents:")
+	fmt.Println("Load Agent(s):")
 	for _, agent := range output.Agents.Value {
 		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
 	}
