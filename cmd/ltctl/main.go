@@ -68,6 +68,18 @@ func RunStopCmdF(cmd *cobra.Command, args []string) error {
 	return t.StopCoordinator()
 }
 
+func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
+	t := terraform.New(nil)
+	names, err := t.AppAndAgentNames()
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		fmt.Printf(" - %s\n", name)
+	}
+	return nil
+}
+
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
@@ -147,16 +159,26 @@ func main() {
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
+
+	sshListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "lists available resources",
+		RunE:  RunSSHListCmdF,
+		Args:  cobra.NoArgs,
+	}
+	sshCmd.AddCommand(sshListCmd)
 	rootCmd.AddCommand(sshCmd)
 
 	goCmd := &cobra.Command{
 		Use:     "go [instance]",
 		Short:   "Open browser for instance",
+		Long:    "Open browser for grafana, mattermost or prometheus",
 		Example: "ltctl go grafana",
 		RunE: func(_ *cobra.Command, args []string) error {
 			return terraform.New(nil).OpenBrowserFor(args[0])
 		},
-		Args: cobra.MinimumNArgs(1),
+		Args:      cobra.ExactValidArgs(1),
+		ValidArgs: []string{"grafana, mattermost, prometheus"},
 	}
 	rootCmd.AddCommand(goCmd)
 

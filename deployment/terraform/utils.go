@@ -53,24 +53,29 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 	for i, agent := range output.Agents.Value {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
 			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP))
+			break
 		}
 	}
-	for _, instance := range output.Instances.Value {
-		if resource == instance.Tags.Name {
-			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP))
+	if cmd == nil {
+		for _, instance := range output.Instances.Value {
+			if resource == instance.Tags.Name {
+				cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP))
+				break
+			}
 		}
 	}
 	if cmd == nil {
 		return fmt.Errorf("could not find any resource with name %q", resource)
 	}
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	return cmd.Wait()
 
+	return cmd.Wait()
 }
 
 // OpenBrowserFor opens a web browser for the resource
@@ -89,6 +94,8 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 		} else {
 			url += output.Instances.Value[0].PublicDNS + ":8065"
 		}
+	case "prometheus":
+		url += output.MetricsServer.Value.PublicDNS + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}
@@ -106,4 +113,20 @@ func openBrowser(url string) (err error) {
 		err = fmt.Errorf("unsupported platform")
 	}
 	return
+}
+
+// AppAndAgentNames returns the name of the app servers and agents from the deployment
+func (t *Terraform) AppAndAgentNames() ([]string, error) {
+	var names []string
+	output, err := t.getOutput()
+	if err != nil {
+		return nil, fmt.Errorf("could not parse output: %w", err)
+	}
+	for _, agent := range output.Agents.Value {
+		names = append(names, agent.Tags.Name)
+	}
+	for _, instance := range output.Instances.Value {
+		names = append(names, instance.Tags.Name)
+	}
+	return names, nil
 }
