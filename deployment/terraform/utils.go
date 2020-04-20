@@ -45,7 +45,7 @@ func uploadBatch(sshc *ssh.Client, batch []uploadInfo) error {
 
 // OpenSSHFor starts a ssh connection to the resource
 func (t *Terraform) OpenSSHFor(resource string) error {
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
@@ -80,7 +80,7 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 
 // OpenBrowserFor opens a web browser for the resource
 func (t *Terraform) OpenBrowserFor(resource string) error {
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
@@ -113,20 +113,4 @@ func openBrowser(url string) (err error) {
 		err = fmt.Errorf("unsupported platform")
 	}
 	return
-}
-
-// AppAndAgentNames returns the name of the app servers and agents from the deployment
-func (t *Terraform) AppAndAgentNames() ([]string, error) {
-	var names []string
-	output, err := t.getOutput()
-	if err != nil {
-		return nil, fmt.Errorf("could not parse output: %w", err)
-	}
-	for _, agent := range output.Agents.Value {
-		names = append(names, agent.Tags.Name)
-	}
-	for _, instance := range output.Instances.Value {
-		names = append(names, instance.Tags.Name)
-	}
-	return names, nil
 }

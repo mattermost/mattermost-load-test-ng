@@ -70,12 +70,16 @@ func RunStopCmdF(cmd *cobra.Command, args []string) error {
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	t := terraform.New(nil)
-	names, err := t.AppAndAgentNames()
+	output, err := t.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not parse output: %w", err)
 	}
-	for _, name := range names {
-		fmt.Printf(" - %s\n", name)
+	for _, agent := range output.Agents.Value {
+		fmt.Printf(" - %s\n", agent.Tags.Name)
+	}
+	for _, instance := range output.Instances.Value {
+		fmt.Printf(" - %s\n", instance.Tags.Name)
+
 	}
 	return nil
 }
