@@ -13,21 +13,25 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) (*loadtest.Config, error) {
+func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
 	if err != nil {
 		return nil, err
 	}
+	url := output.Instances.Value[0].PrivateIP + ":8065"
+	if len(output.Proxy.Value) > 0 {
+		url = output.Proxy.Value[0].PrivateIP
+	}
 
-	cfg.ConnectionConfiguration.ServerURL = "http://" + output.Proxy.Value.PrivateIP
-	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + output.Proxy.Value.PrivateIP
+	cfg.ConnectionConfiguration.ServerURL = "http://" + url
+	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
 	return cfg, nil
 }
 
-func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output) error {
 	var uploadBinary bool
 	var packagePath string
 	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
@@ -89,7 +93,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 	return nil
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 	if len(output.Agents.Value) == 0 {
 		return fmt.Errorf("there are no agents to initialize load-test")
 	}

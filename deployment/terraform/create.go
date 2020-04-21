@@ -35,11 +35,11 @@ type Terraform struct {
 	dir    string
 }
 
-// terraformOutput contains the output variables which are
+// Output contains the output variables which are
 // created after a deployment.
-type terraformOutput struct {
+type Output struct {
 	Proxy struct {
-		Value struct {
+		Value []struct {
 			PrivateIP  string `json:"private_ip"`
 			PublicIP   string `json:"public_ip"`
 			PublicDNS  string `json:"public_dns"`
@@ -148,7 +148,7 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return err
 	}
@@ -158,12 +158,17 @@ func (t *Terraform) Create() error {
 		return fmt.Errorf("error setting up metrics server: %w", err)
 	}
 
+	url := output.Instances.Value[0].PublicDNS + ":8065"
+
 	// Updating the config.json for each instance of app server
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-	// Updating the nginx config on proxy server
-	t.setupProxyServer(output, extAgent)
+	if len(output.Proxy.Value) > 0 {
+		// Updating the nginx config on proxy server
+		t.setupProxyServer(output, extAgent)
+		url = output.Proxy.Value[0].PublicDNS
+	}
 
-	if err := pingServer("http://" + output.Proxy.Value.PublicDNS); err != nil {
+	if err := pingServer("http://" + url); err != nil {
 		return fmt.Errorf("error whiling pinging server: %w", err)
 	}
 
@@ -185,7 +190,7 @@ func (t *Terraform) Create() error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
+func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
 	for _, val := range output.Instances.Value {
 		ip := val.PublicIP
 		sshc, err := extAgent.NewClient(ip)
@@ -235,7 +240,7 @@ func (t *Terraform) setupAppServers(output *terraformOutput, extAgent *ssh.ExtAg
 	}
 }
 
-func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output) error {
 	if err := t.configureAndRunAgents(extAgent, output); err != nil {
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
@@ -247,8 +252,9 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *terrafor
 	return nil
 }
 
-func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtAgent) {
-	ip := output.Proxy.Value.PublicDNS
+func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
+	ip := output.Proxy.Value[0].PublicDNS
+
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
@@ -290,7 +296,7 @@ func (t *Terraform) setupProxyServer(output *terraformOutput, extAgent *ssh.ExtA
 	}()
 }
 
-func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *Output) error {
 	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
@@ -311,7 +317,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *terraformOut
 	return nil
 }
 
-func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *terraformOutput) error {
+func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
 	switch t.config.DBInstanceEngine {
@@ -400,14 +406,15 @@ func (t *Terraform) validate() error {
 	return t.runCommand(nil, "validate", t.dir)
 }
 
-func (t *Terraform) getOutput() (*terraformOutput, error) {
+// Output reads the current terraform output
+func (t *Terraform) Output() (*Output, error) {
 	var buf bytes.Buffer
 	err := t.runCommand(&buf, "output", "-json")
 	if err != nil {
 		return nil, err
 	}
 
-	var output terraformOutput
+	var output Output
 	err = json.Unmarshal(buf.Bytes(), &output)
 	if err != nil {
 		return nil, err

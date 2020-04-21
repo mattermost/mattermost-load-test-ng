@@ -9,7 +9,7 @@ import (
 
 // Info displays information about the current load-test deployment.
 func (t *Terraform) Info() error {
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return err
 	}
@@ -19,15 +19,20 @@ func (t *Terraform) Info() error {
 	return nil
 }
 
-func (t *Terraform) displayInfo(output *terraformOutput) {
+func (t *Terraform) displayInfo(output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
-	fmt.Println("Mattermost URL: http://" + output.Proxy.Value.PublicDNS)
-	fmt.Println("App Servers:")
+	if len(output.Proxy.Value) > 0 {
+		fmt.Println("Mattermost URL: http://" + output.Proxy.Value[0].PublicDNS)
+	} else {
+		fmt.Println("Mattermost URL: http://" + output.Instances.Value[0].PublicDNS + ":8065")
+	}
+	fmt.Println("App Server(s):")
 	for _, instance := range output.Instances.Value {
 		fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
 	}
-	fmt.Println("Load Agents:")
+
+	fmt.Println("Load Agent(s):")
 	for _, agent := range output.Agents.Value {
 		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
 	}

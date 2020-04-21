@@ -24,7 +24,7 @@ const (
 	defaultRequestTimeout      = 10 * time.Second
 )
 
-func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	// Updating Prometheus config
 	sshc, err := extAgent.NewClient(output.MetricsServer.Value.PublicIP)
 	if err != nil {
