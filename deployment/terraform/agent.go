@@ -18,9 +18,13 @@ func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Confi
 	if err != nil {
 		return nil, err
 	}
+	url := output.Instances.Value[0].PrivateIP + ":8065"
+	if len(output.Proxy.Value) > 0 {
+		url = output.Proxy.Value[0].PrivateIP
+	}
 
-	cfg.ConnectionConfiguration.ServerURL = "http://" + output.Proxy.Value.PrivateIP
-	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + output.Proxy.Value.PrivateIP
+	cfg.ConnectionConfiguration.ServerURL = "http://" + url
+	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 

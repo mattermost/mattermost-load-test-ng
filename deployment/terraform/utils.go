@@ -89,8 +89,8 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	case "grafana":
 		url += output.MetricsServer.Value.PublicDNS + ":3000"
 	case "mattermost":
-		if output.Proxy.Value.PublicDNS != "" {
-			url += output.Proxy.Value.PublicDNS
+		if output.Proxy.Value[0].PublicDNS != "" {
+			url += output.Proxy.Value[0].PublicDNS
 		} else {
 			url += output.Instances.Value[0].PublicDNS + ":8065"
 		}

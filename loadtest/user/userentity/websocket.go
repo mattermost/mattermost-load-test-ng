@@ -117,7 +117,6 @@ func (ue *UserEntity) listen(errChan chan error) {
 			connectionFailCount++
 			select {
 			case <-ue.wsClosing:
-				client.Close()
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return

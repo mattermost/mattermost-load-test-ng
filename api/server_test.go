@@ -110,16 +110,18 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("start agent with a simplecontroller.Config", func(t *testing.T) {
+		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimple
 		rd := requestData{
 			LoadTestConfig:         *ltConfig,
 			SimpleControllerConfig: ucConfig1,
 		}
-		ltId := "lt1"
+		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
 			Expect().Status(http.StatusCreated).
 			JSON().Object().ValueEqual("id", ltId)
 		rawMsg := obj.Value("message").String().Raw()
 		require.Equal(t, rawMsg, "load-test agent created")
+		e.POST(ltId + "/run").Expect().Status(http.StatusOK)
 		e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
 		e.DELETE(ltId).Expect().Status(http.StatusOK)
 	})
@@ -130,12 +132,29 @@ func TestAPI(t *testing.T) {
 			LoadTestConfig:        *ltConfig,
 			SimulControllerConfig: ucConfig2,
 		}
-		ltId := "lt2"
+		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
 			Expect().Status(http.StatusCreated).
 			JSON().Object().ValueEqual("id", ltId)
 		rawMsg := obj.Value("message").String().Raw()
 		require.Equal(t, rawMsg, "load-test agent created")
+		e.POST(ltId + "/run").Expect().Status(http.StatusOK)
+		e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
+		e.DELETE(ltId).Expect().Status(http.StatusOK)
+	})
+
+	t.Run("start agent with no controller config", func(t *testing.T) {
+		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimulative
+		rd := requestData{
+			LoadTestConfig: *ltConfig,
+		}
+		ltId := "lt0"
+		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
+			Expect().Status(http.StatusCreated).
+			JSON().Object().ValueEqual("id", ltId)
+		rawMsg := obj.Value("message").String().Raw()
+		require.Equal(t, rawMsg, "load-test agent created")
+		e.POST(ltId + "/run").Expect().Status(http.StatusOK)
 		e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
 		e.DELETE(ltId).Expect().Status(http.StatusOK)
 	})
