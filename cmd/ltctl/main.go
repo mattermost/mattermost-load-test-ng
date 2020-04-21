@@ -68,6 +68,22 @@ func RunStopCmdF(cmd *cobra.Command, args []string) error {
 	return t.StopCoordinator()
 }
 
+func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
+	t := terraform.New(nil)
+	output, err := t.Output()
+	if err != nil {
+		return fmt.Errorf("could not parse output: %w", err)
+	}
+	for _, agent := range output.Agents.Value {
+		fmt.Printf(" - %s\n", agent.Tags.Name)
+	}
+	for _, instance := range output.Instances.Value {
+		fmt.Printf(" - %s\n", instance.Tags.Name)
+
+	}
+	return nil
+}
+
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
@@ -137,6 +153,38 @@ func main() {
 
 	loadtestCmd.AddCommand(loadtestComands...)
 	rootCmd.AddCommand(loadtestCmd)
+
+	sshCmd := &cobra.Command{
+		Use:     "ssh [instance]",
+		Short:   "ssh into instance",
+		Example: "ltctl ssh agent-0",
+		RunE: func(_ *cobra.Command, args []string) error {
+			return terraform.New(nil).OpenSSHFor(args[0])
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
+
+	sshListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "lists available resources",
+		RunE:  RunSSHListCmdF,
+		Args:  cobra.NoArgs,
+	}
+	sshCmd.AddCommand(sshListCmd)
+	rootCmd.AddCommand(sshCmd)
+
+	goCmd := &cobra.Command{
+		Use:     "go [instance]",
+		Short:   "Open browser for instance",
+		Long:    "Open browser for grafana, mattermost or prometheus",
+		Example: "ltctl go grafana",
+		RunE: func(_ *cobra.Command, args []string) error {
+			return terraform.New(nil).OpenBrowserFor(args[0])
+		},
+		Args:      cobra.ExactValidArgs(1),
+		ValidArgs: []string{"grafana, mattermost, prometheus"},
+	}
+	rootCmd.AddCommand(goCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

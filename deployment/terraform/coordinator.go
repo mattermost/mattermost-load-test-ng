@@ -17,7 +17,7 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (t *Terraform) StopCoordinator() error {
 		return err
 	}
 
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return err
 	}

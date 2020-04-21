@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) (*loadtest.Config, error) {
+func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (t *Terraform) generateLoadtestAgentConfig(output *terraformOutput) (*loadt
 	return cfg, nil
 }
 
-func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output) error {
 	var uploadBinary bool
 	var packagePath string
 	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
@@ -93,7 +93,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *terraf
 	return nil
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *terraformOutput) error {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 	if len(output.Agents.Value) == 0 {
 		return fmt.Errorf("there are no agents to initialize load-test")
 	}

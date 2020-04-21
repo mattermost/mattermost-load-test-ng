@@ -9,7 +9,7 @@ import (
 
 // Info displays information about the current load-test deployment.
 func (t *Terraform) Info() error {
-	output, err := t.getOutput()
+	output, err := t.Output()
 	if err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func (t *Terraform) Info() error {
 	return nil
 }
 
-func (t *Terraform) displayInfo(output *terraformOutput) {
+func (t *Terraform) displayInfo(output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 	if len(output.Proxy.Value) > 0 {
