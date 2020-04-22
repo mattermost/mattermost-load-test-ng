@@ -35,55 +35,6 @@ type Terraform struct {
 	dir    string
 }
 
-// Output contains the output variables which are
-// created after a deployment.
-type Output struct {
-	Proxy struct {
-		Value []struct {
-			PrivateIP  string `json:"private_ip"`
-			PublicIP   string `json:"public_ip"`
-			PublicDNS  string `json:"public_dns"`
-			PrivateDNS string `json:"private_dns"`
-		} `json:"value"`
-	} `json:"proxy"`
-	Instances struct {
-		Value []struct {
-			PrivateIP  string `json:"private_ip"`
-			PublicIP   string `json:"public_ip"`
-			PublicDNS  string `json:"public_dns"`
-			PrivateDNS string `json:"private_dns"`
-			Tags       struct {
-				Name string `json:"Name"`
-			} `json:"tags"`
-		} `json:"value"`
-	} `json:"instances"`
-	DBCluster struct {
-		Value struct {
-			ClusterEndpoint string `json:"endpoint"`
-			ReaderEndpoint  string `json:"reader_endpoint"`
-		} `json:"value"`
-	} `json:"dbCluster"`
-	Agents struct {
-		Value []struct {
-			PrivateIP  string `json:"private_ip"`
-			PublicIP   string `json:"public_ip"`
-			PublicDNS  string `json:"public_dns"`
-			PrivateDNS string `json:"private_dns"`
-			Tags       struct {
-				Name string `json:"Name"`
-			} `json:"tags"`
-		} `json:"value"`
-	} `json:"agents"`
-	MetricsServer struct {
-		Value struct {
-			PrivateIP  string `json:"private_ip"`
-			PublicIP   string `json:"public_ip"`
-			PublicDNS  string `json:"public_dns"`
-			PrivateDNS string `json:"private_dns"`
-		} `json:"value"`
-	} `json:"metricsServer"`
-}
-
 // New returns a new Terraform instance.
 func New(cfg *deployment.Config) *Terraform {
 	return &Terraform{
@@ -162,7 +113,7 @@ func (t *Terraform) Create() error {
 
 	// Updating the config.json for each instance of app server
 	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-	if len(output.Proxy.Value) > 0 {
+	if output.HasProxy() {
 		// Updating the nginx config on proxy server
 		t.setupProxyServer(output, extAgent)
 		url = output.Proxy.Value[0].PublicDNS

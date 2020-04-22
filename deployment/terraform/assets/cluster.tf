@@ -110,6 +110,7 @@ resource "aws_instance" "proxy_server" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
+      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
@@ -165,6 +166,7 @@ resource "aws_instance" "loadtest_agent" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
+      "sudo apt-get install -y prometheus-node-exporter",
       "wget -O tmp.tar.gz ${var.load_test_download_url}",
       "tar xzf tmp.tar.gz",
       "mv mattermost-load-test-ng* mattermost-load-test-ng",
@@ -283,6 +285,13 @@ resource "aws_security_group" "agent" {
     self      = true
   }
 
+  ingress {
+    from_port       = 9100
+    to_port         = 9100
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.metrics.id}"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -336,6 +345,13 @@ resource "aws_security_group" "proxy" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 9100
+    to_port         = 9100
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.metrics.id}"]
   }
 
   egress {
