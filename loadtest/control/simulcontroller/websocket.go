@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -17,7 +18,7 @@ func (c *SimulController) wsEventHandler() {
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
 		case model.WEBSOCKET_EVENT_TYPING:
-			userId, ok := ev.Data["user_id"].(string)
+			userId, ok := ev.GetData()["user_id"].(string)
 			if !ok || userId == "" {
 				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: invalid data found in event data"))
 				break
@@ -39,12 +40,16 @@ func (c *SimulController) wsEventHandler() {
 				// If we can't find the user status in the store we fetch it.
 				if status.UserId == "" {
 					c.wg.Add(1)
-					go func() {
-						defer c.wg.Done()
-						if err := c.user.GetUsersStatusesByIds([]string{user.Id}); err != nil {
+					c.semaphore <- struct{}{}
+					go func(wg *sync.WaitGroup, id string) {
+						defer wg.Done()
+
+						if err := c.user.GetUsersStatusesByIds([]string{id}); err != nil {
 							c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
 						}
-					}()
+
+						<-c.semaphore
+					}(c.wg, user.Id)
 				}
 
 				break
@@ -52,17 +57,22 @@ func (c *SimulController) wsEventHandler() {
 
 			// We couldn't find the user so we fetch it and its status.
 			c.wg.Add(1)
-			go func() {
-				defer c.wg.Done()
-				if _, err := c.user.GetUsersByIds([]string{userId}); err != nil {
+			c.semaphore <- struct{}{}
+			go func(wg *sync.WaitGroup, id string) {
+				defer wg.Done()
+
+				if _, err := c.user.GetUsersByIds([]string{id}); err != nil {
 					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersByIds failed %w", err))
+					<-c.semaphore
 					return
 				}
 
-				if err := c.user.GetUsersStatusesByIds([]string{userId}); err != nil {
+				if err := c.user.GetUsersStatusesByIds([]string{id}); err != nil {
 					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
 				}
-			}()
+
+				<-c.semaphore
+			}(c.wg, userId)
 		}
 	}
 }
