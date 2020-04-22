@@ -36,6 +36,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		mmEndpoint = append(mmEndpoint, "'"+val.PrivateIP+":8067'")
 		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+val.PrivateIP+":9100'")
 	}
+	for _, val := range output.Agents.Value {
+		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+val.PrivateIP+":9100'")
+	}
+	if output.HasProxy() {
+		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+output.Proxy.Value[0].PrivateIP+":9100'")
+	}
 	mmConfig := strings.Join(mmEndpoint, ",")
 	nodeExporterConfig := strings.Join(nodeExporterEndpoint, ",")
 
