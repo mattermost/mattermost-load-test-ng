@@ -171,7 +171,7 @@ func (s *MemStore) RandomPost() (model.Post, error) {
 	if err != nil {
 		return model.Post{}, err
 	}
-	return *s.posts[key.(string)], nil
+	return *s.posts[key.(string)].Clone(), nil
 }
 
 // RandomPostForChannel returns a random post for the given channel.
@@ -190,7 +190,7 @@ func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
 		return model.Post{}, ErrPostNotFound
 	}
 
-	return *s.posts[postIds[rand.Intn(len(postIds))]], nil
+	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
 }
 
 // RandomEmoji returns a random emoji.
