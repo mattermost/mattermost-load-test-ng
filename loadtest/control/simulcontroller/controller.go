@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -20,6 +21,7 @@ type SimulController struct {
 	user    user.User
 	stop    chan struct{}
 	stopped chan struct{}
+	wg      sync.WaitGroup
 	status  chan<- control.UserStatus
 	rate    float64
 	config  *Config
@@ -175,10 +177,12 @@ func (c *SimulController) Run() {
 
 		select {
 		case <-c.stop:
+			c.wg.Wait()
 			return
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
 	}
+
 }
 
 // SetRate sets the relative speed of execution of actions by the user.

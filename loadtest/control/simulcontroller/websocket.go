@@ -22,46 +22,47 @@ func (c *SimulController) wsEventHandler() {
 				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: invalid data found in event data"))
 				break
 			}
-
-			go c.typingEventHandler(userId)
-		}
-	}
-}
-
-func (c *SimulController) typingEventHandler(userId string) {
-	user, err := c.user.Store().GetUser(userId)
-	if err != nil {
-		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUser failed %w", err))
-		return
-	}
-
-	// The user was found, we check if we have the status for it.
-	if user.Id != "" {
-		status, err := c.user.Store().Status(userId)
-		if err != nil {
-			c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: Status failed %w", err))
-			return
-		}
-
-		// If we can't find the user status in the store we fetch it.
-		if status.UserId == "" {
-			if err := c.user.GetUsersStatusesByIds([]string{user.Id}); err != nil {
-				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
-				return
+			user, err := c.user.Store().GetUser(userId)
+			if err != nil {
+				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUser failed %w", err))
+				break
 			}
+
+			// The user was found, we check if we have the status for it.
+			if user.Id != "" {
+				status, err := c.user.Store().Status(userId)
+				if err != nil {
+					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: Status failed %w", err))
+					break
+				}
+
+				// If we can't find the user status in the store we fetch it.
+				if status.UserId == "" {
+					c.wg.Add(1)
+					go func() {
+						defer c.wg.Done()
+						if err := c.user.GetUsersStatusesByIds([]string{user.Id}); err != nil {
+							c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
+						}
+					}()
+				}
+
+				break
+			}
+
+			// We couldn't find the user so we fetch it and its status.
+			c.wg.Add(1)
+			go func() {
+				defer c.wg.Done()
+				if _, err := c.user.GetUsersByIds([]string{userId}); err != nil {
+					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersByIds failed %w", err))
+					return
+				}
+
+				if err := c.user.GetUsersStatusesByIds([]string{userId}); err != nil {
+					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
+				}
+			}()
 		}
-
-		return
-	}
-
-	// We couldn't find the user so we fetch it and its status.
-	if _, err := c.user.GetUsersByIds([]string{userId}); err != nil {
-		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersByIds failed %w", err))
-		return
-	}
-
-	if err := c.user.GetUsersStatusesByIds([]string{userId}); err != nil {
-		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
-		return
 	}
 }
