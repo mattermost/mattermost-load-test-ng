@@ -19,7 +19,7 @@ func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Confi
 		return nil, err
 	}
 	url := output.Instances.Value[0].PrivateIP + ":8065"
-	if len(output.Proxy.Value) > 0 {
+	if output.HasProxy() {
 		url = output.Proxy.Value[0].PrivateIP
 	}
 

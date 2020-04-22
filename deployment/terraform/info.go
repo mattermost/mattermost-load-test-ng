@@ -22,7 +22,7 @@ func (t *Terraform) Info() error {
 func (t *Terraform) displayInfo(output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
-	if len(output.Proxy.Value) > 0 {
+	if output.HasProxy() {
 		fmt.Println("Mattermost URL: http://" + output.Proxy.Value[0].PublicDNS)
 	} else {
 		fmt.Println("Mattermost URL: http://" + output.Instances.Value[0].PublicDNS + ":8065")
