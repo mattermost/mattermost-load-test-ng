@@ -88,7 +88,7 @@ func TestRandomPost(t *testing.T) {
 func TestRandomPostForChannel(t *testing.T) {
 	s := New()
 	post, err := s.RandomPostForChannel("someId")
-	require.Empty(t, post.Clone())
+	require.Empty(t, &post)
 	require.Equal(t, ErrPostNotFound, err)
 
 	channelId := "ch-" + model.NewId()
