@@ -9,7 +9,6 @@ import (
 	"math"
 	"math/rand"
 	"runtime"
-	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -18,15 +17,13 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id        int
-	user      user.User
-	stop      chan struct{}
-	stopped   chan struct{}
-	semaphore chan struct{}
-	wg        *sync.WaitGroup
-	status    chan<- control.UserStatus
-	rate      float64
-	config    *Config
+	id      int
+	user    user.User
+	stop    chan struct{}
+	stopped chan struct{}
+	status  chan<- control.UserStatus
+	rate    float64
+	config  *Config
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -42,15 +39,13 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:        id,
-		user:      user,
-		stop:      make(chan struct{}),
-		stopped:   make(chan struct{}),
-		semaphore: make(chan struct{}, runtime.GOMAXPROCS(0)),
-		wg:        &sync.WaitGroup{},
-		status:    status,
-		rate:      1.0,
-		config:    config,
+		id:      id,
+		user:    user,
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		status:  status,
+		rate:    1.0,
+		config:  config,
 	}, nil
 }
 
@@ -64,8 +59,10 @@ func (c *SimulController) Run() {
 		return
 	}
 
+	semCount := runtime.GOMAXPROCS(0)
+	semaphore := make(chan struct{}, semCount)
 	// Start listening for websocket events.
-	go c.wsEventHandler()
+	go c.wsEventHandler(semaphore)
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
@@ -76,6 +73,10 @@ func (c *SimulController) Run() {
 		c.user.Cleanup()
 		c.user.ClearUserData()
 		c.sendStopStatus()
+		for i := 0; i < semCount; i++ {
+			semaphore <- struct{}{}
+		}
+		close(semaphore)
 		close(c.stopped)
 	}()
 
@@ -181,7 +182,6 @@ func (c *SimulController) Run() {
 
 		select {
 		case <-c.stop:
-			c.wg.Wait()
 			return
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
