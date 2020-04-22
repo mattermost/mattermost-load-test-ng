@@ -863,7 +863,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "increase(mattermost_process_cpu_seconds_total{instance=~\"$server\"}[1m])* 100",
+          "expr": "irate(mattermost_process_cpu_seconds_total{instance=~\"$server\"}[1m])* 100",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
