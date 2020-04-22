@@ -6,12 +6,14 @@ package terraform
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,16 +91,30 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 }
 
 func checkTerraformVersion() error {
-	if out, err := exec.Command("terraform", "version").Output(); err != nil {
+	out, err := exec.Command("terraform", "version").Output()
+	if err != nil {
 		return fmt.Errorf("could not run %q command: %w", "terraform version", err)
-	} else if re := regexp.MustCompile(`v\d+.?\d+`); !re.Match(out) {
+	}
+
+	re := regexp.MustCompile(`v\d+.?\d+`)
+	if !re.Match(out) {
 		return fmt.Errorf("could not parse terraform command output: %s", out)
-	} else if version, err := strconv.ParseFloat(string(re.FindAll(out, 1)[0][1:]), 64); err != nil {
+	}
+
+	version, err := strconv.ParseFloat(string(re.FindAll(out, 1)[0][1:]), 64)
+	if err != nil {
 		return fmt.Errorf("could not parse terraform command output: %w", err)
-	} else if version < 0.12 {
-		return fmt.Errorf("at least terraform v0.12 is required, you have %.2f", version)
-	} else if version > 0.12 {
-		mlog.Warn(fmt.Sprintf("This tool tested with terraform v0.12, you have v%.2f. Proceed with your own risk.", version))
+	}
+	if version < minSupportedVersion {
+		return fmt.Errorf("minimum version of terraform %.2f is required, you have %.2f", minSupportedVersion, version)
+	} else if version > maxSupportedVersion {
+		mlog.Warn(fmt.Sprintf(`This tool officially supports till terraform %.2f, you have %.2f.
+Do you want to proceed ? (Y/N).`, maxSupportedVersion, version))
+		var confirm string
+		fmt.Scanln(&confirm)
+		if !strings.EqualFold(confirm, "y") && !strings.EqualFold(confirm, "yes") {
+			return errors.New("incorrect response")
+		}
 	}
 
 	return nil
