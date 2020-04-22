@@ -7,7 +7,7 @@
   "ProxyInstanceType": "m4.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "DBInstanceCount": 1,
-  "DBInstanceEngine": "aurora-mysql",
+  "DBInstanceEngine": "aurora-postgresql",
   "DBInstanceType": "db.r4.large",
   "DBUserName": "mmuser",
   "DBPassword": "mostest80098bigpass_",
