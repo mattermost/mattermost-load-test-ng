@@ -723,7 +723,7 @@ func (s *MemStore) SetStatus(userId string, status *model.Status) error {
 	}
 
 	if userId != status.UserId {
-		return errors.New("memstore: bad status")
+		return errors.New("memstore: status is not valid")
 	}
 
 	st := s.statusesQueue.Get().(*model.Status)
