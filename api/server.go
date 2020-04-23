@@ -110,7 +110,16 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
 			Password:     "testPass123$",
 		}
-		ue := userentity.New(memstore.New(), ueConfig)
+		store, err := memstore.New(&memstore.Config{
+			MaxStoredPosts:          500,
+			MaxStoredUsers:          1000,
+			MaxStoredChannelMembers: 1000,
+			MaxStoredStatuses:       1000,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ue := userentity.New(store, ueConfig)
 		switch ltConfig.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)

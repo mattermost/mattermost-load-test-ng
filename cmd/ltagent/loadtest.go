@@ -63,7 +63,16 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			Email:        fmt.Sprintf("testuser-%d@example.com", id),
 			Password:     "testPass123$",
 		}
-		ue := userentity.New(memstore.New(), ueConfig)
+		store, err := memstore.New(&memstore.Config{
+			MaxStoredPosts:          500,
+			MaxStoredUsers:          1000,
+			MaxStoredChannelMembers: 1000,
+			MaxStoredStatuses:       1000,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ue := userentity.New(store, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
