@@ -1,11 +1,11 @@
 {
-  "NumTeams": 1,
-  "NumChannels": 10,
-  "NumPosts": 100,
-  "NumReactions": 50,
-	"PctReplies": 0.5,
-	"PctPublicChannels": 0.2,
-	"PctPrivateChannels": 0.1,
-	"PctDirectChannels": 0.6,
-	"PctGroupChannels": 0.1
+  "NumTeams":1,
+  "NumChannels":10,
+  "NumPosts":100,
+  "NumReactions":50,
+  "PctReplies":0.5,
+  "PctPublicChannels":0.2,
+  "PctPrivateChannels":0.1,
+  "PctDirectChannels":0.6,
+  "PctGroupChannels":0.1
 }
