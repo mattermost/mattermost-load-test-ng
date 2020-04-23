@@ -221,8 +221,8 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if post, ok := s.posts[postId]; ok {
-		p := *post
-		return &p, nil
+		p := post.Clone()
+		return p, nil
 	}
 	return nil, nil
 }
@@ -233,8 +233,8 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	var channelPosts []*model.Post
 	for _, post := range s.posts {
 		if post.ChannelId == channelId {
-			p := *post
-			channelPosts = append(channelPosts, &p)
+			p := post.Clone()
+			channelPosts = append(channelPosts, p)
 		}
 	}
 
@@ -280,7 +280,7 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	if pp, ok := s.posts[p.Id]; ok && pp == p {
 		delete(s.posts, p.Id)
 	}
-	*p = *post
+	post.ShallowCopy(p)
 	s.posts[post.Id] = p
 
 	return nil
