@@ -50,7 +50,7 @@ pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-	worker_connections 200000;        
+	worker_connections 200000;
 }
 
 http {
@@ -143,6 +143,7 @@ After=network.target
 
 [Service]
 Type=simple
+Environment="GOGC=50"
 ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltagent server
 Restart=always
 RestartSec=1
