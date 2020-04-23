@@ -4,7 +4,10 @@
 package simulcontroller
 
 import (
+	"errors"
 	"fmt"
+	"runtime"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -13,7 +16,17 @@ import (
 // This is used to model user behaviour by responding to certain events with
 // the appropriate actions. It differs from userentity.wsEventHandler which is
 // instead used to manage the internal user state.
-func (c *SimulController) wsEventHandler(semaphore chan struct{}) {
+func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
+	semCount := runtime.GOMAXPROCS(0) * 8
+	semaphore := make(chan struct{}, semCount)
+
+	defer func() {
+		for i := 0; i < semCount; i++ {
+			semaphore <- struct{}{}
+		}
+		wg.Done()
+	}()
+
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
 		case model.WEBSOCKET_EVENT_TYPING:
@@ -38,16 +51,24 @@ func (c *SimulController) wsEventHandler(semaphore chan struct{}) {
 
 				// If we can't find the user status in the store we fetch it.
 				if status.UserId == "" {
-					semaphore <- struct{}{}
-					go fetchStatus(c, semaphore, user.Id)
+					select {
+					case semaphore <- struct{}{}:
+						go fetchStatus(c, semaphore, user.Id)
+					default:
+						c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
+					}
 				}
 
 				break
 			}
 
 			// We couldn't find the user so we fetch it and its status.
-			semaphore <- struct{}{}
-			go fetchUserAndStatus(c, semaphore, userId)
+			select {
+			case semaphore <- struct{}{}:
+				go fetchUserAndStatus(c, semaphore, userId)
+			default:
+				c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
+			}
 		}
 	}
 }
@@ -60,14 +81,14 @@ func fetchStatus(c *SimulController, sem chan struct{}, id string) {
 }
 
 func fetchUserAndStatus(c *SimulController, sem chan struct{}, id string) {
+	defer func() { <-sem }()
+
 	if _, err := c.user.GetUsersByIds([]string{id}); err != nil {
 		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersByIds failed %w", err))
-		<-sem
 		return
 	}
 
 	if err := c.user.GetUsersStatusesByIds([]string{id}); err != nil {
 		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
 	}
-	<-sem
 }

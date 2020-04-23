@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"runtime"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -59,10 +59,10 @@ func (c *SimulController) Run() {
 		return
 	}
 
-	semCount := runtime.GOMAXPROCS(0)
-	semaphore := make(chan struct{}, semCount)
+	var wg sync.WaitGroup
 	// Start listening for websocket events.
-	go c.wsEventHandler(semaphore)
+	wg.Add(1)
+	go c.wsEventHandler(&wg)
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
@@ -72,11 +72,8 @@ func (c *SimulController) Run() {
 		}
 		c.user.Cleanup()
 		c.user.ClearUserData()
+		wg.Wait()
 		c.sendStopStatus()
-		for i := 0; i < semCount; i++ {
-			semaphore <- struct{}{}
-		}
-		close(semaphore)
 		close(c.stopped)
 	}()
 
