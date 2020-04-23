@@ -117,7 +117,7 @@ func (c *LoadAgentCluster) Status() Status {
 	var status Status
 	for _, agent := range c.agents {
 		st := agent.Status()
-		status.ActiveUsers += st.NumUsers
+		status.ActiveUsers += int(st.NumUsers)
 		status.NumErrors += st.NumErrors
 	}
 	return status

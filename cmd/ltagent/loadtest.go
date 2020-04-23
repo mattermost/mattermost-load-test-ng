@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -15,9 +16,38 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
+
+func runGenLoadtest(lt *loadtest.LoadTester, numUsers int) error {
+	start := time.Now()
+	err := lt.Run()
+	if err != nil {
+		return err
+	}
+	mlog.Info("loadtest started")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			status := lt.Status()
+			if status.NumUsersStopped == int64(numUsers) {
+				err = lt.Stop()
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+	wg.Wait()
+
+	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+
+	return err
+}
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	configFilePath, err := cmd.Flags().GetString("config")
@@ -58,12 +88,23 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
 	}
 
+	userPrefix, err := cmd.Flags().GetString("user-prefix")
+	if err != nil {
+		return err
+	}
+
+	userOffset, err := cmd.Flags().GetInt("user-offset")
+	if err != nil {
+		return err
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
+		id += userOffset
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("testuser-%d", id),
-			Email:        fmt.Sprintf("testuser-%d@example.com", id),
+			Username:     fmt.Sprintf("%s-%d", userPrefix, id),
+			Email:        fmt.Sprintf("%s-%d@example.com", userPrefix, id),
 			Password:     "testPass123$",
 		}
 		ue := userentity.New(memstore.New(), ueConfig)
@@ -73,11 +114,6 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
-			if id == 0 {
-				ueConfig.Username = "sysadmin"
-				ueConfig.Email = config.ConnectionConfiguration.AdminEmail
-				ueConfig.Password = config.ConnectionConfiguration.AdminPassword
-			}
 			return gencontroller.New(id, ue, ucConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
@@ -99,6 +135,10 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
 
+	if controllerType == loadtest.UserControllerGenerative {
+		return runGenLoadtest(lt, config.UsersConfiguration.InitialActiveUsers)
+	}
+
 	start := time.Now()
 	err = lt.Run()
 	if err != nil {
@@ -112,7 +152,6 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	time.Sleep(time.Duration(durationSec) * time.Second)
-
 	err = lt.Stop()
 	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
 
@@ -130,5 +169,7 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
+	cmd.PersistentFlags().IntP("user-offset", "", 0, "numerical offset applied to user ids")
 	return cmd
 }
