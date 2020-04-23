@@ -6,6 +6,7 @@ package gencontroller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -55,17 +56,136 @@ func (c *GenController) Run() {
 		return
 	}
 
-	defer c.sendStopStatus()
+	defer func() {
+		if resp := logout(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+		c.sendStopStatus()
+	}()
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
+	initActions := []control.UserAction{
+		control.SignUp,
+		control.Login,
+		c.createTeam,
+		c.joinTeam,
+	}
+
+	for _, action := range initActions {
+		if resp := action(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+
+		idleTime := time.Duration(math.Round(100 * c.rate))
+
+		select {
+		case <-c.stop:
+			return
+		case <-time.After(idleTime * time.Millisecond):
+		}
+	}
+
+	actions := map[string]userAction{
+		"joinTeam": {
+			run:        control.JoinTeam,
+			frequency:  100,
+			idleTimeMs: 0,
+		},
+		"joinChannel": {
+			run:        c.joinChannel,
+			frequency:  1000,
+			idleTimeMs: 0,
+		},
+		"createPublicChannel": {
+			run:        c.createPublicChannel,
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctPublicChannels)),
+			idleTimeMs: 1000,
+		},
+		"createPrivateChannel": {
+			run:        c.createPrivateChannel,
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctPrivateChannels)),
+			idleTimeMs: 1000,
+		},
+		"createDirectChannel": {
+			run:        c.createDirectChannel,
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctDirectChannels)),
+			idleTimeMs: 1000,
+		},
+		"createGroupChannel": {
+			run:        c.createGroupChannel,
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctGroupChannels)),
+			idleTimeMs: 1000,
+		},
+		"createPost": {
+			run:        c.createPost,
+			frequency:  int(math.Round(float64(c.config.NumPosts) * (1 - c.config.PctReplies))),
+			idleTimeMs: 1000,
+		},
+		"createReply": {
+			run:        c.createReply,
+			frequency:  int(math.Round(float64(c.config.NumPosts) * c.config.PctReplies)),
+			idleTimeMs: 1000,
+		},
+		"addReaction": {
+			run:        c.addReaction,
+			frequency:  int(c.config.NumReactions),
+			idleTimeMs: 1000,
+		},
+	}
+
+	done := func() bool {
+		return st.get("teams") == c.config.NumTeams &&
+			st.get("channels") == c.config.NumChannels &&
+			st.get("posts") == c.config.NumPosts &&
+			st.get("reactions") == c.config.NumReactions
+	}
+
 	for {
-		time.Sleep(1 * time.Second)
-		// select {
-		// case <-c.stop:
-		// 	return
-		// default:
-		// }
+		action, err := pickAction(actions)
+		if err != nil {
+			c.status <- c.newErrorStatus(err)
+			return
+		}
+
+		if resp := action.run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+
+		if done() {
+			c.status <- c.newInfoStatus("user done")
+			return
+		}
+
+		if st.get("channels") == c.config.NumChannels {
+			delete(actions, "createPublicChannel")
+			delete(actions, "createPrivateChannel")
+			delete(actions, "createDirectChannel")
+			delete(actions, "createGroupChannel")
+		}
+
+		if st.get("posts") == c.config.NumPosts {
+			delete(actions, "createPost")
+			delete(actions, "createReply")
+		}
+
+		if st.get("reactions") == c.config.NumPosts {
+			delete(actions, "addReaction")
+		}
+
+		idleTime := time.Duration(math.Round(float64(action.idleTimeMs) * c.rate))
+
+		select {
+		case <-c.stop:
+			return
+		case <-time.After(idleTime * time.Millisecond):
+		}
 	}
 }
 
@@ -80,7 +200,7 @@ func (c *GenController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *GenController) Stop() {
-	// close(c.stop)
+	close(c.stop)
 }
 
 func (c *GenController) sendFailStatus(reason string) {
