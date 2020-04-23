@@ -29,7 +29,7 @@ variable "db_engine_version" {
   type = map
   default = {
     "aurora-mysql"      = "5.7.mysql_aurora.2.03.2"
-    "aurora-postgresql" = "9.6.3"
+    "aurora-postgresql" = "9.6.8"
   }
 }
 
