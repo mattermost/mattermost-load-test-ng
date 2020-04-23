@@ -175,7 +175,7 @@ func (c *GenController) Run() {
 			delete(actions, "createReply")
 		}
 
-		if st.get("reactions") == c.config.NumPosts {
+		if st.get("reactions") == c.config.NumReactions {
 			delete(actions, "addReaction")
 		}
 
