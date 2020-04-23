@@ -13,6 +13,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
+// GenController is an implementation of a UserController used to generate
+// realistic initial data.
 type GenController struct {
 	id     int
 	user   user.User
