@@ -23,19 +23,18 @@ import (
 
 func runGenLoadtest(lt *loadtest.LoadTester, numUsers int) error {
 	start := time.Now()
-	err := lt.Run()
-	if err != nil {
+	if err := lt.Run(); err != nil {
 		return err
 	}
 	mlog.Info("loadtest started")
 
+	var err error
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			status := lt.Status()
-			if status.NumUsersStopped == int64(numUsers) {
+			if status := lt.Status(); status.NumUsersStopped == int64(numUsers) {
 				err = lt.Stop()
 				return
 			}

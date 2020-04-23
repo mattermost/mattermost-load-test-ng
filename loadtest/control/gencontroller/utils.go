@@ -8,7 +8,7 @@ import (
 	"math/rand"
 )
 
-// pickAction randomly selects an action from a slice of userAction with
+// pickAction randomly selects an action from a map of userAction with
 // probability proportional to the action's frequency.
 func pickAction(actions map[string]userAction) (*userAction, error) {
 	var sum int
