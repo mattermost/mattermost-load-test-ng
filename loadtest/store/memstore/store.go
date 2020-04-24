@@ -88,9 +88,9 @@ func (s *MemStore) Clear() {
 
 func (s *MemStore) setupQueues(config *Config) error {
 	setups := []struct {
-		size int
-		new  func() interface{}
-		ptr  **CQueue
+		size  int
+		newEl func() interface{}
+		ptr   **CQueue
 	}{
 		{
 			config.MaxStoredPosts,
@@ -123,7 +123,7 @@ func (s *MemStore) setupQueues(config *Config) error {
 	}
 
 	for _, setup := range setups {
-		queue, err := NewCQueue(setup.size, setup.new)
+		queue, err := NewCQueue(setup.size, setup.newEl)
 		if err != nil {
 			return fmt.Errorf("memstore: queue creation failed %w", err)
 		}
