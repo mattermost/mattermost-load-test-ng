@@ -136,6 +136,9 @@ net.ipv4.ip_local_port_range = 1024 65000
 net.ipv4.tcp_fin_timeout = 30
 `
 
+const agentCmdWithLog = `/bin/bash -c '/home/ubuntu/mattermost-load-test-ng/bin/ltagent server &>> /home/ubuntu/agent.log'`
+const agentCmdWithoutLog = `/home/ubuntu/mattermost-load-test-ng/bin/ltagent server`
+
 const agentServiceFile = `
 [Unit]
 Description=Mattermost Load Test Agent
@@ -144,7 +147,7 @@ After=network.target
 [Service]
 Type=simple
 Environment="GOGC=50"
-ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltagent server
+ExecStart={{ printf "%s" .}}
 Restart=always
 RestartSec=1
 WorkingDirectory=/home/ubuntu/mattermost-load-test-ng

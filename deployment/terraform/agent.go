@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -70,8 +71,21 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 			}
 		}
 
+		tpl, err := template.New("").Parse(agentServiceFile)
+		if err != nil {
+			return fmt.Errorf("could not parse agent service template: %w", err)
+		}
+
+		agentCmd := agentCmdWithoutLog
+		if t.config.EnableAgentLogs {
+			agentCmd = agentCmdWithLog
+		}
+
+		buf := bytes.NewBufferString("")
+		tpl.Execute(buf, agentCmd)
+
 		batch := []uploadInfo{
-			{srcData: strings.TrimPrefix(agentServiceFile, "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
+			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
 			{srcData: strings.TrimPrefix(sysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			{srcData: strings.TrimPrefix(coordinatorServiceFile, "\n"), dstPath: "/lib/systemd/system/ltcoordinator.service", msg: "Uploading coordinator service file"},

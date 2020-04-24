@@ -23,6 +23,7 @@ type Config struct {
 	AppInstanceType    string // Type of the EC2 instance for app.
 	AgentInstanceCount int    // Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceType  string // Type of the EC2 instance for agent.
+	EnableAgentLogs    bool   // Logs the command output (stdout & stderr) to home directory.
 	ProxyInstanceType  string // Type of the EC2 instance for proxy.
 	SSHPublicKey       string // Path to the SSH public key.
 	DBInstanceCount    int    // Number of DB instances.
