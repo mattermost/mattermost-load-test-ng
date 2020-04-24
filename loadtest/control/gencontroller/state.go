@@ -9,7 +9,7 @@ import (
 
 type state struct {
 	targets map[string]int64
-	mut     sync.Mutex
+	mut     sync.RWMutex
 }
 
 var st *state
@@ -42,7 +42,7 @@ func (st *state) dec(targetId string) {
 }
 
 func (st *state) get(targetId string) int64 {
-	st.mut.Lock()
-	defer st.mut.Unlock()
+	st.mut.RLock()
+	defer st.mut.RUnlock()
 	return st.targets[targetId]
 }
