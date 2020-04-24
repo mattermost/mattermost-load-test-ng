@@ -17,7 +17,7 @@ import (
 // the appropriate actions. It differs from userentity.wsEventHandler which is
 // instead used to manage the internal user state.
 func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
-	semCount := runtime.GOMAXPROCS(0) * 8
+	semCount := runtime.NumCPU() * 8
 	semaphore := make(chan struct{}, semCount)
 
 	defer func() {
@@ -74,10 +74,11 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 }
 
 func fetchStatus(c *SimulController, sem chan struct{}, id string) {
+	defer func() { <-sem }()
+
 	if err := c.user.GetUsersStatusesByIds([]string{id}); err != nil {
 		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersStatusesByIds failed %w", err))
 	}
-	<-sem
 }
 
 func fetchUserAndStatus(c *SimulController, sem chan struct{}, id string) {
