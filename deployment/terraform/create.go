@@ -24,7 +24,7 @@ const cmdExecTimeoutMinutes = 30
 
 const (
 	latestReleaseURL           = "https://latest.mattermost.com/mattermost-enterprise-linux"
-	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.4.0-alpha/mattermost-load-test-ng-v0.4.0-alpha-linux-amd64.tar.gz"
+	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz"
 	filePrefix                 = "file://"
 )
 
