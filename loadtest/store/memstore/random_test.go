@@ -250,13 +250,11 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 var errG error
 
 func BenchmarkRandomTeam(b *testing.B) {
-	s, err := New(nil)
-	require.NoError(b, err)
-	require.NotNil(b, s)
+	s := newStore(b)
 	s.SetUser(&model.User{})
 	id1 := model.NewId()
 	id2 := model.NewId()
-	err = s.SetTeams([]*model.Team{
+	err := s.SetTeams([]*model.Team{
 		{Id: id1},
 		{Id: id2},
 	})

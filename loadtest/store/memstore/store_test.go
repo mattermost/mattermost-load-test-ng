@@ -12,10 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newStore(t *testing.T) *MemStore {
+func newStore(tb testing.TB) *MemStore {
+	tb.Helper()
 	s, err := New(nil)
-	require.NoError(t, err)
-	require.NotNil(t, s)
+	require.NoError(tb, err)
+	require.NotNil(tb, s)
 	return s
 }
 
