@@ -18,18 +18,19 @@ import (
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	ClusterName        string // Name of the cluster.
-	AppInstanceCount   int    // Number of application instances.
-	AppInstanceType    string // Type of the EC2 instance for app.
-	AgentInstanceCount int    // Number of agents, first agent and coordinator will share the same instance.
-	AgentInstanceType  string // Type of the EC2 instance for agent.
-	ProxyInstanceType  string // Type of the EC2 instance for proxy.
-	SSHPublicKey       string // Path to the SSH public key.
-	DBInstanceCount    int    // Number of DB instances.
-	DBInstanceType     string // Type of the DB instance.
-	DBInstanceEngine   string // Type of the DB instance - postgres or mysql.
-	DBUserName         string // Username to connect to the DB.
-	DBPassword         string // Password to connect to the DB.
+	ClusterName         string // Name of the cluster.
+	AppInstanceCount    int    // Number of application instances.
+	AppInstanceType     string // Type of the EC2 instance for app.
+	AgentInstanceCount  int    // Number of agents, first agent and coordinator will share the same instance.
+	AgentInstanceType   string // Type of the EC2 instance for agent.
+	EnableAgentFullLogs bool   // Logs the command output (stdout & stderr) to home directory.
+	ProxyInstanceType   string // Type of the EC2 instance for proxy.
+	SSHPublicKey        string // Path to the SSH public key.
+	DBInstanceCount     int    // Number of DB instances.
+	DBInstanceType      string // Type of the DB instance.
+	DBInstanceEngine    string // Type of the DB instance - postgres or mysql.
+	DBUserName          string // Username to connect to the DB.
+	DBPassword          string // Password to connect to the DB.
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
