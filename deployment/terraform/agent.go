@@ -76,9 +76,9 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 			return fmt.Errorf("could not parse agent service template: %w", err)
 		}
 
-		agentCmd := agentCmdWithoutLog
-		if t.config.EnableAgentLogs {
-			agentCmd = agentCmdWithLog
+		agentCmd := baseAgentCmd
+		if t.config.EnableAgentFullLogs {
+			agentCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/agent.log'", baseAgentCmd)
 		}
 
 		buf := bytes.NewBufferString("")

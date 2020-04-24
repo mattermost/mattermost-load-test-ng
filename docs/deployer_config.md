@@ -30,7 +30,7 @@ The number of load-test agent instances. The first instance will also host the [
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
-## EnableAgentLogs
+## EnableAgentFullLogs
 
 *bool*
 
