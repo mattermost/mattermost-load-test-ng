@@ -101,7 +101,7 @@ func checkTerraformVersion() error {
 		return fmt.Errorf("could not parse terraform command output: %s", out)
 	}
 
-	version, err := strconv.ParseFloat(string(re.FindAll(out, 1)[0][1:]), 64)
+	version, err := strconv.ParseFloat(string(re.Find(out)[1:]), 64)
 	if err != nil {
 		return fmt.Errorf("could not parse terraform command output: %w", err)
 	}
@@ -109,10 +109,10 @@ func checkTerraformVersion() error {
 		return fmt.Errorf("minimum version of terraform %.2f is required, you have %.2f", minSupportedVersion, version)
 	} else if version > maxSupportedVersion {
 		mlog.Warn(fmt.Sprintf(`This tool officially supports till terraform %.2f, you have %.2f.
-Do you want to proceed ? (Y/N).`, maxSupportedVersion, version))
+Do you want to stop ? (Y/n).`, maxSupportedVersion, version))
 		var confirm string
 		fmt.Scanln(&confirm)
-		if !strings.EqualFold(confirm, "y") && !strings.EqualFold(confirm, "yes") {
+		if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
 			return errors.New("incorrect response")
 		}
 	}
