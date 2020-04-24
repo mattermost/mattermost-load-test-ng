@@ -26,6 +26,8 @@ const (
 	latestReleaseURL           = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz"
 	filePrefix                 = "file://"
+	minSupportedVersion        = 0.12
+	maxSupportedVersion        = 0.12
 )
 
 // Terraform manages all operations related to interacting with
