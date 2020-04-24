@@ -113,7 +113,7 @@ func checkTerraformVersion() error {
 Do you want to proceed ? (Y/n).`, maxSupportedVersion, version))
 		var confirm string
 		fmt.Scanln(&confirm)
-		if confirm != "" && !strings.EqualFold(confirm, "y") && !strings.EqualFold(confirm, "yes") {
+		if !regexp.MustCompile(`(?i)^(y|yes)?$`).MatchString(confirm) {
 			return errors.New("incorrect response")
 		}
 	}
