@@ -9,10 +9,10 @@ import (
 
 // CQueue is a basic implementation of a circular queue of fixed size.
 type CQueue struct {
-	data  []interface{}
-	newEl func() interface{}
-	size  int
-	next  int
+	data  []interface{}      // The backing data slice.
+	newEl func() interface{} // The factory function used to allocate space for new elements.
+	size  int                // The maximum size (capacity) of the backing data slice.
+	next  int                // The index of the next element to return on a call to Get().
 }
 
 // NewCQueue creates and returns a pointer to a queue of the given size.

@@ -276,6 +276,9 @@ func (s *MemStore) SetPost(post *model.Post) error {
 		return errors.New("memstore: post should not be nil")
 	}
 
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
 	p := s.postsQueue.Get().(*model.Post)
 	if pp, ok := s.posts[p.Id]; ok && pp == p {
 		delete(s.posts, p.Id)
@@ -476,6 +479,9 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 			s.channelMembers[cm.ChannelId] = make(map[string]*model.ChannelMember)
 		}
 
+		// We get an element from the queue and check if we have it in the map and
+		// if it points to the same memory location. If so, we delete it since it means the queue is full.
+		// This is done to keep the data pointed by the map consistent with the data stored in the queue.
 		c := s.channelMembersQueue.Get().(*model.ChannelMember)
 		if s.channelMembers[c.ChannelId] != nil {
 			if cc, ok := s.channelMembers[c.ChannelId][c.UserId]; ok && cc == c {
@@ -516,6 +522,9 @@ func (s *MemStore) SetChannelMember(channelId string, channelMember *model.Chann
 		s.channelMembers[channelId] = map[string]*model.ChannelMember{}
 	}
 
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
 	cm := s.channelMembersQueue.Get().(*model.ChannelMember)
 	if s.channelMembers[cm.ChannelId] != nil {
 		if cc, ok := s.channelMembers[cm.ChannelId][cm.UserId]; ok && cc == cm {
@@ -683,6 +692,9 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	for _, user := range users {
+		// We get an element from the queue and check if we have it in the map and
+		// if it points to the same memory location. If so, we delete it since it means the queue is full.
+		// This is done to keep the data pointed by the map consistent with the data stored in the queue.
 		u := s.usersQueue.Get().(*model.User)
 		if uu, ok := s.users[u.Id]; ok && uu == u {
 			delete(s.users, u.Id)
@@ -726,6 +738,9 @@ func (s *MemStore) SetStatus(userId string, status *model.Status) error {
 		return errors.New("memstore: status is not valid")
 	}
 
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
 	st := s.statusesQueue.Get().(*model.Status)
 	if ss, ok := s.statuses[st.UserId]; ok && ss == st {
 		delete(s.statuses, st.UserId)
