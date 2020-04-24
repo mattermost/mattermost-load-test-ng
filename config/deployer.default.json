@@ -3,7 +3,7 @@
   "AppInstanceCount": 1,
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
-  "AgentInstanceType": "t2.medium",
+  "AgentInstanceType": "t3.xlarge",
   "EnableAgentLogs": true,
   "ProxyInstanceType": "m4.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
