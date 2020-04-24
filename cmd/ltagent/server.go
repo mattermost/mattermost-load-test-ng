@@ -19,7 +19,7 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 
 	logger.Init(&logger.Settings{
 		EnableConsole: true,
-		ConsoleLevel:  "INFO",
+		ConsoleLevel:  "ERROR",
 		ConsoleJson:   false,
 		EnableFile:    true,
 		FileLevel:     "INFO",

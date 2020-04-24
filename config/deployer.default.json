@@ -20,7 +20,7 @@
   "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.4.0-alpha/mattermost-load-test-ng-v0.4.0-alpha-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
-    "ConsoleLevel": "INFO",
+    "ConsoleLevel": "ERROR",
     "ConsoleJson": false,
     "EnableFile": true,
     "FileLevel": "INFO",
