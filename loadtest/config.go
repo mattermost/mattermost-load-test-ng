@@ -172,7 +172,7 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	v.AutomaticEnv()
 
 	v.SetDefault("LogSettings.EnableConsole", true)
-	v.SetDefault("LogSettings.ConsoleLevel", "INFO")
+	v.SetDefault("LogSettings.ConsoleLevel", "ERROR")
 	v.SetDefault("LogSettings.ConsoleJson", true)
 	v.SetDefault("LogSettings.EnableFile", true)
 	v.SetDefault("LogSettings.FileLevel", "INFO")
