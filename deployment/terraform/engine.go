@@ -107,12 +107,13 @@ func checkTerraformVersion() error {
 	}
 	if version < minSupportedVersion {
 		return fmt.Errorf("minimum version of terraform %.2f is required, you have %.2f", minSupportedVersion, version)
-	} else if version > maxSupportedVersion {
+	}
+	if version > maxSupportedVersion {
 		mlog.Warn(fmt.Sprintf(`This tool officially supports till terraform %.2f, you have %.2f.
-Do you want to stop ? (Y/n).`, maxSupportedVersion, version))
+Do you want to proceed ? (Y/n).`, maxSupportedVersion, version))
 		var confirm string
 		fmt.Scanln(&confirm)
-		if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
+		if confirm != "" && !strings.EqualFold(confirm, "y") && !strings.EqualFold(confirm, "yes") {
 			return errors.New("incorrect response")
 		}
 	}
