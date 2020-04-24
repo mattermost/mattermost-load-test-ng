@@ -105,32 +105,32 @@ func (c *GenController) Run() {
 		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctPublicChannels)),
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
 			idleTimeMs: 1000,
 		},
 		"createPrivateChannel": {
 			run:        c.createPrivateChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctPrivateChannels)),
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentPrivateChannels)),
 			idleTimeMs: 1000,
 		},
 		"createDirectChannel": {
 			run:        c.createDirectChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctDirectChannels)),
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentDirectChannels)),
 			idleTimeMs: 1000,
 		},
 		"createGroupChannel": {
 			run:        c.createGroupChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PctGroupChannels)),
+			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
 			idleTimeMs: 1000,
 		},
 		"createPost": {
 			run:        c.createPost,
-			frequency:  int(math.Round(float64(c.config.NumPosts) * (1 - c.config.PctReplies))),
+			frequency:  int(math.Round(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
 			idleTimeMs: 1000,
 		},
 		"createReply": {
 			run:        c.createReply,
-			frequency:  int(math.Round(float64(c.config.NumPosts) * c.config.PctReplies)),
+			frequency:  int(math.Round(float64(c.config.NumPosts) * c.config.PercentReplies)),
 			idleTimeMs: 1000,
 		},
 		"addReaction": {

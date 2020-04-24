@@ -26,15 +26,15 @@ type Config struct {
 	NumReactions int64
 
 	// The percentage of replies to be created.
-	PctReplies float64
+	PercentReplies float64
 	// The percentage of public channels to be created.
-	PctPublicChannels float64
+	PercentPublicChannels float64
 	// The percentage of private channels to be created.
-	PctPrivateChannels float64
+	PercentPrivateChannels float64
 	// The percentage of direct channels to be created.
-	PctDirectChannels float64
+	PercentDirectChannels float64
 	// The percentage of group channels to be created.
-	PctGroupChannels float64
+	PercentGroupChannels float64
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -86,27 +86,27 @@ func (c *Config) IsValid() error {
 		return errors.New("NumReactions should be > 0")
 	}
 
-	if c.PctReplies < 0 || c.PctReplies > 1.0 {
-		return errors.New("PctReplies should be >= 0 and <= 1.0")
+	if c.PercentReplies < 0 || c.PercentReplies > 1.0 {
+		return errors.New("PercentReplies should be >= 0 and <= 1.0")
 	}
 
-	if c.PctPublicChannels < 0 || c.PctPublicChannels > 1.0 {
-		return errors.New("PctPublicChannels should be >= 0 and <= 1.0")
+	if c.PercentPublicChannels < 0 || c.PercentPublicChannels > 1.0 {
+		return errors.New("PercentPublicChannels should be >= 0 and <= 1.0")
 	}
 
-	if c.PctPrivateChannels < 0 || c.PctPrivateChannels > 1.0 {
-		return errors.New("PctPrivateChannels should be >= 0 and <= 1.0")
+	if c.PercentPrivateChannels < 0 || c.PercentPrivateChannels > 1.0 {
+		return errors.New("PercentPrivateChannels should be >= 0 and <= 1.0")
 	}
 
-	if c.PctDirectChannels < 0 || c.PctDirectChannels > 1.0 {
-		return errors.New("PctDirectChannels should be >= 0 and <= 1.0")
+	if c.PercentDirectChannels < 0 || c.PercentDirectChannels > 1.0 {
+		return errors.New("PercentDirectChannels should be >= 0 and <= 1.0")
 	}
 
-	if c.PctGroupChannels < 0 || c.PctGroupChannels > 1.0 {
-		return errors.New("PctGroupChannels should be >= 0 and <= 1.0")
+	if c.PercentGroupChannels < 0 || c.PercentGroupChannels > 1.0 {
+		return errors.New("PercentGroupChannels should be >= 0 and <= 1.0")
 	}
 
-	percentChannels := c.PctPublicChannels + c.PctPrivateChannels + c.PctDirectChannels + c.PctGroupChannels
+	percentChannels := c.PercentPublicChannels + c.PercentPrivateChannels + c.PercentDirectChannels + c.PercentGroupChannels
 	if (math.Round(percentChannels*100) / 100) != 1 {
 		return errors.New("sum of percentages for channels should be equal to 1")
 	}
