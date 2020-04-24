@@ -149,14 +149,6 @@ func main() {
 			Short: "Stop the coordinator in the current load-test deployment",
 			RunE:  RunStopCmdF,
 		},
-		{
-			Use:     "log-agents",
-			Short:   "Listens the strace output of agents and saves to a timestamped file",
-			Example: "ltctl loadtest log-agents",
-			RunE: func(_ *cobra.Command, args []string) error {
-				return terraform.New(nil).LogAgentsOutput()
-			},
-		},
 	}
 
 	loadtestCmd.AddCommand(loadtestComands...)

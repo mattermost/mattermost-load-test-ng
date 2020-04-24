@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -114,32 +113,4 @@ func openBrowser(url string) (err error) {
 		err = fmt.Errorf("unsupported platform")
 	}
 	return
-}
-
-// LogAgentsOutput listens the strace output of currently running agents and
-// saves to a timestamped file.
-func (t *Terraform) LogAgentsOutput() error {
-	output, err := t.Output()
-	if err != nil {
-		return err
-	}
-
-	extAgent, err := ssh.NewAgent()
-	if err != nil {
-		return err
-	}
-
-	for _, val := range output.Agents.Value {
-		sshc, err := extAgent.NewClient(val.PublicIP)
-		if err != nil {
-			return err
-		}
-
-		script := fmt.Sprintf("sudo strace -e trace=write -s1000 -fp $(pidof ltagent) 2>&1 | grep --line-buffered -o '\".\\+[^\"]\"' | grep --line-buffered -o '[^\"]\\+[^\"]' | while read line; do  echo >> %s_ltagent.log $line; done", time.Now().Format("20060102T1504"))
-		if err := sshc.StartCommand(script); err != nil {
-			return fmt.Errorf("error running command: %w", err)
-		}
-	}
-
-	return nil
 }
