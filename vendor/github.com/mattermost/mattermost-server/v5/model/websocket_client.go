@@ -6,7 +6,6 @@ package model
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -174,10 +173,9 @@ func (wsc *WebSocketClient) Listen() {
 		buf.Grow(avgReadMsgSizeBytes)
 
 		for {
-			var rawMsg json.RawMessage
-			var err error
-			var r io.Reader
-			_, r, err = wsc.Conn.NextReader()
+			// Reset buffer.
+			buf.Reset()
+			_, r, err := wsc.Conn.NextReader()
 			if err != nil {
 				if !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseNoStatusReceived) {
 					wsc.ListenError = NewAppError("NewWebSocketClient", "model.websocket_client.connect_fail.app_error", nil, err.Error(), http.StatusInternalServerError)
@@ -189,14 +187,12 @@ func (wsc *WebSocketClient) Listen() {
 			if err != nil {
 				// This should use a different error ID, but en.json is not imported anyways.
 				// It's a different bug altogether but we let it be for now.
+				// See MM-24520.
 				wsc.ListenError = NewAppError("NewWebSocketClient", "model.websocket_client.connect_fail.app_error", nil, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			rawMsg = buf.Bytes()
-			event := WebSocketEventFromJson(bytes.NewReader(rawMsg))
-			// Reset buffer.
-			buf.Reset()
+			event := WebSocketEventFromJson(&buf)
 			if event == nil {
 				continue
 			}
@@ -206,7 +202,7 @@ func (wsc *WebSocketClient) Listen() {
 			}
 
 			var response WebSocketResponse
-			if err := json.Unmarshal(rawMsg, &response); err == nil && response.IsValid() {
+			if err := json.Unmarshal(buf.Bytes(), &response); err == nil && response.IsValid() {
 				wsc.ResponseChannel <- &response
 				continue
 			}
