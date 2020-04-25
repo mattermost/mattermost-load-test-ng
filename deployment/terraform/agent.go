@@ -86,7 +86,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 
 		batch := []uploadInfo{
 			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
-			{srcData: strings.TrimPrefix(sysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			{srcData: strings.TrimPrefix(coordinatorServiceFile, "\n"), dstPath: "/lib/systemd/system/ltcoordinator.service", msg: "Uploading coordinator service file"},
 		}
