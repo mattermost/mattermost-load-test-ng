@@ -39,7 +39,9 @@ func (th *TestHelper) Init() *TestHelper {
 }
 
 func (th *TestHelper) CreateUser() *UserEntity {
-	s := memstore.New()
+	s, err := memstore.New(nil)
+	require.NotNil(th.tb, s)
+	require.NoError(th.tb, err)
 	u := New(s, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,

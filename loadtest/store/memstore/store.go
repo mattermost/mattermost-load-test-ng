@@ -5,6 +5,7 @@ package memstore
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -15,31 +16,50 @@ import (
 // MemStore is a simple implementation of MutableUserStore
 // which holds all data in memory.
 type MemStore struct {
-	lock           sync.RWMutex
-	user           *model.User
-	preferences    *model.Preferences
-	config         *model.Config
-	emojis         []*model.Emoji
-	posts          map[string]*model.Post
-	teams          map[string]*model.Team
-	channels       map[string]*model.Channel
-	channelMembers map[string]map[string]*model.ChannelMember
-	teamMembers    map[string]map[string]*model.TeamMember
-	users          map[string]*model.User
-	statuses       map[string]*model.Status
-	reactions      map[string][]*model.Reaction
-	roles          map[string]*model.Role
-	license        map[string]string
-	currentChannel *model.Channel
-	currentTeam    *model.Team
-	channelViews   map[string]int64
+	lock                sync.RWMutex
+	user                *model.User
+	preferences         *model.Preferences
+	config              *model.Config
+	emojis              []*model.Emoji
+	posts               map[string]*model.Post
+	postsQueue          *CQueue
+	teams               map[string]*model.Team
+	channels            map[string]*model.Channel
+	channelMembers      map[string]map[string]*model.ChannelMember
+	channelMembersQueue *CQueue
+	teamMembers         map[string]map[string]*model.TeamMember
+	users               map[string]*model.User
+	usersQueue          *CQueue
+	statuses            map[string]*model.Status
+	statusesQueue       *CQueue
+	reactions           map[string][]*model.Reaction
+	roles               map[string]*model.Role
+	license             map[string]string
+	currentChannel      *model.Channel
+	currentTeam         *model.Team
+	channelViews        map[string]int64
 }
 
-// New returns a new instance of MemStore.
-func New() *MemStore {
+// New returns a new instance of MemStore with the given config.
+// If config is nil, defaults will be used.
+func New(config *Config) (*MemStore, error) {
+	if config == nil {
+		config = &Config{}
+		config.SetDefaults()
+	}
+	if err := config.IsValid(); err != nil {
+		return nil, fmt.Errorf("memstore: config validation failed %w", err)
+	}
+
 	s := &MemStore{}
+
+	if err := s.setupQueues(config); err != nil {
+		return nil, err
+	}
+
 	s.Clear()
-	return s
+
+	return s, nil
 }
 
 // Clear resets the store and removes all entries
@@ -50,16 +70,67 @@ func (s *MemStore) Clear() {
 	s.config = nil
 	s.emojis = []*model.Emoji{}
 	s.posts = map[string]*model.Post{}
+	s.postsQueue.Reset()
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
+	s.channelMembersQueue.Reset()
 	s.teamMembers = map[string]map[string]*model.TeamMember{}
 	s.users = map[string]*model.User{}
+	s.usersQueue.Reset()
 	s.statuses = map[string]*model.Status{}
+	s.statusesQueue.Reset()
 	s.reactions = map[string][]*model.Reaction{}
 	s.roles = map[string]*model.Role{}
 	s.license = map[string]string{}
 	s.channelViews = map[string]int64{}
+}
+
+func (s *MemStore) setupQueues(config *Config) error {
+	setups := []struct {
+		size  int
+		newEl func() interface{}
+		ptr   **CQueue
+	}{
+		{
+			config.MaxStoredPosts,
+			func() interface{} {
+				return new(model.Post)
+			},
+			&s.postsQueue,
+		},
+		{
+			config.MaxStoredUsers,
+			func() interface{} {
+				return new(model.User)
+			},
+			&s.usersQueue,
+		},
+		{
+			config.MaxStoredChannelMembers,
+			func() interface{} {
+				return new(model.ChannelMember)
+			},
+			&s.channelMembersQueue,
+		},
+		{
+			config.MaxStoredStatuses,
+			func() interface{} {
+				return new(model.Status)
+			},
+			&s.statusesQueue,
+		},
+	}
+
+	for _, setup := range setups {
+		queue, err := NewCQueue(setup.size, setup.newEl)
+		if err != nil {
+			return fmt.Errorf("memstore: queue creation failed %w", err)
+		}
+		*setup.ptr = queue
+	}
+
+	return nil
 }
 
 func (s *MemStore) Id() string {
@@ -150,7 +221,8 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if post, ok := s.posts[postId]; ok {
-		return post, nil
+		p := post.Clone()
+		return p, nil
 	}
 	return nil, nil
 }
@@ -161,7 +233,8 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	var channelPosts []*model.Post
 	for _, post := range s.posts {
 		if post.ChannelId == channelId {
-			channelPosts = append(channelPosts, post)
+			p := post.Clone()
+			channelPosts = append(channelPosts, p)
 		}
 	}
 
@@ -202,7 +275,17 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	if post == nil {
 		return errors.New("memstore: post should not be nil")
 	}
-	s.posts[post.Id] = post
+
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+	p := s.postsQueue.Get().(*model.Post)
+	if pp, ok := s.posts[p.Id]; ok && pp == p {
+		delete(s.posts, p.Id)
+	}
+	post.ShallowCopy(p)
+	s.posts[post.Id] = p
+
 	return nil
 }
 
@@ -217,7 +300,6 @@ func (s *MemStore) SetPosts(posts []*model.Post) error {
 	if len(posts) == 0 {
 		return errors.New("memstore: posts should not be nil or empty")
 	}
-
 	for _, post := range posts {
 		if err := s.SetPost(post); err != nil {
 			return err
@@ -396,7 +478,18 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 		if s.channelMembers[cm.ChannelId] == nil {
 			s.channelMembers[cm.ChannelId] = make(map[string]*model.ChannelMember)
 		}
-		s.channelMembers[cm.ChannelId][cm.UserId] = cm
+
+		// We get an element from the queue and check if we have it in the map and
+		// if it points to the same memory location. If so, we delete it since it means the queue is full.
+		// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+		c := s.channelMembersQueue.Get().(*model.ChannelMember)
+		if s.channelMembers[c.ChannelId] != nil {
+			if cc, ok := s.channelMembers[c.ChannelId][c.UserId]; ok && cc == c {
+				delete(s.channelMembers[c.ChannelId], c.UserId)
+			}
+		}
+		*c = *cm
+		s.channelMembers[cm.ChannelId][cm.UserId] = c
 	}
 
 	return nil
@@ -420,10 +513,28 @@ func (s *MemStore) SetChannelMember(channelId string, channelMember *model.Chann
 	if channelMember == nil {
 		return errors.New("memstore: channelMember should not be nil")
 	}
+
+	if channelId != channelMember.ChannelId {
+		return errors.New("memstore: channelMember is not valid")
+	}
+
 	if s.channelMembers[channelId] == nil {
 		s.channelMembers[channelId] = map[string]*model.ChannelMember{}
 	}
-	s.channelMembers[channelId][channelMember.UserId] = channelMember
+
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+	cm := s.channelMembersQueue.Get().(*model.ChannelMember)
+	if s.channelMembers[cm.ChannelId] != nil {
+		if cc, ok := s.channelMembers[cm.ChannelId][cm.UserId]; ok && cc == cm {
+			delete(s.channelMembers[cm.ChannelId], cm.UserId)
+		}
+	}
+
+	*cm = *channelMember
+	s.channelMembers[channelId][channelMember.UserId] = cm
+
 	return nil
 }
 
@@ -553,7 +664,8 @@ func (s *MemStore) Users() ([]*model.User, error) {
 	users := make([]*model.User, len(s.users))
 	i := 0
 	for _, user := range s.users {
-		users[i] = user
+		u := *user
+		users[i] = &u
 		i++
 	}
 	return users, nil
@@ -579,10 +691,17 @@ func (s *MemStore) GetUser(userId string) (model.User, error) {
 func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	//s.users = make(map[string]*model.User)
 	for _, user := range users {
-		s.users[user.Id] = user
+		// We get an element from the queue and check if we have it in the map and
+		// if it points to the same memory location. If so, we delete it since it means the queue is full.
+		// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+		u := s.usersQueue.Get().(*model.User)
+		if uu, ok := s.users[u.Id]; ok && uu == u {
+			delete(s.users, u.Id)
+		}
+
+		*u = *user
+		s.users[user.Id] = u
 	}
 	return nil
 }
@@ -615,7 +734,20 @@ func (s *MemStore) SetStatus(userId string, status *model.Status) error {
 		return errors.New("memstore: status should not be nil")
 	}
 
-	s.statuses[userId] = status
+	if userId != status.UserId {
+		return errors.New("memstore: status is not valid")
+	}
+
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+	st := s.statusesQueue.Get().(*model.Status)
+	if ss, ok := s.statuses[st.UserId]; ok && ss == st {
+		delete(s.statuses, st.UserId)
+	}
+
+	*st = *status
+	s.statuses[userId] = st
 
 	return nil
 }

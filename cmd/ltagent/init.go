@@ -74,7 +74,10 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 			Email:        fmt.Sprintf("testuser-%d@example.com", index),
 			Password:     "testPass123$",
 		}
-		store := memstore.New()
+		store, err := memstore.New(nil)
+		if err != nil {
+			return err
+		}
 		u := userentity.New(store, ueConfig)
 
 		if err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password); err != nil {
@@ -112,7 +115,10 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		ServerURL:    config.ConnectionConfiguration.ServerURL,
 		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
 	}
-	store := memstore.New()
+	store, err := memstore.New(nil)
+	if err != nil {
+		return err
+	}
 	err = store.SetUser(&model.User{
 		Email:    config.ConnectionConfiguration.AdminEmail,
 		Password: config.ConnectionConfiguration.AdminPassword,

@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRandomUsers(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	id1 := model.NewId()
 	id2 := model.NewId()
 	id3 := model.NewId()
@@ -44,7 +44,7 @@ func TestRandomUsers(t *testing.T) {
 }
 
 func TestRandomUser(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	id1 := model.NewId()
 	id2 := model.NewId()
 	err := s.SetUsers([]*model.User{
@@ -65,7 +65,7 @@ func TestRandomUser(t *testing.T) {
 }
 
 func TestRandomPost(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	id1 := model.NewId()
 	id2 := model.NewId()
 	err := s.SetPosts([]*model.Post{
@@ -86,7 +86,7 @@ func TestRandomPost(t *testing.T) {
 }
 
 func TestRandomPostForChannel(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	post, err := s.RandomPostForChannel("someId")
 	require.Empty(t, &post)
 	require.Equal(t, ErrPostNotFound, err)
@@ -133,7 +133,7 @@ func TestRandomPostForChannel(t *testing.T) {
 
 func TestRandomEmoji(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		id1 := model.NewId()
 		id2 := model.NewId()
 		err := s.SetEmojis([]*model.Emoji{
@@ -153,14 +153,14 @@ func TestRandomEmoji(t *testing.T) {
 		})
 	})
 	t.Run("emptyslice", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		_, err := s.RandomEmoji()
 		require.Equal(t, ErrEmptySlice, err)
 	})
 }
 
 func TestRandomChannelMember(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	channelId := model.NewId()
 	userId := model.NewId()
 	userId2 := model.NewId()
@@ -190,7 +190,7 @@ func TestRandomChannelMember(t *testing.T) {
 }
 
 func TestRandomTeamMember(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	teamId := model.NewId()
 	userId := model.NewId()
 	userId2 := model.NewId()
@@ -250,7 +250,7 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 var errG error
 
 func BenchmarkRandomTeam(b *testing.B) {
-	s := New()
+	s := newStore(b)
 	s.SetUser(&model.User{})
 	id1 := model.NewId()
 	id2 := model.NewId()
@@ -268,7 +268,7 @@ func BenchmarkRandomTeam(b *testing.B) {
 
 func TestRandomTeam(t *testing.T) {
 	t.Run("user not set", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		team, err := s.RandomTeam(store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, team)
@@ -276,7 +276,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team not found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -289,7 +289,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("select rom any", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		id1 := model.NewId()
 		id2 := model.NewId()
@@ -311,7 +311,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team found which user is a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -363,7 +363,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team found which user is not a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -393,7 +393,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("no current team", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -450,7 +450,7 @@ func TestRandomTeam(t *testing.T) {
 
 func TestRandomChannel(t *testing.T) {
 	t.Run("basic any channel", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		id1 := model.NewId()
 		id2 := model.NewId()
@@ -478,7 +478,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("emptyslice", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		err := s.SetTeams([]*model.Team{
 			{
@@ -491,7 +491,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("user not set", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		channel, err := s.RandomChannel(model.NewId(), store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, channel)
@@ -499,7 +499,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("team not found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -512,7 +512,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("no channel found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -537,7 +537,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("channel found which is the user a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -583,7 +583,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("channel found which is the user is not a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -616,7 +616,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("no current channel", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
