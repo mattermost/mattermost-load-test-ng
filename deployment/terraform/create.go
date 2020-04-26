@@ -296,6 +296,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.SqlSettings.DriverName = model.NewString(driverName)
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
+	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
+	cfg.SqlSettings.MaxOpenConns = model.NewInt(512)
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
