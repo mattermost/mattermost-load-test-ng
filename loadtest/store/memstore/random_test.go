@@ -44,23 +44,65 @@ func TestRandomUsers(t *testing.T) {
 }
 
 func TestRandomUser(t *testing.T) {
-	s := newStore(t)
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetUsers([]*model.User{
-		{Id: id1},
-		{Id: id2},
-	})
-	require.NoError(t, err)
-	u, err := s.RandomUser()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch u.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
+	t.Run("myself", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{
+			Id: "test",
 		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		err = s.SetUsers([]*model.User{user})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.Equal(t, err, ErrLenMismatch)
+		require.Empty(t, u)
+	})
+
+	t.Run("two users", func(t *testing.T) {
+		s := newStore(t)
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetUsers([]*model.User{
+			{Id: id1},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch u.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("three users, not myself", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id1 := model.NewId()
+		id2 := model.NewId()
+		me := &model.User{Id: myId}
+		err := s.SetUser(me)
+		require.NoError(t, err)
+		err = s.SetUsers([]*model.User{
+			{Id: id1},
+			{Id: id2},
+			{Id: myId},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch u.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
 	})
 }
 

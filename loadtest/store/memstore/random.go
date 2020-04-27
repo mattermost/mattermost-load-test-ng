@@ -115,7 +115,7 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	if len(s.users) < 1 {
+	if len(s.users) < 2 {
 		return model.User{}, ErrLenMismatch
 	}
 

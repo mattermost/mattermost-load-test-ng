@@ -134,8 +134,8 @@ func (s *MemStore) setupQueues(config *Config) error {
 }
 
 func (s *MemStore) Id() string {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	if s.user == nil {
 		return ""
 	}
