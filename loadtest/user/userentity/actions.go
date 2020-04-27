@@ -355,6 +355,14 @@ func (ue *UserEntity) GetChannelsForTeam(teamId string, includeDeleted bool) err
 	return ue.store.SetChannels(channels)
 }
 
+func (ue *UserEntity) GetPublicChannelsForTeam(teamId string, page, perPage int) error {
+	channels, resp := ue.client.GetPublicChannelsForTeam(teamId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetChannels(channels)
+}
+
 func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	channels, resp := ue.client.SearchChannels(teamId, search)
 	if resp.Error != nil {

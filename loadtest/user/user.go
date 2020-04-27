@@ -78,6 +78,7 @@ type User interface {
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
 	GetChannelsForTeam(teamId string, includeDeleted bool) error
+	GetPublicChannelsForTeam(teamId string, page, perPage int) error
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)

@@ -148,6 +148,10 @@ func (u *SampleUser) GetChannelsForTeam(teamId string, includeDeleted bool) erro
 	return nil
 }
 
+func (u *SampleUser) GetPublicChannelsForTeam(teamId string, page, perPage int) error {
+	return nil
+}
+
 func (u *SampleUser) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	return nil, nil
 }

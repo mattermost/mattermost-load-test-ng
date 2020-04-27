@@ -92,23 +92,24 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
-	teamIds, err := u.GetAllTeams(0, 100)
-	if err != nil {
+
+	if _, err := u.GetAllTeams(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	for _, teamId := range teamIds {
-		tm, err := userStore.TeamMember(teamId, userId)
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if tm.UserId == "" {
-			if err := u.AddTeamMember(teamId, userId); err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-			c.status <- c.newInfoStatus(fmt.Sprintf("joined team %s", teamId))
-			break
-		}
+
+	team, err := u.Store().RandomTeam(store.SelectNotMemberOf)
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		c.status <- c.newInfoStatus("no team to join")
+		return c.switchTeam(u)
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
+	if err := u.AddTeamMember(team.Id, userId); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	c.status <- c.newInfoStatus(fmt.Sprintf("joined team %s", team.Id))
+
 	return c.switchTeam(u)
 }
 
@@ -157,6 +158,32 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 	// for now we can simplify and randomly pick one each time.
 
 	return switchChannel(u)
+}
+
+func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+	}
+
+	if err := u.GetPublicChannelsForTeam(team.Id, 0, 100); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectNotMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channel to join"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.AddChannelMember(channel.Id, u.Store().Id()); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channel.Id)}
 }
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {

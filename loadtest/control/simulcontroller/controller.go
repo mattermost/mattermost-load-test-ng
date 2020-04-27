@@ -87,6 +87,9 @@ func (c *SimulController) Run() {
 		{
 			run: c.joinTeam,
 		},
+		{
+			run: c.joinChannel,
+		},
 	}
 
 	for _, action := range initActions {
@@ -118,18 +121,14 @@ func (c *SimulController) Run() {
 			frequency: 55,
 		},
 		{
-			run:       c.createDirectChannel,
-			frequency: 1,
-		},
-		{
-			run:       c.createGroupChannel,
-			frequency: 1,
-		},
-		{
 			run: func(u user.User) control.UserActionResponse {
 				return c.reload(true)
 			},
 			frequency: 40,
+		},
+		{
+			run:       c.joinChannel,
+			frequency: 11,
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
@@ -153,6 +152,14 @@ func (c *SimulController) Run() {
 				return c.reload(false)
 			},
 			frequency: 3,
+		},
+		{
+			run:       c.createDirectChannel,
+			frequency: 1,
+		},
+		{
+			run:       c.createGroupChannel,
+			frequency: 1,
 		},
 	}
 
