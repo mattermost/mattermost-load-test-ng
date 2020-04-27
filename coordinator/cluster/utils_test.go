@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 
 func createMockAgents(t *testing.T) []*agent.LoadAgent {
 	cfg := agent.LoadAgentConfig{
-		ApiURL: "api",
+		ApiURL: "localhost:8065",
 		Id:     "id",
 
 		LoadTestConfig: loadtest.Config{
@@ -33,6 +34,10 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 			},
 			InstanceConfiguration: loadtest.InstanceConfiguration{
 				NumTeams: 1,
+			},
+			LogSettings: logger.Settings{
+				ConsoleLevel: "ERROR",
+				FileLevel:    "ERROR",
 			},
 		},
 	}

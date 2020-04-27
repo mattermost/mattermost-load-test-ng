@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -39,7 +40,8 @@ func TestAPI(t *testing.T) {
 		Expect().
 		Status(http.StatusNotFound)
 
-	ltConfig, err := loadtest.ReadConfig("../config/config.default.json")
+	ltConfig := loadtest.Config{}
+	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
 	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
@@ -53,7 +55,7 @@ func TestAPI(t *testing.T) {
 
 	t.Run("test with loadtest.Config only", func(t *testing.T) {
 		rd := requestData{
-			LoadTestConfig: *ltConfig,
+			LoadTestConfig: ltConfig,
 		}
 		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
@@ -112,7 +114,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with a simplecontroller.Config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimple
 		rd := requestData{
-			LoadTestConfig:         *ltConfig,
+			LoadTestConfig:         ltConfig,
 			SimpleControllerConfig: ucConfig1,
 		}
 		ltId := "lt0"
@@ -129,7 +131,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with simulcontroller.Config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimulative
 		rd := requestData{
-			LoadTestConfig:        *ltConfig,
+			LoadTestConfig:        ltConfig,
 			SimulControllerConfig: ucConfig2,
 		}
 		ltId := "lt0"
@@ -146,7 +148,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with no controller config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimulative
 		rd := requestData{
-			LoadTestConfig: *ltConfig,
+			LoadTestConfig: ltConfig,
 		}
 		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
