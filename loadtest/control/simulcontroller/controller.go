@@ -127,6 +127,10 @@ func (c *SimulController) Run() {
 			frequency: 40,
 		},
 		{
+			run:       createPostReply,
+			frequency: 20,
+		},
+		{
 			run:       c.joinChannel,
 			frequency: 11,
 		},

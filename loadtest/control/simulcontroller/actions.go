@@ -255,6 +255,52 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 	return control.UserActionResponse{Info: "got statuses"}
 }
 
+func createPostReply(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	var rootId string
+	if post.RootId != "" {
+		rootId = post.RootId
+	} else {
+		rootId = post.Id
+	}
+
+	// TODO: possibly add some additional idle time here to simulate the
+	// user actually taking time to type a post message.
+	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// This is an estimate that comes from stats on community servers.
+	// The average length (in words) for a reply.
+	// TODO: should be part of some advanced configuration.
+	avgWordCount := 24
+	minWordCount := 1
+
+	// TODO: make a util function out of this behaviour.
+	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   control.GenerateRandomSentences(wordCount),
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().Unix() * 1000,
+		RootId:    rootId,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", postId)}
+}
+
 func createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
