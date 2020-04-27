@@ -95,6 +95,13 @@ type UserStore interface {
 	RandomChannelMember(channelId string) (model.ChannelMember, error)
 	// RandomTeamMember returns a random team member for a team.
 	RandomTeamMember(teamId string) (model.TeamMember, error)
+
+	// profile
+	ProfileImage(userId string) (bool, error)
+
+	// posts
+	// UserForPost returns the userId for the user who created the given post.
+	UserForPost(postId string) (string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -165,4 +172,7 @@ type MutableUserStore interface {
 	// license
 	// SetLicense stores the given license in the store.
 	SetLicense(license map[string]string) error
+
+	// profile
+	SetProfileImage(userId string) error
 }

@@ -38,6 +38,7 @@ type MemStore struct {
 	currentChannel      *model.Channel
 	currentTeam         *model.Team
 	channelViews        map[string]int64
+	profileImages       map[string]bool
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -84,6 +85,7 @@ func (s *MemStore) Clear() {
 	s.roles = map[string]*model.Role{}
 	s.license = map[string]string{}
 	s.channelViews = map[string]int64{}
+	s.profileImages = map[string]bool{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -227,6 +229,18 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 	return nil, nil
 }
 
+func (s *MemStore) UserForPost(postId string) (string, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if postId == "" {
+		return "", errors.New("memstore: postId should not be empty")
+	}
+	if post, ok := s.posts[postId]; ok {
+		return post.UserId, nil
+	}
+	return "", nil
+}
+
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -267,6 +281,24 @@ func (s *MemStore) PostsIdsSince(ts int64) ([]string, error) {
 		}
 	}
 	return postsIds, nil
+}
+
+func (s *MemStore) UsersIdsForPostsIds(postIds []string) ([]string, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	var users map[string]bool
+	for _, postId := range postIds {
+		if post, ok := s.posts[postId]; ok && users[post.UserId] {
+			users[post.UserId] = true
+		}
+	}
+	var i int
+	userIds := make([]string, len(users))
+	for id := range users {
+		userIds[i] = id
+		i++
+	}
+	return userIds, nil
 }
 
 func (s *MemStore) SetPost(post *model.Post) error {
@@ -784,5 +816,31 @@ func (s *MemStore) SetLicense(license map[string]string) error {
 	defer s.lock.Unlock()
 
 	s.license = license
+	return nil
+}
+
+// ProfileImage returns whether the profile image for the given user has been
+// stored.
+func (s *MemStore) ProfileImage(userId string) (bool, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if userId == "" {
+		return false, errors.New("memstore: userId should not be empty")
+	}
+
+	return s.profileImages[userId], nil
+}
+
+// SetProfileImage sets as stored the profile image for the given user.
+func (s *MemStore) SetProfileImage(userId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if userId == "" {
+		return errors.New("memstore: userId should not be empty")
+	}
+
+	s.profileImages[userId] = true
 	return nil
 }

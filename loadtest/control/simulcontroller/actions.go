@@ -203,16 +203,32 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	var postsIds []string
 	if view, err := u.Store().ChannelView(channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if view == 0 {
-		if err := u.GetPostsAroundLastUnread(channel.Id, 30, 30); err != nil {
+		postsIds, err = u.GetPostsAroundLastUnread(channel.Id, 30, 30)
+		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
-		if err := u.GetPostsSince(channel.Id, time.Now().Add(-1*time.Minute).Unix()*1000); err != nil {
+		postsIds, err = u.GetPostsSince(channel.Id, time.Now().Add(-1*time.Minute).Unix()*1000)
+		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+	}
+
+	var userIds []string
+	for _, postId := range postsIds {
+		userId, err := u.Store().UserForPost(postId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		userIds = append(userIds, userId)
+	}
+
+	if err := getProfileImageForUsers(u, userIds); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if err := u.GetChannelStats(channel.Id); err != nil {
@@ -379,7 +395,12 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 func (c *SimulController) createDirectChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
-	if err := u.GetUsers(0, 100); err != nil {
+	userIds, err := u.GetUsers(0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := getProfileImageForUsers(u, userIds); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -437,7 +458,12 @@ func (c *SimulController) createDirectChannel(u user.User) control.UserActionRes
 func (c *SimulController) createGroupChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a group channel.
-	if err := u.GetUsers(0, 100); err != nil {
+	userIds, err := u.GetUsers(0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := getProfileImageForUsers(u, userIds); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -452,7 +478,7 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 
 	// TODO: this transformation should be done at the store layer
 	// by providing something like RandomUsersIds().
-	userIds := make([]string, numUsers)
+	userIds = make([]string, numUsers)
 	for i := range users {
 		userIds[i] = users[i].Id
 	}
@@ -489,4 +515,20 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 	c.status <- c.newInfoStatus(fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds))
 
 	return createPost(u)
+}
+
+func getProfileImageForUsers(u user.User, userIds []string) error {
+	for _, userId := range userIds {
+		ok, err := u.Store().ProfileImage(userId)
+		if err != nil {
+			return err
+		}
+		if ok {
+			continue
+		}
+		if err := u.GetProfileImageForUser(userId); err != nil {
+			return err
+		}
+	}
+	return nil
 }
