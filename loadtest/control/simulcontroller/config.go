@@ -4,7 +4,6 @@
 package simulcontroller
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
@@ -16,10 +15,10 @@ import (
 type Config struct {
 	// The minium amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	MinIdleTimeMs int
+	MinIdleTimeMs int `default:"1000" validate:"range:(0,]"`
 	// The average amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	AvgIdleTimeMs int
+	AvgIdleTimeMs int `default:"5000" validate:"range:($MinIdleTimeMs,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -49,18 +48,4 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// IsValid reports whether a given simulcontroller.Config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if c.MinIdleTimeMs <= 0 {
-		return fmt.Errorf("MinIdleTimeMs should be greater than zero")
-	}
-
-	if c.AvgIdleTimeMs <= c.MinIdleTimeMs {
-		return fmt.Errorf("AvgIdleTimeMs should be greater than MinIdleTimeMs")
-	}
-
-	return nil
 }

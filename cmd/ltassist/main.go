@@ -10,9 +10,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
@@ -22,12 +22,12 @@ import (
 type config struct {
 	docPath      string
 	defaultPath  string
-	defaultValue control.Config
+	defaultValue interface{}
 }
 
 func init() {
 	for k, c := range configs {
-		cfg, err := readDefaultConfig(k, c.defaultPath)
+		cfg, err := getDefaultConfig(k, c.defaultPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not read default configuration files: %s\n", err)
 			os.Exit(1)
@@ -141,7 +141,7 @@ func createConfig(name string) error {
 		return fmt.Errorf("could not create struct: %w", err)
 	}
 
-	if err = v.Addr().Interface().(control.Config).IsValid(); err != nil {
+	if err = defaults.Validate(v.Addr().Interface()); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -173,18 +173,30 @@ func validTypes() string {
 	return s
 }
 
-func readDefaultConfig(configType, defaultPath string) (control.Config, error) {
+func getDefaultConfig(configType, defaultPath string) (interface{}, error) {
+	var cfg interface{}
+	var err error
 	switch configType {
 	case "agent":
-		return loadtest.ReadConfig(defaultPath)
+		cfg = &loadtest.Config{}
+		err = defaults.Set(cfg)
 	case "coordinator":
-		return coordinator.ReadConfig(defaultPath)
+		cfg = &coordinator.Config{}
+		err = defaults.Set(cfg)
 	case "deployer":
-		return deployment.ReadConfig(defaultPath)
+		cfg = &deployment.Config{}
+		err = defaults.Set(cfg)
 	case "simplecontroller":
-		return simplecontroller.ReadConfig(defaultPath)
+		cfg = &simplecontroller.Config{}
+		err = defaults.Set(cfg)
 	case "simulcontroller":
-		return simulcontroller.ReadConfig(defaultPath)
+		cfg = &simulcontroller.Config{}
+		err = defaults.Set(cfg)
+	default:
+		err = fmt.Errorf("could not find: %q", configType)
 	}
-	return nil, fmt.Errorf("could not find: %q", configType)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

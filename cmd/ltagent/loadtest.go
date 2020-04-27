@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -29,7 +30,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -44,7 +45,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	var ucConfig control.Config
+	var ucConfig interface{}
 	switch controllerType {
 	case loadtest.UserControllerSimple:
 		ucConfig, err = simplecontroller.ReadConfig(ucConfigPath)

@@ -15,17 +15,17 @@ import (
 // the SimpleController.
 type Config struct {
 	// Actions are the user action definitions that will be run by the controller.
-	Actions []actionDefinition
+	Actions []actionDefinition `default_size:"1"`
 }
 
 type actionDefinition struct {
 	// ActionId is the key of an action which is mapped to a user action
 	// implementation.
-	ActionId string
+	ActionId string `default:"Login" validate:"text"`
 	// RunPeriod determines how often the action will be performed.
-	RunPeriod int
+	RunPeriod int `default:"20" validate:"range:[0,]"`
 	// WaitAfterMs is the wait time after the action is performed.
-	WaitAfterMs int
+	WaitAfterMs int `default:"1000" validate:"range:(0,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -56,8 +56,4 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-func (c *Config) IsValid() error {
-	return nil
 }

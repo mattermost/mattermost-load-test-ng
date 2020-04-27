@@ -4,7 +4,6 @@
 package loadtest
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
@@ -14,28 +13,10 @@ import (
 )
 
 type ConnectionConfiguration struct {
-	ServerURL     string
-	WebSocketURL  string
-	AdminEmail    string
-	AdminPassword string
-}
-
-// IsValid reports whether a given ConnectionConfiguration is valid or not.
-// Returns an error if the validation fails.
-func (cc *ConnectionConfiguration) IsValid() error {
-	if cc.ServerURL == "" {
-		return fmt.Errorf("ServerURL is not present in config")
-	}
-	if cc.WebSocketURL == "" {
-		return fmt.Errorf("WebSocketURL is not present in config")
-	}
-	if cc.AdminEmail == "" {
-		return fmt.Errorf("AdminEmail is not present in config")
-	}
-	if cc.AdminPassword == "" {
-		return fmt.Errorf("AdminPassword is not present in config")
-	}
-	return nil
+	ServerURL     string `default:"http://localhost:8065" validate:"url"`
+	WebSocketURL  string `default:"ws://localhost:8065" validate:"url"`
+	AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+	AdminPassword string `default:"Sys@dmin-sample1" validate:"text"`
 }
 
 // userControllerType describes the type of a UserController.
@@ -48,19 +29,6 @@ const (
 	UserControllerNoop                          = "noop"
 )
 
-// IsValid reports whether a given UserControllerType is valid or not.
-// Returns an error if the validation fails.
-func (t userControllerType) IsValid() error {
-	switch t {
-	case UserControllerSimple, UserControllerSimulative:
-		return nil
-	case "":
-		return fmt.Errorf("UserControllerType cannot be empty")
-	default:
-		return fmt.Errorf("UserControllerType %s is not valid", t)
-	}
-}
-
 // UserControllerConfiguration holds information about the UserController to
 // run during a load-test.
 type UserControllerConfiguration struct {
@@ -68,64 +36,26 @@ type UserControllerConfiguration struct {
 	// Possible values:
 	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
-	Type userControllerType
+	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop}"`
 	// A rate multiplier that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
-	Rate float64
-}
-
-// IsValid reports whether a given UserControllerConfiguration is valid or not.
-// Returns an error if the validation fails.
-func (ucc *UserControllerConfiguration) IsValid() error {
-	if err := ucc.Type.IsValid(); err != nil {
-		return fmt.Errorf("could not validate configuration: %w", err)
-	}
-	if ucc.Rate < 0 {
-		return fmt.Errorf("rate cannot be < 0")
-	}
-	return nil
+	Rate float64 `default:"1.0" validate:"range:(0,)"`
 }
 
 type InstanceConfiguration struct {
-	NumTeams          int
-	NumChannels       int
-	NumTeamAdmins     int
-	TeamAdminInterval int
-}
-
-// IsValid reports whether a given InstanceConfiguration is valid or not.
-// Returns an error if the validation fails.
-func (ic *InstanceConfiguration) IsValid() error {
-	if ic.NumTeams <= 0 {
-		return fmt.Errorf("NumTeams cannot be <= 0")
-	}
-	return nil
+	NumTeams          int `default:"2" validate:"range:(0,]"`
+	NumChannels       int `default:"10"`
+	NumTeamAdmins     int `default:"2"`
+	TeamAdminInterval int `default:"10"`
 }
 
 type UsersConfiguration struct {
-	InitialActiveUsers int
-	MaxActiveUsers     int
-	AvgSessionsPerUser int
-}
-
-// IsValid reports whether a given UsersConfiguration is valid or not.
-func (uc *UsersConfiguration) IsValid() error {
-	if uc.InitialActiveUsers < 0 {
-		return fmt.Errorf("InitialActiveUsers cannot be < 0")
-	}
-	if uc.MaxActiveUsers <= 0 {
-		return fmt.Errorf("MaxActiveUsers cannot be <= 0")
-	}
-	if uc.InitialActiveUsers > uc.MaxActiveUsers {
-		return fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
-	}
-	if uc.AvgSessionsPerUser < 1 {
-		return fmt.Errorf("AvgSessionsPerUser cannot be < 1")
-	}
-	return nil
+	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
+	MaxActiveUsers     int `default:"1000" validate:"range:(0,]"`
+	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 }
 
 type Config struct {
@@ -134,28 +64,6 @@ type Config struct {
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
 	LogSettings                 logger.Settings
-}
-
-// IsValid reports whether a config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if err := c.ConnectionConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid connection configuration: %w", err)
-	}
-
-	if err := c.InstanceConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid instance configuration: %w", err)
-	}
-
-	if err := c.UserControllerConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid user controller configuration: %w", err)
-	}
-
-	if err := c.UsersConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid users configuration: %w", err)
-	}
-
-	return nil
 }
 
 func ReadConfig(configFilePath string) (*Config, error) {

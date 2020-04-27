@@ -4,7 +4,6 @@
 package coordinator
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/config"
@@ -24,13 +23,13 @@ type Config struct {
 	MonitorConfig performance.MonitorConfig
 	// The number of active users to increment at each iteration of the feedback loop.
 	// It should be proportional to the maximum number of users expected to test.
-	NumUsersInc int
+	NumUsersInc int `default:"16" validate:"range:(0,]"`
 	// The number of users to decrement at each iteration of the feedback loop.
 	// It should be proportional to the maximum number of users expected to test.
-	NumUsersDec int
+	NumUsersDec int `default:"16" validate:"range:(0,]"`
 	// The number of seconds to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
-	RestTimeSec int
+	RestTimeSec int `default:"10" validate:"range:(0,]"`
 	LogSettings logger.Settings
 }
 
@@ -60,30 +59,4 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// IsValid checks whether a Config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if err := c.ClusterConfig.IsValid(); err != nil {
-		return fmt.Errorf("cluster config validation failed: %w", err)
-	}
-
-	if err := c.MonitorConfig.IsValid(); err != nil {
-		return fmt.Errorf("monitor config validation failed: %w", err)
-	}
-
-	if c.NumUsersInc <= 0 {
-		return fmt.Errorf("NumUsersInc cannot be less than 1")
-	}
-
-	if c.NumUsersDec <= 0 {
-		return fmt.Errorf("NumUsersDec cannot be less than 1")
-	}
-
-	if c.RestTimeSec <= 0 {
-		return fmt.Errorf("RestTimeSec cannot be less than 1")
-	}
-
-	return nil
 }

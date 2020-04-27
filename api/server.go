@@ -10,6 +10,7 @@ import (
 	"net/http/pprof"
 	"strconv"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -54,14 +55,14 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ltConfig := data.LoadTestConfig
-	if err := ltConfig.IsValid(); err != nil {
+	if err := defaults.Validate(ltConfig); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: fmt.Sprintf("could not validate config: %s", err),
 		})
 		return
 	}
 
-	var ucConfig control.Config
+	var ucConfig interface{}
 	var err error
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
@@ -70,14 +71,14 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			ucConfig, err = simplecontroller.ReadConfig("")
 			break
 		}
-		ucConfig = data.SimpleControllerConfig
+		ucConfig = *data.SimpleControllerConfig
 	case loadtest.UserControllerSimulative:
 		if data.SimulControllerConfig == nil {
 			mlog.Warn("could not read controller config from the request")
 			ucConfig, err = simulcontroller.ReadConfig("")
 			break
 		}
-		ucConfig = data.SimulControllerConfig
+		ucConfig = *data.SimulControllerConfig
 	}
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
@@ -86,7 +87,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ucConfig != nil {
-		if err := ucConfig.IsValid(); err != nil {
+		if err := defaults.Validate(ucConfig); err != nil {
 			writeResponse(w, http.StatusBadRequest, &Response{
 				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
 			})

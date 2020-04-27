@@ -10,13 +10,13 @@ import (
 )
 
 type Settings struct {
-	EnableConsole bool
-	ConsoleJson   bool
-	ConsoleLevel  string
-	EnableFile    bool
-	FileJson      bool
-	FileLevel     string
-	FileLocation  string
+	EnableConsole bool   `default:"true"`
+	ConsoleJson   bool   `default:"false"`
+	ConsoleLevel  string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+	EnableFile    bool   `default:"true"`
+	FileJson      bool   `default:"false"`
+	FileLevel     string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+	FileLocation  string `default:"loadtest.log"`
 }
 
 func Init(logSettings *Settings) {

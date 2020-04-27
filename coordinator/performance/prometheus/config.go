@@ -10,8 +10,8 @@ type Configuration struct {
 }
 
 type Query struct {
-	Description string
-	Query       string
-	Threshold   float64
-	Alert       bool
+	Description string  `default:"Request duration" validate:"text"`
+	Query       string  `default:"rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])" validate:"text"`
+	Threshold   float64 `default:"0.2" validate:"range:[0,]"`
+	Alert       bool    `default:"true"`
 }

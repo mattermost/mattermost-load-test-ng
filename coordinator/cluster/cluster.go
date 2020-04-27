@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -21,7 +22,7 @@ type LoadAgentCluster struct {
 // New creates and initializes a new LoadAgentCluster for the given config.
 // An error is returned if the initialization fails.
 func New(config LoadAgentClusterConfig) (*LoadAgentCluster, error) {
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	agents := make([]*agent.LoadAgent, len(config.Agents))
