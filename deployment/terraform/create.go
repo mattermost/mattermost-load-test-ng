@@ -165,11 +165,13 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 				return
 			}
 
-			// Upload service file
-			mlog.Info("Uploading service file", mlog.String("host", ip))
-			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if out, err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
-				mlog.Error("error uploading systemd file", mlog.String("output", string(out)), mlog.Err(err))
+			// Upload files
+			batch := []uploadInfo{
+				{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
+				{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
+			}
+			if err := uploadBatch(sshc, batch); err != nil {
+				mlog.Error("batch upload failed", mlog.Err(err))
 				return
 			}
 
@@ -183,8 +185,8 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			}
 
 			// Starting mattermost.
-			mlog.Info("Starting mattermost", mlog.String("host", ip))
-			cmd := "sudo service mattermost start"
+			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
+			cmd := "sudo sysctl -p && sudo service mattermost start"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
@@ -231,7 +233,7 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 
 		batch := []uploadInfo{
 			{srcData: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), dstPath: "/etc/nginx/sites-available/mattermost"},
-			{srcData: strings.TrimSpace(sysctlConfig), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimSpace(nginxConfig), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimSpace(limitsConfig), dstPath: "/etc/security/limits.conf"},
 		}
