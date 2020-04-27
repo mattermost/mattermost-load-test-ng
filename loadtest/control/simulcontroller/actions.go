@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -337,6 +338,42 @@ func createPost(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
+}
+
+func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	reaction := &model.Reaction{
+		UserId:    u.Store().Id(),
+		PostId:    post.Id,
+		EmojiName: []string{"+1", "tada", "point_up", "raised_hands"}[rand.Intn(4)],
+	}
+
+	reactions, err := u.Store().Reactions(post.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	for i := 0; i < len(reactions); i++ {
+		if reaction.UserId == reactions[i].UserId &&
+			reaction.EmojiName == reactions[i].EmojiName {
+			return control.UserActionResponse{Info: "reaction already added"}
+		}
+	}
+
+	err = u.SaveReaction(reaction)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("added reaction to post %s", post.Id)}
 }
 
 func (c *SimulController) createDirectChannel(u user.User) control.UserActionResponse {

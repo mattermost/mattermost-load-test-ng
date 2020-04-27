@@ -135,6 +135,10 @@ func (c *SimulController) Run() {
 			frequency: 11,
 		},
 		{
+			run:       c.addReaction,
+			frequency: 6,
+		},
+		{
 			run:       editPost,
 			frequency: 3,
 		},
