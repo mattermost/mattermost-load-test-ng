@@ -6,6 +6,8 @@ package simulcontroller
 import (
 	"errors"
 	"math/rand"
+
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 )
 
 // pickAction randomly selects an action from a slice of userAction with
@@ -29,4 +31,21 @@ func pickAction(actions []userAction) (*userAction, error) {
 		}
 	}
 	return nil, errors.New("should not be able to reach this point")
+}
+
+func genMessage(isReply bool) string {
+	// This is an estimate that comes from stats on community servers.
+	// The average length (in words) for a reply.
+	// TODO: should be part of some advanced configuration.
+	avgWordCount := 35
+	minWordCount := 1
+
+	if isReply {
+		avgWordCount = 24
+	}
+
+	// TODO: make a util function out of this behaviour.
+	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
+
+	return control.GenerateRandomSentences(wordCount)
 }

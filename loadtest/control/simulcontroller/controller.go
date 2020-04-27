@@ -135,6 +135,10 @@ func (c *SimulController) Run() {
 			frequency: 11,
 		},
 		{
+			run:       editPost,
+			frequency: 3,
+		},
+		{
 			run: func(u user.User) control.UserActionResponse {
 				// logout
 				if resp := control.Logout(u); resp.Err != nil {

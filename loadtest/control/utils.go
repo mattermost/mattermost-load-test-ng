@@ -26,7 +26,8 @@ const (
 var (
 	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
-	words             []string
+	words             = []string{}
+	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -101,10 +102,21 @@ func GenerateRandomSentences(count int) string {
 		return "🙂" // if there is nothing to say, an emoji worths for thousands
 	}
 
+	var withEmoji bool
+	// 10% of the times we add an emoji to the message.
+	if rand.Float64() < 0.10 {
+		withEmoji = true
+		count--
+	}
+
 	var random string
 	for i := 0; i < count; i++ {
 		n := rand.Int() % len(words)
 		random += words[n] + " "
+	}
+
+	if withEmoji {
+		return random + emojis[rand.Intn(len(emojis))]
 	}
 
 	return random[:len(random)-1] + "."

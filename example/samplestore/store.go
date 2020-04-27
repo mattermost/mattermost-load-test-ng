@@ -247,6 +247,10 @@ func (s *SampleStore) RandomPostForChannel(channelId string) (model.Post, error)
 	return model.Post{}, nil
 }
 
+func (s *SampleStore) RandomPostForChannelByUser(channelId, userId string) (model.Post, error) {
+	return model.Post{}, nil
+}
+
 // RandomEmoji returns a random emoji.
 func (s *SampleStore) RandomEmoji() (model.Emoji, error) {
 	return model.Emoji{}, nil

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -255,6 +254,30 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 	return control.UserActionResponse{Info: "got statuses"}
 }
 
+func editPost(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannelByUser(channel.Id, u.Store().Id())
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: "no posts to edit"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	message := genMessage(post.RootId != "")
+	postId, err := u.PatchPost(post.Id, &model.PostPatch{
+		Message: &message,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
+}
+
 func createPostReply(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
@@ -279,17 +302,8 @@ func createPostReply(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// This is an estimate that comes from stats on community servers.
-	// The average length (in words) for a reply.
-	// TODO: should be part of some advanced configuration.
-	avgWordCount := 24
-	minWordCount := 1
-
-	// TODO: make a util function out of this behaviour.
-	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
-
 	postId, err := u.CreatePost(&model.Post{
-		Message:   control.GenerateRandomSentences(wordCount),
+		Message:   genMessage(true),
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 		RootId:    rootId,
@@ -313,17 +327,8 @@ func createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// This is an estimate that comes from stats on community servers.
-	// The average length (in words) for a root post (not a reply).
-	// TODO: should be part of some advanced configuration.
-	avgWordCount := 34
-	minWordCount := 1
-
-	// TODO: make a util function out of this behaviour.
-	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
-
 	postId, err := u.CreatePost(&model.Post{
-		Message:   control.GenerateRandomSentences(wordCount),
+		Message:   genMessage(false),
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 	})

@@ -193,6 +193,26 @@ func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
 	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
 }
 
+// RandomPostForChannelForUser returns a random post for the given channel made
+// by the given user.
+func (s *MemStore) RandomPostForChannelByUser(channelId, userId string) (model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var postIds []string
+	for _, p := range s.posts {
+		if p.ChannelId == channelId && p.UserId == userId {
+			postIds = append(postIds, p.Id)
+		}
+	}
+
+	if len(postIds) == 0 {
+		return model.Post{}, ErrPostNotFound
+	}
+
+	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
+}
+
 // RandomEmoji returns a random emoji.
 func (s *MemStore) RandomEmoji() (model.Emoji, error) {
 	s.lock.RLock()

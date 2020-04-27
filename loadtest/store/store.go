@@ -86,6 +86,9 @@ type UserStore interface {
 	RandomPost() (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
+	// RandomPostForChanneByUser returns a random post for the given channel made
+	// by the given user.
+	RandomPostForChannelByUser(channelId, userId string) (model.Post, error)
 	// RandomEmoji returns a random emoji.
 	RandomEmoji() (model.Emoji, error)
 	// RandomChannelMember returns a random channel member for a channel.
