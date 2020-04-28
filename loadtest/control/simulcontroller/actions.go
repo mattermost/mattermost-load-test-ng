@@ -66,6 +66,10 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	return loadTeam(c.user, team)
 }
 
+func (c *SimulController) fullReload(u user.User) control.UserActionResponse {
+	return c.reload(true)
+}
+
 func (c *SimulController) login(u user.User) control.UserActionResponse {
 	for {
 		resp := control.Login(u)
@@ -87,6 +91,27 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
 	}
+}
+
+func (c *SimulController) logoutLogin(u user.User) control.UserActionResponse {
+	// logout
+	if resp := control.Logout(u); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	u.ClearUserData()
+
+	// login
+	if resp := c.login(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	// reload
+	return c.reload(false)
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {

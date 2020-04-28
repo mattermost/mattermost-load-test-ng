@@ -6,8 +6,6 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
-	"math"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -93,15 +91,16 @@ func (c *SimulController) Run() {
 	}
 
 	for _, action := range initActions {
+		select {
+		case <-c.stop:
+			return
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		}
+
 		if resp := action.run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
-		}
-		select {
-		case <-c.stop:
-			return
-		default:
 		}
 	}
 
@@ -121,9 +120,7 @@ func (c *SimulController) Run() {
 			frequency: 55,
 		},
 		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(true)
-			},
+			run:       c.fullReload,
 			frequency: 40,
 		},
 		{
@@ -143,26 +140,7 @@ func (c *SimulController) Run() {
 			frequency: 3,
 		},
 		{
-			run: func(u user.User) control.UserActionResponse {
-				// logout
-				if resp := control.Logout(u); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				u.ClearUserData()
-
-				// login
-				if resp := c.login(c.user); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				// reload
-				return c.reload(false)
-			},
+			run:       c.logoutLogin,
 			frequency: 3,
 		},
 		{
@@ -187,19 +165,10 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 
-		// Randomly selecting a value in the interval
-		// [MinIdleTimeMs, AvgIdleTimeMs*2 - MinIdleTimeMs).
-		// This will give us an expected value equal to AvgIdleTimeMs.
-		// TODO: consider if it makes more sense to select this value using
-		// a truncated normal distribution.
-		idleMs := rand.Intn(c.config.AvgIdleTimeMs*2-c.config.MinIdleTimeMs*2) + c.config.MinIdleTimeMs
-
-		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
-
 		select {
 		case <-c.stop:
 			return
-		case <-time.After(idleTimeMs * time.Millisecond):
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
 	}
 
