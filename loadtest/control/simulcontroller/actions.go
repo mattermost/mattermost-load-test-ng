@@ -320,7 +320,7 @@ func editPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
 }
 
-func createPostReply(u user.User) control.UserActionResponse {
+func (c *SimulController) createPostReply(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -344,20 +344,29 @@ func createPostReply(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	postId, err := u.CreatePost(&model.Post{
+	reply := &model.Post{
 		Message:   genMessage(true),
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 		RootId:    rootId,
-	})
+	}
+
+	// 2% of the times post will have files attached.
+	if rand.Float64() < 0.02 {
+		if err := c.attachFilesToPost(u, reply); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	replyId, err := u.CreatePost(reply)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", postId)}
+	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", replyId)}
 }
 
-func createPost(u user.User) control.UserActionResponse {
+func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -369,16 +378,58 @@ func createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	postId, err := u.CreatePost(&model.Post{
+	post := &model.Post{
 		Message:   genMessage(false),
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
-	})
+	}
+
+	// 2% of the times post will have files attached.
+	if rand.Float64() < 0.02 {
+		if err := c.attachFilesToPost(u, post); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	postId, err := u.CreatePost(post)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
+}
+
+func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error {
+	type file struct {
+		data   []byte
+		upload bool
+	}
+	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
+	files := make(map[string]*file, len(filenames))
+
+	for _, filename := range filenames {
+		files[filename] = &file{
+			control.MustAsset(filename),
+			rand.Intn(2) == 0,
+		}
+	}
+
+	files[filenames[rand.Intn(len(filenames))]].upload = true
+
+	for filename, file := range files {
+		if !file.upload {
+			continue
+		}
+		resp, err := u.UploadFile(file.data, post.ChannelId, filename)
+		if err != nil {
+			return err
+		}
+		post.FileIds = append(post.FileIds, resp.FileInfos[0].Id)
+
+		c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
+	}
+
+	return nil
 }
 
 func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
@@ -477,7 +528,7 @@ func (c *SimulController) createDirectChannel(u user.User) control.UserActionRes
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("direct channel created, id %s", channelId))
 
-	return createPost(u)
+	return c.createPost(u)
 }
 
 func (c *SimulController) createGroupChannel(u user.User) control.UserActionResponse {
@@ -539,7 +590,7 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds))
 
-	return createPost(u)
+	return c.createPost(u)
 }
 
 func getProfileImageForUsers(u user.User, userIds []string) error {

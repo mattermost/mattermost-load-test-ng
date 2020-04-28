@@ -116,7 +116,7 @@ func (c *SimulController) Run() {
 			frequency: 110,
 		},
 		{
-			run:       createPost,
+			run:       c.createPost,
 			frequency: 55,
 		},
 		{
@@ -124,7 +124,7 @@ func (c *SimulController) Run() {
 			frequency: 40,
 		},
 		{
-			run:       createPostReply,
+			run:       c.createPostReply,
 			frequency: 20,
 		},
 		{
