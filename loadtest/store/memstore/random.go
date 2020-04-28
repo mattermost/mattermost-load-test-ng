@@ -201,7 +201,7 @@ func (s *MemStore) RandomPostForChannelByUser(channelId, userId string) (model.P
 
 	var postIds []string
 	for _, p := range s.posts {
-		if p.ChannelId == channelId && p.UserId == userId {
+		if p.ChannelId == channelId && p.UserId == userId && p.Type == "" {
 			postIds = append(postIds, p.Id)
 		}
 	}
