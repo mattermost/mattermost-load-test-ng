@@ -370,3 +370,7 @@ func (s *SampleStore) SetProfileImage(userId string) error {
 func (s *SampleStore) UserForPost(postId string) (string, error) {
 	return "", nil
 }
+
+func (s *SampleStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
+	return nil, nil
+}

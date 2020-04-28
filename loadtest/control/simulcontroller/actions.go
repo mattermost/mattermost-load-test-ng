@@ -250,6 +250,20 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		userIds = append(userIds, userId)
+
+		fileInfo, err := u.Store().FileInfoForPost(postId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		for _, info := range fileInfo {
+			if info.Extension != "png" && info.Extension != "jpg" {
+				continue
+			}
+			if err := u.GetFileThumbnail(info.Id); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+		}
 	}
 
 	if err := getProfileImageForUsers(u, userIds); err != nil {

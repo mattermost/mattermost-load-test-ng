@@ -241,6 +241,18 @@ func (s *MemStore) UserForPost(postId string) (string, error) {
 	return "", nil
 }
 
+func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if postId == "" {
+		return nil, errors.New("memstore: postId should not be empty")
+	}
+	if post, ok := s.posts[postId]; ok && post.Metadata != nil {
+		return post.Metadata.Files, nil
+	}
+	return nil, nil
+}
+
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
