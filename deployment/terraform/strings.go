@@ -53,12 +53,13 @@ events {
 	worker_connections 200000;
 }
 
-map $status $loggable {
-    ~^[23] 0;
-    default 1;
-}
 
 http {
+  map $status $loggable {
+    ~^[23] 0;
+    default 1;
+  }
+
 	sendfile on;
 	tcp_nopush on;
 	tcp_nodelay on;
