@@ -295,6 +295,11 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(10)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(5)
 
+	cfg.LogSettings.EnableConsole = model.NewBool(true)
+	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
+	cfg.LogSettings.EnableFile = model.NewBool(true)
+	cfg.LogSettings.FileLevel = model.NewString("WARN")
+
 	cfg.SqlSettings.DriverName = model.NewString(driverName)
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
