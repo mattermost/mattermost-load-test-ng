@@ -53,6 +53,11 @@ events {
 	worker_connections 200000;
 }
 
+map $status $loggable {
+    ~^[23] 0;
+    default 1;
+}
+
 http {
 	sendfile on;
 	tcp_nopush on;
@@ -62,7 +67,7 @@ http {
 	include /etc/nginx/mime.types;
 	default_type application/octet-stream;
 	ssl_prefer_server_ciphers on;
-	access_log /var/log/nginx/access.log;
+	access_log /var/log/nginx/access.log combined if=$loggable;
 	error_log /var/log/nginx/error.log;
 	gzip on;
 	include /etc/nginx/conf.d/*.conf;
