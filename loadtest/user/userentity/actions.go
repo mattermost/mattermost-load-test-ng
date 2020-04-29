@@ -377,12 +377,11 @@ func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDe
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	for _, ch := range channels {
-		err := ue.store.SetChannel(ch)
-		if err != nil {
-			return nil, err
-		}
+
+	if err := ue.store.SetChannels(channels); err != nil {
+		return nil, err
 	}
+
 	return channels, nil
 }
 

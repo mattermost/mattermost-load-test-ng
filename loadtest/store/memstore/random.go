@@ -89,8 +89,25 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 		if (currChanId == channelId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
 			continue
 		}
+
+		if ((st & store.SelectNotPublic) == store.SelectNotPublic) && channel.Type == model.CHANNEL_OPEN {
+			continue
+		}
+
+		if ((st & store.SelectNotPrivate) == store.SelectNotPrivate) && channel.Type == model.CHANNEL_PRIVATE {
+			continue
+		}
+
+		if ((st & store.SelectNotDirect) == store.SelectNotDirect) && channel.Type == model.CHANNEL_DIRECT {
+			continue
+		}
+
+		if ((st & store.SelectNotGroup) == store.SelectNotGroup) && channel.Type == model.CHANNEL_GROUP {
+			continue
+		}
+
 		_, isMember := s.channelMembers[channelId][userId]
-		if channel.TeamId != teamId {
+		if (channel.Type == model.CHANNEL_OPEN || channel.Type == model.CHANNEL_PRIVATE) && channel.TeamId != teamId {
 			continue
 		}
 		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {

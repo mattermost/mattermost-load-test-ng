@@ -744,4 +744,72 @@ func TestRandomChannel(t *testing.T) {
 			require.Equal(t, channelId3, channel.Id)
 		}
 	})
+
+	t.Run("channel types", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		channelId4 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId, Type: model.CHANNEL_OPEN},
+			{Id: channelId2, TeamId: teamId, Type: model.CHANNEL_PRIVATE},
+			{Id: channelId3, Type: model.CHANNEL_DIRECT},
+			{Id: channelId4, Type: model.CHANNEL_GROUP},
+		})
+		require.NoError(t, err)
+		err = s.SetChannelMembers(&model.ChannelMembers{
+			{
+				ChannelId: channelId1,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId2,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId3,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId4,
+				UserId:    user.Id,
+			},
+		})
+		require.NoError(t, err)
+
+		channel, err := s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotPublic|store.SelectNotPrivate|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		require.Equal(t, channelId4, channel.Id)
+
+		channel, err = s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotGroup|store.SelectNotPrivate|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		require.Equal(t, channelId1, channel.Id)
+
+		channel, err = s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		assert.Condition(t, func() bool {
+			switch channel.Id {
+			case channelId1, channelId2, channelId4:
+				return true
+			default:
+				return false
+			}
+		})
+	})
 }

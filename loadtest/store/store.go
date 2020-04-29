@@ -15,6 +15,10 @@ const (
 	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member.
 	SelectNotMemberOf                           // Select cases where the user is not a member.
 	SelectNotCurrent                            // When set the selection won't return current team/channel.
+	SelectNotPublic                             // Don't include public channels in selection.
+	SelectNotPrivate                            // Don't include private channels in selection.
+	SelectNotDirect                             // Don't include direct channels in selection.
+	SelectNotGroup                              // Don't include group channels in selection.
 
 	SelectAny = SelectMemberOf | SelectNotMemberOf
 )

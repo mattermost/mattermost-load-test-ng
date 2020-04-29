@@ -108,12 +108,16 @@ func (c *SimulController) Run() {
 
 	actions := []userAction{
 		{
-			run:       switchChannel,
-			frequency: 300,
+			run:       openDirectGroupChannel,
+			frequency: 200,
 		},
 		{
 			run:       c.switchTeam,
 			frequency: 110,
+		},
+		{
+			run:       switchChannel,
+			frequency: 100,
 		},
 		{
 			run:       c.createPost,

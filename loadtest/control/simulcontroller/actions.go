@@ -274,6 +274,34 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if channel.Type == model.CHANNEL_DIRECT || channel.Type == model.CHANNEL_GROUP {
+		category := map[string]string{
+			model.CHANNEL_DIRECT: model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW,
+			model.CHANNEL_GROUP:  "group_channel_show",
+		}
+
+		// We need to update the user's preferences so that
+		// on next reload we can properly fetch opened DMs.
+		pref := &model.Preferences{
+			model.Preference{
+				UserId:   u.Store().Id(),
+				Category: category[channel.Type],
+				Name:     channel.Id,
+				Value:    "true",
+			},
+			model.Preference{
+				UserId:   u.Store().Id(),
+				Category: "channel_open_time", // This is a client defined constant.
+				Name:     channel.Id,
+				Value:    time.Now().Format(time.RFC3339),
+			},
+		}
+
+		if err := u.UpdatePreferences(pref); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
 	if err := u.SetCurrentChannel(channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -289,7 +317,7 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
 	}
 
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent)
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotDirect|store.SelectNotGroup)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -516,21 +544,6 @@ func (c *SimulController) createDirectChannel(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// We need to update the user's preferences so that
-	// on next reload we can properly fetch opened DMs.
-	pref := &model.Preferences{
-		model.Preference{
-			UserId:   u.Store().Id(),
-			Category: model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW,
-			Name:     channelId,
-			Value:    "true",
-		},
-	}
-
-	if err := u.UpdatePreferences(pref); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	channel, err := u.Store().Channel(channelId)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -578,21 +591,6 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// We need to update the user's preferences so that
-	// on next reload we can properly fetch opened DMs.
-	pref := &model.Preferences{
-		model.Preference{
-			UserId:   u.Store().Id(),
-			Category: "group_channel_show", // It looks like there's no constant for this in the model.
-			Name:     channelId,
-			Value:    "true",
-		},
-	}
-
-	if err := u.UpdatePreferences(pref); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	channel, err := u.Store().Channel(channelId)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -605,6 +603,28 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 	c.status <- c.newInfoStatus(fmt.Sprintf("group channel created, id %s with users %+v", channelId, userIds))
 
 	return c.createPost(u)
+}
+
+func openDirectGroupChannel(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotPublic|store.SelectNotPrivate)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channels to open"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if resp := viewChannel(u, &channel); resp.Err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("opened direct/group channel %s", channel.Id)}
 }
 
 func getProfileImageForUsers(u user.User, userIds []string) error {
