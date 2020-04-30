@@ -106,7 +106,7 @@ type UserStore interface {
 	// posts
 	// UserForPost returns the userId for the user who created the given post.
 	UserForPost(postId string) (string, error)
-	// FileInfoForPost returns the FileInfo fot the given post if any.
+	// FileInfoForPost returns the FileInfo for the given post if any.
 	FileInfoForPost(postId string) ([]*model.FileInfo, error)
 }
 
