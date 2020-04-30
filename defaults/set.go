@@ -8,33 +8,38 @@ import (
 	"strings"
 )
 
+// Set sets the default values to fields
 func Set(value interface{}) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("value should be a pointer")
 	}
-	_, err := toDefaults(value)
-	if err != nil {
-		return err
-	}
-	return nil
+	return structDefaults(value)
 }
 
-// toDefaults assigns default values of a struct
-func toDefaults(defaultValue interface{}) (reflect.Value, error) {
-	v := reflect.Indirect(reflect.ValueOf(defaultValue))
+// structDefaults assigns default values of a struct
+func structDefaults(value interface{}) error {
+	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
+
+	if v.Kind() != reflect.Struct {
+		return errors.New("value should be struct type")
+	}
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
+		if !field.CanSet() {
+			return nil
+		}
+
 		switch field.Type().Kind() {
 		case reflect.Struct:
 			dv := field.Addr().Interface()
-			v, err := toDefaults(dv)
+			err := structDefaults(dv)
 			if err != nil {
-				return reflect.ValueOf(nil), err
+				return err
 			}
-			field.Set(v)
+			field.Set(reflect.Indirect(reflect.ValueOf(dv)))
 		case reflect.Slice:
 			tag, ok := t.Field(i).Tag.Lookup("default_size")
 			if !ok {
@@ -42,12 +47,12 @@ func toDefaults(defaultValue interface{}) (reflect.Value, error) {
 			}
 			size, err := strconv.Atoi(tag)
 			if err != nil {
-				return reflect.ValueOf(nil), fmt.Errorf("invalid size definition: %q", tag)
+				return fmt.Errorf("invalid size definition: %q", tag)
 			}
 			dv := field.Interface()
 			newSlice, err := createSlice(dv, size)
 			if err != nil {
-				return reflect.Zero(t), err
+				return err
 			}
 			field.Set(newSlice)
 		case reflect.Bool, reflect.Int, reflect.Float64, reflect.String:
@@ -57,14 +62,14 @@ func toDefaults(defaultValue interface{}) (reflect.Value, error) {
 			}
 			def, err := setValue(field.Type(), tag)
 			if err != nil {
-				return reflect.ValueOf(nil), fmt.Errorf("could not set value: %w", err)
+				return fmt.Errorf("could not set value: %w", err)
 			}
 			field.Set(def)
 		default:
-			return reflect.ValueOf(nil), fmt.Errorf("unimplemented struct field: %s", t.Field(i).Type.Kind())
+			return fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Type.Kind())
 		}
 	}
-	return v, nil
+	return nil
 }
 
 // converts given string into reflect.Value, the value is assignable to a
@@ -104,11 +109,11 @@ func createSlice(defaultValue interface{}, size int) (reflect.Value, error) {
 	values := reflect.Zero(reflect.SliceOf(t))
 	for i := 0; i < size; i++ {
 		dv := reflect.New(t).Interface()
-		s, err := toDefaults(dv)
+		err := structDefaults(dv)
 		if err != nil {
 			return reflect.ValueOf(nil), err
 		}
-		values = reflect.Append(values, s)
+		values = reflect.Append(values, reflect.Indirect(reflect.ValueOf(dv)))
 	}
 	return values, nil
 }

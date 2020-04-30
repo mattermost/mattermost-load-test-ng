@@ -47,7 +47,7 @@ func Validate(value interface{}) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("unimplemented struct field: %s", t.Field(i).Name)
+			return fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name)
 		}
 	}
 	return nil
@@ -84,8 +84,14 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 	default:
 		if rangeRegex.MatchString(validation) {
 			matches := rangeRegex.FindStringSubmatch(validation)
-			mins := validateFromField(p, matches[2])
-			maxs := validateFromField(p, matches[3])
+			mins, err := validateFromField(p, matches[2])
+			if err != nil {
+				return err
+			}
+			maxs, err := validateFromField(p, matches[3])
+			if err != nil {
+				return err
+			}
 			if err := validateFromRange(v, mins, maxs, matches[1], matches[4]); err != nil {
 				return fmt.Errorf("%s is not in the range of %s: %w", fieldName, validation, err)
 			}
@@ -164,17 +170,31 @@ func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval
 	return nil
 }
 
-func validateFromField(value reflect.Value, valuestr string) string {
+func validateFromField(value reflect.Value, valuestr string) (string, error) {
 	if len(valuestr) > 0 && valuestr[0] == '$' {
-		v := value.FieldByName(valuestr[1:])
+		var v reflect.Value
+		var found bool
+		for i := 0; i < value.Type().NumField(); i++ {
+			name := value.Type().Field(i).Name
+			if name == valuestr[1:] {
+				v = value.Field(i)
+				found = true
+			}
+		}
+		if !found {
+			return "", fmt.Errorf("%q has no field %q", value.Type(), valuestr[1:])
+		}
+
 		switch v.Type().Kind() {
 		case reflect.Int:
-			return fmt.Sprintf("%d", v.Int())
+			return fmt.Sprintf("%d", v.Int()), nil
 		case reflect.Float64:
-			return fmt.Sprintf("%f", v.Float())
+			return fmt.Sprintf("%f", v.Float()), nil
+		default:
+			return "", fmt.Errorf("%q is not a supported field type for using as parameter", v.Type().Kind())
 		}
 	}
-	return valuestr
+	return valuestr, nil
 }
 
 func validateFromOneofValues(value reflect.Value, values []string) error {
