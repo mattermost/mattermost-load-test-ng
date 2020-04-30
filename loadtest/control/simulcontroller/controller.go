@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -17,13 +16,14 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id      int
-	user    user.User
-	stop    chan struct{}
-	stopped chan struct{}
-	status  chan<- control.UserStatus
-	rate    float64
-	config  *Config
+	id        int
+	user      user.User
+	stop      chan struct{}
+	stopped   chan struct{}
+	connected chan struct{}
+	status    chan<- control.UserStatus
+	rate      float64
+	config    *Config
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -39,13 +39,14 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:      id,
-		user:    user,
-		stop:    make(chan struct{}),
-		stopped: make(chan struct{}),
-		status:  status,
-		rate:    1.0,
-		config:  config,
+		id:        id,
+		user:      user,
+		connected: make(chan struct{}, 1),
+		stop:      make(chan struct{}),
+		stopped:   make(chan struct{}),
+		status:    status,
+		rate:      1.0,
+		config:    config,
 	}, nil
 }
 
@@ -59,19 +60,12 @@ func (c *SimulController) Run() {
 		return
 	}
 
-	var wg sync.WaitGroup
-	// Start listening for websocket events.
-	wg.Add(1)
-	go c.wsEventHandler(&wg)
-
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if err := c.user.Disconnect(); err != nil {
-			c.status <- c.newErrorStatus(err)
+		if resp := c.logout(); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
 		}
-		c.user.Cleanup()
-		wg.Wait()
 		c.user.ClearUserData()
 		c.sendStopStatus()
 		close(c.stopped)
@@ -101,9 +95,6 @@ func (c *SimulController) Run() {
 		default:
 		}
 	}
-
-	wg.Add(1)
-	go c.periodicActions(&wg)
 
 	actions := []userAction{
 		{
@@ -135,7 +126,7 @@ func (c *SimulController) Run() {
 		{
 			run: func(u user.User) control.UserActionResponse {
 				// logout
-				if resp := control.Logout(u); resp.Err != nil {
+				if resp := c.logout(); resp.Err != nil {
 					c.status <- c.newErrorStatus(resp.Err)
 				} else {
 					c.status <- c.newInfoStatus(resp.Info)

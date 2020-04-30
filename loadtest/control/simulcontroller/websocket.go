@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
-	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -16,7 +15,7 @@ import (
 // This is used to model user behaviour by responding to certain events with
 // the appropriate actions. It differs from userentity.wsEventHandler which is
 // instead used to manage the internal user state.
-func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
+func (c *SimulController) wsEventHandler() {
 	semCount := runtime.NumCPU() * 8
 	semaphore := make(chan struct{}, semCount)
 
@@ -24,7 +23,7 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 		for i := 0; i < semCount; i++ {
 			semaphore <- struct{}{}
 		}
-		wg.Done()
+		fmt.Printf("%d. exiting from ws loop\n", c.id)
 	}()
 
 	for ev := range c.user.Events() {

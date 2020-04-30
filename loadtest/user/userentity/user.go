@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gocolly/colly/v2"
@@ -18,7 +17,6 @@ import (
 // UserEntity is an implementation of the User interface
 // which provides methods to interact with the Mattermost server.
 type UserEntity struct {
-	mu          sync.Mutex
 	store       store.MutableUserStore
 	client      *model.Client4
 	wsClosing   chan struct{}
@@ -82,16 +80,12 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 		return nil
 	}
 	ue.store = store
-	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.wsTyping = make(chan userTypingMsg)
+
 	return &ue
 }
 
 // Connect creates a websocket connection to the server and starts listening for messages.
 func (ue *UserEntity) Connect() (<-chan error, error) {
-	ue.mu.Lock()
-	defer ue.mu.Unlock()
-
 	if ue.connected {
 		return nil, errors.New("user is already connected")
 	}
@@ -105,6 +99,8 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 		return nil, errors.New("user is already connected")
 	}
 
+	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsTyping = make(chan userTypingMsg)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil
@@ -127,9 +123,6 @@ func (ue *UserEntity) FetchStaticAssets() error {
 
 // Disconnect closes the websocket connection.
 func (ue *UserEntity) Disconnect() error {
-	ue.mu.Lock()
-	defer ue.mu.Unlock()
-
 	ue.client.HttpClient.CloseIdleConnections()
 	if !ue.connected {
 		return errors.New("user is not connected")
@@ -141,6 +134,8 @@ func (ue *UserEntity) Disconnect() error {
 
 	<-ue.wsClosed
 
+	close(ue.wsEventChan)
+	close(ue.wsTyping)
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil

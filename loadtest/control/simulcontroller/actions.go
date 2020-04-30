@@ -33,13 +33,27 @@ func (c *SimulController) connect() error {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+	fmt.Printf("%d. controller connecting\n", c.id)
 
+	go c.wsEventHandler()
+	go c.periodicActions()
+
+	return nil
+}
+
+func (c *SimulController) disconnect() error {
+	err := c.user.Disconnect()
+	if err != nil {
+		return fmt.Errorf("disconnect failed %w", err)
+	}
+	fmt.Printf("%d. controller disconnecting\n", c.id)
+	c.connected <- struct{}{}
 	return nil
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
 	if full {
-		if err := c.user.Disconnect(); err != nil {
+		if err := c.disconnect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		c.user.ClearUserData()
@@ -87,6 +101,23 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
 	}
+}
+
+func (c *SimulController) logout() control.UserActionResponse {
+	err := c.disconnect()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	fmt.Printf("%d. controller logging out\n", c.id)
+	ok, err := c.user.Logout()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !ok {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
+	}
+	fmt.Printf("%d. controller logged out\n", c.id)
+	return control.UserActionResponse{Info: "logged out"}
 }
 
 func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
