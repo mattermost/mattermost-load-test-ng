@@ -35,6 +35,7 @@ func (c *SimulController) connect() error {
 	}()
 	go c.wsEventHandler()
 	go c.periodicActions()
+	c.connected.Store(true)
 	return nil
 }
 
@@ -42,11 +43,13 @@ func (c *SimulController) disconnect() error {
 	// one for ws loop and one for periodic actions loop
 	c.disconnected <- struct{}{}
 	c.disconnected <- struct{}{}
+
 	err := c.user.Disconnect()
 	if err != nil {
 		return fmt.Errorf("disconnect failed %w", err)
 	}
 	<-c.waitwebsocket
+	c.connected.Store(false)
 	return nil
 }
 

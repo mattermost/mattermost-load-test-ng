@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"go.uber.org/atomic"
 )
 
 // SimulController is a simulative implementation of a UserController.
@@ -22,6 +23,7 @@ type SimulController struct {
 	stopped       chan struct{}
 	waitwebsocket chan struct{}
 	disconnected  chan struct{}
+	connected     atomic.Bool
 	status        chan<- control.UserStatus
 	rate          float64
 	config        *Config
@@ -65,8 +67,10 @@ func (c *SimulController) Run() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if resp := c.logout(); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
+		if c.connected.Load() {
+			if resp := c.logout(); resp.Err != nil {
+				c.status <- c.newErrorStatus(resp.Err)
+			}
 		}
 		c.user.ClearUserData()
 		c.sendStopStatus()
