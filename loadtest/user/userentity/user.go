@@ -99,7 +99,7 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 		return nil, errors.New("user is already connected")
 	}
 
-	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsEventChan = make(chan *model.WebSocketEvent, 1)
 	ue.wsTyping = make(chan userTypingMsg)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true

@@ -138,7 +138,10 @@ func (ue *UserEntity) listen(errChan chan error) {
 				if err := ue.wsEventHandler(ev); err != nil {
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
-				ue.wsEventChan <- ev
+				select {
+				case ue.wsEventChan <- ev:
+				default:
+				}
 			case _, ok := <-client.ResponseChannel:
 				if !ok {
 					chanClosed = true
