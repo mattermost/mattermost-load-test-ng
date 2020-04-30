@@ -23,7 +23,6 @@ func (c *SimulController) wsEventHandler() {
 		for i := 0; i < semCount; i++ {
 			semaphore <- struct{}{}
 		}
-		fmt.Printf("%d. exiting from ws loop\n", c.id)
 	}()
 
 	for ev := range c.user.Events() {

@@ -33,7 +33,6 @@ func (c *SimulController) connect() error {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
-	fmt.Printf("%d. controller connecting\n", c.id)
 
 	go c.wsEventHandler()
 	go c.periodicActions()
@@ -46,7 +45,6 @@ func (c *SimulController) disconnect() error {
 	if err != nil {
 		return fmt.Errorf("disconnect failed %w", err)
 	}
-	fmt.Printf("%d. controller disconnecting\n", c.id)
 	c.connected <- struct{}{}
 	return nil
 }
@@ -108,7 +106,6 @@ func (c *SimulController) logout() control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	fmt.Printf("%d. controller logging out\n", c.id)
 	ok, err := c.user.Logout()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -116,7 +113,6 @@ func (c *SimulController) logout() control.UserActionResponse {
 	if !ok {
 		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 	}
-	fmt.Printf("%d. controller logged out\n", c.id)
 	return control.UserActionResponse{Info: "logged out"}
 }
 

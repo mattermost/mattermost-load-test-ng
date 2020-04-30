@@ -4,7 +4,6 @@
 package simulcontroller
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -23,7 +22,6 @@ func (c *SimulController) periodicActions() {
 			}
 		// We can add more periodic actions here.
 		case <-c.connected:
-			fmt.Printf("%d controller stopping periodic actions\n", c.id)
 			return
 		}
 	}
