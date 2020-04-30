@@ -108,7 +108,7 @@ func (c *SimulController) Run() {
 
 	actions := []userAction{
 		{
-			run:       openDirectGroupChannel,
+			run:       openDirectOrGroupChannel,
 			frequency: 200,
 		},
 		{
