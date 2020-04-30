@@ -28,6 +28,7 @@ func (c *SimulController) connect() error {
 	if err != nil {
 		return fmt.Errorf("connect failed %w", err)
 	}
+	c.connected <- struct{}{}
 	go func() {
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
@@ -35,21 +36,23 @@ func (c *SimulController) connect() error {
 	}()
 	go c.wsEventHandler()
 	go c.periodicActions()
-	c.connected.Store(true)
 	return nil
 }
 
 func (c *SimulController) disconnect() error {
 	// one for ws loop and one for periodic actions loop
-	c.disconnected <- struct{}{}
-	c.disconnected <- struct{}{}
-
+	select {
+	case <-c.connected:
+		c.disconnected <- struct{}{}
+		c.disconnected <- struct{}{}
+		<-c.waitwebsocket
+	default:
+		return errors.New("user is not connected")
+	}
 	err := c.user.Disconnect()
 	if err != nil {
 		return fmt.Errorf("disconnect failed %w", err)
 	}
-	<-c.waitwebsocket
-	c.connected.Store(false)
 	return nil
 }
 
