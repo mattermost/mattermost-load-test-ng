@@ -24,6 +24,10 @@ var (
 	ErrPostNotFound      = errors.New("memstore: post not found")
 )
 
+func isSelectionType(st, t store.SelectionType) bool {
+	return (st & t) == t
+}
+
 // RandomTeam returns a random team for the current user.
 func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	s.lock.RLock()
@@ -42,14 +46,14 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 
 	var teams []*model.Team
 	for teamId, team := range s.teams {
-		if (currTeamId == teamId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+		if (currTeamId == teamId) && isSelectionType(st, store.SelectNotCurrent) {
 			continue
 		}
 		_, isMember := s.teamMembers[teamId][userId]
-		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+		if isMember && isSelectionType(st, store.SelectMemberOf) {
 			teams = append(teams, team)
 		}
-		if !isMember && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
+		if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
 			teams = append(teams, team)
 		}
 	}
@@ -61,6 +65,23 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	idx := rand.Intn(len(teams))
 
 	return *teams[idx], nil
+}
+
+func excludeChannelType(st store.SelectionType, channelType string) bool {
+	m := map[store.SelectionType]string{
+		store.SelectNotPublic:  model.CHANNEL_OPEN,
+		store.SelectNotPrivate: model.CHANNEL_PRIVATE,
+		store.SelectNotDirect:  model.CHANNEL_DIRECT,
+		store.SelectNotGroup:   model.CHANNEL_GROUP,
+	}
+
+	for s, t := range m {
+		if isSelectionType(st, s) && channelType == t {
+			return true
+		}
+	}
+
+	return false
 }
 
 // RandomChannel returns a random channel for the given teamId for the current
@@ -86,34 +107,20 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
-		if (currChanId == channelId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+		if (currChanId == channelId) && isSelectionType(st, store.SelectNotCurrent) {
 			continue
 		}
-
-		if ((st & store.SelectNotPublic) == store.SelectNotPublic) && channel.Type == model.CHANNEL_OPEN {
+		if excludeChannelType(st, channel.Type) {
 			continue
 		}
-
-		if ((st & store.SelectNotPrivate) == store.SelectNotPrivate) && channel.Type == model.CHANNEL_PRIVATE {
-			continue
-		}
-
-		if ((st & store.SelectNotDirect) == store.SelectNotDirect) && channel.Type == model.CHANNEL_DIRECT {
-			continue
-		}
-
-		if ((st & store.SelectNotGroup) == store.SelectNotGroup) && channel.Type == model.CHANNEL_GROUP {
-			continue
-		}
-
 		_, isMember := s.channelMembers[channelId][userId]
 		if (channel.Type == model.CHANNEL_OPEN || channel.Type == model.CHANNEL_PRIVATE) && channel.TeamId != teamId {
 			continue
 		}
-		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+		if isMember && isSelectionType(st, store.SelectMemberOf) {
 			channels = append(channels, channel)
 		}
-		if !isMember && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
+		if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
 			channels = append(channels, channel)
 		}
 	}
