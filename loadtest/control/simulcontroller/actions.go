@@ -33,19 +33,20 @@ func (c *SimulController) connect() error {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
-
 	go c.wsEventHandler()
 	go c.periodicActions()
-
 	return nil
 }
 
 func (c *SimulController) disconnect() error {
+	// one for ws loop and one for periodic actions loop
+	c.disconnected <- struct{}{}
+	c.disconnected <- struct{}{}
 	err := c.user.Disconnect()
 	if err != nil {
 		return fmt.Errorf("disconnect failed %w", err)
 	}
-	c.connected <- struct{}{}
+	<-c.waitwebsocket
 	return nil
 }
 

@@ -16,14 +16,15 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id        int
-	user      user.User
-	stop      chan struct{}
-	stopped   chan struct{}
-	connected chan struct{}
-	status    chan<- control.UserStatus
-	rate      float64
-	config    *Config
+	id            int
+	user          user.User
+	stop          chan struct{}
+	stopped       chan struct{}
+	waitwebsocket chan struct{}
+	disconnected  chan struct{}
+	status        chan<- control.UserStatus
+	rate          float64
+	config        *Config
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -39,14 +40,15 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:        id,
-		user:      user,
-		connected: make(chan struct{}, 1),
-		stop:      make(chan struct{}),
-		stopped:   make(chan struct{}),
-		status:    status,
-		rate:      1.0,
-		config:    config,
+		id:            id,
+		user:          user,
+		waitwebsocket: make(chan struct{}),
+		disconnected:  make(chan struct{}),
+		stop:          make(chan struct{}),
+		stopped:       make(chan struct{}),
+		status:        status,
+		rate:          1.0,
+		config:        config,
 	}, nil
 }
 

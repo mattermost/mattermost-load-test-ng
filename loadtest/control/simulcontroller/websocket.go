@@ -23,50 +23,56 @@ func (c *SimulController) wsEventHandler() {
 		for i := 0; i < semCount; i++ {
 			semaphore <- struct{}{}
 		}
+		c.waitwebsocket <- struct{}{}
 	}()
 
-	for ev := range c.user.Events() {
-		switch ev.EventType() {
-		case model.WEBSOCKET_EVENT_TYPING:
-			userId, ok := ev.GetData()["user_id"].(string)
-			if !ok || userId == "" {
-				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: invalid data found in event data"))
-				break
-			}
-			user, err := c.user.Store().GetUser(userId)
-			if err != nil {
-				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUser failed %w", err))
-				break
-			}
-
-			// The user was found, we check if we have the status for it.
-			if user.Id != "" {
-				status, err := c.user.Store().Status(userId)
+	for {
+		select {
+		case ev := <-c.user.Events():
+			switch ev.EventType() {
+			case model.WEBSOCKET_EVENT_TYPING:
+				userId, ok := ev.GetData()["user_id"].(string)
+				if !ok || userId == "" {
+					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: invalid data found in event data"))
+					break
+				}
+				user, err := c.user.Store().GetUser(userId)
 				if err != nil {
-					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: Status failed %w", err))
+					c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUser failed %w", err))
 					break
 				}
 
-				// If we can't find the user status in the store we fetch it.
-				if status.UserId == "" {
-					select {
-					case semaphore <- struct{}{}:
-						go fetchStatus(c, semaphore, user.Id)
-					default:
-						c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
+				// The user was found, we check if we have the status for it.
+				if user.Id != "" {
+					status, err := c.user.Store().Status(userId)
+					if err != nil {
+						c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: Status failed %w", err))
+						break
 					}
+
+					// If we can't find the user status in the store we fetch it.
+					if status.UserId == "" {
+						select {
+						case semaphore <- struct{}{}:
+							go fetchStatus(c, semaphore, user.Id)
+						default:
+							c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
+						}
+					}
+
+					break
 				}
 
-				break
+				// We couldn't find the user so we fetch it and its status.
+				select {
+				case semaphore <- struct{}{}:
+					go fetchUserAndStatus(c, semaphore, userId)
+				default:
+					c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
+				}
 			}
-
-			// We couldn't find the user so we fetch it and its status.
-			select {
-			case semaphore <- struct{}{}:
-				go fetchUserAndStatus(c, semaphore, userId)
-			default:
-				c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
-			}
+		case <-c.disconnected:
+			return
 		}
 	}
 }
