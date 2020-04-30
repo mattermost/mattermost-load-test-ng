@@ -13,10 +13,6 @@ import (
 type User interface {
 	Store() store.UserStore
 
-	// Cleanup is a one time method used to close any open resources
-	// that the user might have kept open throughout its lifetime.
-	Cleanup()
-
 	// connection
 	Connect() (<-chan error, error)
 	Disconnect() error

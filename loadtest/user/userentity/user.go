@@ -152,16 +152,6 @@ func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 	return ue.wsEventChan
 }
 
-// Cleanup is a one time method used to close any open resources
-// that the user might have kept open throughout its lifetime.
-// After calling cleanup, the user might not be used any more.
-// This is different from the Connect/Disconnect methods which
-// can be called multiple times.
-func (ue *UserEntity) Cleanup() {
-	close(ue.wsEventChan)
-	close(ue.wsTyping)
-}
-
 func (ue *UserEntity) IsSysAdmin() (bool, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
