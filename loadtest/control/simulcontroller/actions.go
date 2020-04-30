@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -243,6 +244,10 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		}
 	}
 
+	// We loop through the fetched posts to gather the ids for the users who made
+	// those posts. These are later needed to fetch profile images.
+	// We also check if posts have any image attachments and if so we fetch the
+	// respective thumbnails.
 	var userIds []string
 	for _, postId := range postsIds {
 		userId, err := u.Store().UserForPost(postId)
@@ -351,7 +356,8 @@ func editPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message := genMessage(post.RootId != "")
+	isReply := post.RootId != ""
+	message := genMessage(isReply)
 	postId, err := u.PatchPost(post.Id, &model.PostPatch{
 		Message: &message,
 	})
@@ -451,24 +457,39 @@ func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error
 
 	for _, filename := range filenames {
 		files[filename] = &file{
-			control.MustAsset(filename),
-			rand.Intn(2) == 0,
+			data:   control.MustAsset(filename),
+			upload: rand.Intn(2) == 0,
 		}
 	}
 
+	// We make sure at least one file gets uploaded.
 	files[filenames[rand.Intn(len(filenames))]].upload = true
+
+	var wg sync.WaitGroup
+	fileIds := make(chan string, len(files))
 
 	for filename, file := range files {
 		if !file.upload {
 			continue
 		}
-		resp, err := u.UploadFile(file.data, post.ChannelId, filename)
-		if err != nil {
-			return err
-		}
-		post.FileIds = append(post.FileIds, resp.FileInfos[0].Id)
+		wg.Add(1)
+		go func(filename string, data []byte) {
+			defer wg.Done()
+			resp, err := u.UploadFile(data, post.ChannelId, filename)
+			if err != nil {
+				c.status <- c.newErrorStatus(err)
+				return
+			}
+			post.FileIds = append(post.FileIds, resp.FileInfos[0].Id)
+			fileIds <- resp.FileInfos[0].Id
 
-		c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
+			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
+		}(filename, file.data)
+	}
+
+	wg.Wait()
+	for i := 0; i < len(fileIds); i++ {
+		post.FileIds = append(post.FileIds, <-fileIds)
 	}
 
 	return nil
@@ -486,10 +507,12 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 	}
 
 	reaction := &model.Reaction{
-		UserId:    u.Store().Id(),
-		PostId:    post.Id,
-		EmojiName: []string{"+1", "tada", "point_up", "raised_hands"}[rand.Intn(4)],
+		UserId: u.Store().Id(),
+		PostId: post.Id,
 	}
+
+	emojis := []string{"+1", "tada", "point_up", "raised_hands"}
+	reaction.EmojiName = emojis[rand.Intn(len(emojis))]
 
 	reactions, err := u.Store().Reactions(post.Id)
 	if err != nil {
@@ -605,7 +628,7 @@ func (c *SimulController) createGroupChannel(u user.User) control.UserActionResp
 	return c.createPost(u)
 }
 
-func openDirectGroupChannel(u user.User) control.UserActionResponse {
+func openDirectOrGroupChannel(u user.User) control.UserActionResponse {
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
