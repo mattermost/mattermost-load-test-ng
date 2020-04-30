@@ -467,7 +467,6 @@ func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error
 
 	var wg sync.WaitGroup
 	fileIds := make(chan string, len(files))
-
 	for filename, file := range files {
 		if !file.upload {
 			continue
@@ -480,10 +479,8 @@ func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error
 				c.status <- c.newErrorStatus(err)
 				return
 			}
-			post.FileIds = append(post.FileIds, resp.FileInfos[0].Id)
-			fileIds <- resp.FileInfos[0].Id
-
 			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
+			fileIds <- resp.FileInfos[0].Id
 		}(filename, file.data)
 	}
 
