@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -24,11 +25,15 @@ type userAction struct {
 }
 
 func (c *SimulController) connect() error {
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 0, 1) {
+		return errors.New("already connected")
+	}
 	errChan, err := c.user.Connect()
 	if err != nil {
+		atomic.StoreInt32(&c.connectedFlag, 0)
 		return fmt.Errorf("connect failed %w", err)
 	}
-	c.connected <- struct{}{}
+
 	go func() {
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
@@ -40,15 +45,14 @@ func (c *SimulController) connect() error {
 }
 
 func (c *SimulController) disconnect() error {
-	// one for ws loop and one for periodic actions loop
-	select {
-	case <-c.connected:
-		c.disconnected <- struct{}{}
-		c.disconnected <- struct{}{}
-		<-c.waitwebsocket
-	default:
-		return errors.New("user is not connected")
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 1, 0) {
+		return errors.New("not connected")
 	}
+	// one for ws loop and one for periodic actions loop
+	c.disconnectChan <- struct{}{}
+	c.disconnectChan <- struct{}{}
+	<-c.wsWaitChan
+
 	err := c.user.Disconnect()
 	if err != nil {
 		return fmt.Errorf("disconnect failed %w", err)
@@ -101,7 +105,7 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		idleTimeMs := time.Duration(math.Round(1000 * c.rate))
 
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return control.UserActionResponse{Info: "login canceled"}
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}

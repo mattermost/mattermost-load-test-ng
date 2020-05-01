@@ -16,16 +16,16 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id            int
-	user          user.User
-	stop          chan struct{}
-	stopped       chan struct{}
-	waitwebsocket chan struct{}
-	disconnected  chan struct{}
-	connected     chan struct{}
-	status        chan<- control.UserStatus
-	rate          float64
-	config        *Config
+	id             int
+	user           user.User
+	status         chan<- control.UserStatus
+	rate           float64
+	config         *Config
+	stopChan       chan struct{} // this channel coordinates the stop sequence of the controller
+	stoppedChan    chan struct{} // blocks until controller cleans up everything
+	wsWaitChan     chan struct{} // waits for ws goroutines to finish
+	disconnectChan chan struct{} // notifies disconnection to the ws and periodic goroutines
+	connectedFlag  int32         // indicates that wsWaitChan and disconnectChan are listening
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -41,16 +41,15 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:            id,
-		user:          user,
-		waitwebsocket: make(chan struct{}),
-		disconnected:  make(chan struct{}),
-		connected:     make(chan struct{}, 1),
-		stop:          make(chan struct{}),
-		stopped:       make(chan struct{}),
-		status:        status,
-		rate:          1.0,
-		config:        config,
+		id:             id,
+		user:           user,
+		status:         status,
+		rate:           1.0,
+		config:         config,
+		wsWaitChan:     make(chan struct{}),
+		disconnectChan: make(chan struct{}),
+		stopChan:       make(chan struct{}),
+		stoppedChan:    make(chan struct{}),
 	}, nil
 }
 
@@ -72,7 +71,7 @@ func (c *SimulController) Run() {
 		}
 		c.user.ClearUserData()
 		c.sendStopStatus()
-		close(c.stopped)
+		close(c.stoppedChan)
 	}()
 
 	initActions := []userAction{
@@ -94,7 +93,7 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
 		default:
 		}
@@ -174,7 +173,7 @@ func (c *SimulController) Run() {
 		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
 
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
@@ -193,8 +192,8 @@ func (c *SimulController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimulController) Stop() {
-	close(c.stop)
-	<-c.stopped
+	close(c.stopChan)
+	<-c.stoppedChan
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

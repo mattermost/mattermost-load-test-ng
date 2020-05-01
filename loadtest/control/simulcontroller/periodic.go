@@ -21,7 +21,7 @@ func (c *SimulController) periodicActions() {
 				c.status <- c.newInfoStatus(resp.Info)
 			}
 		// We can add more periodic actions here.
-		case <-c.disconnected:
+		case <-c.disconnectChan:
 			return
 		}
 	}

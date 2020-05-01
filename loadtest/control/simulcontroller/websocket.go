@@ -23,7 +23,7 @@ func (c *SimulController) wsEventHandler() {
 		for i := 0; i < semCount; i++ {
 			semaphore <- struct{}{}
 		}
-		c.waitwebsocket <- struct{}{}
+		c.wsWaitChan <- struct{}{}
 	}()
 
 	for {
@@ -71,7 +71,7 @@ func (c *SimulController) wsEventHandler() {
 					c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
 				}
 			}
-		case <-c.disconnected:
+		case <-c.disconnectChan:
 			return
 		}
 	}
