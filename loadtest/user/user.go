@@ -45,7 +45,7 @@ type User interface {
 	GetUserStatus() error
 	GetUsersStatusesByIds(userIds []string) error
 	GetUsersInChannel(channelId string, page, perPage int) error
-	GetUsers(page, perPage int) error
+	GetUsers(page, perPage int) ([]string, error)
 	SetProfileImage(data []byte) error
 	GetProfileImage() error
 	GetProfileImageForUser(userId string) error
@@ -58,10 +58,10 @@ type User interface {
 	GetPostsForChannel(channelId string, page, perPage int) error
 	GetPostsBefore(channelId, postId string, page, perPage int) error
 	GetPostsAfter(channelId, postId string, page, perPage int) error
-	GetPostsSince(channelId string, time int64) error
+	GetPostsSince(channelId string, time int64) ([]string, error)
 	GetPinnedPosts(channelId string) (*model.PostList, error)
 	// GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
-	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error
+	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error)
 	SaveReaction(reaction *model.Reaction) error
 	DeleteReaction(reaction *model.Reaction) error
 	GetReactions(postId string) error
@@ -78,6 +78,7 @@ type User interface {
 	CreateDirectChannel(otherUserId string) (string, error)
 	GetChannel(channelId string) error
 	GetChannelsForTeam(teamId string, includeDeleted bool) error
+	GetPublicChannelsForTeam(teamId string, page, perPage int) error
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)

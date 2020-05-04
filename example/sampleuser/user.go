@@ -87,8 +87,8 @@ func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int) 
 	return nil
 }
 
-func (u *SampleUser) GetPostsSince(channelId string, time int64) error {
-	return nil
+func (u *SampleUser) GetPostsSince(channelId string, time int64) ([]string, error) {
+	return nil, nil
 }
 
 func (u *SampleUser) GetPinnedPosts(channelId string) (*model.PostList, error) {
@@ -96,8 +96,8 @@ func (u *SampleUser) GetPinnedPosts(channelId string) (*model.PostList, error) {
 }
 
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
-func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
-	return nil
+func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error) {
+	return nil, nil
 }
 
 func (u *SampleUser) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
@@ -145,6 +145,10 @@ func (u *SampleUser) GetChannel(channelId string) error {
 }
 
 func (u *SampleUser) GetChannelsForTeam(teamId string, includeDeleted bool) error {
+	return nil
+}
+
+func (u *SampleUser) GetPublicChannelsForTeam(teamId string, page, perPage int) error {
 	return nil
 }
 
@@ -447,6 +451,6 @@ func (u *SampleUser) GetUsersInChannel(channelId string, page, perPage int) erro
 	return nil
 }
 
-func (u *SampleUser) GetUsers(page, perPage int) error {
-	return nil
+func (u *SampleUser) GetUsers(page, perPage int) ([]string, error) {
+	return nil, nil
 }
