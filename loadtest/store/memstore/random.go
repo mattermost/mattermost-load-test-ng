@@ -22,6 +22,7 @@ var (
 	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
 	ErrChannelNotFound   = errors.New("memstore: channel not found")
 	ErrPostNotFound      = errors.New("memstore: post not found")
+	ErrInvalidData       = errors.New("memstore: invalid data found")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -139,7 +140,11 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	if len(s.users) < 2 {
+	minLen := 1
+	if _, ok := s.users[s.user.Id]; ok {
+		minLen++
+	}
+	if len(s.users) < minLen {
 		return model.User{}, ErrLenMismatch
 	}
 
@@ -149,8 +154,11 @@ func (s *MemStore) RandomUser() (model.User, error) {
 			return model.User{}, err
 		}
 		user := s.users[key.(string)]
+		if user == nil || user.Id == "" {
+			return model.User{}, ErrInvalidData
+		}
 		// We don't want to pick ourselves.
-		if s.user != nil && user.Id == s.user.Id {
+		if user.Id == s.user.Id {
 			continue
 		}
 		return *user, nil
@@ -162,16 +170,21 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	if n > len(s.users) {
+	numUsers := len(s.users)
+	if _, ok := s.users[s.user.Id]; ok {
+		numUsers--
+	}
+	if n > numUsers {
 		return nil, ErrLenMismatch
 	}
-	var users []model.User
+
+	users := make([]model.User, 0, n)
 	for len(users) < n {
 		u, err := s.RandomUser()
 		if err != nil {
 			return nil, err
 		}
-		found := false
+		var found bool
 		for _, ou := range users {
 			if ou.Id == u.Id {
 				found = true

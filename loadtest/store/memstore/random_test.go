@@ -24,11 +24,17 @@ func TestMain(m *testing.M) {
 
 func TestRandomUsers(t *testing.T) {
 	s := newStore(t)
+	myId := model.NewId()
+	err := s.SetUser(&model.User{
+		Id: myId,
+	})
+	require.NoError(t, err)
+
 	id1 := model.NewId()
 	id2 := model.NewId()
 	id3 := model.NewId()
 	id4 := model.NewId()
-	err := s.SetUsers([]*model.User{
+	err = s.SetUsers([]*model.User{
 		{Id: id1},
 		{Id: id2},
 		{Id: id3},
@@ -41,17 +47,79 @@ func TestRandomUsers(t *testing.T) {
 
 	_, err = s.RandomUsers(5)
 	require.Equal(t, err, ErrLenMismatch)
+
+	t.Run("two users without current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id := model.NewId()
+		id2 := model.NewId()
+
+		err = s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+
+		err = s.SetUsers([]*model.User{
+			{Id: id},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+
+		users, err := s.RandomUsers(2)
+		require.NoError(t, err)
+		require.Len(t, users, 2)
+	})
+
+	t.Run("two users with current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id := model.NewId()
+
+		err = s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+
+		err = s.SetUsers([]*model.User{
+			{Id: myId},
+			{Id: id},
+		})
+		require.NoError(t, err)
+
+		users, err := s.RandomUsers(2)
+		require.Equal(t, err, ErrLenMismatch)
+		require.Empty(t, users)
+	})
 }
 
 func TestRandomUser(t *testing.T) {
-	t.Run("myself", func(t *testing.T) {
+	t.Run("one user", func(t *testing.T) {
 		s := newStore(t)
-		user := &model.User{
-			Id: "test",
-		}
-		err := s.SetUser(user)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
 		require.NoError(t, err)
-		err = s.SetUsers([]*model.User{user})
+		id := model.NewId()
+		err = s.SetUsers([]*model.User{
+			{Id: id},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		require.Equal(t, id, u.Id)
+	})
+
+	t.Run("only current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		err = s.SetUsers([]*model.User{
+			{Id: myId},
+		})
 		require.NoError(t, err)
 		u, err := s.RandomUser()
 		require.Equal(t, err, ErrLenMismatch)
@@ -60,9 +128,14 @@ func TestRandomUser(t *testing.T) {
 
 	t.Run("two users", func(t *testing.T) {
 		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
 		id1 := model.NewId()
 		id2 := model.NewId()
-		err := s.SetUsers([]*model.User{
+		err = s.SetUsers([]*model.User{
 			{Id: id1},
 			{Id: id2},
 		})
@@ -79,7 +152,7 @@ func TestRandomUser(t *testing.T) {
 		})
 	})
 
-	t.Run("three users, not myself", func(t *testing.T) {
+	t.Run("three users with current user", func(t *testing.T) {
 		s := newStore(t)
 		myId := model.NewId()
 		id1 := model.NewId()
@@ -103,6 +176,29 @@ func TestRandomUser(t *testing.T) {
 				return false
 			}
 		})
+	})
+
+	t.Run("bad data", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		s.users[""] = nil
+		u, err := s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
+
+		s.users[model.NewId()] = nil
+		u, err = s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
+
+		s.users[model.NewId()] = &model.User{}
+		u, err = s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
 	})
 }
 
