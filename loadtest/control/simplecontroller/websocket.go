@@ -4,6 +4,8 @@
 package simplecontroller
 
 import (
+	"sync"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -11,7 +13,8 @@ import (
 // This is used to model user behaviour by responding to certain events with
 // the appropriate actions. It differs from userentity.wsEventHandler which is
 // instead used to manage the internal user state.
-func (c *SimpleController) wsEventHandler() {
+func (c *SimpleController) wsEventHandler(wg *sync.WaitGroup) {
+	defer wg.Done()
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
 		case model.WEBSOCKET_EVENT_USER_UPDATED:

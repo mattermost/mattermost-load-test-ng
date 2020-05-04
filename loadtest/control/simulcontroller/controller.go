@@ -23,7 +23,7 @@ type SimulController struct {
 	stopChan       chan struct{}   // this channel coordinates the stop sequence of the controller
 	stoppedChan    chan struct{}   // blocks until controller cleans up everything
 	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
-	connectedFlag  int32           // indicates that wsWaitChan and disconnectChan are listening
+	connectedFlag  int32           // indicates that the controller is connected
 	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
