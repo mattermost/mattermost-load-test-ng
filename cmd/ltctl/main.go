@@ -182,7 +182,7 @@ func main() {
 			return terraform.New(nil).OpenBrowserFor(args[0])
 		},
 		Args:      cobra.ExactValidArgs(1),
-		ValidArgs: []string{"grafana, mattermost, prometheus"},
+		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
 	}
 	rootCmd.AddCommand(goCmd)
 

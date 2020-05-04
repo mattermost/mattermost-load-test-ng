@@ -127,7 +127,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 		}
 
 		client.Listen()
-		chanClosed := false
+		var chanClosed bool
+		var timedOut bool
 		for {
 			select {
 			case ev, ok := <-client.EventChannel:
@@ -138,14 +139,10 @@ func (ue *UserEntity) listen(errChan chan error) {
 				if err := ue.wsEventHandler(ev); err != nil {
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
-				select {
-				case ue.wsEventChan <- ev:
-				default:
-				}
+				ue.wsEventChan <- ev
 			case _, ok := <-client.ResponseChannel:
 				if !ok {
 					chanClosed = true
-					break
 				}
 			case <-ue.wsClosing:
 				client.Close()
@@ -158,8 +155,11 @@ func (ue *UserEntity) listen(errChan chan error) {
 					break
 				}
 				client.UserTyping(msg.channelId, msg.parentId)
+			case <-client.PingTimeoutChannel:
+				timedOut = true
 			}
-			if chanClosed {
+			if chanClosed || timedOut {
+				client.Close()
 				break
 			}
 		}
@@ -170,7 +170,6 @@ func (ue *UserEntity) listen(errChan chan error) {
 		connectionFailCount++
 		select {
 		case <-ue.wsClosing:
-			client.Close()
 			// Explicit disconnect. Return.
 			close(ue.wsClosed)
 			return

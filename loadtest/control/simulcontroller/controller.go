@@ -6,8 +6,7 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
-	"math"
-	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -21,11 +20,11 @@ type SimulController struct {
 	status         chan<- control.UserStatus
 	rate           float64
 	config         *Config
-	stopChan       chan struct{} // this channel coordinates the stop sequence of the controller
-	stoppedChan    chan struct{} // blocks until controller cleans up everything
-	wsWaitChan     chan struct{} // waits for ws goroutines to finish
-	disconnectChan chan struct{} // notifies disconnection to the ws and periodic goroutines
-	connectedFlag  int32         // indicates that wsWaitChan and disconnectChan are listening
+	stopChan       chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan    chan struct{}   // blocks until controller cleans up everything
+	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
+	connectedFlag  int32           // indicates that wsWaitChan and disconnectChan are listening
+	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -46,10 +45,10 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		status:         status,
 		rate:           1.0,
 		config:         config,
-		wsWaitChan:     make(chan struct{}),
 		disconnectChan: make(chan struct{}),
 		stopChan:       make(chan struct{}),
 		stoppedChan:    make(chan struct{}),
+		wg:             &sync.WaitGroup{},
 	}, nil
 }
 
@@ -84,33 +83,65 @@ func (c *SimulController) Run() {
 		{
 			run: c.joinTeam,
 		},
+		{
+			run: c.joinChannel,
+		},
 	}
 
 	for _, action := range initActions {
+		select {
+		case <-c.stopChan:
+			return
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		}
+
 		if resp := action.run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
-		select {
-		case <-c.stopChan:
-			return
-		default:
-		}
 	}
 
 	actions := []userAction{
 		{
-			run:       switchChannel,
-			frequency: 300,
+			run:       openDirectOrGroupChannel,
+			frequency: 200,
 		},
 		{
 			run:       c.switchTeam,
 			frequency: 110,
 		},
 		{
-			run:       createPost,
+			run:       switchChannel,
+			frequency: 100,
+		},
+		{
+			run:       c.createPost,
 			frequency: 55,
+		},
+		{
+			run:       c.fullReload,
+			frequency: 40,
+		},
+		{
+			run:       c.createPostReply,
+			frequency: 20,
+		},
+		{
+			run:       c.joinChannel,
+			frequency: 11,
+		},
+		{
+			run:       c.addReaction,
+			frequency: 6,
+		},
+		{
+			run:       editPost,
+			frequency: 3,
+		},
+		{
+			run:       c.logoutLogin,
+			frequency: 3,
 		},
 		{
 			run:       c.createDirectChannel,
@@ -119,35 +150,6 @@ func (c *SimulController) Run() {
 		{
 			run:       c.createGroupChannel,
 			frequency: 1,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(true)
-			},
-			frequency: 40,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				// logout
-				if resp := c.logout(); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				u.ClearUserData()
-
-				// login
-				if resp := c.login(c.user); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				// reload
-				return c.reload(false)
-			},
-			frequency: 3,
 		},
 	}
 
@@ -163,19 +165,10 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 
-		// Randomly selecting a value in the interval
-		// [MinIdleTimeMs, AvgIdleTimeMs*2 - MinIdleTimeMs).
-		// This will give us an expected value equal to AvgIdleTimeMs.
-		// TODO: consider if it makes more sense to select this value using
-		// a truncated normal distribution.
-		idleMs := rand.Intn(c.config.AvgIdleTimeMs*2-c.config.MinIdleTimeMs*2) + c.config.MinIdleTimeMs
-
-		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
-
 		select {
 		case <-c.stopChan:
 			return
-		case <-time.After(idleTimeMs * time.Millisecond):
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
 	}
 

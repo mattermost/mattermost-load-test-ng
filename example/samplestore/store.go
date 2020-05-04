@@ -247,6 +247,10 @@ func (s *SampleStore) RandomPostForChannel(channelId string) (model.Post, error)
 	return model.Post{}, nil
 }
 
+func (s *SampleStore) RandomPostForChannelByUser(channelId, userId string) (model.Post, error) {
+	return model.Post{}, nil
+}
+
 // RandomEmoji returns a random emoji.
 func (s *SampleStore) RandomEmoji() (model.Emoji, error) {
 	return model.Emoji{}, nil
@@ -353,4 +357,20 @@ func (s *SampleStore) SetStatus(userId string, status *model.Status) error {
 
 func (s *SampleStore) GetUser(userId string) (model.User, error) {
 	return model.User{}, nil
+}
+
+func (s *SampleStore) ProfileImage(userId string) (bool, error) {
+	return false, nil
+}
+
+func (s *SampleStore) SetProfileImage(userId string) error {
+	return nil
+}
+
+func (s *SampleStore) UserForPost(postId string) (string, error) {
+	return "", nil
+}
+
+func (s *SampleStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
+	return nil, nil
 }

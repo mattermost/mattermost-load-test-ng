@@ -222,15 +222,16 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
-func (ue *UserEntity) GetPostsSince(channelId string, time int64) error {
+func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
 	postlist, resp := ue.client.GetPostsSince(channelId, time)
 	if resp.Error != nil {
-		return resp.Error
+		return nil, resp.Error
 	}
 	if len(postlist.Posts) == 0 {
-		return nil
+		return nil, nil
 	}
-	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+
+	return postlist.Order, ue.store.SetPosts(postsMapToSlice(postlist.Posts))
 }
 
 func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) {
@@ -242,18 +243,18 @@ func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) 
 }
 
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
-func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) error {
+func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	postList, resp := ue.client.GetPostsAroundLastUnread(user.Id, channelId, limitBefore, limitAfter)
 	if resp.Error != nil {
-		return resp.Error
+		return nil, resp.Error
 	}
 
-	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
+	return postList.Order, ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
@@ -355,6 +356,14 @@ func (ue *UserEntity) GetChannelsForTeam(teamId string, includeDeleted bool) err
 	return ue.store.SetChannels(channels)
 }
 
+func (ue *UserEntity) GetPublicChannelsForTeam(teamId string, page, perPage int) error {
+	channels, resp := ue.client.GetPublicChannelsForTeam(teamId, page, perPage, "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return ue.store.SetChannels(channels)
+}
+
 func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	channels, resp := ue.client.SearchChannels(teamId, search)
 	if resp.Error != nil {
@@ -368,12 +377,11 @@ func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDe
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	for _, ch := range channels {
-		err := ue.store.SetChannel(ch)
-		if err != nil {
-			return nil, err
-		}
+
+	if err := ue.store.SetChannels(channels); err != nil {
+		return nil, err
 	}
+
 	return channels, nil
 }
 
@@ -616,13 +624,18 @@ func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) err
 	return ue.store.SetUsers(users)
 }
 
-func (ue *UserEntity) GetUsers(page, perPage int) error {
+func (ue *UserEntity) GetUsers(page, perPage int) ([]string, error) {
 	users, resp := ue.client.GetUsers(page, perPage, "")
 	if resp.Error != nil {
-		return resp.Error
+		return nil, resp.Error
 	}
 
-	return ue.store.SetUsers(users)
+	userIds := make([]string, len(users))
+	for i := range users {
+		userIds[i] = users[i].Id
+	}
+
+	return userIds, ue.store.SetUsers(users)
 }
 
 func (ue *UserEntity) GetTeamStats(teamId string) error {
@@ -706,12 +719,11 @@ func (ue *UserEntity) GetProfileImage() error {
 }
 
 func (ue *UserEntity) GetProfileImageForUser(userId string) error {
-	_, resp := ue.client.GetProfileImage(userId, "")
-	if resp.Error != nil {
+	if _, resp := ue.client.GetProfileImage(userId, ""); resp.Error != nil {
 		return resp.Error
 	}
 
-	return nil
+	return ue.store.SetProfileImage(userId)
 }
 
 func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
