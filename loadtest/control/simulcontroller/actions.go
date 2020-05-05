@@ -357,7 +357,11 @@ func editPost(u user.User) control.UserActionResponse {
 	}
 
 	isReply := post.RootId != ""
-	message := genMessage(isReply)
+	message, err := genMessage(u, isReply)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	postId, err := u.PatchPost(post.Id, &model.PostPatch{
 		Message: &message,
 	})
@@ -392,8 +396,13 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	message, err := genMessage(u, true)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	reply := &model.Post{
-		Message:   genMessage(true),
+		Message:   message,
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 		RootId:    rootId,
@@ -426,8 +435,13 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	message, err := genMessage(u, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	post := &model.Post{
-		Message:   genMessage(false),
+		Message:   message,
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 	}

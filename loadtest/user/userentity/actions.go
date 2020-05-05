@@ -734,6 +734,22 @@ func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, erro
 	return users, nil
 }
 
+func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
+	users, resp := ue.client.AutocompleteUsersInChannel(teamId, channelId, username, limit, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	usersMap := make(map[string]bool)
+	for _, u := range users.Users {
+		usersMap[u.Username] = true
+	}
+	for _, u := range users.OutOfChannel {
+		usersMap[u.Username] = false
+	}
+
+	return usersMap, nil
+}
+
 func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	emojis, resp := ue.client.GetEmojiList(page, perPage)
 	if resp.Error != nil {

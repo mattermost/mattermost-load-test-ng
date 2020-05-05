@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
 // pickAction randomly selects an action from a slice of userAction with
@@ -35,7 +36,7 @@ func pickAction(actions []userAction) (*userAction, error) {
 	return nil, errors.New("should not be able to reach this point")
 }
 
-func genMessage(isReply bool) string {
+func genMessage(u user.User, isReply bool) (string, error) {
 	// This is an estimate that comes from stats on community servers.
 	// The average length (in words) for a reply.
 	// TODO: should be part of some advanced configuration.
@@ -49,7 +50,17 @@ func genMessage(isReply bool) string {
 	// TODO: make a util function out of this behaviour.
 	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
 
-	return control.GenerateRandomSentences(wordCount)
+	message := control.GenerateRandomSentences(wordCount)
+
+	// 2% of the times someone is mentioned.
+	if rand.Float64() < 0.02 {
+		if resp := control.AutoCompleteUsers(u); resp.Err != nil && resp.Info != "" {
+			message += " @" + resp.Info
+		} else if resp.Err != nil {
+			return "", resp.Err
+		}
+	}
+	return message, nil
 }
 
 func pickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duration {

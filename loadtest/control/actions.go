@@ -471,6 +471,40 @@ func SearchUsers(u user.User) UserActionResponse {
 	})
 }
 
+// AutoCompleteUsers returns "user found" error when the auto completion is
+// done successfully. In that case UserActionResponse.Info carries the user
+// name information.
+func AutoCompleteUsers(u user.User) UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return UserActionResponse{Err: err}
+	}
+
+	user, err := u.Store().RandomUser()
+	if err != nil {
+		return UserActionResponse{Err: err}
+	}
+
+	cutoff := 2 + rand.Intn(len(user.Username)/2)
+
+	return emulateUserTyping(user.Username, func(term string) UserActionResponse {
+		users, err := u.AutoCompleteUsersInChannel(channel.TeamId, channel.Id, term, 100)
+		if err != nil {
+			return UserActionResponse{Err: err}
+		}
+
+		if len(term) == cutoff {
+			return UserActionResponse{Err: errors.New("user found"), Info: user.Username}
+		}
+
+		if _, ok := users[term]; ok {
+			return UserActionResponse{Err: errors.New("user found"), Info: term}
+		}
+
+		return UserActionResponse{Info: "user not found"}
+	})
+}
+
 // UpdateProfileImage uploads a new profile picture for the given user.
 func UpdateProfileImage(u user.User) UserActionResponse {
 	// TODO: take this from the config later.
