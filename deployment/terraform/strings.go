@@ -140,12 +140,12 @@ const limitsConfig = `
 `
 
 const clientSysctlConfig = `
-net.ipv4.ip_local_port_range = 1024 65000
+net.ipv4.ip_local_port_range = 1025 65000
 net.ipv4.tcp_fin_timeout = 30
 `
 
 const serverSysctlConfig = `
-net.ipv4.ip_local_port_range = 1024 65000
+net.ipv4.ip_local_port_range = 1025 65000
 net.ipv4.tcp_fin_timeout = 30
 net.ipv4.tcp_tw_reuse = 1
 net.core.somaxconn = 4096
