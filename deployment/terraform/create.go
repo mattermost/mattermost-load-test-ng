@@ -293,7 +293,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.SiteURL = model.NewString("http://" + ip + ":8065")
 	cfg.ServiceSettings.ReadTimeout = model.NewInt(10)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(10)
-	cfg.ServiceSettings.IdleTimeout = model.NewInt(5)
+	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
 	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
