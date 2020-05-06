@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/websocket"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -111,7 +112,7 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
 	for {
-		client, err := model.NewWebSocketClient4(ue.config.WebSocketURL, ue.client.AuthToken)
+		client, err := websocket.NewClient4(ue.config.WebSocketURL, ue.client.AuthToken)
 		if err != nil {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)
 			connectionFailCount++
@@ -126,9 +127,7 @@ func (ue *UserEntity) listen(errChan chan error) {
 			continue
 		}
 
-		client.Listen()
 		var chanClosed bool
-		var timedOut bool
 		for {
 			select {
 			case ev, ok := <-client.EventChannel:
@@ -140,10 +139,6 @@ func (ue *UserEntity) listen(errChan chan error) {
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
 				ue.wsEventChan <- ev
-			case _, ok := <-client.ResponseChannel:
-				if !ok {
-					chanClosed = true
-				}
 			case <-ue.wsClosing:
 				client.Close()
 				// Explicit disconnect. Return.
@@ -154,19 +149,16 @@ func (ue *UserEntity) listen(errChan chan error) {
 					chanClosed = true
 					break
 				}
-				client.UserTyping(msg.channelId, msg.parentId)
-			case <-client.PingTimeoutChannel:
-				timedOut = true
+				if err := client.UserTyping(msg.channelId, msg.parentId); err != nil {
+					errChan <- fmt.Errorf("userentity: error in client.UserTyping: %w", err)
+				}
 			}
-			if chanClosed || timedOut {
+			if chanClosed {
 				client.Close()
 				break
 			}
 		}
 
-		if client.ListenError != nil {
-			errChan <- fmt.Errorf("userentity: websocket listen error: %w", client.ListenError)
-		}
 		connectionFailCount++
 		select {
 		case <-ue.wsClosing:
