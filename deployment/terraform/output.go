@@ -56,3 +56,9 @@ type Output struct {
 func (o *Output) HasProxy() bool {
 	return len(o.Proxy.Value) > 0
 }
+
+// IsEmpty returns whether a deployment has some data or not.
+// This is useful to check if info is being checked after a cluster is destroyed.
+func (o *Output) IsEmpty() bool {
+	return len(o.Instances.Value) == 0
+}
