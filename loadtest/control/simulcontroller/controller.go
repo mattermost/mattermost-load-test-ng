@@ -15,13 +15,16 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id      int
-	user    user.User
-	stop    chan struct{}
-	stopped chan struct{}
-	status  chan<- control.UserStatus
-	rate    float64
-	config  *Config
+	id             int
+	user           user.User
+	status         chan<- control.UserStatus
+	rate           float64
+	config         *Config
+	stopChan       chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan    chan struct{}   // blocks until controller cleans up everything
+	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
+	connectedFlag  int32           // indicates that the controller is connected
+	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -37,13 +40,15 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:      id,
-		user:    user,
-		stop:    make(chan struct{}),
-		stopped: make(chan struct{}),
-		status:  status,
-		rate:    1.0,
-		config:  config,
+		id:             id,
+		user:           user,
+		status:         status,
+		rate:           1.0,
+		config:         config,
+		disconnectChan: make(chan struct{}),
+		stopChan:       make(chan struct{}),
+		stoppedChan:    make(chan struct{}),
+		wg:             &sync.WaitGroup{},
 	}, nil
 }
 
@@ -57,22 +62,15 @@ func (c *SimulController) Run() {
 		return
 	}
 
-	var wg sync.WaitGroup
-	// Start listening for websocket events.
-	wg.Add(1)
-	go c.wsEventHandler(&wg)
-
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if err := c.user.Disconnect(); err != nil {
-			c.status <- c.newErrorStatus(err)
+		if resp := c.logout(); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
 		}
-		c.user.Cleanup()
 		c.user.ClearUserData()
-		wg.Wait()
 		c.sendStopStatus()
-		close(c.stopped)
+		close(c.stoppedChan)
 	}()
 
 	initActions := []userAction{
@@ -92,7 +90,7 @@ func (c *SimulController) Run() {
 
 	for _, action := range initActions {
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
 		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
@@ -103,8 +101,6 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 	}
-
-	go c.periodicActions()
 
 	actions := []userAction{
 		{
@@ -170,7 +166,7 @@ func (c *SimulController) Run() {
 		}
 
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
 		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
@@ -189,8 +185,8 @@ func (c *SimulController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimulController) Stop() {
-	close(c.stop)
-	<-c.stopped
+	close(c.stopChan)
+	<-c.stoppedChan
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

@@ -60,9 +60,6 @@ func (u *SampleUser) Events() <-chan *model.WebSocketEvent {
 	return nil
 }
 
-func (u *SampleUser) Cleanup() {
-}
-
 func (u *SampleUser) CreatePost(post *model.Post) (string, error) {
 	return "", nil
 }

@@ -4,8 +4,10 @@
 package simplecontroller
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"sync/atomic"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -126,7 +128,7 @@ func (c *SimpleController) updateTeam(user.User) control.UserActionResponse {
 // the WebSocket connection.
 func (c *SimpleController) reload(full bool) control.UserActionResponse {
 	if full {
-		err := c.user.Disconnect()
+		err := c.disconnect()
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
@@ -141,16 +143,35 @@ func (c *SimpleController) reload(full bool) control.UserActionResponse {
 }
 
 func (c *SimpleController) connect() error {
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 0, 1) {
+		return errors.New("already connected")
+	}
 	errChan, err := c.user.Connect()
 	if err != nil {
+		atomic.StoreInt32(&c.connectedFlag, 0)
 		return fmt.Errorf("connect failed %w", err)
 	}
 
+	c.wg.Add(2)
 	go func() {
+		defer c.wg.Done()
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+	go c.wsEventHandler(c.wg)
+	return nil
+}
 
+func (c *SimpleController) disconnect() error {
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 1, 0) {
+		return errors.New("not connected")
+	}
+
+	err := c.user.Disconnect()
+	if err != nil {
+		return fmt.Errorf("disconnect failed %w", err)
+	}
+	c.wg.Wait()
 	return nil
 }

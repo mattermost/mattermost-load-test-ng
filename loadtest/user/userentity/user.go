@@ -80,8 +80,7 @@ func New(store store.MutableUserStore, config Config) *UserEntity {
 		return nil
 	}
 	ue.store = store
-	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.wsTyping = make(chan userTypingMsg)
+
 	return &ue
 }
 
@@ -100,6 +99,8 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 		return nil, errors.New("user is already connected")
 	}
 
+	ue.wsEventChan = make(chan *model.WebSocketEvent)
+	ue.wsTyping = make(chan userTypingMsg)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil
@@ -133,6 +134,8 @@ func (ue *UserEntity) Disconnect() error {
 
 	<-ue.wsClosed
 
+	close(ue.wsEventChan)
+	close(ue.wsTyping)
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil
@@ -142,16 +145,6 @@ func (ue *UserEntity) Disconnect() error {
 // to listen and react to events.
 func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 	return ue.wsEventChan
-}
-
-// Cleanup is a one time method used to close any open resources
-// that the user might have kept open throughout its lifetime.
-// After calling cleanup, the user might not be used any more.
-// This is different from the Connect/Disconnect methods which
-// can be called multiple times.
-func (ue *UserEntity) Cleanup() {
-	close(ue.wsEventChan)
-	close(ue.wsTyping)
 }
 
 func (ue *UserEntity) IsSysAdmin() (bool, error) {

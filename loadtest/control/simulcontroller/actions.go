@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -25,22 +26,45 @@ type userAction struct {
 }
 
 func (c *SimulController) connect() error {
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 0, 1) {
+		return errors.New("already connected")
+	}
 	errChan, err := c.user.Connect()
 	if err != nil {
+		atomic.StoreInt32(&c.connectedFlag, 0)
 		return fmt.Errorf("connect failed %w", err)
 	}
+	c.wg.Add(3)
 	go func() {
+		defer c.wg.Done()
 		for err := range errChan {
 			c.status <- c.newErrorStatus(err)
 		}
 	}()
+	go c.wsEventHandler(c.wg)
+	go c.periodicActions(c.wg)
+	return nil
+}
+
+func (c *SimulController) disconnect() error {
+	if !atomic.CompareAndSwapInt32(&c.connectedFlag, 1, 0) {
+		return errors.New("not connected")
+	}
+
+	err := c.user.Disconnect()
+	if err != nil {
+		return fmt.Errorf("disconnect failed %w", err)
+	}
+
+	c.disconnectChan <- struct{}{}
+	c.wg.Wait()
 
 	return nil
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
 	if full {
-		if err := c.user.Disconnect(); err != nil {
+		if err := c.disconnect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		c.user.ClearUserData()
@@ -87,16 +111,31 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		idleTimeMs := time.Duration(math.Round(1000 * c.rate))
 
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return control.UserActionResponse{Info: "login canceled"}
 		case <-time.After(idleTimeMs * time.Millisecond):
 		}
 	}
 }
 
+func (c *SimulController) logout() control.UserActionResponse {
+	err := c.disconnect()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	ok, err := c.user.Logout()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !ok {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
+	}
+	return control.UserActionResponse{Info: "logged out"}
+}
+
 func (c *SimulController) logoutLogin(u user.User) control.UserActionResponse {
 	// logout
-	if resp := control.Logout(u); resp.Err != nil {
+	if resp := c.logout(); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
