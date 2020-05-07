@@ -100,7 +100,11 @@ func (c *Client) reader() {
 			continue
 		}
 		if event.IsValid() {
-			c.EventChannel <- event
+			// non-blocking send in case event channel is full.
+			select {
+			case c.EventChannel <- event:
+			default:
+			}
 		}
 	}
 }
