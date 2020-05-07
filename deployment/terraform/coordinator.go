@@ -46,20 +46,6 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
-	agentConfig, err := t.generateLoadtestAgentConfig(output)
-	if err != nil {
-		return err
-	}
-	data, err := json.MarshalIndent(agentConfig, "", "  ")
-	if err != nil {
-		return err
-	}
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
-	mlog.Info("Uploading updated load-test agent config file")
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
-	}
-
 	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
 
 	coordinatorConfig, err := coordinator.ReadConfig("")
@@ -69,44 +55,62 @@ func (t *Terraform) StartCoordinator() error {
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
 	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value.PrivateIP + ":9090"
 
-	data, err = json.MarshalIndent(coordinatorConfig, "", "  ")
+	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
 		return err
 	}
 	mlog.Info("Uploading updated coordinator config file")
-	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
-	// Uploading simul controller config
+	mlog.Info("Uploading other load-test config files")
+
+	agentConfig, err := t.generateLoadtestAgentConfig(output)
+	if err != nil {
+		return err
+	}
+
 	simulConfig, err := simulcontroller.ReadConfig("")
 	if err != nil {
 		return err
 	}
-	data, err = json.MarshalIndent(simulConfig, "", "  ")
-	if err != nil {
-		return err
-	}
-	mlog.Info("Uploading simulcontroller config file")
-	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json"
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
-	}
 
-	// Uploading simple controller config
 	simpleConfig, err := simplecontroller.ReadConfig("")
 	if err != nil {
 		return err
 	}
-	data, err = json.MarshalIndent(simpleConfig, "", "  ")
-	if err != nil {
-		return err
+
+	batch := []struct {
+		input   interface{}
+		dstPath string
+	}{
+		{
+			input:   agentConfig,
+			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/config.json",
+		},
+		{
+			input:   simulConfig,
+			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json",
+		},
+		{
+			input:   simpleConfig,
+			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json",
+		},
 	}
-	mlog.Info("Uploading simplecontroller config file")
-	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json"
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
-		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+
+	for _, info := range batch {
+		data, err := json.MarshalIndent(info.input, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		rdr := bytes.NewReader(data)
+		mlog.Info(info.dstPath)
+		if out, err := sshc.Upload(rdr, info.dstPath, false); err != nil {
+			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
+		}
 	}
 
 	mlog.Info("Starting the coordinator")
