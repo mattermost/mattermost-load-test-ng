@@ -106,9 +106,8 @@ func (t *Terraform) StartCoordinator() error {
 			return err
 		}
 
-		rdr := bytes.NewReader(data)
 		mlog.Info(info.dstPath)
-		if out, err := sshc.Upload(rdr, info.dstPath, false); err != nil {
+		if out, err := sshc.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
 			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
 		}
 	}
