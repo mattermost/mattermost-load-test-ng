@@ -158,10 +158,13 @@ func main() {
 		Use:     "ssh [instance]",
 		Short:   "ssh into instance",
 		Example: "ltctl ssh agent-0",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				fmt.Println("Available instances:")
+				return RunSSHListCmdF(cmd, args)
+			}
 			return terraform.New(nil).OpenSSHFor(args[0])
 		},
-		Args: cobra.MinimumNArgs(1),
 	}
 
 	sshListCmd := &cobra.Command{
