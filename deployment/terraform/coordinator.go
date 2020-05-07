@@ -8,6 +8,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -73,6 +75,36 @@ func (t *Terraform) StartCoordinator() error {
 	}
 	mlog.Info("Uploading updated coordinator config file")
 	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+	}
+
+	// Uploading simul controller config
+	simulConfig, err := simulcontroller.ReadConfig("")
+	if err != nil {
+		return err
+	}
+	data, err = json.MarshalIndent(simulConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+	mlog.Info("Uploading simulcontroller config file")
+	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json"
+	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
+	}
+
+	// Uploading simple controller config
+	simpleConfig, err := simplecontroller.ReadConfig("")
+	if err != nil {
+		return err
+	}
+	data, err = json.MarshalIndent(simpleConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+	mlog.Info("Uploading simplecontroller config file")
+	dstPath = "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json"
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}

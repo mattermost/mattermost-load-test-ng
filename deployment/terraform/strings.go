@@ -102,9 +102,9 @@ server {
            client_body_timeout 60;
            send_timeout        300;
            lingering_timeout   5;
-           proxy_connect_timeout   5s;
-           proxy_send_timeout      60s;
-           proxy_read_timeout      60s;
+           proxy_connect_timeout   30s;
+           proxy_send_timeout      90s;
+           proxy_read_timeout      90s;
            proxy_pass http://backend;
    }
 
@@ -118,9 +118,9 @@ server {
            proxy_set_header X-Frame-Options SAMEORIGIN;
            proxy_buffers 256 16k;
            proxy_buffer_size 16k;
-           proxy_connect_timeout   5s;
-           proxy_read_timeout      60s;
-           proxy_send_timeout      60s;
+           proxy_connect_timeout   30s;
+           proxy_read_timeout      90s;
+           proxy_send_timeout      90s;
            proxy_cache mattermost_cache;
            proxy_cache_revalidate on;
            proxy_cache_min_uses 2;
