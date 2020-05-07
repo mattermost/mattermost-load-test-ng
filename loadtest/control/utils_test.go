@@ -56,14 +56,14 @@ func TestGetErrOrigin(t *testing.T) {
 
 func TestEmulateUserTyping(t *testing.T) {
 	search := "this is long enough"
-	res := emulateUserTyping(search, func(term string) UserActionResponse {
+	res := EmulateUserTyping(search, func(term string) UserActionResponse {
 		return UserActionResponse{Info: term}
 	})
 	require.Nil(t, res.Err)
 	require.Equal(t, search, res.Info)
 	text := ""
 	i := 0
-	res = emulateUserTyping(search, func(term string) UserActionResponse {
+	res = EmulateUserTyping(search, func(term string) UserActionResponse {
 		text = term
 		if i == 2 {
 			return UserActionResponse{Err: errors.New("an error")}

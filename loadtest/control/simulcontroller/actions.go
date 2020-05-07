@@ -357,7 +357,7 @@ func editPost(u user.User) control.UserActionResponse {
 	}
 
 	isReply := post.RootId != ""
-	message, err := genMessage(u, isReply)
+	message, err := createMessage(u, channel, isReply)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -396,7 +396,7 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := genMessage(u, true)
+	message, err := createMessage(u, channel, true)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -435,7 +435,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := genMessage(u, false)
+	message, err := createMessage(u, channel, false)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -675,4 +675,21 @@ func getProfileImageForUsers(u user.User, userIds []string) error {
 		}
 	}
 	return nil
+}
+
+func createMessage(u user.User, channel *model.Channel, isReply bool) (string, error) {
+	var message string
+	// 2% of the times someone is mentioned.
+	if rand.Float64() < 0.02 {
+		user, err := u.Store().RandomUser()
+		if err != nil {
+			return "", err
+		}
+		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutoCompleteUsersInChannel); err != nil {
+			return "", err
+		}
+		message = "@" + user.Username + " "
+	}
+	message += genMessage(isReply)
+	return message, nil
 }
