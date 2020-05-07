@@ -178,10 +178,17 @@ func main() {
 		Short:   "Open browser for instance",
 		Long:    "Open browser for grafana, mattermost or prometheus",
 		Example: "ltctl go grafana",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				fmt.Println("Available destinations:")
+				for _, arg := range cmd.ValidArgs {
+					fmt.Printf("ltctl go %s\n", arg)
+				}
+				return nil
+			}
 			return terraform.New(nil).OpenBrowserFor(args[0])
 		},
-		Args:      cobra.ExactValidArgs(1),
+		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
 	}
 	rootCmd.AddCommand(goCmd)
