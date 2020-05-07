@@ -54,5 +54,5 @@ issues:
       # This is mainly used to avoid errors regarding ids
       # We can remove this section once we decide to fix them
       - golint
-      path: "loadtest|coordinator|example|logger|cmd|api"
+      path: "loadtest|coordinator|example|logger|cmd|api|websocket"
 
