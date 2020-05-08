@@ -49,7 +49,39 @@ func genMessage(isReply bool) string {
 	// TODO: make a util function out of this behaviour.
 	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
 
-	return control.GenerateRandomSentences(wordCount)
+	message := control.GenerateRandomSentences(wordCount)
+
+	return message
+}
+
+func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
+	cutoff := 2 + rand.Intn(len(name)/2)
+	found := errors.New("found") // will be used to halt emulate typing function
+
+	resp := control.EmulateUserTyping(name, func(term string) control.UserActionResponse {
+		users, err := auto(teamId, channelId, term, 100)
+		if err != nil {
+			return control.UserActionResponse{Err: err}
+		}
+
+		if len(users) == 1 {
+			return control.UserActionResponse{Err: found, Info: name}
+		}
+
+		if len(term) == cutoff {
+			return control.UserActionResponse{Err: found, Info: name}
+		}
+
+		return control.UserActionResponse{Info: "user not found"}
+	})
+
+	if errors.Is(resp.Err, found) {
+		return nil
+	} else if resp.Err != nil {
+		return resp.Err
+	}
+
+	return errors.New("could not match username")
 }
 
 func pickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duration {

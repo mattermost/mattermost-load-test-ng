@@ -451,3 +451,7 @@ func (u *SampleUser) GetUsersInChannel(channelId string, page, perPage int) erro
 func (u *SampleUser) GetUsers(page, perPage int) ([]string, error) {
 	return nil, nil
 }
+
+func (u *SampleUser) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
+	return nil, nil
+}

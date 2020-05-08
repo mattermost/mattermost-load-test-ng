@@ -70,7 +70,8 @@ func RandomizeTeamDisplayName(name string) string {
 	return name
 }
 
-func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
+// EmulateUserTyping calls cb function for each rune in the input string.
+func EmulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
 	typingSpeed := time.Duration(100+rand.Intn(200)) * time.Millisecond // 100-300ms
 
 	runes := []rune(t)

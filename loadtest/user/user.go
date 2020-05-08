@@ -46,6 +46,7 @@ type User interface {
 	GetProfileImage() error
 	GetProfileImageForUser(userId string) error
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
+	AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error)
 
 	// posts
 	CreatePost(post *model.Post) (string, error)
