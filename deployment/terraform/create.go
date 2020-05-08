@@ -169,6 +169,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			batch := []uploadInfo{
 				{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
+				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			}
 			if err := uploadBatch(sshc, batch); err != nil {
 				mlog.Error("batch upload failed", mlog.Err(err))
@@ -291,8 +292,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
 	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
 	cfg.ServiceSettings.SiteURL = model.NewString("http://" + ip + ":8065")
-	cfg.ServiceSettings.ReadTimeout = model.NewInt(10)
-	cfg.ServiceSettings.WriteTimeout = model.NewInt(10)
+	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
+	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
@@ -313,7 +314,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(true)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 
