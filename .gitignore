@@ -70,6 +70,10 @@ config/simplecontroller.json
 config/simulcontroller.json
 config/deployer.json
 
+# binaries
+ltagent
+ltcoordinator
+
 # terraform stuff
 /terraformenv
 .terraform
