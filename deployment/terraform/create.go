@@ -165,11 +165,14 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 				return
 			}
 
-			// Upload service file
-			mlog.Info("Uploading service file", mlog.String("host", ip))
-			rdr := strings.NewReader(strings.TrimSpace(serviceFile))
-			if out, err := sshc.Upload(rdr, "/lib/systemd/system/mattermost.service", true); err != nil {
-				mlog.Error("error uploading systemd file", mlog.String("output", string(out)), mlog.Err(err))
+			// Upload files
+			batch := []uploadInfo{
+				{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
+				{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
+				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+			}
+			if err := uploadBatch(sshc, batch); err != nil {
+				mlog.Error("batch upload failed", mlog.Err(err))
 				return
 			}
 
@@ -183,8 +186,8 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			}
 
 			// Starting mattermost.
-			mlog.Info("Starting mattermost", mlog.String("host", ip))
-			cmd := "sudo service mattermost start"
+			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
+			cmd := "sudo sysctl -p && sudo service mattermost start"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
@@ -231,7 +234,7 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 
 		batch := []uploadInfo{
 			{srcData: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), dstPath: "/etc/nginx/sites-available/mattermost"},
-			{srcData: strings.TrimSpace(sysctlConfig), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimSpace(nginxConfig), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimSpace(limitsConfig), dstPath: "/etc/security/limits.conf"},
 		}
@@ -289,10 +292,20 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
 	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
 	cfg.ServiceSettings.SiteURL = model.NewString("http://" + ip + ":8065")
+	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
+	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
+	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
+
+	cfg.LogSettings.EnableConsole = model.NewBool(true)
+	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
+	cfg.LogSettings.EnableFile = model.NewBool(true)
+	cfg.LogSettings.FileLevel = model.NewString("WARN")
 
 	cfg.SqlSettings.DriverName = model.NewString(driverName)
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
+	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
+	cfg.SqlSettings.MaxOpenConns = model.NewInt(512)
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
@@ -301,7 +314,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(true)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 

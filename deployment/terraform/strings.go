@@ -53,7 +53,13 @@ events {
 	worker_connections 200000;
 }
 
+
 http {
+  map $status $loggable {
+    ~^[23] 0;
+    default 1;
+  }
+
 	sendfile on;
 	tcp_nopush on;
 	tcp_nodelay on;
@@ -62,7 +68,7 @@ http {
 	include /etc/nginx/mime.types;
 	default_type application/octet-stream;
 	ssl_prefer_server_ciphers on;
-	access_log /var/log/nginx/access.log;
+	access_log /var/log/nginx/access.log combined if=$loggable;
 	error_log /var/log/nginx/error.log;
 	gzip on;
 	include /etc/nginx/conf.d/*.conf;
@@ -73,7 +79,7 @@ http {
 const nginxSiteConfig = `
 upstream backend {
 %s
-        keepalive 32;
+        keepalive 1024;
 }
 
 proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
@@ -96,8 +102,8 @@ server {
            client_body_timeout 60;
            send_timeout        300;
            lingering_timeout   5;
-           proxy_connect_timeout   90;
-           proxy_send_timeout      300;
+           proxy_connect_timeout   30s;
+           proxy_send_timeout      90s;
            proxy_read_timeout      90s;
            proxy_pass http://backend;
    }
@@ -112,7 +118,9 @@ server {
            proxy_set_header X-Frame-Options SAMEORIGIN;
            proxy_buffers 256 16k;
            proxy_buffer_size 16k;
-           proxy_read_timeout 600s;
+           proxy_connect_timeout   30s;
+           proxy_read_timeout      90s;
+           proxy_send_timeout      90s;
            proxy_cache mattermost_cache;
            proxy_cache_revalidate on;
            proxy_cache_min_uses 2;
@@ -131,9 +139,17 @@ const limitsConfig = `
 * hard nproc 8192
 `
 
-const sysctlConfig = `
-net.ipv4.ip_local_port_range = 1024 65000
+const clientSysctlConfig = `
+net.ipv4.ip_local_port_range = 1025 65000
 net.ipv4.tcp_fin_timeout = 30
+`
+
+const serverSysctlConfig = `
+net.ipv4.ip_local_port_range = 1025 65000
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_tw_reuse = 1
+net.core.somaxconn = 4096
+net.ipv4.tcp_max_syn_backlog = 8192
 `
 
 const baseAgentCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltagent server`

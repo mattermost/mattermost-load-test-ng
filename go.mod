@@ -10,10 +10,11 @@ require (
 	github.com/gavv/httpexpect v2.0.0+incompatible
 	github.com/gocolly/colly/v2 v2.0.1
 	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/websocket v1.4.1
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
-	github.com/mattermost/mattermost-server/v5 v5.22.0-rc3.0.20200422135813-a46a1dbd52fc
+	github.com/mattermost/mattermost-server/v5 v5.23.0-rc2.0.20200505065002-60b50ffc5a89
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect

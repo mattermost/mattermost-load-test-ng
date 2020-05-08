@@ -35,7 +35,9 @@ func TestSetRate(t *testing.T) {
 }
 
 func TestRunStop(t *testing.T) {
-	store := memstore.New()
+	store, err := memstore.New(nil)
+	require.NotNil(t, store)
+	require.NoError(t, err)
 
 	user := userentity.New(store, userentity.Config{
 		ServerURL:    "http://localhost:8065",

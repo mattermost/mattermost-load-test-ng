@@ -5,7 +5,11 @@ package simulcontroller
 
 import (
 	"errors"
+	"math"
 	"math/rand"
+	"time"
+
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 )
 
 // pickAction randomly selects an action from a slice of userAction with
@@ -29,4 +33,65 @@ func pickAction(actions []userAction) (*userAction, error) {
 		}
 	}
 	return nil, errors.New("should not be able to reach this point")
+}
+
+func genMessage(isReply bool) string {
+	// This is an estimate that comes from stats on community servers.
+	// The average length (in words) for a reply.
+	// TODO: should be part of some advanced configuration.
+	avgWordCount := 35
+	minWordCount := 1
+
+	if isReply {
+		avgWordCount = 24
+	}
+
+	// TODO: make a util function out of this behaviour.
+	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
+
+	message := control.GenerateRandomSentences(wordCount)
+
+	return message
+}
+
+func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
+	cutoff := 2 + rand.Intn(len(name)/2)
+	found := errors.New("found") // will be used to halt emulate typing function
+
+	resp := control.EmulateUserTyping(name, func(term string) control.UserActionResponse {
+		users, err := auto(teamId, channelId, term, 100)
+		if err != nil {
+			return control.UserActionResponse{Err: err}
+		}
+
+		if len(users) == 1 {
+			return control.UserActionResponse{Err: found, Info: name}
+		}
+
+		if len(term) == cutoff {
+			return control.UserActionResponse{Err: found, Info: name}
+		}
+
+		return control.UserActionResponse{Info: "user not found"}
+	})
+
+	if errors.Is(resp.Err, found) {
+		return nil
+	} else if resp.Err != nil {
+		return resp.Err
+	}
+
+	return errors.New("could not match username")
+}
+
+func pickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duration {
+	// Randomly selecting a value in the interval
+	// [minIdleTimeMs, avgIdleTimeMs*2 - minIdleTimeMs).
+	// This will give us an expected value equal to avgIdleTimeMs.
+	// TODO: consider if it makes more sense to select this value using
+	// a truncated normal distribution.
+	idleMs := rand.Intn(avgIdleTimeMs*2-minIdleTimeMs*2) + minIdleTimeMs
+	idleTimeMs := time.Duration(math.Round(float64(idleMs) * rate))
+
+	return idleTimeMs * time.Millisecond
 }

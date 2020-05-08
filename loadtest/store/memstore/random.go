@@ -22,7 +22,12 @@ var (
 	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
 	ErrChannelNotFound   = errors.New("memstore: channel not found")
 	ErrPostNotFound      = errors.New("memstore: post not found")
+	ErrInvalidData       = errors.New("memstore: invalid data found")
 )
+
+func isSelectionType(st, t store.SelectionType) bool {
+	return (st & t) == t
+}
 
 // RandomTeam returns a random team for the current user.
 func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
@@ -42,14 +47,14 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 
 	var teams []*model.Team
 	for teamId, team := range s.teams {
-		if (currTeamId == teamId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+		if (currTeamId == teamId) && isSelectionType(st, store.SelectNotCurrent) {
 			continue
 		}
 		_, isMember := s.teamMembers[teamId][userId]
-		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+		if isMember && isSelectionType(st, store.SelectMemberOf) {
 			teams = append(teams, team)
 		}
-		if !isMember && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
+		if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
 			teams = append(teams, team)
 		}
 	}
@@ -61,6 +66,23 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	idx := rand.Intn(len(teams))
 
 	return *teams[idx], nil
+}
+
+func excludeChannelType(st store.SelectionType, channelType string) bool {
+	m := map[store.SelectionType]string{
+		store.SelectNotPublic:  model.CHANNEL_OPEN,
+		store.SelectNotPrivate: model.CHANNEL_PRIVATE,
+		store.SelectNotDirect:  model.CHANNEL_DIRECT,
+		store.SelectNotGroup:   model.CHANNEL_GROUP,
+	}
+
+	for s, t := range m {
+		if isSelectionType(st, s) && channelType == t {
+			return true
+		}
+	}
+
+	return false
 }
 
 // RandomChannel returns a random channel for the given teamId for the current
@@ -86,17 +108,20 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
-		if (currChanId == channelId) && (st&store.SelectNotCurrent) == store.SelectNotCurrent {
+		if (currChanId == channelId) && isSelectionType(st, store.SelectNotCurrent) {
+			continue
+		}
+		if excludeChannelType(st, channel.Type) {
 			continue
 		}
 		_, isMember := s.channelMembers[channelId][userId]
-		if channel.TeamId != teamId {
+		if (channel.Type == model.CHANNEL_OPEN || channel.Type == model.CHANNEL_PRIVATE) && channel.TeamId != teamId {
 			continue
 		}
-		if isMember && ((st & store.SelectMemberOf) == store.SelectMemberOf) {
+		if isMember && isSelectionType(st, store.SelectMemberOf) {
 			channels = append(channels, channel)
 		}
-		if !isMember && ((st & store.SelectNotMemberOf) == store.SelectNotMemberOf) {
+		if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
 			channels = append(channels, channel)
 		}
 	}
@@ -115,7 +140,15 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	if len(s.users) < 1 {
+	// We check if the current user is present in the stored map of users.
+	// If so we increment by one minLen since we purposely skip the current user on selection.
+	// This is done to avoid spinning indefinitely in case the store holds only one
+	// user and that being the current one.
+	minLen := 1
+	if _, ok := s.users[s.user.Id]; ok {
+		minLen++
+	}
+	if len(s.users) < minLen {
 		return model.User{}, ErrLenMismatch
 	}
 
@@ -125,8 +158,11 @@ func (s *MemStore) RandomUser() (model.User, error) {
 			return model.User{}, err
 		}
 		user := s.users[key.(string)]
+		if user == nil || user.Id == "" {
+			return model.User{}, ErrInvalidData
+		}
 		// We don't want to pick ourselves.
-		if s.user != nil && user.Id == s.user.Id {
+		if user.Id == s.user.Id {
 			continue
 		}
 		return *user, nil
@@ -138,16 +174,26 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	if n > len(s.users) {
+	// We check if the current user is present in the stored map of users.
+	// If so we decrement by one the maximum number of selectable users (numUsers)
+	// since RandomUser() will never return the current one.
+	// This is done to avoid spinning indefinitely when trying to pick N users in
+	// a store of exactly N users and one of them being the current one.
+	numUsers := len(s.users)
+	if _, ok := s.users[s.user.Id]; ok {
+		numUsers--
+	}
+	if n > numUsers {
 		return nil, ErrLenMismatch
 	}
-	var users []model.User
+
+	users := make([]model.User, 0, n)
 	for len(users) < n {
 		u, err := s.RandomUser()
 		if err != nil {
 			return nil, err
 		}
-		found := false
+		var found bool
 		for _, ou := range users {
 			if ou.Id == u.Id {
 				found = true
@@ -182,6 +228,26 @@ func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
 	var postIds []string
 	for _, p := range s.posts {
 		if p.ChannelId == channelId {
+			postIds = append(postIds, p.Id)
+		}
+	}
+
+	if len(postIds) == 0 {
+		return model.Post{}, ErrPostNotFound
+	}
+
+	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
+}
+
+// RandomPostForChannelForUser returns a random post for the given channel made
+// by the given user.
+func (s *MemStore) RandomPostForChannelByUser(channelId, userId string) (model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var postIds []string
+	for _, p := range s.posts {
+		if p.ChannelId == channelId && p.UserId == userId && p.Type == "" {
 			postIds = append(postIds, p.Id)
 		}
 	}

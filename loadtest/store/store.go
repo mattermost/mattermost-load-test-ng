@@ -15,6 +15,10 @@ const (
 	SelectMemberOf    SelectionType = 1 << iota // Select all cases where the user is a member.
 	SelectNotMemberOf                           // Select cases where the user is not a member.
 	SelectNotCurrent                            // When set the selection won't return current team/channel.
+	SelectNotPublic                             // Don't include public channels in selection.
+	SelectNotPrivate                            // Don't include private channels in selection.
+	SelectNotDirect                             // Don't include direct channels in selection.
+	SelectNotGroup                              // Don't include group channels in selection.
 
 	SelectAny = SelectMemberOf | SelectNotMemberOf
 )
@@ -86,12 +90,24 @@ type UserStore interface {
 	RandomPost() (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
+	// RandomPostForChanneByUser returns a random post for the given channel made
+	// by the given user.
+	RandomPostForChannelByUser(channelId, userId string) (model.Post, error)
 	// RandomEmoji returns a random emoji.
 	RandomEmoji() (model.Emoji, error)
 	// RandomChannelMember returns a random channel member for a channel.
 	RandomChannelMember(channelId string) (model.ChannelMember, error)
 	// RandomTeamMember returns a random team member for a team.
 	RandomTeamMember(teamId string) (model.TeamMember, error)
+
+	// profile
+	ProfileImage(userId string) (bool, error)
+
+	// posts
+	// UserForPost returns the userId for the user who created the given post.
+	UserForPost(postId string) (string, error)
+	// FileInfoForPost returns the FileInfo for the given post if any.
+	FileInfoForPost(postId string) ([]*model.FileInfo, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -162,4 +178,7 @@ type MutableUserStore interface {
 	// license
 	// SetLicense stores the given license in the store.
 	SetLicense(license map[string]string) error
+
+	// profile
+	SetProfileImage(userId string) error
 }

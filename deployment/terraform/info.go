@@ -20,6 +20,9 @@ func (t *Terraform) Info() error {
 }
 
 func (t *Terraform) displayInfo(output *Output) {
+	if output.IsEmpty() {
+		return
+	}
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 	if output.HasProxy() {

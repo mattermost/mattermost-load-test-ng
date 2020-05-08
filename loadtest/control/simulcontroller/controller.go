@@ -6,8 +6,6 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
-	"math"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -18,13 +16,16 @@ import (
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id      int
-	user    user.User
-	stop    chan struct{}
-	stopped chan struct{}
-	status  chan<- control.UserStatus
-	rate    float64
-	config  *Config
+	id             int
+	user           user.User
+	status         chan<- control.UserStatus
+	rate           float64
+	config         *Config
+	stopChan       chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan    chan struct{}   // blocks until controller cleans up everything
+	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
+	connectedFlag  int32           // indicates that the controller is connected
+	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -40,13 +41,15 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	return &SimulController{
-		id:      id,
-		user:    user,
-		stop:    make(chan struct{}),
-		stopped: make(chan struct{}),
-		status:  status,
-		rate:    1.0,
-		config:  config,
+		id:             id,
+		user:           user,
+		status:         status,
+		rate:           1.0,
+		config:         config,
+		disconnectChan: make(chan struct{}),
+		stopChan:       make(chan struct{}),
+		stoppedChan:    make(chan struct{}),
+		wg:             &sync.WaitGroup{},
 	}, nil
 }
 
@@ -60,22 +63,15 @@ func (c *SimulController) Run() {
 		return
 	}
 
-	var wg sync.WaitGroup
-	// Start listening for websocket events.
-	wg.Add(1)
-	go c.wsEventHandler(&wg)
-
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if err := c.user.Disconnect(); err != nil {
-			c.status <- c.newErrorStatus(err)
+		if resp := c.logout(); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
 		}
-		c.user.Cleanup()
 		c.user.ClearUserData()
-		wg.Wait()
 		c.sendStopStatus()
-		close(c.stopped)
+		close(c.stoppedChan)
 	}()
 
 	initActions := []userAction{
@@ -88,35 +84,65 @@ func (c *SimulController) Run() {
 		{
 			run: c.joinTeam,
 		},
+		{
+			run: c.joinChannel,
+		},
 	}
 
 	for _, action := range initActions {
+		select {
+		case <-c.stopChan:
+			return
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		}
+
 		if resp := action.run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
-		select {
-		case <-c.stop:
-			return
-		default:
-		}
 	}
-
-	go c.periodicActions()
 
 	actions := []userAction{
 		{
-			run:       switchChannel,
-			frequency: 300,
+			run:       openDirectOrGroupChannel,
+			frequency: 200,
 		},
 		{
 			run:       c.switchTeam,
 			frequency: 110,
 		},
 		{
-			run:       createPost,
+			run:       switchChannel,
+			frequency: 100,
+		},
+		{
+			run:       c.createPost,
 			frequency: 55,
+		},
+		{
+			run:       c.fullReload,
+			frequency: 40,
+		},
+		{
+			run:       c.createPostReply,
+			frequency: 20,
+		},
+		{
+			run:       c.joinChannel,
+			frequency: 11,
+		},
+		{
+			run:       c.addReaction,
+			frequency: 6,
+		},
+		{
+			run:       editPost,
+			frequency: 3,
+		},
+		{
+			run:       c.logoutLogin,
+			frequency: 3,
 		},
 		{
 			run:       c.createDirectChannel,
@@ -125,35 +151,6 @@ func (c *SimulController) Run() {
 		{
 			run:       c.createGroupChannel,
 			frequency: 1,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				return c.reload(true)
-			},
-			frequency: 40,
-		},
-		{
-			run: func(u user.User) control.UserActionResponse {
-				// logout
-				if resp := control.Logout(u); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				u.ClearUserData()
-
-				// login
-				if resp := c.login(c.user); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				// reload
-				return c.reload(false)
-			},
-			frequency: 3,
 		},
 	}
 
@@ -169,19 +166,10 @@ func (c *SimulController) Run() {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 
-		// Randomly selecting a value in the interval
-		// [MinIdleTimeMs, AvgIdleTimeMs*2 - MinIdleTimeMs).
-		// This will give us an expected value equal to AvgIdleTimeMs.
-		// TODO: consider if it makes more sense to select this value using
-		// a truncated normal distribution.
-		idleMs := rand.Intn(c.config.AvgIdleTimeMs*2-c.config.MinIdleTimeMs*2) + c.config.MinIdleTimeMs
-
-		idleTimeMs := time.Duration(math.Round(float64(idleMs) * c.rate))
-
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
-		case <-time.After(idleTimeMs * time.Millisecond):
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
 	}
 
@@ -198,8 +186,8 @@ func (c *SimulController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimulController) Stop() {
-	close(c.stop)
-	<-c.stopped
+	close(c.stopChan)
+	<-c.stoppedChan
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

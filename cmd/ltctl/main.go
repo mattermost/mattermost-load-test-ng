@@ -159,10 +159,13 @@ func main() {
 		Use:     "ssh [instance]",
 		Short:   "ssh into instance",
 		Example: "ltctl ssh agent-0",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				fmt.Println("Available instances:")
+				return RunSSHListCmdF(cmd, args)
+			}
 			return terraform.New(nil).OpenSSHFor(args[0])
 		},
-		Args: cobra.MinimumNArgs(1),
 	}
 
 	sshListCmd := &cobra.Command{
@@ -179,11 +182,18 @@ func main() {
 		Short:   "Open browser for instance",
 		Long:    "Open browser for grafana, mattermost or prometheus",
 		Example: "ltctl go grafana",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				fmt.Println("Available destinations:")
+				for _, arg := range cmd.ValidArgs {
+					fmt.Printf("ltctl go %s\n", arg)
+				}
+				return nil
+			}
 			return terraform.New(nil).OpenBrowserFor(args[0])
 		},
-		Args:      cobra.ExactValidArgs(1),
-		ValidArgs: []string{"grafana, mattermost, prometheus"},
+		Args:      cobra.OnlyValidArgs,
+		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
 	}
 	rootCmd.AddCommand(goCmd)
 

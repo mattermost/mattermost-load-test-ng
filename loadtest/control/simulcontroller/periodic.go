@@ -4,6 +4,7 @@
 package simulcontroller
 
 import (
+	"sync"
 	"time"
 )
 
@@ -11,7 +12,8 @@ const (
 	getUsersStatusByIdsInterval = 60 * time.Second
 )
 
-func (c *SimulController) periodicActions() {
+func (c *SimulController) periodicActions(wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-time.After(getUsersStatusByIdsInterval):
@@ -21,7 +23,7 @@ func (c *SimulController) periodicActions() {
 				c.status <- c.newInfoStatus(resp.Info)
 			}
 		// We can add more periodic actions here.
-		case <-c.stop:
+		case <-c.disconnectChan:
 			return
 		}
 	}

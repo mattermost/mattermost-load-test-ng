@@ -28,8 +28,15 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids = [
     "${aws_security_group.app.id}",
     "${aws_security_group.app_gossip.id}"
-
   ]
+
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+    content {
+      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_type = lookup(root_block_device.value, "volume_type", null)
+    }
+  }
 
   provisioner "file" {
     source      = var.mattermost_license_file
@@ -69,6 +76,14 @@ resource "aws_instance" "metrics_server" {
     "${aws_security_group.metrics.id}",
   ]
 
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+    content {
+      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_type = lookup(root_block_device.value, "volume_type", null)
+    }
+  }
+
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
@@ -98,6 +113,14 @@ resource "aws_instance" "proxy_server" {
     "${aws_security_group.proxy.id}"
   ]
   key_name = aws_key_pair.key.id
+
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+    content {
+      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_type = lookup(root_block_device.value, "volume_type", null)
+    }
+  }
 
   connection {
     # The default username for our AMI
@@ -161,6 +184,14 @@ resource "aws_instance" "loadtest_agent" {
   count         = var.agent_instance_count
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
+
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+    content {
+      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_type = lookup(root_block_device.value, "volume_type", null)
+    }
+  }
 
   provisioner "remote-exec" {
     inline = [

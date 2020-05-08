@@ -459,7 +459,7 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	return emulateUserTyping("test", func(term string) UserActionResponse {
+	return EmulateUserTyping("test", func(term string) UserActionResponse {
 		users, err := u.SearchUsers(&model.UserSearch{
 			Term:  term,
 			Limit: 100,
@@ -488,7 +488,7 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	return emulateUserTyping("ch-", func(term string) UserActionResponse {
+	return EmulateUserTyping("ch-", func(term string) UserActionResponse {
 		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
