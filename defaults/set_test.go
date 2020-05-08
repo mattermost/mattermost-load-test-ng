@@ -3,6 +3,7 @@ package defaults
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +21,7 @@ func TestSet(t *testing.T) {
 		var s st
 		err := Set(&s)
 		require.NoError(t, err)
-		require.Equal(t, "text", s.String)
+		assert.Equal(t, "text", s.String)
 	})
 
 	t.Run("should fail on non-struct value", func(t *testing.T) {
@@ -50,12 +51,12 @@ func TestSet(t *testing.T) {
 
 		err := Set(&cfg)
 		require.NoError(t, err)
-		require.Equal(t, "text", cfg.String)
-		require.Equal(t, 2, cfg.Integer)
-		require.Equal(t, 0.2, cfg.Float64)
-		require.Equal(t, true, cfg.Bool)
-		require.Equal(t, "text", cfg.AnotherStruct[2].String)
-		require.Equal(t, "text_other", cfg.YetAnotherStruct.String)
+		assert.Equal(t, "text", cfg.String)
+		assert.Equal(t, 2, cfg.Integer)
+		assert.Equal(t, 0.2, cfg.Float64)
+		assert.Equal(t, true, cfg.Bool)
+		assert.Equal(t, "text", cfg.AnotherStruct[2].String)
+		assert.Equal(t, "text_other", cfg.YetAnotherStruct.String)
 	})
 
 	t.Run("should not fail for private fields", func(t *testing.T) {
@@ -65,6 +66,6 @@ func TestSet(t *testing.T) {
 
 		err := Set(&cfg)
 		require.NoError(t, err)
-		require.Equal(t, 0, cfg.integer)
+		assert.Equal(t, 0, cfg.integer)
 	})
 }

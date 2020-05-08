@@ -25,6 +25,14 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("happy path with ptr", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		err := Validate(&cfg)
+		require.NoError(t, err)
+	})
+
 	t.Run("out of given range", func(t *testing.T) {
 		var cfg serverConfiguration
 		Set(&cfg)
