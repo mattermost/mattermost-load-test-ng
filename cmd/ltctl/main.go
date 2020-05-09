@@ -68,6 +68,16 @@ func RunStopCmdF(cmd *cobra.Command, args []string) error {
 	return t.StopCoordinator()
 }
 
+func RunCollectCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New(config)
+	return t.Collect()
+}
+
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	t := terraform.New(nil)
 	output, err := t.Output()
@@ -195,6 +205,14 @@ func main() {
 		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
 	}
 	rootCmd.AddCommand(goCmd)
+
+	collectCmd := &cobra.Command{
+		Use:     "collect",
+		Short:   "Collect logs and configurations",
+		Example: "ltctl collect",
+		RunE:    RunCollectCmdF,
+	}
+	rootCmd.AddCommand(collectCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
