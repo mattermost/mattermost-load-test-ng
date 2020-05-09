@@ -576,7 +576,8 @@ func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error
 	}
 
 	wg.Wait()
-	for i := 0; i < len(fileIds); i++ {
+	numFiles := len(fileIds)
+	for i := 0; i < numFiles; i++ {
 		post.FileIds = append(post.FileIds, <-fileIds)
 	}
 
