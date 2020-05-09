@@ -94,6 +94,9 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	rate, err := cmd.Flags().GetFloat64("rate")
+	if err != nil {
+		return err
+	}
 	if rate != 1.0 {
 		config.UserControllerConfiguration.Rate = rate
 	}
