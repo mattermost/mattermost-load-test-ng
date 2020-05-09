@@ -93,6 +93,11 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		config.UsersConfiguration.InitialActiveUsers = numUsers
 	}
 
+	rate, err := cmd.Flags().GetFloat64("rate")
+	if rate != 1.0 {
+		config.UserControllerConfiguration.Rate = rate
+	}
+
 	lt, err := loadtest.New(config, newControllerFn)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
@@ -129,5 +134,6 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.PersistentFlags().Float64P("rate", "r", 1.0, "rate value for the controller")
 	return cmd
 }
