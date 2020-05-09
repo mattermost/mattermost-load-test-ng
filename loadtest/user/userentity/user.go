@@ -5,9 +5,7 @@ package userentity
 
 import (
 	"errors"
-	"net"
 	"net/http"
-	"time"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -53,24 +51,14 @@ func (ue *UserEntity) Store() store.UserStore {
 }
 
 // New returns a new instance of a UserEntity.
-func New(store store.MutableUserStore, config Config) *UserEntity {
+func New(store store.MutableUserStore, rt http.RoundTripper, config Config) *UserEntity {
 	ue := UserEntity{}
 	ue.config = config
 	ue.client = model.NewAPIv4Client(ue.config.ServerURL)
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          10000,
-		MaxIdleConnsPerHost:   10000,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+	if rt == nil {
+		rt = http.DefaultTransport
 	}
-	ue.client.HttpClient = &http.Client{Transport: transport}
+	ue.client.HttpClient = &http.Client{Transport: rt}
 	err := store.SetUser(&model.User{
 		Username: config.Username,
 		Email:    config.Email,

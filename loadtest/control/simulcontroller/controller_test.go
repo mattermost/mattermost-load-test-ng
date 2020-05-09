@@ -39,7 +39,7 @@ func TestRunStop(t *testing.T) {
 	require.NotNil(t, store)
 	require.NoError(t, err)
 
-	user := userentity.New(store, userentity.Config{
+	user := userentity.New(store, nil, userentity.Config{
 		ServerURL:    "http://localhost:8065",
 		WebSocketURL: "ws://localhost:8065",
 	})

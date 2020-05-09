@@ -47,7 +47,7 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 	if err != nil {
 		return nil, err
 	}
-	ue := userentity.New(store, ueConfig)
+	ue := userentity.New(store, nil, ueConfig)
 	cfg, err := simplecontroller.ReadConfig("")
 	if err != nil {
 		return nil, err

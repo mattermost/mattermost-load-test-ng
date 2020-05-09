@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -55,6 +57,22 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
 	}
 
+	// http.Transport to be shared amongst all clients.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -72,7 +90,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, ueConfig)
+		ue := userentity.New(store, transport, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
