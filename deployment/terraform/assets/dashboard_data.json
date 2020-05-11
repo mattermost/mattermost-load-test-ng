@@ -653,20 +653,20 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(mattermost_http_request_duration_seconds_sum{instance=~\"$server\"}[5m]) /   rate(mattermost_http_request_duration_seconds_count{instance=~\"$server\"}[5m])",
+          "expr": "increase(mattermost_api_time_sum{instance=~\"$server\"}[1m]) /   increase(mattermost_api_time_count{instance=~\"$server\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
-          "metric": "mattermost_http_request_duration_seconds_sum",
+          "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
         },
         {
-          "expr": "histogram_quantile(0.9, sum(rate(mattermost_http_request_duration_seconds_bucket[5m])) by (instance,le))",
+          "expr": "histogram_quantile(0.9, sum(rate(mattermost_api_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "90p-{{instance}}",
-          "metric": "mattermost_http_request_duration_seconds_bucket",
+          "metric": "mattermost_api_time_bucket",
           "refId": "B",
           "step": 5
         }
