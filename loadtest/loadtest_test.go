@@ -93,11 +93,12 @@ func TestAddUsers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 4, n)
 
-	require.Len(t, lt.controllers, 8)
+	require.Len(t, lt.activeControllers, 8)
 }
 
 func TestRemoveUsers(t *testing.T) {
 	lt, err := New(&ltConfig, newController)
+	defer close(lt.statusChan)
 	require.Nil(t, err)
 
 	n, err := lt.RemoveUsers(0)
@@ -127,7 +128,7 @@ func TestRemoveUsers(t *testing.T) {
 	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
-	require.Empty(t, lt.controllers)
+	require.Empty(t, lt.activeControllers)
 
 	n, err = lt.AddUsers(2)
 	require.NoError(t, err)
@@ -136,9 +137,8 @@ func TestRemoveUsers(t *testing.T) {
 	n, err = lt.RemoveUsers(3)
 	require.Equal(t, err, ErrNoUsersLeft)
 	require.Equal(t, 2, n)
-	require.Empty(t, lt.controllers)
+	require.Empty(t, lt.activeControllers)
 
-	close(lt.statusChan)
 }
 
 func TestRun(t *testing.T) {
@@ -147,7 +147,7 @@ func TestRun(t *testing.T) {
 	err = lt.Run()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Running)
-	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
+	require.Len(t, lt.activeControllers, ltConfig.UsersConfiguration.InitialActiveUsers)
 
 	err = lt.Run()
 	require.Equal(t, ErrNotStopped, err)
@@ -190,7 +190,7 @@ func TestStop(t *testing.T) {
 	err = lt.Stop()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Stopped)
-	require.Empty(t, lt.controllers)
+	require.Empty(t, lt.activeControllers)
 }
 
 func TestStatus(t *testing.T) {

@@ -54,7 +54,7 @@ func TestRunStop(t *testing.T) {
 
 	doneRunning := make(chan struct{})
 	go func() {
-		c.Run()
+		c.Run(make(chan struct{}))
 		close(doneRunning)
 	}()
 

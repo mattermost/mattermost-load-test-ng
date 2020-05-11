@@ -37,13 +37,11 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	sc := &SimpleController{
-		id:          id,
-		user:        user,
-		status:      status,
-		rate:        1.0,
-		stopChan:    make(chan struct{}),
-		stoppedChan: make(chan struct{}),
-		wg:          &sync.WaitGroup{},
+		id:     id,
+		user:   user,
+		status: status,
+		rate:   1.0,
+		wg:     &sync.WaitGroup{},
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
@@ -55,12 +53,17 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 // in between the actions. It keeps on doing it until Stop is invoked.
 // This is also a blocking function, so it is recommended to invoke it
 // inside a goroutine.
-func (c *SimpleController) Run() {
+func (c *SimpleController) Run(started chan struct{}) {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
+		close(started)
 		return
 	}
 
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
+
+	close(started)
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {

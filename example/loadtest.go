@@ -32,7 +32,7 @@ func (lt *SampleLoadTester) runControllers() {
 	lt.wg.Add(len(lt.controllers))
 	for i := 0; i < len(lt.controllers); i++ {
 		go func(controller control.UserController) {
-			controller.Run()
+			controller.Run(make(chan struct{}))
 		}(lt.controllers[i])
 	}
 }

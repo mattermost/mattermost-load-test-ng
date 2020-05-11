@@ -40,15 +40,20 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*NoopControl
 // in between the actions. It keeps on doing it until Stop is invoked.
 // This is also a blocking function, so it is recommended to invoke it
 // inside a goroutine.
-func (c *NoopController) Run() {
+func (c *NoopController) Run(started chan struct{}) {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
+		close(started)
 		return
 	}
+
+	c.stop = make(chan struct{})
+	c.stopped = make(chan struct{})
 
 	// Start listening for websocket events.
 	go c.wsEventHandler()
 
+	close(started)
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {

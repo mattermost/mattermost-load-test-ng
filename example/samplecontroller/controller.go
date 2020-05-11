@@ -33,9 +33,10 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SampleContro
 	}
 }
 
-func (c *SampleController) Run() {
+func (c *SampleController) Run(started chan struct{}) {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
+		close(started)
 		return
 	}
 
@@ -54,6 +55,7 @@ func (c *SampleController) Run() {
 		},
 	}
 
+	close(started)
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer c.sendStopStatus()

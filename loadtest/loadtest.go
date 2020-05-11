@@ -17,13 +17,16 @@ import (
 
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
-	mut           sync.RWMutex
-	controllers   []control.UserController
+	mut sync.RWMutex
+	// controllers   []control.UserController
 	config        *Config
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
 	status        Status
 	newController NewController
+
+	activeControllers map[int]control.UserController
+	idleControllers   map[int]control.UserController
 }
 
 // NewController is a factory function that returns a new
@@ -75,30 +78,48 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 // addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
-	activeUsers := len(lt.controllers)
+	activeUsers := len(lt.activeControllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
-	userId := activeUsers + 1
+	userId := len(lt.activeControllers) + len(lt.idleControllers) + 1
 	// If specified by the config, we randomly pick an existing user again,
 	// to simulate multiple sessions.
 	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
 		userId = rand.Intn(activeUsers)
 	}
-	controller, err := lt.newController(userId, lt.statusChan)
-	if err != nil {
-		return fmt.Errorf("could not create controller: %w", err)
+
+	var controllerId int
+	var controller control.UserController
+
+	for id := range lt.idleControllers {
+		controller = lt.idleControllers[id]
+		controllerId = id
+		delete(lt.idleControllers, id)
+		break
 	}
+	if controller == nil {
+		var err error
+		controllerId = len(lt.activeControllers) + len(lt.idleControllers) + 1
+		controller, err = lt.newController(userId, lt.statusChan)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
 		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
 	}
-	lt.controllers = append(lt.controllers, controller)
+
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
+	lt.activeControllers[controllerId] = controller
+	wait := make(chan struct{})
 	lt.wg.Add(1)
 	go func() {
-		controller.Run()
+		controller.Run(wait)
 	}()
+	<-wait
 	return nil
 }
 
@@ -119,7 +140,7 @@ func (lt *LoadTester) RemoveUsers(numUsers int) (int, error) {
 // removeUsers is an internal API called from Stop and RemoveUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
-	activeUsers := len(lt.controllers)
+	activeUsers := len(lt.activeControllers)
 
 	var err error
 	if numUsers > activeUsers {
@@ -131,15 +152,23 @@ func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	wg.Add(numUsers)
 	// TODO: Add a way to make how a user is removed decidable from the upper layer (the user of this API),
 	// for example by passing a typed constant (e.g. random, first, last).
-	for i := 0; i < numUsers; i++ {
-		go func(i int) {
+	var stopped int
+	for id := range lt.activeControllers {
+		if stopped == numUsers {
+			break
+		}
+		go func(id int) {
 			defer wg.Done()
-			lt.controllers[activeUsers-1-i].Stop()
-		}(i)
+			if c, ok := lt.activeControllers[id]; ok {
+				c.Stop()
+				delete(lt.activeControllers, id)
+				lt.idleControllers[id] = c
+			}
+		}(id)
+		stopped++
 	}
 	wg.Wait()
 
-	lt.controllers = lt.controllers[:activeUsers-numUsers]
 	lt.status.NumUsers -= numUsers
 	lt.status.NumUsersRemoved += numUsers
 
@@ -184,7 +213,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.status.State = Stopping
 
-	if _, err := lt.removeUsers(len(lt.controllers)); err != nil {
+	if _, err := lt.removeUsers(len(lt.activeControllers)); err != nil {
 		mlog.Error(err.Error())
 	}
 
@@ -226,9 +255,11 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 	}
 
 	return &LoadTester{
-		config:        config,
-		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
-		newController: nc,
-		status:        Status{},
+		config:            config,
+		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		newController:     nc,
+		status:            Status{},
+		activeControllers: make(map[int]control.UserController),
+		idleControllers:   make(map[int]control.UserController),
 	}, nil
 }
