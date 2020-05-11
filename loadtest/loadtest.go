@@ -24,8 +24,8 @@ type LoadTester struct {
 	status        Status
 	newController NewController
 
-	activeControllers map[int]control.UserController
-	idleControllers   map[int]control.UserController
+	activeControllers []control.UserController
+	idleControllers   []control.UserController
 }
 
 // NewController is a factory function that returns a new
@@ -82,9 +82,8 @@ func (lt *LoadTester) addUser() error {
 		return ErrMaxUsersReached
 	}
 
-	controllerId := activeUsers + len(lt.idleControllers) + 1
-
-	userId := controllerId
+	idleUsers := len(lt.idleControllers)
+	userId := activeUsers + idleUsers + 1
 	// If specified by the config, we randomly pick an existing user again,
 	// to simulate multiple sessions.
 	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
@@ -93,11 +92,9 @@ func (lt *LoadTester) addUser() error {
 
 	var controller control.UserController
 
-	for id := range lt.idleControllers {
-		controllerId = id
-		controller = lt.idleControllers[id]
-		delete(lt.idleControllers, id)
-		break
+	if idleUsers > 0 {
+		controller = lt.idleControllers[0]
+		lt.idleControllers = lt.idleControllers[1:]
 	}
 
 	if controller == nil {
@@ -114,7 +111,7 @@ func (lt *LoadTester) addUser() error {
 
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	lt.activeControllers[controllerId] = controller
+	lt.activeControllers = append(lt.activeControllers, controller)
 
 	lt.wg.Add(1)
 	go func() {
@@ -149,33 +146,19 @@ func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	}
 
 	var wg sync.WaitGroup
-
 	wg.Add(numUsers)
 	// TODO: Add a way to make how a user is removed decidable from the upper layer (the user of this API),
 	// for example by passing a typed constant (e.g. random, first, last).
-	var stopped []int
-
-	for id := range lt.activeControllers {
-		if len(stopped) == numUsers {
-			break
-		}
-
-		go func(id int) {
+	for i := 0; i < numUsers; i++ {
+		go func(i int) {
 			defer wg.Done()
-			if c, ok := lt.activeControllers[id]; ok {
-				c.Stop()
-			}
-		}(id)
-
-		stopped = append(stopped, id)
+			lt.activeControllers[activeUsers-1-i].Stop()
+		}(i)
 	}
-
 	wg.Wait()
 
-	for _, id := range stopped {
-		lt.idleControllers[id] = lt.activeControllers[id]
-		delete(lt.activeControllers, id)
-	}
+	lt.idleControllers = append(lt.idleControllers, lt.activeControllers[activeUsers-numUsers:]...)
+	lt.activeControllers = lt.activeControllers[:activeUsers-numUsers]
 
 	lt.status.NumUsers -= numUsers
 	lt.status.NumUsersRemoved += numUsers
@@ -267,7 +250,7 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController:     nc,
 		status:            Status{},
-		activeControllers: make(map[int]control.UserController),
-		idleControllers:   make(map[int]control.UserController),
+		activeControllers: make([]control.UserController, 0),
+		idleControllers:   make([]control.UserController, 0),
 	}, nil
 }
