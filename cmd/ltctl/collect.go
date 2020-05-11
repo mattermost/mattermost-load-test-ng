@@ -1,4 +1,7 @@
-package terraform
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
+package main
 
 import (
 	"archive/tar"
@@ -13,7 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+
+	"github.com/spf13/cobra"
 )
 
 type collectInfo struct {
@@ -91,7 +97,55 @@ func saveCollection(files []file) error {
 	return nil
 }
 
-func (t *Terraform) Collect() error {
+func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return nil, err
+	}
+
+	clients := make(map[string]*ssh.Client)
+	if output.HasProxy() {
+		sshc, err := extAgent.NewClient(output.Proxy.Value[0].PublicIP)
+		if err != nil {
+			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		clients["proxy"] = sshc
+	}
+
+	for i, instance := range output.Instances.Value {
+		sshc, err := extAgent.NewClient(instance.PublicIP)
+		if err != nil {
+			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		clients[fmt.Sprintf("app%d", i)] = sshc
+	}
+
+	for i, agent := range output.Agents.Value {
+		sshc, err := extAgent.NewClient(agent.PublicIP)
+		if err != nil {
+			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		clients[fmt.Sprintf("agent%d", i)] = sshc
+		if i == 0 {
+			clients["coordinator"] = sshc
+		}
+	}
+
+	return clients, nil
+}
+
+func RunCollectCmdF(cmd *cobra.Command, args []string) error {
+	if os.Getenv("SSH_AUTH_SOCK") == "" {
+		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
+	}
+
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New(config)
+
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -101,41 +155,9 @@ func (t *Terraform) Collect() error {
 		return errors.New("no active deployment found")
 	}
 
-	if err := t.preFlightCheck(); err != nil {
-		return err
-	}
-
-	extAgent, err := ssh.NewAgent()
+	clients, err := createClients(output)
 	if err != nil {
 		return err
-	}
-
-	clients := make(map[string]*ssh.Client)
-	if output.HasProxy() {
-		sshc, err := extAgent.NewClient(output.Proxy.Value[0].PublicIP)
-		if err != nil {
-			return fmt.Errorf("error in getting ssh connection %w", err)
-		}
-		clients["proxy"] = sshc
-	}
-
-	for i, instance := range output.Instances.Value {
-		sshc, err := extAgent.NewClient(instance.PublicIP)
-		if err != nil {
-			return fmt.Errorf("error in getting ssh connection %w", err)
-		}
-		clients[fmt.Sprintf("app%d", i)] = sshc
-	}
-
-	for i, agent := range output.Agents.Value {
-		sshc, err := extAgent.NewClient(agent.PublicIP)
-		if err != nil {
-			return fmt.Errorf("error in getting ssh connection %w", err)
-		}
-		clients[fmt.Sprintf("agent%d", i)] = sshc
-		if i == 0 {
-			clients["coordinator"] = sshc
-		}
 	}
 
 	var collection []collectInfo
