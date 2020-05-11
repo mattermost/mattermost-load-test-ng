@@ -17,16 +17,15 @@ import (
 
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
-	mut sync.RWMutex
-	// controllers   []control.UserController
+	mut           sync.RWMutex
 	config        *Config
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
 	status        Status
 	newController NewController
 
-	activeControllers map[int]control.UserController
-	idleControllers   map[int]control.UserController
+	activeControllers *sync.Map
+	idleControllers   *sync.Map
 }
 
 // NewController is a factory function that returns a new
@@ -78,29 +77,31 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 // addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
-	activeUsers := len(lt.activeControllers)
+	activeUsers := lenMap(lt.activeControllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
-	userId := len(lt.activeControllers) + len(lt.idleControllers) + 1
+
+	controllerId := activeUsers + lenMap(lt.idleControllers) + 1
+
+	userId := controllerId
 	// If specified by the config, we randomly pick an existing user again,
 	// to simulate multiple sessions.
 	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
 		userId = rand.Intn(activeUsers)
 	}
 
-	var controllerId int
 	var controller control.UserController
 
-	for id := range lt.idleControllers {
-		controller = lt.idleControllers[id]
-		controllerId = id
-		delete(lt.idleControllers, id)
-		break
-	}
+	lt.idleControllers.Range(func(key, value interface{}) bool {
+		controller = value.(control.UserController)
+		controllerId = key.(int)
+		lt.idleControllers.Delete(key)
+		return false
+	})
+
 	if controller == nil {
 		var err error
-		controllerId = len(lt.activeControllers) + len(lt.idleControllers) + 1
 		controller, err = lt.newController(userId, lt.statusChan)
 		if err != nil {
 			return err
@@ -113,7 +114,8 @@ func (lt *LoadTester) addUser() error {
 
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
-	lt.activeControllers[controllerId] = controller
+	lt.activeControllers.Store(controllerId, controller)
+
 	wait := make(chan struct{})
 	lt.wg.Add(1)
 	go func() {
@@ -140,7 +142,7 @@ func (lt *LoadTester) RemoveUsers(numUsers int) (int, error) {
 // removeUsers is an internal API called from Stop and RemoveUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
-	activeUsers := len(lt.activeControllers)
+	activeUsers := lenMap(lt.activeControllers)
 
 	var err error
 	if numUsers > activeUsers {
@@ -153,24 +155,27 @@ func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	// TODO: Add a way to make how a user is removed decidable from the upper layer (the user of this API),
 	// for example by passing a typed constant (e.g. random, first, last).
 	var stopped int
-	for id := range lt.activeControllers {
+	lt.activeControllers.Range(func(key, value interface{}) bool {
 		if stopped == numUsers {
-			break
+			return false
 		}
-		go func(id int) {
+		go func(id interface{}) {
 			defer wg.Done()
-			if c, ok := lt.activeControllers[id]; ok {
-				c.Stop()
-				delete(lt.activeControllers, id)
-				lt.idleControllers[id] = c
+			if c, ok := lt.activeControllers.Load(id); ok {
+				controller := c.(control.UserController)
+				controller.Stop()
+
+				lt.activeControllers.Delete(id)
+				lt.idleControllers.Store(id, c)
 			}
-		}(id)
+		}(key)
 		stopped++
-	}
+		return true
+	})
 	wg.Wait()
 
-	lt.status.NumUsers -= numUsers
-	lt.status.NumUsersRemoved += numUsers
+	lt.status.NumUsers -= stopped
+	lt.status.NumUsersRemoved += stopped
 
 	return numUsers, err
 }
@@ -213,7 +218,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.status.State = Stopping
 
-	if _, err := lt.removeUsers(len(lt.activeControllers)); err != nil {
+	if _, err := lt.removeUsers(lt.status.NumUsers); err != nil {
 		mlog.Error(err.Error())
 	}
 
@@ -259,7 +264,16 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
 		newController:     nc,
 		status:            Status{},
-		activeControllers: make(map[int]control.UserController),
-		idleControllers:   make(map[int]control.UserController),
+		activeControllers: &sync.Map{},
+		idleControllers:   &sync.Map{},
 	}, nil
+}
+
+func lenMap(m *sync.Map) int {
+	var len int
+	m.Range(func(key, value interface{}) bool {
+		len++
+		return true
+	})
+	return len
 }
