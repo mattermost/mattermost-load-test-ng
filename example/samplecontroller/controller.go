@@ -33,10 +33,9 @@ func New(id int, user user.User, status chan<- control.UserStatus) *SampleContro
 	}
 }
 
-func (c *SampleController) Run(started chan struct{}) {
+func (c *SampleController) Run() {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
-		close(started)
 		return
 	}
 
@@ -55,7 +54,6 @@ func (c *SampleController) Run(started chan struct{}) {
 		},
 	}
 
-	close(started)
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer c.sendStopStatus()
@@ -78,6 +76,7 @@ func (c *SampleController) SetRate(rate float64) error {
 
 func (c *SampleController) Stop() {
 	close(c.stop)
+	c.stop = make(chan struct{})
 }
 
 func (c *SampleController) sendFailStatus(reason string) {

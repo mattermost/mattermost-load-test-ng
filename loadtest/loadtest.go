@@ -116,12 +116,10 @@ func (lt *LoadTester) addUser() error {
 	lt.status.NumUsersAdded++
 	lt.activeControllers[controllerId] = controller
 
-	wait := make(chan struct{})
 	lt.wg.Add(1)
 	go func() {
-		controller.Run(wait)
+		controller.Run()
 	}()
-	<-wait
 	return nil
 }
 

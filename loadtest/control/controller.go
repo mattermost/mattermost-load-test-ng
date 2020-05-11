@@ -8,8 +8,7 @@ package control
 // performed by a user.
 type UserController interface {
 	// Run starts the controller to begin performing the user actions.
-	// The started channel will be closed after the (re)initializations are done.
-	Run(started chan struct{})
+	Run()
 	// SetRate determines the relative speed in which user actions are performed
 	// one after the other. A rate of 1.0 will run the actions in their usual
 	// speed. A rate of 2.0 will slow down the actions by a factor of 2.

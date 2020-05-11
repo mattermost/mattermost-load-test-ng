@@ -56,18 +56,12 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 // It keeps on doing it until Stop() is invoked.
 // This is also a blocking function, so it is recommended to invoke it
 // inside a goroutine.
-func (c *SimulController) Run(started chan struct{}) {
+func (c *SimulController) Run() {
 	if c.user == nil {
 		c.sendFailStatus("controller was not initialized")
-		close(started)
 		return
 	}
 
-	c.disconnectChan = make(chan struct{})
-	c.stopChan = make(chan struct{})
-	c.stoppedChan = make(chan struct{})
-
-	close(started)
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
@@ -193,11 +187,9 @@ func (c *SimulController) SetRate(rate float64) error {
 func (c *SimulController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
-}
-
-// Id returns the id od the controller
-func (c *SimulController) Id() int {
-	return c.id
+	// re-initialize for the next use
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
 }
 
 func (c *SimulController) sendFailStatus(reason string) {
