@@ -16,7 +16,7 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1586420020883,
+  "iteration": 1589284832600,
   "links": [],
   "panels": [
     {
@@ -60,7 +60,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(mattermost_db_store_time_count{method=~\"$top_db_count\"}[5m])) by (method)",
+          "expr": "sum(increase(mattermost_db_store_time_count{method=~\"$top_db_count\"}[1m])) by (method)",
           "legendFormat": "{{method}}",
           "refId": "A"
         }
@@ -147,7 +147,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(mattermost_api_time_count{handler=~\"$top_api_count\"}[5m])) by (handler)",
+          "expr": "sum(increase(mattermost_api_time_count{handler=~\"$top_api_count\"}[1m])) by (handler)",
           "intervalFactor": 3,
           "legendFormat": "{{handler}}",
           "refId": "A"
@@ -157,7 +157,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "top 10 API queries by count",
+      "title": "Top 10 API queries by count",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -222,7 +222,7 @@
         "values": false
       },
       "lines": true,
-      "linewidth": 2,
+      "linewidth": 1,
       "links": [],
       "nullPointMode": "connected",
       "options": {
@@ -238,7 +238,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "increase(mattermost_post_total{instance=~\"$server\"}[1m])",
+          "expr": "rate(mattermost_post_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
@@ -247,7 +247,7 @@
           "step": 5
         },
         {
-          "expr": "sum(increase(mattermost_post_total{instance=~\"$server\"}[1m]))",
+          "expr": "sum(rate(mattermost_post_total{instance=~\"$server\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Total",
@@ -260,7 +260,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Number of Messages per Second",
+      "title": "Number of Posts per Second",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -326,7 +326,7 @@
         "values": false
       },
       "lines": true,
-      "linewidth": 2,
+      "linewidth": 1,
       "links": [],
       "nullPointMode": "connected",
       "options": {
@@ -342,16 +342,16 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "increase(mattermost_http_requests_total{instance=~\"$server\"}[1m])",
+          "expr": "rate(mattermost_http_requests_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{ instance }}",
           "metric": "mattermost_http_errors_total",
           "refId": "A",
           "step": 5
         },
         {
-          "expr": "sum(increase(mattermost_http_requests_total{instance=~\"$server\"}[1m]))",
+          "expr": "sum(rate(mattermost_http_requests_total{instance=~\"$server\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Total",
@@ -430,7 +430,7 @@
         "values": false
       },
       "lines": true,
-      "linewidth": 2,
+      "linewidth": 1,
       "links": [],
       "nullPointMode": "connected",
       "options": {
@@ -533,7 +533,7 @@
         "values": false
       },
       "lines": true,
-      "linewidth": 2,
+      "linewidth": 1,
       "links": [],
       "nullPointMode": "connected",
       "options": {
@@ -657,18 +657,15 @@
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
-          "metric": "mattermost_api_time_sum",
+          "metric": "mattermost_http_request_duration_seconds_sum",
           "refId": "A",
           "step": 5
         },
         {
           "expr": "histogram_quantile(0.9, sum(rate(mattermost_api_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
-          "intervalFactor": 1,
           "legendFormat": "90p-{{instance}}",
-          "metric": "mattermost_api_time_bucket",
-          "refId": "B",
-          "step": 5
+          "refId": "B"
         }
       ],
       "thresholds": [],
@@ -757,7 +754,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}/1024/1024",
+          "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Alloc-{{instance}}",
@@ -766,7 +763,7 @@
           "step": 5
         },
         {
-          "expr": "go_memstats_stack_inuse_bytes{instance=~\"$server\"}/1024/1024",
+          "expr": "go_memstats_stack_inuse_bytes{instance=~\"$server\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -776,7 +773,7 @@
           "step": 5
         },
         {
-          "expr": "go_memstats_heap_inuse_bytes{instance=~\"$server\"}/1024/1024",
+          "expr": "go_memstats_heap_inuse_bytes{instance=~\"$server\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -790,7 +787,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Usage (in MB)",
+      "title": "Memory Usage",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -807,8 +804,8 @@
       },
       "yaxes": [
         {
-          "format": "short",
-          "label": "MB",
+          "format": "bytes",
+          "label": "",
           "logBase": 1,
           "max": null,
           "min": null,
@@ -820,7 +817,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -1025,6 +1022,420 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "description": "",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "hiddenSeries": false,
+      "id": 21,
+      "legend": {
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"user\"}[1m])) by (instance)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "User {{instance}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"system\"}[1m])) by (instance)",
+          "hide": true,
+          "legendFormat": "System {{instance}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"idle\"}[1m])) by (instance)",
+          "hide": true,
+          "legendFormat": "Idle {{instance}}",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=~\"irq|softirq|iowait\"}[1m])) by (instance)",
+          "hide": true,
+          "legendFormat": "Other {{instance}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "CPU Load (1m)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "hiddenSeries": false,
+      "id": 23,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "(node_memory_MemTotal{instance=~\"$server\"} - node_memory_MemFree{instance=~\"$server\"} - node_memory_Buffers{instance=~\"$server\"} - node_memory_Cached{instance=~\"$server\"})",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Used {{ instance }}",
+          "refId": "A"
+        },
+        {
+          "expr": "node_memory_MemTotal{instance=~\"$server\"}",
+          "legendFormat": "Total {{ instance }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Memory Usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      },
+      "hiddenSeries": false,
+      "id": 27,
+      "legend": {
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "6.6.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "node_netstat_Tcp_CurrEstab{instance=~\"$server\"}",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Established {{ instance }}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(node_netstat_TcpExt_TCPTimeouts{instance=~\"$server\"}[1m])",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Timeouts {{ instance }}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(node_netstat_Tcp_CurrEstab{instance=~\"$server\"})",
+          "hide": false,
+          "legendFormat": "Total Established",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(irate(node_netstat_TcpExt_TCPTimeouts{instance=~\"$server\"}[1m]))",
+          "hide": false,
+          "legendFormat": "Total Timeouts",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "TCP Connections",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "hiddenSeries": false,
+      "id": 25,
+      "interval": "",
+      "legend": {
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "(sum(rate(node_network_transmit_bytes{instance=~\"$server\"}[1m])) by (instance))*8",
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "TX Rate {{ instance }}",
+          "refId": "A"
+        },
+        {
+          "expr": "(sum(rate(node_network_receive_bytes{instance=~\"$server\"}[1m])) by (instance))*8",
+          "hide": false,
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "RX Rate {{ instance }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Network RX/TX Rates",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": "10s",
@@ -1039,9 +1450,9 @@
       {
         "allValue": null,
         "current": {
-          "text": "172.31.13.105:8067",
+          "text": "",
           "value": [
-            "172.31.13.105:8067"
+            ""
           ]
         },
         "datasource": "loadtest-source",
@@ -1078,8 +1489,7 @@
         "label": null,
         "multi": true,
         "name": "top_api_count",
-        "options": [
-        ],
+        "options": [],
         "query": "query_result(topk(10, sum(increase(mattermost_api_time_count[${__range_s}s])) by (handler)))",
         "refresh": 1,
         "regex": ".*handler=\"(.*?)\".*",
@@ -1094,9 +1504,10 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
           "text": "All",
-          "value": "$__all"
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": "loadtest-source",
         "definition": "query_result(topk(10, sum(increase(mattermost_db_store_time_count[5m])) by (method)))",
@@ -1105,8 +1516,7 @@
         "label": null,
         "multi": true,
         "name": "top_db_count",
-        "options": [
-        ],
+        "options": [],
         "query": "query_result(topk(10, sum(increase(mattermost_db_store_time_count[5m])) by (method)))",
         "refresh": 1,
         "regex": ".*method=\"(.*?)\".*",
@@ -1150,7 +1560,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Mattermost Performance Monitoring",
+  "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 4
+  "version": 48
 }
