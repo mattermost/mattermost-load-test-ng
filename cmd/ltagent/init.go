@@ -78,7 +78,7 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 		if err != nil {
 			return err
 		}
-		u := userentity.New(store, ueConfig)
+		u := userentity.New(store, nil, ueConfig)
 
 		if err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password); err != nil {
 			mlog.Warn("error while signing up", mlog.Err(err)) // Possibly, user already exists.
@@ -127,7 +127,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	admin := userentity.New(store, ueConfig)
+	admin := userentity.New(store, nil, ueConfig)
 
 	start := time.Now()
 

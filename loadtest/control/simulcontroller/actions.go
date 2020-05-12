@@ -88,7 +88,19 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	return loadTeam(c.user, team)
+	if resp := loadTeam(c.user, team); resp.Err != nil {
+		return resp
+	}
+
+	channel, err := c.user.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		// If the current channel is not set we switch to a random one.
+		return switchChannel(c.user)
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return viewChannel(c.user, channel)
 }
 
 func (c *SimulController) fullReload(u user.User) control.UserActionResponse {
@@ -259,11 +271,10 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-	} else if err != memstore.ErrChannelNotFound {
+	} else if !errors.Is(err, memstore.ErrChannelNotFound) {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: use the information returned here to figure out how to properly fetch posts.
 	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -277,7 +288,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
-		postsIds, err = u.GetPostsSince(channel.Id, time.Now().Add(-1*time.Minute).Unix()*1000)
+		postsIds, err = u.GetPostsSince(channel.Id, view)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
@@ -288,12 +299,26 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	// We also check if posts have any image attachments and if so we fetch the
 	// respective thumbnails.
 	var userIds []string
+	var missingStatuses []string
+	var missingUsers []string
 	for _, postId := range postsIds {
 		userId, err := u.Store().UserForPost(postId)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		userIds = append(userIds, userId)
+
+		if status, err := u.Store().Status(userId); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if status.UserId == "" {
+			missingStatuses = append(missingStatuses, userId)
+		}
+
+		if user, err := u.Store().GetUser(userId); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if user.Id == "" {
+			missingUsers = append(missingUsers, userId)
+		}
 
 		fileInfo, err := u.Store().FileInfoForPost(postId)
 		if err != nil {
@@ -307,6 +332,18 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 			if err := u.GetFileThumbnail(info.Id); err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
+		}
+	}
+
+	if len(missingStatuses) > 0 {
+		if err := u.GetUsersStatusesByIds(missingStatuses); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	if len(missingUsers) > 0 {
+		if _, err := u.GetUsersByIds(missingUsers); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
@@ -538,7 +575,8 @@ func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error
 	}
 
 	wg.Wait()
-	for i := 0; i < len(fileIds); i++ {
+	numFiles := len(fileIds)
+	for i := 0; i < numFiles; i++ {
 		post.FileIds = append(post.FileIds, <-fileIds)
 	}
 
