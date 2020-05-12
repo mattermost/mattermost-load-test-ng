@@ -93,7 +93,6 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	}
 
 	channel, err := c.user.Store().CurrentChannel()
-
 	if errors.Is(err, memstore.ErrChannelNotFound) {
 		// If the current channel is not set we switch to a random one.
 		return switchChannel(c.user)
