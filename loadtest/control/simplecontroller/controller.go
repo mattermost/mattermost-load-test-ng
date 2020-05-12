@@ -140,7 +140,7 @@ func (c *SimpleController) SetRate(rate float64) error {
 func (c *SimpleController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
-	// re-initialize fot the next use
+	// re-initialize for the next use
 	c.stopChan = make(chan struct{})
 	c.stoppedChan = make(chan struct{})
 
