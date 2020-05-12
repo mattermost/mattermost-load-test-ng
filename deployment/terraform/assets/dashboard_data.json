@@ -657,7 +657,7 @@
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
-          "metric": "mattermost_http_request_duration_seconds_sum",
+          "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
         },
