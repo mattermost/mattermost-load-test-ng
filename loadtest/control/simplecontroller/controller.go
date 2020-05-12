@@ -40,9 +40,9 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		id:          id,
 		user:        user,
 		status:      status,
-		rate:        1.0,
 		stopChan:    make(chan struct{}),
 		stoppedChan: make(chan struct{}),
+		rate:        1.0,
 		wg:          &sync.WaitGroup{},
 	}
 	if err := sc.createActions(config.Actions); err != nil {
@@ -140,6 +140,10 @@ func (c *SimpleController) SetRate(rate float64) error {
 func (c *SimpleController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
+	// re-initialize for the next use
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
+
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {

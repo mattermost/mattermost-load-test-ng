@@ -18,12 +18,14 @@ import (
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	mut           sync.RWMutex
-	controllers   []control.UserController
 	config        *Config
 	wg            sync.WaitGroup
 	statusChan    chan control.UserStatus
 	status        Status
 	newController NewController
+
+	activeControllers []control.UserController
+	idleControllers   []control.UserController
 }
 
 // NewController is a factory function that returns a new
@@ -75,26 +77,37 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 // addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
-	activeUsers := len(lt.controllers)
+	activeUsers := len(lt.activeControllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
-	userId := activeUsers + 1
-	// If specified by the config, we randomly pick an existing user again,
-	// to simulate multiple sessions.
-	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
-		userId = rand.Intn(activeUsers)
+
+	var controller control.UserController
+	if len(lt.idleControllers) > 0 {
+		controller = lt.idleControllers[0]
+		lt.idleControllers = lt.idleControllers[1:]
+	} else {
+		userId := activeUsers + 1
+		// If specified by the config, we randomly pick an existing user again,
+		// to simulate multiple sessions.
+		if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
+			userId = rand.Intn(activeUsers)
+		}
+		var err error
+		controller, err = lt.newController(userId, lt.statusChan)
+		if err != nil {
+			return err
+		}
 	}
-	controller, err := lt.newController(userId, lt.statusChan)
-	if err != nil {
-		return fmt.Errorf("could not create controller: %w", err)
-	}
+
 	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
 		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
 	}
-	lt.controllers = append(lt.controllers, controller)
+
 	lt.status.NumUsers++
 	lt.status.NumUsersAdded++
+	lt.activeControllers = append(lt.activeControllers, controller)
+
 	lt.wg.Add(1)
 	go func() {
 		controller.Run()
@@ -119,7 +132,7 @@ func (lt *LoadTester) RemoveUsers(numUsers int) (int, error) {
 // removeUsers is an internal API called from Stop and RemoveUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
-	activeUsers := len(lt.controllers)
+	activeUsers := len(lt.activeControllers)
 
 	var err error
 	if numUsers > activeUsers {
@@ -134,12 +147,14 @@ func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 	for i := 0; i < numUsers; i++ {
 		go func(i int) {
 			defer wg.Done()
-			lt.controllers[activeUsers-1-i].Stop()
+			lt.activeControllers[activeUsers-1-i].Stop()
 		}(i)
 	}
 	wg.Wait()
 
-	lt.controllers = lt.controllers[:activeUsers-numUsers]
+	lt.idleControllers = append(lt.idleControllers, lt.activeControllers[activeUsers-numUsers:]...)
+	lt.activeControllers = lt.activeControllers[:activeUsers-numUsers]
+
 	lt.status.NumUsers -= numUsers
 	lt.status.NumUsersRemoved += numUsers
 
@@ -184,7 +199,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.status.State = Stopping
 
-	if _, err := lt.removeUsers(len(lt.controllers)); err != nil {
+	if _, err := lt.removeUsers(len(lt.activeControllers)); err != nil {
 		mlog.Error(err.Error())
 	}
 
@@ -226,9 +241,11 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 	}
 
 	return &LoadTester{
-		config:        config,
-		statusChan:    make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
-		newController: nc,
-		status:        Status{},
+		config:            config,
+		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		newController:     nc,
+		status:            Status{},
+		activeControllers: make([]control.UserController, 0),
+		idleControllers:   make([]control.UserController, 0),
 	}, nil
 }

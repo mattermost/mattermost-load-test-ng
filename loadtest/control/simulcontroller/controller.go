@@ -187,6 +187,9 @@ func (c *SimulController) SetRate(rate float64) error {
 func (c *SimulController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
+	// re-initialize for the next use
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

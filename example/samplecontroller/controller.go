@@ -76,6 +76,7 @@ func (c *SampleController) SetRate(rate float64) error {
 
 func (c *SampleController) Stop() {
 	close(c.stop)
+	c.stop = make(chan struct{})
 }
 
 func (c *SampleController) sendFailStatus(reason string) {
