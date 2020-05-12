@@ -204,7 +204,7 @@ func (lt *LoadTester) Stop() error {
 	}
 	lt.status.State = Stopping
 
-	if _, err := lt.removeUsers(lt.status.NumUsers); err != nil {
+	if _, err := lt.removeUsers(len(lt.activeControllers)); err != nil {
 		mlog.Error(err.Error())
 	}
 

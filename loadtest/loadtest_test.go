@@ -122,10 +122,13 @@ func TestRemoveUsers(t *testing.T) {
 	require.Equal(t, ErrNoUsersLeft, err)
 	require.Zero(t, n)
 	require.Empty(t, lt.idleControllers)
+	require.Empty(t, lt.activeControllers)
 
 	n, err = lt.AddUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
+	require.Empty(t, lt.idleControllers)
+	require.Len(t, lt.activeControllers, 1)
 
 	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
@@ -136,7 +139,8 @@ func TestRemoveUsers(t *testing.T) {
 	n, err = lt.AddUsers(2)
 	require.NoError(t, err)
 	require.Equal(t, 2, n)
-	require.Len(t, lt.idleControllers, 0)
+	require.Empty(t, lt.idleControllers)
+	require.Len(t, lt.activeControllers, 2)
 
 	n, err = lt.RemoveUsers(3)
 	require.Equal(t, err, ErrNoUsersLeft)
