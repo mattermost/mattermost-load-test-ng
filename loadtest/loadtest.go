@@ -82,22 +82,17 @@ func (lt *LoadTester) addUser() error {
 		return ErrMaxUsersReached
 	}
 
-	idleUsers := len(lt.idleControllers)
-	userId := activeUsers + idleUsers + 1
-	// If specified by the config, we randomly pick an existing user again,
-	// to simulate multiple sessions.
-	if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
-		userId = rand.Intn(activeUsers)
-	}
-
 	var controller control.UserController
-
-	if idleUsers > 0 {
+	if len(lt.idleControllers) > 0 {
 		controller = lt.idleControllers[0]
 		lt.idleControllers = lt.idleControllers[1:]
-	}
-
-	if controller == nil {
+	} else {
+		userId := activeUsers + 1
+		// If specified by the config, we randomly pick an existing user again,
+		// to simulate multiple sessions.
+		if activeUsers != 0 && rand.Int()%lt.config.UsersConfiguration.AvgSessionsPerUser != 0 {
+			userId = rand.Intn(activeUsers)
+		}
 		var err error
 		controller, err = lt.newController(userId, lt.statusChan)
 		if err != nil {
