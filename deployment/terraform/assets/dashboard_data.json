@@ -16,7 +16,7 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1589359421712,
+  "iteration": 1589376916191,
   "links": [],
   "panels": [
     {
@@ -492,13 +492,13 @@
       "hiddenSeries": false,
       "id": 10,
       "legend": {
-        "avg": false,
+        "avg": true,
         "current": false,
-        "max": false,
-        "min": false,
+        "max": true,
+        "min": true,
         "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 1,
@@ -1739,5 +1739,5 @@
   "timezone": "browser",
   "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 7
+  "version": 9
 }
