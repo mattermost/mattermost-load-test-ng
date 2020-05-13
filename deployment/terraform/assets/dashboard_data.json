@@ -16,7 +16,7 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1589359421696,
+  "iteration": 1589359421712,
   "links": [],
   "panels": [
     {
@@ -303,7 +303,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -832,7 +832,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "rate",
+          "legendFormat": "{{ instance }}",
           "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
@@ -1739,5 +1739,5 @@
   "timezone": "browser",
   "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 5
+  "version": 7
 }
