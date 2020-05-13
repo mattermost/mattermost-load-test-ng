@@ -1074,19 +1074,19 @@
         },
         {
           "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"system\"}[1m])) by (instance)",
-          "hide": true,
+          "hide": false,
           "legendFormat": "System {{instance}}",
           "refId": "B"
         },
         {
           "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"idle\"}[1m])) by (instance)",
-          "hide": true,
+          "hide": false,
           "legendFormat": "Idle {{instance}}",
           "refId": "C"
         },
         {
           "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=~\"irq|softirq|iowait\"}[1m])) by (instance)",
-          "hide": true,
+          "hide": false,
           "legendFormat": "Other {{instance}}",
           "refId": "D"
         }
