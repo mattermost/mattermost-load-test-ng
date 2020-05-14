@@ -742,6 +742,9 @@ func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username str
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
+	if users == nil {
+		return nil, errors.New("nil users")
+	}
 	usersMap := make(map[string]bool, len(users.Users)+len(users.OutOfChannel))
 	for _, u := range users.Users {
 		usersMap[u.Username] = true
