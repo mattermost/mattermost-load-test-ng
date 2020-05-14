@@ -4,12 +4,12 @@
 package loadtest
 
 import (
-	"strings"
+	"encoding/json"
+	"fmt"
+	"os"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-
-	"github.com/spf13/viper"
 )
 
 type ConnectionConfiguration struct {
@@ -66,39 +66,26 @@ type Config struct {
 	LogSettings                 logger.Settings
 }
 
+// ReadConfig reads the configuration file from the given string. If the string
+// is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
-	v := viper.New()
-
-	configName := "config"
-	v.SetConfigName(configName)
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	// This is needed for the calls from the terraform package to find the config.
-	v.AddConfigPath("../../config")
-	v.SetEnvPrefix("mmloadtest")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	v.SetDefault("LogSettings.EnableConsole", true)
-	v.SetDefault("LogSettings.ConsoleLevel", "ERROR")
-	v.SetDefault("LogSettings.ConsoleJson", true)
-	v.SetDefault("LogSettings.EnableFile", true)
-	v.SetDefault("LogSettings.FileLevel", "INFO")
-	v.SetDefault("LogSettings.FileJson", true)
-	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
-
-	if configFilePath != "" {
-		v.SetConfigFile(configFilePath)
+	var cfg Config
+	if configFilePath == "" {
+		if err := defaults.Set(&cfg); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
 
-	if err := config.ReadConfigFile(v, configName); err != nil {
-		return nil, err
+	file, err := os.Open(configFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open config file: %w", err)
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
+	err = json.NewDecoder(file).Decode(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode file: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }

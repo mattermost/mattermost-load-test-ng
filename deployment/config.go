@@ -4,12 +4,12 @@
 package deployment
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
+	"os"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-
-	"github.com/spf13/viper"
 )
 
 // Config contains the necessary data
@@ -63,36 +63,25 @@ type Config struct {
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
-// is empty, it will search a config file in predefined folders.
-func ReadConfig(filePath string) (*Config, error) {
-	v := viper.New()
-
-	v.SetConfigName("deployer")
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	v.SetDefault("LogSettings.EnableConsole", true)
-	v.SetDefault("LogSettings.ConsoleLevel", "ERROR")
-	v.SetDefault("LogSettings.ConsoleJson", false)
-	v.SetDefault("LogSettings.EnableFile", true)
-	v.SetDefault("LogSettings.FileLevel", "INFO")
-	v.SetDefault("LogSettings.FileJson", true)
-	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
-
-	if filePath != "" {
-		v.SetConfigFile(filePath)
+// is empty, it will return a config with default values.
+func ReadConfig(configFilePath string) (*Config, error) {
+	var cfg Config
+	if configFilePath == "" {
+		if err := defaults.Set(&cfg); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
 
-	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("unable to read configuration file: %w", err)
+	file, err := os.Open(configFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open config file: %w", err)
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
+	err = json.NewDecoder(file).Decode(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode file: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }

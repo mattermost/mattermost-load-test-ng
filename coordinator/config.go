@@ -4,14 +4,14 @@
 package coordinator
 
 import (
-	"strings"
+	"encoding/json"
+	"fmt"
+	"os"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-
-	"github.com/spf13/viper"
 )
 
 // Config holds the necessary information to drive a cluster of
@@ -33,30 +33,26 @@ type Config struct {
 	LogSettings logger.Settings
 }
 
+// ReadConfig reads the configuration file from the given string. If the string
+// is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
-	v := viper.New()
-
-	configName := "coordinator"
-	v.SetConfigName(configName)
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	// This is needed for the calls from the terraform package to find the config.
-	v.AddConfigPath("../../config")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	if configFilePath != "" {
-		v.SetConfigFile(configFilePath)
+	var cfg Config
+	if configFilePath == "" {
+		if err := defaults.Set(&cfg); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
 
-	if err := config.ReadConfigFile(v, configName); err != nil {
-		return nil, err
+	file, err := os.Open(configFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open config file: %w", err)
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
+	err = json.NewDecoder(file).Decode(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode file: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }
