@@ -314,7 +314,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(true)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 
