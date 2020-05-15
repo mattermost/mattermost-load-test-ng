@@ -17,6 +17,12 @@ import (
 type LoadAgentCluster struct {
 	config LoadAgentClusterConfig
 	agents []*agent.LoadAgent
+	errMap map[*agent.LoadAgent]errorTrack
+}
+
+type errorTrack struct {
+	lastError   int64
+	totalErrors int64
 }
 
 // New creates and initializes a new LoadAgentCluster for the given config.
@@ -26,16 +32,20 @@ func New(config LoadAgentClusterConfig) (*LoadAgentCluster, error) {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	agents := make([]*agent.LoadAgent, len(config.Agents))
+	errMap := make(map[*agent.LoadAgent]errorTrack{})
 	for i := 0; i < len(agents); i++ {
 		agent, err := agent.New(config.Agents[i])
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
 		}
 		agents[i] = agent
+		errMap[agent] = errorTrack{}
 	}
+
 	return &LoadAgentCluster{
 		agents: agents,
 		config: config,
+		errMap: errMap,
 	}, nil
 }
 
@@ -133,7 +143,17 @@ func (c *LoadAgentCluster) Status() Status {
 	for _, agent := range c.agents {
 		st := agent.Status()
 		status.ActiveUsers += st.NumUsers
-		status.NumErrors += st.NumErrors
+		currentError := st.NumErrors
+		if currentError < c.errMap[agent].lastError {
+			// crash
+			// We increment the total accumulated errors by the
+			// last error count.
+			c.errMap[agent].totalErrors += c.errMap[agent].lastError
+		}
+		c.errMap[agent].lastError = currentError
+
+		// Total errors = current errors + past accumulated errors from restarts.
+		status.NumErrors += currentError + c.errMap[agent].totalErrors
 	}
 	return status
 }
