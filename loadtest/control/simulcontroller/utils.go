@@ -15,24 +15,17 @@ import (
 // pickAction randomly selects an action from a slice of userAction with
 // probability proportional to the action's frequency.
 func pickAction(actions []userAction) (*userAction, error) {
-	var sum int
-	if len(actions) == 0 {
-		return nil, errors.New("actions cannot be empty")
-	}
+	weights := make([]int, len(actions))
 	for i := range actions {
-		sum += actions[i].frequency
+		weights[i] = actions[i].frequency
 	}
-	if sum == 0 {
-		return nil, errors.New("actions frequency sum cannot be zero")
+
+	idx, err := control.SelectWeighted(weights)
+	if err != nil {
+		return nil, err
 	}
-	distance := rand.Intn(sum)
-	for i := range actions {
-		distance -= actions[i].frequency
-		if distance < 0 {
-			return &actions[i], nil
-		}
-	}
-	return nil, errors.New("should not be able to reach this point")
+
+	return &actions[idx], nil
 }
 
 func genMessage(isReply bool) string {
