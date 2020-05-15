@@ -40,15 +40,22 @@ Possible values:
 - `simulative`  - to use [`SimulController`](controllers.md#simulcontroller)
 - `noop` - to use [`NoopController`](controllers.md#noopcontroller)
 
-### Rate
+### RatesDistribution
 
-*number*
+*[]struct{
+  Rate float32
+  Percentage float32
+}*
 
-A rate multiplier that will affect the speed at which user actions are executed by the `UserController`.
+The distribution of action rates for running controllers.
+
+Rate is a multiplier that will affect the speed at which user actions are executed by the `UserController`.
 
 A rate < 1.0 will run actions at a faster pace.   
 A rate == 1.0 will run actions at the default pace.    
 A rate > 1.0 will run actions at a slower pace.  
+
+Percentage is the percentage of controllers that should run with the specified rate.
 
 ## InstanceConfiguration
 

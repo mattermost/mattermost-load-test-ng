@@ -100,7 +100,11 @@ func (lt *LoadTester) addUser() error {
 		}
 	}
 
-	if err := controller.SetRate(lt.config.UserControllerConfiguration.Rate); err != nil {
+	rate, err := pickRate(lt.config.UserControllerConfiguration)
+	if err != nil {
+		return fmt.Errorf("loadtest: failed to pick rate: %w", err)
+	}
+	if err := controller.SetRate(rate); err != nil {
 		return fmt.Errorf("loadtest: failed to set controller rate %w", err)
 	}
 

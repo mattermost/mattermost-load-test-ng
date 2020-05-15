@@ -24,7 +24,6 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 			},
 			UserControllerConfiguration: loadtest.UserControllerConfiguration{
 				Type: "simple",
-				Rate: 1.0,
 			},
 			UsersConfiguration: loadtest.UsersConfiguration{
 				MaxActiveUsers:     8,

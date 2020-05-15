@@ -5,6 +5,7 @@
 package control
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -121,4 +122,26 @@ func GenerateRandomSentences(count int) string {
 	}
 
 	return random[:len(random)-1] + "."
+}
+
+// SelectWeighted does a random weighted selection on a given slice of weights.
+func SelectWeighted(weights []int) (int, error) {
+	var sum int
+	if len(weights) == 0 {
+		return -1, errors.New("weights cannot be empty")
+	}
+	for i := range weights {
+		sum += weights[i]
+	}
+	if sum == 0 {
+		return -1, errors.New("weights frequency sum cannot be zero")
+	}
+	distance := rand.Intn(sum)
+	for i := range weights {
+		distance -= weights[i]
+		if distance < 0 {
+			return i, nil
+		}
+	}
+	return -1, errors.New("should not be able to reach this point")
 }
