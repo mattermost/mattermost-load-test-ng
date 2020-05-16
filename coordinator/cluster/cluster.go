@@ -32,7 +32,7 @@ func New(config LoadAgentClusterConfig) (*LoadAgentCluster, error) {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	agents := make([]*agent.LoadAgent, len(config.Agents))
-	errMap := make(map[*agent.LoadAgent]errorTrack{})
+	errMap := make(map[*agent.LoadAgent]errorTrack)
 	for i := 0; i < len(agents); i++ {
 		agent, err := agent.New(config.Agents[i])
 		if err != nil {
@@ -144,13 +144,15 @@ func (c *LoadAgentCluster) Status() Status {
 		st := agent.Status()
 		status.ActiveUsers += st.NumUsers
 		currentError := st.NumErrors
-		if currentError < c.errMap[agent].lastError {
+		errInfo := c.errMap[agent]
+		if currentError < errInfo.lastError {
 			// crash
 			// We increment the total accumulated errors by the
 			// last error count.
-			c.errMap[agent].totalErrors += c.errMap[agent].lastError
+			errInfo.totalErrors += errInfo.lastError
 		}
-		c.errMap[agent].lastError = currentError
+		errInfo.lastError = currentError
+		c.errMap[agent] = errInfo
 
 		// Total errors = current errors + past accumulated errors from restarts.
 		status.NumErrors += currentError + c.errMap[agent].totalErrors
