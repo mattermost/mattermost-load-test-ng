@@ -298,10 +298,28 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	var missingStatuses []string
 	var missingUsers []string
 	for _, postId := range postsIds {
-		userId, err := u.Store().UserForPost(postId)
-		if err != nil {
+
+		fileInfo, err := u.Store().FileInfoForPost(postId)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+
+		for _, info := range fileInfo {
+			if info.Extension != "png" && info.Extension != "jpg" {
+				continue
+			}
+			if err := u.GetFileThumbnail(info.Id); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+		}
+
+		userId, err := u.Store().UserForPost(postId)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			continue
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
 		userIds = append(userIds, userId)
 
 		if status, err := u.Store().Status(userId); err != nil {
@@ -314,20 +332,6 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		} else if user.Id == "" {
 			missingUsers = append(missingUsers, userId)
-		}
-
-		fileInfo, err := u.Store().FileInfoForPost(postId)
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		for _, info := range fileInfo {
-			if info.Extension != "png" && info.Extension != "jpg" {
-				continue
-			}
-			if err := u.GetFileThumbnail(info.Id); err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
 		}
 	}
 

@@ -226,7 +226,7 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 		p := post.Clone()
 		return p, nil
 	}
-	return nil, nil
+	return nil, ErrPostNotFound
 }
 
 func (s *MemStore) UserForPost(postId string) (string, error) {
@@ -250,7 +250,7 @@ func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
 	if post, ok := s.posts[postId]; ok && post.Metadata != nil {
 		return post.Metadata.Files, nil
 	}
-	return nil, nil
+	return nil, ErrPostNotFound
 }
 
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {

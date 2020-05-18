@@ -98,6 +98,19 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, pp)
 	})
 
+	t.Run("Post", func(t *testing.T) {
+		p, err := s.Post("someid")
+		require.Empty(t, p)
+		require.Equal(t, ErrPostNotFound, err)
+
+		err = s.SetPost(&model.Post{Id: "someid"})
+		require.NoError(t, err)
+
+		p, err = s.Post("someid")
+		require.NoError(t, err)
+		require.Equal(t, "someid", p.Id)
+	})
+
 	t.Run("SetPost", func(t *testing.T) {
 		err := s.SetPost(nil)
 		require.Error(t, err)

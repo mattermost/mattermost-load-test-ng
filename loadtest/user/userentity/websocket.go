@@ -42,10 +42,12 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 		return nil
 	}
 
-	if post, err := ue.store.Post(reaction.PostId); err != nil {
-		return fmt.Errorf("failed to get post from store: %w", err)
-	} else if post == nil || post.ChannelId != currentChannel.Id {
+	post, err := ue.store.Post(reaction.PostId)
+	if errors.Is(err, memstore.ErrPostNotFound) || post.ChannelId != currentChannel.Id {
 		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get post from store: %w", err)
 	}
 
 	switch ev.EventType() {
