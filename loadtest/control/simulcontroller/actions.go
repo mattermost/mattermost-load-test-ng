@@ -658,7 +658,7 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		}
 	}
 
-	if err := u.SaveReaction(reaction); err != nil {
+	if u.SaveReaction(reaction); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -860,6 +860,9 @@ func searchChannels(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	// We simulate the user typing up to 4 characters when searching for
+	// a channel. This is an arbitrary value which fits well with the current
+	// frequency value for this action.
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
