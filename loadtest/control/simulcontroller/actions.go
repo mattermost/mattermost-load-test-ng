@@ -658,7 +658,7 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		}
 	}
 
-	if u.SaveReaction(reaction); err != nil {
+	if err := u.SaveReaction(reaction); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
