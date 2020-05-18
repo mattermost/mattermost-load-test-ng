@@ -20,15 +20,15 @@ type Config struct {
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[1,)"`
 	// Type of the EC2 instance for app.
-	AppInstanceType string `default:"c5.xlarge" validate:"oneof:{c5.xlarge, t3.xlarge, m4.xlarge}"`
+	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[1,)"`
 	// Type of the EC2 instance for agent.
-	AgentInstanceType string `default:"t3.xlarge" validate:"oneof:{c5.xlarge, t3.xlarge, m4.xlarge}"`
+	AgentInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Type of the EC2 instance for proxy.
-	ProxyInstanceType string `default:"m4.xlarge" validate:"oneof:{c5.xlarge, t3.xlarge, m4.xlarge}"`
+	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
 	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
 	// Number of DB instances.
