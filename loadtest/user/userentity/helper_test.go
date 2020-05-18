@@ -42,7 +42,7 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	s, err := memstore.New(nil)
 	require.NotNil(th.tb, s)
 	require.NoError(th.tb, err)
-	u := New(s, Config{
+	u := New(s, nil, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,
 		"testuser",

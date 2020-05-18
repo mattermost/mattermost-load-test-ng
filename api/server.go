@@ -6,9 +6,11 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"strconv"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -103,6 +105,22 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// http.Transport to be shared amongst all clients.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
@@ -120,7 +138,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, ueConfig)
+		ue := userentity.New(store, transport, ueConfig)
 		switch ltConfig.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)

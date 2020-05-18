@@ -24,7 +24,7 @@ const cmdExecTimeoutMinutes = 30
 
 const (
 	latestReleaseURL           = "https://latest.mattermost.com/mattermost-enterprise-linux"
-	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz"
+	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.6.0-alpha/mattermost-load-test-ng-v0.6.0-alpha-linux-amd64.tar.gz"
 	filePrefix                 = "file://"
 	minSupportedVersion        = 0.12
 	maxSupportedVersion        = 0.12
@@ -179,6 +179,12 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			// Upload binary if needed.
 			if uploadBinary {
 				mlog.Info("Uploading binary", mlog.String("host", ip))
+				cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
+				if out, err := sshc.RunCommand(cmd); err != nil {
+					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
+					return
+				}
+
 				if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.String("output", string(out)), mlog.Err(err))
 					return
@@ -187,7 +193,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 
 			// Starting mattermost.
 			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-			cmd := "sudo sysctl -p && sudo service mattermost start"
+			cmd := "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
@@ -314,7 +320,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(true)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 

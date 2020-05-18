@@ -197,6 +197,14 @@ func main() {
 	}
 	rootCmd.AddCommand(goCmd)
 
+	collectCmd := &cobra.Command{
+		Use:     "collect",
+		Short:   "Collect logs and configurations",
+		Example: "ltctl collect",
+		RunE:    RunCollectCmdF,
+	}
+	rootCmd.AddCommand(collectCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

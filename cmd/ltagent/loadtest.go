@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -56,6 +58,22 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
 	}
 
+	// http.Transport to be shared amongst all clients.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -73,7 +91,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, ueConfig)
+		ue := userentity.New(store, transport, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
@@ -92,6 +110,14 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 	if numUsers > 0 {
 		config.UsersConfiguration.InitialActiveUsers = numUsers
+	}
+
+	rate, err := cmd.Flags().GetFloat64("rate")
+	if err != nil {
+		return err
+	}
+	if rate != 1.0 {
+		config.UserControllerConfiguration.Rate = rate
 	}
 
 	lt, err := loadtest.New(config, newControllerFn)
@@ -130,5 +156,6 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.PersistentFlags().Float64P("rate", "r", 1.0, "rate value for the controller")
 	return cmd
 }

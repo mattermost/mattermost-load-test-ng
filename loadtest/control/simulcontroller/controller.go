@@ -105,28 +105,24 @@ func (c *SimulController) Run() {
 
 	actions := []userAction{
 		{
+			run:       switchChannel,
+			frequency: 120,
+		},
+		{
 			run:       openDirectOrGroupChannel,
-			frequency: 200,
+			frequency: 50,
 		},
 		{
 			run:       c.switchTeam,
-			frequency: 110,
-		},
-		{
-			run:       switchChannel,
-			frequency: 100,
+			frequency: 30,
 		},
 		{
 			run:       c.createPost,
-			frequency: 55,
-		},
-		{
-			run:       c.fullReload,
-			frequency: 40,
+			frequency: 25,
 		},
 		{
 			run:       c.createPostReply,
-			frequency: 20,
+			frequency: 15,
 		},
 		{
 			run:       c.joinChannel,
@@ -134,11 +130,15 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.addReaction,
-			frequency: 6,
+			frequency: 12,
+		},
+		{
+			run:       c.fullReload,
+			frequency: 8,
 		},
 		{
 			run:       editPost,
-			frequency: 3,
+			frequency: 8,
 		},
 		{
 			run:       c.logoutLogin,
@@ -146,7 +146,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.createDirectChannel,
-			frequency: 1,
+			frequency: 2,
 		},
 		{
 			run:       c.createGroupChannel,
@@ -188,6 +188,9 @@ func (c *SimulController) SetRate(rate float64) error {
 func (c *SimulController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
+	// re-initialize for the next use
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
 }
 
 func (c *SimulController) sendFailStatus(reason string) {

@@ -127,6 +127,33 @@ func (sshc *Client) UploadFile(src, dst string, sudo bool) ([]byte, error) {
 	return sshc.Upload(f, dst, sudo)
 }
 
+// Download downloads a given src remote filepath to a given dst writer.
+func (sshc *Client) Download(src string, dst io.Writer, sudo bool) error {
+	if strings.ContainsAny(src, `'\`) {
+		// TODO: copied from load-test repo. Need to be improved
+		// by using an actual sftp library.
+		return fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
+	}
+
+	sess, err := sshc.client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+	sess.Stdout = dst
+
+	cmd := fmt.Sprintf("cat '%s'", src)
+	if sudo {
+		cmd = fmt.Sprintf("sudo su -c %q", cmd)
+	}
+
+	if err := sess.Run(cmd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Close closes the underlying connection.
 func (sshc *Client) Close() error {
 	return sshc.client.Close()
