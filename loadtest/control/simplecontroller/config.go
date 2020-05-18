@@ -21,7 +21,7 @@ type Config struct {
 type actionDefinition struct {
 	// ActionId is the key of an action which is mapped to a user action
 	// implementation.
-	ActionId string `default:"Login" validate:"text"`
+	ActionId string `default:"Login" validate:"notempty"`
 	// RunPeriod determines how often the action will be performed.
 	RunPeriod int `default:"20" validate:"range:[0,]"`
 	// WaitAfterMs is the wait time after the action is performed.

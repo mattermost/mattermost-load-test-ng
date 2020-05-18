@@ -31,7 +31,7 @@ func Validate(value interface{}) error {
 			if err := Validate(dv); err != nil {
 				return err
 			}
-		case reflect.Slice:
+		case reflect.Slice, reflect.Map:
 			dv := reflect.ValueOf(field.Interface())
 			for j := 0; j < dv.Len(); j++ {
 				if err := Validate(dv.Index(j).Interface()); err != nil {
@@ -46,6 +46,8 @@ func Validate(value interface{}) error {
 			if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
 				return err
 			}
+		case reflect.Chan:
+			return nil
 		default:
 			return fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name)
 		}
@@ -66,10 +68,13 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		if !emailRegex.MatchString(s) {
 			return fmt.Errorf("%s is not a valid e-mail address", s)
 		}
-	case "text":
-		s := v.String()
-		if s == "" {
-			return fmt.Errorf("%s is not present in config", fieldName)
+	case "notempty":
+		switch v.Type().Kind() {
+		case reflect.String:
+			s := v.String()
+			if s == "" {
+				return fmt.Errorf("%s is empty", fieldName)
+			}
 		}
 	case "alpha":
 		s := v.String()

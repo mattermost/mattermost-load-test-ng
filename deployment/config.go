@@ -30,7 +30,7 @@ type Config struct {
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"oneof:{c5.xlarge, t3.xlarge, m4.xlarge}"`
 	// Path to the SSH public key.
-	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"text"`
+	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
 	// Number of DB instances.
 	DBInstanceCount int `default:"1" validate:"range:[1,)"`
 	// Type of the DB instance.
@@ -38,9 +38,9 @@ type Config struct {
 	// Type of the DB instance - postgres or mysql.
 	DBInstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
-	DBUserName string `default:"mmuser" validate:"text"`
+	DBUserName string `default:"mmuser" validate:"notempty"`
 	// Password to connect to the DB.
-	DBPassword string `default:"mostest80098bigpass_" validate:"text"`
+	DBPassword string `default:"mostest80098bigpass_" validate:"notempty"`
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -52,9 +52,9 @@ type Config struct {
 	// Mattermost instance sysadmin e-mail.
 	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
 	// Mattermost instance sysadmin user name.
-	AdminUsername string `default:"sysadmin" validate:"text"`
+	AdminUsername string `default:"sysadmin" validate:"notempty"`
 	// Mattermost instance sysadmin password.
-	AdminPassword string `default:"Sys@dmin-sample1" validate:"text"`
+	AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.

@@ -10,8 +10,8 @@ type Configuration struct {
 }
 
 type Query struct {
-	Description string  `default:"Request duration" validate:"text"`
-	Query       string  `default:"rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])" validate:"text"`
+	Description string  `default:"Request duration" validate:"notempty"`
+	Query       string  `default:"sum(increase(mattermost_api_time_sum[1m])) by (instance) / sum(increase(mattermost_api_time_count[1m])) by (instance)" validate:"notempty"`
 	Threshold   float64 `default:"0.2" validate:"range:[0,]"`
 	Alert       bool    `default:"true"`
 }

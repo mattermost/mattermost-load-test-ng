@@ -10,7 +10,7 @@ import (
 // LoadAgentConfig holds information about the load-test agent instance.
 type LoadAgentConfig struct {
 	// A sring that identifies the load-test agent instance.
-	Id string `default:"lt0" validate:"text"`
+	Id string `default:"lt0" validate:"notempty"`
 	// The API URL used to control the specified load-test instance.
 	ApiURL string `default:"http://localhost:4000" validate:"url"`
 	// The configuration for the load-test to run.

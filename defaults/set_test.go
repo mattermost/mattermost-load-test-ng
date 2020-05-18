@@ -68,4 +68,17 @@ func TestSet(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 0, cfg.integer)
 	})
+
+	t.Run("should be able to set chan and map data types", func(t *testing.T) {
+		cfg := struct {
+			Map  map[int]string `default_size:"0"`
+			Chan chan bool      `default_size:"3"`
+		}{}
+
+		err := Set(&cfg)
+		require.NoError(t, err)
+		assert.NotNil(t, cfg.Map)
+		assert.NotNil(t, cfg.Chan)
+		assert.Equal(t, 3, cap(cfg.Chan))
+	})
 }

@@ -10,7 +10,7 @@ func TestValidate(t *testing.T) {
 	type serverConfiguration struct {
 		URL           string `default:"http://localhost:8065" validate:"url"`
 		Email         string `default:"sysadmin@sample.mattermost.com" validate:"email"`
-		AdminPassword string `default:"Sys@dmin-sample1" validate:"text"`
+		AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 		NumTeams      int    `default:"2" validate:"range:(0,]"`
 		InitialUsers  int    `default:"0" validate:"range:[0,$MaxUsers]"`
 		MaxUsers      int    `default:"1000" validate:"range:(0,]"`

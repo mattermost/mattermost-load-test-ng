@@ -16,7 +16,7 @@ type ConnectionConfiguration struct {
 	ServerURL     string `default:"http://localhost:8065" validate:"url"`
 	WebSocketURL  string `default:"ws://localhost:8065" validate:"url"`
 	AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
-	AdminPassword string `default:"Sys@dmin-sample1" validate:"text"`
+	AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 }
 
 // userControllerType describes the type of a UserController.

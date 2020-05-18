@@ -20,44 +20,24 @@ import (
 )
 
 type config struct {
-	docPath      string
-	defaultPath  string
-	defaultValue interface{}
-}
-
-func init() {
-	for k, c := range configs {
-		cfg, err := getDefaultConfig(k, c.defaultPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not read default configuration files: %s\n", err)
-			os.Exit(1)
-		}
-
-		c.defaultValue = cfg
-		configs[k] = c
-	}
+	docPath string
 }
 
 var configs = map[string]config{
 	"agent": {
-		docPath:     "./docs/loadtest_config.md",
-		defaultPath: "./config/config.default.json",
+		docPath: "./docs/loadtest_config.md",
 	},
 	"coordinator": {
-		docPath:     "./docs/coordinator_config.md",
-		defaultPath: "./config/coordinator.default.json",
+		docPath: "./docs/coordinator_config.md",
 	},
 	"deployer": {
-		docPath:     "./docs/deployer_config.md",
-		defaultPath: "./config/deployer.default.json",
+		docPath: "./docs/deployer_config.md",
 	},
 	"simplecontroller": {
-		docPath:     "./docs/simplecontroller_config.md",
-		defaultPath: "./config/simplecontroller.default.json",
+		docPath: "./docs/simplecontroller_config.md",
 	},
 	"simulcontroller": {
-		docPath:     "./docs/simulcontroller_config.md",
-		defaultPath: "./config/simulcontroller.default.json",
+		docPath: "./docs/simulcontroller_config.md",
 	},
 }
 
@@ -136,7 +116,13 @@ func createConfig(name string) error {
 
 	fmt.Printf("Creating %s.Config:\n\n", name)
 	f := config.docPath
-	v, err := createStruct(config.defaultValue, f, false)
+
+	cfg, err := getDefaultConfig(name)
+	if err != nil {
+		return fmt.Errorf("could not get default config: %w", err)
+	}
+
+	v, err := createStruct(cfg, f, false)
 	if err != nil {
 		return fmt.Errorf("could not create struct: %w", err)
 	}
@@ -157,7 +143,13 @@ func createConfig(name string) error {
 func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 	for name, config := range configs {
 		f := config.docPath
-		_, err := createStruct(config.defaultValue, f, true)
+
+		cfg, err := getDefaultConfig(name)
+		if err != nil {
+			return fmt.Errorf("could not get default config: %w", err)
+		}
+
+		_, err = createStruct(cfg, f, true)
 		if err != nil {
 			fmt.Printf("docs for %s.Config is not consistent: %s\n", name, err)
 		}
@@ -173,7 +165,7 @@ func validTypes() string {
 	return s
 }
 
-func getDefaultConfig(configType, defaultPath string) (interface{}, error) {
+func getDefaultConfig(configType string) (interface{}, error) {
 	var cfg interface{}
 	var err error
 	switch configType {
