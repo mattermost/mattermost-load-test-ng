@@ -77,7 +77,7 @@ type UserControllerConfiguration struct {
 	// A Rate > 1.0 will run actions at a slower pace.
 	RatesDistribution []struct {
 		Rate       float64
-		Percentage float32
+		Percentage float64
 	}
 }
 
@@ -87,7 +87,7 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 	if err := ucc.Type.IsValid(); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
-	var sum float32
+	var sum float64
 	for _, el := range ucc.RatesDistribution {
 		sum += el.Percentage
 	}

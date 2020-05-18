@@ -43,8 +43,8 @@ Possible values:
 ### RatesDistribution
 
 *[]struct{
-  Rate float32
-  Percentage float32
+  Rate float64
+  Percentage float64
 }*
 
 The distribution of action rates for running controllers.
