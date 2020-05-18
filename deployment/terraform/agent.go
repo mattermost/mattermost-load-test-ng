@@ -100,7 +100,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 		}
 
 		mlog.Info("Starting agent")
-		if out, err := sshc.RunCommand("sudo service ltagent start"); err != nil {
+		if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltagent restart"); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 	}
