@@ -6,6 +6,7 @@ package agent
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -24,6 +25,8 @@ type LoadAgent struct {
 	status *loadtest.Status
 	client *http.Client
 }
+
+var ErrAgentNotFound = errors.New("agent: not found")
 
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
@@ -45,6 +48,9 @@ func (a *LoadAgent) apiRequest(req *http.Request) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode == http.StatusNotFound {
+			return ErrAgentNotFound
+		}
 		return fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
 	}
 	res := &api.Response{}
