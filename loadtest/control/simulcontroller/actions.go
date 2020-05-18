@@ -298,12 +298,10 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	var missingStatuses []string
 	var missingUsers []string
 	for _, postId := range postsIds {
-
 		fileInfo, err := u.Store().FileInfoForPost(postId)
 		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-
 		for _, info := range fileInfo {
 			if info.Extension != "png" && info.Extension != "jpg" {
 				continue
