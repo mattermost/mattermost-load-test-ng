@@ -275,10 +275,6 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	var postsIds []string
 	if view, err := u.Store().ChannelView(channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -383,6 +379,10 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		}
 	}
 
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	if err := u.SetCurrentChannel(channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -411,8 +411,47 @@ func switchChannel(u user.User) control.UserActionResponse {
 }
 
 func (c *SimulController) getUsersStatuses() control.UserActionResponse {
-	err := c.user.GetUsersStatusesByIds([]string{c.user.Store().Id()})
+	channel, err := c.user.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "getUsersStatuses: current channel not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)
 	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// This comes from webapp. It should simulate how many posts the user can
+	// actually see without scrolling.
+	postVisibility := 60
+	if len(posts) > postVisibility {
+		posts = posts[:postVisibility]
+	}
+
+	currentId := c.user.Store().Id()
+	statuses := make(map[string]bool)
+	userIds := []string{currentId}
+	for _, post := range posts {
+		if post.UserId != "" && post.UserId != currentId && !statuses[post.UserId] {
+			statuses[post.UserId] = true
+			userIds = append(userIds, post.UserId)
+		}
+	}
+
+	prefs, err := c.user.Store().Preferences()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	for _, p := range prefs {
+		switch {
+		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
+			userIds = append(userIds, p.Name)
+		}
+	}
+
+	if err := c.user.GetUsersStatusesByIds(userIds); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -455,7 +494,9 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 	}
 
 	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if err != nil {
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -590,7 +631,9 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 	}
 
 	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if err != nil {
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -613,8 +656,7 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		}
 	}
 
-	err = u.SaveReaction(reaction)
-	if err != nil {
+	if u.SaveReaction(reaction); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -756,8 +798,8 @@ func getProfileImageForUsers(u user.User, userIds []string) error {
 
 func createMessage(u user.User, channel *model.Channel, isReply bool) (string, error) {
 	var message string
-	// 2% of the times someone is mentioned.
-	if rand.Float64() < 0.02 {
+	// 25% of messages will contain a mention.
+	if rand.Float64() < 0.25 {
 		user, err := u.Store().RandomUser()
 		if err != nil {
 			return "", err
@@ -769,4 +811,60 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 	}
 	message += genMessage(isReply)
 	return message, nil
+}
+
+// This action includes methods that are called by the webapp client when a user
+// unfocuses (switches browser's tab/window) and goes back to the app after some time.
+func unreadCheck(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+	}
+
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id}); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: "unread check done"}
+}
+
+func searchChannels(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channel to search"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
+		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+			Term: term,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+	})
 }

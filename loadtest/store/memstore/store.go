@@ -238,7 +238,7 @@ func (s *MemStore) UserForPost(postId string) (string, error) {
 	if post, ok := s.posts[postId]; ok {
 		return post.UserId, nil
 	}
-	return "", nil
+	return "", ErrPostNotFound
 }
 
 func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
@@ -318,6 +318,10 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	defer s.lock.Unlock()
 	if post == nil {
 		return errors.New("memstore: post should not be nil")
+	}
+
+	if post.Id == "" {
+		return errors.New("memstore: post id should not be empty")
 	}
 
 	// We get an element from the queue and check if we have it in the map and

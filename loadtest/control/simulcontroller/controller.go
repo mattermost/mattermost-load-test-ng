@@ -92,7 +92,7 @@ func (c *SimulController) Run() {
 		select {
 		case <-c.stopChan:
 			return
-		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
 		}
 
 		if resp := action.run(c.user); resp.Err != nil {
@@ -105,15 +105,19 @@ func (c *SimulController) Run() {
 	actions := []userAction{
 		{
 			run:       switchChannel,
-			frequency: 120,
-		},
-		{
-			run:       openDirectOrGroupChannel,
-			frequency: 50,
+			frequency: 70,
 		},
 		{
 			run:       c.switchTeam,
 			frequency: 30,
+		},
+		{
+			run:       openDirectOrGroupChannel,
+			frequency: 30,
+		},
+		{
+			run:       unreadCheck,
+			frequency: 25,
 		},
 		{
 			run:       c.createPost,
@@ -125,14 +129,6 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.joinChannel,
-			frequency: 11,
-		},
-		{
-			run:       c.addReaction,
-			frequency: 12,
-		},
-		{
-			run:       c.fullReload,
 			frequency: 8,
 		},
 		{
@@ -140,8 +136,16 @@ func (c *SimulController) Run() {
 			frequency: 8,
 		},
 		{
-			run:       c.logoutLogin,
-			frequency: 3,
+			run:       searchChannels,
+			frequency: 5,
+		},
+		{
+			run:       c.addReaction,
+			frequency: 5,
+		},
+		{
+			run:       c.fullReload,
+			frequency: 4,
 		},
 		{
 			run:       c.createDirectChannel,
@@ -149,6 +153,10 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.createGroupChannel,
+			frequency: 1,
+		},
+		{
+			run:       c.logoutLogin,
 			frequency: 1,
 		},
 	}

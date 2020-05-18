@@ -223,15 +223,15 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 }
 
 func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
-	postlist, resp := ue.client.GetPostsSince(channelId, time)
+	postList, resp := ue.client.GetPostsSince(channelId, time)
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	if len(postlist.Posts) == 0 {
+	if len(postList.Posts) == 0 {
 		return nil, nil
 	}
 
-	return postlist.Order, ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
 func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) {
@@ -253,8 +253,11 @@ func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, li
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
+	if len(postList.Posts) == 0 {
+		return nil, nil
+	}
 
-	return postList.Order, ue.store.SetPosts(postsMapToSlice(postList.Posts))
+	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
