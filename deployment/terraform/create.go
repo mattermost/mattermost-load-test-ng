@@ -179,7 +179,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			// Upload binary if needed.
 			if uploadBinary {
 				mlog.Info("Uploading binary", mlog.String("host", ip))
-				cmd := "sudo service mattermost stop || true"
+				cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
 				if out, err := sshc.RunCommand(cmd); err != nil {
 					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 					return
@@ -193,7 +193,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 
 			// Starting mattermost.
 			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-			cmd := "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost start"
+			cmd := "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
