@@ -140,6 +140,10 @@ func (s *MemStore) RandomUser() (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
+	return s.randomUser()
+}
+
+func (s *MemStore) randomUser() (model.User, error) {
 	// We check if the current user is present in the stored map of users.
 	// If so we increment by one minLen since we purposely skip the current user on selection.
 	// This is done to avoid spinning indefinitely in case the store holds only one
@@ -189,7 +193,7 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 
 	users := make([]model.User, 0, n)
 	for len(users) < n {
-		u, err := s.RandomUser()
+		u, err := s.randomUser()
 		if err != nil {
 			return nil, err
 		}

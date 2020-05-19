@@ -6,6 +6,7 @@ package memstore
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 
@@ -575,4 +576,54 @@ func TestConfig(t *testing.T) {
 		s.SetConfig(config)
 		require.Equal(t, s.Config(), *config)
 	})
+}
+
+func TestStoreDeadlock(t *testing.T) {
+	s := newStore(t)
+
+	myId := model.NewId()
+	id := model.NewId()
+	id2 := model.NewId()
+
+	err := s.SetUser(&model.User{
+		Id: myId,
+	})
+	require.NoError(t, err)
+
+	err = s.SetUsers([]*model.User{
+		{Id: id},
+		{Id: id2},
+	})
+	require.NoError(t, err)
+
+	doneChan := make(chan struct{})
+
+	go func() {
+		users, err := s.RandomUsers(2)
+		require.NoError(t, err)
+		require.Len(t, users, 2)
+		doneChan <- struct{}{}
+	}()
+
+	go func() {
+		err = s.SetCurrentTeam(nil)
+		require.Error(t, err)
+		doneChan <- struct{}{}
+	}()
+
+	doneCount := 0
+outer:
+	for {
+		select {
+		case <-doneChan:
+			doneCount++
+			if doneCount == 2 {
+				break outer
+			}
+		case <-time.After(2 * time.Second):
+			require.Fail(t, "deadlock occurred")
+			break outer
+		}
+	}
+	require.Equal(t, 2, doneCount)
 }
