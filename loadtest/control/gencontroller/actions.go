@@ -43,7 +43,7 @@ func (c *GenController) createTeam(u user.User) control.UserActionResponse {
 
 	team := &model.Team{
 		AllowOpenInvite: true,
-		Type:            "O",
+		Type:            model.TEAM_OPEN,
 	}
 	team.Name = "team-" + model.NewId()
 	team.DisplayName = team.Name
@@ -70,7 +70,7 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 	channel := &model.Channel{
 		Name:   "ch-" + model.NewId(),
 		TeamId: team.Id,
-		Type:   "O",
+		Type:   model.CHANNEL_OPEN,
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)
@@ -97,7 +97,7 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 	channel := &model.Channel{
 		Name:   "ch-" + model.NewId(),
 		TeamId: team.Id,
-		Type:   "P",
+		Type:   model.CHANNEL_PRIVATE,
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)
