@@ -256,6 +256,11 @@ func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
+
+	return s.channelPosts(channelId)
+}
+
+func (s *MemStore) channelPosts(channelId string) ([]*model.Post, error) {
 	var channelPosts []*model.Post
 	for _, post := range s.posts {
 		if post.ChannelId == channelId {
@@ -270,7 +275,7 @@ func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	posts, err := s.ChannelPosts(channelId)
+	posts, err := s.channelPosts(channelId)
 	if err != nil {
 		return nil, err
 	}
