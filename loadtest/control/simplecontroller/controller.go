@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -16,13 +17,15 @@ import (
 // SimpleController is a very basic implementation of a controller.
 // Currently, it just performs a pre-defined set of actions in a loop.
 type SimpleController struct {
-	id      int
-	user    user.User
-	stop    chan struct{}
-	stopped chan struct{}
-	status  chan<- control.UserStatus
-	rate    float64
-	actions []*UserAction
+	id            int
+	user          user.User
+	status        chan<- control.UserStatus
+	rate          float64
+	actions       []*UserAction
+	stopChan      chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan   chan struct{}   // blocks until controller cleans up everything
+	connectedFlag int32           // indicates that the controller is connected
+	wg            *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimpleController with given parameters.
@@ -34,12 +37,13 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	sc := &SimpleController{
-		id:      id,
-		user:    user,
-		stop:    make(chan struct{}),
-		stopped: make(chan struct{}),
-		status:  status,
-		rate:    1.0,
+		id:          id,
+		user:        user,
+		status:      status,
+		stopChan:    make(chan struct{}),
+		stoppedChan: make(chan struct{}),
+		rate:        1.0,
+		wg:          &sync.WaitGroup{},
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
@@ -57,19 +61,15 @@ func (c *SimpleController) Run() {
 		return
 	}
 
-	// Start listening for websocket events.
-	go c.wsEventHandler()
-
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if err := c.user.Disconnect(); err != nil {
+		if err := c.disconnect(); err != nil {
 			c.status <- c.newErrorStatus(err)
 		}
-		c.user.Cleanup()
 		c.user.ClearUserData()
 		c.sendStopStatus()
-		close(c.stopped)
+		close(c.stoppedChan)
 	}()
 
 	initActions := []UserAction{
@@ -96,7 +96,7 @@ func (c *SimpleController) Run() {
 		}
 
 		select {
-		case <-c.stop:
+		case <-c.stopChan:
 			return
 		default:
 		}
@@ -117,7 +117,7 @@ func (c *SimpleController) Run() {
 				idleTime := time.Duration(math.Round(float64(c.actions[i].waitAfter) * c.rate))
 
 				select {
-				case <-c.stop:
+				case <-c.stopChan:
 					return
 				case <-time.After(time.Millisecond * idleTime):
 				}
@@ -138,8 +138,12 @@ func (c *SimpleController) SetRate(rate float64) error {
 
 // Stop stops the controller.
 func (c *SimpleController) Stop() {
-	close(c.stop)
-	<-c.stopped
+	close(c.stopChan)
+	<-c.stoppedChan
+	// re-initialize for the next use
+	c.stopChan = make(chan struct{})
+	c.stoppedChan = make(chan struct{})
+
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
@@ -173,12 +177,18 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			return resp
 		},
 		"Logout": func(u user.User) control.UserActionResponse {
-			resp := control.Logout(u)
-			if resp.Err != nil {
-				return resp
+			ok, err := u.Logout()
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
+
+			if !ok {
+				return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
+			}
+
+			c.disconnect()
 			u.ClearUserData()
-			return resp
+			return control.UserActionResponse{Info: "logged out"}
 		},
 		"EditPost": control.EditPost,
 		"Reload": func(u user.User) control.UserActionResponse {

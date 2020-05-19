@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/websocket"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -41,10 +42,12 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 		return nil
 	}
 
-	if post, err := ue.store.Post(reaction.PostId); err != nil {
-		return fmt.Errorf("failed to get post from store: %w", err)
-	} else if post == nil || post.ChannelId != currentChannel.Id {
+	post, err := ue.store.Post(reaction.PostId)
+	if errors.Is(err, memstore.ErrPostNotFound) || post.ChannelId != currentChannel.Id {
 		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get post from store: %w", err)
 	}
 
 	switch ev.EventType() {
@@ -111,7 +114,7 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
 	for {
-		client, err := model.NewWebSocketClient4(ue.config.WebSocketURL, ue.client.AuthToken)
+		client, err := websocket.NewClient4(ue.config.WebSocketURL, ue.client.AuthToken)
 		if err != nil {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)
 			connectionFailCount++
@@ -126,8 +129,7 @@ func (ue *UserEntity) listen(errChan chan error) {
 			continue
 		}
 
-		client.Listen()
-		chanClosed := false
+		var chanClosed bool
 		for {
 			select {
 			case ev, ok := <-client.EventChannel:
@@ -139,11 +141,6 @@ func (ue *UserEntity) listen(errChan chan error) {
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
 				ue.wsEventChan <- ev
-			case _, ok := <-client.ResponseChannel:
-				if !ok {
-					chanClosed = true
-					break
-				}
 			case <-ue.wsClosing:
 				client.Close()
 				// Explicit disconnect. Return.
@@ -154,20 +151,19 @@ func (ue *UserEntity) listen(errChan chan error) {
 					chanClosed = true
 					break
 				}
-				client.UserTyping(msg.channelId, msg.parentId)
+				if err := client.UserTyping(msg.channelId, msg.parentId); err != nil {
+					errChan <- fmt.Errorf("userentity: error in client.UserTyping: %w", err)
+				}
 			}
 			if chanClosed {
+				client.Close()
 				break
 			}
 		}
 
-		if client.ListenError != nil {
-			errChan <- fmt.Errorf("userentity: websocket listen error: %w", client.ListenError)
-		}
 		connectionFailCount++
 		select {
 		case <-ue.wsClosing:
-			client.Close()
 			// Explicit disconnect. Return.
 			close(ue.wsClosed)
 			return

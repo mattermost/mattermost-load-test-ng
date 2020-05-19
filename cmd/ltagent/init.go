@@ -74,8 +74,11 @@ func createTeamAdmins(admin *userentity.UserEntity, numUsers int, config *loadte
 			Email:        fmt.Sprintf("testuser-%d@example.com", index),
 			Password:     "testPass123$",
 		}
-		store := memstore.New()
-		u := userentity.New(store, ueConfig)
+		store, err := memstore.New(nil)
+		if err != nil {
+			return err
+		}
+		u := userentity.New(store, nil, ueConfig)
 
 		if err := u.SignUp(ueConfig.Email, ueConfig.Username, ueConfig.Password); err != nil {
 			mlog.Warn("error while signing up", mlog.Err(err)) // Possibly, user already exists.
@@ -112,7 +115,10 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		ServerURL:    config.ConnectionConfiguration.ServerURL,
 		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
 	}
-	store := memstore.New()
+	store, err := memstore.New(nil)
+	if err != nil {
+		return err
+	}
 	err = store.SetUser(&model.User{
 		Email:    config.ConnectionConfiguration.AdminEmail,
 		Password: config.ConnectionConfiguration.AdminPassword,
@@ -121,7 +127,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	admin := userentity.New(store, ueConfig)
+	admin := userentity.New(store, nil, ueConfig)
 
 	start := time.Now()
 

@@ -4,6 +4,7 @@
 package memstore
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -11,15 +12,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newStore(tb testing.TB) *MemStore {
+	tb.Helper()
+	s, err := New(nil)
+	require.NoError(tb, err)
+	require.NotNil(tb, s)
+	return s
+}
+
 func TestNew(t *testing.T) {
 	t.Run("NewMemStore", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		require.NotNil(t, s)
 	})
 }
 
 func TestUser(t *testing.T) {
-	s := New()
+	s := newStore(t)
 
 	t.Run("NilUser", func(t *testing.T) {
 		u, err := s.User()
@@ -89,6 +98,19 @@ func TestUser(t *testing.T) {
 		require.Equal(t, p, pp)
 	})
 
+	t.Run("Post", func(t *testing.T) {
+		p, err := s.Post("someid")
+		require.Empty(t, p)
+		require.Equal(t, ErrPostNotFound, err)
+
+		err = s.SetPost(&model.Post{Id: "someid"})
+		require.NoError(t, err)
+
+		p, err = s.Post("someid")
+		require.NoError(t, err)
+		require.Equal(t, "someid", p.Id)
+	})
+
 	t.Run("SetPost", func(t *testing.T) {
 		err := s.SetPost(nil)
 		require.Error(t, err)
@@ -98,10 +120,11 @@ func TestUser(t *testing.T) {
 		uu, err := s.Post(p.Id)
 		require.NoError(t, err)
 		require.Equal(t, p, uu)
+
 	})
 
 	t.Run("DeletePost", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		require.Empty(t, s.posts)
 		p := &model.Post{Id: model.NewId()}
 		err := s.SetPost(p)
@@ -146,7 +169,7 @@ func TestUser(t *testing.T) {
 	})
 
 	t.Run("ChannelPostsSorted", func(t *testing.T) {
-		cleanStore := New()
+		cleanStore := newStore(t)
 		channelId := model.NewId()
 		p := []*model.Post{
 			{Id: model.NewId(), ChannelId: channelId, CreateAt: 123},
@@ -214,9 +237,69 @@ func TestUser(t *testing.T) {
 	})
 }
 
+func TestStoreConsistency(t *testing.T) {
+	config := &Config{}
+	config.SetDefaults()
+	t.Run("Posts", func(t *testing.T) {
+		config.MaxStoredPosts = 3
+		s, err := New(config)
+		require.NotNil(t, s)
+		require.NoError(t, err)
+
+		for i := 0; i < config.MaxStoredPosts; i++ {
+			err := s.SetPost(&model.Post{Id: fmt.Sprintf("%d", i+1)})
+			require.NoError(t, err)
+		}
+
+		require.Len(t, s.postsQueue.data, config.MaxStoredPosts)
+		require.Len(t, s.posts, config.MaxStoredPosts)
+
+		for i := 0; i < config.MaxStoredPosts; i++ {
+			id := fmt.Sprintf("%d", i+1)
+			require.Equal(t, id, s.posts[id].Id)
+		}
+
+		s.SetPost(&model.Post{Id: "1"})
+		s.SetPost(&model.Post{Id: "2"})
+		s.SetPost(&model.Post{Id: "1"})
+		s.DeletePost("2")
+		s.SetPost(&model.Post{Id: "3"})
+
+		require.Len(t, s.postsQueue.data, config.MaxStoredPosts)
+		require.Len(t, s.posts, config.MaxStoredPosts-1)
+
+		p, err := s.Post("1")
+		require.NoError(t, err)
+		require.NotNil(t, p)
+	})
+
+	t.Run("Lengths", func(t *testing.T) {
+		config.MaxStoredPosts = 100
+		s, err := New(config)
+		require.NotNil(t, s)
+		require.NoError(t, err)
+
+		for i := 0; i < config.MaxStoredPosts; i++ {
+			err := s.SetPost(&model.Post{Id: fmt.Sprintf("%d", i+1)})
+			require.NoError(t, err)
+		}
+
+		require.Len(t, s.posts, config.MaxStoredPosts)
+		require.Len(t, s.postsQueue.data, config.MaxStoredPosts)
+
+		for i := 0; i < config.MaxStoredPosts; i++ {
+			err := s.DeletePost(fmt.Sprintf("%d", i+1))
+			require.NoError(t, err)
+		}
+
+		require.Len(t, s.posts, 0)
+		require.Len(t, s.postsQueue.data, config.MaxStoredPosts)
+	})
+}
+
 func TestChannel(t *testing.T) {
 	t.Run("Store channel", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		err := s.SetChannel(nil)
 		require.Error(t, err)
 		channel := &model.Channel{Id: model.NewId()}
@@ -228,7 +311,7 @@ func TestChannel(t *testing.T) {
 	})
 
 	t.Run("Store channels", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		err := s.SetChannels(nil)
 		require.Error(t, err)
 		channel := &model.Channel{Id: model.NewId()}
@@ -241,7 +324,7 @@ func TestChannel(t *testing.T) {
 }
 
 func TestCurrentChannel(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	channel, err := s.CurrentChannel()
 	require.Nil(t, channel)
 	require.EqualError(t, err, ErrChannelNotFound.Error())
@@ -262,7 +345,7 @@ func TestCurrentChannel(t *testing.T) {
 
 func TestReactions(t *testing.T) {
 	t.Run("SetReactions", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		postId := model.NewId()
 		userId := model.NewId()
 		emojiName := "testemoji"
@@ -279,7 +362,7 @@ func TestReactions(t *testing.T) {
 	})
 
 	t.Run("SetReaction", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		postId := model.NewId()
 		userId := model.NewId()
 		emojiName := "testemoji"
@@ -296,7 +379,7 @@ func TestReactions(t *testing.T) {
 	})
 
 	t.Run("DeleteReaction", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		postId := model.NewId()
 		userId := model.NewId()
 		emojiName := "testemoji"
@@ -341,7 +424,7 @@ func TestReactions(t *testing.T) {
 }
 
 func TestId(t *testing.T) {
-	s := New()
+	s := newStore(t)
 
 	t.Run("EmptyId", func(t *testing.T) {
 		id := s.Id()
@@ -359,7 +442,7 @@ func TestId(t *testing.T) {
 }
 
 func TestChannelMembers(t *testing.T) {
-	s := New()
+	s := newStore(t)
 
 	t.Run("SetChannelMembers", func(t *testing.T) {
 		channelId := model.NewId()
@@ -399,7 +482,7 @@ func TestChannelMembers(t *testing.T) {
 	})
 
 	t.Run("Remove channel members", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		channel := &model.Channel{Id: model.NewId()}
 		err := s.SetChannel(channel)
 		require.NoError(t, err)
@@ -425,7 +508,7 @@ func TestChannelMembers(t *testing.T) {
 }
 
 func TestCurrentTeam(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	team, err := s.CurrentTeam()
 	require.Nil(t, team)
 	require.NoError(t, err)
@@ -445,7 +528,7 @@ func TestCurrentTeam(t *testing.T) {
 }
 
 func TestTeamMembers(t *testing.T) {
-	s := New()
+	s := newStore(t)
 
 	t.Run("SetTeamMember", func(t *testing.T) {
 		teamId := model.NewId()
@@ -485,7 +568,7 @@ func TestTeamMembers(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	s := New()
+	s := newStore(t)
 
 	t.Run("SetConfig", func(t *testing.T) {
 		config := &model.Config{}

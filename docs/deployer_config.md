@@ -30,6 +30,12 @@ The number of load-test agent instances. The first instance will also host the [
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
+## EnableAgentFullLogs
+
+*bool*
+
+Allows to log the agent service command output (`stdout` & `stderr`) to home directory.
+
 ## ProxyInstanceType
 
 *string*

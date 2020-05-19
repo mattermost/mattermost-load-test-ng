@@ -23,12 +23,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestRandomUsers(t *testing.T) {
-	s := New()
+	s := newStore(t)
+	myId := model.NewId()
+	err := s.SetUser(&model.User{
+		Id: myId,
+	})
+	require.NoError(t, err)
+
 	id1 := model.NewId()
 	id2 := model.NewId()
 	id3 := model.NewId()
 	id4 := model.NewId()
-	err := s.SetUsers([]*model.User{
+	err = s.SetUsers([]*model.User{
 		{Id: id1},
 		{Id: id2},
 		{Id: id3},
@@ -41,31 +47,163 @@ func TestRandomUsers(t *testing.T) {
 
 	_, err = s.RandomUsers(5)
 	require.Equal(t, err, ErrLenMismatch)
+
+	t.Run("two users without current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id := model.NewId()
+		id2 := model.NewId()
+
+		err = s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+
+		err = s.SetUsers([]*model.User{
+			{Id: id},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+
+		users, err := s.RandomUsers(2)
+		require.NoError(t, err)
+		require.Len(t, users, 2)
+	})
+
+	t.Run("two users with current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id := model.NewId()
+
+		err = s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+
+		err = s.SetUsers([]*model.User{
+			{Id: myId},
+			{Id: id},
+		})
+		require.NoError(t, err)
+
+		users, err := s.RandomUsers(2)
+		require.Equal(t, err, ErrLenMismatch)
+		require.Empty(t, users)
+	})
 }
 
 func TestRandomUser(t *testing.T) {
-	s := New()
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetUsers([]*model.User{
-		{Id: id1},
-		{Id: id2},
+	t.Run("one user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		id := model.NewId()
+		err = s.SetUsers([]*model.User{
+			{Id: id},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		require.Equal(t, id, u.Id)
 	})
-	require.NoError(t, err)
-	u, err := s.RandomUser()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch u.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
+
+	t.Run("only current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		err = s.SetUsers([]*model.User{
+			{Id: myId},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.Equal(t, err, ErrLenMismatch)
+		require.Empty(t, u)
+	})
+
+	t.Run("two users", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err = s.SetUsers([]*model.User{
+			{Id: id1},
+			{Id: id2},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch u.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("three users with current user", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		id1 := model.NewId()
+		id2 := model.NewId()
+		me := &model.User{Id: myId}
+		err := s.SetUser(me)
+		require.NoError(t, err)
+		err = s.SetUsers([]*model.User{
+			{Id: id1},
+			{Id: id2},
+			{Id: myId},
+		})
+		require.NoError(t, err)
+		u, err := s.RandomUser()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch u.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("bad data", func(t *testing.T) {
+		s := newStore(t)
+		myId := model.NewId()
+		err := s.SetUser(&model.User{
+			Id: myId,
+		})
+		require.NoError(t, err)
+		s.users[""] = nil
+		u, err := s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
+
+		s.users[model.NewId()] = nil
+		u, err = s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
+
+		s.users[model.NewId()] = &model.User{}
+		u, err = s.RandomUser()
+		require.Equal(t, ErrInvalidData, err)
+		require.Empty(t, u)
 	})
 }
 
 func TestRandomPost(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	id1 := model.NewId()
 	id2 := model.NewId()
 	err := s.SetPosts([]*model.Post{
@@ -86,7 +224,7 @@ func TestRandomPost(t *testing.T) {
 }
 
 func TestRandomPostForChannel(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	post, err := s.RandomPostForChannel("someId")
 	require.Empty(t, &post)
 	require.Equal(t, ErrPostNotFound, err)
@@ -131,9 +269,49 @@ func TestRandomPostForChannel(t *testing.T) {
 	}
 }
 
+func TestRandomPostForChannelByUser(t *testing.T) {
+	s := newStore(t)
+	post, err := s.RandomPostForChannelByUser("chanId", "userId")
+	require.Empty(t, &post)
+	require.Equal(t, ErrPostNotFound, err)
+
+	channelId := "ch-" + model.NewId()
+	userId := model.NewId()
+
+	id1 := model.NewId()
+	id2 := model.NewId()
+	err = s.SetPosts([]*model.Post{
+		{
+			Id:        id1,
+			ChannelId: channelId,
+		},
+		{Id: id2},
+	})
+	require.NoError(t, err)
+
+	post, err = s.RandomPostForChannelByUser(channelId, "userId")
+	require.Empty(t, &post)
+	require.Equal(t, ErrPostNotFound, err)
+
+	id3 := model.NewId()
+	err = s.SetPosts([]*model.Post{
+		{
+			Id:        id3,
+			ChannelId: channelId,
+			UserId:    userId,
+		},
+	})
+	require.NoError(t, err)
+
+	post, err = s.RandomPostForChannelByUser(channelId, userId)
+	require.NoError(t, err)
+	require.NotEmpty(t, &post)
+	require.Equal(t, id3, post.Id)
+}
+
 func TestRandomEmoji(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		id1 := model.NewId()
 		id2 := model.NewId()
 		err := s.SetEmojis([]*model.Emoji{
@@ -153,14 +331,14 @@ func TestRandomEmoji(t *testing.T) {
 		})
 	})
 	t.Run("emptyslice", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		_, err := s.RandomEmoji()
 		require.Equal(t, ErrEmptySlice, err)
 	})
 }
 
 func TestRandomChannelMember(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	channelId := model.NewId()
 	userId := model.NewId()
 	userId2 := model.NewId()
@@ -190,7 +368,7 @@ func TestRandomChannelMember(t *testing.T) {
 }
 
 func TestRandomTeamMember(t *testing.T) {
-	s := New()
+	s := newStore(t)
 	teamId := model.NewId()
 	userId := model.NewId()
 	userId2 := model.NewId()
@@ -250,7 +428,7 @@ func TestPickRandomKeyFromMap(t *testing.T) {
 var errG error
 
 func BenchmarkRandomTeam(b *testing.B) {
-	s := New()
+	s := newStore(b)
 	s.SetUser(&model.User{})
 	id1 := model.NewId()
 	id2 := model.NewId()
@@ -268,7 +446,7 @@ func BenchmarkRandomTeam(b *testing.B) {
 
 func TestRandomTeam(t *testing.T) {
 	t.Run("user not set", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		team, err := s.RandomTeam(store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, team)
@@ -276,7 +454,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team not found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -289,7 +467,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("select rom any", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		id1 := model.NewId()
 		id2 := model.NewId()
@@ -311,7 +489,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team found which user is a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -363,7 +541,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("team found which user is not a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -393,7 +571,7 @@ func TestRandomTeam(t *testing.T) {
 	})
 
 	t.Run("no current team", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -450,7 +628,7 @@ func TestRandomTeam(t *testing.T) {
 
 func TestRandomChannel(t *testing.T) {
 	t.Run("basic any channel", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		id1 := model.NewId()
 		id2 := model.NewId()
@@ -478,7 +656,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("emptyslice", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		s.SetUser(&model.User{})
 		err := s.SetTeams([]*model.Team{
 			{
@@ -491,7 +669,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("user not set", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		channel, err := s.RandomChannel(model.NewId(), store.SelectMemberOf)
 		require.Error(t, err)
 		require.Empty(t, channel)
@@ -499,7 +677,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("team not found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -512,7 +690,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("no channel found", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -537,7 +715,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("channel found which is the user a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -583,7 +761,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("channel found which is the user is not a member of", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -616,7 +794,7 @@ func TestRandomChannel(t *testing.T) {
 	})
 
 	t.Run("no current channel", func(t *testing.T) {
-		s := New()
+		s := newStore(t)
 		user := &model.User{
 			Id: model.NewId(),
 		}
@@ -661,5 +839,73 @@ func TestRandomChannel(t *testing.T) {
 			require.NotNil(t, channel)
 			require.Equal(t, channelId3, channel.Id)
 		}
+	})
+
+	t.Run("channel types", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		channelId4 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId, Type: model.CHANNEL_OPEN},
+			{Id: channelId2, TeamId: teamId, Type: model.CHANNEL_PRIVATE},
+			{Id: channelId3, Type: model.CHANNEL_DIRECT},
+			{Id: channelId4, Type: model.CHANNEL_GROUP},
+		})
+		require.NoError(t, err)
+		err = s.SetChannelMembers(&model.ChannelMembers{
+			{
+				ChannelId: channelId1,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId2,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId3,
+				UserId:    user.Id,
+			},
+			{
+				ChannelId: channelId4,
+				UserId:    user.Id,
+			},
+		})
+		require.NoError(t, err)
+
+		channel, err := s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotPublic|store.SelectNotPrivate|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		require.Equal(t, channelId4, channel.Id)
+
+		channel, err = s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotGroup|store.SelectNotPrivate|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		require.Equal(t, channelId1, channel.Id)
+
+		channel, err = s.RandomChannel(teamId, store.SelectMemberOf|store.SelectNotDirect)
+		require.NoError(t, err)
+		require.NotNil(t, channel)
+		assert.Condition(t, func() bool {
+			switch channel.Id {
+			case channelId1, channelId2, channelId4:
+				return true
+			default:
+				return false
+			}
+		})
 	})
 }

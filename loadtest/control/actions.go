@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -39,8 +40,10 @@ func SignUp(u user.User) UserActionResponse {
 	username := u.Store().Username()
 	password := u.Store().Password()
 
-	err := u.SignUp(email, username, password)
-	if err != nil {
+	if err := u.SignUp(email, username, password); err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
+		}
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
@@ -459,7 +462,7 @@ func SearchUsers(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "no teams to search for users"}
 	}
 
-	return emulateUserTyping("test", func(term string) UserActionResponse {
+	return EmulateUserTyping("test", func(term string) UserActionResponse {
 		users, err := u.SearchUsers(&model.UserSearch{
 			Term:  term,
 			Limit: 100,
@@ -488,7 +491,7 @@ func SearchChannels(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	return emulateUserTyping("ch-", func(term string) UserActionResponse {
+	return EmulateUserTyping("ch-", func(term string) UserActionResponse {
 		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
 		})

@@ -113,7 +113,7 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 func (c *GenController) createDirectChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
-	if err := u.GetUsers(0, 100); err != nil {
+	if _, err := u.GetUsers(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -137,7 +137,7 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 func (c *GenController) createGroupChannel(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
-	if err := u.GetUsers(0, 100); err != nil {
+	if _, err := u.GetUsers(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -290,7 +290,7 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetPostsSince(channel.Id, time.Now().Add(-10*time.Second).Unix()*1000); err != nil {
+	if _, err := u.GetPostsSince(channel.Id, time.Now().Add(-10*time.Second).Unix()*1000); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

@@ -14,3 +14,11 @@ func postsMapToSlice(postsMap map[string]*model.Post) []*model.Post {
 	}
 	return posts
 }
+
+func postListToSlice(list *model.PostList) []*model.Post {
+	posts := make([]*model.Post, len(list.Order))
+	for i, id := range list.Order {
+		posts[i] = list.Posts[id]
+	}
+	return posts
+}

@@ -26,7 +26,6 @@ var ltConfig = Config{
 	},
 	UserControllerConfiguration: UserControllerConfiguration{
 		Type: "simple",
-		Rate: 1.0,
 	},
 	UsersConfiguration: UsersConfiguration{
 		MaxActiveUsers:     8,
@@ -44,7 +43,11 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
 	}
-	ue := userentity.New(memstore.New(), ueConfig)
+	store, err := memstore.New(nil)
+	if err != nil {
+		return nil, err
+	}
+	ue := userentity.New(store, nil, ueConfig)
 	cfg, err := simplecontroller.ReadConfig("")
 	if err != nil {
 		return nil, err
@@ -90,11 +93,13 @@ func TestAddUsers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 4, n)
 
-	require.Len(t, lt.controllers, 8)
+	require.Len(t, lt.activeControllers, 8)
+	require.Empty(t, lt.idleControllers)
 }
 
 func TestRemoveUsers(t *testing.T) {
 	lt, err := New(&ltConfig, newController)
+	defer close(lt.statusChan)
 	require.Nil(t, err)
 
 	n, err := lt.RemoveUsers(0)
@@ -116,26 +121,32 @@ func TestRemoveUsers(t *testing.T) {
 	n, err = lt.RemoveUsers(1)
 	require.Equal(t, ErrNoUsersLeft, err)
 	require.Zero(t, n)
+	require.Empty(t, lt.idleControllers)
+	require.Empty(t, lt.activeControllers)
 
 	n, err = lt.AddUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
+	require.Empty(t, lt.idleControllers)
+	require.Len(t, lt.activeControllers, 1)
 
 	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
-	require.Empty(t, lt.controllers)
+	require.Empty(t, lt.activeControllers)
+	require.Len(t, lt.idleControllers, 1)
 
 	n, err = lt.AddUsers(2)
 	require.NoError(t, err)
 	require.Equal(t, 2, n)
+	require.Empty(t, lt.idleControllers)
+	require.Len(t, lt.activeControllers, 2)
 
 	n, err = lt.RemoveUsers(3)
 	require.Equal(t, err, ErrNoUsersLeft)
 	require.Equal(t, 2, n)
-	require.Empty(t, lt.controllers)
-
-	close(lt.statusChan)
+	require.Empty(t, lt.activeControllers)
+	require.Len(t, lt.idleControllers, 2)
 }
 
 func TestRun(t *testing.T) {
@@ -144,7 +155,7 @@ func TestRun(t *testing.T) {
 	err = lt.Run()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Running)
-	require.Len(t, lt.controllers, ltConfig.UsersConfiguration.InitialActiveUsers)
+	require.Len(t, lt.activeControllers, ltConfig.UsersConfiguration.InitialActiveUsers)
 
 	err = lt.Run()
 	require.Equal(t, ErrNotStopped, err)
@@ -187,7 +198,7 @@ func TestStop(t *testing.T) {
 	err = lt.Stop()
 	require.NoError(t, err)
 	require.Equal(t, lt.status.State, Stopped)
-	require.Empty(t, lt.controllers)
+	require.Empty(t, lt.activeControllers)
 }
 
 func TestStatus(t *testing.T) {

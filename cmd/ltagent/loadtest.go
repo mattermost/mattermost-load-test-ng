@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -97,6 +99,22 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// http.Transport to be shared amongst all clients.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 		ueConfig := userentity.Config{
@@ -106,7 +124,16 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			Email:        fmt.Sprintf("%s-%d@example.com", userPrefix, id),
 			Password:     "testPass123$",
 		}
-		ue := userentity.New(memstore.New(), ueConfig)
+		store, err := memstore.New(&memstore.Config{
+			MaxStoredPosts:          500,
+			MaxStoredUsers:          1000,
+			MaxStoredChannelMembers: 1000,
+			MaxStoredStatuses:       1000,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ue := userentity.New(store, transport, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
@@ -127,6 +154,22 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 	if numUsers > 0 {
 		config.UsersConfiguration.InitialActiveUsers = numUsers
+	}
+
+	rate, err := cmd.Flags().GetFloat64("rate")
+	if err != nil {
+		return err
+	}
+	if rate != 1.0 {
+		config.UserControllerConfiguration.RatesDistribution = []struct {
+			Rate       float64
+			Percentage float64
+		}{
+			{
+				Rate:       rate,
+				Percentage: 1.0,
+			},
+		}
 	}
 
 	lt, err := loadtest.New(config, newControllerFn)
@@ -168,6 +211,7 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
 	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
 	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.PersistentFlags().Float64P("rate", "r", 1.0, "rate value for the controller")
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
 	cmd.PersistentFlags().IntP("user-offset", "", 0, "numerical offset applied to user ids")
 	return cmd

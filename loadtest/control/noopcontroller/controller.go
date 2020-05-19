@@ -28,11 +28,12 @@ type NoopController struct {
 // a UserStatus channel is passed to communicate errors and information about the user's status.
 func New(id int, user user.User, status chan<- control.UserStatus) (*NoopController, error) {
 	return &NoopController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   1.0,
+		id:      id,
+		user:    user,
+		stop:    make(chan struct{}),
+		stopped: make(chan struct{}),
+		status:  status,
+		rate:    1.0,
 	}, nil
 }
 
@@ -55,7 +56,6 @@ func (c *NoopController) Run() {
 		if err := c.user.Disconnect(); err != nil {
 			c.status <- c.newErrorStatus(err)
 		}
-		c.user.Cleanup()
 		c.sendStopStatus()
 		close(c.stopped)
 	}()
@@ -113,6 +113,8 @@ func (c *NoopController) SetRate(rate float64) error {
 func (c *NoopController) Stop() {
 	close(c.stop)
 	<-c.stopped
+	c.stop = make(chan struct{})
+	c.stopped = make(chan struct{})
 }
 
 func (c *NoopController) sendFailStatus(reason string) {

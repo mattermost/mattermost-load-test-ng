@@ -7,8 +7,7 @@ package control
 // It contains a very simple interface to just start/stop the actions
 // performed by a user.
 type UserController interface {
-	// Run starts the controller to begin performing the
-	// user actions.
+	// Run starts the controller to begin performing the user actions.
 	Run()
 	// SetRate determines the relative speed in which user actions are performed
 	// one after the other. A rate of 1.0 will run the actions in their usual

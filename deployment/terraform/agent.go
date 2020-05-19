@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -70,9 +71,22 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 			}
 		}
 
+		tpl, err := template.New("").Parse(agentServiceFile)
+		if err != nil {
+			return fmt.Errorf("could not parse agent service template: %w", err)
+		}
+
+		agentCmd := baseAgentCmd
+		if t.config.EnableAgentFullLogs {
+			agentCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/agent.log'", baseAgentCmd)
+		}
+
+		buf := bytes.NewBufferString("")
+		tpl.Execute(buf, agentCmd)
+
 		batch := []uploadInfo{
-			{srcData: strings.TrimPrefix(agentServiceFile, "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
-			{srcData: strings.TrimPrefix(sysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
+			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			{srcData: strings.TrimPrefix(coordinatorServiceFile, "\n"), dstPath: "/lib/systemd/system/ltcoordinator.service", msg: "Uploading coordinator service file"},
 		}
@@ -86,7 +100,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 		}
 
 		mlog.Info("Starting agent")
-		if out, err := sshc.RunCommand("sudo service ltagent start"); err != nil {
+		if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltagent restart"); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 	}

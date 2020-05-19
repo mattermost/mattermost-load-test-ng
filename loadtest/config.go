@@ -4,6 +4,7 @@
 package loadtest
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -72,12 +73,15 @@ type UserControllerConfiguration struct {
 	//   UserControllerNoop
 	//   UserControllerGenerative - A controller used to generate data.
 	Type userControllerType
-	// A rate multiplier that will affect the speed at which user actions are
+	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
-	Rate float64
+	RatesDistribution []struct {
+		Rate       float64
+		Percentage float64
+	}
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.
@@ -86,8 +90,12 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 	if err := ucc.Type.IsValid(); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
-	if ucc.Rate < 0 {
-		return fmt.Errorf("rate cannot be < 0")
+	var sum float64
+	for _, el := range ucc.RatesDistribution {
+		sum += el.Percentage
+	}
+	if len(ucc.RatesDistribution) > 0 && sum != 1 {
+		return errors.New("Percentages in RatesDistribution should sum to 1")
 	}
 	return nil
 }
@@ -175,7 +183,7 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	v.AutomaticEnv()
 
 	v.SetDefault("LogSettings.EnableConsole", true)
-	v.SetDefault("LogSettings.ConsoleLevel", "INFO")
+	v.SetDefault("LogSettings.ConsoleLevel", "ERROR")
 	v.SetDefault("LogSettings.ConsoleJson", true)
 	v.SetDefault("LogSettings.EnableFile", true)
 	v.SetDefault("LogSettings.FileLevel", "INFO")

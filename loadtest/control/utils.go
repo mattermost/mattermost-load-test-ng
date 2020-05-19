@@ -5,6 +5,7 @@
 package control
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -26,7 +27,8 @@ const (
 var (
 	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
-	words             []string
+	words             = []string{}
+	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -69,7 +71,8 @@ func RandomizeTeamDisplayName(name string) string {
 	return name
 }
 
-func emulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
+// EmulateUserTyping calls cb function for each rune in the input string.
+func EmulateUserTyping(t string, cb func(term string) UserActionResponse) UserActionResponse {
 	typingSpeed := time.Duration(100+rand.Intn(200)) * time.Millisecond // 100-300ms
 
 	runes := []rune(t)
@@ -101,11 +104,44 @@ func GenerateRandomSentences(count int) string {
 		return "🙂" // if there is nothing to say, an emoji worths for thousands
 	}
 
+	var withEmoji bool
+	// 10% of the times we add an emoji to the message.
+	if rand.Float64() < 0.10 {
+		withEmoji = true
+		count--
+	}
+
 	var random string
 	for i := 0; i < count; i++ {
 		n := rand.Int() % len(words)
 		random += words[n] + " "
 	}
 
+	if withEmoji {
+		return random + emojis[rand.Intn(len(emojis))]
+	}
+
 	return random[:len(random)-1] + "."
+}
+
+// SelectWeighted does a random weighted selection on a given slice of weights.
+func SelectWeighted(weights []int) (int, error) {
+	var sum int
+	if len(weights) == 0 {
+		return -1, errors.New("weights cannot be empty")
+	}
+	for i := range weights {
+		sum += weights[i]
+	}
+	if sum == 0 {
+		return -1, errors.New("weights frequency sum cannot be zero")
+	}
+	distance := rand.Intn(sum)
+	for i := range weights {
+		distance -= weights[i]
+		if distance < 0 {
+			return i, nil
+		}
+	}
+	return -1, errors.New("should not be able to reach this point")
 }

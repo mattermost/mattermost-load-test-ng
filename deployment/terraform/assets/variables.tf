@@ -50,3 +50,12 @@ variable "mattermost_license_file" {
 
 variable "load_test_download_url" {
 }
+
+variable "root_block_device" {
+  default = [
+    {
+      volume_type = "gp2"
+      volume_size = 50
+    },
+  ]
+}
