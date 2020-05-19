@@ -7,7 +7,24 @@
   },
   "UserControllerConfiguration": {
     "Type": "simple",
-    "Rate": 1.0
+    "RatesDistribution":[
+      {
+        "Rate": 1.0,
+        "Percentage": 0.2
+      },
+      {
+        "Rate": 3.0,
+        "Percentage": 0.3
+      },
+      {
+        "Rate": 6.0,
+        "Percentage": 0.3
+      },
+      {
+        "Rate": 30.0,
+        "Percentage": 0.2
+      }
+    ]
   },
   "InstanceConfiguration": {
     "NumTeams": 2,
