@@ -16,7 +16,7 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1589965954614,
+  "iteration": 1589979177598,
   "links": [],
   "panels": [
     {
@@ -1278,9 +1278,7 @@
         "allValue": null,
         "current": {
           "text": "",
-          "value": [
-            ""
-          ]
+          "value": []
         },
         "datasource": "loadtest-source",
         "definition": "label_values(instance)",
@@ -1291,7 +1289,7 @@
         "name": "server",
         "options": [],
         "query": "label_values(instance)",
-        "refresh": 0,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
@@ -1335,5 +1333,5 @@
   "timezone": "browser",
   "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 11
+  "version": 3
 }
