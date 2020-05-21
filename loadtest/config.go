@@ -47,13 +47,14 @@ const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 	UserControllerNoop                          = "noop"
+	UserControllerCluster                       = "cluster"
 )
 
 // IsValid reports whether a given UserControllerType is valid or not.
 // Returns an error if the validation fails.
 func (t userControllerType) IsValid() error {
 	switch t {
-	case UserControllerSimple, UserControllerSimulative:
+	case UserControllerSimple, UserControllerSimulative, UserControllerCluster:
 		return nil
 	case "":
 		return fmt.Errorf("UserControllerType cannot be empty")
