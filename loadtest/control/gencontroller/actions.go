@@ -211,6 +211,13 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	var rootId string
+	if root.RootId != "" {
+		rootId = root.RootId
+	} else {
+		rootId = root.Id
+	}
+
 	avgWordCount := 34
 	minWordCount := 1
 	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
@@ -219,7 +226,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		Message:   control.GenerateRandomSentences(wordCount),
 		ChannelId: root.ChannelId,
 		CreateAt:  time.Now().Unix() * 1000,
-		RootId:    root.Id,
+		RootId:    rootId,
 	})
 	if err != nil {
 		st.dec("posts")
