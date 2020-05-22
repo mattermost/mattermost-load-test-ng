@@ -132,6 +132,7 @@ type User interface {
 	SetCurrentChannel(channel *model.Channel) error
 
 	// System console functionalities
+	
 	// GetLogs fetches the logs.
 	GetLogs(page, perPage int) error
 	// GetAnalytics fetches the system analytics.
