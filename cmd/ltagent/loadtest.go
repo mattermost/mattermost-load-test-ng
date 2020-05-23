@@ -19,7 +19,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/spf13/cobra"
 )
 
@@ -105,15 +104,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			// For cluster controller, we only use the sysadmin
 			// because we are just testing system console APIs.
 			ueConfig.Username = ""
-			ueConfig.Email = ""
-			ueConfig.Password = ""
-			err = store.SetUser(&model.User{
-				Email:    config.ConnectionConfiguration.AdminEmail,
-				Password: config.ConnectionConfiguration.AdminPassword,
-			})
-			if err != nil {
-				return nil, err
-			}
+			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
 
 			admin := userentity.New(store, transport, ueConfig)
 			return clustercontroller.New(id, admin, status)
