@@ -455,3 +455,23 @@ func (u *SampleUser) GetUsers(page, perPage int) ([]string, error) {
 func (u *SampleUser) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
 	return nil, nil
 }
+
+func (u *SampleUser) GetLogs(page, perPage int) error {
+	return nil
+}
+
+func (u *SampleUser) GetAnalytics() error {
+	return nil
+}
+
+func (u *SampleUser) GetClusterStatus() error {
+	return nil
+}
+
+func (u *SampleUser) GetPluginStatuses() error {
+	return nil
+}
+
+func (u *SampleUser) UpdateConfig(*model.Config) error {
+	return nil
+}

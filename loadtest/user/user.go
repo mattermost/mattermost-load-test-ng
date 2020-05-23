@@ -5,6 +5,7 @@ package user
 
 import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -129,6 +130,19 @@ type User interface {
 	IsTeamAdmin() (bool, error)
 	SetCurrentTeam(team *model.Team) error
 	SetCurrentChannel(channel *model.Channel) error
+
+	// System console functionalities
+
+	// GetLogs fetches the logs.
+	GetLogs(page, perPage int) error
+	// GetAnalytics fetches the system analytics.
+	GetAnalytics() error
+	// GetClusterStatus fetches the cluster status.
+	GetClusterStatus() error
+	// GetPluginStatuses fetches the plugin statuses.
+	GetPluginStatuses() error
+	// UpdateConfig updates the config with cfg.
+	UpdateConfig(cfg *model.Config) error
 
 	// Clear clears the underlying UserStore
 	ClearUserData()

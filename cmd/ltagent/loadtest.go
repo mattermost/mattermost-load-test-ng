@@ -11,11 +11,13 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
@@ -98,6 +100,15 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
+		case loadtest.UserControllerCluster:
+			// For cluster controller, we only use the sysadmin
+			// because we are just testing system console APIs.
+			ueConfig.Username = ""
+			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
+
+			admin := userentity.New(store, transport, ueConfig)
+			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
 		}

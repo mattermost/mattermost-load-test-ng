@@ -5,6 +5,8 @@ package userentity
 
 import (
 	"errors"
+	"io"
+	"io/ioutil"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -880,4 +882,65 @@ func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
 
 func (ue *UserEntity) ClearUserData() {
 	ue.store.Clear()
+}
+
+// GetLogs fetches the logs.
+func (ue *UserEntity) GetLogs(page, perPage int) error {
+	_, resp := ue.client.GetLogs(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+// GetAnalytics fetches the system analytics.
+func (ue *UserEntity) GetAnalytics() error {
+	_, resp := ue.client.GetAnalyticsOld("", "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+// GetClusterStatus fetches the cluster status.
+func (ue *UserEntity) GetClusterStatus() error {
+	_, resp := ue.client.GetClusterStatus()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
+// GetPluginStatuses fetches the plugin statuses.
+func (ue *UserEntity) GetPluginStatuses() error {
+	// Need to do it manually until MM-25405 is resolved.
+	_, resp := ue.getPluginStatuses()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
+// UpdateConfig updates the config with cfg.
+func (ue *UserEntity) UpdateConfig(cfg *model.Config) error {
+	cfg, resp := ue.client.UpdateConfig(cfg)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	ue.store.SetConfig(cfg)
+	return nil
+}
+
+func (ue *UserEntity) getPluginStatuses() (model.PluginStatuses, *model.Response) {
+	r, err := ue.client.DoApiGet(ue.client.GetPluginsRoute()+"/statuses", "")
+	if err != nil {
+		return nil, model.BuildErrorResponse(r, err)
+	}
+	defer func() {
+		_, _ = io.Copy(ioutil.Discard, r.Body)
+		_ = r.Body.Close()
+	}()
+	return model.PluginStatusesFromJson(r.Body), model.BuildResponse(r)
 }
