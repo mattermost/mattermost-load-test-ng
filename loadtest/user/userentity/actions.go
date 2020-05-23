@@ -5,7 +5,6 @@ package userentity
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -896,14 +895,7 @@ func (ue *UserEntity) GetLogs(page, perPage int) error {
 
 // GetAnalytics fetches the system analytics.
 func (ue *UserEntity) GetAnalytics() error {
-	teamIds, err := ue.GetTeamsForUser(ue.store.Id())
-	if err != nil {
-		return err
-	}
-	if len(teamIds) == 0 {
-		return fmt.Errorf("user does not have any teams")
-	}
-	_, resp := ue.client.GetAnalyticsOld("", teamIds[0])
+	_, resp := ue.client.GetAnalyticsOld("", "")
 	if resp.Error != nil {
 		return resp.Error
 	}
