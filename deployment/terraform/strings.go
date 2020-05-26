@@ -79,7 +79,7 @@ http {
 const nginxSiteConfig = `
 upstream backend {
 %s
-        keepalive 1024;
+        keepalive 64;
 }
 
 proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
