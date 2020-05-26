@@ -235,7 +235,7 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 
 		backends := ""
 		for _, addr := range output.Instances.Value {
-			backends += "server " + addr.PrivateIP + ":8065; max_fails=3\n"
+			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
 		}
 
 		batch := []uploadInfo{
