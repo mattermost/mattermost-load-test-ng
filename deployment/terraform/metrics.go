@@ -34,13 +34,13 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	var hosts string
 	var mmTargets, nodeTargets []string
 	for i, val := range output.Instances.Value {
-		host := fmt.Sprintf("app%d", i)
+		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("'%s:8067'", host))
 		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	for i, val := range output.Agents.Value {
-		host := fmt.Sprintf("agent%d", i)
+		host := fmt.Sprintf("agent-%d", i)
 		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
