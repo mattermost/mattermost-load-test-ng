@@ -201,27 +201,36 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 }
 
 func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) error {
-	postlist, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "")
+	postList, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
-	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+	if postList == nil || len(postList.Posts) == 0 {
+		return nil
+	}
+	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
 func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int) error {
-	postlist, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "")
+	postList, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
-	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+	if postList == nil || len(postList.Posts) == 0 {
+		return nil
+	}
+	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
 func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int) error {
-	postlist, resp := ue.client.GetPostsAfter(channelId, postId, page, perPage, "")
+	postList, resp := ue.client.GetPostsAfter(channelId, postId, page, perPage, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
-	return ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+	if postList == nil || len(postList.Posts) == 0 {
+		return nil
+	}
+	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
 func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
@@ -229,7 +238,7 @@ func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, err
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	if len(postList.Posts) == 0 {
+	if postList == nil || len(postList.Posts) == 0 {
 		return nil, nil
 	}
 
@@ -255,7 +264,7 @@ func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, li
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	if len(postList.Posts) == 0 {
+	if postList == nil || len(postList.Posts) == 0 {
 		return nil, nil
 	}
 
