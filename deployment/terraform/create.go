@@ -302,6 +302,9 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 
+	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.Value.PrivateIP)
+	cfg.EmailSettings.SMTPPort = model.NewString("2500")
+
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
 	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
 	cfg.LogSettings.EnableFile = model.NewBool(true)
