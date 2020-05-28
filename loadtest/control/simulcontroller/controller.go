@@ -88,15 +88,16 @@ func (c *SimulController) Run() {
 		},
 	}
 
-	for _, action := range initActions {
+	for i := 0; i < len(initActions); i++ {
 		select {
 		case <-c.stopChan:
 			return
 		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
 		}
 
-		if resp := action.run(c.user); resp.Err != nil {
+		if resp := initActions[i].run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
+			i--
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
 		}

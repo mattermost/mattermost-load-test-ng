@@ -329,6 +329,11 @@ func (s *MemStore) SetPost(post *model.Post) error {
 		return errors.New("memstore: post id should not be empty")
 	}
 
+	// Avoid storing deleted posts.
+	if post.DeleteAt > 0 {
+		return nil
+	}
+
 	// We get an element from the queue and check if we have it in the map and
 	// if it points to the same memory location. If so, we delete it since it means the queue is full.
 	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
