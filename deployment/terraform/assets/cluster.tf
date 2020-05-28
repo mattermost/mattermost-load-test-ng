@@ -94,9 +94,13 @@ resource "aws_instance" "metrics_server" {
       "sudo apt-get install -y adduser libfontconfig1",
       "wget https://dl.grafana.com/oss/release/grafana_6.6.2_amd64.deb",
       "sudo dpkg -i grafana_6.6.2_amd64.deb",
+      "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
+      "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable grafana-server",
-      "sudo service grafana-server start"
+      "sudo service grafana-server start",
+      "sudo systemctl enable inbucket",
+      "sudo service inbucket start"
     ]
   }
 }
@@ -358,6 +362,17 @@ resource "aws_security_group" "metrics" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+# We need a separate security group rule to prevent cyclic dependency between
+# the app group and metrics group.
+resource "aws_security_group_rule" "app-to-inbucket" {
+  type                     = "ingress"
+  from_port                = 2500
+  to_port                  = 2500
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.metrics.id
+  source_security_group_id = aws_security_group.app.id
 }
 
 resource "aws_security_group" "proxy" {
