@@ -17,3 +17,11 @@ output "metricsServer" {
 output "proxy" {
   value = "${aws_instance.proxy_server}"
 }
+
+output "s3bucket" {
+    value = "${aws_s3_bucket.s3bucket}"
+}
+
+output "s3Key" {
+    value = "${aws_iam_access_key.s3key}"
+}
