@@ -129,6 +129,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 			continue
 		}
 
+		ue.incWebSocketConnections()
+
 		var chanClosed bool
 		for {
 			select {
@@ -143,6 +145,7 @@ func (ue *UserEntity) listen(errChan chan error) {
 				ue.wsEventChan <- ev
 			case <-ue.wsClosing:
 				client.Close()
+				ue.decWebSocketConnections()
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return
@@ -160,6 +163,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 				break
 			}
 		}
+
+		ue.decWebSocketConnections()
 
 		connectionFailCount++
 		select {

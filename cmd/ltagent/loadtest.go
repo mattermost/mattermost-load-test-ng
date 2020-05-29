@@ -70,6 +70,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		MaxConnsPerHost:       500,
 		MaxIdleConns:          500,
 		MaxIdleConnsPerHost:   500,
+		ResponseHeaderTimeout: 5 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -92,7 +93,11 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, transport, ueConfig)
+		ueSetup := userentity.Setup{
+			Store:     store,
+			Transport: transport,
+		}
+		ue := userentity.New(ueSetup, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
@@ -107,7 +112,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
 			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
 
-			admin := userentity.New(store, transport, ueConfig)
+			admin := userentity.New(ueSetup, ueConfig)
 			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
