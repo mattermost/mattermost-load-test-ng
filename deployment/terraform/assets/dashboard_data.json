@@ -488,10 +488,10 @@
           "step": 5
         },
         {
-          "expr": "histogram_quantile(0.9, sum(rate(mattermost_api_time_bucket[1m])) by (instance,le))",
+          "expr": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "hide": false,
-          "legendFormat": "90p-{{instance}}",
+          "legendFormat": "p99-{{instance}}",
           "refId": "B"
         }
       ],
