@@ -6,6 +6,7 @@ package userentity
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -58,7 +59,10 @@ func New(store store.MutableUserStore, rt http.RoundTripper, config Config) *Use
 	if rt == nil {
 		rt = http.DefaultTransport
 	}
-	ue.client.HttpClient = &http.Client{Transport: rt}
+	ue.client.HttpClient = &http.Client{
+		Transport: rt,
+		Timeout:   5 * time.Second,
+	}
 	err := store.SetUser(&model.User{
 		Username: config.Username,
 		Email:    config.Email,
