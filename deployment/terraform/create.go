@@ -305,6 +305,14 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.Value.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
+	if output.HasProxy() && len(output.S3Key.Value) > 0 && len(output.S3Bucket.Value) > 0 {
+		cfg.FileSettings.DriverName = model.NewString("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(output.S3Key.Value[0].Id)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(output.S3Key.Value[0].Secret)
+		cfg.FileSettings.AmazonS3Bucket = model.NewString(output.S3Bucket.Value[0].Id)
+		cfg.FileSettings.AmazonS3Region = model.NewString(output.S3Bucket.Value[0].Region)
+	}
+
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
 	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
 	cfg.LogSettings.EnableFile = model.NewBool(true)

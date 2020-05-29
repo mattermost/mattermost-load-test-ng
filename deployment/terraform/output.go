@@ -50,6 +50,18 @@ type Output struct {
 			PrivateDNS string `json:"private_dns"`
 		} `json:"value"`
 	} `json:"metricsServer"`
+	S3Bucket struct {
+		Value []struct {
+			Id     string `json:"id"`
+			Region string `json:"region"`
+		}
+	} `json:"s3Bucket"`
+	S3Key struct {
+		Value []struct {
+			Id     string `json:"id"`
+			Secret string `json:"secret"`
+		}
+	} `json:"s3Key"`
 }
 
 // HasProxy returns whether a deployment has proxy installed in it or not.
