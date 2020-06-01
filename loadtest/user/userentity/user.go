@@ -5,12 +5,14 @@ package userentity
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	perf "github.com/mattermost/mattermost-load-test-ng/performance"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -28,7 +30,7 @@ type UserEntity struct {
 	wsTyping    chan userTypingMsg
 	connected   bool
 	config      Config
-	metrics     *perf.UserEntityMetrics
+	metrics     *performance.UserEntityMetrics
 }
 
 // Config holds necessary information required by a UserEntity.
@@ -48,7 +50,7 @@ type Config struct {
 type Setup struct {
 	Store     store.MutableUserStore
 	Transport http.RoundTripper
-	Metrics   *perf.UserEntityMetrics
+	Metrics   *performance.UserEntityMetrics
 }
 
 type userTypingMsg struct {
@@ -65,7 +67,9 @@ func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	resp, err := t.transport.RoundTrip(req)
 	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
+	fmt.Println(reflect.TypeOf(err))
 	if os.IsTimeout(err) {
+		fmt.Println("TIMEOUT")
 		t.ue.incHTTPTimeouts()
 	}
 	if resp != nil && resp.StatusCode >= 400 {
@@ -96,7 +100,7 @@ func New(setup Setup, config Config) *UserEntity {
 			ue:        &ue,
 		}
 	}
-	ue.client.HttpClient = &http.Client{Transport: setup.Transport}
+	ue.client.HttpClient = &http.Client{Transport: setup.Transport, Timeout: 5 * time.Second}
 
 	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
