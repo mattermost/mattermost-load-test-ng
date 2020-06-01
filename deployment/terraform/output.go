@@ -50,6 +50,14 @@ type Output struct {
 			PrivateDNS string `json:"private_dns"`
 		} `json:"value"`
 	} `json:"metricsServer"`
+	ElasticServer struct {
+		Value []struct {
+			Endpoint string `json:"endpoint"`
+			Tags     struct {
+				Name string `json:"Name"`
+			} `json:"tags"`
+		} `json:"value"`
+	} `json:"elasticServer"`
 	S3Bucket struct {
 		Value []struct {
 			Id     string `json:"id"`

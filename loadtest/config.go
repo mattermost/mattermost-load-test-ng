@@ -103,6 +103,7 @@ type InstanceConfiguration struct {
 	NumChannels       int
 	NumTeamAdmins     int
 	TeamAdminInterval int
+	ElasticSearch     bool
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.

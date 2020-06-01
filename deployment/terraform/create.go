@@ -80,10 +80,16 @@ func (t *Terraform) Create() error {
 
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
+		"-var", fmt.Sprintf("vpc=%s", t.config.VpcId),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
+		"-var", fmt.Sprintf("es_instance=%t", t.config.ESInstance),
+		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ESInstanceType),
+		"-var", fmt.Sprintf("es_version=%s", t.config.ESVersion),
+		"-var", fmt.Sprintf("es_ebs_type=%s", t.config.ESEBSType),
+		"-var", fmt.Sprintf("es_ebs_size=%d", t.config.ESEBSSize),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
@@ -337,6 +343,16 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 
 	cfg.PluginSettings.Enable = model.NewBool(true)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
+
+	if t.config.ESInstance {
+		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticServer.Value[0].Endpoint)
+		cfg.ElasticsearchSettings.Username = model.NewString("")
+		cfg.ElasticsearchSettings.Password = model.NewString("")
+		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
+		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
+		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
+		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {

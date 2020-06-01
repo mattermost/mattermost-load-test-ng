@@ -19,10 +19,16 @@ import (
 // to deploy and provision a load test environment.
 type Config struct {
 	ClusterName         string // Name of the cluster.
+	VpcId               string // Id of the VPC to be used
 	AppInstanceCount    int    // Number of application instances.
 	AppInstanceType     string // Type of the EC2 instance for app.
 	AgentInstanceCount  int    // Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceType   string // Type of the EC2 instance for agent.
+	ESInstance          bool   // Elasticsearch is going to be created
+	ESInstanceType      string // Elasticsearch type to be created
+	ESVersion           string // Elasticsearch version to be used
+	ESEBSType           string // Elasticsearch EBS type
+	ESEBSSize           int    // Elasticsearch EBS size in Gb
 	EnableAgentFullLogs bool   // Logs the command output (stdout & stderr) to home directory.
 	ProxyInstanceType   string // Type of the EC2 instance for proxy.
 	SSHPublicKey        string // Path to the SSH public key.
@@ -75,6 +81,10 @@ func (c *Config) IsValid() error {
 	}
 	if !strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
+	}
+
+	if c.ESInstance && c.VpcId == "" {
+		return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
 	}
 
 	return nil
