@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"reflect"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -67,9 +66,7 @@ func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	resp, err := t.transport.RoundTrip(req)
 	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
-	fmt.Println(reflect.TypeOf(err))
 	if os.IsTimeout(err) {
-		fmt.Println("TIMEOUT")
 		t.ue.incHTTPTimeouts()
 	}
 	if resp != nil && resp.StatusCode >= 400 {
@@ -100,7 +97,7 @@ func New(setup Setup, config Config) *UserEntity {
 			ue:        &ue,
 		}
 	}
-	ue.client.HttpClient = &http.Client{Transport: setup.Transport, Timeout: 5 * time.Second}
+	ue.client.HttpClient = &http.Client{Transport: setup.Transport}
 
 	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
