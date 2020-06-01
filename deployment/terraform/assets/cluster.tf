@@ -369,10 +369,11 @@ resource "aws_security_group" "agent" {
   }
 
   ingress {
-    from_port = 4000
-    to_port   = 4000
-    protocol  = "tcp"
-    self      = true
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    self            = true
+    security_groups = ["${aws_security_group.metrics.id}"]
   }
 
   ingress {
