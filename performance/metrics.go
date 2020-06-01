@@ -19,7 +19,7 @@ const (
 type UserEntityMetrics struct {
 	HTTPRequestTimes     prometheus.Histogram
 	HTTPErrors           *prometheus.CounterVec
-	HTTPTimeouts         prometheus.Counter
+	HTTPTimeouts         *prometheus.CounterVec
 	WebSocketConnections prometheus.Gauge
 }
 
@@ -46,16 +46,16 @@ func NewMetrics() *Metrics {
 		Name:      "errors_total",
 		Help:      "The total number of HTTP client errors.",
 	},
-		[]string{"path", "method", "status_code"},
-	)
+		[]string{"path", "method", "status_code"})
 	m.registry.MustRegister(m.ueMetrics.HTTPErrors)
 
-	m.ueMetrics.HTTPTimeouts = prometheus.NewCounter(prometheus.CounterOpts{
+	m.ueMetrics.HTTPTimeouts = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Subsystem: metricsSubSystemHTTP,
 		Name:      "timeouts_total",
 		Help:      "The total number of HTTP client timeouts.",
-	})
+	},
+		[]string{"path", "method"})
 	m.registry.MustRegister(m.ueMetrics.HTTPTimeouts)
 
 	m.ueMetrics.WebSocketConnections = prometheus.NewGauge(prometheus.GaugeOpts{

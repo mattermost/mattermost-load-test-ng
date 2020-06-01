@@ -37,8 +37,11 @@ func (ue *UserEntity) observeHTTPRequestTimes(elapsed float64) {
 	}
 }
 
-func (ue *UserEntity) incHTTPTimeouts() {
+func (ue *UserEntity) incHTTPTimeouts(path, method string) {
 	if ue.metrics != nil {
-		ue.metrics.HTTPTimeouts.Inc()
+		ue.metrics.HTTPTimeouts.With(prometheus.Labels{
+			"path":   path,
+			"method": method,
+		}).Inc()
 	}
 }
