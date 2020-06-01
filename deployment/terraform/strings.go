@@ -39,6 +39,9 @@ scrape_configs:
   - job_name: mattermost
     static_configs:
         - targets: [%s]
+  - job_name: loadtest
+    static_configs:
+        - targets: [%s]
 `
 
 const metricsHosts = `
