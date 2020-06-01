@@ -5,7 +5,6 @@ package userentity
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
