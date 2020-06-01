@@ -6,10 +6,13 @@ package userentity
 import (
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
-	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
+
+	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -25,6 +28,7 @@ type UserEntity struct {
 	wsTyping    chan userTypingMsg
 	connected   bool
 	config      Config
+	metrics     *performance.UserEntityMetrics
 }
 
 // Config holds necessary information required by a UserEntity.
@@ -41,9 +45,33 @@ type Config struct {
 	Password string
 }
 
+type Setup struct {
+	Store     store.MutableUserStore
+	Transport http.RoundTripper
+	Metrics   *performance.UserEntityMetrics
+}
+
 type userTypingMsg struct {
 	channelId string
 	parentId  string
+}
+
+type ueTransport struct {
+	transport http.RoundTripper
+	ue        *UserEntity
+}
+
+func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	startTime := time.Now()
+	resp, err := t.transport.RoundTrip(req)
+	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
+	if os.IsTimeout(err) {
+		t.ue.incHTTPTimeouts()
+	}
+	if resp != nil && resp.StatusCode >= 400 {
+		t.ue.incHTTPErrors(req.URL.Path, req.Method, resp.StatusCode)
+	}
+	return resp, err
 }
 
 // Store returns the underlying store of the user.
@@ -52,18 +80,25 @@ func (ue *UserEntity) Store() store.UserStore {
 }
 
 // New returns a new instance of a UserEntity.
-func New(store store.MutableUserStore, rt http.RoundTripper, config Config) *UserEntity {
-	ue := UserEntity{}
+func New(setup Setup, config Config) *UserEntity {
+	var ue UserEntity
 	ue.config = config
-	ue.client = model.NewAPIv4Client(ue.config.ServerURL)
-	if rt == nil {
-		rt = http.DefaultTransport
+	ue.store = setup.Store
+	ue.metrics = setup.Metrics
+	ue.client = model.NewAPIv4Client(config.ServerURL)
+
+	if setup.Transport == nil {
+		setup.Transport = http.DefaultTransport
 	}
-	ue.client.HttpClient = &http.Client{
-		Transport: rt,
-		Timeout:   5 * time.Second,
+	if setup.Metrics != nil {
+		setup.Transport = &ueTransport{
+			transport: setup.Transport,
+			ue:        &ue,
+		}
 	}
-	err := store.SetUser(&model.User{
+	ue.client.HttpClient = &http.Client{Transport: setup.Transport}
+
+	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
 		Email:    config.Email,
 		Password: config.Password,
@@ -71,7 +106,6 @@ func New(store store.MutableUserStore, rt http.RoundTripper, config Config) *Use
 	if err != nil {
 		return nil
 	}
-	ue.store = store
 
 	return &ue
 }

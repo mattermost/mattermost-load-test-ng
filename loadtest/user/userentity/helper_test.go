@@ -18,7 +18,7 @@ type TestHelper struct {
 	tb     testing.TB
 }
 
-func Setup(tb testing.TB) *TestHelper {
+func HelperSetup(tb testing.TB) *TestHelper {
 	var th TestHelper
 	th.tb = tb
 	config, err := loadtest.ReadConfig("../../../config/config.default.json")
@@ -42,7 +42,7 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	s, err := memstore.New(nil)
 	require.NotNil(th.tb, s)
 	require.NoError(th.tb, err)
-	u := New(s, nil, Config{
+	u := New(Setup{Store: s}, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,
 		"testuser",
@@ -53,12 +53,12 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	return u
 }
 
-func TestSetup(t *testing.T) {
-	th := Setup(t)
+func TestHelperSetup(t *testing.T) {
+	th := HelperSetup(t)
 	require.NotNil(t, th)
 }
 
 func TestInit(t *testing.T) {
-	th := Setup(t).Init()
+	th := HelperSetup(t).Init()
 	require.NotNil(t, th)
 }
