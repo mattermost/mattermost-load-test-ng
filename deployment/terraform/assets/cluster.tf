@@ -104,6 +104,9 @@ resource "aws_instance" "metrics_server" {
       "sudo dpkg -i grafana_6.6.2_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
+      "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
+      "sudo mkdir /opt/elasticsearch_exporter",
+      "sudo tar -zxvf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable grafana-server",
       "sudo service grafana-server start",
@@ -486,14 +489,14 @@ resource "aws_security_group" "elastic" {
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
   }
 
   egress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
   }
 
 }
