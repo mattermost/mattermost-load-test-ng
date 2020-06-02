@@ -80,7 +80,7 @@ func (t *Terraform) Create() error {
 
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
-		"-var", fmt.Sprintf("vpc=%s", t.config.VpcId),
+		"-var", fmt.Sprintf("vpc=%s", t.config.VpcID),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),

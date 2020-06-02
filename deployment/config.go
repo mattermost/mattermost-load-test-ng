@@ -19,7 +19,7 @@ import (
 // to deploy and provision a load test environment.
 type Config struct {
 	ClusterName         string // Name of the cluster.
-	VpcId               string // Id of the VPC to be used
+	VpcID               string // Id of the VPC to be used
 	AppInstanceCount    int    // Number of application instances.
 	AppInstanceType     string // Type of the EC2 instance for app.
 	AgentInstanceCount  int    // Number of agents, first agent and coordinator will share the same instance.
@@ -83,7 +83,7 @@ func (c *Config) IsValid() error {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
 	}
 
-	if c.ESInstance && c.VpcId == "" {
+	if c.ESInstance && c.VpcID == "" {
 		return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
 	}
 
