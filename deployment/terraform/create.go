@@ -397,6 +397,9 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(dir, "datasource.yaml")
 	assets.RestoreAssets(dir, "dashboard.yaml")
 	assets.RestoreAssets(dir, "dashboard_data.json")
+	if t.config.ESInstance {
+		assets.RestoreAssets(dir, "es_dashboard_data.json")
+	}
 
 	return t.runCommand(nil, "init", t.dir)
 }

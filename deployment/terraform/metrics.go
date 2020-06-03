@@ -128,6 +128,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
+	if t.config.ESInstance {
+		buf, err = ioutil.ReadFile(path.Join(t.dir, "es_dashboard_data.json"))
+		if err != nil {
+			return err
+		}
+		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/es_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading es_dashboard_json: output: %s, error: %w", out, err)
+		}
+	}
+
 	// Restart grafana
 	cmd = "sudo service grafana-server restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
