@@ -20,7 +20,7 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
-		"-var", fmt.Sprintf("es_instance=%t", t.config.ESInstance),
+		"-var", fmt.Sprintf("es_instance=%t", t.config.HasElasticSearch()),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),

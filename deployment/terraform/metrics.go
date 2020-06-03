@@ -50,7 +50,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		hosts += fmt.Sprintf("%s %s\n", output.Proxy.Value[0].PrivateIP, host)
 	}
 
-	if t.config.ESInstance {
+	if t.config.HasElasticSearch() {
 		esEndpoint := fmt.Sprintf("https://%s", output.ElasticServer.Value[0].Endpoint)
 		esTargets = append(esTargets, "'metrics:9114'")
 
@@ -128,7 +128,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
-	if t.config.ESInstance {
+	if t.config.HasElasticSearch() {
 		buf, err = ioutil.ReadFile(path.Join(t.dir, "es_dashboard_data.json"))
 		if err != nil {
 			return err

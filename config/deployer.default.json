@@ -5,11 +5,13 @@
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "t3.xlarge",
-  "ESInstance": false,
-  "ESInstanceType": "r4.large.elasticsearch",
-  "ESVersion": 6.5,
-  "ESEBSType": "gp2",
-  "ESEBSSize": 10,
+  "ElasticSearchSettings": {
+    "Enable": false,
+    "InstanceType": "r4.large.elasticsearch",
+    "Version": 6.5,
+    "EBSType": "gp2",
+    "EBSSize": 10
+  },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "m4.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",

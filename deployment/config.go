@@ -18,25 +18,21 @@ import (
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	ClusterName         string // Name of the cluster.
-	VpcID               string // Id of the VPC to be used
-	AppInstanceCount    int    // Number of application instances.
-	AppInstanceType     string // Type of the EC2 instance for app.
-	AgentInstanceCount  int    // Number of agents, first agent and coordinator will share the same instance.
-	AgentInstanceType   string // Type of the EC2 instance for agent.
-	ESInstance          bool   // Elasticsearch is going to be created
-	ESInstanceType      string // Elasticsearch type to be created
-	ESVersion           string // Elasticsearch version to be used
-	ESEBSType           string // Elasticsearch EBS type
-	ESEBSSize           int    // Elasticsearch EBS size in Gb
-	EnableAgentFullLogs bool   // Logs the command output (stdout & stderr) to home directory.
-	ProxyInstanceType   string // Type of the EC2 instance for proxy.
-	SSHPublicKey        string // Path to the SSH public key.
-	DBInstanceCount     int    // Number of DB instances.
-	DBInstanceType      string // Type of the DB instance.
-	DBInstanceEngine    string // Type of the DB instance - postgres or mysql.
-	DBUserName          string // Username to connect to the DB.
-	DBPassword          string // Password to connect to the DB.
+	ClusterName           string // Name of the cluster.
+	VpcID                 string // Id of the VPC to be used
+	AppInstanceCount      int    // Number of application instances.
+	AppInstanceType       string // Type of the EC2 instance for app.
+	AgentInstanceCount    int    // Number of agents, first agent and coordinator will share the same instance.
+	AgentInstanceType     string // Type of the EC2 instance for agent.
+	ElasticSearchSettings ElasticSearchSettings
+	EnableAgentFullLogs   bool   // Logs the command output (stdout & stderr) to home directory.
+	ProxyInstanceType     string // Type of the EC2 instance for proxy.
+	SSHPublicKey          string // Path to the SSH public key.
+	DBInstanceCount       int    // Number of DB instances.
+	DBInstanceType        string // Type of the DB instance.
+	DBInstanceEngine      string // Type of the DB instance - postgres or mysql.
+	DBUserName            string // Username to connect to the DB.
+	DBPassword            string // Password to connect to the DB.
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -52,6 +48,14 @@ type Config struct {
 	// the deployment process.
 	LoadTestDownloadURL string
 	LogSettings         logger.Settings
+}
+
+type ElasticSearchSettings struct {
+	Enable       bool   // Elasticsearch is going to be created
+	InstanceType string // Elasticsearch type to be created
+	Version      string // Elasticsearch version to be used
+	EBSType      string // Elasticsearch EBS type
+	EBSSize      int    // Elasticsearch EBS size in Gb
 }
 
 // IsValid reports whether a given deployment config is valid or not.
@@ -83,11 +87,15 @@ func (c *Config) IsValid() error {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
 	}
 
-	if c.ESInstance && c.VpcID == "" {
+	if c.HasElasticSearch() && c.VpcID == "" {
 		return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
 	}
 
 	return nil
+}
+
+func (c *Config) HasElasticSearch() bool {
+	return c.ElasticSearchSettings != ElasticSearchSettings{} && c.ElasticSearchSettings.Enable
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

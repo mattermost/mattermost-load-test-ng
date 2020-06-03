@@ -85,11 +85,11 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
-		"-var", fmt.Sprintf("es_instance=%t", t.config.ESInstance),
-		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ESInstanceType),
-		"-var", fmt.Sprintf("es_version=%s", t.config.ESVersion),
-		"-var", fmt.Sprintf("es_ebs_type=%s", t.config.ESEBSType),
-		"-var", fmt.Sprintf("es_ebs_size=%d", t.config.ESEBSSize),
+		"-var", fmt.Sprintf("es_instance=%t", t.config.HasElasticSearch()),
+		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
+		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
+		"-var", fmt.Sprintf("es_ebs_type=%s", t.config.ElasticSearchSettings.EBSType),
+		"-var", fmt.Sprintf("es_ebs_size=%d", t.config.ElasticSearchSettings.EBSSize),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
@@ -344,7 +344,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.PluginSettings.Enable = model.NewBool(true)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
 
-	if t.config.ESInstance {
+	if t.config.HasElasticSearch() {
 		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticServer.Value[0].Endpoint)
 		cfg.ElasticsearchSettings.Username = model.NewString("")
 		cfg.ElasticsearchSettings.Password = model.NewString("")
@@ -397,7 +397,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(dir, "datasource.yaml")
 	assets.RestoreAssets(dir, "dashboard.yaml")
 	assets.RestoreAssets(dir, "dashboard_data.json")
-	if t.config.ESInstance {
+	if t.config.HasElasticSearch() {
 		assets.RestoreAssets(dir, "es_dashboard_data.json")
 	}
 
