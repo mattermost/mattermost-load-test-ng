@@ -30,8 +30,7 @@
     "NumTeams": 2,
     "NumChannels": 10,
     "NumTeamAdmins": 2,
-    "TeamAdminInterval": 10,
-    "ElasticSearch": false
+    "TeamAdminInterval": 10
   },
   "UsersConfiguration": {
     "InitialActiveUsers": 0,
