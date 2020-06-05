@@ -6,6 +6,7 @@ package deployment
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/spf13/viper"
 )
+
+var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 
 // Config contains the necessary data
 // to deploy and provision a load test environment.
@@ -50,12 +53,13 @@ type Config struct {
 	LogSettings         logger.Settings
 }
 
+// ElasticSearchSettings contains the necessary data
+// to configure an ElasticSearch instance to be deployed
+// and provisioned.
 type ElasticSearchSettings struct {
-	Enable       bool   // Elasticsearch is going to be created
-	InstanceType string // Elasticsearch type to be created
-	Version      string // Elasticsearch version to be used
-	EBSType      string // Elasticsearch EBS type
-	EBSSize      int    // Elasticsearch EBS size in Gb
+	InstanceCount int    // Elasticsearch instances number.
+	InstanceType  string // Elasticsearch instance type to be created.
+	Version       string // Elasticsearch version to be deployed.
 }
 
 // IsValid reports whether a given deployment config is valid or not.
@@ -87,15 +91,33 @@ func (c *Config) IsValid() error {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
 	}
 
-	if c.HasElasticSearch() && c.VpcID == "" {
-		return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
+	if err := c.validateElasticSearchConfig(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *Config) HasElasticSearch() bool {
-	return c.ElasticSearchSettings != ElasticSearchSettings{} && c.ElasticSearchSettings.Enable
+func (c *Config) validateElasticSearchConfig() error {
+	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
+		if c.VpcID == "" {
+			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
+		}
+
+		if c.ElasticSearchSettings.InstanceCount > 1 {
+			return fmt.Errorf("is not possible to create more than 1 instance of Elasticsearch")
+		}
+
+		domainName := c.ClusterName + "-es"
+		if !esDomainNameRe.Match([]byte(domainName)) {
+			return fmt.Errorf("Elasticsearch domain name must start with a lowercase alphabet and be at least " +
+				"3 and no more than 28 characters long. Valid characters are a-z (lowercase letters), 0-9, and - " +
+				"(hyphen). Current value is \"" + domainName + "\"")
+		}
+
+	}
+
+	return nil
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

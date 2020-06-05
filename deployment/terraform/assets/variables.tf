@@ -2,7 +2,6 @@ variable "cluster_name" {
 }
 
 variable "vpc" {
-  type=string
 }
 
 variable "app_instance_count" {
@@ -19,29 +18,22 @@ variable "agent_instance_type" {
 
 # Elasticsearch variables
 
-variable "es_instance" {
-  type = bool
-  default = false
+variable "es_instance_count" {
 }
 
 variable "es_instance_type" {
-  type = string
-  default = "r4.large.elasticsearch"
 }
 
 variable "es_version" {
-  type = string
-  default = "6.5"
 }
 
-variable "es_ebs_type" {
-  type = string
-  default = "gp2"
-}
-
-variable "es_ebs_size" {
-  type = number
-  default = 10
+variable "es_ebs_options" {
+  default = [
+    {
+      volume_type = "gp2"
+      volume_size = 10
+    },
+  ]
 }
 
 variable "proxy_instance_type" {

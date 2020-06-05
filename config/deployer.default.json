@@ -6,11 +6,9 @@
   "AgentInstanceCount": 2,
   "AgentInstanceType": "t3.xlarge",
   "ElasticSearchSettings": {
-    "Enable": false,
+    "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",
-    "Version": 6.5,
-    "EBSType": "gp2",
-    "EBSSize": 10
+    "Version": 6.5
   },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "m4.xlarge",

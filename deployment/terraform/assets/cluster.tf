@@ -177,10 +177,13 @@ resource "aws_elasticsearch_domain" "es_server" {
     security_group_ids = ["${aws_security_group.elastic.id}"]
   }
 
-  ebs_options {
-    ebs_enabled = true
-    volume_type = var.es_ebs_type
-    volume_size = var.es_ebs_size
+  dynamic "ebs_options" {
+    for_each = var.es_ebs_options
+    content {
+      ebs_enabled = true
+      volume_type = lookup(ebs_options.value, "volume_type", "gp2")
+      volume_size = lookup(ebs_options.value, "volume_size", 10)
+    }
   }
 
   cluster_config {
@@ -205,7 +208,7 @@ resource "aws_elasticsearch_domain" "es_server" {
     aws_iam_service_linked_role.es,
   ]
 
-  count = var.es_instance ? 1 : 0
+  count = var.es_instance_count
 }
 
 
