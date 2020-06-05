@@ -142,8 +142,8 @@ func TestSplitName(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		ePrefix, eTyped := splitName(tc.input)
-		require.Equal(t, tc.prefix, ePrefix)
-		require.Equal(t, tc.typed, eTyped)
+		prefix, typed := splitName(tc.input)
+		require.Equal(t, tc.prefix, prefix)
+		require.Equal(t, tc.typed, typed)
 	}
 }
