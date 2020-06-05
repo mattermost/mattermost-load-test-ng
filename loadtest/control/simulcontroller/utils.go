@@ -61,10 +61,10 @@ func splitName(name string) (string, string) {
 }
 
 func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
-	cutoff := 2 + rand.Intn(len(name)/2)
 	found := errors.New("found") // will be used to halt emulate typing function
 
 	prefix, typed := splitName(name)
+	cutoff := len(prefix) + rand.Intn(len(typed)/2) + 2
 	resp := control.EmulateUserTyping(typed, func(term string) control.UserActionResponse {
 		term = prefix + term
 		users, err := auto(teamId, channelId, term, 100)
