@@ -4,10 +4,14 @@
 package user
 
 import (
+	"regexp"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
+
+var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
 
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.

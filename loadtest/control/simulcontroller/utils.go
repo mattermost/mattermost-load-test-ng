@@ -7,11 +7,11 @@ import (
 	"errors"
 	"math"
 	"math/rand"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
 // pickAction randomly selects an action from a slice of userAction with
@@ -50,8 +50,7 @@ func genMessage(isReply bool) string {
 }
 
 func splitName(name string) (string, string) {
-	reSplit := regexp.MustCompile(`\d+$`)
-	typed := reSplit.FindString(name)
+	typed := user.TestUserSuffixRegexp.FindString(name)
 	var prefix string
 	if typed == "" {
 		typed = name
