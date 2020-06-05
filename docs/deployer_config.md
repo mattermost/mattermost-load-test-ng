@@ -137,7 +137,6 @@ The password that will be used when creating a sysadmin user during the deployme
 
 The URL from where to download load-test-ng binaries. This can also point to a local package if the user wants to run a load-test with a custom version of load-test-ng binaries. The path should be prefixed with `file://` to use the local package. Either case the configuration files in the package will be updated in the deployment process.
 
-
 ## LogSettings
 
 ### EnableConsole
