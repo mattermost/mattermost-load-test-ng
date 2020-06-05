@@ -122,13 +122,13 @@ func TestSplitName(t *testing.T) {
 		},
 		{
 			input:  "testuser999",
-			prefix: "",
-			typed:  "testuser999",
+			prefix: "testuser",
+			typed:  "999",
 		},
 		{
-			input:  "téstüser-999",
-			prefix: "",
-			typed:  "téstüser-999",
+			input:  "téstüser999",
+			prefix: "téstüser",
+			typed:  "999",
 		},
 		{
 			input:  "testuser",
@@ -137,8 +137,8 @@ func TestSplitName(t *testing.T) {
 		},
 		{
 			input:  "testuser-100a",
-			prefix: "testuser-",
-			typed:  "100a",
+			prefix: "",
+			typed:  "testuser-100a",
 		},
 	}
 	for _, tc := range testCases {

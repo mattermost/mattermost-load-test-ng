@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,11 +50,15 @@ func genMessage(isReply bool) string {
 }
 
 func splitName(name string) (string, string) {
+	reSplit := regexp.MustCompile(`\d+$`)
+	typed := reSplit.FindString(name)
 	var prefix string
-	if strings.HasPrefix(name, "testuser-") {
-		prefix = "testuser-"
+	if typed == "" {
+		typed = name
+	} else {
+		prefix = strings.TrimSuffix(name, typed)
 	}
-	return prefix, strings.TrimPrefix(name, prefix)
+	return prefix, typed
 }
 
 func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
