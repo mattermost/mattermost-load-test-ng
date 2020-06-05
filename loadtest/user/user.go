@@ -11,6 +11,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// TestUserSuffixRegexp matches the numerical suffix of test usernames,
+// which are assumed to be in this format.
 var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
 
 // User provides a wrapper interface to interact with the Mattermost server
