@@ -47,10 +47,10 @@ func TestAPI(t *testing.T) {
 	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
-	ucConfig1, err := simplecontroller.ReadConfig("../config/simplecontroller.default.json")
+	ucConfig1, err := simplecontroller.ReadConfig("../config/simplecontroller.sample.json")
 	require.NoError(t, err)
 
-	ucConfig2, err := simulcontroller.ReadConfig("../config/simulcontroller.default.json")
+	ucConfig2, err := simulcontroller.ReadConfig("../config/simulcontroller.sample.json")
 	require.NoError(t, err)
 
 	t.Run("test with loadtest.Config only", func(t *testing.T) {

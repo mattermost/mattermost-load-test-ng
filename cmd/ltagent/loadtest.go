@@ -134,8 +134,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	}
 	if rate != 1.0 {
 		config.UserControllerConfiguration.RatesDistribution = []struct {
-			Rate       float64
-			Percentage float64
+			Rate       float64 `default:"1.0" validate:"range:(0,)"`
+			Percentage float64 `default:"1.0" validate:"range:(0,100]"`
 		}{
 			{
 				Rate:       rate,

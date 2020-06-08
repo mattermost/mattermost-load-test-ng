@@ -21,7 +21,7 @@ type TestHelper struct {
 func HelperSetup(tb testing.TB) *TestHelper {
 	var th TestHelper
 	th.tb = tb
-	config, err := loadtest.ReadConfig("../../../config/config.default.json")
+	config, err := loadtest.ReadConfig("../../../config/config.sample.json")
 	require.Nil(th.tb, err)
 	require.NotNil(th.tb, config)
 	th.config = config
