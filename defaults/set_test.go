@@ -38,6 +38,7 @@ func TestSet(t *testing.T) {
 	t.Run("should be able to set default values", func(t *testing.T) {
 		cfg := struct {
 			String        string  `default:"text"`
+			StringNumeric string  `default:"123"`
 			Integer       int     `default:"2"`
 			Float64       float64 `default:"0.2"`
 			Bool          bool    `default:"true"`
@@ -52,11 +53,21 @@ func TestSet(t *testing.T) {
 		err := Set(&cfg)
 		require.NoError(t, err)
 		assert.Equal(t, "text", cfg.String)
+		assert.Equal(t, "123", cfg.StringNumeric)
 		assert.Equal(t, 2, cfg.Integer)
 		assert.Equal(t, 0.2, cfg.Float64)
 		assert.Equal(t, true, cfg.Bool)
 		assert.Equal(t, "text", cfg.AnotherStruct[2].String)
 		assert.Equal(t, "text_other", cfg.YetAnotherStruct.String)
+	})
+
+	t.Run("should fail on wrong default types", func(t *testing.T) {
+		cfg := struct {
+			Number int `default:"test"`
+		}{}
+
+		err := Set(&cfg)
+		require.Error(t, err)
 	})
 
 	t.Run("should not fail for private fields", func(t *testing.T) {

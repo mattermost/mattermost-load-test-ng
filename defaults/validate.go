@@ -96,7 +96,10 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			return fmt.Errorf("%s: %w", fieldName, err)
 		}
 	default:
-		if rangeRegex.MatchString(validation) {
+		if strings.HasPrefix(validation, "range") {
+			if !rangeRegex.MatchString(validation) {
+				return errors.New("invalid range declaration")
+			}
 			matches := rangeRegex.FindStringSubmatch(validation)
 			mins, err := validateFromField(p, matches[2])
 			if err != nil {
@@ -109,7 +112,10 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			if err := validateFromRange(v, mins, maxs, matches[1], matches[4]); err != nil {
 				return fmt.Errorf("%s is not in the range of %s: %w", fieldName, validation, err)
 			}
-		} else if oneofRegex.MatchString(validation) {
+		} else if strings.HasPrefix(validation, "oneof") {
+			if !oneofRegex.MatchString(validation) {
+				return errors.New("ivalid oneof declaration")
+			}
 			valids := oneofRegex.FindStringSubmatch(validation)[2]
 			if err := validateFromOneofValues(v, strings.Split(valids, ",")); err != nil {
 				return fmt.Errorf("%s is not valid: %w", fieldName, err)

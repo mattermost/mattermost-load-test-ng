@@ -82,7 +82,7 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("call is valid method", func(t *testing.T) {
+	t.Run("call IsValid method", func(t *testing.T) {
 		var cfg testConfig
 
 		err := Set(&cfg)
@@ -90,6 +90,39 @@ func TestValidate(t *testing.T) {
 
 		err = Validate(&cfg)
 		require.Error(t, err)
+	})
+
+	t.Run("invalid struct tags", func(t *testing.T) {
+		type missingColonConfig struct {
+			InitialUsers int `default:"0" validate:"oneof:{test,text}"`
+		}
+
+		var cfg1 missingColonConfig
+		Set(&cfg1)
+
+		err := Validate(cfg1)
+		require.Error(t, err, "should fail on missing colon")
+
+		type invalidField struct {
+			Name         string `default:"test" validate:"notempty"`
+			InitialUsers int    `default:"0" validate:"range:[0,$Name]"`
+		}
+
+		var cfg2 invalidField
+		Set(&cfg2)
+
+		err = Validate(cfg2)
+		require.Error(t, err, "should fail on wrong type")
+
+		type invalidRange struct {
+			InitialUsers int `default:"-1" validate:"range:[,(0,123),]"`
+		}
+
+		var cfg3 invalidRange
+		Set(&cfg3)
+
+		err = Validate(cfg3)
+		require.Error(t, err, "should fail on wrong range declaration")
 	})
 }
 
