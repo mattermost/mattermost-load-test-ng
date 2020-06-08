@@ -147,3 +147,39 @@ func TestSplitName(t *testing.T) {
 		require.Equal(t, tc.typed, typed)
 	}
 }
+
+func TestGetCutoff(t *testing.T) {
+	testCases := []struct {
+		prefix, typed string
+		cutoff        int
+	}{
+		{
+			prefix: "testuser-",
+			typed:  "1",
+			cutoff: 11,
+		},
+		{
+			prefix: "testuser",
+			typed:  "999",
+			cutoff: 10,
+		},
+		{
+			prefix: "téstüser",
+			typed:  "999",
+			cutoff: 12,
+		},
+		{
+			prefix: "",
+			typed:  "testuser",
+			cutoff: 3,
+		},
+		{
+			prefix: "",
+			typed:  "testuser-100a",
+			cutoff: 7,
+		},
+	}
+	for _, tc := range testCases {
+		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, 1)) // seed is constant for deterministic random numbers for tests
+	}
+}

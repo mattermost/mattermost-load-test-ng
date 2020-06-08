@@ -60,11 +60,22 @@ func splitName(name string) (string, string) {
 	return prefix, typed
 }
 
+func getCutoff(prefix, typed string, seed ...int64) int {
+	if len(seed) > 0 { // for deterministic test output
+		rand.Seed(seed[0])
+	}
+	cutoff := len(prefix) + 2
+	if len(typed)/2 > 0 {
+		cutoff += rand.Intn(len(typed) / 2)
+	}
+	return cutoff
+}
+
 func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
 	found := errors.New("found") // will be used to halt emulate typing function
 
 	prefix, typed := splitName(name)
-	cutoff := len(prefix) + rand.Intn(len(typed)/2) + 2
+	cutoff := getCutoff(prefix, typed)
 	resp := control.EmulateUserTyping(typed, func(term string) control.UserActionResponse {
 		term = prefix + term
 		users, err := auto(teamId, channelId, term, 100)
