@@ -50,6 +50,14 @@ type Output struct {
 			PrivateDNS string `json:"private_dns"`
 		} `json:"value"`
 	} `json:"metricsServer"`
+	ElasticServer struct {
+		Value []struct {
+			Endpoint string `json:"endpoint"`
+			Tags     struct {
+				Name string `json:"Name"`
+			} `json:"tags"`
+		} `json:"value"`
+	} `json:"elasticServer"`
 	S3Bucket struct {
 		Value []struct {
 			Id     string `json:"id"`
@@ -67,6 +75,11 @@ type Output struct {
 // HasProxy returns whether a deployment has proxy installed in it or not.
 func (o *Output) HasProxy() bool {
 	return len(o.Proxy.Value) > 0
+}
+
+//HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
+func (o *Output) HasElasticSearch() bool {
+	return len(o.ElasticServer.Value) > 0
 }
 
 // IsEmpty returns whether a deployment has some data or not.

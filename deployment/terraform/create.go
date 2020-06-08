@@ -80,10 +80,14 @@ func (t *Terraform) Create() error {
 
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
+		"-var", fmt.Sprintf("vpc=%s", t.config.VpcID),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
+		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
+		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
+		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
@@ -338,6 +342,16 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.PluginSettings.Enable = model.NewBool(true)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
 
+	if output.HasElasticSearch() {
+		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticServer.Value[0].Endpoint)
+		cfg.ElasticsearchSettings.Username = model.NewString("")
+		cfg.ElasticsearchSettings.Password = model.NewString("")
+		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
+		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
+		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
+		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+	}
+
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in marshalling config: %w", err)
@@ -381,6 +395,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(dir, "datasource.yaml")
 	assets.RestoreAssets(dir, "dashboard.yaml")
 	assets.RestoreAssets(dir, "dashboard_data.json")
+	assets.RestoreAssets(dir, "es_dashboard_data.json")
 
 	return t.runCommand(nil, "init", t.dir)
 }
