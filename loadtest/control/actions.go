@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -39,8 +40,10 @@ func SignUp(u user.User) UserActionResponse {
 	username := u.Store().Username()
 	password := u.Store().Password()
 
-	err := u.SignUp(email, username, password)
-	if err != nil {
+	if err := u.SignUp(email, username, password); err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
+		}
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 

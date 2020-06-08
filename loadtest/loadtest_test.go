@@ -25,7 +25,6 @@ var ltConfig = Config{
 	},
 	UserControllerConfiguration: UserControllerConfiguration{
 		Type: "simple",
-		Rate: 1.0,
 	},
 	UsersConfiguration: UsersConfiguration{
 		MaxActiveUsers:     8,

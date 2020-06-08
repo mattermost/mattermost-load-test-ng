@@ -16,359 +16,9 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1589376916191,
+  "iteration": 1589979177598,
   "links": [],
   "panels": [
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "hiddenSeries": false,
-      "id": 19,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(mattermost_db_store_time_count{method=~\"$top_db_count\"}[$__range])) by (method)",
-          "legendFormat": "{{method}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Top Store Calls by Count",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "hiddenSeries": false,
-      "id": 17,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(mattermost_api_time_count{handler=~\"$top_api_count\"}[$__range])) by (handler)",
-          "intervalFactor": 1,
-          "legendFormat": "{{handler}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Top API Calls by Count",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 30,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(mattermost_db_store_time_sum{method=~\"$top_db_count\"}[$__range])) by (method) / sum(increase(mattermost_db_store_time_count{method=~\"$top_db_count\"}[$__range])) by (method)",
-          "legendFormat": "{{ method }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Top Store Calls by Duration",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 31,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(mattermost_api_time_sum{handler=~\"$top_api_count\"}[$__range])) by (handler) / sum(increase(mattermost_api_time_count{handler=~\"$top_api_count\"}[$__range])) by (handler)",
-          "legendFormat": "{{ handler }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Top API Calls by Duration",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
     {
       "aliasColors": {},
       "bars": false,
@@ -383,7 +33,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 0
       },
       "hiddenSeries": false,
       "id": 7,
@@ -487,7 +137,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 0
       },
       "hiddenSeries": false,
       "id": 10,
@@ -591,7 +241,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 6,
@@ -694,7 +344,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 1,
@@ -798,7 +448,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 11,
@@ -901,7 +551,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 5,
@@ -1016,7 +666,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 13,
@@ -1110,7 +760,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 4,
@@ -1213,7 +863,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 54
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 21,
@@ -1322,7 +972,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 54
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 23,
@@ -1419,7 +1069,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 45
       },
       "hiddenSeries": false,
       "id": 25,
@@ -1517,7 +1167,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 45
       },
       "hiddenSeries": false,
       "id": 27,
@@ -1628,9 +1278,7 @@
         "allValue": null,
         "current": {
           "text": "",
-          "value": [
-            ""
-          ]
+          "value": []
         },
         "datasource": "loadtest-source",
         "definition": "label_values(instance)",
@@ -1643,60 +1291,6 @@
         "query": "label_values(instance)",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": null,
-        "tags": [],
-        "tagsQuery": null,
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": null,
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": "loadtest-source",
-        "definition": "query_result(topk(10, sum(increase(mattermost_api_time_count[${__range_s}s])) by (handler)))",
-        "hide": 0,
-        "includeAll": true,
-        "label": null,
-        "multi": true,
-        "name": "top_api_count",
-        "options": [],
-        "query": "query_result(topk(10, sum(increase(mattermost_api_time_count[${__range_s}s])) by (handler)))",
-        "refresh": 1,
-        "regex": ".*handler=\"(.*?)\".*",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": null,
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": "loadtest-source",
-        "definition": "query_result(topk(10, sum(increase(mattermost_db_store_time_count[5m])) by (method)))",
-        "hide": 0,
-        "includeAll": true,
-        "label": null,
-        "multi": true,
-        "name": "top_db_count",
-        "options": [],
-        "query": "query_result(topk(10, sum(increase(mattermost_db_store_time_count[5m])) by (method)))",
-        "refresh": 1,
-        "regex": ".*method=\"(.*?)\".*",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
@@ -1739,5 +1333,5 @@
   "timezone": "browser",
   "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 9
+  "version": 3
 }

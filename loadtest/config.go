@@ -5,6 +5,7 @@ package loadtest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -27,6 +28,7 @@ const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 	UserControllerNoop                          = "noop"
+	UserControllerCluster                       = "cluster"
 )
 
 // UserControllerConfiguration holds information about the UserController to
@@ -36,13 +38,29 @@ type UserControllerConfiguration struct {
 	// Possible values:
 	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
-	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop}"`
 	// A rate multiplier that will affect the speed at which user actions are
+	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop,cluster}"`
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
-	Rate float64 `default:"1.0" validate:"range:(0,)"`
+	RatesDistribution []struct {
+		Rate       float64 `default:"1.0" validate:"range:(0,)"`
+		Percentage float64 `default:"1.0" validate:"range:(0,100]"`
+	} `default_len:"1"`
+}
+
+// IsValid reports whether a given UserControllerConfiguration is valid or not.
+// Returns an error if the validation fails.
+func (ucc *UserControllerConfiguration) IsValid() error {
+	var sum float64
+	for _, el := range ucc.RatesDistribution {
+		sum += el.Percentage
+	}
+	if len(ucc.RatesDistribution) > 0 && sum != 1 {
+		return errors.New("Percentages in RatesDistribution should sum to 1")
+	}
+	return nil
 }
 
 type InstanceConfiguration struct {

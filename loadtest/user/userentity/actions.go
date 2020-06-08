@@ -5,6 +5,8 @@ package userentity
 
 import (
 	"errors"
+	"io"
+	"io/ioutil"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -223,15 +225,15 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 }
 
 func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
-	postlist, resp := ue.client.GetPostsSince(channelId, time)
+	postList, resp := ue.client.GetPostsSince(channelId, time)
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
-	if len(postlist.Posts) == 0 {
+	if len(postList.Posts) == 0 {
 		return nil, nil
 	}
 
-	return postlist.Order, ue.store.SetPosts(postsMapToSlice(postlist.Posts))
+	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
 func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) {
@@ -253,8 +255,11 @@ func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, li
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
+	if len(postList.Posts) == 0 {
+		return nil, nil
+	}
 
-	return postList.Order, ue.store.SetPosts(postsMapToSlice(postList.Posts))
+	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
 func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
@@ -739,6 +744,9 @@ func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username str
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
+	if users == nil {
+		return nil, errors.New("nil users")
+	}
 	usersMap := make(map[string]bool, len(users.Users)+len(users.OutOfChannel))
 	for _, u := range users.Users {
 		usersMap[u.Username] = true
@@ -874,4 +882,65 @@ func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
 
 func (ue *UserEntity) ClearUserData() {
 	ue.store.Clear()
+}
+
+// GetLogs fetches the logs.
+func (ue *UserEntity) GetLogs(page, perPage int) error {
+	_, resp := ue.client.GetLogs(page, perPage)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+// GetAnalytics fetches the system analytics.
+func (ue *UserEntity) GetAnalytics() error {
+	_, resp := ue.client.GetAnalyticsOld("", "")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+// GetClusterStatus fetches the cluster status.
+func (ue *UserEntity) GetClusterStatus() error {
+	_, resp := ue.client.GetClusterStatus()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
+// GetPluginStatuses fetches the plugin statuses.
+func (ue *UserEntity) GetPluginStatuses() error {
+	// Need to do it manually until MM-25405 is resolved.
+	_, resp := ue.getPluginStatuses()
+	if resp.Error != nil {
+		return resp.Error
+	}
+
+	return nil
+}
+
+// UpdateConfig updates the config with cfg.
+func (ue *UserEntity) UpdateConfig(cfg *model.Config) error {
+	cfg, resp := ue.client.UpdateConfig(cfg)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	ue.store.SetConfig(cfg)
+	return nil
+}
+
+func (ue *UserEntity) getPluginStatuses() (model.PluginStatuses, *model.Response) {
+	r, err := ue.client.DoApiGet(ue.client.GetPluginsRoute()+"/statuses", "")
+	if err != nil {
+		return nil, model.BuildErrorResponse(r, err)
+	}
+	defer func() {
+		_, _ = io.Copy(ioutil.Discard, r.Body)
+		_ = r.Body.Close()
+	}()
+	return model.PluginStatusesFromJson(r.Body), model.BuildResponse(r)
 }
