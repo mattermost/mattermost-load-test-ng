@@ -18,6 +18,10 @@ output "proxy" {
   value = "${aws_instance.proxy_server}"
 }
 
+output "elasticServer" {
+  value = "${aws_elasticsearch_domain.es_server}"
+}
+
 output "s3bucket" {
     value = "${aws_s3_bucket.s3bucket}"
 }

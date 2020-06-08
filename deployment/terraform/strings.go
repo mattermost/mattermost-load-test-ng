@@ -39,6 +39,9 @@ scrape_configs:
   - job_name: mattermost
     static_configs:
         - targets: [%s]
+  - job_name: elasticsearch
+    static_configs:
+        - targets: [%s]
   - job_name: loadtest
     static_configs:
         - targets: [%s]
@@ -202,6 +205,24 @@ ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltcoordinator
 Restart=always
 RestartSec=1
 WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const esExporterServiceFile = `
+[Unit]
+Description=Elasticsearch prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/elasticsearch_exporter
 User=ubuntu
 Group=ubuntu
 

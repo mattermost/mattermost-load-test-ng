@@ -110,3 +110,40 @@ func TestPickAction(t *testing.T) {
 		require.Greater(t, res[1], res[3])
 	})
 }
+
+func TestSplitName(t *testing.T) {
+	testCases := []struct {
+		input, prefix, typed string
+	}{
+		{
+			input:  "testuser-1",
+			prefix: "testuser-",
+			typed:  "1",
+		},
+		{
+			input:  "testuser999",
+			prefix: "testuser",
+			typed:  "999",
+		},
+		{
+			input:  "téstüser999",
+			prefix: "téstüser",
+			typed:  "999",
+		},
+		{
+			input:  "testuser",
+			prefix: "",
+			typed:  "testuser",
+		},
+		{
+			input:  "testuser-100a",
+			prefix: "",
+			typed:  "testuser-100a",
+		},
+	}
+	for _, tc := range testCases {
+		prefix, typed := splitName(tc.input)
+		require.Equal(t, tc.prefix, prefix)
+		require.Equal(t, tc.typed, typed)
+	}
+}
