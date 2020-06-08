@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -81,4 +82,21 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("call is valid method", func(t *testing.T) {
+		var cfg testConfig
+
+		err := Set(&cfg)
+		require.NoError(t, err)
+
+		err = Validate(&cfg)
+		require.Error(t, err)
+	})
+}
+
+type testConfig struct {
+	Name string `default:"test" validate:"notempty"`
+}
+
+func (c *testConfig) IsValid() error {
+	return errors.New("some error")
 }

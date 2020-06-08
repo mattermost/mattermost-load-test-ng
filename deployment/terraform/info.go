@@ -46,5 +46,8 @@ func (t *Terraform) displayInfo(output *Output) {
 	fmt.Println("Prometheus URL: http://" + output.MetricsServer.Value.PublicIP + ":9090")
 	fmt.Println("DB reader endpoint: " + output.DBCluster.Value.ReaderEndpoint)
 	fmt.Println("DB cluster endpoint: " + output.DBCluster.Value.ClusterEndpoint)
+	if output.HasElasticSearch() {
+		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticServer.Value[0].Endpoint)
+	}
 	fmt.Println("==================================================")
 }

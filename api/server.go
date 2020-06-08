@@ -20,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -27,7 +28,8 @@ import (
 
 // API contains information about all load tests.
 type API struct {
-	agents map[string]*loadtest.LoadTester
+	agents  map[string]*loadtest.LoadTester
+	metrics *performance.Metrics
 }
 
 // Response contains the data returned by the HTTP server.
@@ -116,6 +118,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		MaxConnsPerHost:       500,
 		MaxIdleConns:          500,
 		MaxIdleConnsPerHost:   500,
+		ResponseHeaderTimeout: 5 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -138,7 +141,12 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, transport, ueConfig)
+		ueSetup := userentity.Setup{
+			Store:     store,
+			Transport: transport,
+			Metrics:   a.metrics.UserEntityMetrics(),
+		}
+		ue := userentity.New(ueSetup, ueConfig)
 		switch ltConfig.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
@@ -316,23 +324,28 @@ func SetupAPIRouter() *mux.Router {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadagent").Subrouter()
 
-	agent := API{agents: make(map[string]*loadtest.LoadTester)}
-	r.HandleFunc("/create", agent.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
-	// TODO: add a middleware which refactors getLoadAgentById and passes the load test
-	// in a request context.
-	r.HandleFunc("/{id}/run", agent.runLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/stop", agent.stopLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}", agent.destroyLoadAgentHandler).Methods("DELETE")
-	r.HandleFunc("/{id}", agent.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/status", agent.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/addusers", agent.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
-	r.HandleFunc("/{id}/removeusers", agent.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	api := API{
+		agents:  make(map[string]*loadtest.LoadTester),
+		metrics: performance.NewMetrics(),
+	}
+	r.HandleFunc("/create", api.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
+	r.HandleFunc("/{id}/run", api.runLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}/stop", api.stopLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}", api.destroyLoadAgentHandler).Methods("DELETE")
+	r.HandleFunc("/{id}", api.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/status", api.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/addusers", api.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/removeusers", api.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 
 	// Add profile endpoints
 	p := router.PathPrefix("/debug/pprof").Subrouter()
-	p.HandleFunc("/", agent.pprofIndexHandler).Methods("GET")
+	p.HandleFunc("/", api.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
+
+	// Add metrics endpoint
+	router.Handle("/metrics", api.metrics.Handler())
+
 	return router
 }

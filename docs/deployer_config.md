@@ -6,6 +6,12 @@
 
 The name of the cluster. This will be prefixed to all resources in AWS that are built with the configuration.
 
+## VpcID
+
+*string*
+
+Id used to retrieve the subnets to be used. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/)
+
 ## AppInstanceCount
 
 *int*
@@ -29,6 +35,23 @@ The number of load-test agent instances. The first instance will also host the [
 *string*
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
+## ElasticSearchSettings
+
+### InstancesCount
+
+*int*
+
+Number of the instances to be created. Right now only support 1 o 0 values.
+
+### InstanceType
+
+The type of instance of the elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+
+### Version
+
+Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
+
 
 ## EnableAgentFullLogs
 

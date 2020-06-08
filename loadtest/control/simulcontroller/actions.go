@@ -6,7 +6,6 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -120,12 +119,10 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 
 		c.status <- c.newErrorStatus(resp.Err)
 
-		idleTimeMs := time.Duration(math.Round(1000 * c.rate))
-
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "login canceled"}
-		case <-time.After(idleTimeMs * time.Millisecond):
+		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
 		}
 	}
 }
@@ -221,14 +218,14 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.SetCurrentTeam(&team); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
 	if resp := loadTeam(u, &team); resp.Err != nil {
 		return resp
+	}
+
+	if err := u.SetCurrentTeam(&team); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	// We should probably keep track of the last channel viewed in the team but
@@ -385,10 +382,6 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.SetCurrentChannel(channel); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	return control.UserActionResponse{Info: fmt.Sprintf("viewed channel %s", channel.Id)}
 }
 
@@ -407,6 +400,10 @@ func switchChannel(u user.User) control.UserActionResponse {
 
 	if resp := viewChannel(u, &channel); resp.Err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
+	}
+
+	if err := u.SetCurrentChannel(&channel); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}

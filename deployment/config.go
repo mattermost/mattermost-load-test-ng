@@ -7,16 +7,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
+
+var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
+	// VpcID is the Id of the VPC to be used
+	VpcID string `default:""`
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[1,)"`
 	// Type of the EC2 instance for app.
@@ -58,8 +63,51 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz" validate:"url"`
-	LogSettings         logger.Settings
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz" validate:"url"`
+	ElasticSearchSettings ElasticSearchSettings
+	LogSettings           logger.Settings
+}
+
+// ElasticSearchSettings contains the necessary data
+// to configure an ElasticSearch instance to be deployed
+// and provisioned.
+type ElasticSearchSettings struct {
+	// Elasticsearch instances number.
+	InstanceCount int
+	// Elasticsearch instance type to be created.
+	InstanceType string
+	// Elasticsearch version to be deployed.
+	Version string
+}
+
+// IsValid reports whether a given deployment config is valid or not.
+func (c *Config) IsValid() error {
+	if err := c.validateElasticSearchConfig(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Config) validateElasticSearchConfig() error {
+	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
+		if c.VpcID == "" {
+			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
+		}
+
+		if c.ElasticSearchSettings.InstanceCount > 1 {
+			return fmt.Errorf("is not possible to create more than 1 instance of Elasticsearch")
+		}
+
+		domainName := c.ClusterName + "-es"
+		if !esDomainNameRe.Match([]byte(domainName)) {
+			return fmt.Errorf("Elasticsearch domain name must start with a lowercase alphabet and be at least " +
+				"3 and no more than 28 characters long. Valid characters are a-z (lowercase letters), 0-9, and - " +
+				"(hyphen). Current value is \"" + domainName + "\"")
+		}
+
+	}
+
+	return nil
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

@@ -23,6 +23,15 @@ func Validate(value interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
 
+	m := reflect.ValueOf(value).MethodByName("IsValid")
+	if m.IsValid() {
+		e := m.Call([]reflect.Value{})
+		err, ok := e[0].Interface().(error)
+		if ok && err != nil {
+			return err
+		}
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		switch field.Type().Kind() {

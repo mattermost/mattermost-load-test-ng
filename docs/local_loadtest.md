@@ -53,7 +53,7 @@ Running this command will create initial teams and channels for the users to joi
 A new load-test can be started with the following command:
 
 ```sh
-go run ./cmd/ltagent -c config/config.json -s config/simplecontroller.json -d 60
+go run ./cmd/ltagent -c config/config.json --controller-config config/simplecontroller.json -d 60
 ```
 
 This will run a load-test with the given configs for 60 seconds.
