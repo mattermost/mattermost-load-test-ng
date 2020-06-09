@@ -159,6 +159,7 @@ resource "aws_instance" "proxy_server" {
 }
 
 resource "aws_iam_service_linked_role" "es" {
+  count = var.es_instance_count && var.es_create_role ? 1 : 0
   aws_service_name = "es.amazonaws.com"
 }
 

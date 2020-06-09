@@ -60,6 +60,7 @@ type ElasticSearchSettings struct {
 	InstanceCount int    // Elasticsearch instances number.
 	InstanceType  string // Elasticsearch instance type to be created.
 	Version       string // Elasticsearch version to be deployed.
+	CreateRole    bool   // Whether it should create the AWSServiceRoleForAmazonElasticsearchService role
 }
 
 // IsValid reports whether a given deployment config is valid or not.

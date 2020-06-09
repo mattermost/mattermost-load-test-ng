@@ -27,6 +27,9 @@ variable "es_instance_type" {
 variable "es_version" {
 }
 
+variable "es_create_role" {
+}
+
 variable "es_ebs_options" {
   default = [
     {

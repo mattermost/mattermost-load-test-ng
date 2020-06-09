@@ -46,12 +46,23 @@ Number of the instances to be created. Right now only support 1 o 0 values.
 
 ### InstanceType
 
+*string*
+
 The type of instance of the elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
 
 ### Version
 
+*string*
+
 Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
 
+### CreateRole
+
+*bool*
+
+Elasticsearch depends on the AWSServiceRoleForAmazonElasticsearchService service-linked role. This role is unique and shares across all the account so if is already created you can't create it again and you'll receive an error.
+
+You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if is not created set this property as true
 
 ## EnableAgentFullLogs
 
