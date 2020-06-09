@@ -62,14 +62,14 @@ func splitName(name string) (string, string) {
 
 func getCutoff(prefix, typed string, altRand *rand.Rand) int {
 	cutoff := len(prefix) + 2
-	if len(typed)/2 > 0 {
-		if altRand != nil {
-			cutoff += altRand.Intn(len(typed) / 2)
-		} else {
-			cutoff += rand.Intn(len(typed) / 2)
-		}
+	switch {
+	case len(typed)/2 > 0 && altRand != nil:
+		return cutoff + altRand.Intn(len(typed)/2)
+	case len(typed)/2 > 0:
+		return cutoff + rand.Intn(len(typed)/2)
+	default:
+		return cutoff
 	}
-	return cutoff
 }
 
 func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
