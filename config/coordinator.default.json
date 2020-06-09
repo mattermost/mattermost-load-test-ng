@@ -13,9 +13,21 @@
     "UpdateIntervalMs": 2000,
     "Queries": [
       {
-        "Description": "Request duration",
+        "Description": "Average request duration",
         "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
-        "Threshold": 0.2,
+        "Threshold": 0.1,
+        "Alert": true
+      },
+      {
+        "Description": "Rate of 500 errors",
+        "Query": "sum(rate(mattermost_api_time_count{status_code=\"500\"}[1m]))",
+        "Threshold": 0.01,
+        "Alert": true
+      },
+      {
+        "Description": "Rate of client timeouts",
+        "Query": "sum(rate(loadtest_http_timeouts_total[1m]))",
+        "Threshold": 0.01,
         "Alert": true
       }
     ]
