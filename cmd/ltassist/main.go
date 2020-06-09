@@ -167,27 +167,21 @@ func validTypes() string {
 
 func getDefaultConfig(configType string) (interface{}, error) {
 	var cfg interface{}
-	var err error
 	switch configType {
 	case "agent":
 		cfg = &loadtest.Config{}
-		err = defaults.Set(cfg)
 	case "coordinator":
 		cfg = &coordinator.Config{}
-		err = defaults.Set(cfg)
 	case "deployer":
 		cfg = &deployment.Config{}
-		err = defaults.Set(cfg)
 	case "simplecontroller":
 		cfg = &simplecontroller.Config{}
-		err = defaults.Set(cfg)
 	case "simulcontroller":
 		cfg = &simulcontroller.Config{}
-		err = defaults.Set(cfg)
 	default:
-		err = fmt.Errorf("could not find: %q", configType)
+		return nil, fmt.Errorf("could not find: %q", configType)
 	}
-	if err != nil {
+	if err := defaults.Set(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
