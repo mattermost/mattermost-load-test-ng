@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -171,7 +172,7 @@ func TestGetCutoff(t *testing.T) {
 		{
 			prefix: "",
 			typed:  "testuser",
-			cutoff: 3,
+			cutoff: 5,
 		},
 		{
 			prefix: "",
@@ -179,7 +180,10 @@ func TestGetCutoff(t *testing.T) {
 			cutoff: 7,
 		},
 	}
+	// custom rand with fixed source for deterministic values
+	// without polluting global rand
+	newRand := rand.New(rand.NewSource(1))
 	for _, tc := range testCases {
-		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, 1)) // seed is constant for deterministic random numbers for tests
+		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, newRand))
 	}
 }
