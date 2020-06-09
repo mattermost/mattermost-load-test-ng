@@ -19,8 +19,14 @@
         "Alert": true
       },
       {
-        "Description": "Rate of 500 errors",
-        "Query": "sum(rate(mattermost_api_time_count{status_code=\"500\"}[1m]))",
+        "Description": "Average request duration",
+        "Query": "rate(mattermost_api_time_sum[1m])/rate(mattermost_api_time_count[1m])",
+        "Threshold": 0.1,
+        "Alert": true
+      },
+      {
+        "Description": "Rate of HTTP 5xx client errors",
+        "Query": "sum(rate(loadtest_http_errors_total{status_code=~\"5..\"}[1m]))",
         "Threshold": 0.01,
         "Alert": true
       },
