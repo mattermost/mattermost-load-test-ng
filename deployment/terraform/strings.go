@@ -42,6 +42,9 @@ scrape_configs:
   - job_name: elasticsearch
     static_configs:
         - targets: [%s]
+  - job_name: loadtest
+    static_configs:
+        - targets: [%s]
 `
 
 const metricsHosts = `
