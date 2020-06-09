@@ -174,7 +174,7 @@ resource "aws_elasticsearch_domain" "es_server" {
     subnet_ids = [
       element(tolist(data.aws_subnet_ids.selected.ids), 0)
     ]
-    security_group_ids = ["${aws_security_group.elastic.id}"]
+    security_group_ids = ["${aws_security_group.elastic[0].id}"]
   }
 
   dynamic "ebs_options" {
@@ -496,13 +496,7 @@ resource "aws_security_group" "elastic" {
     security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
   }
 
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
-  }
-
+  count = var.es_instance_count
 }
 
 # We need a separate security group rule to prevent cyclic dependency between
