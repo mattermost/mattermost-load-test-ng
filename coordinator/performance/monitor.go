@@ -70,7 +70,7 @@ func (m *Monitor) runQueries() Status {
 		}
 		value, err := m.helper.VectorFirst(query.Query)
 		if err != nil {
-			mlog.Error("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))
+			mlog.Warn("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))
 			continue
 		}
 		mlog.Debug("monitor: ran query",
