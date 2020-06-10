@@ -60,9 +60,9 @@ Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elast
 
 *bool*
 
-Elasticsearch depends on the AWSServiceRoleForAmazonElasticsearchService service-linked role. This role is unique and shares across all the account so if is already created you can't create it again and you'll receive an error.
+Elasticsearch depends on the AWSServiceRoleForAmazonElasticsearchService service-linked role. This role is unique and shares across all the account so if it's already created you can't create it again and you'll receive an error.
 
-You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if is not created set this property as true
+You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
 ## EnableAgentFullLogs
 
