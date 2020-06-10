@@ -68,6 +68,7 @@ config/config.json
 config/coordinator.json
 config/simplecontroller.json
 config/simulcontroller.json
+config/gencontroller.json
 config/deployer.json
 
 # binaries

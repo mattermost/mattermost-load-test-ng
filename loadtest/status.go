@@ -69,9 +69,10 @@ func (s State) MarshalJSON() ([]byte, error) {
 // Status contains various information about the load test.
 type Status struct {
 	State           State     // State of the load test.
-	NumUsers        int       // Number of active users.
-	NumUsersAdded   int       // Number of users added since the start of the test.
-	NumUsersRemoved int       // Number of users removed since the start of the test.
+	NumUsers        int64     // Number of active users.
+	NumUsersAdded   int64     // Number of users added since the start of the test.
+	NumUsersRemoved int64     // Number of users removed since the start of the test.
+	NumUsersStopped int64     // Number of users that stopped running.
 	NumErrors       int64     // Number of errors that have occurred.
 	StartTime       time.Time // Time when the load test was started. This only logs the time when the load test was first started, and does not get reset if it was subsequently restarted.
 }

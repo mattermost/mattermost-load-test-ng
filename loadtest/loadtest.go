@@ -41,6 +41,7 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 	close(startedChan)
 	for st := range statusChan {
 		if st.Code == control.USER_STATUS_STOPPED || st.Code == control.USER_STATUS_FAILED {
+			atomic.AddInt64(&lt.status.NumUsersStopped, 1)
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
@@ -158,9 +159,8 @@ func (lt *LoadTester) removeUsers(numUsers int) (int, error) {
 
 	lt.idleControllers = append(lt.idleControllers, lt.activeControllers[activeUsers-numUsers:]...)
 	lt.activeControllers = lt.activeControllers[:activeUsers-numUsers]
-
-	lt.status.NumUsers -= numUsers
-	lt.status.NumUsersRemoved += numUsers
+	lt.status.NumUsers -= int64(numUsers)
+	lt.status.NumUsersRemoved += int64(numUsers)
 
 	return numUsers, err
 }
@@ -177,6 +177,7 @@ func (lt *LoadTester) Run() error {
 	lt.status.State = Starting
 	lt.status.NumUsersRemoved = 0
 	lt.status.NumUsersAdded = 0
+	lt.status.NumUsersStopped = 0
 	lt.status.NumErrors = 0
 	lt.status.StartTime = time.Now()
 	lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
@@ -219,14 +220,16 @@ func (lt *LoadTester) Status() *Status {
 	lt.mut.RLock()
 	defer lt.mut.RUnlock()
 	// We need to construct the struct anew because
-	// NumErrors gets incremented in a separate goroutine.
+	// NumErrors and NumUsersStopped get incremented in a separate goroutine.
 	numErrors := atomic.LoadInt64(&lt.status.NumErrors)
+	numStopped := atomic.LoadInt64(&lt.status.NumUsersStopped)
 
 	return &Status{
 		State:           lt.status.State,
 		NumUsers:        lt.status.NumUsers,
 		NumUsersAdded:   lt.status.NumUsersAdded,
 		NumUsersRemoved: lt.status.NumUsersRemoved,
+		NumUsersStopped: numStopped,
 		NumErrors:       numErrors,
 		StartTime:       lt.status.StartTime,
 	}

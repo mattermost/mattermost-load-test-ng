@@ -47,6 +47,7 @@ const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 	UserControllerNoop                          = "noop"
+	UserControllerGenerative                    = "generative"
 	UserControllerCluster                       = "cluster"
 )
 
@@ -54,7 +55,7 @@ const (
 // Returns an error if the validation fails.
 func (t userControllerType) IsValid() error {
 	switch t {
-	case UserControllerSimple, UserControllerSimulative, UserControllerCluster:
+	case UserControllerSimple, UserControllerSimulative, UserControllerNoop, UserControllerGenerative, UserControllerCluster:
 		return nil
 	case "":
 		return fmt.Errorf("UserControllerType cannot be empty")
@@ -70,6 +71,8 @@ type UserControllerConfiguration struct {
 	// Possible values:
 	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
+	//   UserControllerNoop
+	//   UserControllerGenerative - A controller used to generate data.
 	Type userControllerType
 	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
