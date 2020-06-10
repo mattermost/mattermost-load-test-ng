@@ -7,7 +7,7 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",
-    "VpcId": "",
+    "VpcID": "",
     "Version": 6.5,
     "CreateRole": false
   },
