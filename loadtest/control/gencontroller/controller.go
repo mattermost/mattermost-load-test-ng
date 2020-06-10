@@ -74,11 +74,13 @@ func (c *GenController) Run() {
 		control.Login,
 		c.createTeam,
 		c.joinTeam,
+		c.joinChannel,
 	}
 
-	for _, action := range initActions {
-		if resp := action(c.user); resp.Err != nil {
+	for i := 0; i < len(initActions); i++ {
+		if resp := initActions[i](c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
+			i--
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
