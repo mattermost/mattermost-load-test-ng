@@ -297,7 +297,7 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetPostsSince(channel.Id, time.Now().Add(-10*time.Second).Unix()*1000); err != nil {
+	if err := c.user.GetPostsForChannel(channel.Id, 0, 60); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
