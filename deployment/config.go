@@ -101,12 +101,12 @@ func (c *Config) IsValid() error {
 
 func (c *Config) validateElasticSearchConfig() error {
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.VpcID == "" {
-			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
-		}
-
 		if c.ElasticSearchSettings.InstanceCount > 1 {
 			return fmt.Errorf("is not possible to create more than 1 instance of Elasticsearch")
+		}
+
+		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
+			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
 		}
 
 		domainName := c.ClusterName + "-es"
