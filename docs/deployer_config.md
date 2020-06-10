@@ -42,7 +42,7 @@ Number of the instances to be created. Right now only support 1 o 0 values.
 
 *string*
 
-The type of instance of the elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
 
 ### Version
 
@@ -62,7 +62,7 @@ This ID is mandatory is you're going to instanciate an ES service in your cluste
 
 *bool*
 
-Elasticsearch depends on the AWSServiceRoleForAmazonElasticsearchService service-linked role. This role is unique and shares across all the account so if it's already created you can't create it again and you'll receive an error.
+Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` service-linked role. This role is unique and shared by all users of the account so if it's already created you can't create it again and you'll receive an error.
 
 You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
