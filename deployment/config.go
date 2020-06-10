@@ -22,7 +22,6 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 // to deploy and provision a load test environment.
 type Config struct {
 	ClusterName           string // Name of the cluster.
-	VpcID                 string // Id of the VPC to be used
 	AppInstanceCount      int    // Number of application instances.
 	AppInstanceType       string // Type of the EC2 instance for app.
 	AgentInstanceCount    int    // Number of agents, first agent and coordinator will share the same instance.
@@ -60,6 +59,7 @@ type ElasticSearchSettings struct {
 	InstanceCount int    // Elasticsearch instances number.
 	InstanceType  string // Elasticsearch instance type to be created.
 	Version       string // Elasticsearch version to be deployed.
+	VpcID         string // Id of the VPC where the instance is going to be created.
 	CreateRole    bool   // Whether it should create the AWSServiceRoleForAmazonElasticsearchService role
 }
 

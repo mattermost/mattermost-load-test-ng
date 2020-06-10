@@ -9,7 +9,7 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 data "aws_subnet_ids" "selected" {
-  vpc_id = "${var.vpc}"
+  vpc_id = "${var.es_vpc}"
 }
 
 resource "aws_key_pair" "key" {

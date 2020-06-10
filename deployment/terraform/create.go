@@ -80,7 +80,6 @@ func (t *Terraform) Create() error {
 
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
-		"-var", fmt.Sprintf("vpc=%s", t.config.VpcID),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
@@ -88,6 +87,7 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
 		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
+		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),

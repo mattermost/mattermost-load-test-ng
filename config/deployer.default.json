@@ -1,6 +1,5 @@
 {
   "ClusterName": "loadtest",
-  "VpcId": "",
   "AppInstanceCount": 1,
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
@@ -8,7 +7,9 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",
-    "Version": 6.5
+    "VpcId": "",
+    "Version": 6.5,
+    "CreateRole": false
   },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "m4.xlarge",

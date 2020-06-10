@@ -6,12 +6,6 @@
 
 The name of the cluster. This will be prefixed to all resources in AWS that are built with the configuration.
 
-## VpcID
-
-*string*
-
-Id used to retrieve the subnets to be used. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/)
-
 ## AppInstanceCount
 
 *int*
@@ -55,6 +49,14 @@ The type of instance of the elasticsearch service. See type [here](https://aws.a
 *string*
 
 Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
+
+## VpcID
+
+*string*
+
+Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
+
+This ID is mandatory is you're going to instanciate an ES service in your cluster.
 
 ### CreateRole
 
