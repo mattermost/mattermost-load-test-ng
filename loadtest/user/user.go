@@ -4,9 +4,16 @@
 package user
 
 import (
+	"regexp"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 )
+
+// TestUserSuffixRegexp matches the numerical suffix of test usernames,
+// which are assumed to be in this format.
+var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
 
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.
@@ -129,6 +136,19 @@ type User interface {
 	IsTeamAdmin() (bool, error)
 	SetCurrentTeam(team *model.Team) error
 	SetCurrentChannel(channel *model.Channel) error
+
+	// System console functionalities
+
+	// GetLogs fetches the logs.
+	GetLogs(page, perPage int) error
+	// GetAnalytics fetches the system analytics.
+	GetAnalytics() error
+	// GetClusterStatus fetches the cluster status.
+	GetClusterStatus() error
+	// GetPluginStatuses fetches the plugin statuses.
+	GetPluginStatuses() error
+	// UpdateConfig updates the config with cfg.
+	UpdateConfig(cfg *model.Config) error
 
 	// Clear clears the underlying UserStore
 	ClearUserData()

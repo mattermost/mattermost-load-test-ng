@@ -4,6 +4,14 @@ provider "aws" {
   version = "~> 2.47"
 }
 
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_subnet_ids" "selected" {
+  vpc_id = "${var.vpc}"
+}
+
 resource "aws_key_pair" "key" {
   key_name   = "${var.cluster_name}-keypair"
   public_key = file(var.ssh_public_key)
@@ -94,9 +102,16 @@ resource "aws_instance" "metrics_server" {
       "sudo apt-get install -y adduser libfontconfig1",
       "wget https://dl.grafana.com/oss/release/grafana_6.6.2_amd64.deb",
       "sudo dpkg -i grafana_6.6.2_amd64.deb",
+      "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
+      "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
+      "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
+      "sudo mkdir /opt/elasticsearch_exporter",
+      "sudo tar -zxvf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable grafana-server",
-      "sudo service grafana-server start"
+      "sudo service grafana-server start",
+      "sudo systemctl enable inbucket",
+      "sudo service inbucket start"
     ]
   }
 }
@@ -141,6 +156,115 @@ resource "aws_instance" "proxy_server" {
       "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
     ]
   }
+}
+
+resource "aws_iam_service_linked_role" "es" {
+  aws_service_name = "es.amazonaws.com"
+}
+
+resource "aws_elasticsearch_domain" "es_server" {
+  tags = {
+    Name = "${var.cluster_name}-es_server"
+  }
+
+  domain_name           = "${var.cluster_name}-es"
+  elasticsearch_version = var.es_version
+
+  vpc_options {
+    subnet_ids = [
+      element(tolist(data.aws_subnet_ids.selected.ids), 0)
+    ]
+    security_group_ids = ["${aws_security_group.elastic.id}"]
+  }
+
+  dynamic "ebs_options" {
+    for_each = var.es_ebs_options
+    content {
+      ebs_enabled = true
+      volume_type = lookup(ebs_options.value, "volume_type", "gp2")
+      volume_size = lookup(ebs_options.value, "volume_size", 10)
+    }
+  }
+
+  cluster_config {
+    instance_type = var.es_instance_type
+  }
+
+  access_policies = <<CONFIG
+  {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": "es:*",
+              "Principal": "*",
+              "Effect": "Allow",
+              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
+          }
+      ]
+  }
+  CONFIG
+
+  depends_on = [
+    aws_iam_service_linked_role.es,
+  ]
+
+  count = var.es_instance_count
+}
+
+
+resource "aws_iam_user" "s3user" {
+  name  = "${var.cluster_name}-s3user"
+  count = var.app_instance_count > 1 ? 1 : 0
+}
+
+resource "aws_iam_access_key" "s3key" {
+  user  = aws_iam_user.s3user[0].name
+  count = var.app_instance_count > 1 ? 1 : 0
+}
+
+resource "aws_s3_bucket" "s3bucket" {
+  bucket = "${var.cluster_name}.s3bucket"
+  acl    = "private"
+  count  = var.app_instance_count > 1 ? 1 : 0
+  tags = {
+    Name = "${var.cluster_name}-s3bucket"
+  }
+
+  force_destroy = true
+}
+
+resource "aws_iam_user_policy" "s3userpolicy" {
+  name  = "${var.cluster_name}-s3userpolicy"
+  user  = aws_iam_user.s3user[0].name
+  count = var.app_instance_count > 1 ? 1 : 0
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+      {
+          "Effect": "Allow",
+          "Action": [
+              "s3:ListBucket",
+              "s3:GetBucketLocation"
+          ],
+          "Resource": "arn:aws:s3:::${aws_s3_bucket.s3bucket[0].id}"
+      },
+      {
+          "Action": [
+              "s3:AbortMultipartUpload",
+              "s3:DeleteObject",
+              "s3:GetObject",
+              "s3:GetObjectAcl",
+              "s3:PutObject",
+              "s3:PutObjectAcl"
+          ],
+          "Effect": "Allow",
+          "Resource": "arn:aws:s3:::${aws_s3_bucket.s3bucket[0].id}/*"
+      }
+  ]
+}
+EOF
 }
 
 
@@ -310,10 +434,11 @@ resource "aws_security_group" "agent" {
   }
 
   ingress {
-    from_port = 4000
-    to_port   = 4000
-    protocol  = "tcp"
-    self      = true
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    self            = true
+    security_groups = ["${aws_security_group.metrics.id}"]
   }
 
   ingress {
@@ -358,6 +483,37 @@ resource "aws_security_group" "metrics" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_security_group" "elastic" {
+  name = "${var.cluster_name}-elastic-security-group"
+  description = "Security group for elastic instance"
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
+  }
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
+  }
+
+}
+
+# We need a separate security group rule to prevent cyclic dependency between
+# the app group and metrics group.
+resource "aws_security_group_rule" "app-to-inbucket" {
+  type                     = "ingress"
+  from_port                = 2500
+  to_port                  = 2500
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.metrics.id
+  source_security_group_id = aws_security_group.app.id
 }
 
 resource "aws_security_group" "proxy" {

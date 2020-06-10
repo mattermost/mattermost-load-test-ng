@@ -7,9 +7,11 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
 // pickAction randomly selects an action from a slice of userAction with
@@ -47,11 +49,36 @@ func genMessage(isReply bool) string {
 	return message
 }
 
+func splitName(name string) (string, string) {
+	typed := user.TestUserSuffixRegexp.FindString(name)
+	var prefix string
+	if typed == "" {
+		typed = name
+	} else {
+		prefix = strings.TrimSuffix(name, typed)
+	}
+	return prefix, typed
+}
+
+func getCutoff(prefix, typed string, altRand *rand.Rand) int {
+	cutoff := len(prefix) + 2
+	switch {
+	case len(typed)/2 > 0 && altRand != nil:
+		return cutoff + altRand.Intn(len(typed)/2)
+	case len(typed)/2 > 0:
+		return cutoff + rand.Intn(len(typed)/2)
+	default:
+		return cutoff
+	}
+}
+
 func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
-	cutoff := 2 + rand.Intn(len(name)/2)
 	found := errors.New("found") // will be used to halt emulate typing function
 
-	resp := control.EmulateUserTyping(name, func(term string) control.UserActionResponse {
+	prefix, typed := splitName(name)
+	cutoff := getCutoff(prefix, typed, nil)
+	resp := control.EmulateUserTyping(typed, func(term string) control.UserActionResponse {
+		term = prefix + term
 		users, err := auto(teamId, channelId, term, 100)
 		if err != nil {
 			return control.UserActionResponse{Err: err}

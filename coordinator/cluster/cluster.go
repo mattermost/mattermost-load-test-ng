@@ -6,6 +6,7 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 
@@ -75,11 +76,17 @@ func (c *LoadAgentCluster) Stop() error {
 // It differs from Stop() as it won't return early in case of an error.
 // It makes sure agent.Stop() is called once for every agent in the cluster.
 func (c *LoadAgentCluster) Shutdown() {
-	for _, agent := range c.agents {
-		if err := agent.Stop(); err != nil {
-			mlog.Error("cluster: failed to stop agent", mlog.Err(err))
-		}
+	var wg sync.WaitGroup
+	wg.Add(len(c.agents))
+	for _, ag := range c.agents {
+		go func(ag *agent.LoadAgent) {
+			defer wg.Done()
+			if err := ag.Stop(); err != nil {
+				mlog.Error("cluster: failed to stop agent", mlog.Err(err))
+			}
+		}(ag)
 	}
+	wg.Wait()
 }
 
 // IncrementUsers increments the total number of active users in the load-test

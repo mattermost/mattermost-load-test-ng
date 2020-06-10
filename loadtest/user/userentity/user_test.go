@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetUserFromStore(t *testing.T) {
-	th := Setup(t).Init()
+	th := HelperSetup(t).Init()
 
 	user, err := th.User.getUserFromStore()
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestFetchStaticAssets(t *testing.T) {
 	mux.HandleFunc("/static/test.js", jsHandler)
 	mux.HandleFunc("/static/test.css", cssHandler)
 	config.ConnectionConfiguration.ServerURL = ts.URL
-	th := Setup(t).SetConfig(config).Init()
+	th := HelperSetup(t).SetConfig(config).Init()
 	err = th.User.FetchStaticAssets()
 	require.NoError(t, err)
 	require.True(t, indexFetched)
@@ -75,7 +75,7 @@ func TestFetchStaticAssets(t *testing.T) {
 }
 
 func TestIsSysAdmin(t *testing.T) {
-	th := Setup(t).Init()
+	th := HelperSetup(t).Init()
 
 	err := th.User.store.SetUser(&model.User{
 		Id:    "someid",

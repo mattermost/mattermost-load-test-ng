@@ -6,6 +6,7 @@ package deployment
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -15,22 +16,26 @@ import (
 	"github.com/spf13/viper"
 )
 
+var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
+
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	ClusterName         string // Name of the cluster.
-	AppInstanceCount    int    // Number of application instances.
-	AppInstanceType     string // Type of the EC2 instance for app.
-	AgentInstanceCount  int    // Number of agents, first agent and coordinator will share the same instance.
-	AgentInstanceType   string // Type of the EC2 instance for agent.
-	EnableAgentFullLogs bool   // Logs the command output (stdout & stderr) to home directory.
-	ProxyInstanceType   string // Type of the EC2 instance for proxy.
-	SSHPublicKey        string // Path to the SSH public key.
-	DBInstanceCount     int    // Number of DB instances.
-	DBInstanceType      string // Type of the DB instance.
-	DBInstanceEngine    string // Type of the DB instance - postgres or mysql.
-	DBUserName          string // Username to connect to the DB.
-	DBPassword          string // Password to connect to the DB.
+	ClusterName           string // Name of the cluster.
+	VpcID                 string // Id of the VPC to be used
+	AppInstanceCount      int    // Number of application instances.
+	AppInstanceType       string // Type of the EC2 instance for app.
+	AgentInstanceCount    int    // Number of agents, first agent and coordinator will share the same instance.
+	AgentInstanceType     string // Type of the EC2 instance for agent.
+	ElasticSearchSettings ElasticSearchSettings
+	EnableAgentFullLogs   bool   // Logs the command output (stdout & stderr) to home directory.
+	ProxyInstanceType     string // Type of the EC2 instance for proxy.
+	SSHPublicKey          string // Path to the SSH public key.
+	DBInstanceCount       int    // Number of DB instances.
+	DBInstanceType        string // Type of the DB instance.
+	DBInstanceEngine      string // Type of the DB instance - postgres or mysql.
+	DBUserName            string // Username to connect to the DB.
+	DBPassword            string // Password to connect to the DB.
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -46,6 +51,15 @@ type Config struct {
 	// the deployment process.
 	LoadTestDownloadURL string
 	LogSettings         logger.Settings
+}
+
+// ElasticSearchSettings contains the necessary data
+// to configure an ElasticSearch instance to be deployed
+// and provisioned.
+type ElasticSearchSettings struct {
+	InstanceCount int    // Elasticsearch instances number.
+	InstanceType  string // Elasticsearch instance type to be created.
+	Version       string // Elasticsearch version to be deployed.
 }
 
 // IsValid reports whether a given deployment config is valid or not.
@@ -75,6 +89,32 @@ func (c *Config) IsValid() error {
 	}
 	if !strings.HasSuffix(c.LoadTestDownloadURL, ".tar.gz") {
 		return fmt.Errorf("load-test package file must be a tar.gz file")
+	}
+
+	if err := c.validateElasticSearchConfig(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Config) validateElasticSearchConfig() error {
+	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
+		if c.VpcID == "" {
+			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
+		}
+
+		if c.ElasticSearchSettings.InstanceCount > 1 {
+			return fmt.Errorf("is not possible to create more than 1 instance of Elasticsearch")
+		}
+
+		domainName := c.ClusterName + "-es"
+		if !esDomainNameRe.Match([]byte(domainName)) {
+			return fmt.Errorf("Elasticsearch domain name must start with a lowercase alphabet and be at least " +
+				"3 and no more than 28 characters long. Valid characters are a-z (lowercase letters), 0-9, and - " +
+				"(hyphen). Current value is \"" + domainName + "\"")
+		}
+
 	}
 
 	return nil

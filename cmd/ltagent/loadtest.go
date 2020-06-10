@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -110,6 +111,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		MaxConnsPerHost:       500,
 		MaxIdleConns:          500,
 		MaxIdleConnsPerHost:   500,
+		ResponseHeaderTimeout: 5 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -133,7 +135,11 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return nil, err
 		}
-		ue := userentity.New(store, transport, ueConfig)
+		ueSetup := userentity.Setup{
+			Store:     store,
+			Transport: transport,
+		}
+		ue := userentity.New(ueSetup, ueConfig)
 		switch controllerType {
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
@@ -143,6 +149,15 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 			return gencontroller.New(id, ue, ucConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
+		case loadtest.UserControllerCluster:
+			// For cluster controller, we only use the sysadmin
+			// because we are just testing system console APIs.
+			ueConfig.Username = ""
+			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
+
+			admin := userentity.New(ueSetup, ueConfig)
+			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
 		}

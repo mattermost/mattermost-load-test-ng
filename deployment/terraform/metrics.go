@@ -31,25 +31,63 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		return err
 	}
 
-	var mmEndpoint, nodeExporterEndpoint []string
-	for _, val := range output.Instances.Value {
-		mmEndpoint = append(mmEndpoint, "'"+val.PrivateIP+":8067'")
-		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+val.PrivateIP+":9100'")
+	var hosts string
+	var mmTargets, nodeTargets, esTargets, ltTargets []string
+	for i, val := range output.Instances.Value {
+		host := fmt.Sprintf("app-%d", i)
+		mmTargets = append(mmTargets, fmt.Sprintf("'%s:8067'", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
-	for _, val := range output.Agents.Value {
-		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+val.PrivateIP+":9100'")
+	for i, val := range output.Agents.Value {
+		host := fmt.Sprintf("agent-%d", i)
+		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		ltTargets = append(ltTargets, fmt.Sprintf("'%s:4000'", host))
+		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if output.HasProxy() {
-		nodeExporterEndpoint = append(nodeExporterEndpoint, "'"+output.Proxy.Value[0].PrivateIP+":9100'")
+		host := "proxy"
+		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		hosts += fmt.Sprintf("%s %s\n", output.Proxy.Value[0].PrivateIP, host)
 	}
-	mmConfig := strings.Join(mmEndpoint, ",")
-	nodeExporterConfig := strings.Join(nodeExporterEndpoint, ",")
 
-	prometheusConfigFile := fmt.Sprintf(prometheusConfig, mmConfig, nodeExporterConfig)
-	rdr := strings.NewReader(prometheusConfigFile)
+	if output.HasElasticSearch() {
+		esEndpoint := fmt.Sprintf("https://%s", output.ElasticServer.Value[0].Endpoint)
+		esTargets = append(esTargets, "'metrics:9114'")
+
+		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value.PublicIP))
+		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
+		rdr := strings.NewReader(esExporterService)
+		if out, err := sshc.Upload(rdr, "/lib/systemd/system/es-exporter.service", true); err != nil {
+			return fmt.Errorf("error upload elasticsearch exporter service file: output: %s, error: %w", out, err)
+		}
+		cmd := "sudo systemctl enable es-exporter"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+
+		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value.PublicIP))
+		cmd = "sudo service es-exporter restart"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+	}
+
 	mlog.Info("Updating Prometheus config", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	prometheusConfigFile := fmt.Sprintf(prometheusConfig,
+		strings.Join(nodeTargets, ","),
+		strings.Join(mmTargets, ","),
+		strings.Join(esTargets, ","),
+		strings.Join(ltTargets, ","),
+	)
+	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
+	}
+	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
+	rdr = strings.NewReader(metricsHostsFile)
+	if out, err := sshc.Upload(rdr, "/etc/hosts", true); err != nil {
+		return fmt.Errorf("error upload metrics hosts file: output: %s, error: %w", out, err)
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value.PublicIP))
@@ -90,6 +128,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	}
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
+	if output.HasElasticSearch() {
+		buf, err = ioutil.ReadFile(path.Join(t.dir, "es_dashboard_data.json"))
+		if err != nil {
+			return err
+		}
+		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/es_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading es_dashboard_json: output: %s, error: %w", out, err)
+		}
 	}
 
 	// Restart grafana

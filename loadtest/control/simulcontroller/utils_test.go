@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -109,4 +110,80 @@ func TestPickAction(t *testing.T) {
 		require.Greater(t, res[3], res[0])
 		require.Greater(t, res[1], res[3])
 	})
+}
+
+func TestSplitName(t *testing.T) {
+	testCases := []struct {
+		input, prefix, typed string
+	}{
+		{
+			input:  "testuser-1",
+			prefix: "testuser-",
+			typed:  "1",
+		},
+		{
+			input:  "testuser999",
+			prefix: "testuser",
+			typed:  "999",
+		},
+		{
+			input:  "téstüser999",
+			prefix: "téstüser",
+			typed:  "999",
+		},
+		{
+			input:  "testuser",
+			prefix: "",
+			typed:  "testuser",
+		},
+		{
+			input:  "testuser-100a",
+			prefix: "",
+			typed:  "testuser-100a",
+		},
+	}
+	for _, tc := range testCases {
+		prefix, typed := splitName(tc.input)
+		require.Equal(t, tc.prefix, prefix)
+		require.Equal(t, tc.typed, typed)
+	}
+}
+
+func TestGetCutoff(t *testing.T) {
+	testCases := []struct {
+		prefix, typed string
+		cutoff        int
+	}{
+		{
+			prefix: "testuser-",
+			typed:  "1",
+			cutoff: 11,
+		},
+		{
+			prefix: "testuser",
+			typed:  "999",
+			cutoff: 10,
+		},
+		{
+			prefix: "téstüser",
+			typed:  "999",
+			cutoff: 12,
+		},
+		{
+			prefix: "",
+			typed:  "testuser",
+			cutoff: 5,
+		},
+		{
+			prefix: "",
+			typed:  "testuser-100a",
+			cutoff: 7,
+		},
+	}
+	// custom rand with fixed source for deterministic values
+	// without polluting global rand
+	newRand := rand.New(rand.NewSource(1))
+	for _, tc := range testCases {
+		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, newRand))
+	}
 }
