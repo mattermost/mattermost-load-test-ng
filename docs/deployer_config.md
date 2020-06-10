@@ -6,12 +6,6 @@
 
 The name of the cluster. This will be prefixed to all resources in AWS that are built with the configuration.
 
-## VpcID
-
-*string*
-
-Id used to retrieve the subnets to be used. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/)
-
 ## AppInstanceCount
 
 *int*
@@ -46,12 +40,31 @@ Number of the instances to be created. Right now only support 1 o 0 values.
 
 ### InstanceType
 
-The type of instance of the elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+*string*
+
+The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
 
 ### Version
 
+*string*
+
 Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
 
+## VpcID
+
+*string*
+
+Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
+
+This ID is mandatory is you're going to instanciate an ES service in your cluster.
+
+### CreateRole
+
+*bool*
+
+Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` service-linked role. This role is unique and shared by all users of the account so if it's already created you can't create it again and you'll receive an error.
+
+You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
 ## EnableAgentFullLogs
 
