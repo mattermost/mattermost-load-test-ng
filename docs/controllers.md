@@ -37,3 +37,9 @@ This is a controller that runs the minimum amount of actions needed to connect a
 It is used to calculate what is the ideal performance of a Mattermost instance.  
 It's sole purpose is to have the user login once, open a WebSocket connection and perform just one request.  
 Running this controller will serve as a baseline against which to compare other results.  
+
+### `GenController`
+
+This controller's purpose is to generate data (teams, channels, posts, etc.).  
+This is particularly useful when a more realistic starting setup is required.  
+Also, it is used to populate an empty database during the init process.  

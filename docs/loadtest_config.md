@@ -39,6 +39,7 @@ Possible values:
 - `simple` - to use [`SimpleController`](controllers.md#simplecontroller)
 - `simulative`  - to use [`SimulController`](controllers.md#simulcontroller)
 - `noop` - to use [`NoopController`](controllers.md#noopcontroller)
+- `generative` - to use [`GenController`](controllers.md#gencontroller)
 
 ### RatesDistribution
 
