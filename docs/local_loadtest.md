@@ -33,8 +33,8 @@ cd mattermost-load-test-ng
 It's suggested to copy the required config files and edit them accordingly.
 
 ```sh
-cp config/config.default.json config/config.json
-cp config/simplecontroller.default.json config/simplecontroller.json
+cp config/config.sample.json config/config.json
+cp config/simplecontroller.sample.json config/simplecontroller.json
 ```
 
 The load-test config file is documented [here](loadtest_config.md).  
@@ -149,7 +149,7 @@ go run ./cmd/ltagent server
 Before starting the [`coordinator`](coordinator.md), the default configuration file should be copied and modified accordingly.
 
 ```sh
-cp config/coordinator.default.json config/coordinator.json
+cp config/coordinator.sample.json config/coordinator.json
 ```
 
 Its documentation can be found [here](coordinator_config.md).
