@@ -42,4 +42,4 @@ Running this controller will serve as a baseline against which to compare other 
 
 This controller's purpose is to generate data (teams, channels, posts, etc.).  
 This is particularly useful when a more realistic starting setup is required.  
-It is used to populate an otherwise empty database during the init process.  
+Also, it is used to populate an empty database during the init process.  

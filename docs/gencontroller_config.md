@@ -53,3 +53,7 @@ The percentage of direct channels to be created.
 *float64*
 
 The percentage of group channels to be created.
+
+#### Note
+
+The total sum of channels percentages must be equal to 1.

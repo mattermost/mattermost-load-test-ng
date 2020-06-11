@@ -7,7 +7,7 @@ using [`GenController`](controllers.md#gencontroller).
 
 ## Prerequisites
 
-- Before starting, make sure you read and understood [how to run a load-test locally](local_loadtest.md).
+- Before starting, make sure you have read and understood [how to run a load-test locally](local_loadtest.md).
 
 ## Configuration
 
