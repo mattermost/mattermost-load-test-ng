@@ -133,10 +133,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if rate != 1.0 {
-		config.UserControllerConfiguration.RatesDistribution = []struct {
-			Rate       float64 `default:"1.0" validate:"range:(0,)"`
-			Percentage float64 `default:"1.0" validate:"range:(0,100]"`
-		}{
+		config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 			{
 				Rate:       rate,
 				Percentage: 1.0,

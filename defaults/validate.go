@@ -127,41 +127,29 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 
 func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval string) error {
 	var min, max, val float64
+	var err error
 	switch value.Type().Kind() {
 	case reflect.Int:
 		if mins != "" {
-			mn, err := strconv.Atoi(mins)
-			if err != nil {
-				return err
-			}
-			min = float64(mn)
+			min, err = strconv.ParseFloat(mins, 64)
 		}
 		if maxs != "" {
-			mx, err := strconv.Atoi(maxs)
-			if err != nil {
-				return err
-			}
-			max = float64(mx)
+			max, err = strconv.ParseFloat(maxs, 64)
 		}
 		val = float64(value.Int())
 	case reflect.Float64:
 		if mins != "" {
-			mn, err := strconv.ParseFloat(mins, 64)
-			if err != nil {
-				return err
-			}
-			min = mn
+			min, err = strconv.ParseFloat(mins, 64)
 		}
 		if maxs != "" {
-			mx, err := strconv.Atoi(maxs)
-			if err != nil {
-				return err
-			}
-			min = float64(mx)
+			max, err = strconv.ParseFloat(maxs, 64)
 		}
 		val = value.Float()
 	default:
 		return errors.New("could not validate this value within a range")
+	}
+	if err != nil {
+		return err
 	}
 
 	if mins != "" {

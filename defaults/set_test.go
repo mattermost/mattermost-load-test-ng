@@ -8,7 +8,6 @@ import (
 )
 
 func TestSet(t *testing.T) {
-
 	t.Run("should fail on nil pointer", func(t *testing.T) {
 		err := Set(nil)
 		require.Error(t, err)

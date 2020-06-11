@@ -31,6 +31,11 @@ const (
 	UserControllerCluster                       = "cluster"
 )
 
+type RatesDistribution struct {
+	Rate       float64 `default:"1.0" validate:"range:[0,)"`
+	Percentage float64 `default:"1.0" validate:"range:(0,100]"`
+}
+
 // UserControllerConfiguration holds information about the UserController to
 // run during a load-test.
 type UserControllerConfiguration struct {
@@ -44,10 +49,7 @@ type UserControllerConfiguration struct {
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
-	RatesDistribution []struct {
-		Rate       float64 `default:"1.0" validate:"range:(0,)"`
-		Percentage float64 `default:"1.0" validate:"range:(0,100]"`
-	} `default_len:"1"`
+	RatesDistribution []RatesDistribution `default_len:"1"`
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.

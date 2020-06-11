@@ -15,7 +15,7 @@ import (
 // the SimpleController.
 type Config struct {
 	// Actions are the user action definitions that will be run by the controller.
-	Actions []actionDefinition `default_size:"1"`
+	Actions []actionDefinition
 }
 
 type actionDefinition struct {
@@ -25,7 +25,7 @@ type actionDefinition struct {
 	// RunPeriod determines how often the action will be performed.
 	RunPeriod int `default:"20" validate:"range:[0,]"`
 	// WaitAfterMs is the wait time after the action is performed.
-	WaitAfterMs int `default:"1000" validate:"range:(0,]"`
+	WaitAfterMs int `default:"1000" validate:"range:[0,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

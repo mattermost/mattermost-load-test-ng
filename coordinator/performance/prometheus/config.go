@@ -10,8 +10,8 @@ type Configuration struct {
 }
 
 type Query struct {
-	Description string  `default:"Request duration" validate:"notempty"`
-	Query       string  `default:"sum(increase(mattermost_api_time_sum[1m])) by (instance) / sum(increase(mattermost_api_time_count[1m])) by (instance)" validate:"notempty"`
-	Threshold   float64 `default:"0.2" validate:"range:[0,]"`
-	Alert       bool    `default:"true"`
+	Description string  `validate:"notempty"`
+	Query       string  `validate:"notempty"`
+	Threshold   float64 `validate:"range:[0,]"`
+	Alert       bool
 }

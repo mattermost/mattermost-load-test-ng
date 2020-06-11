@@ -15,7 +15,7 @@ import (
 type Config struct {
 	// The minium amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	MinIdleTimeMs int `default:"1000" validate:"range:(0,]"`
+	MinIdleTimeMs int `default:"1000" validate:"range:[0,]"`
 	// The average amount of time (in milliseconds) the controlled users
 	// will wait between actions.
 	AvgIdleTimeMs int `default:"5000" validate:"range:($MinIdleTimeMs,]"`

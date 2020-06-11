@@ -19,26 +19,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type config struct {
-	docPath string
-}
-
-var configs = map[string]config{
-	"agent": {
-		docPath: "./docs/loadtest_config.md",
-	},
-	"coordinator": {
-		docPath: "./docs/coordinator_config.md",
-	},
-	"deployer": {
-		docPath: "./docs/deployer_config.md",
-	},
-	"simplecontroller": {
-		docPath: "./docs/simplecontroller_config.md",
-	},
-	"simulcontroller": {
-		docPath: "./docs/simulcontroller_config.md",
-	},
+var docs = map[string]string{
+	"agent":            "./docs/loadtest_config.md",
+	"coordinator":      "./docs/coordinator_config.md",
+	"deployer":         "./docs/deployer_config.md",
+	"simplecontroller": "./docs/simplecontroller_config.md",
+	"simulcontroller":  "./docs/simulcontroller_config.md",
 }
 
 func main() {
@@ -73,14 +59,14 @@ func main() {
 
 func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 	if len(args) > 0 {
-		if _, ok := configs[args[0]]; ok {
+		if _, ok := docs[args[0]]; ok {
 			return createConfig(args[0])
 		}
 	}
 
 	var configNames []string
 	fmt.Printf("Select the configuration type you want to create:\n")
-	for name := range configs {
+	for name := range docs {
 		configNames = append(configNames, name)
 	}
 	sort.Strings(configNames)
@@ -109,20 +95,19 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 }
 
 func createConfig(name string) error {
-	config, ok := configs[name]
+	doc, ok := docs[name]
 	if !ok {
 		return fmt.Errorf("couldn't find a config for %q", name)
 	}
 
 	fmt.Printf("Creating %s.Config:\n\n", name)
-	f := config.docPath
 
 	cfg, err := getDefaultConfig(name)
 	if err != nil {
 		return fmt.Errorf("could not get default config: %w", err)
 	}
 
-	v, err := createStruct(cfg, f, false)
+	v, err := createStruct(cfg, doc, false)
 	if err != nil {
 		return fmt.Errorf("could not create struct: %w", err)
 	}
@@ -141,15 +126,13 @@ func createConfig(name string) error {
 }
 
 func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
-	for name, config := range configs {
-		f := config.docPath
-
+	for name, doc := range docs {
 		cfg, err := getDefaultConfig(name)
 		if err != nil {
 			return fmt.Errorf("could not get default config: %w", err)
 		}
 
-		_, err = createStruct(cfg, f, true)
+		_, err = createStruct(cfg, doc, true)
 		if err != nil {
 			fmt.Printf("docs for %s.Config is not consistent: %s\n", name, err)
 		}
@@ -159,7 +142,7 @@ func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 
 func validTypes() string {
 	s := "Valid types are:"
-	for name := range configs {
+	for name := range docs {
 		s += "\n - " + name
 	}
 	return s
