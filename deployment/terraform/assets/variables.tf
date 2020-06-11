@@ -1,9 +1,6 @@
 variable "cluster_name" {
 }
 
-variable "vpc" {
-}
-
 variable "app_instance_count" {
 }
 
@@ -25,6 +22,12 @@ variable "es_instance_type" {
 }
 
 variable "es_version" {
+}
+
+variable "es_vpc" {
+}
+
+variable "es_create_role" {
 }
 
 variable "es_ebs_options" {

@@ -20,8 +20,6 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
-	// VpcID is the Id of the VPC to be used
-	VpcID string `default:""`
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[1,)"`
 	// Type of the EC2 instance for app.
@@ -78,6 +76,10 @@ type ElasticSearchSettings struct {
 	InstanceType string
 	// Elasticsearch version to be deployed.
 	Version string
+	// Id of the VPC associated with the instance to be created.
+	VpcID string
+	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
+	CreateRole bool
 }
 
 // IsValid reports whether a given deployment config is valid or not.
@@ -90,12 +92,12 @@ func (c *Config) IsValid() error {
 
 func (c *Config) validateElasticSearchConfig() error {
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.VpcID == "" {
-			return fmt.Errorf("vpc id must be included in order to include an elastic search instance")
+		if c.ElasticSearchSettings.InstanceCount > 1 {
+			return fmt.Errorf("it is not possible to create more than 1 instance of Elasticsearch")
 		}
 
-		if c.ElasticSearchSettings.InstanceCount > 1 {
-			return fmt.Errorf("is not possible to create more than 1 instance of Elasticsearch")
+		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
+			return fmt.Errorf("VpcID must be set in order to create an Elasticsearch instance")
 		}
 
 		domainName := c.ClusterName + "-es"

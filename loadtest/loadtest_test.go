@@ -5,6 +5,7 @@ package loadtest
 
 import (
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -213,35 +214,36 @@ func TestStatus(t *testing.T) {
 	st := lt.Status()
 	startTime := st.StartTime
 	assert.Equal(t, Running, st.State)
-	assert.Equal(t, 0, st.NumUsers)
-	assert.Equal(t, 0, st.NumUsersAdded)
-	assert.Equal(t, 0, st.NumUsersRemoved)
+	assert.Equal(t, int64(0), st.NumUsers)
+	assert.Equal(t, int64(0), st.NumUsersAdded)
+	assert.Equal(t, int64(0), st.NumUsersRemoved)
 
 	n, err := lt.AddUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
 	st = lt.Status()
 	assert.Equal(t, Running, st.State)
-	assert.Equal(t, 1, st.NumUsers)
-	assert.Equal(t, 1, st.NumUsersAdded)
-	assert.Equal(t, 0, st.NumUsersRemoved)
+	assert.Equal(t, int64(1), st.NumUsers)
+	assert.Equal(t, int64(1), st.NumUsersAdded)
+	assert.Equal(t, int64(0), st.NumUsersRemoved)
 
 	n, err = lt.RemoveUsers(1)
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
 	st = lt.Status()
 	assert.Equal(t, Running, st.State)
-	assert.Equal(t, 0, st.NumUsers)
-	assert.Equal(t, 1, st.NumUsersAdded)
-	assert.Equal(t, 1, st.NumUsersRemoved)
+	time.Sleep(1 * time.Second)
+	assert.Equal(t, int64(0), st.NumUsers)
+	assert.Equal(t, int64(1), st.NumUsersAdded)
+	assert.Equal(t, int64(1), st.NumUsersRemoved)
 
 	err = lt.Stop()
 	require.NoError(t, err)
 	st = lt.Status()
 	assert.Equal(t, Stopped, st.State)
-	assert.Equal(t, 0, st.NumUsers)
-	assert.Equal(t, 1, st.NumUsersAdded)
-	assert.Equal(t, 1, st.NumUsersRemoved)
+	assert.Equal(t, int64(0), st.NumUsers)
+	assert.Equal(t, int64(1), st.NumUsersAdded)
+	assert.Equal(t, int64(1), st.NumUsersRemoved)
 
 	// Start again, and verify that start time got reset.
 	err = lt.Run()

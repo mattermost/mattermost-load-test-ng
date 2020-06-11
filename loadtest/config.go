@@ -28,6 +28,7 @@ const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 	UserControllerNoop                          = "noop"
+	UserControllerGenerative                    = "generative"
 	UserControllerCluster                       = "cluster"
 )
 
@@ -43,8 +44,10 @@ type UserControllerConfiguration struct {
 	// Possible values:
 	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
-	// A rate multiplier that will affect the speed at which user actions are
-	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop,cluster}"`
+	//   UserControllerNoop
+	//   UserControllerGenerative - A controller used to generate data.
+	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
+	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.

@@ -794,12 +794,12 @@ func (ue *UserEntity) GetReactions(postId string) error {
 }
 
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
-	_, resp := ue.client.SaveReaction(reaction)
+	r, resp := ue.client.SaveReaction(reaction)
 	if resp.Error != nil {
 		return resp.Error
 	}
 
-	return ue.store.SetReaction(reaction)
+	return ue.store.SetReaction(r)
 }
 
 func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {

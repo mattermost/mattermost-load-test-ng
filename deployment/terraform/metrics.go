@@ -32,7 +32,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets []string
 	for i, val := range output.Instances.Value {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("'%s:8067'", host))
@@ -42,6 +42,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	for i, val := range output.Agents.Value {
 		host := fmt.Sprintf("agent-%d", i)
 		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		ltTargets = append(ltTargets, fmt.Sprintf("'%s:4000'", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if output.HasProxy() {
@@ -77,6 +78,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		strings.Join(nodeTargets, ","),
 		strings.Join(mmTargets, ","),
 		strings.Join(esTargets, ","),
+		strings.Join(ltTargets, ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {

@@ -66,7 +66,7 @@ func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.transport.RoundTrip(req)
 	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
 	if os.IsTimeout(err) {
-		t.ue.incHTTPTimeouts()
+		t.ue.incHTTPTimeouts(req.URL.Path, req.Method)
 	}
 	if resp != nil && resp.StatusCode >= 400 {
 		t.ue.incHTTPErrors(req.URL.Path, req.Method, resp.StatusCode)

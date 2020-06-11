@@ -150,7 +150,7 @@ func (c *LoadAgentCluster) Status() Status {
 	var status Status
 	for _, agent := range c.agents {
 		st := agent.Status()
-		status.ActiveUsers += st.NumUsers
+		status.ActiveUsers += int(st.NumUsers)
 		currentError := st.NumErrors
 		errInfo := c.errMap[agent]
 		if currentError < errInfo.lastError {

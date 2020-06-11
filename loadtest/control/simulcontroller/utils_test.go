@@ -5,6 +5,7 @@ package simulcontroller
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -145,5 +146,44 @@ func TestSplitName(t *testing.T) {
 		prefix, typed := splitName(tc.input)
 		require.Equal(t, tc.prefix, prefix)
 		require.Equal(t, tc.typed, typed)
+	}
+}
+
+func TestGetCutoff(t *testing.T) {
+	testCases := []struct {
+		prefix, typed string
+		cutoff        int
+	}{
+		{
+			prefix: "testuser-",
+			typed:  "1",
+			cutoff: 11,
+		},
+		{
+			prefix: "testuser",
+			typed:  "999",
+			cutoff: 10,
+		},
+		{
+			prefix: "téstüser",
+			typed:  "999",
+			cutoff: 12,
+		},
+		{
+			prefix: "",
+			typed:  "testuser",
+			cutoff: 5,
+		},
+		{
+			prefix: "",
+			typed:  "testuser-100a",
+			cutoff: 7,
+		},
+	}
+	// custom rand with fixed source for deterministic values
+	// without polluting global rand
+	newRand := rand.New(rand.NewSource(1))
+	for _, tc := range testCases {
+		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, newRand))
 	}
 }
