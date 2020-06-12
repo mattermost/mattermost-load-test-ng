@@ -204,6 +204,38 @@ func main() {
 	}
 	rootCmd.AddCommand(collectCmd)
 
+	reportCmd := &cobra.Command{
+		Use:   "report",
+		Short: "Get or compare reports from load tests",
+	}
+
+	genReport := &cobra.Command{
+		Use:     "generate",
+		Short:   "Generate a report from a load test",
+		Example: "ltctl report generate --start-time=1591858735 --end-time=1591858960 --output=base.out --label=base",
+		RunE:    RunGenerateReportCmdF,
+	}
+	genReport.Flags().Int64P("start-time", "s", 0, "Start time in epoch miliseconds.")
+	genReport.Flags().Int64P("end-time", "e", 0, "End time in epoch miliseconds.")
+	genReport.Flags().StringP("output", "o", "ltreport.out", "Path to the output file to write the report to.")
+	genReport.Flags().StringP("label", "l", "", "A friendly name for the report.")
+	genReport.MarkFlagRequired("start-time")
+	genReport.MarkFlagRequired("end-time")
+
+	compareReport := &cobra.Command{
+		Use:     "compare",
+		Short:   "Compare one or more reports",
+		Long:    "Compare one or more reports. The first report is considered to be the base",
+		Example: "ltctl report compare report1.out report2.out",
+		RunE:    RunCompareReportCmdF,
+	}
+	compareReport.Flags().StringP("output", "o", "", "Path to the output file to write the comparison to. If this is not set, the report is displayed to stdout.")
+	compareReport.Flags().Bool("graph", false, "If set to true, it also generates graphs comparing different metrics from the load tests. This needs gnuplot to be present in the system.")
+
+	reportCmds := []*cobra.Command{genReport, compareReport}
+	reportCmd.AddCommand(reportCmds...)
+	rootCmd.AddCommand(reportCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

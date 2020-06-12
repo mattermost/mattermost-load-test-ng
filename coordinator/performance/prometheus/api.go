@@ -17,4 +17,5 @@ import (
 // while allowing compatibility with Prometheus API interface.
 type API interface {
 	Query(ctx context.Context, query string, ts time.Time) (model.Value, apiv1.Warnings, error)
+	QueryRange(ctx context.Context, query string, r apiv1.Range) (model.Value, apiv1.Warnings, error)
 }
