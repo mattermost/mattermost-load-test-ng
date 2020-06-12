@@ -244,7 +244,7 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := defaults.Validate(*config); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 

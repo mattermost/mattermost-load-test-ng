@@ -36,7 +36,7 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := defaults.Validate(*config); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 

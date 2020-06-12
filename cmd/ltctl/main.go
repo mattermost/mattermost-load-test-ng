@@ -92,7 +92,7 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	if err := defaults.Validate(*cfg); err != nil {
+	if err := defaults.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 

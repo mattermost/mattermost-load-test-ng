@@ -27,6 +27,10 @@ type Config struct {
 
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`
+
+	// Percentages of channels to be created, grouped by type.
+	// The total sum of these values must be equal to 1.
+
 	// The percentage of public channels to be created.
 	PercentPublicChannels float64 `default:"0.2" validate:"range:[0,1]"`
 	// The percentage of private channels to be created.
