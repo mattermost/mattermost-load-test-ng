@@ -75,14 +75,14 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			ucConfig, err = simplecontroller.ReadConfig("")
 			break
 		}
-		ucConfig = *data.SimpleControllerConfig
+		ucConfig = data.SimpleControllerConfig
 	case loadtest.UserControllerSimulative:
 		if data.SimulControllerConfig == nil {
 			mlog.Warn("could not read controller config from the request")
 			ucConfig, err = simulcontroller.ReadConfig("")
 			break
 		}
-		ucConfig = *data.SimulControllerConfig
+		ucConfig = data.SimulControllerConfig
 	}
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{

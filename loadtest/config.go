@@ -4,10 +4,7 @@
 package loadtest
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -46,7 +43,7 @@ type UserControllerConfiguration struct {
 	//   UserControllerSimulative - A more realistic controller.
 	//   UserControllerNoop
 	//   UserControllerGenerative - A controller used to generate data.
-	Type userControllerType `default:"simple" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
+	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
 	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
@@ -93,21 +90,9 @@ type Config struct {
 // is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
-	if configFilePath == "" {
-		if err := defaults.Set(&cfg); err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-	}
 
-	file, err := os.Open(configFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("could not open config file: %w", err)
-	}
-
-	err = json.NewDecoder(file).Decode(&cfg)
-	if err != nil {
-		return nil, fmt.Errorf("could not decode file: %w", err)
+	if err := defaults.ReadFromJSON(configFilePath, "./config/config.json", &cfg); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil
