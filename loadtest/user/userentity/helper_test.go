@@ -6,29 +6,39 @@ package userentity
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 
 	"github.com/stretchr/testify/require"
 )
 
+type config struct {
+	ConnectionConfiguration struct {
+		ServerURL     string `default:"http://localhost:8065" validate:"url"`
+		WebSocketURL  string `default:"ws://localhost:8065" validate:"url"`
+		AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+		AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
+	}
+}
+
 type TestHelper struct {
 	User   *UserEntity
-	config *loadtest.Config
+	config config
 	tb     testing.TB
 }
 
 func HelperSetup(tb testing.TB) *TestHelper {
 	var th TestHelper
 	th.tb = tb
-	config, err := loadtest.ReadConfig("../../../config/config.sample.json")
+	var cfg config
+	err := defaults.ReadFromJSON("", "../../../config/config.sample.json", &cfg)
 	require.Nil(th.tb, err)
-	require.NotNil(th.tb, config)
-	th.config = config
+	require.NotNil(th.tb, cfg)
+	th.config = cfg
 	return &th
 }
 
-func (th *TestHelper) SetConfig(config *loadtest.Config) *TestHelper {
+func (th *TestHelper) SetConfig(config config) *TestHelper {
 	th.config = config
 	return th
 }

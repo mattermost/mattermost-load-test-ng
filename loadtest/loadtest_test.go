@@ -7,10 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -39,24 +36,6 @@ var ltConfig = Config{
 		ConsoleLevel: "ERROR",
 		FileLevel:    "ERROR",
 	},
-}
-
-func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
-	ueConfig := userentity.Config{
-		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
-		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
-	}
-	store, err := memstore.New(nil)
-	if err != nil {
-		return nil, err
-	}
-	ue := userentity.New(userentity.Setup{Store: store}, ueConfig)
-	cfg, err := simplecontroller.ReadConfig("")
-	if err != nil {
-		return nil, err
-	}
-
-	return simplecontroller.New(id, ue, cfg, status)
 }
 
 func TestNew(t *testing.T) {
