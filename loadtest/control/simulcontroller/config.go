@@ -14,7 +14,7 @@ type Config struct {
 	MinIdleTimeMs int `default:"1000" validate:"range:[0,]"`
 	// The average amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	AvgIdleTimeMs int `default:"5000" validate:"range:($MinIdleTimeMs,]"`
+	AvgIdleTimeMs int `default:"20000" validate:"range:($MinIdleTimeMs,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

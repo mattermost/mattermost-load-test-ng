@@ -73,7 +73,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string
+	Version float64
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.

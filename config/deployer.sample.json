@@ -8,7 +8,7 @@
     "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",
     "VpcID": "",
-    "Version": "6.5",
+    "Version": 6.5,
     "CreateRole": false
   },
   "EnableAgentFullLogs": true,
