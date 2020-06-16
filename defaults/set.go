@@ -81,7 +81,7 @@ func structDefaults(value interface{}) error {
 				return fmt.Errorf("could not create map: %w", err)
 			}
 			field.Set(m)
-		case reflect.Bool, reflect.Int, reflect.Float64, reflect.String:
+		case reflect.Bool, reflect.Int, reflect.Int64, reflect.Float64, reflect.String:
 			tag, ok := t.Field(i).Tag.Lookup("default")
 			if !ok {
 				continue
@@ -112,7 +112,7 @@ func setValue(t reflect.Type, data string) (reflect.Value, error) {
 		v.SetBool(b)
 	case reflect.String:
 		v.SetString(data)
-	case reflect.Int:
+	case reflect.Int, reflect.Int64:
 		i, err := strconv.Atoi(data)
 		if err != nil {
 			return reflect.Zero(t), err
