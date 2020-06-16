@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
@@ -73,7 +74,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -137,10 +138,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	config.UsersConfiguration.InitialActiveUsers = 0
-	config.UserControllerConfiguration.RatesDistribution = []struct {
-		Rate       float64
-		Percentage float64
-	}{
+	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
 			Percentage: 1.0,
