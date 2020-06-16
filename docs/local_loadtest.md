@@ -53,10 +53,14 @@ Running this command will create initial teams and channels for the users to joi
 A new load-test can be started with the following command:
 
 ```sh
-go run ./cmd/ltagent -c config/config.json --controller-config config/simplecontroller.json -d 60
+go run ./cmd/ltagent -n 10 -d 60
 ```
 
-This will run a load-test with the given configs for 60 seconds.
+This will start a load-test running the specified number of users (10) for 60 seconds.
+
+#### Note
+
+Command line arguments take precedence over configuration settings.
 
 ## Running a load-test through the load-test agent API server
 
@@ -159,7 +163,7 @@ Its documentation can be found [here](coordinator_config.md).
 From a different terminal we can then run the [`coordinator`](coordinator.md).
 
 ```sh
-go run ./cmd/ltcoordinator -c config/coordinator.json -l config/config.json
+go run ./cmd/ltcoordinator
 ```
 
 This will start running a load-test across the configured cluster of load-test agents.
