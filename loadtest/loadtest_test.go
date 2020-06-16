@@ -60,20 +60,26 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 }
 
 func TestNew(t *testing.T) {
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
 	// ignore lt structs if there is an error.
-	_, err := New(nil, newController)
+	_, err = New(nil, 0, "test", cfg)
 	require.NotNil(t, err)
 
-	_, err = New(&ltConfig, nil)
+	_, err = New(&ltConfig, 0, "test", nil)
 	require.NotNil(t, err)
 
-	lt, err := New(&ltConfig, newController)
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.Nil(t, err)
 	require.NotNil(t, lt)
 }
 
 func TestAddUsers(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.Nil(t, err)
 
 	n, err := lt.AddUsers(0)
@@ -101,7 +107,10 @@ func TestAddUsers(t *testing.T) {
 }
 
 func TestRemoveUsers(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	defer close(lt.statusChan)
 	require.Nil(t, err)
 
@@ -153,7 +162,10 @@ func TestRemoveUsers(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -168,7 +180,10 @@ func TestRun(t *testing.T) {
 }
 
 func TestRerun(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -184,7 +199,10 @@ func TestRerun(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.Nil(t, err)
 	err = lt.Stop()
 	require.Equal(t, ErrNotRunning, err)
@@ -205,7 +223,10 @@ func TestStop(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	lt, err := New(&ltConfig, newController)
+	cfg, err := simplecontroller.ReadConfig("")
+	require.NoError(t, err)
+
+	lt, err := New(&ltConfig, 0, "test", cfg)
 	require.NotNil(t, lt)
 	require.Nil(t, err)
 

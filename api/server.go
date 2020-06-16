@@ -6,20 +6,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"strconv"
-	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
@@ -107,59 +101,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// http.Transport to be shared amongst all clients.
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxConnsPerHost:       500,
-		MaxIdleConns:          500,
-		MaxIdleConnsPerHost:   500,
-		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
-		ueConfig := userentity.Config{
-			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
-			WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-user%d", agentId, id),
-			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
-			Password:     "testPass123$",
-		}
-		store, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          500,
-			MaxStoredUsers:          1000,
-			MaxStoredChannelMembers: 1000,
-			MaxStoredStatuses:       1000,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
-			Metrics:   a.metrics.UserEntityMetrics(),
-		}
-		ue := userentity.New(ueSetup, ueConfig)
-		switch ltConfig.UserControllerConfiguration.Type {
-		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
-		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
-		case loadtest.UserControllerNoop:
-			return noopcontroller.New(id, ue, status)
-		default:
-			panic("controller type must be valid")
-		}
-	}
-
-	lt, err := loadtest.New(&ltConfig, newControllerFn)
+	lt, err := loadtest.New(&ltConfig, 0, agentId, ucConfig)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,

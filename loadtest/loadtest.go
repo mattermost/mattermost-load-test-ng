@@ -7,12 +7,21 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -239,9 +248,74 @@ func (lt *LoadTester) Status() *Status {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *Config, nc NewController) (*LoadTester, error) {
-	if config == nil || nc == nil {
+func New(config *Config, userOffset int, namePrefix string, controllerConfig interface{}) (*LoadTester, error) {
+	if config == nil || controllerConfig == nil {
 		return nil, errors.New("nil params passed")
+	}
+
+	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
+		id += userOffset
+
+		ueConfig := userentity.Config{
+			ServerURL:    config.ConnectionConfiguration.ServerURL,
+			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     fmt.Sprintf("%s-%d", namePrefix, id),
+			Email:        fmt.Sprintf("%s-%d@example.com", namePrefix, id),
+			Password:     "testPass123$",
+		}
+		store, err := memstore.New(&memstore.Config{
+			MaxStoredPosts:          500,
+			MaxStoredUsers:          1000,
+			MaxStoredChannelMembers: 1000,
+			MaxStoredStatuses:       1000,
+		})
+		if err != nil {
+			return nil, err
+		}
+		// http.Transport to be shared amongst all clients.
+		transport := &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   1 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxConnsPerHost:       500,
+			MaxIdleConns:          500,
+			MaxIdleConnsPerHost:   500,
+			ResponseHeaderTimeout: 5 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   1 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+		ueSetup := userentity.Setup{
+			Store:     store,
+			Transport: transport,
+		}
+
+		ue := userentity.New(ueSetup, ueConfig)
+
+		switch config.UserControllerConfiguration.Type {
+		case UserControllerSimple:
+			return simplecontroller.New(id, ue, controllerConfig.(*simplecontroller.Config), status)
+		case UserControllerSimulative:
+			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
+		case UserControllerGenerative:
+			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
+		case UserControllerNoop:
+			return noopcontroller.New(id, ue, status)
+		case UserControllerCluster:
+			// For cluster controller, we only use the sysadmin
+			// because we are just testing system console APIs.
+			ueConfig.Username = ""
+			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
+
+			admin := userentity.New(ueSetup, ueConfig)
+			return clustercontroller.New(id, admin, status)
+		default:
+			panic("controller type must be valid")
+		}
 	}
 
 	if err := defaults.Validate(config); err != nil {
@@ -251,7 +325,7 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 	return &LoadTester{
 		config:            config,
 		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
-		newController:     nc,
+		newController:     newControllerFn,
 		status:            Status{},
 		activeControllers: make([]control.UserController, 0),
 		idleControllers:   make([]control.UserController, 0),
