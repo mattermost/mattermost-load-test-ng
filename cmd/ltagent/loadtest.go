@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -26,30 +25,19 @@ import (
 )
 
 func runGenLoadtest(lt *loadtest.LoadTester, numUsers int) error {
-	start := time.Now()
 	if err := lt.Run(); err != nil {
 		return err
 	}
-	mlog.Info("loadtest started")
 
-	var err error
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			if status := lt.Status(); status.NumUsersStopped == int64(numUsers) {
-				err = lt.Stop()
-				return
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-	wg.Wait()
+	defer func(start time.Time) {
+		mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+	}(time.Now())
 
-	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+	for lt.Status().NumUsersStopped != int64(numUsers) {
+		time.Sleep(1 * time.Second)
+	}
 
-	return err
+	return lt.Stop()
 }
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {

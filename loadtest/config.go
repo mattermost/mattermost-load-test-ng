@@ -6,7 +6,9 @@ package loadtest
 import (
 	"errors"
 
+	"github.com/mattermost/mattermost-load-test-ng/config"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
@@ -65,13 +67,6 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 	return nil
 }
 
-type InstanceConfiguration struct {
-	NumTeams          int `default:"2" validate:"range:(0,]"`
-	NumChannels       int `default:"10"`
-	NumTeamAdmins     int `default:"2"`
-	TeamAdminInterval int `default:"10"`
-}
-
 type UsersConfiguration struct {
 	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
 	MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
@@ -81,7 +76,7 @@ type UsersConfiguration struct {
 type Config struct {
 	ConnectionConfiguration     ConnectionConfiguration
 	UserControllerConfiguration UserControllerConfiguration
-	InstanceConfiguration       InstanceConfiguration
+	InstanceConfiguration       gencontroller.Config
 	UsersConfiguration          UsersConfiguration
 	LogSettings                 logger.Settings
 }

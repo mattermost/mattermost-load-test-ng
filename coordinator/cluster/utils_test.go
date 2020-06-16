@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 				InitialActiveUsers: 0,
 				AvgSessionsPerUser: 1,
 			},
-			InstanceConfiguration: loadtest.InstanceConfiguration{
+			InstanceConfiguration: gencontroller.Config{
 				NumTeams: 1,
 			},
 			LogSettings: logger.Settings{
