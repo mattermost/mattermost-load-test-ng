@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -117,7 +118,7 @@ func New(config *Config) (*Coordinator, error) {
 	if config == nil {
 		return nil, fmt.Errorf("coordinator: config should not be nil")
 	}
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 

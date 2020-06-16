@@ -4,11 +4,7 @@
 package simplecontroller
 
 import (
-	"strings"
-
-	"github.com/mattermost/mattermost-load-test-ng/config"
-
-	"github.com/spf13/viper"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 )
 
 // Config holds the the rate and user actions definitions that will be run by
@@ -21,43 +17,21 @@ type Config struct {
 type actionDefinition struct {
 	// ActionId is the key of an action which is mapped to a user action
 	// implementation.
-	ActionId string
+	ActionId string `default:"Login" validate:"notempty"`
 	// RunPeriod determines how often the action will be performed.
-	RunPeriod int
+	RunPeriod int `default:"20" validate:"range:[0,]"`
 	// WaitAfterMs is the wait time after the action is performed.
-	WaitAfterMs int
+	WaitAfterMs int `default:"1000" validate:"range:[0,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
-// is empty, it will search a config file in predefined folders.
+// is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
-	v := viper.New()
+	var cfg Config
 
-	configName := "simplecontroller"
-	v.SetConfigName(configName)
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	v.AddConfigPath("./../config/")
-	v.AddConfigPath("./../../../config/")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	if configFilePath != "" {
-		v.SetConfigFile(configFilePath)
-	}
-
-	if err := config.ReadConfigFile(v, configName); err != nil {
+	if err := defaults.ReadFromJSON(configFilePath, "./config/simplecontroller.json", &cfg); err != nil {
 		return nil, err
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-func (c *Config) IsValid() error {
-	return nil
+	return &cfg, nil
 }

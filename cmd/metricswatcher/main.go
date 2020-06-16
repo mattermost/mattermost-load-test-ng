@@ -29,8 +29,8 @@ func main() {
 }
 
 func runMetricsWatcher(cmd *cobra.Command, args []string) error {
-	configuration, err := config.GetMetricsCheckConfig()
-
+	configFilePath, _ := cmd.Flags().GetString("config")
+	configuration, err := config.ReadConfig(configFilePath)
 	if err != nil {
 		return err
 	}

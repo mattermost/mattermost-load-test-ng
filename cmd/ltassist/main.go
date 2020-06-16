@@ -10,55 +10,21 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
 	"github.com/spf13/cobra"
 )
 
-type config struct {
-	docPath      string
-	defaultPath  string
-	defaultValue control.Config
-}
-
-func init() {
-	for k, c := range configs {
-		cfg, err := readDefaultConfig(k, c.defaultPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not read default configuration files: %s\n", err)
-			os.Exit(1)
-		}
-
-		c.defaultValue = cfg
-		configs[k] = c
-	}
-}
-
-var configs = map[string]config{
-	"agent": {
-		docPath:     "./docs/loadtest_config.md",
-		defaultPath: "./config/config.default.json",
-	},
-	"coordinator": {
-		docPath:     "./docs/coordinator_config.md",
-		defaultPath: "./config/coordinator.default.json",
-	},
-	"deployer": {
-		docPath:     "./docs/deployer_config.md",
-		defaultPath: "./config/deployer.default.json",
-	},
-	"simplecontroller": {
-		docPath:     "./docs/simplecontroller_config.md",
-		defaultPath: "./config/simplecontroller.default.json",
-	},
-	"simulcontroller": {
-		docPath:     "./docs/simulcontroller_config.md",
-		defaultPath: "./config/simulcontroller.default.json",
-	},
+var docs = map[string]string{
+	"agent":            "./docs/loadtest_config.md",
+	"coordinator":      "./docs/coordinator_config.md",
+	"deployer":         "./docs/deployer_config.md",
+	"simplecontroller": "./docs/simplecontroller_config.md",
+	"simulcontroller":  "./docs/simulcontroller_config.md",
 }
 
 func main() {
@@ -93,14 +59,14 @@ func main() {
 
 func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 	if len(args) > 0 {
-		if _, ok := configs[args[0]]; ok {
+		if _, ok := docs[args[0]]; ok {
 			return createConfig(args[0])
 		}
 	}
 
 	var configNames []string
 	fmt.Printf("Select the configuration type you want to create:\n")
-	for name := range configs {
+	for name := range docs {
 		configNames = append(configNames, name)
 	}
 	sort.Strings(configNames)
@@ -129,19 +95,24 @@ func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
 }
 
 func createConfig(name string) error {
-	config, ok := configs[name]
+	doc, ok := docs[name]
 	if !ok {
 		return fmt.Errorf("couldn't find a config for %q", name)
 	}
 
 	fmt.Printf("Creating %s.Config:\n\n", name)
-	f := config.docPath
-	v, err := createStruct(config.defaultValue, f, false)
+
+	cfg, err := getDefaultConfig(name)
+	if err != nil {
+		return fmt.Errorf("could not get default config: %w", err)
+	}
+
+	v, err := createStruct(cfg, doc, false)
 	if err != nil {
 		return fmt.Errorf("could not create struct: %w", err)
 	}
 
-	if err = v.Addr().Interface().(control.Config).IsValid(); err != nil {
+	if err = defaults.Validate(v.Addr().Interface()); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -155,9 +126,13 @@ func createConfig(name string) error {
 }
 
 func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
-	for name, config := range configs {
-		f := config.docPath
-		_, err := createStruct(config.defaultValue, f, true)
+	for name, doc := range docs {
+		cfg, err := getDefaultConfig(name)
+		if err != nil {
+			return fmt.Errorf("could not get default config: %w", err)
+		}
+
+		_, err = createStruct(cfg, doc, true)
 		if err != nil {
 			fmt.Printf("docs for %s.Config is not consistent: %s\n", name, err)
 		}
@@ -167,24 +142,30 @@ func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 
 func validTypes() string {
 	s := "Valid types are:"
-	for name := range configs {
+	for name := range docs {
 		s += "\n - " + name
 	}
 	return s
 }
 
-func readDefaultConfig(configType, defaultPath string) (control.Config, error) {
+func getDefaultConfig(configType string) (interface{}, error) {
+	var cfg interface{}
 	switch configType {
 	case "agent":
-		return loadtest.ReadConfig(defaultPath)
+		cfg = &loadtest.Config{}
 	case "coordinator":
-		return coordinator.ReadConfig(defaultPath)
+		cfg = &coordinator.Config{}
 	case "deployer":
-		return deployment.ReadConfig(defaultPath)
+		cfg = &deployment.Config{}
 	case "simplecontroller":
-		return simplecontroller.ReadConfig(defaultPath)
+		cfg = &simplecontroller.Config{}
 	case "simulcontroller":
-		return simulcontroller.ReadConfig(defaultPath)
+		cfg = &simulcontroller.Config{}
+	default:
+		return nil, fmt.Errorf("could not find: %q", configType)
 	}
-	return nil, fmt.Errorf("could not find: %q", configType)
+	if err := defaults.Set(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

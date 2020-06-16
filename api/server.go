@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -58,14 +59,14 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ltConfig := data.LoadTestConfig
-	if err := ltConfig.IsValid(); err != nil {
+	if err := defaults.Validate(ltConfig); err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Error: fmt.Sprintf("could not validate config: %s", err),
 		})
 		return
 	}
 
-	var ucConfig control.Config
+	var ucConfig interface{}
 	var err error
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
@@ -90,7 +91,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ucConfig != nil {
-		if err := ucConfig.IsValid(); err != nil {
+		if err := defaults.Validate(ucConfig); err != nil {
 			writeResponse(w, http.StatusBadRequest, &Response{
 				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
 			})

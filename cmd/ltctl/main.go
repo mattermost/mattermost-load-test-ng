@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -91,7 +92,7 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	if err := cfg.IsValid(); err != nil {
+	if err := defaults.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 

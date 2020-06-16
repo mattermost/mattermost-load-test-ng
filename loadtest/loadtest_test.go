@@ -35,7 +35,10 @@ var ltConfig = Config{
 	InstanceConfiguration: InstanceConfiguration{
 		NumTeams: 1,
 	},
-	LogSettings: logger.Settings{},
+	LogSettings: logger.Settings{
+		ConsoleLevel: "ERROR",
+		FileLevel:    "ERROR",
+	},
 }
 
 func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {

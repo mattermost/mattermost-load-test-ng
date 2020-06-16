@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -31,7 +32,7 @@ var ErrAgentNotFound = errors.New("agent: not found")
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
 func New(config LoadAgentConfig) (*LoadAgent, error) {
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configartion: %w", err)
 	}
 	return &LoadAgent{

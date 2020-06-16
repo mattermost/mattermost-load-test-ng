@@ -5,78 +5,45 @@ package config
 
 import (
 	"os"
-	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type MetricsWatcherConfiguration struct {
 	LogSettings             logger.Settings
 	PrometheusConfiguration prometheus.Configuration
-	Queries                 []prometheus.Query
+	Queries                 []prometheus.Query `default_size:"1"`
 }
 
 func SetupMetricsCheck(cmd *cobra.Command, args []string) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 
-	if err := ReadConfig(configFilePath); err != nil {
-		mlog.Error("Failed to initialize config", mlog.Err(err))
-		os.Exit(1)
-	}
-
-	cfg, err := GetMetricsCheckConfig()
-
+	cfg, err := ReadConfig(configFilePath)
 	if err != nil {
-		mlog.Error("Failed to get logging config:", mlog.Err(err))
+		mlog.Error("Failed to initialize config", mlog.Err(err))
 		os.Exit(1)
 	}
 
 	logger.Init(&cfg.LogSettings)
 }
 
-func ReadConfig(configFilePath string) error {
-	viper.SetConfigName("config.metricswatcher")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("./config/")
-	viper.SetEnvPrefix("mmmetricswatcher")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+// ReadConfig reads the configuration file from the given string. If the string
+// is empty, it will return a config with default values.
+func ReadConfig(configFilePath string) (*MetricsWatcherConfiguration, error) {
+	var cfg MetricsWatcherConfiguration
 
-	viper.SetDefault("LogSettings.EnableConsole", true)
-	viper.SetDefault("LogSettings.ConsoleLevel", "INFO")
-	viper.SetDefault("LogSettings.ConsoleJson", true)
-	viper.SetDefault("LogSettings.EnableFile", true)
-	viper.SetDefault("LogSettings.FileLevel", "INFO")
-	viper.SetDefault("LogSettings.FileJson", true)
-	viper.SetDefault("LogSettings.FileLocation", "metricswatcher.log")
-
-	viper.SetDefault("PrometheusConfiguration.PrometheusURL", "http://localhost:9090")
-	viper.SetDefault("PrometheusConfiguration.MetricsUpdateIntervalInMS", 1000)
-	viper.SetDefault("PrometheusConfiguration.HealthcheckUpdateIntervalInMS", 60000)
-
-	if configFilePath != "" {
-		viper.SetConfigFile(configFilePath)
-	}
-
-	if err := viper.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "unable to read configuration file")
-	}
-
-	return nil
-}
-
-func GetMetricsCheckConfig() (*MetricsWatcherConfiguration, error) {
-	var cfg *MetricsWatcherConfiguration
-
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := defaults.ReadFromJSON(configFilePath, "./config/config.metricswatcher.json", &cfg); err != nil {
 		return nil, err
 	}
 
-	return cfg, nil
+	if configFilePath == "" {
+		cfg.LogSettings.FileLocation = "metricswatcher.log"
+	}
+
+	return &cfg, nil
 }

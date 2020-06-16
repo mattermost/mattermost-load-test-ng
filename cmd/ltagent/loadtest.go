@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
@@ -62,7 +63,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -77,7 +78,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	var ucConfig control.Config
+	var ucConfig interface{}
 	switch controllerType {
 	case loadtest.UserControllerSimple:
 		ucConfig, err = simplecontroller.ReadConfig(ucConfigPath)
@@ -176,10 +177,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if rate != 1.0 {
-		config.UserControllerConfiguration.RatesDistribution = []struct {
-			Rate       float64
-			Percentage float64
-		}{
+		config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 			{
 				Rate:       rate,
 				Percentage: 1.0,

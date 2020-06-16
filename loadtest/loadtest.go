@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -243,7 +244,7 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 

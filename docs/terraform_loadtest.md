@@ -31,7 +31,7 @@ cd mattermost-load-test-ng
 In order to start the deployment process, it is required to configure the deployer appropriately.
 
 ```sh
-cp config/deployer.default.json config/deployer.json
+cp config/deployer.sample.json config/deployer.json
 ```
 
 Detailed documentation for the deployer's config can be found [here](deployer_config.md).
@@ -76,7 +76,7 @@ If no files are found, defaults will be used.
 To configure the [coordinator](coordinator.md), `config/coordinator.json` should be created and/or edited. 
 
 ```sh
-cp config/coordinator.default.json config/coordinator.json
+cp config/coordinator.sample.json config/coordinator.json
 ```
 
 Its documentation can be found [here](coordinator_config.md).
@@ -86,7 +86,7 @@ Its documentation can be found [here](coordinator_config.md).
 To configure the load-test `config/config.json`, should be created and/or edited.
 
 ```sh
-cp config/config.default.json config/config.json
+cp config/config.sample.json config/config.json
 ```
 
 Its documentation can be found [here](loadtest_config.md).

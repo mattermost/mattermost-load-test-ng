@@ -17,7 +17,7 @@ First of all, the type of `UserController` to be used should be set to
 ### Copy and modify needed configuration file
 
 ```sh
-cp config/gencontroller.default.json config/gencontroller.json
+cp config/gencontroller.sample.json config/gencontroller.json
 ```
 
 The `GenController` config file is documented [here](gencontroller_config.md).  
