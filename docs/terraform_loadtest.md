@@ -91,7 +91,7 @@ cp config/config.sample.json config/config.json
 
 Its documentation can be found [here](loadtest_config.md).
 
-### Run the coordinator
+### Start a load-test
 
 ```sh
 go run ./cmd/ltctl loadtest start

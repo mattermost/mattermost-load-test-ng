@@ -74,7 +74,7 @@ type InstanceConfiguration struct {
 
 type UsersConfiguration struct {
 	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
-	MaxActiveUsers     int `default:"1000" validate:"range:(0,]"`
+	MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 }
 
