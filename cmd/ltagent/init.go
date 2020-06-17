@@ -112,7 +112,17 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	genConfig := config.InstanceConfiguration
+	genConfig := gencontroller.Config{
+		NumTeams:               config.InstanceConfiguration.NumTeams,
+		NumChannels:            config.InstanceConfiguration.NumChannels,
+		NumPosts:               config.InstanceConfiguration.NumPosts,
+		NumReactions:           config.InstanceConfiguration.NumReactions,
+		PercentReplies:         config.InstanceConfiguration.PercentReplies,
+		PercentPublicChannels:  config.InstanceConfiguration.PercentPublicChannels,
+		PercentPrivateChannels: config.InstanceConfiguration.PercentPrivateChannels,
+		PercentDirectChannels:  config.InstanceConfiguration.PercentDirectChannels,
+		PercentGroupChannels:   config.InstanceConfiguration.PercentGroupChannels,
+	}
 
 	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		ueConfig := userentity.Config{

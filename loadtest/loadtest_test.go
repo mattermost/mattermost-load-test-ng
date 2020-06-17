@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
@@ -33,7 +32,7 @@ var ltConfig = Config{
 		InitialActiveUsers: 0,
 		AvgSessionsPerUser: 1,
 	},
-	InstanceConfiguration: gencontroller.Config{
+	InstanceConfiguration: InstanceConfiguration{
 		NumTeams:               1,
 		NumChannels:            10,
 		NumPosts:               100,
