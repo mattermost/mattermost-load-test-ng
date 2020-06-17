@@ -168,6 +168,23 @@ func MakeLoadTestCommand() *cobra.Command {
 }
 
 func controllerInitializer(config *loadtest.Config, userOffset int, namePrefix string, controllerConfig interface{}) loadtest.NewController {
+	// http.Transport to be shared amongst all clients.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		ResponseHeaderTimeout: 5 * time.Second,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
@@ -187,27 +204,10 @@ func controllerInitializer(config *loadtest.Config, userOffset int, namePrefix s
 		if err != nil {
 			return nil, err
 		}
-		// http.Transport to be shared amongst all clients.
-		transport := &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   1 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxConnsPerHost:       500,
-			MaxIdleConns:          500,
-			MaxIdleConnsPerHost:   500,
-			ResponseHeaderTimeout: 5 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   1 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		}
 		ueSetup := userentity.Setup{
 			Store:     store,
 			Transport: transport,
 		}
-
 		ue := userentity.New(ueSetup, ueConfig)
 
 		switch config.UserControllerConfiguration.Type {
