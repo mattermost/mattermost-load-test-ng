@@ -4,12 +4,21 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 	"github.com/prometheus/common/model"
 )
+
+// Generator is used to generate load test reports.
+type Generator struct {
+	label  string
+	helper *prometheus.Helper
+}
 
 // Report contains the entire report data comprising of several metrics
 // that are needed to compare load test runs.
@@ -26,6 +35,28 @@ type Report struct {
 type graph struct {
 	Name   string
 	Values []model.SamplePair
+}
+
+// New returns a new instance of a generator.
+func New(label string, helper *prometheus.Helper) *Generator {
+	return &Generator{
+		label:  label,
+		helper: helper,
+	}
+}
+
+// Load loads a report from a given file path.
+func Load(path string) (Report, error) {
+	var r Report
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		return r, err
+	}
+	err = json.Unmarshal(buf, &r)
+	if err != nil {
+		return r, err
+	}
+	return r, nil
 }
 
 // Generate returns a report from a given start time to end time.
