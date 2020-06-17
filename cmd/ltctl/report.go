@@ -19,14 +19,23 @@ import (
 )
 
 func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
-	st, err := cmd.Flags().GetInt64("start-time")
+	const layout = "2006-01-02 15:04:05"
+	st, err := cmd.Flags().GetString("start-time")
 	if err != nil {
 		return err
 	}
+	startTime, err := time.Parse(layout, st)
+	if err != nil {
+		return fmt.Errorf("start-time in incorrect format: %w", err)
+	}
 
-	et, err := cmd.Flags().GetInt64("end-time")
+	et, err := cmd.Flags().GetString("end-time")
 	if err != nil {
 		return err
+	}
+	endTime, err := time.Parse(layout, et)
+	if err != nil {
+		return fmt.Errorf("end-time in incorrect format: %w", err)
 	}
 
 	file, err := cmd.Flags().GetString("output")
@@ -39,8 +48,6 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	startTime := time.Unix(st, 0)
-	endTime := time.Unix(et, 0)
 	if endTime.Before(startTime) {
 		return errors.New("end-time is before start-time")
 	}
@@ -120,6 +127,5 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 		defer target.Close()
 	}
 
-	report.Compare(target, genGraph, reports...)
-	return nil
+	return report.Compare(target, genGraph, reports...)
 }

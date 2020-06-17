@@ -114,7 +114,7 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	return data, nil
 }
 
-// getValue returns a map of labels to the values for the last timestemp of a given query.
+// getValue returns a map of labels to the values for the last timestamp of a given query.
 func (g *Generator) getValue(endTime time.Time, query, label string) (map[model.LabelValue]model.SampleValue, error) {
 	// We just query from endTime-5s to endTime because the query already computes the values
 	// from startTime to endTime.

@@ -206,17 +206,17 @@ func main() {
 
 	reportCmd := &cobra.Command{
 		Use:   "report",
-		Short: "Get or compare reports from load tests",
+		Short: "Get or compare reports from load-tests",
 	}
 
 	genReport := &cobra.Command{
 		Use:     "generate",
-		Short:   "Generate a report from a load test",
-		Example: "ltctl report generate --start-time=1591858735 --end-time=1591858960 --output=base.out --label=base",
+		Short:   "Generate a report from a load-test",
+		Example: "ltctl report generate --start-time=\"2020-06-17 04:37:05\" --end-time=\"2020-06-17 04:42:00\" --output=base.out --label=base",
 		RunE:    RunGenerateReportCmdF,
 	}
-	genReport.Flags().Int64P("start-time", "s", 0, "Start time in epoch miliseconds.")
-	genReport.Flags().Int64P("end-time", "e", 0, "End time in epoch miliseconds.")
+	genReport.Flags().StringP("start-time", "s", "", "Start time in UTC in YYYY-MM-DD HH:MM:SS format.")
+	genReport.Flags().StringP("end-time", "e", "", "End time in UTC in YYYY-MM-DD HH:MM:SS format.")
 	genReport.Flags().StringP("output", "o", "ltreport.out", "Path to the output file to write the report to.")
 	genReport.Flags().StringP("label", "l", "", "A friendly name for the report.")
 	genReport.MarkFlagRequired("start-time")
