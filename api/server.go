@@ -128,8 +128,8 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ueConfig := userentity.Config{
 			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 			WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-user%d", agentId, id),
-			Email:        fmt.Sprintf("%s-user%d@example.com", agentId, id),
+			Username:     fmt.Sprintf("%s-%d", agentId, id),
+			Email:        fmt.Sprintf("%s-%d@example.com", agentId, id),
 			Password:     "testPass123$",
 		}
 		store, err := memstore.New(&memstore.Config{

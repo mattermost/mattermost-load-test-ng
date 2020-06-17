@@ -4,8 +4,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,31 +14,9 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 	cfg := agent.LoadAgentConfig{
 		ApiURL: "localhost:8065",
 		Id:     "id",
-
-		LoadTestConfig: loadtest.Config{
-			ConnectionConfiguration: loadtest.ConnectionConfiguration{
-				ServerURL:     "localhost:8065",
-				WebSocketURL:  "localhost:4000",
-				AdminEmail:    "user@example.com",
-				AdminPassword: "str0ngPassword##",
-			},
-			UserControllerConfiguration: loadtest.UserControllerConfiguration{
-				Type: "simple",
-			},
-			UsersConfiguration: loadtest.UsersConfiguration{
-				MaxActiveUsers:     8,
-				InitialActiveUsers: 0,
-				AvgSessionsPerUser: 1,
-			},
-			InstanceConfiguration: loadtest.InstanceConfiguration{
-				NumTeams: 1,
-			},
-			LogSettings: logger.Settings{
-				ConsoleLevel: "ERROR",
-				FileLevel:    "ERROR",
-			},
-		},
 	}
+	defaults.Set(&cfg)
+
 	agent1, err := agent.New(cfg)
 	require.NoError(t, err)
 	agent2, err := agent.New(cfg)

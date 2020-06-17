@@ -14,13 +14,13 @@ import (
 // GenController.
 type Config struct {
 	// The target number of teams to be created.
-	NumTeams int64 `default:"2" validate:"range:(0,]"`
+	NumTeams int64 `default:"2" validate:"range:[0,]"`
 	// The target number of channels to be created.
-	NumChannels int64 `default:"20" validate:"range:(0,]"`
+	NumChannels int64 `default:"20" validate:"range:[0,]"`
 	// The target number of posts to be created.
-	NumPosts int64 `default:"1000" validate:"range:(0,]"`
+	NumPosts int64 `default:"1000" validate:"range:[0,]"`
 	// The target number of reactions to be created.
-	NumReactions int64 `default:"200" validate:"range:(0,]"`
+	NumReactions int64 `default:"200" validate:"range:[0,]"`
 
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`

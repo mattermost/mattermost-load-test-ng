@@ -34,6 +34,7 @@ func Validate(value interface{}) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
+
 		switch field.Type().Kind() {
 		case reflect.Struct:
 			dv := field.Interface()
@@ -47,7 +48,7 @@ func Validate(value interface{}) error {
 					return err
 				}
 			}
-		case reflect.Bool, reflect.Int, reflect.Float64, reflect.String:
+		case reflect.Bool, reflect.Int, reflect.Int64, reflect.Float64, reflect.String:
 			tag, ok := t.Field(i).Tag.Lookup("validate")
 			if !ok {
 				continue
@@ -129,7 +130,7 @@ func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval
 	var min, max, val float64
 	var err error
 	switch value.Type().Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.Int64:
 		if mins != "" {
 			min, err = strconv.ParseFloat(mins, 64)
 		}
@@ -194,7 +195,7 @@ func validateFromField(value reflect.Value, valuestr string) (string, error) {
 		}
 
 		switch v.Type().Kind() {
-		case reflect.Int:
+		case reflect.Int, reflect.Int64:
 			return fmt.Sprintf("%d", v.Int()), nil
 		case reflect.Float64:
 			return fmt.Sprintf("%f", v.Float()), nil
