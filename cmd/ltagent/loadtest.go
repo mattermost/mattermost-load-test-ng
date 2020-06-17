@@ -208,11 +208,11 @@ func MakeLoadTestCommand() *cobra.Command {
 		SilenceUsage: true,
 		PreRun:       SetupLoadTest,
 	}
-	cmd.PersistentFlags().StringP("controller-config", "", "", "path to the controller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
-	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
-	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
-	cmd.PersistentFlags().Float64P("rate", "r", 1.0, "rate value for the controller")
+	cmd.Flags().StringP("controller-config", "", "", "path to the controller configuration file to use")
+	cmd.Flags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
+	cmd.Flags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.Flags().Float64P("rate", "r", 1.0, "rate value for the controller")
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
 	cmd.PersistentFlags().IntP("user-offset", "", 0, "numerical offset applied to user ids")
 	return cmd
