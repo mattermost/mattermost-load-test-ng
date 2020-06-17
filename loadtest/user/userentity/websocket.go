@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/websocket"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
