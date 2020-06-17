@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func initDone(serverURL, userPrefix string) (bool, error) {
+func isInitDone(serverURL, userPrefix string) (bool, error) {
 	ueConfig := userentity.Config{
 		ServerURL: serverURL,
 		Username:  userPrefix + "-1",
@@ -85,7 +85,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if ok, err := initDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
+	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
 		return err
 	} else if ok {
 		mlog.Warn("init already done")
