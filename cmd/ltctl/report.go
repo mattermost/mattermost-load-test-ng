@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"time"
 
@@ -19,21 +20,18 @@ import (
 )
 
 func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
-	const layout = "2006-01-02 15:04:05"
-	st, err := cmd.Flags().GetString("start-time")
+	err := cobra.MinimumNArgs(2)(cmd, args)
 	if err != nil {
 		return err
 	}
-	startTime, err := time.Parse(layout, st)
+
+	const layout = "2006-01-02 15:04:05"
+	startTime, err := time.Parse(layout, args[0])
 	if err != nil {
 		return fmt.Errorf("start-time in incorrect format: %w", err)
 	}
 
-	et, err := cmd.Flags().GetString("end-time")
-	if err != nil {
-		return err
-	}
-	endTime, err := time.Parse(layout, et)
+	endTime, err := time.Parse(layout, args[1])
 	if err != nil {
 		return fmt.Errorf("end-time in incorrect format: %w", err)
 	}
@@ -111,6 +109,12 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 	genGraph, err := cmd.Flags().GetBool("graph")
 	if err != nil {
 		return err
+	}
+
+	if genGraph {
+		if _, err := exec.LookPath("gnuplot"); err != nil {
+			return fmt.Errorf("gnuplot is not installed. The --graph option requires it to be installed: %w", err)
+		}
 	}
 
 	file, err := cmd.Flags().GetString("output")
