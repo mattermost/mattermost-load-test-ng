@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -38,27 +41,39 @@ var ltConfig = Config{
 	},
 }
 
-func TestNew(t *testing.T) {
+func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
+	ueConfig := userentity.Config{
+		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
+		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
+	}
+	store, err := memstore.New(nil)
+	if err != nil {
+		return nil, err
+	}
+	ue := userentity.New(userentity.Setup{Store: store}, ueConfig)
 	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
 
+	return simplecontroller.New(id, ue, cfg, status)
+}
+
+func TestNew(t *testing.T) {
 	// ignore lt structs if there is an error.
-	_, err = New(nil, 0, "test", cfg)
+	_, err := New(nil, newController)
 	require.NotNil(t, err)
 
-	_, err = New(&ltConfig, 0, "test", nil)
+	_, err = New(&ltConfig, nil)
 	require.NotNil(t, err)
 
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 	require.NotNil(t, lt)
 }
 
 func TestAddUsers(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 
 	n, err := lt.AddUsers(0)
@@ -86,10 +101,7 @@ func TestAddUsers(t *testing.T) {
 }
 
 func TestRemoveUsers(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	defer close(lt.statusChan)
 	require.Nil(t, err)
 
@@ -141,10 +153,7 @@ func TestRemoveUsers(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -159,10 +168,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRerun(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -178,10 +184,7 @@ func TestRerun(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.Nil(t, err)
 	err = lt.Stop()
 	require.Equal(t, ErrNotRunning, err)
@@ -202,10 +205,7 @@ func TestStop(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	cfg, err := simplecontroller.ReadConfig("")
-	require.NoError(t, err)
-
-	lt, err := New(&ltConfig, 0, "test", cfg)
+	lt, err := New(&ltConfig, newController)
 	require.NotNil(t, lt)
 	require.Nil(t, err)
 

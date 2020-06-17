@@ -20,10 +20,13 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
+type Initializer func(config *loadtest.Config, userOffset int, namePrefix string, controllerConfig interface{}) loadtest.NewController
+
 // API contains information about all load tests.
 type API struct {
-	agents  map[string]*loadtest.LoadTester
-	metrics *performance.Metrics
+	initializer Initializer
+	agents      map[string]*loadtest.LoadTester
+	metrics     *performance.Metrics
 }
 
 // Response contains the data returned by the HTTP server.
@@ -101,7 +104,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lt, err := loadtest.New(&ltConfig, 0, agentId, ucConfig)
+	lt, err := loadtest.New(&ltConfig, a.initializer(&ltConfig, 0, agentId, ucConfig))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
@@ -262,13 +265,14 @@ func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
-func SetupAPIRouter() *mux.Router {
+func SetupAPIRouter(controllerInitializer Initializer) *mux.Router {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadagent").Subrouter()
 
 	api := API{
-		agents:  make(map[string]*loadtest.LoadTester),
-		metrics: performance.NewMetrics(),
+		initializer: controllerInitializer,
+		agents:      make(map[string]*loadtest.LoadTester),
+		metrics:     performance.NewMetrics(),
 	}
 	r.HandleFunc("/create", api.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
 	r.HandleFunc("/{id}/run", api.runLoadAgentHandler).Methods("POST")
