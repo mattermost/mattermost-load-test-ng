@@ -50,7 +50,9 @@ func genData(lt *loadtest.LoadTester, numUsers int64) error {
 	}(time.Now())
 
 	for lt.Status().NumUsersAdded != numUsers {
-		lt.AddUsers(10)
+		if _, err := lt.AddUsers(10); err != nil {
+			return fmt.Errorf("failed to add users %w", err)
+		}
 		time.Sleep(5 * time.Second)
 	}
 
