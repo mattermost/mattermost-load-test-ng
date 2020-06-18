@@ -5,14 +5,12 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
@@ -95,23 +93,6 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	seed := memstore.SetRandomSeed()
 	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
 
-	// http.Transport to be shared amongst all clients.
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxConnsPerHost:       100,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   100,
-		ResponseHeaderTimeout: 10 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
 	genConfig := gencontroller.Config{
 		NumTeams:               config.InstanceConfiguration.NumTeams,
 		NumChannels:            config.InstanceConfiguration.NumChannels,
@@ -124,31 +105,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		PercentGroupChannels:   config.InstanceConfiguration.PercentGroupChannels,
 	}
 
-	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
-		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-%d", userPrefix, id),
-			Email:        fmt.Sprintf("%s-%d@example.com", userPrefix, id),
-			Password:     "testPass123$",
-		}
-		store, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          500,
-			MaxStoredUsers:          1000,
-			MaxStoredChannelMembers: 1000,
-			MaxStoredStatuses:       1000,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
-		}
-		ue := userentity.New(ueSetup, ueConfig)
-		return gencontroller.New(id, ue, &genConfig, status)
-	}
-
+	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
 	config.UsersConfiguration.InitialActiveUsers = 0
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
@@ -157,7 +114,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	lt, err := loadtest.New(config, newControllerFn)
+	lt, err := loadtest.New(config, newControllerWrapper(config, &genConfig, 0, userPrefix, nil))
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

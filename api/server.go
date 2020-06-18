@@ -6,30 +6,27 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"strconv"
-	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
+type newControllerWrapper func(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController
+
 // API contains information about all load tests.
 type API struct {
-	agents  map[string]*loadtest.LoadTester
-	metrics *performance.Metrics
+	newControllerFn newControllerWrapper
+	agents          map[string]*loadtest.LoadTester
+	metrics         *performance.Metrics
 }
 
 // Response contains the data returned by the HTTP server.
@@ -107,59 +104,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// http.Transport to be shared amongst all clients.
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxConnsPerHost:       500,
-		MaxIdleConns:          500,
-		MaxIdleConnsPerHost:   500,
-		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	newControllerFn := func(id int, status chan<- control.UserStatus) (control.UserController, error) {
-		ueConfig := userentity.Config{
-			ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
-			WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-%d", agentId, id),
-			Email:        fmt.Sprintf("%s-%d@example.com", agentId, id),
-			Password:     "testPass123$",
-		}
-		store, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          500,
-			MaxStoredUsers:          1000,
-			MaxStoredChannelMembers: 1000,
-			MaxStoredStatuses:       1000,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
-			Metrics:   a.metrics.UserEntityMetrics(),
-		}
-		ue := userentity.New(ueSetup, ueConfig)
-		switch ltConfig.UserControllerConfiguration.Type {
-		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, ucConfig.(*simplecontroller.Config), status)
-		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, ucConfig.(*simulcontroller.Config), status)
-		case loadtest.UserControllerNoop:
-			return noopcontroller.New(id, ue, status)
-		default:
-			panic("controller type must be valid")
-		}
-	}
-
-	lt, err := loadtest.New(&ltConfig, newControllerFn)
+	lt, err := loadtest.New(&ltConfig, a.newControllerFn(&ltConfig, ucConfig, 0, agentId, a.metrics))
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, &Response{
 			Id:      agentId,
@@ -320,13 +265,14 @@ func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
-func SetupAPIRouter() *mux.Router {
+func SetupAPIRouter(f newControllerWrapper) *mux.Router {
 	router := mux.NewRouter()
 	r := router.PathPrefix("/loadagent").Subrouter()
 
 	api := API{
-		agents:  make(map[string]*loadtest.LoadTester),
-		metrics: performance.NewMetrics(),
+		newControllerFn: f,
+		agents:          make(map[string]*loadtest.LoadTester),
+		metrics:         performance.NewMetrics(),
 	}
 	r.HandleFunc("/create", api.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
 	r.HandleFunc("/{id}/run", api.runLoadAgentHandler).Methods("POST")
