@@ -6,6 +6,7 @@ package deployment
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -82,10 +83,24 @@ type ElasticSearchSettings struct {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if !checkPrefix(c.MattermostDownloadURL) {
+		return fmt.Errorf("mattermost download url is not in correct format: %q", c.MattermostDownloadURL)
+	}
+
+	if !checkPrefix(c.LoadTestDownloadURL) {
+		return fmt.Errorf("load-test download url is not in correct format: %q", c.LoadTestDownloadURL)
+	}
+
 	if err := c.validateElasticSearchConfig(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func checkPrefix(str string) bool {
+	return strings.HasPrefix(str, "https://") ||
+		strings.HasPrefix(str, "http://") ||
+		strings.HasPrefix(str, "file://")
 }
 
 func (c *Config) validateElasticSearchConfig() error {
