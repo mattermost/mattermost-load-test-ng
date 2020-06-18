@@ -4,13 +4,13 @@
 package coordinator
 
 import (
-	"fmt"
-	"net"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/stretchr/testify/require"
 )
@@ -24,19 +24,24 @@ func newConfig(t *testing.T) *Config {
 	return &cfg
 }
 
-func setupAPIServer(t *testing.T) *http.Server {
+func setupAPIServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	listener, err := net.Listen("tcp", ":0")
-	require.NoError(t, err)
-	port := listener.Addr().(*net.TCPAddr).Port
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: api.SetupAPIRouter(),
-	}
-	go func() {
-		srv.Serve(listener)
-	}()
-	return srv
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := struct {
+			Id      string           `json:"id,omitempty"`
+			Message string           `json:"message,omitempty"`
+			Status  *loadtest.Status `json:"status,omitempty"`
+			Error   string           `json:"error,omitempty"`
+		}{
+			"lt0",
+			"",
+			&loadtest.Status{},
+			"",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
 }
 
 func TestNew(t *testing.T) {
@@ -54,7 +59,7 @@ func TestRun(t *testing.T) {
 	defer srv.Close()
 
 	cfg := newConfig(t)
-	cfg.ClusterConfig.Agents[0].ApiURL = "http://localhost" + srv.Addr
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
 	c, err := New(cfg)
 	require.NoError(t, err)
@@ -77,7 +82,7 @@ func TestStop(t *testing.T) {
 	defer srv.Close()
 
 	cfg := newConfig(t)
-	cfg.ClusterConfig.Agents[0].ApiURL = "http://localhost" + srv.Addr
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
 	c, err := New(cfg)
 	require.NoError(t, err)
@@ -102,7 +107,7 @@ func TestStatus(t *testing.T) {
 	defer srv.Close()
 
 	cfg := newConfig(t)
-	cfg.ClusterConfig.Agents[0].ApiURL = "http://localhost" + srv.Addr
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
 	c, err := New(cfg)
 	require.NoError(t, err)
