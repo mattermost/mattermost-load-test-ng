@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -20,36 +19,26 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
 )
 
 func runGenLoadtest(lt *loadtest.LoadTester, numUsers int) error {
-	start := time.Now()
 	if err := lt.Run(); err != nil {
 		return err
 	}
-	mlog.Info("loadtest started")
 
-	var err error
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			if status := lt.Status(); status.NumUsersStopped == int64(numUsers) {
-				err = lt.Stop()
-				return
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-	wg.Wait()
+	defer func(start time.Time) {
+		mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+	}(time.Now())
 
-	mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
+	for lt.Status().NumUsersStopped != int64(numUsers) {
+		time.Sleep(1 * time.Second)
+	}
 
-	return err
+	return lt.Stop()
 }
 
 func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
@@ -122,7 +111,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	lt, err := loadtest.New(config, controllerInitializer(config, userOffset, userPrefix, ucConfig))
+	lt, err := loadtest.New(config, newControllerWrapper(config, ucConfig, userOffset, userPrefix, nil))
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
@@ -157,17 +146,17 @@ func MakeLoadTestCommand() *cobra.Command {
 		SilenceUsage: true,
 		PreRun:       SetupLoadTest,
 	}
-	cmd.PersistentFlags().StringP("controller-config", "", "", "path to the controller configuration file to use")
 	cmd.PersistentFlags().StringP("config", "c", "", "path to the configuration file to use")
-	cmd.PersistentFlags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
-	cmd.PersistentFlags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
-	cmd.PersistentFlags().Float64P("rate", "r", 1.0, "rate value for the controller")
+	cmd.Flags().StringP("controller-config", "", "", "path to the controller configuration file to use")
+	cmd.Flags().IntP("duration", "d", 60, "number of seconds to pass before stopping the load-test")
+	cmd.Flags().IntP("num-users", "n", 0, "number of users to run, setting this value will override the config setting")
+	cmd.Flags().Float64P("rate", "r", 1.0, "rate value for the controller")
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
 	cmd.PersistentFlags().IntP("user-offset", "", 0, "numerical offset applied to user ids")
 	return cmd
 }
 
-func controllerInitializer(config *loadtest.Config, userOffset int, namePrefix string, controllerConfig interface{}) loadtest.NewController {
+func newControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
 	// http.Transport to be shared amongst all clients.
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -207,6 +196,9 @@ func controllerInitializer(config *loadtest.Config, userOffset int, namePrefix s
 		ueSetup := userentity.Setup{
 			Store:     store,
 			Transport: transport,
+		}
+		if metrics != nil {
+			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
 		ue := userentity.New(ueSetup, ueConfig)
 

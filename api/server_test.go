@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,7 @@ type requestData struct {
 }
 
 func TestAPI(t *testing.T) {
-	initializer := func(config *loadtest.Config, userOffset int, namePrefix string, controllerConfig interface{}) loadtest.NewController {
+	newControllerFn := func(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
 		return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 			switch config.UserControllerConfiguration.Type {
 			case loadtest.UserControllerSimple:
@@ -40,7 +41,7 @@ func TestAPI(t *testing.T) {
 		}
 	}
 	// create http.Handler
-	handler := SetupAPIRouter(initializer)
+	handler := SetupAPIRouter(newControllerFn)
 
 	// run server using httptest
 	server := httptest.NewServer(handler)

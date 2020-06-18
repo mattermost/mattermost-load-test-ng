@@ -28,7 +28,7 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	})
 
 	mlog.Info("API server started, listening on", mlog.Int("port", port))
-	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter(controllerInitializer))
+	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter(newControllerWrapper))
 }
 
 func MakeServerCommand() *cobra.Command {
