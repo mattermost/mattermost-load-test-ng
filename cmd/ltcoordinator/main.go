@@ -6,7 +6,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -43,7 +45,23 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
 
-	return c.Run()
+	done, err := c.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run coordinator: %w", err)
+	}
+
+	interruptChannel := make(chan os.Signal, 1)
+	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-interruptChannel:
+		if err := c.Stop(); err != nil {
+			return fmt.Errorf("failed to stop coordinator: %w", err)
+		}
+	case <-done:
+	}
+
+	return nil
 }
 
 func main() {

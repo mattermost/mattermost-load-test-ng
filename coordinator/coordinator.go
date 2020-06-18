@@ -5,9 +5,7 @@ package coordinator
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
@@ -20,26 +18,34 @@ import (
 // Coordinator is the object used to coordinate a cluster of
 // load-test agents.
 type Coordinator struct {
-	config  *Config
-	cluster *cluster.LoadAgentCluster
-	monitor *performance.Monitor
+	mut      sync.RWMutex
+	stopChan chan struct{}
+	doneChan chan struct{}
+	status   Status
+	config   *Config
+	cluster  *cluster.LoadAgentCluster
+	monitor  *performance.Monitor
 }
 
 // Run starts a cluster of load-test agents.
-func (c *Coordinator) Run() error {
+// It returns a channel to signal when the coordinator is done.
+// It is not safe to call this again after a call to Stop().
+func (c *Coordinator) Run() (<-chan struct{}, error) {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	if c.status.State != Stopped {
+		return nil, ErrNotStopped
+	}
+
 	mlog.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)))
 
-	interruptChannel := make(chan os.Signal, 1)
-	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	defer c.cluster.Shutdown()
 	if err := c.cluster.Run(); err != nil {
 		mlog.Error("coordinator: running cluster failed", mlog.Err(err))
-		return err
+		return nil, err
 	}
 
 	monitorChan := c.monitor.Run()
-	defer c.monitor.Stop()
 
 	var lastActionTime, lastAlertTime time.Time
 	var supportedUsers int
@@ -59,56 +65,96 @@ func (c *Coordinator) Run() error {
 	// incrementing or decrementing users again.
 	restTime := time.Duration(c.config.RestTimeSec) * time.Second
 
-	for {
-		var perfStatus performance.Status
+	go func() {
+		defer func() {
+			c.monitor.Stop()
+			c.cluster.Shutdown()
+			close(c.doneChan)
+		}()
 
-		select {
-		case <-interruptChannel:
-			mlog.Info("coordinator: shutting down")
-			return nil
-		case perfStatus = <-monitorChan:
-		}
+		for {
+			var perfStatus performance.Status
 
-		if perfStatus.Alert {
-			lastAlertTime = time.Now()
-		}
+			select {
+			case <-c.stopChan:
+				mlog.Info("coordinator: shutting down")
+				return
+			case perfStatus = <-monitorChan:
+			}
 
-		status := c.cluster.Status()
-		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
-
-		// TODO: supportedUsers should be estimated in a more clever way in the future.
-		// For now we say that the supported number of users is the number of active users that ran
-		// for the defined timespan without causing any performance degradation alert.
-		if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
-			supportedUsers = status.ActiveUsers
-		}
-
-		mlog.Info("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
-
-		// We give the feedback loop some rest time in case of performance
-		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
-		if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
 			if perfStatus.Alert {
-				mlog.Info("coordinator: decrementing active users", mlog.Int("num_users", decValue))
-				if err := c.cluster.DecrementUsers(decValue); err != nil {
-					mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
-				} else {
-					lastActionTime = time.Now()
-				}
-			} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
-				if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
-					inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
-					mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
-					if err := c.cluster.IncrementUsers(inc); err != nil {
-						mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+				lastAlertTime = time.Now()
+			}
+
+			status := c.cluster.Status()
+			mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+
+			// TODO: supportedUsers should be estimated in a more clever way in the future.
+			// For now we say that the supported number of users is the number of active users that ran
+			// for the defined timespan without causing any performance degradation alert.
+			if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
+				supportedUsers = status.ActiveUsers
+			}
+
+			mlog.Info("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
+
+			// We give the feedback loop some rest time in case of performance
+			// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
+			if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
+				if perfStatus.Alert {
+					mlog.Info("coordinator: decrementing active users", mlog.Int("num_users", decValue))
+					if err := c.cluster.DecrementUsers(decValue); err != nil {
+						mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
 					} else {
 						lastActionTime = time.Now()
 					}
+				} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
+					if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
+						inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
+						mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+						if err := c.cluster.IncrementUsers(inc); err != nil {
+							mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+						} else {
+							lastActionTime = time.Now()
+						}
+					}
 				}
+			} else {
+				mlog.Info("coordinator: waiting for metrics to stabilize")
 			}
-		} else {
-			mlog.Info("coordinator: waiting for metrics to stabilize")
 		}
+	}()
+
+	c.status.StartTime = time.Now()
+	c.status.State = Running
+
+	return c.doneChan, nil
+}
+
+// Stop stops the coordinator.
+// It returns an error if the coordinator was not running.
+func (c *Coordinator) Stop() error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+	if c.status.State != Running {
+		return ErrNotRunning
+	}
+	close(c.stopChan)
+	<-c.doneChan
+	c.status.State = Stopped
+	return nil
+}
+
+// Status returns the coordinator's status.
+func (c *Coordinator) Status() Status {
+	c.mut.RLock()
+	defer c.mut.RUnlock()
+	clusterStatus := c.cluster.Status()
+	return Status{
+		State:       c.status.State,
+		StartTime:   c.status.StartTime,
+		ActiveUsers: clusterStatus.ActiveUsers,
+		NumErrors:   clusterStatus.NumErrors,
 	}
 }
 
@@ -133,8 +179,12 @@ func New(config *Config) (*Coordinator, error) {
 	}
 
 	return &Coordinator{
-		config:  config,
-		cluster: cluster,
-		monitor: monitor,
+		mut:      sync.RWMutex{},
+		stopChan: make(chan struct{}),
+		doneChan: make(chan struct{}),
+		status:   Status{},
+		config:   config,
+		cluster:  cluster,
+		monitor:  monitor,
 	}, nil
 }
