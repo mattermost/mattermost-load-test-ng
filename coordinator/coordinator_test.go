@@ -68,13 +68,16 @@ func TestRun(t *testing.T) {
 	done, err := c.Run()
 	require.NoError(t, err)
 	require.NotNil(t, done)
+	require.Equal(t, Running, c.status.State)
 
 	done, err = c.Run()
 	require.Error(t, err)
 	require.Nil(t, done)
+	require.Equal(t, Running, c.status.State)
 
 	err = c.Stop()
 	require.NoError(t, err)
+	require.Equal(t, c.status.State, Stopped)
 }
 
 func TestStop(t *testing.T) {
@@ -87,6 +90,7 @@ func TestStop(t *testing.T) {
 	c, err := New(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, c)
+	require.Equal(t, c.status.State, Stopped)
 
 	err = c.Stop()
 	require.Error(t, err)
@@ -94,9 +98,11 @@ func TestStop(t *testing.T) {
 	done, err := c.Run()
 	require.NoError(t, err)
 	require.NotNil(t, done)
+	require.Equal(t, Running, c.status.State)
 
 	err = c.Stop()
 	require.NoError(t, err)
+	require.Equal(t, c.status.State, Stopped)
 
 	err = c.Stop()
 	require.Error(t, err)
