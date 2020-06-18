@@ -54,7 +54,7 @@ func (a *LoadAgent) apiRequest(req *http.Request) error {
 		}
 		return fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
 	}
-	res := &api.Response{}
+	res := &api.AgentResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&res)
 	if err != nil {
 		return err
