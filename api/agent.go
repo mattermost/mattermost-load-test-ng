@@ -47,7 +47,7 @@ func getAmount(r *http.Request) (int, error) {
 	return int(amount), err
 }
 
-func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		LoadTestConfig         loadtest.Config
 		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
@@ -125,7 +125,7 @@ func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *API) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
+func (a *api) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	lt, ok := a.agents[id]
@@ -139,7 +139,7 @@ func (a *API) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtes
 	return lt, nil
 }
 
-func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
@@ -156,7 +156,7 @@ func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
@@ -173,7 +173,7 @@ func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
@@ -188,7 +188,7 @@ func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
@@ -198,7 +198,7 @@ func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
@@ -222,7 +222,7 @@ func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, http.StatusOK, &resp)
 }
 
-func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	lt, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return

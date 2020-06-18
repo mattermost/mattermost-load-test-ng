@@ -13,13 +13,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// API keeps track of the load-test API server state.
-type API struct {
+// api keeps track of the load-test API server state.
+type api struct {
 	agents  map[string]*loadtest.LoadTester
 	metrics *performance.Metrics
 }
 
-func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 	html := `
 		<html>
 			<body>
@@ -35,31 +35,32 @@ func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // SetupAPIRouter creates a router to handle load test API requests.
 func SetupAPIRouter() *mux.Router {
-	router := mux.NewRouter()
-	r := router.PathPrefix("/loadagent").Subrouter()
-
-	api := API{
+	a := api{
 		agents:  make(map[string]*loadtest.LoadTester),
 		metrics: performance.NewMetrics(),
 	}
-	r.HandleFunc("/create", api.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
-	r.HandleFunc("/{id}/run", api.runLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/stop", api.stopLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}", api.destroyLoadAgentHandler).Methods("DELETE")
-	r.HandleFunc("/{id}", api.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/status", api.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/addusers", api.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
-	r.HandleFunc("/{id}/removeusers", api.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 
-	// Add profile endpoints
+	// load-test agent API.
+	router := mux.NewRouter()
+	r := router.PathPrefix("/loadagent").Subrouter()
+	r.HandleFunc("/create", a.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
+	r.HandleFunc("/{id}/run", a.runLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}/stop", a.stopLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}", a.destroyLoadAgentHandler).Methods("DELETE")
+	r.HandleFunc("/{id}", a.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/status", a.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/addusers", a.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/removeusers", a.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+
+	// Debug endpoint.
 	p := router.PathPrefix("/debug/pprof").Subrouter()
-	p.HandleFunc("/", api.pprofIndexHandler).Methods("GET")
+	p.HandleFunc("/", a.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
 
-	// Add metrics endpoint
-	router.Handle("/metrics", api.metrics.Handler())
+	// Metrics endpoint.
+	router.Handle("/metrics", a.metrics.Handler())
 
 	return router
 }
