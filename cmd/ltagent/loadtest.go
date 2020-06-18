@@ -5,21 +5,15 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"net/http"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
-	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
@@ -111,7 +105,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	lt, err := loadtest.New(config, newControllerWrapper(config, ucConfig, userOffset, userPrefix, nil))
+	lt, err := loadtest.New(config, api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil))
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
@@ -154,74 +148,4 @@ func MakeLoadTestCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
 	cmd.PersistentFlags().IntP("user-offset", "", 0, "numerical offset applied to user ids")
 	return cmd
-}
-
-func newControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
-	// http.Transport to be shared amongst all clients.
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxConnsPerHost:       500,
-		MaxIdleConns:          500,
-		MaxIdleConnsPerHost:   500,
-		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
-		id += userOffset
-
-		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-%d", namePrefix, id),
-			Email:        fmt.Sprintf("%s-%d@example.com", namePrefix, id),
-			Password:     "testPass123$",
-		}
-		store, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          500,
-			MaxStoredUsers:          1000,
-			MaxStoredChannelMembers: 1000,
-			MaxStoredStatuses:       1000,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
-		}
-		if metrics != nil {
-			ueSetup.Metrics = metrics.UserEntityMetrics()
-		}
-		ue := userentity.New(ueSetup, ueConfig)
-
-		switch config.UserControllerConfiguration.Type {
-		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, controllerConfig.(*simplecontroller.Config), status)
-		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
-		case loadtest.UserControllerGenerative:
-			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
-		case loadtest.UserControllerNoop:
-			return noopcontroller.New(id, ue, status)
-		case loadtest.UserControllerCluster:
-			// For cluster controller, we only use the sysadmin
-			// because we are just testing system console APIs.
-			ueConfig.Username = ""
-			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
-			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
-
-			admin := userentity.New(ueSetup, ueConfig)
-			return clustercontroller.New(id, admin, status)
-		default:
-			panic("controller type must be valid")
-		}
-	}
 }

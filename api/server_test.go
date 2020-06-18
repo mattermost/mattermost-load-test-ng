@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,10 +11,8 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
-	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -28,20 +25,8 @@ type requestData struct {
 }
 
 func TestAPI(t *testing.T) {
-	newControllerFn := func(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
-		return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
-			switch config.UserControllerConfiguration.Type {
-			case loadtest.UserControllerSimple:
-				return simplecontroller.New(id, nil, controllerConfig.(*simplecontroller.Config), status)
-			case loadtest.UserControllerSimulative:
-				return simulcontroller.New(id, nil, controllerConfig.(*simulcontroller.Config), status)
-			default:
-				return nil, errors.New("not implemented")
-			}
-		}
-	}
 	// create http.Handler
-	handler := SetupAPIRouter(newControllerFn)
+	handler := SetupAPIRouter()
 
 	// run server using httptest
 	server := httptest.NewServer(handler)

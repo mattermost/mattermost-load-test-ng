@@ -28,7 +28,6 @@ func main() {
 			PreRun:       SetupLoadTest,
 		},
 		MakeInitCommand(),
-		MakeServerCommand(),
 	}
 
 	rootCmd.AddCommand(commands...)

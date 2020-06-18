@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -24,21 +25,22 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 		EnableFile:    true,
 		FileLevel:     "INFO",
 		FileJson:      true,
-		FileLocation:  "ltagent.log",
+		FileLocation:  "ltapi.log",
 	})
 
 	mlog.Info("API server started, listening on", mlog.Int("port", port))
-	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter(newControllerWrapper))
+	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter())
 }
 
-func MakeServerCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "server",
-		Short:        "Start API agent",
+func main() {
+	rootCmd := &cobra.Command{
+		Use:          "ltapi",
+		Short:        "Start load-test API server",
 		SilenceUsage: true,
 		RunE:         RunServerCmdF,
 	}
-	cmd.PersistentFlags().IntP("port", "p", 4000, "Port to listen on")
-
-	return cmd
+	rootCmd.PersistentFlags().IntP("port", "p", 4000, "Port to listen on")
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
