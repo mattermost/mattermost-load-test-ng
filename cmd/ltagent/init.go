@@ -105,6 +105,15 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		PercentGroupChannels:   config.InstanceConfiguration.PercentGroupChannels,
 	}
 
+	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
+	config.UsersConfiguration.InitialActiveUsers = 0
+	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
+		{
+			Rate:       0.2,
+			Percentage: 1.0,
+		},
+	}
+
 	lt, err := loadtest.New(config, newControllerWrapper(config, &genConfig, 0, userPrefix, nil))
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
