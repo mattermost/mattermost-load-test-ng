@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
@@ -15,8 +16,9 @@ import (
 
 // api keeps track of the load-test API server state.
 type api struct {
-	agents  map[string]*loadtest.LoadTester
-	metrics *performance.Metrics
+	agents       map[string]*loadtest.LoadTester
+	coordinators map[string]*coordinator.Coordinator
+	metrics      *performance.Metrics
 }
 
 func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,12 +38,14 @@ func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 // SetupAPIRouter creates a router to handle load test API requests.
 func SetupAPIRouter() *mux.Router {
 	a := api{
-		agents:  make(map[string]*loadtest.LoadTester),
-		metrics: performance.NewMetrics(),
+		agents:       make(map[string]*loadtest.LoadTester),
+		coordinators: make(map[string]*coordinator.Coordinator),
+		metrics:      performance.NewMetrics(),
 	}
 
-	// load-test agent API.
 	router := mux.NewRouter()
+
+	// load-test agent API.
 	r := router.PathPrefix("/loadagent").Subrouter()
 	r.HandleFunc("/create", a.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
 	r.HandleFunc("/{id}/run", a.runLoadAgentHandler).Methods("POST")
@@ -51,6 +55,15 @@ func SetupAPIRouter() *mux.Router {
 	r.HandleFunc("/{id}/status", a.getLoadAgentStatusHandler).Methods("GET")
 	r.HandleFunc("/{id}/addusers", a.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	r.HandleFunc("/{id}/removeusers", a.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+
+	// load-test coordinator API.
+	c := router.PathPrefix("/coordinator").Subrouter()
+	c.HandleFunc("/create", a.createCoordinatorHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
+	c.HandleFunc("/{id}", a.destroyCoordinatorHandler).Methods("DELETE")
+	c.HandleFunc("/{id}", a.getCoordinatorStatusHandler).Methods("GET")
+	c.HandleFunc("/{id}/status", a.getCoordinatorStatusHandler).Methods("GET")
+	c.HandleFunc("/{id}/run", a.runCoordinatorHandler).Methods("POST")
+	c.HandleFunc("/{id}/stop", a.stopCoordinatorHandler).Methods("POST")
 
 	// Debug endpoint.
 	p := router.PathPrefix("/debug/pprof").Subrouter()

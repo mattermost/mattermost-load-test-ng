@@ -24,7 +24,7 @@ type requestData struct {
 	SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 }
 
-func TestAPI(t *testing.T) {
+func TestAgentAPI(t *testing.T) {
 	// create http.Handler
 	handler := SetupAPIRouter()
 
