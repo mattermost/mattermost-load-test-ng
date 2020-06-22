@@ -77,7 +77,7 @@ resource "aws_instance" "metrics_server" {
   }
 
   ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
-  instance_type = "t2.large"
+  instance_type = "t3.xlarge"
   key_name      = aws_key_pair.key.id
 
   vpc_security_group_ids = [
