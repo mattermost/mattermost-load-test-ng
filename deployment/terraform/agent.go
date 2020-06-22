@@ -71,24 +71,23 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 			}
 		}
 
-		tpl, err := template.New("").Parse(agentServiceFile)
+		tpl, err := template.New("").Parse(apiServiceFile)
 		if err != nil {
 			return fmt.Errorf("could not parse agent service template: %w", err)
 		}
 
-		agentCmd := baseAgentCmd
+		serverCmd := baseAPIServerCmd
 		if t.config.EnableAgentFullLogs {
-			agentCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/agent.log'", baseAgentCmd)
+			serverCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
 		}
 
 		buf := bytes.NewBufferString("")
-		tpl.Execute(buf, agentCmd)
+		tpl.Execute(buf, serverCmd)
 
 		batch := []uploadInfo{
-			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltagent.service", msg: "Uploading agent service file"},
+			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
 			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-			{srcData: strings.TrimPrefix(coordinatorServiceFile, "\n"), dstPath: "/lib/systemd/system/ltcoordinator.service", msg: "Uploading coordinator service file"},
 		}
 
 		if err := uploadBatch(sshc, batch); err != nil {
@@ -99,8 +98,8 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 
-		mlog.Info("Starting agent")
-		if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltagent restart"); err != nil {
+		mlog.Info("Starting load-test api server")
+		if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
 			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 	}

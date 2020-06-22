@@ -23,6 +23,7 @@ metricswatcher.log
 ltagent.log
 ltcoordinator.log
 deployer.log
+ltapi.log
 
 .tmp
 debug
@@ -74,6 +75,7 @@ config/deployer.json
 # binaries
 ltagent
 ltcoordinator
+ltapi
 
 # terraform stuff
 /terraformenv
