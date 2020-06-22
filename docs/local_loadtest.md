@@ -9,7 +9,7 @@ It's also a great way to learn how the whole load-testing process works before t
 There are a few ways to run a load-test locally, in order of complexity:
 
 - Run the `ltagent` command directly. 
-- Run a load-test through the load-test agent API server.
+- Run a load-test through the load-test agent API server `ltapi`.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
 ## Prerequisites
@@ -69,7 +69,7 @@ A more advanced way to run a load-test is to use the provided load-test agent AP
 ### Start the API server
 
 ```sh
-go run ./cmd/ltagent server
+go run ./cmd/ltapi
 ```
 
 This will start the server and expose the HTTP API on port 4000 (default).  
@@ -145,7 +145,7 @@ correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for 
 The first step is having the server running.
 
 ```sh
-go run ./cmd/ltagent server
+go run ./cmd/ltapi
 ```
 
 ### Configure the coordinator
