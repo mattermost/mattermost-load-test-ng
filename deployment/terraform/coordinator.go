@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -113,9 +115,34 @@ func (t *Terraform) StartCoordinator() error {
 	}
 
 	mlog.Info("Starting the coordinator")
-	cmd := "sudo service ltcoordinator start"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: output: %q, error: %w", out, err)
+	data, err = json.Marshal(struct {
+		CoordinatorConfig coordinator.Config
+		LoadTestConfig    loadtest.Config
+	}{
+		*coordinatorConfig,
+		*agentConfig,
+	})
+	if err != nil {
+		return err
+	}
+	// TODO: create a wrapper to simplify coordinator's HTTP API usage.
+	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
+	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
+	resp, err := http.Post("http://"+ip+":4000/coordinator/create?id="+id, "application/json", bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to create coordinator: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create coordinator, returned status was %s", resp.Status)
+	}
+	resp, err = http.Post(apiURL+"/run", "", nil)
+	if err != nil {
+		return fmt.Errorf("failed to start coordinator: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to start coordinator, returned status was %s", resp.Status)
 	}
 
 	mlog.Info("Done")
@@ -138,19 +165,23 @@ func (t *Terraform) StopCoordinator() error {
 	}
 	ip := output.Agents.Value[0].PublicIP
 
-	extAgent, err := ssh.NewAgent()
-	if err != nil {
-		return err
-	}
-	sshc, err := extAgent.NewClient(ip)
-	if err != nil {
-		return err
-	}
+	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
 
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
-	cmd := "sudo service ltcoordinator stop"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: output: %q, error: %w", out, err)
+
+	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
+	client := &http.Client{}
+	req, err := http.NewRequest("DELETE", apiURL, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to stop coordinator: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to stop coordinator, returned status was %s", resp.Status)
 	}
 
 	mlog.Info("Done")
