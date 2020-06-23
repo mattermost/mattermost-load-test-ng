@@ -167,3 +167,38 @@ go run ./cmd/ltcoordinator
 ```
 
 This will start running a load-test across the configured cluster of load-test agents.
+
+### Run coordinator using the API server
+
+Similarly to what happens for the load-test agents, a coordinator (or more than
+one) can be created and ran using the API server.
+
+### Start the API server
+
+```sh
+go run ./cmd/ltapi
+```
+
+### Create a coordinator
+
+```sh
+curl -d "{\"CoordinatorConfig\": $(cat config/coordinator.json), \"LoadTestConfig\": $(cat config/config.json)}" http://localhost:4000/coordinator/create\?id\=ltc0
+```
+
+### Run a coordinator
+
+```sh
+curl -X POST http://localhost:4000/coordinator/ltc0/run
+```
+
+### Stop a coordinator
+
+```sh
+curl -X POST http://localhost:4000/coordinator/ltc0/stop
+```
+
+### Destroy a coordinator
+
+```sh
+curl -X DELETE http://localhost:4000/coordinator/ltc0
+```
