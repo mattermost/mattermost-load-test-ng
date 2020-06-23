@@ -20,7 +20,7 @@
       },
       {
         "Description": "Average request duration",
-        "Query": "rate(mattermost_api_time_sum[1m])/rate(mattermost_api_time_count[1m])",
+        "Query": "sum(rate(mattermost_api_time_sum[1m])/rate(mattermost_api_time_count[1m]))",
         "Threshold": 0.1,
         "Alert": true
       },
