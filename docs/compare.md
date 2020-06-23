@@ -5,7 +5,7 @@
 After a load test is complete, a report can be generated and saved to a file which can be used to compare different load test runs. This can be done using
 
 ```sh
-go run ./cmd/ltctl report generate --output=base2.out --label=base2 "2020-06-23 07:23:35" "2020-06-23 07:33:35"
+go run ./cmd/ltctl report generate --output=base.out --label=base "2020-06-23 07:23:35" "2020-06-23 07:33:35"
 ```
 
 The timestamps _must_ be in UTC, and they indicate the range within which the data is to be collected for the test. It is recommended to keep the timestamps within a range during which the loadtest is running a stable number of users, and not in a ramp-up phase or an unstable state of adding/removing users. This is to get consistent results between different runs.
@@ -37,5 +37,3 @@ On the server, run:
 
 Then on the coordinator, run:
 - `~/mattermost-load-test-ng$ ./bin/ltagent init`
-
-
