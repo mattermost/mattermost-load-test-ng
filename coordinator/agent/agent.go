@@ -53,22 +53,20 @@ func New(config LoadAgentConfig) (*LoadAgent, error) {
 func (a *LoadAgent) apiRequest(req *http.Request) error {
 	resp, err := a.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("agent: failed to execute api request: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		if resp.StatusCode == http.StatusNotFound {
-			return ErrAgentNotFound
-		}
-		return fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
-	}
 	var res agentResponse
 	err = json.NewDecoder(resp.Body).Decode(&res)
 	if err != nil {
-		return err
+		return fmt.Errorf("agent: failed to decode api response: %w", err)
 	}
-	if res.Error != "" {
+	if resp.StatusCode == http.StatusNotFound {
+		return ErrAgentNotFound
+	} else if res.Error != "" {
 		return fmt.Errorf("agent: api request error: %s", res.Error)
+	} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
 	}
 	a.status = res.Status
 	return nil
