@@ -170,8 +170,8 @@ This will start running a load-test across the configured cluster of load-test a
 
 ### Run coordinator using the API server
 
-Similarly to what happens for the load-test agents, a coordinator (or more than
-one) can be created and ran using the API server.
+Similar to what happens for the load-test agents, a coordinator (or more than
+one) can be created and run using the API server.
 
 ### Start the API server
 
