@@ -29,7 +29,7 @@ type Coordinator struct {
 
 // Run starts a cluster of load-test agents.
 // It returns a channel to signal when the coordinator is done.
-// It is not safe to call this again after a call to Stop().
+// It returns an error if the coordinator is not in Stopped state.
 func (c *Coordinator) Run() (<-chan struct{}, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
