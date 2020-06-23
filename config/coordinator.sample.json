@@ -43,7 +43,7 @@
   "RestTimeSec": 10,
   "LogSettings": {
     "EnableConsole": true,
-    "ConsoleLevel": "ERROR",
+    "ConsoleLevel": "INFO",
     "ConsoleJson": false,
     "EnableFile": true,
     "FileLevel": "INFO",

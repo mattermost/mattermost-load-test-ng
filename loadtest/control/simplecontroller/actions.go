@@ -65,6 +65,10 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if len(posts) == 0 {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts in channel %v", channel.Id)}
+	}
+
 	postId := posts[0].Id // get the oldest post
 	const NUM_OF_SCROLLS = 3
 	const SLEEP_BETWEEN_SCROLL = 1000

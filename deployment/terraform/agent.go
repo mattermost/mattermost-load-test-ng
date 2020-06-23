@@ -132,7 +132,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 	}
 
 	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-	cmd := "cd mattermost-load-test-ng && ./bin/ltagent init"
+	cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents.Value[0].Tags.Name)
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		// TODO: make this fully atomic. See MM-23998.
 		// ltagent init should drop teams and channels before creating them.

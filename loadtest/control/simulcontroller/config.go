@@ -4,63 +4,27 @@
 package simulcontroller
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/mattermost/mattermost-load-test-ng/config"
-
-	"github.com/spf13/viper"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 )
 
 // Config holds information needed to run a SimulController.
 type Config struct {
 	// The minium amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	MinIdleTimeMs int
+	MinIdleTimeMs int `default:"1000" validate:"range:[0,]"`
 	// The average amount of time (in milliseconds) the controlled users
 	// will wait between actions.
-	AvgIdleTimeMs int
+	AvgIdleTimeMs int `default:"20000" validate:"range:($MinIdleTimeMs,]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
-// is empty, it will search a config file in predefined folders.
+// is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
-	v := viper.New()
+	var cfg Config
 
-	configName := "simulcontroller"
-	v.SetConfigName(configName)
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	v.AddConfigPath("./../config/")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	if configFilePath != "" {
-		v.SetConfigFile(configFilePath)
-	}
-
-	if err := config.ReadConfigFile(v, configName); err != nil {
+	if err := defaults.ReadFromJSON(configFilePath, "./config/simulcontoller.json", &cfg); err != nil {
 		return nil, err
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-// IsValid reports whether a given simulcontroller.Config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if c.MinIdleTimeMs <= 0 {
-		return fmt.Errorf("MinIdleTimeMs should be greater than zero")
-	}
-
-	if c.AvgIdleTimeMs <= c.MinIdleTimeMs {
-		return fmt.Errorf("AvgIdleTimeMs should be greater than MinIdleTimeMs")
-	}
-
-	return nil
+	return &cfg, nil
 }

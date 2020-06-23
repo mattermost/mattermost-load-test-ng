@@ -103,7 +103,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	if err != nil {
 		return err
 	}
-	dataSource := fmt.Sprintf(string(buf), "http://"+output.MetricsServer.Value.PublicIP+":9090")
+	dataSource := fmt.Sprintf(string(buf), "http://"+output.MetricsServer.Value.PrivateIP+":9090")
 	if out, err := sshc.Upload(strings.NewReader(dataSource), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
 		return fmt.Errorf("error while uploading datasource: output: %s, error: %w", out, err)
 	}

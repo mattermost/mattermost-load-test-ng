@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,8 @@ func TestGetUserFromStore(t *testing.T) {
 }
 
 func TestFetchStaticAssets(t *testing.T) {
-	config, err := loadtest.ReadConfig("../../../config/config.default.json")
+	var cfg config
+	err := defaults.ReadFromJSON("", "../../../config/config.sample.json", &cfg)
 	require.Nil(t, err)
 	mux := http.NewServeMux()
 	ts := httptest.NewServer(mux)
@@ -65,8 +66,8 @@ func TestFetchStaticAssets(t *testing.T) {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/static/test.js", jsHandler)
 	mux.HandleFunc("/static/test.css", cssHandler)
-	config.ConnectionConfiguration.ServerURL = ts.URL
-	th := HelperSetup(t).SetConfig(config).Init()
+	cfg.ConnectionConfiguration.ServerURL = ts.URL
+	th := HelperSetup(t).SetConfig(cfg).Init()
 	err = th.User.FetchStaticAssets()
 	require.NoError(t, err)
 	require.True(t, indexFetched)

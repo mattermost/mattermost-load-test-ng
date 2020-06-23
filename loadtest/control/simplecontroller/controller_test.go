@@ -6,13 +6,18 @@ package simplecontroller
 import (
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSetRate(t *testing.T) {
-	c, err := New(1, &userentity.UserEntity{}, &Config{}, make(chan control.UserStatus))
+	var cfg Config
+	err := defaults.Set(&cfg)
+	require.Nil(t, err)
+
+	c, err := New(1, &userentity.UserEntity{}, &cfg, make(chan control.UserStatus))
 	require.Nil(t, err)
 
 	require.Equal(t, 1.0, c.rate)

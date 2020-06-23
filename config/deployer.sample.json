@@ -1,6 +1,5 @@
 {
   "ClusterName": "loadtest",
-  "VpcId": "",
   "AppInstanceCount": 1,
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
@@ -8,7 +7,9 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",
-    "Version": 6.5
+    "VpcID": "",
+    "Version": 6.5,
+    "CreateRole": false
   },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "m4.xlarge",
@@ -26,7 +27,7 @@
   "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.6.0-alpha/mattermost-load-test-ng-v0.6.0-alpha-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
-    "ConsoleLevel": "ERROR",
+    "ConsoleLevel": "INFO",
     "ConsoleJson": false,
     "EnableFile": true,
     "FileLevel": "INFO",

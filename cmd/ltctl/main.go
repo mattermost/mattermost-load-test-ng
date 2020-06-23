@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -91,7 +92,7 @@ func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	if err := cfg.IsValid(); err != nil {
+	if err := defaults.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
@@ -203,6 +204,34 @@ func main() {
 		RunE:    RunCollectCmdF,
 	}
 	rootCmd.AddCommand(collectCmd)
+
+	reportCmd := &cobra.Command{
+		Use:   "report",
+		Short: "Get or compare reports from load-tests",
+	}
+
+	genReport := &cobra.Command{
+		Use:     "generate",
+		Short:   "Generate a report from a load-test from a start time to end time.",
+		Example: "ltctl report generate --output=base.out --label=base \"2020-06-17 04:37:05\" \"2020-06-17 04:42:00\"",
+		RunE:    RunGenerateReportCmdF,
+	}
+	genReport.Flags().StringP("output", "o", "ltreport.out", "Path to the output file to write the report to.")
+	genReport.Flags().StringP("label", "l", "", "A friendly name for the report.")
+
+	compareReport := &cobra.Command{
+		Use:     "compare",
+		Short:   "Compare one or more reports",
+		Long:    "Compare one or more reports. The first report is considered to be the base",
+		Example: "ltctl report compare report1.out report2.out",
+		RunE:    RunCompareReportCmdF,
+	}
+	compareReport.Flags().StringP("output", "o", "", "Path to the output file to write the comparison to. If this is not set, the report is displayed to stdout.")
+	compareReport.Flags().Bool("graph", false, "If set to true, it also generates graphs comparing different metrics from the load tests. This needs gnuplot to be present in the system.")
+
+	reportCmds := []*cobra.Command{genReport, compareReport}
+	reportCmd.AddCommand(reportCmds...)
+	rootCmd.AddCommand(reportCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

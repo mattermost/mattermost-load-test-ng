@@ -13,7 +13,7 @@ import (
 )
 
 func TestSetRate(t *testing.T) {
-	config, err := ReadConfig("../../../config/simulcontroller.default.json")
+	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
@@ -45,7 +45,7 @@ func TestRunStop(t *testing.T) {
 	})
 	statusChan := make(chan control.UserStatus)
 
-	config, err := ReadConfig("../../../config/simulcontroller.default.json")
+	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
 	require.NoError(t, err)
 	require.NotNil(t, config)
 

@@ -4,14 +4,18 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -24,8 +28,20 @@ type requestData struct {
 }
 
 func TestAPI(t *testing.T) {
+	newControllerFn := func(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
+		return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
+			switch config.UserControllerConfiguration.Type {
+			case loadtest.UserControllerSimple:
+				return simplecontroller.New(id, nil, controllerConfig.(*simplecontroller.Config), status)
+			case loadtest.UserControllerSimulative:
+				return simulcontroller.New(id, nil, controllerConfig.(*simulcontroller.Config), status)
+			default:
+				return nil, errors.New("not implemented")
+			}
+		}
+	}
 	// create http.Handler
-	handler := SetupAPIRouter()
+	handler := SetupAPIRouter(newControllerFn)
 
 	// run server using httptest
 	server := httptest.NewServer(handler)
@@ -39,21 +55,22 @@ func TestAPI(t *testing.T) {
 		Expect().
 		Status(http.StatusNotFound)
 
-	ltConfig, err := loadtest.ReadConfig("../config/config.default.json")
+	ltConfig := loadtest.Config{}
+	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
 	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
-	ucConfig1, err := simplecontroller.ReadConfig("../config/simplecontroller.default.json")
+	ucConfig1, err := simplecontroller.ReadConfig("../config/simplecontroller.sample.json")
 	require.NoError(t, err)
 
-	ucConfig2, err := simulcontroller.ReadConfig("../config/simulcontroller.default.json")
+	ucConfig2, err := simulcontroller.ReadConfig("../config/simulcontroller.sample.json")
 	require.NoError(t, err)
 
 	t.Run("test with loadtest.Config only", func(t *testing.T) {
 		rd := requestData{
-			LoadTestConfig: *ltConfig,
+			LoadTestConfig: ltConfig,
 		}
 		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
@@ -112,7 +129,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with a simplecontroller.Config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimple
 		rd := requestData{
-			LoadTestConfig:         *ltConfig,
+			LoadTestConfig:         ltConfig,
 			SimpleControllerConfig: ucConfig1,
 		}
 		ltId := "lt0"
@@ -129,7 +146,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with simulcontroller.Config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimulative
 		rd := requestData{
-			LoadTestConfig:        *ltConfig,
+			LoadTestConfig:        ltConfig,
 			SimulControllerConfig: ucConfig2,
 		}
 		ltId := "lt0"
@@ -146,7 +163,7 @@ func TestAPI(t *testing.T) {
 	t.Run("start agent with no controller config", func(t *testing.T) {
 		ltConfig.UserControllerConfiguration.Type = loadtest.UserControllerSimulative
 		rd := requestData{
-			LoadTestConfig: *ltConfig,
+			LoadTestConfig: ltConfig,
 		}
 		ltId := "lt0"
 		obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).

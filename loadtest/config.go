@@ -5,38 +5,17 @@ package loadtest
 
 import (
 	"errors"
-	"fmt"
-	"strings"
+	"math"
 
-	"github.com/mattermost/mattermost-load-test-ng/config"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
-
-	"github.com/spf13/viper"
 )
 
 type ConnectionConfiguration struct {
-	ServerURL     string
-	WebSocketURL  string
-	AdminEmail    string
-	AdminPassword string
-}
-
-// IsValid reports whether a given ConnectionConfiguration is valid or not.
-// Returns an error if the validation fails.
-func (cc *ConnectionConfiguration) IsValid() error {
-	if cc.ServerURL == "" {
-		return fmt.Errorf("ServerURL is not present in config")
-	}
-	if cc.WebSocketURL == "" {
-		return fmt.Errorf("WebSocketURL is not present in config")
-	}
-	if cc.AdminEmail == "" {
-		return fmt.Errorf("AdminEmail is not present in config")
-	}
-	if cc.AdminPassword == "" {
-		return fmt.Errorf("AdminPassword is not present in config")
-	}
-	return nil
+	ServerURL     string `default:"http://localhost:8065" validate:"url"`
+	WebSocketURL  string `default:"ws://localhost:8065" validate:"url"`
+	AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+	AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 }
 
 // userControllerType describes the type of a UserController.
@@ -47,20 +26,13 @@ const (
 	UserControllerSimple     userControllerType = "simple"
 	UserControllerSimulative                    = "simulative"
 	UserControllerNoop                          = "noop"
+	UserControllerGenerative                    = "generative"
 	UserControllerCluster                       = "cluster"
 )
 
-// IsValid reports whether a given UserControllerType is valid or not.
-// Returns an error if the validation fails.
-func (t userControllerType) IsValid() error {
-	switch t {
-	case UserControllerSimple, UserControllerSimulative, UserControllerCluster:
-		return nil
-	case "":
-		return fmt.Errorf("UserControllerType cannot be empty")
-	default:
-		return fmt.Errorf("UserControllerType %s is not valid", t)
-	}
+type RatesDistribution struct {
+	Rate       float64 `default:"1.0" validate:"range:[0,)"`
+	Percentage float64 `default:"1.0" validate:"range:(0,100]"`
 }
 
 // UserControllerConfiguration holds information about the UserController to
@@ -70,24 +42,20 @@ type UserControllerConfiguration struct {
 	// Possible values:
 	//   UserControllerSimple - A simple version of a controller.
 	//   UserControllerSimulative - A more realistic controller.
-	Type userControllerType
+	//   UserControllerNoop
+	//   UserControllerGenerative - A controller used to generate data.
+	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
 	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
-	RatesDistribution []struct {
-		Rate       float64
-		Percentage float64
-	}
+	RatesDistribution []RatesDistribution `default_len:"1"`
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.
 // Returns an error if the validation fails.
 func (ucc *UserControllerConfiguration) IsValid() error {
-	if err := ucc.Type.IsValid(); err != nil {
-		return fmt.Errorf("could not validate configuration: %w", err)
-	}
 	var sum float64
 	for _, el := range ucc.RatesDistribution {
 		sum += el.Percentage
@@ -98,43 +66,49 @@ func (ucc *UserControllerConfiguration) IsValid() error {
 	return nil
 }
 
+// InstanceConfiguration holds information about the data to be populated
+// during the init process.
 type InstanceConfiguration struct {
-	NumTeams          int
-	NumChannels       int
-	NumTeamAdmins     int
-	TeamAdminInterval int
+	// The target number of teams to be created.
+	NumTeams int64 `default:"2" validate:"range:[0,]"`
+	// The target number of channels to be created.
+	NumChannels int64 `default:"10" validate:"range:[0,]"`
+	// The target number of posts to be created.
+	NumPosts int64 `default:"0" validate:"range:[0,]"`
+	// The target number of reactions to be created.
+	NumReactions int64 `default:"0" validate:"range:[0,]"`
+
+	// The percentage of replies to be created.
+	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`
+
+	// Percentages of channels to be created, grouped by type.
+	// The total sum of these values must be equal to 1.
+
+	// The percentage of public channels to be created.
+	PercentPublicChannels float64 `default:"0.2" validate:"range:[0,1]"`
+	// The percentage of private channels to be created.
+	PercentPrivateChannels float64 `default:"0.1" validate:"range:[0,1]"`
+	// The percentage of direct channels to be created.
+	PercentDirectChannels float64 `default:"0.6" validate:"range:[0,1]"`
+	// The percentage of group channels to be created.
+	PercentGroupChannels float64 `default:"0.1" validate:"range:[0,1]"`
 }
 
 // IsValid reports whether a given InstanceConfiguration is valid or not.
 // Returns an error if the validation fails.
-func (ic *InstanceConfiguration) IsValid() error {
-	if ic.NumTeams <= 0 {
-		return fmt.Errorf("NumTeams cannot be <= 0")
+func (c *InstanceConfiguration) IsValid() error {
+	percentChannels := c.PercentPublicChannels + c.PercentPrivateChannels + c.PercentDirectChannels + c.PercentGroupChannels
+	if (math.Round(percentChannels*100) / 100) != 1 {
+		return errors.New("sum of percentages for channels should be equal to 1")
 	}
+
 	return nil
 }
 
 type UsersConfiguration struct {
-	InitialActiveUsers int
-	MaxActiveUsers     int
-	AvgSessionsPerUser int
-}
-
-// IsValid reports whether a given UsersConfiguration is valid or not.
-func (uc *UsersConfiguration) IsValid() error {
-	if uc.InitialActiveUsers < 0 {
-		return fmt.Errorf("InitialActiveUsers cannot be < 0")
-	}
-	if uc.MaxActiveUsers <= 0 {
-		return fmt.Errorf("MaxActiveUsers cannot be <= 0")
-	}
-	if uc.InitialActiveUsers > uc.MaxActiveUsers {
-		return fmt.Errorf("InitialActiveUsers cannot be greater than MaxActiveUsers")
-	}
-	if uc.AvgSessionsPerUser < 1 {
-		return fmt.Errorf("AvgSessionsPerUser cannot be < 1")
-	}
-	return nil
+	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
+	MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
+	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 }
 
 type Config struct {
@@ -145,61 +119,14 @@ type Config struct {
 	LogSettings                 logger.Settings
 }
 
-// IsValid reports whether a config is valid or not.
-// Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	if err := c.ConnectionConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid connection configuration: %w", err)
-	}
-
-	if err := c.InstanceConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid instance configuration: %w", err)
-	}
-
-	if err := c.UserControllerConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid user controller configuration: %w", err)
-	}
-
-	if err := c.UsersConfiguration.IsValid(); err != nil {
-		return fmt.Errorf("invalid users configuration: %w", err)
-	}
-
-	return nil
-}
-
+// ReadConfig reads the configuration file from the given string. If the string
+// is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
-	v := viper.New()
+	var cfg Config
 
-	configName := "config"
-	v.SetConfigName(configName)
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config/")
-	// This is needed for the calls from the terraform package to find the config.
-	v.AddConfigPath("../../config")
-	v.SetEnvPrefix("mmloadtest")
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	v.SetDefault("LogSettings.EnableConsole", true)
-	v.SetDefault("LogSettings.ConsoleLevel", "ERROR")
-	v.SetDefault("LogSettings.ConsoleJson", true)
-	v.SetDefault("LogSettings.EnableFile", true)
-	v.SetDefault("LogSettings.FileLevel", "INFO")
-	v.SetDefault("LogSettings.FileJson", true)
-	v.SetDefault("LogSettings.FileLocation", "loadtest.log")
-
-	if configFilePath != "" {
-		v.SetConfigFile(configFilePath)
-	}
-
-	if err := config.ReadConfigFile(v, configName); err != nil {
+	if err := defaults.ReadFromJSON(configFilePath, "./config/config.json", &cfg); err != nil {
 		return nil, err
 	}
 
-	var cfg *Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+	return &cfg, nil
 }

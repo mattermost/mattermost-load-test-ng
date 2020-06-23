@@ -24,6 +24,10 @@ func (t testAPI) Query(ctx context.Context, query string, ts time.Time) (model.V
 	return t.value, t.warnings, t.err
 }
 
+func (t testAPI) QueryRange(ctx context.Context, query string, r apiv1.Range) (model.Value, apiv1.Warnings, error) {
+	return t.value, t.warnings, nil
+}
+
 func Test_VectorFirst_ReturnsFloatValue(t *testing.T) {
 	expectedValue := float64(12.12345)
 	sample := &model.Sample{Value: model.SampleValue(expectedValue)}
@@ -48,6 +52,6 @@ func Test_VectorFirst_FailsIfItsNotAVector(t *testing.T) {
 	helper := Helper{api}
 	actualValue, err := helper.VectorFirst("some PromQL query")
 
-	assert.Equal(t, "Expected a vector, got a string", err.Error())
+	assert.Equal(t, "expected a vector, got a string", err.Error())
 	assert.Equal(t, float64(0), actualValue)
 }
