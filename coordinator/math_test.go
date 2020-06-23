@@ -65,6 +65,8 @@ func TestSlope(t *testing.T) {
 	require.Equal(t, float64(1.1879), math.Round(s*10000)/10000)
 }
 
+var slopeSink float64
+
 func BenchmarkSlope(b *testing.B) {
 	samples := make([]point, 10000)
 	for i := 0; i < len(samples); i++ {
@@ -75,6 +77,6 @@ func BenchmarkSlope(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = slope(samples)
+		slopeSink = slope(samples)
 	}
 }
