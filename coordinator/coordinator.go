@@ -101,6 +101,10 @@ func (c *Coordinator) Run() error {
 				mlog.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
 				return nil
 			}
+			// We truncate to remove older samples which are not needed anymore.
+			if len(samples) >= 2*len(latest) {
+				samples = latest
+			}
 		}
 
 		// We give the feedback loop some rest time in case of performance
