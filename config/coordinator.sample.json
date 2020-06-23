@@ -13,14 +13,14 @@
     "UpdateIntervalMs": 2000,
     "Queries": [
       {
-        "Description": "Average request duration",
+        "Description": "Average request duration (old)",
         "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
         "Threshold": 0.1,
         "Alert": true
       },
       {
         "Description": "Average request duration",
-        "Query": "sum(rate(mattermost_api_time_sum[1m])/rate(mattermost_api_time_count[1m]))",
+        "Query": "sum(rate(mattermost_api_time_sum[1m]))/sum(rate(mattermost_api_time_count[1m]))",
         "Threshold": 0.1,
         "Alert": true
       },
