@@ -34,7 +34,9 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
-	if c.status.State != Stopped {
+	if c.status.State == Done {
+		return nil, ErrAlreadyDone
+	} else if c.status.State != Stopped {
 		return nil, ErrNotStopped
 	}
 
@@ -70,6 +72,9 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 			c.monitor.Stop()
 			c.cluster.Shutdown()
 			close(c.doneChan)
+			c.mut.Lock()
+			c.status.State = Done
+			c.mut.Unlock()
 		}()
 
 		for {
@@ -141,7 +146,7 @@ func (c *Coordinator) Stop() error {
 	}
 	close(c.stopChan)
 	<-c.doneChan
-	c.status.State = Stopped
+	c.status.State = Done
 	return nil
 }
 

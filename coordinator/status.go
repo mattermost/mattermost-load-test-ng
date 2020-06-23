@@ -17,12 +17,14 @@ type State int
 const (
 	Stopped State = iota
 	Running
+	Done
 )
 
 // State related errors.
 var (
-	ErrNotRunning = errors.New("coordinator is not running")
-	ErrNotStopped = errors.New("coordinator has not stopped")
+	ErrNotRunning  = errors.New("coordinator is not running")
+	ErrNotStopped  = errors.New("coordinator has not stopped")
+	ErrAlreadyDone = errors.New("coordinator is already done")
 )
 
 // ErrInvalidState is returned when an unknown state variable is encoded/decoded.
@@ -42,6 +44,8 @@ func (s *State) UnmarshalJSON(b []byte) error {
 		*s = Stopped
 	case "running":
 		*s = Running
+	case "done":
+		*s = Done
 	}
 
 	return nil
@@ -57,6 +61,8 @@ func (s State) MarshalJSON() ([]byte, error) {
 		res = "stopped"
 	case Running:
 		res = "running"
+	case Done:
+		res = "done"
 	}
 
 	return json.Marshal(res)

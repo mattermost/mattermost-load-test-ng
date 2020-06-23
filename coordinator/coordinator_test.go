@@ -72,12 +72,18 @@ func TestRun(t *testing.T) {
 
 	done, err = c.Run()
 	require.Error(t, err)
+	require.Equal(t, ErrNotStopped, err)
 	require.Nil(t, done)
 	require.Equal(t, Running, c.status.State)
 
 	err = c.Stop()
 	require.NoError(t, err)
-	require.Equal(t, c.status.State, Stopped)
+	require.Equal(t, c.status.State, Done)
+
+	done, err = c.Run()
+	require.Error(t, err)
+	require.Nil(t, done)
+	require.Equal(t, ErrAlreadyDone, err)
 }
 
 func TestStop(t *testing.T) {
@@ -102,10 +108,11 @@ func TestStop(t *testing.T) {
 
 	err = c.Stop()
 	require.NoError(t, err)
-	require.Equal(t, c.status.State, Stopped)
+	require.Equal(t, c.status.State, Done)
 
 	err = c.Stop()
 	require.Error(t, err)
+	require.Equal(t, ErrNotRunning, err)
 }
 
 func TestStatus(t *testing.T) {
@@ -134,6 +141,6 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	status = c.Status()
-	require.Equal(t, Stopped, status.State)
+	require.Equal(t, Done, status.State)
 	require.NotEmpty(t, status)
 }
