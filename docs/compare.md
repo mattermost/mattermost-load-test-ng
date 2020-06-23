@@ -35,5 +35,5 @@ On the app server's instance, run:
 - `/opt/mattermost$ ./bin/mattermost user create --email sysadmin@sample.mattermost.com --username sysadmin --password Sys@dmin-sample1 --system_admin`
 - `sudo service mattermost restart`
 
-Then on the coordinator, run:
-- `~/mattermost-load-test-ng$ ./bin/ltagent init`
+Then on the coordinator's instance, run:
+- `/home/ubuntu/mattermost-load-test-ng$ ./bin/ltagent init`
