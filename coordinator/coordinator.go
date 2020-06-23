@@ -179,10 +179,8 @@ func New(config *Config) (*Coordinator, error) {
 	}
 
 	return &Coordinator{
-		mut:      sync.RWMutex{},
 		stopChan: make(chan struct{}),
 		doneChan: make(chan struct{}),
-		status:   Status{},
 		config:   config,
 		cluster:  cluster,
 		monitor:  monitor,
