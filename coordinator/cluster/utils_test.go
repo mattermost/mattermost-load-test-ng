@@ -11,7 +11,7 @@ import (
 )
 
 func createMockAgents(t *testing.T) []*agent.LoadAgent {
-	cfg := agent.LoadAgentConfig{
+	cfg := agent.Config{
 		ApiURL: "localhost:8065",
 		Id:     "id",
 	}
