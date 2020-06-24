@@ -202,13 +202,19 @@ The location of the log file.
 
 The label to filter Prometheus queries.
 
-### GraphQueries.Name
+### GraphQueries
+
+*[]GraphQuery*
+
+GraphQuery contains the query to be executed against a Prometheus instance to gather data for reports.
+
+#### Name
 
 *string*
 
 A friendly name for the graph.
 
-### GraphQueries.Query
+#### Query
 
 *string*
 
