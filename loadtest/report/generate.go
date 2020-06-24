@@ -11,13 +11,28 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
+
 	"github.com/prometheus/common/model"
 )
+
+// Config contains information needed to generate reports.
+type Config struct {
+	Label        string // Label to be used when querying Prometheus.
+	GraphQueries []GraphQuery
+}
+
+// GraphQuery contains the query to be executed against a Prometheus instance
+// to gather data for reports.
+type GraphQuery struct {
+	Name  string // A friendly name for the query.
+	Query string // The actual Prometheus query to be executed.
+}
 
 // Generator is used to generate load test reports.
 type Generator struct {
 	label  string
 	helper *prometheus.Helper
+	cfg    Config
 }
 
 // Report contains the entire report data comprising of several metrics
@@ -38,10 +53,11 @@ type graph struct {
 }
 
 // New returns a new instance of a generator.
-func New(label string, helper *prometheus.Helper) *Generator {
+func New(label string, helper *prometheus.Helper, cfg Config) *Generator {
 	return &Generator{
 		label:  label,
 		helper: helper,
+		cfg:    cfg,
 	}
 }
 
@@ -69,69 +85,39 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	diff := endTime.Sub(startTime)
 	sec := int(diff.Seconds())
 
-	// TODO: ability to filter the instances by a given label for cases
-	// when a single Prometheus instance runs multiple clusters.
-
 	// Avg store times.
-	tmpl := `sum(increase(mattermost_db_store_time_sum[%ds])) by (method) / sum(increase(mattermost_db_store_time_count[%ds])) by (method)`
-	query := fmt.Sprintf(tmpl, sec, sec)
+	tmpl := `sum(rate(mattermost_db_store_time_sum%s[%ds])) by (method) / sum(rate(mattermost_db_store_time_count%s[%ds])) by (method)`
+	query := fmt.Sprintf(tmpl, g.cfg.Label, sec, g.cfg.Label, sec)
 	data.AvgStoreTimes, err = g.getValue(endTime, query, "method")
 	if err != nil {
 		return data, fmt.Errorf("error while getting avg store times: %w", err)
 	}
 
 	// P99 store times.
-	tmpl = `histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[%ds])) by (le,method))`
-	query = fmt.Sprintf(tmpl, sec)
+	tmpl = `histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket%s[%ds])) by (le,method))`
+	query = fmt.Sprintf(tmpl, g.cfg.Label, sec)
 	data.P99StoreTimes, err = g.getValue(endTime, query, "method")
 	if err != nil {
 		return data, fmt.Errorf("error while getting p99 store times: %w", err)
 	}
 
 	// Avg API times.
-	tmpl = `sum(increase(mattermost_api_time_sum[%ds])) by (handler) / sum(increase(mattermost_api_time_count[%ds])) by (handler)`
-	query = fmt.Sprintf(tmpl, sec, sec)
+	tmpl = `sum(rate(mattermost_api_time_sum%s[%ds])) by (handler) / sum(rate(mattermost_api_time_count%s[%ds])) by (handler)`
+	query = fmt.Sprintf(tmpl, g.cfg.Label, sec, g.cfg.Label, sec)
 	data.AvgAPITimes, err = g.getValue(endTime, query, "handler")
 	if err != nil {
 		return data, fmt.Errorf("error while getting avg API times: %w", err)
 	}
 
 	// P99 API times.
-	tmpl = `histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[%ds])) by (handler,le))`
-	query = fmt.Sprintf(tmpl, sec)
+	tmpl = `histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket%s[%ds])) by (handler,le))`
+	query = fmt.Sprintf(tmpl, g.cfg.Label, sec)
 	data.P99APITimes, err = g.getValue(endTime, query, "handler")
 	if err != nil {
 		return data, fmt.Errorf("error while getting p99 API times: %w", err)
 	}
 
-	// TODO: move them to be loadable from config so that more queries can be easily added later.
-	graphQueries := []struct {
-		Name  string
-		Query string
-	}{
-		{
-			Name:  "CPU Utilization",
-			Query: `avg(irate(mattermost_process_cpu_seconds_total{instance=~"app.*"}[1m])* 100)`,
-		},
-		{
-			Name:  "Heap In Use",
-			Query: `avg(go_memstats_heap_inuse_bytes{instance=~"app.*:8067"})`,
-		},
-		{
-			Name:  "Stack In Use",
-			Query: `avg(go_memstats_stack_inuse_bytes{instance=~"app.*:8067"})`,
-		},
-		{
-			Name:  "RPS",
-			Query: `sum(rate(mattermost_http_requests_total{instance=~"app.*:8067"}[1m]))`,
-		},
-		{
-			Name:  "Avg Store times",
-			Query: `sum(increase(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))`,
-		},
-	}
-
-	for _, gq := range graphQueries {
+	for _, gq := range g.cfg.GraphQueries {
 		res, err := g.helper.Matrix(gq.Query, startTime, endTime)
 		if err != nil {
 			return data, fmt.Errorf("error while getting %s: %w", gq.Name, err)

@@ -33,5 +33,30 @@
     "FileLevel": "INFO",
     "FileJson": true,
     "FileLocation": "deployer.log"
+  },
+  "Report": {
+    "Label": "{instance=~\"app.*\"}",
+    "GraphQueries": [
+      {
+        "Name":  "CPU Utilization",
+        "Query": "avg(irate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
+      },
+      {
+        "Name":  "Heap In Use",
+        "Query": "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name":  "Stack In Use",
+        "Query": "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name":  "RPS",
+        "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name":  "Avg Store times",
+        "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+      }
+    ]
   }
 }
