@@ -104,8 +104,8 @@ func calculateDeltas(reports ...Report) comp {
 		// XXX: This can be somewhat refactored but whether absolute metrics
 		// are useful or not needs to be seen.
 		for label, value := range base.AvgStoreTimes {
-			actual := float64(r.AvgStoreTimes[label])
-			delta := actual - float64(value)
+			actual := roundTo3DecimalPlaces(float64(r.AvgStoreTimes[label]))
+			delta := actual - roundTo3DecimalPlaces(float64(value))
 			deltaP := (delta / actual) * 100
 
 			diffs := c.store[label]
@@ -118,8 +118,8 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.P99StoreTimes {
-			actual := float64(r.P99StoreTimes[label])
-			delta := actual - float64(value)
+			actual := roundTo3DecimalPlaces(float64(r.P99StoreTimes[label]))
+			delta := actual - roundTo3DecimalPlaces(float64(value))
 			deltaP := (delta / actual) * 100
 
 			diffs := c.store[label]
@@ -132,8 +132,8 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.AvgAPITimes {
-			actual := float64(r.AvgAPITimes[label])
-			delta := actual - float64(value)
+			actual := roundTo3DecimalPlaces(float64(r.AvgAPITimes[label]))
+			delta := actual - roundTo3DecimalPlaces(float64(value))
 			deltaP := (delta / actual) * 100
 
 			diffs := c.api[label]
@@ -146,8 +146,8 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.P99APITimes {
-			actual := float64(r.P99APITimes[label])
-			delta := actual - float64(value)
+			actual := roundTo3DecimalPlaces(float64(r.P99APITimes[label]))
+			delta := actual - roundTo3DecimalPlaces(float64(value))
 			deltaP := (delta / actual) * 100
 
 			diffs := c.api[label]
