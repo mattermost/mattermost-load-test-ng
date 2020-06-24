@@ -50,7 +50,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	var input = map[string]model.Matrix{
-		"sum(increase(mattermost_db_store_time_sum[10s])) by (method) / sum(increase(mattermost_db_store_time_count[10s])) by (method)": {
+		"sum(rate(mattermost_db_store_time_sum[10s])) by (method) / sum(rate(mattermost_db_store_time_count[10s])) by (method)": {
 			&model.SampleStream{
 				Metric: model.Metric{
 					"method": "method1",
@@ -98,7 +98,7 @@ func TestGenerate(t *testing.T) {
 				},
 			},
 		},
-		"sum(increase(mattermost_api_time_sum[10s])) by (handler) / sum(increase(mattermost_api_time_count[10s])) by (handler)": {
+		"sum(rate(mattermost_api_time_sum[10s])) by (handler) / sum(rate(mattermost_api_time_count[10s])) by (handler)": {
 			&model.SampleStream{
 				Metric: model.Metric{
 					"handler": "handler1",

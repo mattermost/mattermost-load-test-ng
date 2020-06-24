@@ -86,7 +86,7 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	sec := int(diff.Seconds())
 
 	// Avg store times.
-	tmpl := `sum(increase(mattermost_db_store_time_sum%s[%ds])) by (method) / sum(increase(mattermost_db_store_time_count%s[%ds])) by (method)`
+	tmpl := `sum(rate(mattermost_db_store_time_sum%s[%ds])) by (method) / sum(rate(mattermost_db_store_time_count%s[%ds])) by (method)`
 	query := fmt.Sprintf(tmpl, g.cfg.Label, sec, g.cfg.Label, sec)
 	data.AvgStoreTimes, err = g.getValue(endTime, query, "method")
 	if err != nil {
@@ -102,7 +102,7 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	}
 
 	// Avg API times.
-	tmpl = `sum(increase(mattermost_api_time_sum%s[%ds])) by (handler) / sum(increase(mattermost_api_time_count%s[%ds])) by (handler)`
+	tmpl = `sum(rate(mattermost_api_time_sum%s[%ds])) by (handler) / sum(rate(mattermost_api_time_count%s[%ds])) by (handler)`
 	query = fmt.Sprintf(tmpl, g.cfg.Label, sec, g.cfg.Label, sec)
 	data.AvgAPITimes, err = g.getValue(endTime, query, "handler")
 	if err != nil {
