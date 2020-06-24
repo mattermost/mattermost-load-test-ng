@@ -117,7 +117,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
 					mlog.Info("coordinator done!")
 					mlog.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
-					return nil
+					return
 				}
 				// We replace older samples which are not needed anymore.
 				if len(samples) >= 2*len(latest) {
