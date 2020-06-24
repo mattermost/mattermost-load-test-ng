@@ -6,10 +6,12 @@ package report
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/prometheus/common/model"
@@ -17,7 +19,7 @@ import (
 
 // displayMarkdown prints a given comparison in markdown to the given target.
 func displayMarkdown(c comp, target *os.File, base Report, cols int) {
-	fmt.Fprintln(target, "### Store times in seconds:")
+	fmt.Fprintln(target, "### Store times:")
 	printHeader(target, cols)
 
 	keys := sortKeys(c.store)
@@ -28,21 +30,21 @@ func displayMarkdown(c comp, target *os.File, base Report, cols int) {
 		p99 := measurement[1]
 
 		fmt.Fprint(target, " |  Avg")
-		fmt.Fprintf(target, "| %.3f", base.AvgStoreTimes[label])
+		fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgStoreTimes[label])))
 		for i := 0; i < len(avg); i++ {
-			fmt.Fprintf(target, "| %.3f | %.3f | %.3f", avg[i].actual, avg[i].delta, avg[i].deltaPercent)
+			fmt.Fprintf(target, "| %s | %s | %.3f", avg[i].actual, avg[i].delta, avg[i].deltaPercent)
 		}
 		fmt.Fprintln(target)
 
 		fmt.Fprint(target, "| |  P99")
-		fmt.Fprintf(target, "| %.3f", base.P99StoreTimes[label])
+		fmt.Fprintf(target, "| %s", getDuration(float64(base.P99StoreTimes[label])))
 		for i := 0; i < len(p99); i++ {
-			fmt.Fprintf(target, "| %.3f | %.3f | %.3f", p99[i].actual, p99[i].delta, p99[i].deltaPercent)
+			fmt.Fprintf(target, "| %s | %s | %.3f", p99[i].actual, p99[i].delta, p99[i].deltaPercent)
 		}
 		fmt.Fprintln(target)
 	}
 
-	fmt.Fprintln(target, "### API times in seconds:")
+	fmt.Fprintln(target, "### API times:")
 	printHeader(target, cols)
 
 	keys = sortKeys(c.api)
@@ -53,16 +55,16 @@ func displayMarkdown(c comp, target *os.File, base Report, cols int) {
 		p99 := measurement[1]
 
 		fmt.Fprint(target, " | Avg")
-		fmt.Fprintf(target, "| %.3f", base.AvgAPITimes[label])
+		fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgAPITimes[label])))
 		for i := 0; i < len(avg); i++ {
-			fmt.Fprintf(target, "| %.3f | %.3f | %.3f", avg[i].actual, avg[i].delta, avg[i].deltaPercent)
+			fmt.Fprintf(target, "| %s | %s | %.3f", avg[i].actual, avg[i].delta, avg[i].deltaPercent)
 		}
 		fmt.Fprintln(target)
 
 		fmt.Fprint(target, "| | P99")
-		fmt.Fprintf(target, "| %.3f", base.P99APITimes[label])
+		fmt.Fprintf(target, "| %s", getDuration(float64(base.P99APITimes[label])))
 		for i := 0; i < len(p99); i++ {
-			fmt.Fprintf(target, "| %.3f | %.3f | %.3f", p99[i].actual, p99[i].delta, p99[i].deltaPercent)
+			fmt.Fprintf(target, "| %s | %s | %.3f", p99[i].actual, p99[i].delta, p99[i].deltaPercent)
 		}
 		fmt.Fprintln(target)
 	}
@@ -166,4 +168,10 @@ func sortKeys(m map[model.LabelValue]avgp99) []model.LabelValue {
 		return labels[i] < labels[j]
 	})
 	return labels
+}
+
+func getDuration(f float64) time.Duration {
+	ms := int64(math.Round(f * 1000))    // convert seconds to ms and round it off.
+	d := time.Duration(ms * 1000 * 1000) // convert to ns for duration.
+	return d
 }
