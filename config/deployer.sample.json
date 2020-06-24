@@ -55,7 +55,7 @@
       },
       {
         "Name":  "Avg Store times",
-        "Query": "sum(increase(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+        "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
       }
     ]
   }

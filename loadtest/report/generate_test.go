@@ -170,7 +170,7 @@ func TestGenerate(t *testing.T) {
 				Values: values,
 			},
 		},
-		`sum(increase(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))`: {
+		`sum(rate(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))`: {
 			&model.SampleStream{
 				Metric: model.Metric{},
 				Values: values,
@@ -199,7 +199,7 @@ func TestGenerate(t *testing.T) {
 			},
 			{
 				Name:  "Avg Store times",
-				Query: "sum(increase(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))",
+				Query: "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))",
 			},
 		},
 	}
