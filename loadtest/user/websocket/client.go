@@ -81,7 +81,7 @@ func (c *Client) reader() {
 		if err != nil {
 			if !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseNoStatusReceived) {
 				// log error
-				mlog.Warn("error from conn.NextReader", mlog.Err(err))
+				mlog.Debug("error from conn.NextReader", mlog.Err(err))
 			}
 			return
 		}
