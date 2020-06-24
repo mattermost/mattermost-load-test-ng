@@ -5,15 +5,17 @@ package report
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"time"
 
 	"github.com/prometheus/common/model"
 )
 
 // diff contains the differences from a base measurement.
 type diff struct {
-	actual       float64
-	delta        float64
+	actual       time.Duration
+	delta        time.Duration
 	deltaPercent float64
 }
 
@@ -104,9 +106,12 @@ func calculateDeltas(reports ...Report) comp {
 		// XXX: This can be somewhat refactored but whether absolute metrics
 		// are useful or not needs to be seen.
 		for label, value := range base.AvgStoreTimes {
-			actual := roundTo3DecimalPlaces(float64(r.AvgStoreTimes[label]))
-			delta := actual - roundTo3DecimalPlaces(float64(value))
-			deltaP := (delta / actual) * 100
+			actual := getDuration(float64(r.AvgStoreTimes[label]))
+			delta := actual - getDuration(float64(value))
+			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			if math.IsNaN(deltaP) {
+				deltaP = 0
+			}
 
 			diffs := c.store[label]
 			diffs[0] = append(diffs[0], diff{
@@ -118,9 +123,12 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.P99StoreTimes {
-			actual := roundTo3DecimalPlaces(float64(r.P99StoreTimes[label]))
-			delta := actual - roundTo3DecimalPlaces(float64(value))
-			deltaP := (delta / actual) * 100
+			actual := getDuration(float64(r.P99StoreTimes[label]))
+			delta := actual - getDuration(float64(value))
+			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			if math.IsNaN(deltaP) {
+				deltaP = 0
+			}
 
 			diffs := c.store[label]
 			diffs[1] = append(diffs[1], diff{
@@ -132,9 +140,12 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.AvgAPITimes {
-			actual := roundTo3DecimalPlaces(float64(r.AvgAPITimes[label]))
-			delta := actual - roundTo3DecimalPlaces(float64(value))
-			deltaP := (delta / actual) * 100
+			actual := getDuration(float64(r.AvgAPITimes[label]))
+			delta := actual - getDuration(float64(value))
+			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			if math.IsNaN(deltaP) {
+				deltaP = 0
+			}
 
 			diffs := c.api[label]
 			diffs[0] = append(diffs[0], diff{
@@ -146,9 +157,12 @@ func calculateDeltas(reports ...Report) comp {
 		}
 
 		for label, value := range base.P99APITimes {
-			actual := roundTo3DecimalPlaces(float64(r.P99APITimes[label]))
-			delta := actual - roundTo3DecimalPlaces(float64(value))
-			deltaP := (delta / actual) * 100
+			actual := getDuration(float64(r.P99APITimes[label]))
+			delta := actual - getDuration(float64(value))
+			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			if math.IsNaN(deltaP) {
+				deltaP = 0
+			}
 
 			diffs := c.api[label]
 			diffs[1] = append(diffs[1], diff{
