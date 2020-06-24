@@ -19,6 +19,18 @@ type Settings struct {
 	FileLocation  string `default:"loadtest.log"`
 }
 
+func New(logSettings *Settings) *mlog.Logger {
+	return mlog.NewLogger(&mlog.LoggerConfiguration{
+		EnableConsole: logSettings.EnableConsole,
+		ConsoleJson:   logSettings.ConsoleJson,
+		ConsoleLevel:  strings.ToLower(logSettings.ConsoleLevel),
+		EnableFile:    logSettings.EnableFile,
+		FileJson:      logSettings.FileJson,
+		FileLevel:     strings.ToLower(logSettings.FileLevel),
+		FileLocation:  logSettings.FileLocation,
+	})
+}
+
 func Init(logSettings *Settings) {
 	log := mlog.NewLogger(&mlog.LoggerConfiguration{
 		EnableConsole: logSettings.EnableConsole,

@@ -79,6 +79,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
 
+	log := logger.New(&config.LogSettings)
+
 	userPrefix, err := cmd.Flags().GetString("user-prefix")
 	if err != nil {
 		return err
@@ -115,7 +117,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	lt, err := loadtest.New(config, api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil))
+	lt, err := loadtest.New(config, api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil), log)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ type requestData struct {
 
 func TestAgentAPI(t *testing.T) {
 	// create http.Handler
-	handler := SetupAPIRouter()
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
 	// run server using httptest
 	server := httptest.NewServer(handler)

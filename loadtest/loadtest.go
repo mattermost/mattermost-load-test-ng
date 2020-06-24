@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -27,6 +28,8 @@ type LoadTester struct {
 
 	activeControllers []control.UserController
 	idleControllers   []control.UserController
+
+	log *mlog.Logger
 }
 
 // NewController is a factory function that returns a new
@@ -46,14 +49,14 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 			lt.wg.Done()
 		}
 		if st.Code == control.USER_STATUS_ERROR {
-			mlog.Error(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
+			lt.log.Error(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 			atomic.AddInt64(&lt.status.NumErrors, 1)
 			continue
 		} else if st.Code == control.USER_STATUS_FAILED {
-			mlog.Error(st.Err.Error())
+			lt.log.Error(st.Err.Error())
 			continue
 		}
-		mlog.Info(st.Info, mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
+		lt.log.Info(st.Info, mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 	}
 }
 
@@ -187,7 +190,7 @@ func (lt *LoadTester) Run() error {
 	<-startedChan
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
 		if err := lt.addUser(); err != nil {
-			mlog.Error(err.Error())
+			lt.log.Error(err.Error())
 		}
 	}
 	lt.status.State = Running
@@ -206,7 +209,7 @@ func (lt *LoadTester) Stop() error {
 	lt.status.State = Stopping
 
 	if _, err := lt.removeUsers(len(lt.activeControllers)); err != nil {
-		mlog.Error(err.Error())
+		lt.log.Error(err.Error())
 	}
 
 	lt.wg.Wait()
@@ -239,8 +242,8 @@ func (lt *LoadTester) Status() *Status {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *Config, nc NewController) (*LoadTester, error) {
-	if config == nil || nc == nil {
+func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error) {
+	if config == nil || nc == nil || log == nil {
 		return nil, errors.New("nil params passed")
 	}
 
@@ -255,5 +258,6 @@ func New(config *Config, nc NewController) (*LoadTester, error) {
 		status:            Status{},
 		activeControllers: make([]control.UserController, 0),
 		idleControllers:   make([]control.UserController, 0),
+		log:               log,
 	}, nil
 }

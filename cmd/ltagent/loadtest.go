@@ -14,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
@@ -49,6 +50,8 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
+
+	log := logger.New(&config.LogSettings)
 
 	controllerType := config.UserControllerConfiguration.Type
 
@@ -105,7 +108,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	lt, err := loadtest.New(config, api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil))
+	lt, err := loadtest.New(config, api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil), log)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

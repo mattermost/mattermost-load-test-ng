@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
@@ -27,6 +28,8 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	log := logger.New(&cfg.LogSettings)
+
 	ltConfigFilePath, err := cmd.Flags().GetString("ltagent-config")
 	if err != nil {
 		return err
@@ -40,7 +43,7 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		cfg.ClusterConfig.Agents[i].LoadTestConfig = *ltConfig
 	}
 
-	c, err := coordinator.New(cfg)
+	c, err := coordinator.New(cfg, log)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
