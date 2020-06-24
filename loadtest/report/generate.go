@@ -17,7 +17,7 @@ import (
 
 // Config contains information needed to generate reports.
 type Config struct {
-	Label        string // Label to be used when querying Prometheus
+	Label        string // Label to be used when querying Prometheus.
 	GraphQueries []GraphQuery
 }
 
