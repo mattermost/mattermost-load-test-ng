@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
@@ -63,6 +64,7 @@ type Config struct {
 	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v0.5.0-alpha/mattermost-load-test-ng-v0.5.0-alpha-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	LogSettings           logger.Settings
+	Report                report.Config
 }
 
 // ElasticSearchSettings contains the necessary data

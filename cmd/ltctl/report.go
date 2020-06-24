@@ -25,6 +25,11 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
 	const layout = "2006-01-02 15:04:05"
 	startTime, err := time.Parse(layout, args[0])
 	if err != nil {
@@ -76,7 +81,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create prometheus.Helper: %w", err)
 	}
 
-	g := report.New(label, helper)
+	g := report.New(label, helper, config.Report)
 	data, err := g.Generate(startTime, endTime)
 	if err != nil {
 		return fmt.Errorf("error while generating report: %w", err)

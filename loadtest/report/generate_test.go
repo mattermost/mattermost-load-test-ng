@@ -178,6 +178,32 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 
+	cfg := Config{
+		Label: "",
+		GraphQueries: []GraphQuery{
+			{
+				Name:  "CPU Utilization",
+				Query: "avg(irate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)",
+			},
+			{
+				Name:  "Heap In Use",
+				Query: "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})",
+			},
+			{
+				Name:  "Stack In Use",
+				Query: "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})",
+			},
+			{
+				Name:  "RPS",
+				Query: "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))",
+			},
+			{
+				Name:  "Avg Store times",
+				Query: "sum(increase(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))",
+			},
+		},
+	}
+
 	label := "base"
 	var output = Report{
 		Label:         label,
@@ -214,7 +240,7 @@ func TestGenerate(t *testing.T) {
 		dataMap: input,
 	})
 
-	g := New(label, helper)
+	g := New(label, helper, cfg)
 	now := time.Now()
 	r, err := g.Generate(now.Add(-10*time.Second), now)
 	require.NoError(t, err)
