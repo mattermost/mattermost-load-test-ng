@@ -5,6 +5,7 @@ package coordinator
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -42,7 +43,6 @@ func (c *Coordinator) Run() error {
 	defer c.monitor.Stop()
 
 	var lastActionTime, lastAlertTime time.Time
-	var supportedUsers int
 
 	// For now we are keeping all these values constant but in the future they
 	// might change based on the state of the feedback loop.
@@ -58,6 +58,20 @@ func (c *Coordinator) Run() error {
 	// The timespan to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
 	restTime := time.Duration(c.config.RestTimeSec) * time.Second
+
+	// TODO: considering making the following values configurable.
+
+	// The threshold at which we consider the load-test done and we are ready to
+	// give an answer. The value represent the slope of the best fine line for
+	// the gathered samples. This value approaching zero means we have found
+	// an equilibrium point.
+	stopThreshold := 0.1
+	// The timespan to consider when calculating the best fit line. A higher
+	// value means considering a higher number of samples which improves the precision of
+	// the final result.
+	samplesTimeRange := 30 * time.Minute
+
+	var samples []point
 
 	for {
 		var perfStatus performance.Status
@@ -76,14 +90,23 @@ func (c *Coordinator) Run() error {
 		status := c.cluster.Status()
 		mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
-		// TODO: supportedUsers should be estimated in a more clever way in the future.
-		// For now we say that the supported number of users is the number of active users that ran
-		// for the defined timespan without causing any performance degradation alert.
-		if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
-			supportedUsers = status.ActiveUsers
+		if !lastAlertTime.IsZero() {
+			samples = append(samples, point{
+				x: time.Now(),
+				y: status.ActiveUsers,
+			})
+			latest := getLatestSamples(samples, samplesTimeRange)
+			if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
+				mlog.Info("coordinator done!")
+				mlog.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
+				return nil
+			}
+			// We replace older samples which are not needed anymore.
+			if len(samples) >= 2*len(latest) {
+				copy(samples, latest)
+				samples = samples[:len(latest)]
+			}
 		}
-
-		mlog.Info("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
 
 		// We give the feedback loop some rest time in case of performance
 		// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
