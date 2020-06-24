@@ -20,3 +20,20 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+// getLatestSamples returns all the samples in the time range
+// [lastSampleTime-d, lastSampleTime].
+func getLatestSamples(samples []point, d time.Duration) []point {
+	var k int
+	if len(samples) == 0 {
+		return samples
+	}
+	last := samples[len(samples)-1]
+	for i := len(samples) - 1; i >= 0; i-- {
+		if last.x.Sub(samples[i].x) >= d {
+			k = i
+			break
+		}
+	}
+	return samples[k:]
+}

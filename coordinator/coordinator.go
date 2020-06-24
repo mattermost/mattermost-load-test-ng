@@ -5,6 +5,7 @@ package coordinator
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -50,7 +51,6 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	monitorChan := c.monitor.Run()
 
 	var lastActionTime, lastAlertTime time.Time
-	var supportedUsers int
 
 	// For now we are keeping all these values constant but in the future they
 	// might change based on the state of the feedback loop.
@@ -67,6 +67,18 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	// incrementing or decrementing users again.
 	restTime := time.Duration(c.config.RestTimeSec) * time.Second
 
+	// TODO: considering making the following values configurable.
+
+	// The threshold at which we consider the load-test done and we are ready to
+	// give an answer. The value represent the slope of the best fine line for
+	// the gathered samples. This value approaching zero means we have found
+	// an equilibrium point.
+	stopThreshold := 0.1
+	// The timespan to consider when calculating the best fit line. A higher
+	// value means considering a higher number of samples which improves the precision of
+	// the final result.
+	samplesTimeRange := 30 * time.Minute
+
 	go func() {
 		defer func() {
 			c.monitor.Stop()
@@ -76,6 +88,8 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 			c.status.State = Done
 			c.mut.Unlock()
 		}()
+
+		var samples []point
 
 		for {
 			var perfStatus performance.Status
@@ -94,14 +108,23 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 			status := c.cluster.Status()
 			mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
-			// TODO: supportedUsers should be estimated in a more clever way in the future.
-			// For now we say that the supported number of users is the number of active users that ran
-			// for the defined timespan without causing any performance degradation alert.
-			if !lastAlertTime.IsZero() && !perfStatus.Alert && hasPassed(lastAlertTime, restTime) && hasPassed(lastActionTime, restTime) {
-				supportedUsers = status.ActiveUsers
+			if !lastAlertTime.IsZero() {
+				samples = append(samples, point{
+					x: time.Now(),
+					y: status.ActiveUsers,
+				})
+				latest := getLatestSamples(samples, samplesTimeRange)
+				if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
+					mlog.Info("coordinator done!")
+					mlog.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
+					return nil
+				}
+				// We replace older samples which are not needed anymore.
+				if len(samples) >= 2*len(latest) {
+					copy(samples, latest)
+					samples = samples[:len(latest)]
+				}
 			}
-
-			mlog.Info("coordinator: supported users", mlog.Int("supported_users", supportedUsers))
 
 			// We give the feedback loop some rest time in case of performance
 			// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
@@ -122,10 +145,20 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 						} else {
 							lastActionTime = time.Now()
 						}
+					} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
+						if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
+							inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
+							mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+							if err := c.cluster.IncrementUsers(inc); err != nil {
+								mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+							} else {
+								lastActionTime = time.Now()
+							}
+						}
 					}
+				} else {
+					mlog.Info("coordinator: waiting for metrics to stabilize")
 				}
-			} else {
-				mlog.Info("coordinator: waiting for metrics to stabilize")
 			}
 		}
 	}()
