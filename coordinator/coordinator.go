@@ -26,6 +26,7 @@ type Coordinator struct {
 	config   *Config
 	cluster  *cluster.LoadAgentCluster
 	monitor  *performance.Monitor
+	log      *mlog.Logger
 }
 
 // Run starts a cluster of load-test agents.
@@ -41,10 +42,10 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 		return nil, ErrNotStopped
 	}
 
-	mlog.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)))
+	c.log.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)))
 
 	if err := c.cluster.Run(); err != nil {
-		mlog.Error("coordinator: running cluster failed", mlog.Err(err))
+		c.log.Error("coordinator: running cluster failed", mlog.Err(err))
 		return nil, err
 	}
 
@@ -96,7 +97,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 
 			select {
 			case <-c.stopChan:
-				mlog.Info("coordinator: shutting down")
+				c.log.Info("coordinator: shutting down")
 				return
 			case perfStatus = <-monitorChan:
 			}
@@ -106,7 +107,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 			}
 
 			status := c.cluster.Status()
-			mlog.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+			c.log.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
 			if !lastAlertTime.IsZero() {
 				samples = append(samples, point{
@@ -115,8 +116,8 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				})
 				latest := getLatestSamples(samples, samplesTimeRange)
 				if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
-					mlog.Info("coordinator done!")
-					mlog.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
+					c.log.Info("coordinator done!")
+					c.log.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
 					return
 				}
 				// We replace older samples which are not needed anymore.
@@ -130,34 +131,34 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 			// degradation alerts. We want metrics to stabilize before incrementing/decrementing users again.
 			if lastAlertTime.IsZero() || lastActionTime.IsZero() || hasPassed(lastActionTime, restTime) {
 				if perfStatus.Alert {
-					mlog.Info("coordinator: decrementing active users", mlog.Int("num_users", decValue))
+					c.log.Info("coordinator: decrementing active users", mlog.Int("num_users", decValue))
 					if err := c.cluster.DecrementUsers(decValue); err != nil {
-						mlog.Error("coordinator: failed to decrement users", mlog.Err(err))
+						c.log.Error("coordinator: failed to decrement users", mlog.Err(err))
 					} else {
 						lastActionTime = time.Now()
 					}
 				} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
 					if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
 						inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
-						mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+						c.log.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
 						if err := c.cluster.IncrementUsers(inc); err != nil {
-							mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+							c.log.Error("coordinator: failed to increment users", mlog.Err(err))
 						} else {
 							lastActionTime = time.Now()
 						}
 					} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
 						if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
 							inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
-							mlog.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
+							c.log.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
 							if err := c.cluster.IncrementUsers(inc); err != nil {
-								mlog.Error("coordinator: failed to increment users", mlog.Err(err))
+								c.log.Error("coordinator: failed to increment users", mlog.Err(err))
 							} else {
 								lastActionTime = time.Now()
 							}
 						}
 					}
 				} else {
-					mlog.Info("coordinator: waiting for metrics to stabilize")
+					c.log.Info("coordinator: waiting for metrics to stabilize")
 				}
 			}
 		}
@@ -198,20 +199,23 @@ func (c *Coordinator) Status() Status {
 
 // New creates and initializes a new Coordinator for the given config.
 // An error is returned if the initialization fails.
-func New(config *Config) (*Coordinator, error) {
+func New(config *Config, log *mlog.Logger) (*Coordinator, error) {
 	if config == nil {
 		return nil, fmt.Errorf("coordinator: config should not be nil")
+	}
+	if log == nil {
+		return nil, fmt.Errorf("coordinator: logger should not be nil")
 	}
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	cluster, err := cluster.New(config.ClusterConfig)
+	cluster, err := cluster.New(config.ClusterConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}
 
-	monitor, err := performance.NewMonitor(config.MonitorConfig)
+	monitor, err := performance.NewMonitor(config.MonitorConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create performance monitor: %w", err)
 	}
@@ -222,5 +226,6 @@ func New(config *Config) (*Coordinator, error) {
 		config:   config,
 		cluster:  cluster,
 		monitor:  monitor,
+		log:      log,
 	}, nil
 }

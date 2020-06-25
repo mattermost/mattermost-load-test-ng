@@ -24,6 +24,7 @@ type LoadAgent struct {
 	config LoadAgentConfig
 	status *loadtest.Status
 	client *http.Client
+	log    *mlog.Logger
 }
 
 // TODO: maybe move this into a shared model package.
@@ -39,7 +40,10 @@ var ErrAgentNotFound = errors.New("agent: not found")
 
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
-func New(config LoadAgentConfig) (*LoadAgent, error) {
+func New(config LoadAgentConfig, log *mlog.Logger) (*LoadAgent, error) {
+	if log == nil {
+		return nil, errors.New("logger should not be nil")
+	}
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configartion: %w", err)
 	}
@@ -47,6 +51,7 @@ func New(config LoadAgentConfig) (*LoadAgent, error) {
 		config: config,
 		status: &loadtest.Status{},
 		client: &http.Client{},
+		log:    log,
 	}, nil
 }
 
@@ -139,7 +144,7 @@ func (a *LoadAgent) Start() error {
 		return err
 	}
 
-	mlog.Info("agent: agent created", mlog.String("agent_id", a.config.Id))
+	a.log.Info("agent: agent created", mlog.String("agent_id", a.config.Id))
 
 	return nil
 }
@@ -154,7 +159,7 @@ func (a *LoadAgent) Stop() error {
 		return err
 	}
 
-	mlog.Info("agent: agent destroyed", mlog.String("agent_id", a.config.Id))
+	a.log.Info("agent: agent destroyed", mlog.String("agent_id", a.config.Id))
 
 	return nil
 }

@@ -109,7 +109,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lt, err := loadtest.New(&ltConfig, NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics))
+	lt, err := loadtest.New(&ltConfig, NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics), a.agentLog)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
 			Id:      agentId,

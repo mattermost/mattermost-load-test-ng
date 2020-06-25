@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/require"
 )
@@ -45,11 +46,15 @@ func setupAPIServer(t *testing.T) *httptest.Server {
 }
 
 func TestNew(t *testing.T) {
-	c, err := New(nil)
+	c, err := New(nil, logger.New(&logger.Settings{}))
 	require.Error(t, err)
 	require.Nil(t, c)
 
-	c, err = New(newConfig(t))
+	c, err = New(newConfig(t), nil)
+	require.Error(t, err)
+	require.Nil(t, c)
+
+	c, err = New(newConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 }
@@ -61,7 +66,7 @@ func TestRun(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg)
+	c, err := New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -93,7 +98,7 @@ func TestStop(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg)
+	c, err := New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.Equal(t, c.status.State, Stopped)
@@ -122,7 +127,7 @@ func TestStatus(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg)
+	c, err := New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 

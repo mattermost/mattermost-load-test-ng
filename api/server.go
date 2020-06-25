@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 // api keeps track of the load-test API server state.
@@ -19,6 +20,8 @@ type api struct {
 	agents       map[string]*loadtest.LoadTester
 	coordinators map[string]*coordinator.Coordinator
 	metrics      *performance.Metrics
+	coordLog     *mlog.Logger
+	agentLog     *mlog.Logger
 }
 
 func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,11 +39,14 @@ func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
-func SetupAPIRouter() *mux.Router {
+// Custom loggers for coordinator and agent are given.
+func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	a := api{
 		agents:       make(map[string]*loadtest.LoadTester),
 		coordinators: make(map[string]*coordinator.Coordinator),
 		metrics:      performance.NewMetrics(),
+		coordLog:     coordLog,
+		agentLog:     agentLog,
 	}
 
 	router := mux.NewRouter()
