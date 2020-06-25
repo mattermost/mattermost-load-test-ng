@@ -172,11 +172,11 @@ net.core.somaxconn = 4096
 net.ipv4.tcp_max_syn_backlog = 8192
 `
 
-const baseAgentCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltagent server`
+const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
 
-const agentServiceFile = `
+const apiServiceFile = `
 [Unit]
-Description=Mattermost Load Test Agent
+Description=Mattermost load-test API Server
 After=network.target
 
 [Service]
@@ -189,24 +189,6 @@ WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
 User=ubuntu
 Group=ubuntu
 LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-`
-
-const coordinatorServiceFile = `
-[Unit]
-Description=Mattermost Load Test Coordinator
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/home/ubuntu/mattermost-load-test-ng/bin/ltcoordinator
-Restart=always
-RestartSec=1
-WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
-User=ubuntu
-Group=ubuntu
 
 [Install]
 WantedBy=multi-user.target

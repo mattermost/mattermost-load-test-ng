@@ -75,6 +75,7 @@ config/deployer.json
 # binaries
 ltagent
 ltcoordinator
+ltapi
 
 # terraform stuff
 /terraformenv

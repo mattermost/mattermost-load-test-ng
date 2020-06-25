@@ -9,7 +9,7 @@ It's also a great way to learn how the whole load-testing process works before t
 There are a few ways to run a load-test locally, in order of complexity:
 
 - Run the `ltagent` command directly. 
-- Run a load-test through the load-test agent API server.
+- Run a load-test through the load-test agent API server `ltapi`.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
 ## Prerequisites
@@ -69,7 +69,7 @@ A more advanced way to run a load-test is to use the provided load-test agent AP
 ### Start the API server
 
 ```sh
-go run ./cmd/ltagent server
+go run ./cmd/ltapi
 ```
 
 This will start the server and expose the HTTP API on port 4000 (default).  
@@ -145,7 +145,7 @@ correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for 
 The first step is having the server running.
 
 ```sh
-go run ./cmd/ltagent server
+go run ./cmd/ltapi
 ```
 
 ### Configure the coordinator
@@ -167,3 +167,38 @@ go run ./cmd/ltcoordinator
 ```
 
 This will start running a load-test across the configured cluster of load-test agents.
+
+### Run coordinator using the API server
+
+Similar to what happens for the load-test agents, a coordinator (or more than
+one) can be created and run using the API server.
+
+### Start the API server
+
+```sh
+go run ./cmd/ltapi
+```
+
+### Create a coordinator
+
+```sh
+curl -d "{\"CoordinatorConfig\": $(cat config/coordinator.json), \"LoadTestConfig\": $(cat config/config.json)}" http://localhost:4000/coordinator/create\?id\=ltc0
+```
+
+### Run a coordinator
+
+```sh
+curl -X POST http://localhost:4000/coordinator/ltc0/run
+```
+
+### Stop a coordinator
+
+```sh
+curl -X POST http://localhost:4000/coordinator/ltc0/stop
+```
+
+### Destroy a coordinator
+
+```sh
+curl -X DELETE http://localhost:4000/coordinator/ltc0
+```

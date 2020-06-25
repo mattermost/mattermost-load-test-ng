@@ -12,10 +12,10 @@ endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
-COORDINATOR=ltcoordinator
-COORDINATOR_ARGS=-mod=readonly -trimpath ./cmd/ltcoordinator
 AGENT=ltagent
 AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
+API_SERVER=ltapi
+API_SERVER_ARGS=-mod=readonly -trimpath ./cmd/ltapi
 
 GOBIN=$(PWD)/bin
 PATH=$(shell printenv PATH):$(GOBIN)
@@ -27,18 +27,18 @@ all: install
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
 	env GOOS=linux GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
+	env GOOS=linux GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 build-windows:
 	@echo Build Windows amd64
-	env GOOS=windows GOARCH=amd64 $(GO) build -o $(COORDINATOR) $(COORDINATOR_ARGS)
 	env GOOS=windows GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 assets:
 	go get -modfile=go.tools.mod github.com/kevinburke/go-bindata/go-bindata/...
@@ -48,8 +48,7 @@ build: assets build-linux build-windows build-osx
 
 # Build and install for the current platform
 install:
-	$(GO) install $(COORDINATOR_ARGS)
-	$(GO) install $(AGENT_ARGS)
+	$(GO) install $(API_SERVER_ARGS)
 
 # We only support Linux to package for now. Package manually for other targets.
 package:
@@ -70,8 +69,8 @@ endif
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
 	cp LICENSE.txt $(PLATFORM_DIST_PATH)
 
-	mv $(COORDINATOR) $(PLATFORM_DIST_PATH)/bin
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
+	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)
