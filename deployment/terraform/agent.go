@@ -60,7 +60,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
 			}
 			commands := []string{
-				"rm -rf mattermost-load-test-ng",
+				"rm -rf mattermost-load-test-ng*",
 				"tar xzf tmp.tar.gz",
 				"mv mattermost-load-test-ng* mattermost-load-test-ng",
 				"rm tmp.tar.gz",
