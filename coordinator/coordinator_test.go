@@ -25,6 +25,13 @@ func newConfig(t *testing.T) *Config {
 	return &cfg
 }
 
+func newLoadTestConfig(t *testing.T) loadtest.Config {
+	t.Helper()
+	var cfg loadtest.Config
+	defaults.Set(&cfg)
+	return cfg
+}
+
 func setupAPIServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,15 +53,19 @@ func setupAPIServer(t *testing.T) *httptest.Server {
 }
 
 func TestNew(t *testing.T) {
-	c, err := New(nil, logger.New(&logger.Settings{}))
+	c, err := New(nil, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.Error(t, err)
 	require.Nil(t, c)
 
-	c, err = New(newConfig(t), nil)
+	c, err = New(newConfig(t), loadtest.Config{}, logger.New(&logger.Settings{}))
 	require.Error(t, err)
 	require.Nil(t, c)
 
-	c, err = New(newConfig(t), logger.New(&logger.Settings{}))
+	c, err = New(newConfig(t), newLoadTestConfig(t), nil)
+	require.Error(t, err)
+	require.Nil(t, c)
+
+	c, err = New(newConfig(t), newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 }
@@ -66,7 +77,7 @@ func TestRun(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg, logger.New(&logger.Settings{}))
+	c, err := New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -98,7 +109,7 @@ func TestStop(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg, logger.New(&logger.Settings{}))
+	c, err := New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.Equal(t, c.status.State, Stopped)
@@ -127,7 +138,7 @@ func TestStatus(t *testing.T) {
 	cfg := newConfig(t)
 	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
 
-	c, err := New(cfg, logger.New(&logger.Settings{}))
+	c, err := New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 

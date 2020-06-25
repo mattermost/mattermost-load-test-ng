@@ -64,9 +64,6 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config := data.CoordinatorConfig
-	for i := 0; i < len(config.ClusterConfig.Agents); i++ {
-		config.ClusterConfig.Agents[i].LoadTestConfig = ltConfig
-	}
 
 	id := r.FormValue("id")
 	if a.coordinators[id] != nil {
@@ -76,7 +73,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := coordinator.New(&config, a.coordLog)
+	c, err := coordinator.New(&config, ltConfig, a.coordLog)
 	if err != nil {
 		writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
 			Id:      id,

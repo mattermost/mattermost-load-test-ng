@@ -40,7 +40,7 @@ var ErrAgentNotFound = errors.New("agent: not found")
 
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
-func New(config LoadAgentConfig, log *mlog.Logger) (*LoadAgent, error) {
+func New(config Config, log *mlog.Logger) (*LoadAgent, error) {
 	if log == nil {
 		return nil, errors.New("logger should not be nil")
 	}
