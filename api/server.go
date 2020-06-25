@@ -4,252 +4,27 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/pprof"
-	"strconv"
 
-	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-type newControllerWrapper func(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController
-
-// API contains information about all load tests.
-type API struct {
-	newControllerFn newControllerWrapper
-	agents          map[string]*loadtest.LoadTester
-	metrics         *performance.Metrics
+// api keeps track of the load-test API server state.
+type api struct {
+	agents       map[string]*loadtest.LoadTester
+	coordinators map[string]*coordinator.Coordinator
+	metrics      *performance.Metrics
+	coordLog     *mlog.Logger
+	agentLog     *mlog.Logger
 }
 
-// Response contains the data returned by the HTTP server.
-type Response struct {
-	Id      string           `json:"id,omitempty"`      // The load-test agent unique identifier.
-	Message string           `json:"message,omitempty"` // Message contains information about the response.
-	Status  *loadtest.Status `json:"status,omitempty"`  // Status contains the current status of the load test.
-	Error   string           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
-}
-
-func writeResponse(w http.ResponseWriter, status int, response *Response) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(response)
-}
-
-func (a *API) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		LoadTestConfig         loadtest.Config
-		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
-		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("could not read request: %s", err),
-		})
-		return
-	}
-	ltConfig := data.LoadTestConfig
-	if err := defaults.Validate(ltConfig); err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("could not validate config: %s", err),
-		})
-		return
-	}
-
-	var ucConfig interface{}
-	var err error
-	switch ltConfig.UserControllerConfiguration.Type {
-	case loadtest.UserControllerSimple:
-		if data.SimpleControllerConfig == nil {
-			mlog.Warn("could not read controller config from the request")
-			ucConfig, err = simplecontroller.ReadConfig("")
-			break
-		}
-		ucConfig = data.SimpleControllerConfig
-	case loadtest.UserControllerSimulative:
-		if data.SimulControllerConfig == nil {
-			mlog.Warn("could not read controller config from the request")
-			ucConfig, err = simulcontroller.ReadConfig("")
-			break
-		}
-		ucConfig = data.SimulControllerConfig
-	}
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("could not read controller configuration: %s", err),
-		})
-		return
-	}
-	if ucConfig != nil {
-		if err := defaults.Validate(ucConfig); err != nil {
-			writeResponse(w, http.StatusBadRequest, &Response{
-				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
-			})
-			return
-		}
-	}
-
-	agentId := r.FormValue("id")
-	if a.agents[agentId] != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
-		})
-		return
-	}
-
-	lt, err := loadtest.New(&ltConfig, a.newControllerFn(&ltConfig, ucConfig, 0, agentId, a.metrics))
-	if err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Id:      agentId,
-			Message: "load-test agent creation failed",
-			Error:   fmt.Sprintf("could not create agent: %s", err),
-		})
-		return
-	}
-	a.agents[agentId] = lt
-
-	writeResponse(w, http.StatusCreated, &Response{
-		Id:      agentId,
-		Message: "load-test agent created",
-	})
-}
-
-func (a *API) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtest.LoadTester, error) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	lt, ok := a.agents[id]
-	if !ok {
-		err := fmt.Errorf("load-test agent with id %s not found", id)
-		writeResponse(w, http.StatusNotFound, &Response{
-			Error: err.Error(),
-		})
-		return nil, err
-	}
-	return lt, nil
-}
-
-func (a *API) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-	if err = lt.Run(); err != nil {
-		writeResponse(w, http.StatusOK, &Response{
-			Error: err.Error(),
-		})
-		return
-	}
-	writeResponse(w, http.StatusOK, &Response{
-		Message: "load-test agent started",
-		Status:  lt.Status(),
-	})
-}
-
-func (a *API) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-	if err = lt.Stop(); err != nil {
-		writeResponse(w, http.StatusOK, &Response{
-			Error: err.Error(),
-		})
-		return
-	}
-	writeResponse(w, http.StatusOK, &Response{
-		Message: "load-test agent stopped",
-		Status:  lt.Status(),
-	})
-}
-
-func (a *API) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-
-	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
-
-	delete(a.agents, mux.Vars(r)["id"])
-	writeResponse(w, http.StatusOK, &Response{
-		Message: "load-test agent destroyed",
-		Status:  lt.Status(),
-	})
-}
-
-func (a *API) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-	writeResponse(w, http.StatusOK, &Response{
-		Status: lt.Status(),
-	})
-}
-
-func getAmount(r *http.Request) (int, error) {
-	amountStr := r.FormValue("amount")
-	amount, err := strconv.ParseInt(amountStr, 10, 16)
-	return int(amount), err
-}
-
-func (a *API) addUsersHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-
-	amount, err := getAmount(r)
-	if amount <= 0 || err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
-		})
-		return
-	}
-
-	var res Response
-	n, err := lt.AddUsers(amount)
-	if err != nil {
-		res.Error = err.Error()
-	}
-	res.Message = fmt.Sprintf("%d users added", n)
-	res.Status = lt.Status()
-	writeResponse(w, http.StatusOK, &res)
-}
-
-func (a *API) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
-	}
-
-	amount, err := getAmount(r)
-	if amount <= 0 || err != nil {
-		writeResponse(w, http.StatusBadRequest, &Response{
-			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
-		})
-		return
-	}
-
-	var res Response
-	n, err := lt.RemoveUsers(amount)
-	if err != nil {
-		res.Error = err.Error()
-	}
-
-	res.Message = fmt.Sprintf("%d users removed", n)
-	res.Status = lt.Status()
-	writeResponse(w, http.StatusOK, &res)
-}
-
-func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 	html := `
 		<html>
 			<body>
@@ -260,38 +35,51 @@ func (a *API) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 			</body>
 		</html>
 	`
-
 	w.Write([]byte(html))
 }
 
 // SetupAPIRouter creates a router to handle load test API requests.
-func SetupAPIRouter(f newControllerWrapper) *mux.Router {
-	router := mux.NewRouter()
-	r := router.PathPrefix("/loadagent").Subrouter()
-
-	api := API{
-		newControllerFn: f,
-		agents:          make(map[string]*loadtest.LoadTester),
-		metrics:         performance.NewMetrics(),
+// Custom loggers for coordinator and agent are given.
+func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
+	a := api{
+		agents:       make(map[string]*loadtest.LoadTester),
+		coordinators: make(map[string]*coordinator.Coordinator),
+		metrics:      performance.NewMetrics(),
+		coordLog:     coordLog,
+		agentLog:     agentLog,
 	}
-	r.HandleFunc("/create", api.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
-	r.HandleFunc("/{id}/run", api.runLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/stop", api.stopLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}", api.destroyLoadAgentHandler).Methods("DELETE")
-	r.HandleFunc("/{id}", api.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/status", api.getLoadAgentStatusHandler).Methods("GET")
-	r.HandleFunc("/{id}/addusers", api.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
-	r.HandleFunc("/{id}/removeusers", api.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 
-	// Add profile endpoints
+	router := mux.NewRouter()
+
+	// load-test agent API.
+	r := router.PathPrefix("/loadagent").Subrouter()
+	r.HandleFunc("/create", a.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
+	r.HandleFunc("/{id}/run", a.runLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}/stop", a.stopLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}", a.destroyLoadAgentHandler).Methods("DELETE")
+	r.HandleFunc("/{id}", a.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/status", a.getLoadAgentStatusHandler).Methods("GET")
+	r.HandleFunc("/{id}/addusers", a.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/removeusers", a.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+
+	// load-test coordinator API.
+	c := router.PathPrefix("/coordinator").Subrouter()
+	c.HandleFunc("/create", a.createCoordinatorHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
+	c.HandleFunc("/{id}", a.destroyCoordinatorHandler).Methods("DELETE")
+	c.HandleFunc("/{id}", a.getCoordinatorStatusHandler).Methods("GET")
+	c.HandleFunc("/{id}/status", a.getCoordinatorStatusHandler).Methods("GET")
+	c.HandleFunc("/{id}/run", a.runCoordinatorHandler).Methods("POST")
+	c.HandleFunc("/{id}/stop", a.stopCoordinatorHandler).Methods("POST")
+
+	// Debug endpoint.
 	p := router.PathPrefix("/debug/pprof").Subrouter()
-	p.HandleFunc("/", api.pprofIndexHandler).Methods("GET")
+	p.HandleFunc("/", a.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
 
-	// Add metrics endpoint
-	router.Handle("/metrics", api.metrics.Handler())
+	// Metrics endpoint.
+	router.Handle("/metrics", a.metrics.Handler())
 
 	return router
 }

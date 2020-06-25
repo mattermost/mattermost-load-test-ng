@@ -6,10 +6,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
@@ -25,6 +28,8 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	log := logger.New(&cfg.LogSettings)
+
 	ltConfigFilePath, err := cmd.Flags().GetString("ltagent-config")
 	if err != nil {
 		return err
@@ -34,12 +39,28 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, err := coordinator.New(cfg, *ltConfig)
+	c, err := coordinator.New(cfg, *ltConfig, log)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
 
-	return c.Run()
+	done, err := c.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run coordinator: %w", err)
+	}
+
+	interruptChannel := make(chan os.Signal, 1)
+	signal.Notify(interruptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-interruptChannel:
+		if err := c.Stop(); err != nil {
+			return fmt.Errorf("failed to stop coordinator: %w", err)
+		}
+	case <-done:
+	}
+
+	return nil
 }
 
 func main() {

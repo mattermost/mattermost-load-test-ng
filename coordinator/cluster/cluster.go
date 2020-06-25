@@ -21,6 +21,7 @@ type LoadAgentCluster struct {
 	config LoadAgentClusterConfig
 	agents []*agent.LoadAgent
 	errMap map[*agent.LoadAgent]errorTrack
+	log    *mlog.Logger
 }
 
 type errorTrack struct {
@@ -30,7 +31,10 @@ type errorTrack struct {
 
 // New creates and initializes a new LoadAgentCluster for the given config.
 // An error is returned if the initialization fails.
-func New(config LoadAgentClusterConfig, ltConfig loadtest.Config) (*LoadAgentCluster, error) {
+func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logger) (*LoadAgentCluster, error) {
+	if log == nil {
+		return nil, fmt.Errorf("logger should not be nil")
+	}
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
@@ -42,7 +46,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config) (*LoadAgentClu
 			ApiURL:         config.Agents[i].ApiURL,
 			LoadTestConfig: ltConfig,
 		}
-		agent, err := agent.New(agentConfig)
+		agent, err := agent.New(agentConfig, log)
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
 		}
@@ -54,6 +58,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config) (*LoadAgentClu
 		agents: agents,
 		config: config,
 		errMap: errMap,
+		log:    log,
 	}, nil
 }
 
@@ -89,7 +94,7 @@ func (c *LoadAgentCluster) Shutdown() {
 		go func(ag *agent.LoadAgent) {
 			defer wg.Done()
 			if err := ag.Stop(); err != nil {
-				mlog.Error("cluster: failed to stop agent", mlog.Err(err))
+				c.log.Error("cluster: failed to stop agent", mlog.Err(err))
 			}
 		}(ag)
 	}
@@ -108,13 +113,13 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 	for i, inc := range dist {
-		mlog.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
+		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
 
 		if err := c.agents[i].AddUsers(inc); err != nil {
 			// Most probably the agent restarted, so we just start the agent again.
 			if errors.Is(err, agent.ErrAgentNotFound) {
 				if err := c.agents[i].Start(); err != nil {
-					mlog.Error("agent restart failed", mlog.Err(err))
+					c.log.Error("agent restart failed", mlog.Err(err))
 				}
 				continue
 			}
@@ -136,12 +141,12 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 	for i, dec := range dist {
-		mlog.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
+		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
 		if err := c.agents[i].RemoveUsers(dec); err != nil {
 			// Most probably the agent restarted, so we just start the agent again.
 			if errors.Is(err, agent.ErrAgentNotFound) {
 				if err := c.agents[i].Start(); err != nil {
-					mlog.Error("agent restart failed", mlog.Err(err))
+					c.log.Error("agent restart failed", mlog.Err(err))
 				}
 				continue
 			}

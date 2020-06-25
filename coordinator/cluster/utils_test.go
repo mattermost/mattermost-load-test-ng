@@ -5,6 +5,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,11 +18,11 @@ func createMockAgents(t *testing.T) []*agent.LoadAgent {
 	}
 	defaults.Set(&cfg)
 
-	agent1, err := agent.New(cfg)
+	agent1, err := agent.New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
-	agent2, err := agent.New(cfg)
+	agent2, err := agent.New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
-	agent3, err := agent.New(cfg)
+	agent3, err := agent.New(cfg, logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 
 	agents := []*agent.LoadAgent{

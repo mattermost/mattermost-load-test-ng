@@ -17,10 +17,14 @@ type Monitor struct {
 	helper     *prometheus.Helper
 	stopChan   chan struct{}
 	statusChan chan Status
+	log        *mlog.Logger
 }
 
 // NewMonitor creates and initializes a new Monitor.
-func NewMonitor(config MonitorConfig) (*Monitor, error) {
+func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
+	if log == nil {
+		return nil, fmt.Errorf("logger should not be nil")
+	}
 	if err := config.IsValid(); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
@@ -33,18 +37,19 @@ func NewMonitor(config MonitorConfig) (*Monitor, error) {
 		helper:     helper,
 		stopChan:   make(chan struct{}),
 		statusChan: make(chan Status),
+		log:        log,
 	}, nil
 }
 
 // Run will start the performance monitoring process.
 func (m *Monitor) Run() <-chan Status {
 	go func() {
-		mlog.Info("monitor: started")
+		m.log.Info("monitor: started")
 		for {
 			m.statusChan <- m.runQueries()
 			select {
 			case <-m.stopChan:
-				mlog.Info("monitor: shutting down")
+				m.log.Info("monitor: shutting down")
 				return
 			case <-time.After(time.Duration(m.config.UpdateIntervalMs) * time.Millisecond):
 			}
@@ -55,7 +60,7 @@ func (m *Monitor) Run() <-chan Status {
 
 // Stop will stop the monitoring process.
 func (m *Monitor) Stop() {
-	mlog.Info("monitor: stop")
+	m.log.Info("monitor: stop")
 	close(m.stopChan)
 }
 
@@ -64,22 +69,22 @@ func (m *Monitor) runQueries() Status {
 	for _, query := range m.config.Queries {
 		select {
 		case <-m.stopChan:
-			mlog.Info("monitor: exiting query loop")
+			m.log.Info("monitor: exiting query loop")
 			return Status{}
 		default:
 		}
 		value, err := m.helper.VectorFirst(query.Query)
 		if err != nil {
-			mlog.Warn("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))
+			m.log.Warn("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))
 			continue
 		}
-		mlog.Debug("monitor: ran query",
+		m.log.Debug("monitor: ran query",
 			mlog.String("query_description", query.Description),
 			mlog.String("query_returned_value", fmt.Sprintf("%2.8f", value)),
 			mlog.String("query_threshold", fmt.Sprintf("%2.8f", query.Threshold)),
 		)
 		if query.Alert && value >= query.Threshold {
-			mlog.Warn("monitor: returned value is above the threshold",
+			m.log.Warn("monitor: returned value is above the threshold",
 				mlog.String("query_description", query.Description),
 				mlog.String("query_returned_value", fmt.Sprintf("%2.8f", value)),
 				mlog.String("query_threshold", fmt.Sprintf("%2.8f", query.Threshold)),
