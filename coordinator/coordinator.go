@@ -137,6 +137,7 @@ func (c *Coordinator) Run() error {
 }
 
 // New creates and initializes a new Coordinator for the given config.
+// The ltConfig parameter is used to create and configure load-test agents.
 // An error is returned if the initialization fails.
 func New(config *Config, ltConfig loadtest.Config) (*Coordinator, error) {
 	if config == nil {
