@@ -6,7 +6,7 @@
 
 ### Agents
 
-*[]agent.LoadAgentConfig*
+*[]cluster.LoadAgentConfig*
 
 #### Id
 

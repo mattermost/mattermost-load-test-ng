@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
-	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
+	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -29,9 +29,9 @@ func (t *Terraform) StartCoordinator() error {
 	}
 	ip := output.Agents.Value[0].PublicIP
 
-	var loadAgentConfigs []agent.LoadAgentConfig
+	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range output.Agents.Value {
-		loadAgentConfigs = append(loadAgentConfigs, agent.LoadAgentConfig{
+		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
 			ApiURL: "http://" + val.PrivateIP + ":4000",
 		})

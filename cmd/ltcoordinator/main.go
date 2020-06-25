@@ -34,11 +34,7 @@ func RunCoordinatorCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	for i := 0; i < len(cfg.ClusterConfig.Agents); i++ {
-		cfg.ClusterConfig.Agents[i].LoadTestConfig = *ltConfig
-	}
-
-	c, err := coordinator.New(cfg)
+	c, err := coordinator.New(cfg, *ltConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}

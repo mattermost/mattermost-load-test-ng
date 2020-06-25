@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -29,14 +30,19 @@ type errorTrack struct {
 
 // New creates and initializes a new LoadAgentCluster for the given config.
 // An error is returned if the initialization fails.
-func New(config LoadAgentClusterConfig) (*LoadAgentCluster, error) {
+func New(config LoadAgentClusterConfig, ltConfig loadtest.Config) (*LoadAgentCluster, error) {
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	agents := make([]*agent.LoadAgent, len(config.Agents))
 	errMap := make(map[*agent.LoadAgent]errorTrack)
 	for i := 0; i < len(agents); i++ {
-		agent, err := agent.New(config.Agents[i])
+		agentConfig := agent.Config{
+			Id:             config.Agents[i].Id,
+			ApiURL:         config.Agents[i].ApiURL,
+			LoadTestConfig: ltConfig,
+		}
+		agent, err := agent.New(agentConfig)
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
 		}

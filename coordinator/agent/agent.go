@@ -22,7 +22,7 @@ import (
 // LoadAgent is the object acting as a client to the load-test agent
 // HTTP API.
 type LoadAgent struct {
-	config LoadAgentConfig
+	config Config
 	status *loadtest.Status
 	client *http.Client
 }
@@ -31,7 +31,7 @@ var ErrAgentNotFound = errors.New("agent: not found")
 
 // New creates and initializes a new LoadAgent for the given config.
 // An error is returned if the initialization fails.
-func New(config LoadAgentConfig) (*LoadAgent, error) {
+func New(config Config) (*LoadAgent, error) {
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configartion: %w", err)
 	}
