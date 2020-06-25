@@ -76,7 +76,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := coordinator.New(&config, a.clog)
+	c, err := coordinator.New(&config, a.coordLog)
 	if err != nil {
 		writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
 			Id:      id,
