@@ -21,7 +21,7 @@ import (
 // LoadAgent is the object acting as a client to the load-test agent
 // HTTP API.
 type LoadAgent struct {
-	config LoadAgentConfig
+	config Config
 	status *loadtest.Status
 	client *http.Client
 	log    *mlog.Logger

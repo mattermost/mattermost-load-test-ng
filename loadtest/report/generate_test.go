@@ -50,7 +50,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	var input = map[string]model.Matrix{
-		"sum(increase(mattermost_db_store_time_sum[10s])) by (method) / sum(increase(mattermost_db_store_time_count[10s])) by (method)": {
+		"sum(rate(mattermost_db_store_time_sum[10s])) by (method) / sum(rate(mattermost_db_store_time_count[10s])) by (method)": {
 			&model.SampleStream{
 				Metric: model.Metric{
 					"method": "method1",
@@ -98,7 +98,7 @@ func TestGenerate(t *testing.T) {
 				},
 			},
 		},
-		"sum(increase(mattermost_api_time_sum[10s])) by (handler) / sum(increase(mattermost_api_time_count[10s])) by (handler)": {
+		"sum(rate(mattermost_api_time_sum[10s])) by (handler) / sum(rate(mattermost_api_time_count[10s])) by (handler)": {
 			&model.SampleStream{
 				Metric: model.Metric{
 					"handler": "handler1",
@@ -170,10 +170,36 @@ func TestGenerate(t *testing.T) {
 				Values: values,
 			},
 		},
-		`sum(increase(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(increase(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))`: {
+		`sum(rate(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))`: {
 			&model.SampleStream{
 				Metric: model.Metric{},
 				Values: values,
+			},
+		},
+	}
+
+	cfg := Config{
+		Label: "",
+		GraphQueries: []GraphQuery{
+			{
+				Name:  "CPU Utilization",
+				Query: "avg(irate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)",
+			},
+			{
+				Name:  "Heap In Use",
+				Query: "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})",
+			},
+			{
+				Name:  "Stack In Use",
+				Query: "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})",
+			},
+			{
+				Name:  "RPS",
+				Query: "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))",
+			},
+			{
+				Name:  "Avg Store times",
+				Query: "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))",
 			},
 		},
 	}
@@ -214,7 +240,7 @@ func TestGenerate(t *testing.T) {
 		dataMap: input,
 	})
 
-	g := New(label, helper)
+	g := New(label, helper, cfg)
 	now := time.Now()
 	r, err := g.Generate(now.Add(-10*time.Second), now)
 	require.NoError(t, err)

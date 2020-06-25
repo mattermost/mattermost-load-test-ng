@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -198,8 +199,9 @@ func (c *Coordinator) Status() Status {
 }
 
 // New creates and initializes a new Coordinator for the given config.
+// The ltConfig parameter is used to create and configure load-test agents.
 // An error is returned if the initialization fails.
-func New(config *Config, log *mlog.Logger) (*Coordinator, error) {
+func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinator, error) {
 	if config == nil {
 		return nil, fmt.Errorf("coordinator: config should not be nil")
 	}
@@ -210,7 +212,7 @@ func New(config *Config, log *mlog.Logger) (*Coordinator, error) {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	cluster, err := cluster.New(config.ClusterConfig, log)
+	cluster, err := cluster.New(config.ClusterConfig, ltConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}

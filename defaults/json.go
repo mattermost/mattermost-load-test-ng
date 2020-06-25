@@ -34,6 +34,7 @@ func readJSON(path string, value interface{}) error {
 	if err != nil {
 		return fmt.Errorf("could not open file: %w", err)
 	}
+	defer file.Close()
 
 	err = json.NewDecoder(file).Decode(&value)
 	if err != nil {

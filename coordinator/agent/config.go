@@ -7,8 +7,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 )
 
-// LoadAgentConfig holds information about the load-test agent instance.
-type LoadAgentConfig struct {
+// Config holds information about the load-test agent instance.
+type Config struct {
 	// A sring that identifies the load-test agent instance.
 	Id string `default:"lt0" validate:"notempty"`
 	// The API URL used to control the specified load-test instance.

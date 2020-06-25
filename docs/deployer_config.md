@@ -193,3 +193,29 @@ When true, logged events are written in a machine-readable JSON format. Otherwis
 *string*
 
 The location of the log file.
+
+## Report
+
+### Label
+
+*string*
+
+The label to filter Prometheus queries.
+
+### GraphQueries
+
+*[]GraphQuery*
+
+GraphQuery contains the query to be executed against a Prometheus instance to gather data for reports.
+
+#### Name
+
+*string*
+
+A friendly name for the graph.
+
+#### Query
+
+*string*
+
+The Prometheus query to run.
