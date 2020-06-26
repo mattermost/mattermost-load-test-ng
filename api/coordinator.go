@@ -77,9 +77,15 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.FormValue("id")
 	if val, ok := a.resources.Load(id); ok && val != nil {
-		writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
-			Error: fmt.Sprintf("load-test coordinator with id %s already exists", id),
-		})
+		if _, ok := val.(*coordinator.Coordinator); ok {
+			writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
+				Error: fmt.Sprintf("load-test coordinator with id %s already exists", id),
+			})
+		} else {
+			writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
+				Error: fmt.Sprintf("resource with id %s already exists", id),
+			})
+		}
 		return
 	}
 
