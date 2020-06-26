@@ -11,6 +11,7 @@ The name of the cluster. This will be prefixed to all resources in AWS that are 
 *int*
 
 The number of Mattermost application instances.
+This value can be set to zero to enable a load-test agents only deployment.
 
 ## AppInstanceType
 
