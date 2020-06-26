@@ -281,7 +281,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster" "db_cluster" {
-  count               = var.app_instance_count > 0 ? var.db_instance_count : 0
+  count               = var.app_instance_count > 0 ? 1 : 0
   cluster_identifier  = "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username
@@ -443,6 +443,7 @@ resource "aws_security_group" "agent" {
     from_port       = 4000
     to_port         = 4000
     protocol        = "tcp"
+    self            = true
     cidr_blocks     = ["0.0.0.0/0"]
   }
 
@@ -459,7 +460,6 @@ resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
   type                     = "ingress"
   from_port                = 4000
   to_port                  = 4000
-  self                     = true
   protocol                 = "tcp"
   security_group_id        = aws_security_group.agent.id
   source_security_group_id = aws_security_group.metrics[0].id
