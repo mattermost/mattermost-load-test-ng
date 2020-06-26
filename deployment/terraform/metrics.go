@@ -26,7 +26,7 @@ const (
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	// Updating Prometheus config
-	sshc, err := extAgent.NewClient(output.MetricsServer.Value.PublicIP)
+	sshc, err := extAgent.NewClient(output.MetricsServer.Value[0].PublicIP)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		esEndpoint := fmt.Sprintf("https://%s", output.ElasticServer.Value[0].Endpoint)
 		esTargets = append(esTargets, "'metrics:9114'")
 
-		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value.PublicIP))
+		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value[0].PublicIP))
 		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
 		rdr := strings.NewReader(esExporterService)
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/es-exporter.service", true); err != nil {
@@ -66,14 +66,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
 
-		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value.PublicIP))
+		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", output.MetricsServer.Value[0].PublicIP))
 		cmd = "sudo service es-exporter restart"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
 	}
 
-	mlog.Info("Updating Prometheus config", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	mlog.Info("Updating Prometheus config", mlog.String("host", output.MetricsServer.Value[0].PublicIP))
 	prometheusConfigFile := fmt.Sprintf(prometheusConfig,
 		strings.Join(nodeTargets, ","),
 		strings.Join(mmTargets, ","),
@@ -90,20 +90,20 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		return fmt.Errorf("error upload metrics hosts file: output: %s, error: %w", out, err)
 	}
 
-	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	mlog.Info("Starting Prometheus", mlog.String("host", output.MetricsServer.Value[0].PublicIP))
 	cmd := "sudo service prometheus restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
-	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value.PublicIP))
+	mlog.Info("Setting up Grafana", mlog.String("host", output.MetricsServer.Value[0].PublicIP))
 
 	// Upload datasource file
 	buf, err := ioutil.ReadFile(path.Join(t.dir, "datasource.yaml"))
 	if err != nil {
 		return err
 	}
-	dataSource := fmt.Sprintf(string(buf), "http://"+output.MetricsServer.Value.PrivateIP+":9090")
+	dataSource := fmt.Sprintf(string(buf), "http://"+output.MetricsServer.Value[0].PrivateIP+":9090")
 	if out, err := sshc.Upload(strings.NewReader(dataSource), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
 		return fmt.Errorf("error while uploading datasource: output: %s, error: %w", out, err)
 	}
@@ -149,7 +149,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	// Set preference to new dashboard.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
 	defer cancel()
-	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value.PublicIP + ":3000/api/user/preferences"
+	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.Value[0].PublicIP + ":3000/api/user/preferences"
 	payload := struct {
 		Theme           string `json:"theme"`
 		HomeDashboardID int    `json:"homeDashboardId"`

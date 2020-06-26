@@ -21,7 +21,7 @@ type Config struct {
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// Number of application instances.
-	AppInstanceCount int `default:"1" validate:"range:[1,)"`
+	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.

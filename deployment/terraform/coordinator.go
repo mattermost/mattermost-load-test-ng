@@ -55,7 +55,7 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
-	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value.PrivateIP + ":9090"
+	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value[0].PrivateIP + ":9090"
 
 	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {

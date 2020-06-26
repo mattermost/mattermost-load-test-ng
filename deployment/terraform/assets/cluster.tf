@@ -34,8 +34,8 @@ resource "aws_instance" "app_server" {
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
   vpc_security_group_ids = [
-    "${aws_security_group.app.id}",
-    "${aws_security_group.app_gossip.id}"
+    "${aws_security_group.app[0].id}",
+    "${aws_security_group.app_gossip[0].id}"
   ]
 
   dynamic "root_block_device" {
@@ -78,10 +78,11 @@ resource "aws_instance" "metrics_server" {
 
   ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
   instance_type = "t3.xlarge"
+  count = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
 
   vpc_security_group_ids = [
-    "${aws_security_group.metrics.id}",
+    "${aws_security_group.metrics[0].id}",
   ]
 
   dynamic "root_block_device" {
@@ -125,7 +126,7 @@ resource "aws_instance" "proxy_server" {
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    "${aws_security_group.proxy.id}"
+    "${aws_security_group.proxy[0].id}"
   ]
   key_name = aws_key_pair.key.id
 
@@ -270,9 +271,9 @@ EOF
 
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
-  count                      = var.db_instance_count
+  count                      = var.app_instance_count > 0 ? var.db_instance_count : 0
   identifier                 = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier         = aws_rds_cluster.db_cluster.id
+  cluster_identifier         = aws_rds_cluster.db_cluster[0].id
   instance_class             = var.db_instance_class
   engine                     = var.db_instance_engine
   apply_immediately          = true
@@ -280,6 +281,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster" "db_cluster" {
+  count               = var.app_instance_count > 0 ? var.db_instance_count : 0
   cluster_identifier  = "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username
@@ -289,7 +291,7 @@ resource "aws_rds_cluster" "db_cluster" {
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
 
-  vpc_security_group_ids = ["${aws_security_group.db.id}"]
+  vpc_security_group_ids = ["${aws_security_group.db[0].id}"]
 }
 
 resource "aws_instance" "loadtest_agent" {
@@ -332,6 +334,7 @@ resource "aws_instance" "loadtest_agent" {
 }
 
 resource "aws_security_group" "app" {
+  count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
 
@@ -359,7 +362,7 @@ resource "aws_security_group" "app" {
     from_port       = 9100
     to_port         = 9100
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.metrics.id}"]
+    security_groups = ["${aws_security_group.metrics[0].id}"]
   }
   egress {
     from_port   = 0
@@ -370,31 +373,32 @@ resource "aws_security_group" "app" {
 }
 
 resource "aws_security_group" "app_gossip" {
+  count       = var.app_instance_count > 1 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
   ingress {
     from_port       = 8074
     to_port         = 8074
     protocol        = "udp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
   ingress {
     from_port       = 8074
     to_port         = 8074
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
   ingress {
     from_port       = 8075
     to_port         = 8075
     protocol        = "udp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
   ingress {
     from_port       = 8075
     to_port         = 8075
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
   egress {
     from_port   = 0
@@ -406,26 +410,27 @@ resource "aws_security_group" "app_gossip" {
 
 
 resource "aws_security_group" "db" {
+  count       = var.app_instance_count > 0 ? 1 : 0
   name = "${var.cluster_name}-db-security-group"
 
   ingress {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
 
   ingress {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}"]
+    security_groups = ["${aws_security_group.app[0].id}"]
   }
 }
 
 resource "aws_security_group" "agent" {
-  name        = "${var.cluster_name}-agent-security-group"
-  description = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+  name          = "${var.cluster_name}-agent-security-group"
+  description   = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
 
   ingress {
     from_port   = 22
@@ -438,22 +443,7 @@ resource "aws_security_group" "agent" {
     from_port       = 4000
     to_port         = 4000
     protocol        = "tcp"
-    self            = true
-    security_groups = ["${aws_security_group.metrics.id}"]
-  }
-
-  ingress {
-    from_port       = 4000
-    to_port         = 4000
-    protocol        = "tcp"
     cidr_blocks     = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port       = 9100
-    to_port         = 9100
-    protocol        = "tcp"
-    security_groups = ["${aws_security_group.metrics.id}"]
   }
 
   egress {
@@ -464,8 +454,30 @@ resource "aws_security_group" "agent" {
   }
 }
 
+resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
+  count                    = var.app_instance_count > 1 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 4000
+  to_port                  = 4000
+  self                     = true
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.agent.id
+  source_security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "agent-node-exporter" {
+  count                    = var.app_instance_count > 1 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 9100
+  to_port                  = 9100
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.agent.id
+  source_security_group_id = aws_security_group.metrics[0].id
+}
+
 resource "aws_security_group" "metrics" {
-  name = "${var.cluster_name}-metrics-security-group"
+  count         = var.app_instance_count > 0 ? 1 : 0
+  name          = "${var.cluster_name}-metrics-security-group"
 
   ingress {
     from_port   = 22
@@ -501,24 +513,26 @@ resource "aws_security_group" "elastic" {
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app.id}", "${aws_security_group.metrics.id}"]
+    security_groups = ["${aws_security_group.app[0].id}", "${aws_security_group.metrics[0].id}"]
   }
 
-  count = var.es_instance_count
+  count = var.es_instance_count > 0 ? 1 : 0
 }
 
 # We need a separate security group rule to prevent cyclic dependency between
 # the app group and metrics group.
 resource "aws_security_group_rule" "app-to-inbucket" {
+  count                    = var.app_instance_count > 1 ? 1 : 0
   type                     = "ingress"
   from_port                = 2500
   to_port                  = 2500
   protocol                 = "tcp"
-  security_group_id        = aws_security_group.metrics.id
-  source_security_group_id = aws_security_group.app.id
+  security_group_id        = aws_security_group.metrics[0].id
+  source_security_group_id = aws_security_group.app[0].id
 }
 
 resource "aws_security_group" "proxy" {
+  count       = var.app_instance_count > 1 ? 1 : 0
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
 
@@ -540,7 +554,7 @@ resource "aws_security_group" "proxy" {
     from_port       = 9100
     to_port         = 9100
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.metrics.id}"]
+    security_groups = ["${aws_security_group.metrics[0].id}"]
   }
 
   egress {
