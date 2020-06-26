@@ -32,14 +32,24 @@ func writeCoordinatorResponse(w http.ResponseWriter, status int, resp *coordinat
 func (a *api) getCoordinatorById(w http.ResponseWriter, r *http.Request) (*coordinator.Coordinator, error) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	c, ok := a.coordinators[id]
-	if !ok {
+	val, ok := a.resources.Load(id)
+	if !ok || val == nil {
 		err := fmt.Errorf("load-test coordinator with id %s not found", id)
 		writeCoordinatorResponse(w, http.StatusNotFound, &coordinatorResponse{
 			Error: err.Error(),
 		})
 		return nil, err
 	}
+
+	c, ok := val.(*coordinator.Coordinator)
+	if !ok {
+		err := fmt.Errorf("resource with id %s is not a load-test coordinator", id)
+		writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
+			Error: err.Error(),
+		})
+		return nil, err
+	}
+
 	return c, nil
 }
 
@@ -66,7 +76,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	config := data.CoordinatorConfig
 
 	id := r.FormValue("id")
-	if a.coordinators[id] != nil {
+	if val, ok := a.resources.Load(id); ok && val != nil {
 		writeCoordinatorResponse(w, http.StatusBadRequest, &coordinatorResponse{
 			Error: fmt.Sprintf("load-test coordinator with id %s already exists", id),
 		})
@@ -83,7 +93,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.coordinators[id] = c
+	a.resources.Store(id, c)
 
 	writeCoordinatorResponse(w, http.StatusCreated, &coordinatorResponse{
 		Message: "load-test coordinator created",
@@ -98,7 +108,7 @@ func (a *api) destroyCoordinatorHandler(w http.ResponseWriter, r *http.Request) 
 
 	_ = c.Stop() // we are ignoring the error here in case the coordinator was previously stopped
 
-	delete(a.coordinators, mux.Vars(r)["id"])
+	a.resources.Delete(mux.Vars(r)["id"])
 	writeCoordinatorResponse(w, http.StatusOK, &coordinatorResponse{
 		Message: "load-test coordinator destroyed",
 	})

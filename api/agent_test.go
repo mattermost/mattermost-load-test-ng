@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -80,6 +81,12 @@ func TestAgentAPI(t *testing.T) {
 			JSON().Object().ContainsKey("error")
 		rawMsg = obj.Value("error").String().Raw()
 		require.Equal(t, fmt.Sprintf("load-test agent with id %s already exists", ltId), rawMsg)
+
+		eCoord := httpexpect.New(t, server.URL+"/coordinator")
+		obj = eCoord.GET(ltId).Expect().Status(http.StatusBadRequest).
+			JSON().Object().ContainsKey("error")
+		rawMsg = obj.Value("error").String().Raw()
+		require.Equal(t, fmt.Sprintf("resource with id %s is not a load-test coordinator", ltId), rawMsg)
 
 		e.POST(ltId + "/run").Expect().Status(http.StatusOK)
 		e.POST(ltId+"/addusers").WithQuery("amount", 10).Expect().Status(http.StatusOK)
@@ -161,4 +168,53 @@ func TestAgentAPI(t *testing.T) {
 		e.POST(ltId + "/stop").Expect().Status(http.StatusOK)
 		e.DELETE(ltId).Expect().Status(http.StatusOK)
 	})
+}
+
+func TestAgentAPIConcurrency(t *testing.T) {
+	// create http.Handler
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+
+	// run server using httptest
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	// create httpexpect instance
+	e := httpexpect.New(t, server.URL+"/loadagent")
+
+	ltConfig := loadtest.Config{}
+	err := defaults.Set(&ltConfig)
+	require.NoError(t, err)
+
+	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	ltConfig.UsersConfiguration.MaxActiveUsers = 100
+
+	ucConfig, err := simulcontroller.ReadConfig("../config/simulcontroller.sample.json")
+	require.NoError(t, err)
+
+	n := 4
+	var wg sync.WaitGroup
+	wg.Add(n)
+
+	for i := 0; i < n; i++ {
+		go func(id int) {
+			defer wg.Done()
+			rd := requestData{
+				LoadTestConfig:        ltConfig,
+				SimulControllerConfig: ucConfig,
+			}
+			ltId := fmt.Sprintf("lt%d", id)
+			obj := e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
+				Expect().Status(http.StatusCreated).
+				JSON().Object().ValueEqual("id", ltId)
+			rawMsg := obj.Value("message").String().Raw()
+			require.Equal(t, rawMsg, "load-test agent created")
+
+			e.GET(ltId + "/status").
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object().NotContainsKey("error")
+		}(i)
+	}
+
+	wg.Wait()
 }
