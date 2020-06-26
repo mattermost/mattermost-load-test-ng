@@ -20,6 +20,11 @@ func (t *Terraform) Info() error {
 }
 
 func (t *Terraform) displayInfo(output *Output) {
+	if len(output.Agents.Value) == 0 {
+		fmt.Println("No active deployment found.")
+		return
+	}
+
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
@@ -39,9 +44,8 @@ func (t *Terraform) displayInfo(output *Output) {
 	for _, agent := range output.Agents.Value {
 		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
 	}
-	if len(output.Agents.Value) > 0 {
-		fmt.Println("Coordinator: " + output.Agents.Value[0].PublicIP)
-	}
+	fmt.Println("Coordinator: " + output.Agents.Value[0].PublicIP)
+
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.Value[0].PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.Value[0].PublicIP + ":9090")
