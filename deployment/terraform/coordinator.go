@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -190,4 +191,43 @@ func (t *Terraform) StopCoordinator() error {
 
 	mlog.Info("Done")
 	return nil
+}
+
+// GetCoordinatorStatus returns information about the status of the
+// coordinatore in the current load-test deployment.
+func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
+	if err := t.preFlightCheck(); err != nil {
+		return nil, err
+	}
+
+	output, err := t.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(output.Agents.Value) == 0 {
+		return nil, fmt.Errorf("there are no agents to initialize load-test")
+	}
+	ip := output.Agents.Value[0].PublicIP
+
+	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
+
+	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get coordinator status: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var res api.CoordinatorResponse
+	err = json.NewDecoder(resp.Body).Decode(&res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode api response: %w", err)
+	}
+
+	if res.Error != "" {
+		return nil, fmt.Errorf(res.Error)
+	}
+
+	return res.Status, nil
 }

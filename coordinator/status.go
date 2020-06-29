@@ -53,10 +53,18 @@ func (s *State) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON returns a JSON representation from a State variable.
 func (s State) MarshalJSON() ([]byte, error) {
+	val, err := s.stateToString()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(val)
+}
+
+func (s State) stateToString() (string, error) {
 	var res string
 	switch s {
 	default:
-		return nil, ErrInvalidState
+		return "", ErrInvalidState
 	case Stopped:
 		res = "stopped"
 	case Running:
@@ -64,14 +72,20 @@ func (s State) MarshalJSON() ([]byte, error) {
 	case Done:
 		res = "done"
 	}
+	return res, nil
+}
 
-	return json.Marshal(res)
+func (s State) String() string {
+	res, _ := s.stateToString()
+	return res
 }
 
 // Status contains various information about Coordinator.
 type Status struct {
-	State       State     // State of Coordinator.
-	StartTime   time.Time // Time when Coordinator was started.
-	ActiveUsers int       // Total number of currently active users across the load-test agents cluster.
-	NumErrors   int64     // Total number of errors received from the load-test agents cluster.
+	State          State     // State of Coordinator.
+	StartTime      time.Time // Time when Coordinator has started.
+	StopTime       time.Time // Time when Coordinator has stopped.
+	ActiveUsers    int       // Total number of currently active users across the load-test agents cluster.
+	NumErrors      int64     // Total number of errors received from the load-test agents cluster.
+	SupportedUsers int       // Number of supported users.
 }
