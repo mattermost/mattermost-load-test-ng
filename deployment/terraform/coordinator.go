@@ -26,6 +26,10 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
+	if len(output.Instances.Value) == 0 {
+		return fmt.Errorf("there are no app server instances to run the load-test")
+	}
+
 	if len(output.Agents.Value) == 0 {
 		return fmt.Errorf("there are no agent instances to run the coordinator")
 	}
