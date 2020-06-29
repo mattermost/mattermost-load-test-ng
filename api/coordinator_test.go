@@ -68,6 +68,12 @@ func TestCoordinatorAPI(t *testing.T) {
 		rawMsg = obj.Value("error").String().Raw()
 		require.Equal(t, "load-test coordinator with id ltc0 already exists", rawMsg)
 
+		eAgent := httpexpect.New(t, server.URL+"/loadagent")
+		obj = eAgent.GET(id).Expect().Status(http.StatusBadRequest).
+			JSON().Object().ContainsKey("error")
+		rawMsg = obj.Value("error").String().Raw()
+		require.Equal(t, "resource with id ltc0 is not a load-test agent", rawMsg)
+
 		obj = e.DELETE(id).
 			Expect().Status(http.StatusOK).
 			JSON().Object().ContainsKey("message")
