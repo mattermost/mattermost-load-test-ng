@@ -16,10 +16,30 @@ import (
 
 // api keeps track of the load-test API server state.
 type api struct {
-	resources sync.Map
+	mut       sync.RWMutex
+	resources map[string]interface{}
 	metrics   *performance.Metrics
 	coordLog  *mlog.Logger
 	agentLog  *mlog.Logger
+}
+
+func (a *api) getResource(id string) (interface{}, bool) {
+	a.mut.RLock()
+	defer a.mut.RUnlock()
+	val, ok := a.resources[id]
+	return val, ok
+}
+
+func (a *api) setResource(id string, res interface{}) {
+	a.mut.Lock()
+	defer a.mut.Unlock()
+	a.resources[id] = res
+}
+
+func (a *api) deleteResource(id string) {
+	a.mut.Lock()
+	defer a.mut.Unlock()
+	delete(a.resources, id)
 }
 
 func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +60,10 @@ func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 // Custom loggers for coordinator and agent are given.
 func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	a := api{
-		metrics:  performance.NewMetrics(),
-		coordLog: coordLog,
-		agentLog: agentLog,
+		resources: make(map[string]interface{}),
+		metrics:   performance.NewMetrics(),
+		coordLog:  coordLog,
+		agentLog:  agentLog,
 	}
 
 	router := mux.NewRouter()

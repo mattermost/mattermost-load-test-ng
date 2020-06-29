@@ -102,7 +102,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	agentId := r.FormValue("id")
-	if val, ok := a.resources.Load(agentId); ok && val != nil {
+	if val, ok := a.getResource(agentId); ok && val != nil {
 		if _, ok := val.(*loadtest.LoadTester); ok {
 			writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
 				Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
@@ -124,7 +124,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	a.resources.Store(agentId, lt)
+	a.setResource(agentId, lt)
 
 	writeAgentResponse(w, http.StatusCreated, &agentResponse{
 		Id:      agentId,
@@ -136,7 +136,7 @@ func (a *api) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtes
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	val, ok := a.resources.Load(id)
+	val, ok := a.getResource(id)
 	if !ok || val == nil {
 		err := fmt.Errorf("load-test agent with id %s not found", id)
 		writeAgentResponse(w, http.StatusNotFound, &agentResponse{
@@ -199,7 +199,7 @@ func (a *api) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
-	a.resources.Delete(mux.Vars(r)["id"])
+	a.deleteResource(mux.Vars(r)["id"])
 	writeAgentResponse(w, http.StatusOK, &agentResponse{
 		Message: "load-test agent destroyed",
 		Status:  lt.Status(),
