@@ -13,51 +13,6 @@ import (
 
 func TestGetPlots(t *testing.T) {
 	modelNow := model.Now()
-	r1 := Report{
-		Label: "report1",
-		Graphs: []graph{
-			{
-				Name: "CPU",
-				Values: []model.SamplePair{
-					{
-						Timestamp: modelNow,
-						Value:     0.01,
-					},
-					{
-						Timestamp: modelNow,
-						Value:     0.02,
-					},
-				},
-			},
-			{
-				Name: "Memory",
-				Values: []model.SamplePair{
-					{
-						Timestamp: modelNow,
-						Value:     0.01,
-					},
-					{
-						Timestamp: modelNow,
-						Value:     0.02,
-					},
-				},
-			},
-			{
-				Name: "Store",
-				Values: []model.SamplePair{
-					{
-						Timestamp: modelNow,
-						Value:     0.01,
-					},
-					{
-						Timestamp: modelNow,
-						Value:     0.02,
-					},
-				},
-			},
-		},
-	}
-
 	r2 := Report{
 		Label: "report2",
 		Graphs: []graph{
@@ -148,7 +103,7 @@ func TestGetPlots(t *testing.T) {
 		},
 	}
 
-	gPlots := getPlots(r1, r2, r3)
+	gPlots := getPlots(r2, r3)
 	require.Len(t, gPlots, 3)
 	for i, plot := range gPlots {
 		switch i {

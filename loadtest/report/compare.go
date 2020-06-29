@@ -55,7 +55,7 @@ func Compare(target *os.File, genGraph bool, reports ...Report) error {
 	// TODO: generate a single image combining all the graphs.
 	// Printing the graphs.
 	if genGraph {
-		gPlots := getPlots(reports...)
+		gPlots := getPlots(reports[1:]...)
 		for i, plot := range gPlots {
 			err := generateGraph(plot.name, base.Label, base.Graphs[i], plot.graphs)
 			if err != nil {
@@ -73,7 +73,7 @@ func getPlots(reports ...Report) []gplot {
 	// A single report has multiple graphs.
 	// What we are doing here is changing the aggregation such that
 	// a single gPlot contains graphs of a single type from multiple reports.
-	for i, r := range reports[1:] {
+	for i, r := range reports {
 		for j, g := range r.Graphs {
 			if i == 0 {
 				gPlots = append(gPlots, struct {
