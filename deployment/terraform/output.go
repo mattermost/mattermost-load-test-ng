@@ -26,7 +26,7 @@ type Output struct {
 		} `json:"value"`
 	} `json:"instances"`
 	DBCluster struct {
-		Value struct {
+		Value []struct {
 			ClusterEndpoint string `json:"endpoint"`
 			ReaderEndpoint  string `json:"reader_endpoint"`
 		} `json:"value"`
@@ -43,7 +43,7 @@ type Output struct {
 		} `json:"value"`
 	} `json:"agents"`
 	MetricsServer struct {
-		Value struct {
+		Value []struct {
 			PrivateIP  string `json:"private_ip"`
 			PublicIP   string `json:"public_ip"`
 			PublicDNS  string `json:"public_dns"`
@@ -82,8 +82,12 @@ func (o *Output) HasElasticSearch() bool {
 	return len(o.ElasticServer.Value) > 0
 }
 
-// IsEmpty returns whether a deployment has some data or not.
-// This is useful to check if info is being checked after a cluster is destroyed.
-func (o *Output) IsEmpty() bool {
-	return len(o.Instances.Value) == 0
+// HasMetrics returns whether a deployment includes app server instances.
+func (o *Output) HasAppServers() bool {
+	return len(o.Instances.Value) > 0
+}
+
+// HasMetrics returns whether a deployment includes the metrics instance.
+func (o *Output) HasMetrics() bool {
+	return len(o.MetricsServer.Value) > 0
 }

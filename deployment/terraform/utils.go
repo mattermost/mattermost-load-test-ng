@@ -87,7 +87,7 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	url := "http://"
 	switch resource {
 	case "grafana":
-		url += output.MetricsServer.Value.PublicDNS + ":3000"
+		url += output.MetricsServer.Value[0].PublicDNS + ":3000"
 	case "mattermost":
 		if output.Proxy.Value[0].PublicDNS != "" {
 			url += output.Proxy.Value[0].PublicDNS
@@ -95,7 +95,7 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 			url += output.Instances.Value[0].PublicDNS + ":8065"
 		}
 	case "prometheus":
-		url += output.MetricsServer.Value.PublicDNS + ":9090"
+		url += output.MetricsServer.Value[0].PublicDNS + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}

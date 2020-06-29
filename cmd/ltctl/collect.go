@@ -151,7 +151,7 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if output.IsEmpty() {
+	if output.HasAppServers() {
 		return errors.New("no active deployment found")
 	}
 

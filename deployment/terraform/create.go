@@ -116,27 +116,31 @@ func (t *Terraform) Create() error {
 		return err
 	}
 
-	// Setting up metrics server.
-	if err := t.setupMetrics(extAgent, output); err != nil {
-		return fmt.Errorf("error setting up metrics server: %w", err)
+	if output.HasMetrics() {
+		// Setting up metrics server.
+		if err := t.setupMetrics(extAgent, output); err != nil {
+			return fmt.Errorf("error setting up metrics server: %w", err)
+		}
 	}
 
-	url := output.Instances.Value[0].PublicDNS + ":8065"
+	if output.HasAppServers() {
+		url := output.Instances.Value[0].PublicDNS + ":8065"
 
-	// Updating the config.json for each instance of app server
-	t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-	if output.HasProxy() {
-		// Updating the nginx config on proxy server
-		t.setupProxyServer(output, extAgent)
-		url = output.Proxy.Value[0].PublicDNS
-	}
+		// Updating the config.json for each instance of app server
+		t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
+		if output.HasProxy() {
+			// Updating the nginx config on proxy server
+			t.setupProxyServer(output, extAgent)
+			url = output.Proxy.Value[0].PublicDNS
+		}
 
-	if err := pingServer("http://" + url); err != nil {
-		return fmt.Errorf("error whiling pinging server: %w", err)
-	}
+		if err := pingServer("http://" + url); err != nil {
+			return fmt.Errorf("error whiling pinging server: %w", err)
+		}
 
-	if err := t.createAdminUser(extAgent, output); err != nil {
-		return fmt.Errorf("could not create admin user: %w", err)
+		if err := t.createAdminUser(extAgent, output); err != nil {
+			return fmt.Errorf("could not create admin user: %w", err)
+		}
 	}
 
 	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
@@ -217,6 +221,10 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output) 
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
+	if !output.HasAppServers() {
+		return nil
+	}
+
 	if err := t.initLoadtest(extAgent, output); err != nil {
 		return err
 	}
@@ -294,12 +302,12 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	var readerDSN []string
 	switch t.config.DBInstanceEngine {
 	case "aurora-postgresql":
-		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
-		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value[0].ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
+		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value[0].ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
 		driverName = "postgres"
 	case "aurora-mysql":
-		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value[0].ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value[0].ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
 		driverName = "mysql"
 	}
 
@@ -312,7 +320,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 
-	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.Value.PrivateIP)
+	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.Value[0].PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
 	if output.HasProxy() && len(output.S3Key.Value) > 0 && len(output.S3Bucket.Value) > 0 {

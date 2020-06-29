@@ -26,6 +26,10 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
+	if len(output.Instances.Value) == 0 {
+		return fmt.Errorf("there are no app server instances to run the load-test")
+	}
+
 	if len(output.Agents.Value) == 0 {
 		return fmt.Errorf("there are no agent instances to run the coordinator")
 	}
@@ -55,7 +59,7 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
-	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value.PrivateIP + ":9090"
+	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value[0].PrivateIP + ":9090"
 
 	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
