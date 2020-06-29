@@ -3,6 +3,7 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,11 +29,11 @@ func (t *Terraform) StartCoordinator() error {
 	}
 
 	if len(output.Instances.Value) == 0 {
-		return fmt.Errorf("there are no app server instances to run the load-test")
+		return errors.New("there are no app server instances to run the load-test")
 	}
 
 	if len(output.Agents.Value) == 0 {
-		return fmt.Errorf("there are no agent instances to run the coordinator")
+		return errors.New("there are no agent instances to run the coordinator")
 	}
 	ip := output.Agents.Value[0].PublicIP
 
@@ -166,7 +167,7 @@ func (t *Terraform) StopCoordinator() error {
 	}
 
 	if len(output.Agents.Value) == 0 {
-		return fmt.Errorf("there are no agents to initialize load-test")
+		return errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents.Value[0].PublicIP
 
@@ -206,7 +207,7 @@ func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
 	}
 
 	if len(output.Agents.Value) == 0 {
-		return nil, fmt.Errorf("there are no agents to initialize load-test")
+		return nil, errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents.Value[0].PublicIP
 
@@ -226,7 +227,7 @@ func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
 	}
 
 	if res.Error != "" {
-		return nil, fmt.Errorf(res.Error)
+		return nil, errors.New(res.Error)
 	}
 
 	return res.Status, nil
