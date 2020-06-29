@@ -36,6 +36,11 @@ type labelValues struct {
 	values []model.SamplePair // The series of values for a given metric.
 }
 
+type gplot struct {
+	name   string // the name of the metric
+	graphs []labelValues
+}
+
 // Compare compares the given set of reports.
 // The first report is considered to be the base.
 func Compare(target *os.File, genGraph bool, reports ...Report) error {
@@ -50,41 +55,7 @@ func Compare(target *os.File, genGraph bool, reports ...Report) error {
 	// TODO: generate a single image combining all the graphs.
 	// Printing the graphs.
 	if genGraph {
-		// gPlots is a slice of structs to aggregate graphs of a single type
-		// from multiple reports.
-		var gPlots []struct {
-			name   string // the name of the metric
-			graphs []labelValues
-		}
-		// A single report has multiple graphs.
-		// What we are doing here is changing the aggregation such that
-		// a single gPlot contains graphs of a single type from multiple reports.
-		for i, r := range reports[1:] {
-			for _, g := range r.Graphs {
-				if i == 0 {
-					gPlots = append(gPlots, struct {
-						name   string
-						graphs []labelValues
-					}{
-						// Only set the name one time
-						name: g.Name,
-						graphs: []labelValues{
-							{
-								label:  r.Label,
-								values: g.Values,
-							},
-						},
-					})
-				} else {
-					// Graph of the same type from another report, append it.
-					gPlots[i].graphs = append(gPlots[i].graphs, labelValues{
-						label:  r.Label,
-						values: g.Values,
-					})
-				}
-			}
-		}
-
+		gPlots := getPlots(reports[1:]...)
 		for i, plot := range gPlots {
 			err := generateGraph(plot.name, base.Label, base.Graphs[i], plot.graphs)
 			if err != nil {
@@ -93,6 +64,41 @@ func Compare(target *os.File, genGraph bool, reports ...Report) error {
 		}
 	}
 	return nil
+}
+
+// getPlots returns a slice of structs to aggregate graphs of a single type
+// from multiple reports.
+func getPlots(reports ...Report) []gplot {
+	var gPlots []gplot
+	// A single report has multiple graphs.
+	// What we are doing here is changing the aggregation such that
+	// a single gPlot contains graphs of a single type from multiple reports.
+	for i, r := range reports {
+		for j, g := range r.Graphs {
+			if i == 0 {
+				gPlots = append(gPlots, struct {
+					name   string
+					graphs []labelValues
+				}{
+					// Only set the name one time
+					name: g.Name,
+					graphs: []labelValues{
+						{
+							label:  r.Label,
+							values: g.Values,
+						},
+					},
+				})
+			} else {
+				// Graph of the same type from another report, append it.
+				gPlots[j].graphs = append(gPlots[j].graphs, labelValues{
+					label:  r.Label,
+					values: g.Values,
+				})
+			}
+		}
+	}
+	return gPlots
 }
 
 // calculateDeltas returns a comparison from a given set of reports.
