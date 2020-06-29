@@ -227,7 +227,7 @@ resource "aws_iam_access_key" "s3key" {
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
   acl    = "private"
-  count  = var.app_instance_count > 1 ? 1 : 0
+  count  = var.app_instance_count > 0 ? 1 : 0
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }
@@ -373,7 +373,7 @@ resource "aws_security_group" "app" {
 }
 
 resource "aws_security_group" "app_gossip" {
-  count       = var.app_instance_count > 1 ? 1 : 0
+  count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
   ingress {
