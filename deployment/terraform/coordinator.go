@@ -195,7 +195,7 @@ func (t *Terraform) StopCoordinator() error {
 }
 
 // GetCoordinatorStatus returns information about the status of the
-// coordinatore in the current load-test deployment.
+// coordinator in the current load-test deployment.
 func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
 	if err := t.preFlightCheck(); err != nil {
 		return nil, err
