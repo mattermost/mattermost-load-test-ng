@@ -15,14 +15,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// CoordinatorResponse contains the data returned by load-test coordinator API.
-type coordinatorResponse struct {
-	Id      string              `json:"id,omitempty"`      // The load-test coordinator unique identifier.
-	Message string              `json:"message,omitempty"` // Message contains information about the response.
-	Status  *coordinator.Status `json:"status,omitempty"`  // Status contains the current status of the coordinator.
-	Error   string              `json:"error,omitempty"`   // Error is set if there was an error during the operation.
-}
-
 func writeCoordinatorResponse(w http.ResponseWriter, status int, resp *coordinatorResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -102,6 +94,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	a.setResource(id, c)
 
 	writeCoordinatorResponse(w, http.StatusCreated, &coordinatorResponse{
+		Id:      id,
 		Message: "load-test coordinator created",
 	})
 }
@@ -115,8 +108,10 @@ func (a *api) destroyCoordinatorHandler(w http.ResponseWriter, r *http.Request) 
 	_ = c.Stop() // we are ignoring the error here in case the coordinator was previously stopped
 
 	a.deleteResource(mux.Vars(r)["id"])
+	status := c.Status()
 	writeCoordinatorResponse(w, http.StatusOK, &coordinatorResponse{
 		Message: "load-test coordinator destroyed",
+		Status:  &status,
 	})
 }
 
@@ -134,8 +129,10 @@ func (a *api) runCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	status := c.Status()
 	writeCoordinatorResponse(w, http.StatusOK, &coordinatorResponse{
 		Message: "load-test coordinator started",
+		Status:  &status,
 	})
 }
 
@@ -153,8 +150,10 @@ func (a *api) stopCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	status := c.Status()
 	writeCoordinatorResponse(w, http.StatusOK, &coordinatorResponse{
 		Message: "load-test coordinator stopped",
+		Status:  &status,
 	})
 }
 

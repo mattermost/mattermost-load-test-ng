@@ -27,15 +27,6 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-// agentResponse contains the data returned by load-test agent API.
-// TODO: maybe move this into a shared model package.
-type agentResponse struct {
-	Id      string           `json:"id,omitempty"`      // The load-test agent unique identifier.
-	Message string           `json:"message,omitempty"` // Message contains information about the response.
-	Status  *loadtest.Status `json:"status,omitempty"`  // Status contains the current status of the load test.
-	Error   string           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
-}
-
 func writeAgentResponse(w http.ResponseWriter, status int, resp *agentResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
