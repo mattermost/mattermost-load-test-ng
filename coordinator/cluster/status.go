@@ -4,6 +4,6 @@
 package cluster
 
 type Status struct {
-	ActiveUsers int
-	NumErrors   int64
+	ActiveUsers int   // Total number of currently active users across the load-test agents cluster.
+	NumErrors   int64 // Total number of errors received from the load-test agents cluster.
 }

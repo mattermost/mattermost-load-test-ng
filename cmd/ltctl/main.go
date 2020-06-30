@@ -37,17 +37,6 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	return t.Destroy()
 }
 
-func RunStartCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
-	if err != nil {
-		return err
-	}
-
-	t := terraform.New(config)
-	defer t.Cleanup()
-	return t.StartCoordinator()
-}
-
 func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
@@ -56,17 +45,6 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 
 	t := terraform.New(config)
 	return t.Info()
-}
-
-func RunStopCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
-	if err != nil {
-		return err
-	}
-
-	t := terraform.New(config)
-	defer t.Cleanup()
-	return t.StopCoordinator()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
@@ -143,12 +121,17 @@ func main() {
 		{
 			Use:   "start",
 			Short: "Start the coordinator in the current load-test deployment",
-			RunE:  RunStartCmdF,
+			RunE:  RunLoadTestStartCmdF,
 		},
 		{
 			Use:   "stop",
 			Short: "Stop the coordinator in the current load-test deployment",
-			RunE:  RunStopCmdF,
+			RunE:  RunLoadTestStopCmdF,
+		},
+		{
+			Use:   "status",
+			Short: "Shows the status of the current load-test",
+			RunE:  RunLoadTestStatusCmdF,
 		},
 	}
 

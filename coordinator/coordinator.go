@@ -82,12 +82,16 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	samplesTimeRange := 30 * time.Minute
 
 	go func() {
+		var supported int
+
 		defer func() {
 			c.monitor.Stop()
 			c.cluster.Shutdown()
 			close(c.doneChan)
 			c.mut.Lock()
 			c.status.State = Done
+			c.status.SupportedUsers = supported
+			c.status.StopTime = time.Now()
 			c.mut.Unlock()
 		}()
 
@@ -118,7 +122,8 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				latest := getLatestSamples(samples, samplesTimeRange)
 				if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
 					c.log.Info("coordinator done!")
-					c.log.Info(fmt.Sprintf("estimated number of supported users is %f", math.Round(avg(latest))))
+					supported = int(math.Round(avg(latest)))
+					c.log.Info(fmt.Sprintf("estimated number of supported users is %d", supported))
 					return
 				}
 				// We replace older samples which are not needed anymore.
@@ -191,10 +196,12 @@ func (c *Coordinator) Status() Status {
 	defer c.mut.RUnlock()
 	clusterStatus := c.cluster.Status()
 	return Status{
-		State:       c.status.State,
-		StartTime:   c.status.StartTime,
-		ActiveUsers: clusterStatus.ActiveUsers,
-		NumErrors:   clusterStatus.NumErrors,
+		State:          c.status.State,
+		StartTime:      c.status.StartTime,
+		StopTime:       c.status.StopTime,
+		ActiveUsers:    clusterStatus.ActiveUsers,
+		NumErrors:      clusterStatus.NumErrors,
+		SupportedUsers: c.status.SupportedUsers,
 	}
 }
 
