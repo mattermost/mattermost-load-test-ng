@@ -136,7 +136,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 
 func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 	if os.Getenv("SSH_AUTH_SOCK") == "" {
-		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
+		return errors.New("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
 
 	config, err := getConfig(cmd)

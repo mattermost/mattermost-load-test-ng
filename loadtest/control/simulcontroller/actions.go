@@ -239,7 +239,7 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	if err := u.GetPublicChannelsForTeam(team.Id, 0, 100); err != nil {
@@ -390,7 +390,7 @@ func switchChannel(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotDirect|store.SelectNotGroup)
@@ -762,7 +762,7 @@ func openDirectOrGroupChannel(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotPublic|store.SelectNotPrivate)
@@ -819,7 +819,7 @@ func unreadCheck(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	channel, err := u.Store().CurrentChannel()
@@ -847,7 +847,7 @@ func searchChannels(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("current team should be set"))}
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)

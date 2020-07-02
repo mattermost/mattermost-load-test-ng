@@ -4,6 +4,7 @@
 package performance
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -23,7 +24,7 @@ type Monitor struct {
 // NewMonitor creates and initializes a new Monitor.
 func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
 	if log == nil {
-		return nil, fmt.Errorf("logger should not be nil")
+		return nil, errors.New("logger should not be nil")
 	}
 	if err := config.IsValid(); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)

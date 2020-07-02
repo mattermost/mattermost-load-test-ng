@@ -4,6 +4,7 @@
 package deployment
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -108,11 +109,11 @@ func checkPrefix(str string) bool {
 func (c *Config) validateElasticSearchConfig() error {
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
 		if c.ElasticSearchSettings.InstanceCount > 1 {
-			return fmt.Errorf("it is not possible to create more than 1 instance of Elasticsearch")
+			return errors.New("it is not possible to create more than 1 instance of Elasticsearch")
 		}
 
 		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
-			return fmt.Errorf("VpcID must be set in order to create an Elasticsearch instance")
+			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
 		}
 
 		domainName := c.ClusterName + "-es"

@@ -6,6 +6,7 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -380,7 +381,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 
 func (t *Terraform) preFlightCheck() error {
 	if os.Getenv("SSH_AUTH_SOCK") == "" {
-		return fmt.Errorf("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
+		return errors.New("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
 
 	if err := checkTerraformVersion(); err != nil {
@@ -443,7 +444,7 @@ func pingServer(addr string) error {
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("timeout after 30 seconds, server is not responding")
+			return errors.New("timeout after 30 seconds, server is not responding")
 		case <-time.After(3 * time.Second):
 			_, resp := client.GetPingWithServerStatus()
 			if resp.Error != nil {

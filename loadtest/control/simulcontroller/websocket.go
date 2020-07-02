@@ -32,7 +32,7 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 		case model.WEBSOCKET_EVENT_TYPING:
 			userId, ok := ev.GetData()["user_id"].(string)
 			if !ok || userId == "" {
-				c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: invalid data found in event data"))
+				c.status <- c.newErrorStatus(errors.New("simulcontroller: invalid data found in event data"))
 				break
 			}
 			user, err := c.user.Store().GetUser(userId)

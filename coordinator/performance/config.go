@@ -4,7 +4,7 @@
 package performance
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 )
@@ -23,13 +23,13 @@ type MonitorConfig struct {
 // Returns an error if the validation fails.
 func (c MonitorConfig) IsValid() error {
 	if c.PrometheusURL == "" {
-		return fmt.Errorf("PrometheusURL cannot be empty")
+		return errors.New("PrometheusURL cannot be empty")
 	}
 	if c.UpdateIntervalMs < 1000 {
-		return fmt.Errorf("UpdateInterval cannot be less than 1000")
+		return errors.New("UpdateInterval cannot be less than 1000")
 	}
 	if len(c.Queries) == 0 {
-		return fmt.Errorf("Queries cannot be empty")
+		return errors.New("Queries cannot be empty")
 	}
 	return nil
 }

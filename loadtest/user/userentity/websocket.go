@@ -25,7 +25,7 @@ const (
 func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	var data string
 	if el, ok := ev.Data["reaction"]; !ok {
-		return fmt.Errorf("reaction data is missing")
+		return errors.New("reaction data is missing")
 	} else if data, ok = el.(string); !ok {
 		return fmt.Errorf("type of the reaction data should be a string, but it is %T", el)
 	}
@@ -57,7 +57,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 		if ok, err := ue.store.DeleteReaction(reaction); err != nil {
 			return err
 		} else if !ok {
-			return fmt.Errorf("could not find reaction in the store")
+			return errors.New("could not find reaction in the store")
 		}
 	}
 
@@ -67,7 +67,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	var data string
 	if el, ok := ev.Data["post"]; !ok {
-		return fmt.Errorf("post data is missing")
+		return errors.New("post data is missing")
 	} else if data, ok = el.(string); !ok {
 		return fmt.Errorf("type of the post data should be a string, but it is %T", el)
 	}
@@ -195,7 +195,7 @@ func getWaitTime(failCount int) time.Duration {
 // who are in the specified channel.
 func (ue *UserEntity) SendTypingEvent(channelId, parentId string) error {
 	if !ue.connected {
-		return fmt.Errorf("user is not connected")
+		return errors.New("user is not connected")
 	}
 	ue.wsTyping <- userTypingMsg{
 		channelId,
