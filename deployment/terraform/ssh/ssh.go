@@ -99,7 +99,7 @@ func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error)
 	if strings.ContainsAny(dst, `'\`) {
 		// TODO: copied from load-test repo. Need to be improved
 		// by using an actual sftp library.
-		return nil, fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
+		return nil, errors.New("shell quoting not actually implemented. don't use weird paths")
 	}
 
 	sess, err := sshc.client.NewSession()
@@ -132,7 +132,7 @@ func (sshc *Client) Download(src string, dst io.Writer, sudo bool) error {
 	if strings.ContainsAny(src, `'\`) {
 		// TODO: copied from load-test repo. Need to be improved
 		// by using an actual sftp library.
-		return fmt.Errorf("shell quoting not actually implemented. don't use weird paths")
+		return errors.New("shell quoting not actually implemented. don't use weird paths")
 	}
 
 	sess, err := sshc.client.NewSession()

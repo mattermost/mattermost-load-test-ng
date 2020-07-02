@@ -33,7 +33,7 @@ type errorTrack struct {
 // An error is returned if the initialization fails.
 func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logger) (*LoadAgentCluster, error) {
 	if log == nil {
-		return nil, fmt.Errorf("logger should not be nil")
+		return nil, errors.New("logger should not be nil")
 	}
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)

@@ -3,6 +3,7 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -108,7 +109,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 
 func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 	if len(output.Agents.Value) == 0 {
-		return fmt.Errorf("there are no agents to initialize load-test")
+		return errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents.Value[0].PublicIP
 	sshc, err := extAgent.NewClient(ip)

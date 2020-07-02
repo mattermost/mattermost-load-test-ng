@@ -4,6 +4,7 @@
 package coordinator
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -210,10 +211,10 @@ func (c *Coordinator) Status() Status {
 // An error is returned if the initialization fails.
 func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinator, error) {
 	if config == nil {
-		return nil, fmt.Errorf("coordinator: config should not be nil")
+		return nil, errors.New("coordinator: config should not be nil")
 	}
 	if log == nil {
-		return nil, fmt.Errorf("coordinator: logger should not be nil")
+		return nil, errors.New("coordinator: logger should not be nil")
 	}
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
