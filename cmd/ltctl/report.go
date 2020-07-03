@@ -70,13 +70,21 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	}
 	defer f.Close()
 
-	t := terraform.New(nil)
-	output, err := t.Output()
+	promHost, err := cmd.Flags().GetString("prometheus-host")
 	if err != nil {
-		return fmt.Errorf("could not parse output: %w", err)
+		return err
 	}
 
-	helper, err := prometheus.NewHelper("http://" + output.MetricsServer.Value[0].PublicIP + ":9090")
+	if promHost == "" {
+		t := terraform.New(nil)
+		output, err := t.Output()
+		if err != nil {
+			return fmt.Errorf("could not parse output: %w", err)
+		}
+		promHost = output.MetricsServer.Value[0].PublicIP
+	}
+
+	helper, err := prometheus.NewHelper("http://" + promHost + ":9090")
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus.Helper: %w", err)
 	}
