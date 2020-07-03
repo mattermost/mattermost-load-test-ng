@@ -119,6 +119,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)
 			connectionFailCount++
 			select {
+			// Draining the channel to avoid blocking the sender.
+			case <-ue.wsTyping:
 			case <-ue.wsClosing:
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
@@ -168,6 +170,8 @@ func (ue *UserEntity) listen(errChan chan error) {
 
 		connectionFailCount++
 		select {
+		// Draining the channel to avoid blocking the sender.
+		case <-ue.wsTyping:
 		case <-ue.wsClosing:
 			// Explicit disconnect. Return.
 			close(ue.wsClosed)
