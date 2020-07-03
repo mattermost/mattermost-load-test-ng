@@ -1,6 +1,6 @@
 provider "aws" {
   profile = "mm-loadtest"
-  region  = "us-east-2"
+  region  = "us-east-1"
   version = "~> 2.47"
 }
 
@@ -29,10 +29,11 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
+  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
+  availability_zone = "us-east-1a"
   vpc_security_group_ids = [
     "${aws_security_group.app[0].id}",
     "${aws_security_group.app_gossip[0].id}"
@@ -76,10 +77,11 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fc20dd1da406780b" # 18.04 LTS
+  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
   instance_type = "t3.xlarge"
   count = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
+  availability_zone = "us-east-1a"
 
   vpc_security_group_ids = [
     "${aws_security_group.metrics[0].id}",
@@ -121,10 +123,11 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy"
   }
-  ami                         = "ami-0fc20dd1da406780b"
+  ami                         = "ami-0ac80df6eff0e70b5"
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
+  availability_zone = "us-east-1a"
   vpc_security_group_ids = [
     "${aws_security_group.proxy[0].id}"
   ]
@@ -290,6 +293,7 @@ resource "aws_rds_cluster" "db_cluster" {
   apply_immediately   = true
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
+  availability_zones = ["us-east-1a"]
 
   vpc_security_group_ids = ["${aws_security_group.db[0].id}"]
 }
@@ -305,10 +309,11 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fc20dd1da406780b"
+  ami           = "ami-0ac80df6eff0e70b5"
   instance_type = var.agent_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.agent_instance_count
+  availability_zone = "us-east-1a"
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
