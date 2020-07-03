@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -27,7 +28,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func writeAgentResponse(w http.ResponseWriter, status int, resp *agentResponse) {
+func writeAgentResponse(w http.ResponseWriter, status int, resp *client.AgentResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(resp)
@@ -46,14 +47,14 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("could not read request: %s", err),
 		})
 		return
 	}
 	ltConfig := data.LoadTestConfig
 	if err := defaults.Validate(ltConfig); err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("could not validate config: %s", err),
 		})
 		return
@@ -78,14 +79,14 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		ucConfig = data.SimulControllerConfig
 	}
 	if err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("could not read controller configuration: %s", err),
 		})
 		return
 	}
 	if ucConfig != nil {
 		if err := defaults.Validate(ucConfig); err != nil {
-			writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 				Error: fmt.Sprintf("could not validate controller configuration: %s", err),
 			})
 			return
@@ -95,11 +96,11 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	agentId := r.FormValue("id")
 	if val, ok := a.getResource(agentId); ok && val != nil {
 		if _, ok := val.(*loadtest.LoadTester); ok {
-			writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 				Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
 			})
 		} else {
-			writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 				Error: fmt.Sprintf("resource with id %s already exists", agentId),
 			})
 		}
@@ -108,7 +109,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	lt, err := loadtest.New(&ltConfig, NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics), a.agentLog)
 	if err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
 			Message: "load-test agent creation failed",
 			Error:   fmt.Sprintf("could not create agent: %s", err),
@@ -117,9 +118,10 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	a.setResource(agentId, lt)
 
-	writeAgentResponse(w, http.StatusCreated, &agentResponse{
+	writeAgentResponse(w, http.StatusCreated, &client.AgentResponse{
 		Id:      agentId,
 		Message: "load-test agent created",
+		Status:  lt.Status(),
 	})
 }
 
@@ -130,7 +132,7 @@ func (a *api) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtes
 	val, ok := a.getResource(id)
 	if !ok || val == nil {
 		err := fmt.Errorf("load-test agent with id %s not found", id)
-		writeAgentResponse(w, http.StatusNotFound, &agentResponse{
+		writeAgentResponse(w, http.StatusNotFound, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return nil, err
@@ -139,7 +141,7 @@ func (a *api) getLoadAgentById(w http.ResponseWriter, r *http.Request) (*loadtes
 	lt, ok := val.(*loadtest.LoadTester)
 	if !ok {
 		err := fmt.Errorf("resource with id %s is not a load-test agent", id)
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return nil, err
@@ -154,12 +156,12 @@ func (a *api) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Run(); err != nil {
-		writeAgentResponse(w, http.StatusOK, &agentResponse{
+		writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return
 	}
-	writeAgentResponse(w, http.StatusOK, &agentResponse{
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent started",
 		Status:  lt.Status(),
 	})
@@ -171,12 +173,12 @@ func (a *api) stopLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = lt.Stop(); err != nil {
-		writeAgentResponse(w, http.StatusOK, &agentResponse{
+		writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return
 	}
-	writeAgentResponse(w, http.StatusOK, &agentResponse{
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent stopped",
 		Status:  lt.Status(),
 	})
@@ -191,7 +193,7 @@ func (a *api) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
 	a.deleteResource(mux.Vars(r)["id"])
-	writeAgentResponse(w, http.StatusOK, &agentResponse{
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent destroyed",
 		Status:  lt.Status(),
 	})
@@ -202,7 +204,7 @@ func (a *api) getLoadAgentStatusHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return
 	}
-	writeAgentResponse(w, http.StatusOK, &agentResponse{
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Status: lt.Status(),
 	})
 }
@@ -215,13 +217,13 @@ func (a *api) addUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	amount, err := getAmount(r)
 	if amount <= 0 || err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
 		})
 		return
 	}
 
-	var resp agentResponse
+	var resp client.AgentResponse
 	n, err := lt.AddUsers(amount)
 	if err != nil {
 		resp.Error = err.Error()
@@ -239,13 +241,13 @@ func (a *api) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	amount, err := getAmount(r)
 	if amount <= 0 || err != nil {
-		writeAgentResponse(w, http.StatusBadRequest, &agentResponse{
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("invalid amount: %s", r.FormValue("amount")),
 		})
 		return
 	}
 
-	var resp agentResponse
+	var resp client.AgentResponse
 	n, err := lt.RemoveUsers(amount)
 	if err != nil {
 		resp.Error = err.Error()

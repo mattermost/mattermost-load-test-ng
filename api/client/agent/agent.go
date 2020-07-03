@@ -1,16 +1,23 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-package api
+package agent
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+)
+
+var (
+	ErrAgentNotFound = errors.New("client: agent not found")
 )
 
 // Agent represents a load-test agent.
@@ -18,20 +25,20 @@ import (
 type Agent struct {
 	id     string
 	apiURL string
-	client *Client
+	client *http.Client
 }
 
-// agentResponse contains the data returned by the load-test agent API.
-type agentResponse struct {
+// AgentResponse contains the data returned by the load-test agent API.
+type AgentResponse struct {
 	Id      string           `json:"id,omitempty"`      // The load-test agent unique identifier.
 	Message string           `json:"message,omitempty"` // Message contains information about the response.
 	Status  *loadtest.Status `json:"status,omitempty"`  // Status contains the current status of the load test.
 	Error   string           `json:"error,omitempty"`   // Error is set if there was an error during the operation.
 }
 
-func (a *Agent) apiRequest(req *http.Request) (agentResponse, error) {
-	var res agentResponse
-	resp, err := a.client.httpClient.Do(req)
+func (a *Agent) apiRequest(req *http.Request) (AgentResponse, error) {
+	var res AgentResponse
+	resp, err := a.client.Do(req)
 	if err != nil {
 		return res, fmt.Errorf("agent: post request failed: %w", err)
 	}
@@ -42,26 +49,47 @@ func (a *Agent) apiRequest(req *http.Request) (agentResponse, error) {
 	}
 	if res.Error != "" {
 		return res, fmt.Errorf("agent: load-test agent api request error: %s", res.Error)
-	} else if resp.StatusCode != http.StatusOK {
+	} else if resp.StatusCode == http.StatusNotFound {
+		return res, ErrAgentNotFound
+	} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return res, fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
 	}
 	return res, nil
 }
 
-func (a *Agent) apiGet(url string) (agentResponse, error) {
+func (a *Agent) apiGet(url string) (AgentResponse, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return agentResponse{}, fmt.Errorf("agent: failed to build request: %w", err)
+		return AgentResponse{}, fmt.Errorf("agent: failed to build request: %w", err)
 	}
 	return a.apiRequest(req)
 }
 
-func (a *Agent) apiPost(url string, data []byte) (agentResponse, error) {
+func (a *Agent) apiPost(url string, data []byte) (AgentResponse, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		return agentResponse{}, fmt.Errorf("agent: failed to build request: %w", err)
+		return AgentResponse{}, fmt.Errorf("agent: failed to build request: %w", err)
 	}
 	return a.apiRequest(req)
+}
+
+// New creates and initializes a new instance of Agent.
+// Returns an error in case of failure.
+func New(id, serverURL string, client *http.Client) (*Agent, error) {
+	if id == "" {
+		return nil, errors.New("agent: id should not be empty")
+	}
+	if serverURL == "" {
+		return nil, errors.New("agent: serverURL should not be empty")
+	}
+	if client == nil {
+		client = http.DefaultClient
+	}
+	return &Agent{
+		id:     id,
+		apiURL: serverURL + "/loadagent/",
+		client: client,
+	}, nil
 }
 
 // Id returns the unique identifier for the load-test agent resource.
@@ -69,11 +97,61 @@ func (a *Agent) Id() string {
 	return a.id
 }
 
+// Create creates a new load-test agent resource with the given configs.
+// Returns the load-test agent status or an error in case of failure.
+func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtest.Status, error) {
+	var status loadtest.Status
+	if ltConfig == nil {
+		return status, errors.New("client: ltConfig should not be nil")
+	}
+	if ucConfig == nil {
+		return status, errors.New("client: ucConfig should not be nil")
+	}
+
+	data := struct {
+		LoadTestConfig         *loadtest.Config
+		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+	}{
+		LoadTestConfig: ltConfig,
+	}
+
+	switch ltConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		var scc *simplecontroller.Config
+		scc, ok := ucConfig.(*simplecontroller.Config)
+		if !ok {
+			return status, errors.New("client: ucConfig has the wrong type")
+		}
+		data.SimpleControllerConfig = scc
+	case loadtest.UserControllerSimulative:
+		scc, ok := ucConfig.(*simulcontroller.Config)
+		if !ok {
+			return status, errors.New("client: ucConfig has the wrong type")
+		}
+		data.SimulControllerConfig = scc
+	default:
+		return status, errors.New("client: UserController type is not set")
+	}
+
+	configData, err := json.Marshal(data)
+	if err != nil {
+		return status, err
+	}
+	resp, err := a.apiPost(a.apiURL+"create?id="+a.id, configData)
+	if err != nil {
+		return status, err
+	}
+
+	status = *resp.Status
+	return status, nil
+}
+
 // Status retrieves and returns the status for the load-test agent.
 // It also returns an error in case of failure.
 func (a *Agent) Status() (loadtest.Status, error) {
 	var status loadtest.Status
-	resp, err := a.apiGet(a.apiURL)
+	resp, err := a.apiGet(a.apiURL + a.id)
 	if err != nil {
 		return status, err
 	}
@@ -85,7 +163,7 @@ func (a *Agent) Status() (loadtest.Status, error) {
 // Returns the load-test agent status or an error in case of failure.
 func (a *Agent) Run() (loadtest.Status, error) {
 	var status loadtest.Status
-	resp, err := a.apiPost(a.apiURL+"/run", nil)
+	resp, err := a.apiPost(a.apiURL+a.id+"/run", nil)
 	if err != nil {
 		return status, err
 	}
@@ -97,7 +175,7 @@ func (a *Agent) Run() (loadtest.Status, error) {
 // Returns the load-test agent status or an error in case of failure.
 func (a *Agent) Stop() (loadtest.Status, error) {
 	var status loadtest.Status
-	resp, err := a.apiPost(a.apiURL+"/stop", nil)
+	resp, err := a.apiPost(a.apiURL+a.id+"/stop", nil)
 	if err != nil {
 		return status, err
 	}
@@ -109,7 +187,7 @@ func (a *Agent) Stop() (loadtest.Status, error) {
 // Returns the load-test agent status or an error in case of failure.
 func (a *Agent) AddUsers(numUsers int) (loadtest.Status, error) {
 	var status loadtest.Status
-	resp, err := a.apiPost(a.apiURL+"/addusers?amount="+strconv.Itoa(numUsers), nil)
+	resp, err := a.apiPost(a.apiURL+a.id+"/addusers?amount="+strconv.Itoa(numUsers), nil)
 	if err != nil {
 		return status, err
 	}
@@ -121,7 +199,7 @@ func (a *Agent) AddUsers(numUsers int) (loadtest.Status, error) {
 // Returns the load-test agent status or an error in case of failure.
 func (a *Agent) RemoveUsers(numUsers int) (loadtest.Status, error) {
 	var status loadtest.Status
-	resp, err := a.apiPost(a.apiURL+"/removeusers?amount="+strconv.Itoa(numUsers), nil)
+	resp, err := a.apiPost(a.apiURL+a.id+"/removeusers?amount="+strconv.Itoa(numUsers), nil)
 	if err != nil {
 		return status, err
 	}
@@ -133,7 +211,7 @@ func (a *Agent) RemoveUsers(numUsers int) (loadtest.Status, error) {
 // Returns the load-test agent status or an error in case of failure.
 func (a *Agent) Destroy() (loadtest.Status, error) {
 	var status loadtest.Status
-	req, err := http.NewRequest("DELETE", a.apiURL, nil)
+	req, err := http.NewRequest("DELETE", a.apiURL+a.id, nil)
 	if err != nil {
 		return status, fmt.Errorf("agent: failed to build request: %w", err)
 	}

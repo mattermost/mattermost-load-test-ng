@@ -8,11 +8,96 @@ import (
 	"testing"
 	"time"
 
+	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/require"
 )
+
+func createAgent(t *testing.T, id, serverURL string) *client.Agent {
+	t.Helper()
+	var ltConfig loadtest.Config
+	var ucConfig simulcontroller.Config
+	defaults.Set(&ltConfig)
+	defaults.Set(&ucConfig)
+	agent, err := client.New(id, serverURL, nil)
+	require.NoError(t, err)
+	require.NotNil(t, agent)
+	_, err = agent.Create(&ltConfig, &ucConfig)
+	require.NoError(t, err)
+	return agent
+}
+
+func TestCreateAgent(t *testing.T) {
+	// create http.Handler
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+
+	// run server using httptest
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	id := "agent0"
+	agent, err := client.New(id, server.URL, nil)
+	require.NoError(t, err)
+	require.NotNil(t, agent)
+
+	t.Run("missing ltConfig", func(t *testing.T) {
+		status, err := agent.Create(nil, nil)
+		require.EqualError(t, err, "client: ltConfig should not be nil")
+		require.Empty(t, status)
+	})
+
+	t.Run("missing ucConfig", func(t *testing.T) {
+		status, err := agent.Create(&loadtest.Config{}, nil)
+		require.EqualError(t, err, "client: ucConfig should not be nil")
+		require.Empty(t, status)
+	})
+
+	t.Run("missing uc type", func(t *testing.T) {
+		status, err := agent.Create(&loadtest.Config{}, &simulcontroller.Config{})
+		require.EqualError(t, err, "client: UserController type is not set")
+		require.Empty(t, status)
+	})
+
+	t.Run("invalid ucConfig type", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		ltConfig.UserControllerConfiguration.Type = "simulative"
+		status, err := agent.Create(&ltConfig, "invalid")
+		require.EqualError(t, err, "client: ucConfig has the wrong type")
+		require.Empty(t, status)
+	})
+
+	t.Run("invalid configs", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		ltConfig.UserControllerConfiguration.Type = "simulative"
+		status, err := agent.Create(&ltConfig, &simulcontroller.Config{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "could not validate config")
+		require.Empty(t, status)
+	})
+
+	t.Run("successful creation", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		var ucConfig simulcontroller.Config
+		defaults.Set(&ltConfig)
+		defaults.Set(&ucConfig)
+		_, err := agent.Create(&ltConfig, &ucConfig)
+		require.NoError(t, err)
+	})
+
+	t.Run("conflict failure", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		var ucConfig simulcontroller.Config
+		defaults.Set(&ltConfig)
+		defaults.Set(&ucConfig)
+		_, err := agent.Create(&ltConfig, &ucConfig)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "load-test agent with id agent0 already exists")
+	})
+}
 
 func TestAgentId(t *testing.T) {
 	// create http.Handler
@@ -22,11 +107,8 @@ func TestAgentId(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	client := NewClient(server.URL, nil)
-	require.NotNil(t, client)
-
 	id := "agent0"
-	agent := createAgent(t, client, id)
+	agent := createAgent(t, id, server.URL)
 	require.Equal(t, id, agent.Id())
 }
 
@@ -38,11 +120,8 @@ func TestAgentStatus(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	client := NewClient(server.URL, nil)
-	require.NotNil(t, client)
-
 	id := "agent0"
-	agent := createAgent(t, client, id)
+	agent := createAgent(t, id, server.URL)
 
 	status, err := agent.Status()
 	require.NoError(t, err)
@@ -58,11 +137,8 @@ func TestAgentRunStop(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	client := NewClient(server.URL, nil)
-	require.NotNil(t, client)
-
 	id := "agent0"
-	agent := createAgent(t, client, id)
+	agent := createAgent(t, id, server.URL)
 
 	t.Run("stopping failure", func(t *testing.T) {
 		status, err := agent.Status()
@@ -121,11 +197,8 @@ func TestAgentAddRemoveUsers(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	client := NewClient(server.URL, nil)
-	require.NotNil(t, client)
-
 	id := "agent0"
-	agent := createAgent(t, client, id)
+	agent := createAgent(t, id, server.URL)
 
 	status, err := agent.Run()
 	require.NoError(t, err)
@@ -180,11 +253,8 @@ func TestAgentDestroy(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	client := NewClient(server.URL, nil)
-	require.NotNil(t, client)
-
 	id := "agent0"
-	agent := createAgent(t, client, id)
+	agent := createAgent(t, id, server.URL)
 
 	status, err := agent.Run()
 	require.NoError(t, err)
@@ -198,7 +268,7 @@ func TestAgentDestroy(t *testing.T) {
 		require.Equal(t, loadtest.Stopped, status.State)
 
 		id := "agent0"
-		agent := createAgent(t, client, id)
+		agent := createAgent(t, id, server.URL)
 		status, err = agent.Destroy()
 		require.NoError(t, err)
 		require.Empty(t, status)
