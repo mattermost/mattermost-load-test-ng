@@ -527,7 +527,7 @@ resource "aws_security_group" "elastic" {
 # We need a separate security group rule to prevent cyclic dependency between
 # the app group and metrics group.
 resource "aws_security_group_rule" "app-to-inbucket" {
-  count                    = var.app_instance_count > 1 ? 1 : 0
+  count                    = var.app_instance_count > 0 ? 1 : 0
   type                     = "ingress"
   from_port                = 2500
   to_port                  = 2500
