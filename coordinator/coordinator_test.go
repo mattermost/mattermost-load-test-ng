@@ -65,7 +65,12 @@ func TestNew(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, c)
 
-	c, err = New(newConfig(t), newLoadTestConfig(t), logger.New(&logger.Settings{}))
+	srv := setupAPIServer(t)
+	defer srv.Close()
+
+	cfg := newConfig(t)
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
+	c, err = New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 }
@@ -142,7 +147,8 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	status := c.Status()
+	status, err := c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Stopped, status.State)
 	require.Empty(t, status)
 
@@ -150,13 +156,15 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, done)
 
-	status = c.Status()
+	status, err = c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Running, status.State)
 
 	err = c.Stop()
 	require.NoError(t, err)
 
-	status = c.Status()
+	status, err = c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Done, status.State)
 	require.NotEmpty(t, status)
 }

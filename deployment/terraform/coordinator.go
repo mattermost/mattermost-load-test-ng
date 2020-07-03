@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/mattermost/mattermost-load-test-ng/api"
+	client "github.com/mattermost/mattermost-load-test-ng/api/client/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
@@ -63,6 +62,8 @@ func (t *Terraform) StartCoordinator() error {
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
 	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value[0].PrivateIP + ":9090"
 
+	// TODO: consider removing this. Config is passed dynamically when creating
+	// a coordinator resource through the API.
 	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
 		return err
@@ -121,34 +122,17 @@ func (t *Terraform) StartCoordinator() error {
 	}
 
 	mlog.Info("Starting the coordinator")
-	data, err = json.Marshal(struct {
-		CoordinatorConfig coordinator.Config
-		LoadTestConfig    loadtest.Config
-	}{
-		*coordinatorConfig,
-		*agentConfig,
-	})
+
+	id := t.config.ClusterName + "-coordinator-0"
+	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create coordinator client: %w", err)
 	}
-	// TODO: create a wrapper to simplify coordinator's HTTP API usage.
-	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
-	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
-	resp, err := http.Post("http://"+ip+":4000/coordinator/create?id="+id, "application/json", bytes.NewReader(data))
-	if err != nil {
+	if _, err := coord.Create(coordinatorConfig, agentConfig); err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create coordinator, returned status was %s", resp.Status)
-	}
-	resp, err = http.Post(apiURL+"/run", "", nil)
-	if err != nil {
+	if _, err := coord.Run(); err != nil {
 		return fmt.Errorf("failed to start coordinator: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to start coordinator, returned status was %s", resp.Status)
 	}
 
 	mlog.Info("Done")
@@ -171,23 +155,15 @@ func (t *Terraform) StopCoordinator() error {
 	}
 	ip := output.Agents.Value[0].PublicIP
 
-	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
-
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
 
-	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
-	client := &http.Client{}
-	req, err := http.NewRequest("DELETE", apiURL, nil)
+	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
+	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create coordinator client: %w", err)
 	}
-	resp, err := client.Do(req)
-	if err != nil {
+	if _, err := coord.Destroy(); err != nil {
 		return fmt.Errorf("failed to stop coordinator: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to stop coordinator, returned status was %s", resp.Status)
 	}
 
 	mlog.Info("Done")
@@ -196,39 +172,31 @@ func (t *Terraform) StopCoordinator() error {
 
 // GetCoordinatorStatus returns information about the status of the
 // coordinator in the current load-test deployment.
-func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
+func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
+	var status coordinator.Status
 	if err := t.preFlightCheck(); err != nil {
-		return nil, err
+		return status, err
 	}
 
 	output, err := t.Output()
 	if err != nil {
-		return nil, err
+		return status, err
 	}
 
 	if len(output.Agents.Value) == 0 {
-		return nil, errors.New("there are no agents to initialize load-test")
+		return status, errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents.Value[0].PublicIP
 
-	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
-
-	apiURL := fmt.Sprintf("http://%s:4000/coordinator/%s", ip, id)
-	resp, err := http.Get(apiURL)
+	id := t.config.ClusterName + "-coordinator-0"
+	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get coordinator status: %w", err)
+		return status, fmt.Errorf("failed to create coordinator client: %w", err)
 	}
-	defer resp.Body.Close()
-
-	var res api.CoordinatorResponse
-	err = json.NewDecoder(resp.Body).Decode(&res)
+	status, err = coord.Status()
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode api response: %w", err)
+		return status, fmt.Errorf("failed to get coordinator status: %w", err)
 	}
 
-	if res.Error != "" {
-		return nil, errors.New(res.Error)
-	}
-
-	return res.Status, nil
+	return status, nil
 }
