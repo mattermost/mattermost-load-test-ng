@@ -140,9 +140,9 @@ func plot(metric, fileName string, others []labelValues, baseLabel string) error
 	fmt.Fprintln(f, "set xlabel 'time (normalized)'")
 
 	// Just some gnuplot jargon to specify plot characteristics and the columns to compare.
-	fmt.Fprintf(f, "plot '%s' u 1:2 w lp t '%s'", fileName, baseLabel)
+	fmt.Fprintf(f, "plot '%s' u 1:2 w l lw 2 t '%s'", fileName, baseLabel)
 	for i := 0; i < len(others); i++ {
-		fmt.Fprintf(f, ", '%s' u 1:%d w lp t '%s'", fileName, i+3, others[i].label)
+		fmt.Fprintf(f, ", '%s' u 1:%d w l lw 2 t '%s'", fileName, i+3, others[i].label)
 	}
 
 	err = f.Close()
