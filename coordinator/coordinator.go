@@ -112,7 +112,11 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				lastAlertTime = time.Now()
 			}
 
-			status := c.cluster.Status()
+			status, err := c.cluster.Status()
+			if err != nil {
+				c.log.Error("coordinator: cluster status error:", mlog.Err(err))
+				continue
+			}
 			c.log.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
 			if !lastAlertTime.IsZero() {
@@ -192,10 +196,13 @@ func (c *Coordinator) Stop() error {
 }
 
 // Status returns the coordinator's status.
-func (c *Coordinator) Status() Status {
+func (c *Coordinator) Status() (Status, error) {
 	c.mut.RLock()
 	defer c.mut.RUnlock()
-	clusterStatus := c.cluster.Status()
+	clusterStatus, err := c.cluster.Status()
+	if err != nil {
+		return Status{}, fmt.Errorf("coordinator: failed to get cluster status: %w", err)
+	}
 	return Status{
 		State:          c.status.State,
 		StartTime:      c.status.StartTime,
@@ -203,7 +210,7 @@ func (c *Coordinator) Status() Status {
 		ActiveUsers:    clusterStatus.ActiveUsers,
 		NumErrors:      clusterStatus.NumErrors,
 		SupportedUsers: c.status.SupportedUsers,
-	}
+	}, nil
 }
 
 // New creates and initializes a new Coordinator for the given config.

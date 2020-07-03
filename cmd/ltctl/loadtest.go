@@ -35,7 +35,7 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 	return t.StopCoordinator()
 }
 
-func printCoordinatorStatus(status *coordinator.Status) {
+func printCoordinatorStatus(status coordinator.Status) {
 	fmt.Println("==================================================")
 	fmt.Println("load-test status:")
 	fmt.Println("")
