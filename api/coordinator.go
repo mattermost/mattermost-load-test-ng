@@ -16,7 +16,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func writecoordinatorResponse(w http.ResponseWriter, status int, resp *client.CoordinatorResponse) {
+func writeCoordinatorResponse(w http.ResponseWriter, status int, resp *client.CoordinatorResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(resp)
@@ -28,7 +28,7 @@ func (a *api) getCoordinatorById(w http.ResponseWriter, r *http.Request) (*coord
 	val, ok := a.getResource(id)
 	if !ok || val == nil {
 		err := fmt.Errorf("load-test coordinator with id %s not found", id)
-		writecoordinatorResponse(w, http.StatusNotFound, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusNotFound, &client.CoordinatorResponse{
 			Error: err.Error(),
 		})
 		return nil, err
@@ -37,7 +37,7 @@ func (a *api) getCoordinatorById(w http.ResponseWriter, r *http.Request) (*coord
 	c, ok := val.(*coordinator.Coordinator)
 	if !ok {
 		err := fmt.Errorf("resource with id %s is not a load-test coordinator", id)
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Error: err.Error(),
 		})
 		return nil, err
@@ -52,7 +52,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		LoadTestConfig    loadtest.Config
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not read request: %s", err),
 		})
 		return
@@ -60,7 +60,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	ltConfig := data.LoadTestConfig
 	if err := defaults.Validate(ltConfig); err != nil {
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not validate load-test config: %s", err),
 		})
 		return
@@ -71,11 +71,11 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if val, ok := a.getResource(id); ok && val != nil {
 		if _, ok := val.(*coordinator.Coordinator); ok {
-			writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+			writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 				Error: fmt.Sprintf("load-test coordinator with id %s already exists", id),
 			})
 		} else {
-			writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+			writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 				Error: fmt.Sprintf("resource with id %s already exists", id),
 			})
 		}
@@ -84,7 +84,7 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	c, err := coordinator.New(&config, ltConfig, a.coordLog)
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Id:      id,
 			Message: "load-test coordinator creation failed",
 			Error:   fmt.Sprintf("could not create coordinator: %s", err),
@@ -96,13 +96,13 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	status, err := c.Status()
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
 			Id:    id,
 			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
 		})
 		return
 	}
-	writecoordinatorResponse(w, http.StatusCreated, &client.CoordinatorResponse{
+	writeCoordinatorResponse(w, http.StatusCreated, &client.CoordinatorResponse{
 		Id:      id,
 		Message: "load-test coordinator created",
 		Status:  &status,
@@ -120,12 +120,12 @@ func (a *api) destroyCoordinatorHandler(w http.ResponseWriter, r *http.Request) 
 	a.deleteResource(mux.Vars(r)["id"])
 	status, err := c.Status()
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
 		})
 		return
 	}
-	writecoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
+	writeCoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
 		Message: "load-test coordinator destroyed",
 		Status:  &status,
 	})
@@ -138,7 +138,7 @@ func (a *api) runCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := c.Run(); err != nil {
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Message: "running coordinator failed",
 			Error:   fmt.Sprintf("could not run coordinator: %s", err),
 		})
@@ -147,12 +147,12 @@ func (a *api) runCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	status, err := c.Status()
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
 		})
 		return
 	}
-	writecoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
+	writeCoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
 		Message: "load-test coordinator started",
 		Status:  &status,
 	})
@@ -165,7 +165,7 @@ func (a *api) stopCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.Stop(); err != nil {
-		writecoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
 			Message: "stopping coordinator failed",
 			Error:   fmt.Sprintf("could not stop coordinator: %s", err),
 		})
@@ -174,12 +174,12 @@ func (a *api) stopCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 
 	status, err := c.Status()
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
 		})
 		return
 	}
-	writecoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
+	writeCoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
 		Message: "load-test coordinator stopped",
 		Status:  &status,
 	})
@@ -192,12 +192,12 @@ func (a *api) getCoordinatorStatusHandler(w http.ResponseWriter, r *http.Request
 	}
 	status, err := c.Status()
 	if err != nil {
-		writecoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
 			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
 		})
 		return
 	}
-	writecoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
+	writeCoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
 		Status: &status,
 	})
 }
