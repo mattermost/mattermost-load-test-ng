@@ -182,16 +182,27 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 }
 
 // Stop stops the coordinator.
-// It returns an error if the coordinator was not running.
+// It returns an error in case of failure.
 func (c *Coordinator) Stop() error {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	if c.status.State != Running {
 		return ErrNotRunning
 	}
+	clusterStatus, err := c.cluster.Status()
+	if err != nil {
+		return fmt.Errorf("coordinator: failed to get cluster status: %w", err)
+	}
 	close(c.stopChan)
 	<-c.doneChan
-	c.status.State = Done
+	c.status = Status{
+		State:          Done,
+		StartTime:      c.status.StartTime,
+		StopTime:       c.status.StopTime,
+		ActiveUsers:    clusterStatus.ActiveUsers,
+		NumErrors:      clusterStatus.NumErrors,
+		SupportedUsers: c.status.SupportedUsers,
+	}
 	return nil
 }
 
@@ -199,6 +210,9 @@ func (c *Coordinator) Stop() error {
 func (c *Coordinator) Status() (Status, error) {
 	c.mut.RLock()
 	defer c.mut.RUnlock()
+	if c.status.State != Running {
+		return c.status, nil
+	}
 	clusterStatus, err := c.cluster.Status()
 	if err != nil {
 		return Status{}, fmt.Errorf("coordinator: failed to get cluster status: %w", err)

@@ -105,9 +105,14 @@ func TestCoordinatorAPI(t *testing.T) {
 		require.Equal(t, "load-test coordinator created", rawMsg)
 
 		e.POST(id + "/stop").Expect().Status(http.StatusBadRequest)
+
+		eAgent := httpexpect.New(t, server.URL+"/loadagent")
+		eAgent.GET("/" + config.ClusterConfig.Agents[0].Id).Expect().Status(http.StatusOK)
 		e.POST(id + "/run").Expect().Status(http.StatusOK)
 		e.POST(id + "/run").Expect().Status(http.StatusBadRequest)
 		e.POST(id + "/stop").Expect().Status(http.StatusOK)
+		eAgent.GET("/" + config.ClusterConfig.Agents[0].Id).Expect().Status(http.StatusNotFound)
+
 		e.DELETE(id).Expect().Status(http.StatusOK)
 	})
 
