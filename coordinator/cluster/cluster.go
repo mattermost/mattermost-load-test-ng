@@ -101,16 +101,15 @@ func (c *LoadAgentCluster) Stop() error {
 	return nil
 }
 
-// Shutdown stops all the load-test agents available in the cluster.
-// It differs from Stop() as it won't return early in case of an error.
-// It makes sure agent.Stop() is called once for every agent in the cluster.
+// Shutdown stops and destroys all the load-test agents available in the cluster.
+// It makes sure agent.Destroy() is called once for every agent in the cluster.
 func (c *LoadAgentCluster) Shutdown() {
 	var wg sync.WaitGroup
 	wg.Add(len(c.agents))
 	for _, ag := range c.agents {
 		go func(ag *client.Agent) {
 			defer wg.Done()
-			if _, err := ag.Stop(); err != nil {
+			if _, err := ag.Destroy(); err != nil {
 				c.log.Error("cluster: failed to stop agent", mlog.Err(err))
 			}
 		}(ag)
