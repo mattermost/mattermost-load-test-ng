@@ -201,6 +201,7 @@ func main() {
 	}
 	genReport.Flags().StringP("output", "o", "ltreport.out", "Path to the output file to write the report to.")
 	genReport.Flags().StringP("label", "l", "", "A friendly name for the report.")
+	genReport.Flags().StringP("prometheus-url", "p", "", "The URL of the Prometheus server. If this is not passed, the value is taken from terraform.tfstate.")
 
 	compareReport := &cobra.Command{
 		Use:     "compare",
