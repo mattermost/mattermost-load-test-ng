@@ -21,7 +21,7 @@ func (c *SimpleController) wsEventHandler(wg *sync.WaitGroup) {
 			// probably do something interesting ?
 		case model.WEBSOCKET_EVENT_STATUS_CHANGE:
 			// Send a message if the user has come online.
-			data := ev.Data // TODO: upgrade the server dependency and move to GetData call
+			data := ev.GetData()
 			status, ok := data["status"].(string)
 			if !ok || status != "online" {
 				continue
