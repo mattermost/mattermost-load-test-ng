@@ -328,10 +328,6 @@ func (s *SampleStore) Reactions(postId string) ([]model.Reaction, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (s *SampleStore) Users() ([]*model.User, error) {
-	return nil, errors.New("not implemented")
-}
-
 func (s *SampleStore) SetUsers(users []*model.User) error {
 	return errors.New("not implemented")
 }
