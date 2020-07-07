@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+// SignUp signs up the user with the given credentials.
 func (ue *UserEntity) SignUp(email, username, password string) error {
 	user := model.User{
 		Email:    email,
@@ -27,6 +28,7 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 	return ue.store.SetUser(newUser)
 }
 
+// Login logs the user in. It authenticates a user and starts a new session.
 func (ue *UserEntity) Login() error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -47,6 +49,7 @@ func (ue *UserEntity) Login() error {
 	return nil
 }
 
+// Logout logs the user out. It terminates the current user's session.
 func (ue *UserEntity) Logout() (bool, error) {
 	ok, resp := ue.client.Logout()
 	if resp.Error != nil {
@@ -56,6 +59,7 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, nil
 }
 
+// GetConfig fetches and stores the server's configuration.
 func (ue *UserEntity) GetConfig() error {
 	config, resp := ue.client.GetConfig()
 	if resp.Error != nil {
@@ -65,6 +69,7 @@ func (ue *UserEntity) GetConfig() error {
 	return nil
 }
 
+// GetMe loads user's information into the store and returns its id.
 func (ue *UserEntity) GetMe() (string, error) {
 	user, resp := ue.client.GetMe("")
 	if resp.Error != nil {
@@ -78,6 +83,7 @@ func (ue *UserEntity) GetMe() (string, error) {
 	return user.Id, nil
 }
 
+// GetPreferences fetches and store the user's preferences.
 func (ue *UserEntity) GetPreferences() error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -95,6 +101,7 @@ func (ue *UserEntity) GetPreferences() error {
 	return nil
 }
 
+// UpdatePreferences updates the user's preferences.
 func (ue *UserEntity) UpdatePreferences(pref *model.Preferences) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -115,6 +122,7 @@ func (ue *UserEntity) UpdatePreferences(pref *model.Preferences) error {
 	return nil
 }
 
+// CreateUser creates a new user with the given information.
 func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	user, resp := ue.client.CreateUser(user)
 	if resp.Error != nil {
@@ -124,6 +132,7 @@ func (ue *UserEntity) CreateUser(user *model.User) (string, error) {
 	return user.Id, nil
 }
 
+// UpdateUser updates the given user with the given information.
 func (ue *UserEntity) UpdateUser(user *model.User) error {
 	user, resp := ue.client.UpdateUser(user)
 	if resp.Error != nil {
@@ -137,6 +146,7 @@ func (ue *UserEntity) UpdateUser(user *model.User) error {
 	return nil
 }
 
+// UpdateUserRoles updates the given userId with the given role ids.
 func (ue *UserEntity) UpdateUserRoles(userId, roles string) error {
 	_, resp := ue.client.UpdateUserRoles(userId, roles)
 	if resp.Error != nil {
@@ -146,6 +156,7 @@ func (ue *UserEntity) UpdateUserRoles(userId, roles string) error {
 	return nil
 }
 
+// PatchUser patches a given user with the given information.
 func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
 	user, resp := ue.client.PatchUser(userId, patch)
 
@@ -160,6 +171,7 @@ func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
 	return nil
 }
 
+// CreatePost creates and stores a new post made by the user.
 func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -179,6 +191,7 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+// PatchPost modifies a post for the given postId and stores the updated result.
 func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, error) {
 	post, resp := ue.client.PatchPost(postId, patch)
 	if resp.Error != nil {
@@ -192,6 +205,7 @@ func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, 
 	return post.Id, nil
 }
 
+// SearchPosts performs a search for posts in the given teamId with the given terms.
 func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
 	postList, resp := ue.client.SearchPosts(teamId, terms, isOrSearch)
 	if resp.Error != nil {
@@ -200,6 +214,7 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 	return postList, nil
 }
 
+// GetPostsForChannel fetches and stores posts in a given channelId.
 func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) error {
 	postList, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "")
 	if resp.Error != nil {
@@ -211,6 +226,8 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) er
 	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
+// GetPostsBefore fetches and stores posts in a given channelId that were made before
+// a given postId.
 func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int) error {
 	postList, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "")
 	if resp.Error != nil {
@@ -222,6 +239,8 @@ func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int
 	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
+// GetPostsAfter fetches and stores posts in a given channelId that were made after
+// a given postId.
 func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int) error {
 	postList, resp := ue.client.GetPostsAfter(channelId, postId, page, perPage, "")
 	if resp.Error != nil {
@@ -233,6 +252,8 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
 }
 
+// GetPostsSince fetches and stores posts in a given channelId that were made
+// since the given time. It returns a list of posts ids.
 func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
 	postList, resp := ue.client.GetPostsSince(channelId, time)
 	if resp.Error != nil {
@@ -245,6 +266,7 @@ func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, err
 	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
+// GetPinnedPosts fetches and returns pinned posts in a given channelId.
 func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) {
 	postList, resp := ue.client.GetPinnedPosts(channelId, "")
 	if resp.Error != nil {
@@ -253,7 +275,8 @@ func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) 
 	return postList, nil
 }
 
-// GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
+// GetPostsAroundLastUnread fetches and stores the posts made around last
+// unread in a given channelId. It returns a list of posts ids.
 func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -271,15 +294,8 @@ func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, li
 	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
-func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
-	fresp, resp := ue.client.UploadFile(data, channelId, filename)
-	if resp.Error != nil {
-		return nil, resp.Error
-	}
-
-	return fresp, nil
-}
-
+// CreateChannel creates and stores a new channel with the given information.
+// It returns the channel's id.
 func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
 	_, err := ue.getUserFromStore()
 	if err != nil {
@@ -299,6 +315,8 @@ func (ue *UserEntity) CreateChannel(channel *model.Channel) (string, error) {
 	return channel.Id, nil
 }
 
+// CreateGroupChannel creates and stores a new group channel with the given
+// members. It returns the channel's id.
 func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	channel, resp := ue.client.CreateGroupChannel(memberIds)
 	if resp.Error != nil {
@@ -313,6 +331,8 @@ func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	return channel.Id, nil
 }
 
+// CreateGroupChannel creates and stores a new direct channel with the given
+// user. It returns the channel's id.
 func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -331,6 +351,9 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 
 	return channel.Id, nil
 }
+
+// RemoveUserFromChannel removes the specified user from the specified channel.
+// It returns whether the user was successfully removed or not.
 func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, error) {
 	ok, resp := ue.client.RemoveUserFromChannel(channelId, userId)
 	if resp.Error != nil {
@@ -339,6 +362,7 @@ func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) (bool, err
 	return ok, ue.store.RemoveChannelMember(channelId, userId)
 }
 
+// AddChannelMember adds the specified user to the specified channel.
 func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
 	member, resp := ue.client.AddChannelMember(channelId, userId)
 	if resp.Error != nil {
@@ -348,6 +372,7 @@ func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
 	return ue.store.SetChannelMember(channelId, member)
 }
 
+// GetChannel fetches and stores the specified channel.
 func (ue *UserEntity) GetChannel(channelId string) error {
 	channel, resp := ue.client.GetChannel(channelId, "")
 	if resp.Error != nil {
@@ -357,6 +382,7 @@ func (ue *UserEntity) GetChannel(channelId string) error {
 	return ue.store.SetChannel(channel)
 }
 
+// GetChannelsForTeam fetches and stores channels in the specified team.
 func (ue *UserEntity) GetChannelsForTeam(teamId string, includeDeleted bool) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -370,6 +396,8 @@ func (ue *UserEntity) GetChannelsForTeam(teamId string, includeDeleted bool) err
 	return ue.store.SetChannels(channels)
 }
 
+// GetPublicChannelsForTeam fetches and stores public channels in the
+// specified team.
 func (ue *UserEntity) GetPublicChannelsForTeam(teamId string, page, perPage int) error {
 	channels, resp := ue.client.GetPublicChannelsForTeam(teamId, page, perPage, "")
 	if resp.Error != nil {
@@ -378,6 +406,8 @@ func (ue *UserEntity) GetPublicChannelsForTeam(teamId string, page, perPage int)
 	return ue.store.SetChannels(channels)
 }
 
+// SearchChannels performs a search for channels in the specified team.
+// It returns channels that matches the search.
 func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	channels, resp := ue.client.SearchChannels(teamId, search)
 	if resp.Error != nil {
@@ -386,6 +416,8 @@ func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch)
 	return channels, nil
 }
 
+// GetChannelsForTeamForUser fetches and stores chanels for the specified user in
+// the specified team. It returns a list of those channels.
 func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error) {
 	channels, resp := ue.client.GetChannelsForTeamForUser(teamId, userId, includeDeleted, "")
 	if resp.Error != nil {
@@ -399,6 +431,7 @@ func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDe
 	return channels, nil
 }
 
+// ViewChannels performs a channel view for the user.
 func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -417,6 +450,8 @@ func (ue *UserEntity) ViewChannel(view *model.ChannelView) (*model.ChannelViewRe
 	return channelViewResponse, nil
 }
 
+// GetChannelUnread fetches and returns information about the specified channel's unread
+// messages.
 func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -431,6 +466,7 @@ func (ue *UserEntity) GetChannelUnread(channelId string) (*model.ChannelUnread, 
 	return channelUnreadResponse, nil
 }
 
+// GetChannelMembers fetches and stores channel members for the specified channel.
 func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) error {
 	channelMembers, resp := ue.client.GetChannelMembers(channelId, page, perPage, "")
 	if resp.Error != nil {
@@ -440,7 +476,8 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 	return ue.store.SetChannelMembers(channelMembers)
 }
 
-// GetChannelMembersForUser gets all the channel members for a user on a team.
+// GetChannelMembersForUser gets the channel members for the specified user in
+// the specified team.
 func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {
 	channelMembers, resp := ue.client.GetChannelMembersForUser(userId, teamId, "")
 	if resp.Error != nil {
@@ -450,6 +487,8 @@ func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {
 	return ue.store.SetChannelMembers(channelMembers)
 }
 
+// GetChannelMember fetches and stores the channel member for the specified user in
+// the specified channel.
 func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
 	cm, resp := ue.client.GetChannelMember(channelId, userId, "")
 	if resp.Error != nil {
@@ -459,6 +498,7 @@ func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
 	return ue.store.SetChannelMember(channelId, cm)
 }
 
+// GetChannelStats fetches statistics for the specified channel.
 func (ue *UserEntity) GetChannelStats(channelId string) error {
 	_, resp := ue.client.GetChannelStats(channelId, "")
 	if resp.Error != nil {
@@ -468,7 +508,8 @@ func (ue *UserEntity) GetChannelStats(channelId string) error {
 	return nil
 }
 
-// AutocompleteChannelsForTeam returns an ordered list of channels for a given name.
+// AutocompleteChannelsForTeam returns an ordered list of channels for a given
+// name in a specified team.
 func (ue *UserEntity) AutocompleteChannelsForTeam(teamId, name string) error {
 	channelList, resp := ue.client.AutocompleteChannelsForTeam(teamId, name)
 	if resp.Error != nil {
@@ -478,6 +519,7 @@ func (ue *UserEntity) AutocompleteChannelsForTeam(teamId, name string) error {
 	return ue.store.SetChannels(*channelList)
 }
 
+// CreateTeam creates a new team with the given information.
 func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 	team, resp := ue.client.CreateTeam(team)
 	if resp.Error != nil {
@@ -487,6 +529,7 @@ func (ue *UserEntity) CreateTeam(team *model.Team) (string, error) {
 	return team.Id, nil
 }
 
+// GetTeam fetches and returns the specified team.
 func (ue *UserEntity) GetTeam(teamId string) error {
 	team, resp := ue.client.GetTeam(teamId, "")
 	if resp.Error != nil {
@@ -495,6 +538,7 @@ func (ue *UserEntity) GetTeam(teamId string) error {
 	return ue.store.SetTeam(team)
 }
 
+// UpdateTeam updates and stores the given team.
 func (ue *UserEntity) UpdateTeam(team *model.Team) error {
 	team, resp := ue.client.UpdateTeam(team)
 	if resp.Error != nil {
@@ -503,6 +547,8 @@ func (ue *UserEntity) UpdateTeam(team *model.Team) error {
 	return ue.store.SetTeam(team)
 }
 
+// GetTeamsForUser fetches and stores the teams for the specified user.
+// It returns a list of team ids.
 func (ue *UserEntity) GetTeamsForUser(userId string) ([]string, error) {
 	teams, resp := ue.client.GetTeamsForUser(userId, "")
 	if resp.Error != nil {
@@ -521,6 +567,7 @@ func (ue *UserEntity) GetTeamsForUser(userId string) ([]string, error) {
 	return teamIds, nil
 }
 
+// AddTeamMember adds the specified user to the specified team.
 func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	tm, resp := ue.client.AddTeamMember(teamId, userId)
 	if resp.Error != nil {
@@ -530,6 +577,7 @@ func (ue *UserEntity) AddTeamMember(teamId, userId string) error {
 	return ue.store.SetTeamMember(teamId, tm)
 }
 
+// RemoveTeamMember removes the specified user from the specified team.
 func (ue *UserEntity) RemoveTeamMember(teamId, userId string) error {
 	_, resp := ue.client.RemoveTeamMember(teamId, userId)
 	if resp.Error != nil {
@@ -539,6 +587,7 @@ func (ue *UserEntity) RemoveTeamMember(teamId, userId string) error {
 	return ue.store.RemoveTeamMember(teamId, userId)
 }
 
+// GetTeamMembers fetches and stores team members for the specified team.
 func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	members, resp := ue.client.GetTeamMembers(teamId, page, perPage, "")
 	if resp.Error != nil {
@@ -547,6 +596,7 @@ func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	return ue.store.SetTeamMembers(teamId, members)
 }
 
+// GetTeamMembersForUser fetches and stores team members for the specified user.
 func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
 	members, resp := ue.client.GetTeamMembersForUser(userId, "")
 	if resp.Error != nil {
@@ -562,6 +612,8 @@ func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
 	return nil
 }
 
+// GetUsersByIds fetches and stores the specified users.
+// It returns a list of those users' ids.
 func (ue *UserEntity) GetUsersByIds(userIds []string) ([]string, error) {
 	users, resp := ue.client.GetUsersByIds(userIds)
 	if resp.Error != nil {
@@ -579,6 +631,8 @@ func (ue *UserEntity) GetUsersByIds(userIds []string) ([]string, error) {
 	return newUserIds, nil
 }
 
+// GetUsersByUsername fetches and stores users for the given usernames.
+// It returns a list of those users' ids.
 func (ue *UserEntity) GetUsersByUsernames(usernames []string) ([]string, error) {
 	users, resp := ue.client.GetUsersByUsernames(usernames)
 	if resp.Error != nil {
@@ -596,6 +650,7 @@ func (ue *UserEntity) GetUsersByUsernames(usernames []string) ([]string, error) 
 	return newUserIds, nil
 }
 
+// GetUserStatus fetches and stores the status for the user.
 func (ue *UserEntity) GetUserStatus() error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -610,6 +665,7 @@ func (ue *UserEntity) GetUserStatus() error {
 	return nil
 }
 
+// GetUsersStatusesByIds fetches and stores statuses for the specified users.
 func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	statusList, resp := ue.client.GetUsersStatusesByIds(userIds)
 	if resp.Error != nil {
@@ -625,6 +681,7 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }
 
+// GetUsersInChannel fetches and stores users in the specified channel.
 func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) error {
 	if len(channelId) == 0 {
 		return errors.New("userentity: channelId should not be empty")
@@ -638,6 +695,7 @@ func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) err
 	return ue.store.SetUsers(users)
 }
 
+// GetUsers fetches and stores all users. It returns a list of those users' ids.
 func (ue *UserEntity) GetUsers(page, perPage int) ([]string, error) {
 	users, resp := ue.client.GetUsers(page, perPage, "")
 	if resp.Error != nil {
@@ -652,6 +710,7 @@ func (ue *UserEntity) GetUsers(page, perPage int) ([]string, error) {
 	return userIds, ue.store.SetUsers(users)
 }
 
+// GetTeamStats fetches statistics for the specified team.
 func (ue *UserEntity) GetTeamStats(teamId string) error {
 	_, resp := ue.client.GetTeamStats(teamId, "")
 	if resp.Error != nil {
@@ -661,6 +720,8 @@ func (ue *UserEntity) GetTeamStats(teamId string) error {
 	return nil
 }
 
+// GetTeamsUnread fetches and returns information about unreads messages for
+// the user in the teams it belongs to.
 func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -675,6 +736,17 @@ func (ue *UserEntity) GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnrea
 	return unread, nil
 }
 
+// UploadFile uploads the given data in the specified channel.
+func (ue *UserEntity) UploadFile(data []byte, channelId, filename string) (*model.FileUploadResponse, error) {
+	fresp, resp := ue.client.UploadFile(data, channelId, filename)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	return fresp, nil
+}
+
+// GetFileInfosForPost returns file information for the specified post.
 func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, error) {
 	infos, resp := ue.client.GetFileInfosForPost(postId, "")
 	if resp.Error != nil {
@@ -683,6 +755,7 @@ func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, err
 	return infos, nil
 }
 
+// GetFileThumbnail fetches the thumbnail for the specified file.
 func (ue *UserEntity) GetFileThumbnail(fileId string) error {
 	_, resp := ue.client.GetFileThumbnail(fileId)
 	if resp.Error != nil {
@@ -691,6 +764,7 @@ func (ue *UserEntity) GetFileThumbnail(fileId string) error {
 	return nil
 }
 
+// GetFilePreview fetches the preview for the specified file.
 func (ue *UserEntity) GetFilePreview(fileId string) error {
 	_, resp := ue.client.GetFilePreview(fileId)
 	if resp.Error != nil {
@@ -700,6 +774,8 @@ func (ue *UserEntity) GetFilePreview(fileId string) error {
 	return nil
 }
 
+// AddTeamMemberFromInvite adds a user to a team using the given token and
+// inviteId.
 func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
 	tm, resp := ue.client.AddTeamMemberFromInvite(token, inviteId)
 	if resp.Error != nil {
@@ -709,6 +785,7 @@ func (ue *UserEntity) AddTeamMemberFromInvite(token, inviteId string) error {
 	return ue.store.SetTeamMember(tm.TeamId, tm)
 }
 
+// SetProfileImage sets the profile image for the user.
 func (ue *UserEntity) SetProfileImage(data []byte) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -724,6 +801,7 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 	return nil
 }
 
+// GetProfileImage fetches the profile image for the user.
 func (ue *UserEntity) GetProfileImage() error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -732,6 +810,8 @@ func (ue *UserEntity) GetProfileImage() error {
 	return ue.GetProfileImageForUser(user.Id)
 }
 
+// GetProfileImageForUser fetches and stores the profile imagine for the
+// specified user.
 func (ue *UserEntity) GetProfileImageForUser(userId string) error {
 	if _, resp := ue.client.GetProfileImage(userId, ""); resp.Error != nil {
 		return resp.Error
@@ -740,6 +820,7 @@ func (ue *UserEntity) GetProfileImageForUser(userId string) error {
 	return ue.store.SetProfileImage(userId)
 }
 
+// SearchUsers performs a user search. It returns a list of users that matched.
 func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, error) {
 	users, resp := ue.client.SearchUsers(search)
 	if resp.Error != nil {
@@ -748,6 +829,8 @@ func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, erro
 	return users, nil
 }
 
+// AutoCompleteUsersInChannel performs autocomplete of a username in a specified team and channel.
+// It returns the users in the system based on the given username.
 func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
 	users, resp := ue.client.AutocompleteUsersInChannel(teamId, channelId, username, limit, "")
 	if resp.Error != nil {
@@ -767,6 +850,7 @@ func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username str
 	return usersMap, nil
 }
 
+// GetEmojiList fetches and stores a list of custom emoji.
 func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	emojis, resp := ue.client.GetEmojiList(page, perPage)
 	if resp.Error != nil {
@@ -775,6 +859,7 @@ func (ue *UserEntity) GetEmojiList(page, perPage int) error {
 	return ue.store.SetEmojis(emojis)
 }
 
+// GetEmojiImage fetches the image for a given emoji.
 func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	_, resp := ue.client.GetEmojiImage(emojiId)
 	if resp.Error != nil {
@@ -784,6 +869,7 @@ func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
+// GetReactions fetches and stores reactions to the specified post.
 func (ue *UserEntity) GetReactions(postId string) error {
 	reactions, resp := ue.client.GetReactions(postId)
 	if resp.Error != nil {
@@ -793,6 +879,7 @@ func (ue *UserEntity) GetReactions(postId string) error {
 	return ue.store.SetReactions(postId, reactions)
 }
 
+// SaveReaction stores the given reaction.
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	r, resp := ue.client.SaveReaction(reaction)
 	if resp.Error != nil {
@@ -802,6 +889,7 @@ func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	return ue.store.SetReaction(r)
 }
 
+// DeleteReaction deletes the given reaction.
 func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {
 	_, resp := ue.client.DeleteReaction(reaction)
 	if resp.Error != nil {
@@ -815,16 +903,8 @@ func (ue *UserEntity) DeleteReaction(reaction *model.Reaction) error {
 	return nil
 }
 
-func (ue *UserEntity) GetTeams() ([]string, error) {
-	user, err := ue.getUserFromStore()
-	if err != nil {
-		return nil, err
-	}
-
-	return ue.GetTeamsForUser(user.Id)
-}
-
 // GetAllTeams returns all teams based on permissions.
+// It returns a list of team ids.
 func (ue *UserEntity) GetAllTeams(page, perPage int) ([]string, error) {
 	teams, resp := ue.client.GetAllTeams("", page, perPage)
 	if resp.Error != nil {
@@ -843,6 +923,8 @@ func (ue *UserEntity) GetAllTeams(page, perPage int) ([]string, error) {
 	return teamIds, nil
 }
 
+// GetRolesByName fetches and stores roles for the given names.
+// It returns a list of role ids.
 func (ue *UserEntity) GetRolesByNames(roleNames []string) ([]string, error) {
 	roles, resp := ue.client.GetRolesByNames(roleNames)
 	if resp.Error != nil {
@@ -860,6 +942,7 @@ func (ue *UserEntity) GetRolesByNames(roleNames []string) ([]string, error) {
 	return roleIds, nil
 }
 
+// GetWebappPlugins fetches webapp plugins.
 func (ue *UserEntity) GetWebappPlugins() error {
 	_, resp := ue.client.GetWebappPlugins()
 	if resp.Error != nil {
@@ -869,7 +952,8 @@ func (ue *UserEntity) GetWebappPlugins() error {
 	return nil
 }
 
-// GetClientLicense returns the client license in the old format.
+// GetClientLicense fetched and stores the client license.
+// It returns the client license in the old format.
 func (ue *UserEntity) GetClientLicense() error {
 	license, resp := ue.client.GetOldClientLicense("")
 	if resp.Error != nil {
@@ -881,19 +965,22 @@ func (ue *UserEntity) GetClientLicense() error {
 	return nil
 }
 
+// SetCurrentTeam sets the given team as the current team for the user.
 func (ue *UserEntity) SetCurrentTeam(team *model.Team) error {
 	return ue.store.SetCurrentTeam(team)
 }
 
+// SetCurrentChannel sets the given channel as the current channel for the user.
 func (ue *UserEntity) SetCurrentChannel(channel *model.Channel) error {
 	return ue.store.SetCurrentChannel(channel)
 }
 
+// ClearUserData calls the Clear method on the underlying UserStore.
 func (ue *UserEntity) ClearUserData() {
 	ue.store.Clear()
 }
 
-// GetLogs fetches the logs.
+// GetLogs fetches the server logs.
 func (ue *UserEntity) GetLogs(page, perPage int) error {
 	_, resp := ue.client.GetLogs(page, perPage)
 	if resp.Error != nil {
@@ -921,6 +1008,18 @@ func (ue *UserEntity) GetClusterStatus() error {
 	return nil
 }
 
+func (ue *UserEntity) getPluginStatuses() (model.PluginStatuses, *model.Response) {
+	r, err := ue.client.DoApiGet(ue.client.GetPluginsRoute()+"/statuses", "")
+	if err != nil {
+		return nil, model.BuildErrorResponse(r, err)
+	}
+	defer func() {
+		_, _ = io.Copy(ioutil.Discard, r.Body)
+		_ = r.Body.Close()
+	}()
+	return model.PluginStatusesFromJson(r.Body), model.BuildResponse(r)
+}
+
 // GetPluginStatuses fetches the plugin statuses.
 func (ue *UserEntity) GetPluginStatuses() error {
 	// Need to do it manually until MM-25405 is resolved.
@@ -940,16 +1039,4 @@ func (ue *UserEntity) UpdateConfig(cfg *model.Config) error {
 	}
 	ue.store.SetConfig(cfg)
 	return nil
-}
-
-func (ue *UserEntity) getPluginStatuses() (model.PluginStatuses, *model.Response) {
-	r, err := ue.client.DoApiGet(ue.client.GetPluginsRoute()+"/statuses", "")
-	if err != nil {
-		return nil, model.BuildErrorResponse(r, err)
-	}
-	defer func() {
-		_, _ = io.Copy(ioutil.Discard, r.Body)
-		_ = r.Body.Close()
-	}()
-	return model.PluginStatusesFromJson(r.Body), model.BuildResponse(r)
 }
