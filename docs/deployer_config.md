@@ -33,7 +33,7 @@ The type of the EC2 instance of the loadtest agent. See type [here](https://aws.
 
 ## ElasticSearchSettings
 
-### InstancesCount
+### InstanceCount
 
 *int*
 
@@ -47,7 +47,7 @@ The type of instance for the Elasticsearch service. See type [here](https://aws.
 
 ### Version
 
-*string*
+*float64*
 
 Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
 

@@ -63,7 +63,8 @@ func New(config *Config) (*MemStore, error) {
 	return s, nil
 }
 
-// Clear resets the store and removes all entries
+// Clear resets the store and removes all entries with the exception of the
+// user object and state information (current team/channel) which are preserved.
 func (s *MemStore) Clear() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -135,6 +136,7 @@ func (s *MemStore) setupQueues(config *Config) error {
 	return nil
 }
 
+// Id returns the id for the stored user.
 func (s *MemStore) Id() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -144,6 +146,7 @@ func (s *MemStore) Id() string {
 	return s.user.Id
 }
 
+// Username returns the username for the stored user.
 func (s *MemStore) Username() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -153,6 +156,7 @@ func (s *MemStore) Username() string {
 	return s.user.Username
 }
 
+// Email returns the email for the stored user.
 func (s *MemStore) Email() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -162,6 +166,7 @@ func (s *MemStore) Email() string {
 	return s.user.Email
 }
 
+// Password returns the password for the stored user.
 func (s *MemStore) Password() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -171,18 +176,21 @@ func (s *MemStore) Password() string {
 	return s.user.Password
 }
 
+// Config returns the server configuration settings.
 func (s *MemStore) Config() model.Config {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return *s.config
 }
 
+// SetConfig stores the given configuration settings.
 func (s *MemStore) SetConfig(config *model.Config) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.config = config
 }
 
+// User returns the stored user.
 func (s *MemStore) User() (*model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -190,6 +198,7 @@ func (s *MemStore) User() (*model.User, error) {
 	return s.user, nil
 }
 
+// SetUser stores the given user.
 func (s *MemStore) SetUser(user *model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -201,6 +210,7 @@ func (s *MemStore) SetUser(user *model.User) error {
 	return nil
 }
 
+// Preferences returns the preferences for the stored user.
 func (s *MemStore) Preferences() (model.Preferences, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -212,6 +222,7 @@ func (s *MemStore) Preferences() (model.Preferences, error) {
 	return newPref, nil
 }
 
+// Preferences stores the preferences for the stored user.
 func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -219,6 +230,7 @@ func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
 	return nil
 }
 
+// Post returns the post for the given postId.
 func (s *MemStore) Post(postId string) (*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -229,6 +241,7 @@ func (s *MemStore) Post(postId string) (*model.Post, error) {
 	return nil, ErrPostNotFound
 }
 
+// UserForPost returns the userId for the user who created the specified post.
 func (s *MemStore) UserForPost(postId string) (string, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -241,6 +254,7 @@ func (s *MemStore) UserForPost(postId string) (string, error) {
 	return "", ErrPostNotFound
 }
 
+// FileInfoForPost returns the FileInfo for the specified post, if any.
 func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -253,6 +267,7 @@ func (s *MemStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
 	return nil, ErrPostNotFound
 }
 
+// ChannelPosts returns all posts for the specified channel.
 func (s *MemStore) ChannelPosts(channelId string) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -272,6 +287,7 @@ func (s *MemStore) channelPosts(channelId string) ([]*model.Post, error) {
 	return channelPosts, nil
 }
 
+// ChannelPostsSorted returns all posts for specified channel, sorted by CreateAt.
 func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -288,6 +304,7 @@ func (s *MemStore) ChannelPostsSorted(channelId string, asc bool) ([]*model.Post
 	return posts, nil
 }
 
+// PostsIdsSince returns a list of post ids for posts created after a specified timestamp in milliseconds.
 func (s *MemStore) PostsIdsSince(ts int64) ([]string, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -300,6 +317,8 @@ func (s *MemStore) PostsIdsSince(ts int64) ([]string, error) {
 	return postsIds, nil
 }
 
+// UsersIdsForPostsIds returns a list of user ids that created the specified
+// posts.
 func (s *MemStore) UsersIdsForPostsIds(postIds []string) ([]string, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -318,6 +337,7 @@ func (s *MemStore) UsersIdsForPostsIds(postIds []string) ([]string, error) {
 	return userIds, nil
 }
 
+// SetPost stores the given post.
 func (s *MemStore) SetPost(post *model.Post) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -347,6 +367,7 @@ func (s *MemStore) SetPost(post *model.Post) error {
 	return nil
 }
 
+// DeletePost deletes the specified post.
 func (s *MemStore) DeletePost(postId string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -354,6 +375,7 @@ func (s *MemStore) DeletePost(postId string) error {
 	return nil
 }
 
+// SetPosts stores the given posts.
 func (s *MemStore) SetPosts(posts []*model.Post) error {
 	if len(posts) == 0 {
 		return errors.New("memstore: posts should not be nil or empty")
@@ -366,6 +388,7 @@ func (s *MemStore) SetPosts(posts []*model.Post) error {
 	return nil
 }
 
+// Channel returns the channel for the given channelId.
 func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -376,6 +399,7 @@ func (s *MemStore) Channel(channelId string) (*model.Channel, error) {
 	return nil, nil
 }
 
+// SetChannel stores the given channel.
 func (s *MemStore) SetChannel(channel *model.Channel) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -386,6 +410,7 @@ func (s *MemStore) SetChannel(channel *model.Channel) error {
 	return nil
 }
 
+// GetCurrentChannel returns the channel the user is currently viewing.
 func (s *MemStore) CurrentChannel() (*model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -396,6 +421,7 @@ func (s *MemStore) CurrentChannel() (*model.Channel, error) {
 	return &chanCopy, nil
 }
 
+// SetCurrentChannel stores the channel the user is currently viewing.
 func (s *MemStore) SetCurrentChannel(channel *model.Channel) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -406,7 +432,7 @@ func (s *MemStore) SetCurrentChannel(channel *model.Channel) error {
 	return nil
 }
 
-// Channels return all the channels for a team.
+// Channels returns all the channels for a team.
 func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -420,6 +446,7 @@ func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 	return channels, nil
 }
 
+// SetChannels adds the given channels to the store.
 func (s *MemStore) SetChannels(channels []*model.Channel) error {
 	if channels == nil {
 		return errors.New("memstore: channels should not be nil")
@@ -432,6 +459,8 @@ func (s *MemStore) SetChannels(channels []*model.Channel) error {
 	return nil
 }
 
+// SetChannelView marks the given channel as viewed and updates the store with the
+// current timestamp.
 func (s *MemStore) SetChannelView(channelId string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -445,6 +474,7 @@ func (s *MemStore) SetChannelView(channelId string) error {
 	return nil
 }
 
+// ChannelView returns the timestamp of the last view for the given channelId.
 func (s *MemStore) ChannelView(channelId string) (int64, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -456,6 +486,7 @@ func (s *MemStore) ChannelView(channelId string) (int64, error) {
 	return s.channelViews[channelId], nil
 }
 
+// Team returns the team for the given teamId.
 func (s *MemStore) Team(teamId string) (*model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -466,6 +497,7 @@ func (s *MemStore) Team(teamId string) (*model.Team, error) {
 	return nil, nil
 }
 
+// SetTeam stores the given team.
 func (s *MemStore) SetTeam(team *model.Team) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -474,6 +506,7 @@ func (s *MemStore) SetTeam(team *model.Team) error {
 	return nil
 }
 
+// GetCurrentTeam returns the currently selected team for the user.
 func (s *MemStore) CurrentTeam() (*model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -484,6 +517,7 @@ func (s *MemStore) CurrentTeam() (*model.Team, error) {
 	return &teamCopy, nil
 }
 
+// SetCurrentTeam sets the currently selected team for the user.
 func (s *MemStore) SetCurrentTeam(team *model.Team) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -494,6 +528,7 @@ func (s *MemStore) SetCurrentTeam(team *model.Team) error {
 	return nil
 }
 
+// Teams returns the teams a user belong to.
 func (s *MemStore) Teams() ([]model.Team, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -507,6 +542,7 @@ func (s *MemStore) Teams() ([]model.Team, error) {
 	return teams, nil
 }
 
+// SetTeams stores the given teams.
 func (s *MemStore) SetTeams(teams []*model.Team) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -553,6 +589,7 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 	return nil
 }
 
+// ChannelMembers returns a list of members for the specified channel.
 func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -564,6 +601,7 @@ func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, erro
 	return &channelMembers, nil
 }
 
+// SetChannelMember stores the given channel member.
 func (s *MemStore) SetChannelMember(channelId string, channelMember *model.ChannelMember) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -596,6 +634,7 @@ func (s *MemStore) SetChannelMember(channelId string, channelMember *model.Chann
 	return nil
 }
 
+// ChannelMember returns the channel member for the given channelId and userId.
 func (s *MemStore) ChannelMember(channelId, userId string) (model.ChannelMember, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -607,6 +646,7 @@ func (s *MemStore) ChannelMember(channelId, userId string) (model.ChannelMember,
 	return cm, nil
 }
 
+// RemoveChannelMember removes the channel member for the specified channel and user.
 func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -615,6 +655,7 @@ func (s *MemStore) RemoveChannelMember(channelId string, userId string) error {
 	return nil
 }
 
+// RemoveTeamMember removes the team member for the specified team and user..
 func (s *MemStore) RemoveTeamMember(teamId string, userId string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -623,6 +664,7 @@ func (s *MemStore) RemoveTeamMember(teamId string, userId string) error {
 	return nil
 }
 
+// SetTeamMember stores the given team member.
 func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -637,6 +679,7 @@ func (s *MemStore) SetTeamMember(teamId string, teamMember *model.TeamMember) er
 	return nil
 }
 
+// SetTeamMembers stores the given team members.
 func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -649,6 +692,7 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 	return nil
 }
 
+// TeamMember returns the team member for the given teamId and userId.
 func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -660,6 +704,7 @@ func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
 	return tm, nil
 }
 
+// SetEmojis stores the given emojis.
 func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -668,6 +713,7 @@ func (s *MemStore) SetEmojis(emoji []*model.Emoji) error {
 	return nil
 }
 
+// SetReactions stores the given reactions for the specified post.
 func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -676,6 +722,7 @@ func (s *MemStore) SetReactions(postId string, reactions []*model.Reaction) erro
 	return nil
 }
 
+// SetReaction stores the given reaction.
 func (s *MemStore) SetReaction(reaction *model.Reaction) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -685,6 +732,7 @@ func (s *MemStore) SetReaction(reaction *model.Reaction) error {
 	return nil
 }
 
+// Reactions returns the reactions for the specified post.
 func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -697,6 +745,8 @@ func (s *MemStore) Reactions(postId string) ([]model.Reaction, error) {
 	return reactions, nil
 }
 
+// DeleteReaction deletes the given reaction.
+// It returns whether or not the reaction was deleted.
 func (s *MemStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -715,20 +765,7 @@ func (s *MemStore) DeleteReaction(reaction *model.Reaction) (bool, error) {
 	return false, nil
 }
 
-func (s *MemStore) Users() ([]*model.User, error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	users := make([]*model.User, len(s.users))
-	i := 0
-	for _, user := range s.users {
-		u := *user
-		users[i] = &u
-		i++
-	}
-	return users, nil
-}
-
+// GetUser returns the user for the given userId.
 func (s *MemStore) GetUser(userId string) (model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -746,6 +783,7 @@ func (s *MemStore) GetUser(userId string) (model.User, error) {
 	return user, nil
 }
 
+// SetUsers stores the given users.
 func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -764,6 +802,7 @@ func (s *MemStore) SetUsers(users []*model.User) error {
 	return nil
 }
 
+// Status returns the status for the given userId.
 func (s *MemStore) Status(userId string) (model.Status, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -780,6 +819,7 @@ func (s *MemStore) Status(userId string) (model.Status, error) {
 	return status, nil
 }
 
+// SetStatus stores the status for the given userId.
 func (s *MemStore) SetStatus(userId string, status *model.Status) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -822,7 +862,7 @@ func (s *MemStore) SetRoles(roles []*model.Role) error {
 	return nil
 }
 
-// Roles return the roles of the user.
+// Roles returns the roles of the user.
 func (s *MemStore) Roles() ([]model.Role, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
