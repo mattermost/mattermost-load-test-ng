@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -23,7 +24,7 @@ type LoadAgentCluster struct {
 	config   LoadAgentClusterConfig
 	ltConfig loadtest.Config
 	agents   []*client.Agent
-	errMap   map[*client.Agent]errorTrack
+	errMap   map[*client.Agent]*errorTrack
 	log      *mlog.Logger
 }
 
@@ -64,14 +65,14 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 	agents := make([]*client.Agent, len(config.Agents))
-	errMap := make(map[*client.Agent]errorTrack)
+	errMap := make(map[*client.Agent]*errorTrack)
 	for i := 0; i < len(agents); i++ {
 		agent, err := client.New(config.Agents[i].Id, config.Agents[i].ApiURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
 		}
 		agents[i] = agent
-		errMap[agent] = errorTrack{}
+		errMap[agent] = &errorTrack{}
 
 		// We check if the agent has already been created.
 		if _, err := agent.Status(); err == nil {
@@ -201,17 +202,19 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 		status.ActiveUsers += int(st.NumUsers)
 		currentError := st.NumErrors
 		errInfo := c.errMap[agent]
-		if currentError < errInfo.lastError {
+		lastError := atomic.LoadInt64(&errInfo.lastError)
+		totalErrors := atomic.LoadInt64(&errInfo.totalErrors)
+		if currentError < lastError {
 			// crash
 			// We increment the total accumulated errors by the
 			// last error count.
-			errInfo.totalErrors += errInfo.lastError
+			atomic.AddInt64(&errInfo.totalErrors, lastError)
+			totalErrors += lastError
 		}
-		errInfo.lastError = currentError
-		c.errMap[agent] = errInfo
+		atomic.StoreInt64(&errInfo.lastError, currentError)
 
 		// Total errors = current errors + past accumulated errors from restarts.
-		status.NumErrors += currentError + c.errMap[agent].totalErrors
+		status.NumErrors += currentError + totalErrors
 	}
 	return status, nil
 }
