@@ -99,6 +99,14 @@ go run ./cmd/ltctl loadtest start
 
 This will begin to run the load-test across the whole cluster of load-test agents.
 
+### Show the load-test status
+
+```sh
+go run ./cmd/ltctl loadtest status
+```
+
+This will print information about the status of the current load-test.
+
 ### Stop the running load-test
 
 ```sh
