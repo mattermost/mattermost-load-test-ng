@@ -107,6 +107,14 @@ go run ./cmd/ltctl loadtest stop
 
 This will stop the currently running load-test.
 
+### Re-initialize a load-test
+
+```sh
+go run ./cmd/ltctl loadtest reset
+```
+
+This will completely erase data on the target instance's database and will run again the init process.
+
 ### Destroy the current deployment
 
 When done with a deployment, it's suggested to run:
@@ -116,3 +124,4 @@ go run ./cmd/ltctl deployment destroy
 ```
 
 This will permanently destroy all resources for the current deployment.
+
