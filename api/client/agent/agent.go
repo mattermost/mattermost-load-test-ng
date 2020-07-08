@@ -47,13 +47,14 @@ func (a *Agent) apiRequest(req *http.Request) (AgentResponse, error) {
 	if err != nil {
 		return res, fmt.Errorf("agent: failed to decode load-test agent api response: %w", err)
 	}
-	if res.Error != "" {
-		return res, fmt.Errorf("agent: load-test agent api request error: %s", res.Error)
-	} else if resp.StatusCode == http.StatusNotFound {
+	if resp.StatusCode == http.StatusNotFound {
 		return res, ErrAgentNotFound
+	} else if res.Error != "" {
+		return res, fmt.Errorf("agent: load-test agent api request error: %s", res.Error)
 	} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return res, fmt.Errorf("agent: bad response status code %d", resp.StatusCode)
 	}
+
 	return res, nil
 }
 

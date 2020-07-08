@@ -20,15 +20,38 @@ import (
 // LoadAgentCluster is the object holding information about all the load-test
 // agents available in the cluster.
 type LoadAgentCluster struct {
-	config LoadAgentClusterConfig
-	agents []*client.Agent
-	errMap map[*client.Agent]errorTrack
-	log    *mlog.Logger
+	config   LoadAgentClusterConfig
+	ltConfig loadtest.Config
+	agents   []*client.Agent
+	errMap   map[*client.Agent]errorTrack
+	log      *mlog.Logger
 }
 
 type errorTrack struct {
 	lastError   int64
 	totalErrors int64
+}
+
+func createAgent(agent *client.Agent, ltConfig loadtest.Config) error {
+	// TODO: UserController config should probably come from the upper layer
+	// and be passed through.
+	var ucConfig interface{}
+	var err error
+	switch ltConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		ucConfig, err = simplecontroller.ReadConfig("")
+	case loadtest.UserControllerSimulative:
+		ucConfig, err = simulcontroller.ReadConfig("")
+	}
+	if err != nil {
+		return fmt.Errorf("cluster: failed to read controller config: %w", err)
+	}
+
+	if _, err := agent.Create(&ltConfig, ucConfig); err != nil {
+		return fmt.Errorf("cluster: failed to create agent: %w", err)
+	}
+
+	return nil
 }
 
 // New creates and initializes a new LoadAgentCluster for the given config.
@@ -55,29 +78,17 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 			continue
 		}
 
-		// TODO: UserController config should probably come from the upper layer
-		// and be passed through.
-		var ucConfig interface{}
-		switch ltConfig.UserControllerConfiguration.Type {
-		case loadtest.UserControllerSimple:
-			ucConfig, err = simplecontroller.ReadConfig("")
-		case loadtest.UserControllerSimulative:
-			ucConfig, err = simulcontroller.ReadConfig("")
-		}
-		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to read controller config: %w", err)
-		}
-
-		if _, err := agent.Create(&ltConfig, ucConfig); err != nil {
-			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
+		if err := createAgent(agent, ltConfig); err != nil {
+			return nil, err
 		}
 	}
 
 	return &LoadAgentCluster{
-		agents: agents,
-		config: config,
-		errMap: errMap,
-		log:    log,
+		agents:   agents,
+		config:   config,
+		ltConfig: ltConfig,
+		errMap:   errMap,
+		log:      log,
 	}, nil
 }
 
@@ -134,16 +145,12 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	}
 	for i, inc := range dist {
 		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
-
 		if _, err := c.agents[i].AddUsers(inc); err != nil {
-			// Most probably the agent restarted, so we just start the agent again.
-			if errors.Is(err, client.ErrAgentNotFound) {
-				if _, err := c.agents[i].Run(); err != nil {
-					c.log.Error("agent restart failed", mlog.Err(err))
-				}
-				continue
+			// Most probably the agent crashed, so we just start it again.
+			if _, err := c.agents[i].Run(); err != nil {
+				c.log.Error("agent restart failed", mlog.Err(err))
+				return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 			}
-			return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 		}
 	}
 	return nil
@@ -167,14 +174,11 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 	for i, dec := range dist {
 		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
 		if _, err := c.agents[i].RemoveUsers(dec); err != nil {
-			// Most probably the agent restarted, so we just start the agent again.
-			if errors.Is(err, client.ErrAgentNotFound) {
-				if _, err := c.agents[i].Run(); err != nil {
-					c.log.Error("agent restart failed", mlog.Err(err))
-				}
-				continue
+			// Most probably the agent crashed, so we just start it again.
+			if _, err := c.agents[i].Run(); err != nil {
+				c.log.Error("agent restart failed", mlog.Err(err))
+				return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 			}
-			return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 		}
 	}
 	return nil
@@ -185,9 +189,15 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 	var status Status
 	for _, agent := range c.agents {
 		st, err := agent.Status()
-		if err != nil {
-			return status, fmt.Errorf("cluster: failed to get status for agent: %w", err)
+		// Agent probably crashed. We create it again.
+		if errors.Is(err, client.ErrAgentNotFound) {
+			if err := createAgent(agent, c.ltConfig); err != nil {
+				c.log.Error("agent create failed", mlog.Err(err))
+			}
+		} else if err != nil {
+			c.log.Error("cluster: failed to get status for agent:", mlog.Err(err))
 		}
+
 		status.ActiveUsers += int(st.NumUsers)
 		currentError := st.NumErrors
 		errInfo := c.errMap[agent]
