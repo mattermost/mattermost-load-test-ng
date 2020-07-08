@@ -230,7 +230,7 @@ resource "aws_iam_access_key" "s3key" {
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
   acl    = "private"
-  count  = var.app_instance_count > 0 ? 1 : 0
+  count  = var.app_instance_count > 1 ? 1 : 0
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }

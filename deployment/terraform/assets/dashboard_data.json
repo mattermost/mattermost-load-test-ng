@@ -16,7 +16,7 @@
   "gnetId": 2542,
   "graphTooltip": 1,
   "id": 2,
-  "iteration": 1591005717341,
+  "iteration": 1593789757353,
   "links": [],
   "panels": [
     {
@@ -478,11 +478,11 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(mattermost_api_time_sum[1m])) by (instance) / sum(increase(mattermost_api_time_count[1m])) by (instance)",
+          "expr": "sum(rate(mattermost_api_time_sum[1m])) by (instance) / sum(rate(mattermost_api_time_count[1m])) by (instance)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{ instance }}",
+          "legendFormat": "avg-{{ instance }}",
           "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
@@ -499,7 +499,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Mean API Request Time",
+      "title": "API Request Time (Server)",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -554,7 +554,7 @@
         "y": 18
       },
       "hiddenSeries": false,
-      "id": 5,
+      "id": 32,
       "legend": {
         "avg": false,
         "current": false,
@@ -581,40 +581,28 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}",
+          "expr": "sum(rate(loadtest_http_request_time_sum[1m])) by (instance) / sum(rate(loadtest_http_request_time_count[1m])) by (instance)",
           "format": "time_series",
+          "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Alloc-{{instance}}",
-          "metric": "go_memstats_alloc_bytes_total",
+          "legendFormat": "avg-{{ instance }}",
+          "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
         },
         {
-          "expr": "go_memstats_stack_inuse_bytes{instance=~\"$server\"}",
+          "expr": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "hide": false,
-          "intervalFactor": 1,
-          "legendFormat": "StackAlloc-{{instance}}",
-          "metric": "go_memstats_alloc_bytes_total",
-          "refId": "B",
-          "step": 5
-        },
-        {
-          "expr": "go_memstats_heap_inuse_bytes{instance=~\"$server\"}",
-          "format": "time_series",
-          "hide": false,
-          "intervalFactor": 1,
-          "legendFormat": "HeapAlloc-{{instance}}",
-          "metric": "go_memstats_alloc_bytes_total",
-          "refId": "C",
-          "step": 5
+          "legendFormat": "p99-{{instance}}",
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Usage",
+      "title": "API Request Time (Client)",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -631,7 +619,7 @@
       },
       "yaxes": [
         {
-          "format": "bytes",
+          "format": "s",
           "label": "",
           "logBase": 1,
           "max": null,
@@ -644,7 +632,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": false
+          "show": true
         }
       ],
       "yaxis": {
@@ -763,6 +751,213 @@
         "y": 27
       },
       "hiddenSeries": false,
+      "id": 5,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Alloc-{{instance}}",
+          "metric": "go_memstats_alloc_bytes_total",
+          "refId": "A",
+          "step": 5
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{instance=~\"$server\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "StackAlloc-{{instance}}",
+          "metric": "go_memstats_alloc_bytes_total",
+          "refId": "B",
+          "step": 5
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{instance=~\"$server\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "HeapAlloc-{{instance}}",
+          "metric": "go_memstats_alloc_bytes_total",
+          "refId": "C",
+          "step": 5
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Memory Usage",
+      "tooltip": {
+        "msResolution": false,
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "hiddenSeries": false,
+      "id": 29,
+      "legend": {
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(increase(loadtest_http_timeouts_total{instance=~\"$server\"}[1m])) by (instance)",
+          "legendFormat": "{{ instance }}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(loadtest_http_timeouts_total{instance=~\"$server\"}[1m]))",
+          "legendFormat": "Total",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Client Timeouts per Minute",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "loadtest-source",
+      "editable": true,
+      "error": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "hiddenSeries": false,
       "id": 4,
       "legend": {
         "avg": false,
@@ -843,190 +1038,6 @@
           "max": null,
           "min": null,
           "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 36
-      },
-      "hiddenSeries": false,
-      "id": 29,
-      "legend": {
-        "avg": true,
-        "current": false,
-        "max": true,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(loadtest_http_timeouts_total{instance=~\"$server\"}[1m])) by (instance)",
-          "legendFormat": "{{ instance }}",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(increase(loadtest_http_timeouts_total{instance=~\"$server\"}[1m]))",
-          "legendFormat": "Total",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Timeouts per Minute",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 36
-      },
-      "hiddenSeries": false,
-      "id": 31,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(increase(loadtest_http_errors_total{instance=~\"$server\"}[1m])) by (status_code)",
-          "legendFormat": "agent - {{ status_code }} ",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(increase(mattermost_api_time_count{instance=~\"$server\",status_code=~\"4..|5..\"}[1m])) by (status_code)",
-          "legendFormat": "app - {{ status_code }}",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "HTTP Errors per Minute",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
         }
       ],
       "yaxis": {
@@ -1149,7 +1160,6 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "decimals": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1159,15 +1169,12 @@
         "y": 45
       },
       "hiddenSeries": false,
-      "id": 23,
+      "id": 31,
       "legend": {
         "avg": false,
         "current": false,
-        "hideEmpty": false,
-        "hideZero": false,
         "max": false,
         "min": false,
-        "rightSide": false,
         "show": true,
         "total": false,
         "values": false
@@ -1188,15 +1195,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(node_memory_MemTotal{instance=~\"$server\"} - node_memory_MemFree{instance=~\"$server\"} - node_memory_Buffers{instance=~\"$server\"} - node_memory_Cached{instance=~\"$server\"})",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "Used {{ instance }}",
+          "expr": "sum(increase(loadtest_http_errors_total{instance=~\"$server\"}[1m])) by (status_code)",
+          "legendFormat": "agent - {{ status_code }} ",
           "refId": "A"
         },
         {
-          "expr": "node_memory_MemTotal{instance=~\"$server\"}",
-          "legendFormat": "Total {{ instance }}",
+          "expr": "sum(increase(mattermost_api_time_count{instance=~\"$server\",status_code=~\"4..|5..\"}[1m])) by (status_code)",
+          "legendFormat": "app - {{ status_code }}",
           "refId": "B"
         }
       ],
@@ -1204,7 +1209,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Usage",
+      "title": "HTTP Errors per Minute",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1220,7 +1225,7 @@
       },
       "yaxes": [
         {
-          "format": "bytes",
+          "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -1345,6 +1350,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "decimals": null,
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1352,6 +1358,103 @@
         "w": 12,
         "x": 12,
         "y": 54
+      },
+      "hiddenSeries": false,
+      "id": 23,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "(node_memory_MemTotal{instance=~\"$server\"} - node_memory_MemFree{instance=~\"$server\"} - node_memory_Buffers{instance=~\"$server\"} - node_memory_Cached{instance=~\"$server\"})",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Used {{ instance }}",
+          "refId": "A"
+        },
+        {
+          "expr": "node_memory_MemTotal{instance=~\"$server\"}",
+          "legendFormat": "Total {{ instance }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Memory Usage",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 27,
