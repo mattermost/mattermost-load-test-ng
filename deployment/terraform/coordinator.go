@@ -28,17 +28,17 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 
-	if len(output.Instances.Value) == 0 {
+	if len(output.Instances) == 0 {
 		return errors.New("there are no app server instances to run the load-test")
 	}
 
-	if len(output.Agents.Value) == 0 {
+	if len(output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := output.Agents.Value[0].PublicIP
+	ip := output.Agents[0].PublicIP
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
-	for _, val := range output.Agents.Value {
+	for _, val := range output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
 			ApiURL: "http://" + val.PrivateIP + ":4000",
@@ -61,7 +61,7 @@ func (t *Terraform) StartCoordinator() error {
 		return err
 	}
 	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
-	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.Value[0].PrivateIP + ":9090"
+	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.PrivateIP + ":9090"
 
 	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
 	if err != nil {
@@ -166,10 +166,10 @@ func (t *Terraform) StopCoordinator() error {
 		return err
 	}
 
-	if len(output.Agents.Value) == 0 {
+	if len(output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
-	ip := output.Agents.Value[0].PublicIP
+	ip := output.Agents[0].PublicIP
 
 	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
 
@@ -206,10 +206,10 @@ func (t *Terraform) GetCoordinatorStatus() (*coordinator.Status, error) {
 		return nil, err
 	}
 
-	if len(output.Agents.Value) == 0 {
+	if len(output.Agents) == 0 {
 		return nil, errors.New("there are no agents to initialize load-test")
 	}
-	ip := output.Agents.Value[0].PublicIP
+	ip := output.Agents[0].PublicIP
 
 	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
 

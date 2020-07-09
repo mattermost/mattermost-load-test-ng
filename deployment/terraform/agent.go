@@ -20,9 +20,9 @@ func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Confi
 	if err != nil {
 		return nil, err
 	}
-	url := output.Instances.Value[0].PrivateIP + ":8065"
+	url := output.Instances[0].PrivateIP + ":8065"
 	if output.HasProxy() {
-		url = output.Proxy.Value[0].PrivateIP
+		url = output.Proxy.PrivateIP
 	}
 
 	cfg.ConnectionConfiguration.ServerURL = "http://" + url
@@ -48,7 +48,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 		uploadBinary = true
 	}
 
-	for _, val := range output.Agents.Value {
+	for _, val := range output.Agents {
 		sshc, err := extAgent.NewClient(val.PublicIP)
 		if err != nil {
 			return err
@@ -108,10 +108,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 }
 
 func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
-	if len(output.Agents.Value) == 0 {
+	if len(output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
-	ip := output.Agents.Value[0].PublicIP
+	ip := output.Agents[0].PublicIP
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 	}
 
 	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-	cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents.Value[0].Tags.Name)
+	cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name)
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		// TODO: make this fully atomic. See MM-23998.
 		// ltagent init should drop teams and channels before creating them.
