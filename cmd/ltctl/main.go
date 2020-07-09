@@ -133,6 +133,11 @@ func main() {
 			Short: "Shows the status of the current load-test",
 			RunE:  RunLoadTestStatusCmdF,
 		},
+		{
+			Use:   "reset",
+			Short: "Reset and re-initialize target instance database",
+			RunE:  RunResetCmdF,
+		},
 	}
 
 	loadtestCmd.AddCommand(loadtestComands...)
