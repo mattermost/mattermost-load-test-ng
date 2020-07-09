@@ -281,6 +281,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   engine                     = var.db_instance_engine
   apply_immediately          = true
   auto_minor_version_upgrade = false
+  availability_zone          = "us-east-1a"
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -293,7 +294,6 @@ resource "aws_rds_cluster" "db_cluster" {
   apply_immediately   = true
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
-  availability_zones = ["us-east-1a"]
 
   vpc_security_group_ids = ["${aws_security_group.db[0].id}"]
 }
