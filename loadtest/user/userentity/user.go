@@ -45,10 +45,14 @@ type Config struct {
 	Password string
 }
 
+// Setup contains data used to create a new instance of UserEntity.
 type Setup struct {
-	Store     store.MutableUserStore
+	// The store to be used to save user's data.
+	Store store.MutableUserStore
+	// The transport to be used to execute API calls.
 	Transport http.RoundTripper
-	Metrics   *performance.UserEntityMetrics
+	// An optional object used to collect metrics.
+	Metrics *performance.UserEntityMetrics
 }
 
 type userTypingMsg struct {
@@ -61,6 +65,8 @@ type ueTransport struct {
 	ue        *UserEntity
 }
 
+// RoundTrip implements the RoundTripper interface for ueTransport.
+// This is used to collect metrics regarding the timing of HTTP calls.
 func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	resp, err := t.transport.RoundTrip(req)
@@ -110,7 +116,7 @@ func New(setup Setup, config Config) *UserEntity {
 	return &ue
 }
 
-// Connect creates a websocket connection to the server and starts listening for messages.
+// Connect creates a WebSocket connection to the server and starts listening for messages.
 func (ue *UserEntity) Connect() (<-chan error, error) {
 	if ue.connected {
 		return nil, errors.New("user is already connected")
@@ -147,7 +153,7 @@ func (ue *UserEntity) FetchStaticAssets() error {
 	return c.Visit(ue.client.Url)
 }
 
-// Disconnect closes the websocket connection.
+// Disconnect closes the WebSocket connection.
 func (ue *UserEntity) Disconnect() error {
 	ue.client.HttpClient.CloseIdleConnections()
 	if !ue.connected {
@@ -173,6 +179,7 @@ func (ue *UserEntity) Events() <-chan *model.WebSocketEvent {
 	return ue.wsEventChan
 }
 
+// IsSysAdmin returns whether the user is a system admin or not.
 func (ue *UserEntity) IsSysAdmin() (bool, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -182,6 +189,7 @@ func (ue *UserEntity) IsSysAdmin() (bool, error) {
 	return user.IsInRole(model.SYSTEM_ADMIN_ROLE_ID), nil
 }
 
+// IsTeamAdmin returns whether the user is a team admin or not.
 func (ue *UserEntity) IsTeamAdmin() (bool, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -193,14 +201,11 @@ func (ue *UserEntity) IsTeamAdmin() (bool, error) {
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {
 	user, err := ue.store.User()
-
 	if err != nil {
 		return nil, err
 	}
-
 	if user == nil {
 		return nil, errors.New("user was not initialized")
 	}
-
 	return user, nil
 }

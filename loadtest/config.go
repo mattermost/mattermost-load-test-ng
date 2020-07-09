@@ -11,10 +11,15 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
+// ConnectionConfiguration holds information needed to connect to the instance.
 type ConnectionConfiguration struct {
-	ServerURL     string `default:"http://localhost:8065" validate:"url"`
-	WebSocketURL  string `default:"ws://localhost:8065" validate:"url"`
-	AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+	// URL of the instance to connect to.
+	ServerURL string `default:"http://localhost:8065" validate:"url"`
+	// WebSocket URL of the instance to connect to.
+	WebSocketURL string `default:"ws://localhost:8065" validate:"url"`
+	// Email of the system admin.
+	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+	// Password of the system admin.
 	AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 }
 
@@ -30,6 +35,8 @@ const (
 	UserControllerCluster                       = "cluster"
 )
 
+// RatesDistribution maps a rate to a percentage of controllers that should run
+// at that rate.
 type RatesDistribution struct {
 	Rate       float64 `default:"1.0" validate:"range:[0,)"`
 	Percentage float64 `default:"1.0" validate:"range:(0,100]"`
@@ -105,12 +112,19 @@ func (c *InstanceConfiguration) IsValid() error {
 	return nil
 }
 
+// UsersConfiguration holds information about the users of the load-test.
 type UsersConfiguration struct {
+	// The number of initial users the load-test should start with.
 	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
-	MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
+	// The maximum number of users that can be simulated by a single load-test
+	// agent.
+	MaxActiveUsers int `default:"2000" validate:"range:(0,]"`
+	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 }
 
+// Config holds information needed to create and initialize a new load-test
+// agent.
 type Config struct {
 	ConnectionConfiguration     ConnectionConfiguration
 	UserControllerConfiguration UserControllerConfiguration

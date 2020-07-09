@@ -82,8 +82,10 @@ func TestUser(t *testing.T) {
 		}
 		err := s.SetUsers(usrs)
 		require.NoError(t, err)
-		uusrs, err := s.Users()
-		require.NoError(t, err)
+		var uusrs []*model.User
+		for _, u := range s.users {
+			uusrs = append(uusrs, u)
+		}
 		require.ElementsMatch(t, usrs, uusrs)
 	})
 
