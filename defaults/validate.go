@@ -43,6 +43,11 @@ func Validate(value interface{}) error {
 			}
 		case reflect.Slice, reflect.Map:
 			dv := reflect.ValueOf(field.Interface())
+			if tag, ok := t.Field(i).Tag.Lookup("validate"); ok {
+				if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
+					return err
+				}
+			}
 			for j := 0; j < dv.Len(); j++ {
 				if err := Validate(dv.Index(j).Interface()); err != nil {
 					return err
@@ -84,6 +89,10 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			s := v.String()
 			if s == "" {
 				return fmt.Errorf("%s is empty", fieldName)
+			}
+		case reflect.Slice, reflect.Map:
+			if v.Len() == 0 {
+				return fmt.Errorf("%v is empty", fieldName)
 			}
 		}
 	case "alpha":
