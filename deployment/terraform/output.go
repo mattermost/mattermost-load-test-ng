@@ -83,14 +83,11 @@ type S3Bucket struct {
 // Output reads the current terraform output
 func (t *Terraform) Output() (*Output, error) {
 	var buf bytes.Buffer
-	err := t.runCommand(&buf, "output", "-json")
-	if err != nil {
+	if err := t.runCommand(&buf, "output", "-json"); err != nil {
 		return nil, err
 	}
-
 	var o output
-	err = json.Unmarshal(buf.Bytes(), &o)
-	if err != nil {
+	if err := json.Unmarshal(buf.Bytes(), &o); err != nil {
 		return nil, err
 	}
 
@@ -140,7 +137,7 @@ func (o *Output) HasMetrics() bool {
 	return o.MetricsServer.PrivateIP != ""
 }
 
-// HasS3Bucket returns whether a deployment includes the the S3 Bucket.
+// HasS3Bucket returns whether a deployment includes the S3 Bucket.
 func (o *Output) HasS3Bucket() bool {
 	return o.S3Bucket.Region != ""
 }
