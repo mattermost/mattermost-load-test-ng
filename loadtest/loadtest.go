@@ -214,6 +214,7 @@ func (lt *LoadTester) Stop() error {
 
 	lt.wg.Wait()
 	close(lt.statusChan)
+	lt.idleControllers = make([]control.UserController, 0)
 	lt.status.NumUsers = 0
 	lt.status.State = Stopped
 	return nil
