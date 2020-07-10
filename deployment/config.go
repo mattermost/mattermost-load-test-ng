@@ -38,7 +38,7 @@ type Config struct {
 	// Number of DB instances.
 	DBInstanceCount int `default:"1" validate:"range:[1,)"`
 	// Type of the DB instance.
-	DBInstanceType string `default:"db.r4.large" validate:"oneof:{db.r4.large}"`
+	DBInstanceType string `default:"db.r4.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	DBInstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
