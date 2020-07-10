@@ -48,6 +48,7 @@ type Output struct {
 	S3Key               IAMAccess           `json:"s3Key"`
 }
 
+// Instance is an AWS EC2 instance resource.
 type Instance struct {
 	PrivateIP  string `json:"private_ip"`
 	PublicIP   string `json:"public_ip"`
@@ -56,25 +57,30 @@ type Instance struct {
 	Tags       Tags   `json:"tags"`
 }
 
+// ElasticSearchDomain is an AWS Elasticsearch domain.
 type ElasticSearchDomain struct {
 	Endpoint string `json:"endpoint"`
 	Tags     Tags   `json:"tags"`
 }
 
+// Tags are the values attached to resource.
 type Tags struct {
 	Name string `json:"Name"`
 }
 
+// DBCluster defines a RDS cluster instance resource.
 type DBCluster struct {
 	ClusterEndpoint string `json:"endpoint"`
 	ReaderEndpoint  string `json:"reader_endpoint"`
 }
 
+// IAMAccess is a set of credentials that allow API requests to be made as an IAM user.
 type IAMAccess struct {
 	Id     string `json:"id"`
 	Secret string `json:"secret"`
 }
 
+// S3Bucket defines a specific S3 bucket.
 type S3Bucket struct {
 	Id     string `json:"id"`
 	Region string `json:"region"`
