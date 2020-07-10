@@ -33,7 +33,6 @@ resource "aws_instance" "app_server" {
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
-  availability_zone = "us-east-1a"
   vpc_security_group_ids = [
     "${aws_security_group.app[0].id}",
     "${aws_security_group.app_gossip[0].id}"
@@ -81,7 +80,6 @@ resource "aws_instance" "metrics_server" {
   instance_type = "t3.xlarge"
   count = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
-  availability_zone = "us-east-1a"
 
   vpc_security_group_ids = [
     "${aws_security_group.metrics[0].id}",
@@ -127,7 +125,6 @@ resource "aws_instance" "proxy_server" {
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
-  availability_zone = "us-east-1a"
   vpc_security_group_ids = [
     "${aws_security_group.proxy[0].id}"
   ]
@@ -281,7 +278,6 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   engine                     = var.db_instance_engine
   apply_immediately          = true
   auto_minor_version_upgrade = false
-  availability_zone          = "us-east-1a"
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -313,7 +309,6 @@ resource "aws_instance" "loadtest_agent" {
   instance_type = var.agent_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.agent_instance_count
-  availability_zone = "us-east-1a"
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
