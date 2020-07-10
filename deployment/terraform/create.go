@@ -125,14 +125,14 @@ func (t *Terraform) Create() error {
 	}
 
 	if output.HasAppServers() {
-		url := output.Instances.Value[0].PublicDNS + ":8065"
+		url := output.Instances[0].PublicDNS + ":8065"
 
 		// Updating the config.json for each instance of app server
 		t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
 		if output.HasProxy() {
 			// Updating the nginx config on proxy server
 			t.setupProxyServer(output, extAgent)
-			url = output.Proxy.Value[0].PublicDNS
+			url = output.Proxy.PublicDNS
 		}
 
 		if err := pingServer("http://" + url); err != nil {
@@ -159,7 +159,7 @@ func (t *Terraform) Create() error {
 }
 
 func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
-	for _, val := range output.Instances.Value {
+	for _, val := range output.Instances {
 		ip := val.PublicIP
 		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
@@ -234,7 +234,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output) 
 }
 
 func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
-	ip := output.Proxy.Value[0].PublicDNS
+	ip := output.Proxy.PublicDNS
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
@@ -253,7 +253,7 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 		mlog.Info("Uploading nginx config", mlog.String("host", ip))
 
 		backends := ""
-		for _, addr := range output.Instances.Value {
+		for _, addr := range output.Instances {
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
 		}
 
@@ -284,7 +284,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *Output) erro
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(output.Instances.Value[0].PublicIP)
+	sshc, err := extAgent.NewClient(output.Instances[0].PublicIP)
 	if err != nil {
 		return err
 	}
@@ -303,12 +303,12 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	var readerDSN []string
 	switch t.config.DBInstanceEngine {
 	case "aurora-postgresql":
-		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value[0].ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
-		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.Value[0].ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
+		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
 		driverName = "postgres"
 	case "aurora-mysql":
-		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value[0].ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.Value[0].ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
 		driverName = "mysql"
 	}
 
@@ -321,15 +321,15 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 
-	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.Value[0].PrivateIP)
+	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
-	if output.HasProxy() && len(output.S3Key.Value) > 0 && len(output.S3Bucket.Value) > 0 {
+	if output.HasProxy() && output.HasS3Key() && output.HasS3Bucket() {
 		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(output.S3Key.Value[0].Id)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(output.S3Key.Value[0].Secret)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(output.S3Bucket.Value[0].Id)
-		cfg.FileSettings.AmazonS3Region = model.NewString(output.S3Bucket.Value[0].Region)
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(output.S3Key.Id)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(output.S3Key.Secret)
+		cfg.FileSettings.AmazonS3Bucket = model.NewString(output.S3Bucket.Id)
+		cfg.FileSettings.AmazonS3Region = model.NewString(output.S3Bucket.Region)
 	}
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
@@ -358,7 +358,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
 
 	if output.HasElasticSearch() {
-		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticServer.Value[0].Endpoint)
+		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticSearchServer.Endpoint)
 		cfg.ElasticsearchSettings.Username = model.NewString("")
 		cfg.ElasticsearchSettings.Password = model.NewString("")
 		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
@@ -417,22 +417,6 @@ func (t *Terraform) init() error {
 
 func (t *Terraform) validate() error {
 	return t.runCommand(nil, "validate", t.dir)
-}
-
-// Output reads the current terraform output
-func (t *Terraform) Output() (*Output, error) {
-	var buf bytes.Buffer
-	err := t.runCommand(&buf, "output", "-json")
-	if err != nil {
-		return nil, err
-	}
-
-	var output Output
-	err = json.Unmarshal(buf.Bytes(), &output)
-	if err != nil {
-		return nil, err
-	}
-	return &output, nil
 }
 
 func pingServer(addr string) error {

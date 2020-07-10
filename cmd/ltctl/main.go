@@ -53,10 +53,10 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
-	for _, agent := range output.Agents.Value {
+	for _, agent := range output.Agents {
 		fmt.Printf(" - %s\n", agent.Tags.Name)
 	}
-	for _, instance := range output.Instances.Value {
+	for _, instance := range output.Instances {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
 
 	}

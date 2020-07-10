@@ -50,14 +50,14 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
 	var cmd *exec.Cmd
-	for i, agent := range output.Agents.Value {
+	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
 			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP))
 			break
 		}
 	}
 	if cmd == nil {
-		for _, instance := range output.Instances.Value {
+		for _, instance := range output.Instances {
 			if resource == instance.Tags.Name {
 				cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP))
 				break
@@ -87,15 +87,15 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	url := "http://"
 	switch resource {
 	case "grafana":
-		url += output.MetricsServer.Value[0].PublicDNS + ":3000"
+		url += output.MetricsServer.PublicDNS + ":3000"
 	case "mattermost":
-		if output.Proxy.Value[0].PublicDNS != "" {
-			url += output.Proxy.Value[0].PublicDNS
+		if output.Proxy.PublicDNS != "" {
+			url += output.Proxy.PublicDNS
 		} else {
-			url += output.Instances.Value[0].PublicDNS + ":8065"
+			url += output.Instances[0].PublicDNS + ":8065"
 		}
 	case "prometheus":
-		url += output.MetricsServer.Value[0].PublicDNS + ":9090"
+		url += output.MetricsServer.PublicDNS + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}

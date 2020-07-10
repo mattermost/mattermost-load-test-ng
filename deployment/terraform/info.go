@@ -20,7 +20,7 @@ func (t *Terraform) Info() error {
 }
 
 func (t *Terraform) displayInfo(output *Output) {
-	if len(output.Agents.Value) == 0 {
+	if len(output.Agents) == 0 {
 		fmt.Println("No active deployment found.")
 		return
 	}
@@ -30,33 +30,33 @@ func (t *Terraform) displayInfo(output *Output) {
 
 	if output.HasAppServers() {
 		if output.HasProxy() {
-			fmt.Println("Mattermost URL: http://" + output.Proxy.Value[0].PublicDNS)
+			fmt.Println("Mattermost URL: http://" + output.Proxy.PublicDNS)
 		} else {
-			fmt.Println("Mattermost URL: http://" + output.Instances.Value[0].PublicDNS + ":8065")
+			fmt.Println("Mattermost URL: http://" + output.Instances[0].PublicDNS + ":8065")
 		}
 		fmt.Println("App Server(s):")
-		for _, instance := range output.Instances.Value {
+		for _, instance := range output.Instances {
 			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
 		}
 	}
 
 	fmt.Println("Load Agent(s):")
-	for _, agent := range output.Agents.Value {
+	for _, agent := range output.Agents {
 		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
 	}
-	fmt.Println("Coordinator: " + output.Agents.Value[0].PublicIP)
+	fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 
 	if output.HasMetrics() {
-		fmt.Println("Grafana URL: http://" + output.MetricsServer.Value[0].PublicIP + ":3000")
-		fmt.Println("Prometheus URL: http://" + output.MetricsServer.Value[0].PublicIP + ":9090")
+		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
+		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
 	}
 	if output.HasAppServers() {
-		fmt.Println("DB reader endpoint: " + output.DBCluster.Value[0].ReaderEndpoint)
-		fmt.Println("DB cluster endpoint: " + output.DBCluster.Value[0].ClusterEndpoint)
+		fmt.Println("DB reader endpoint: " + output.DBCluster.ReaderEndpoint)
+		fmt.Println("DB cluster endpoint: " + output.DBCluster.ClusterEndpoint)
 	}
 
 	if output.HasElasticSearch() {
-		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticServer.Value[0].Endpoint)
+		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticSearchServer.Endpoint)
 	}
 	fmt.Println("==================================================")
 }
