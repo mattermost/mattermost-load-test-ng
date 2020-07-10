@@ -160,7 +160,7 @@ resource "aws_instance" "proxy_server" {
 }
 
 resource "aws_iam_service_linked_role" "es" {
-  count = var.es_instance_count && var.es_create_role ? 1 : 0
+  count            = var.es_instance_count && var.es_create_role ? 1 : 0
   aws_service_name = "es.amazonaws.com"
 }
 
@@ -410,8 +410,8 @@ resource "aws_security_group" "app_gossip" {
 
 
 resource "aws_security_group" "db" {
-  count       = var.app_instance_count > 0 ? 1 : 0
-  name = "${var.cluster_name}-db-security-group"
+  count = var.app_instance_count > 0 ? 1 : 0
+  name  = "${var.cluster_name}-db-security-group"
 
   ingress {
     from_port       = 3306
@@ -429,34 +429,39 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_security_group" "agent" {
-  name          = "${var.cluster_name}-agent-security-group"
-  description   = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+  name        = "${var.cluster_name}-agent-security-group"
+  description = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "agent-ssh" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.agent.id
+}
 
-  ingress {
-    from_port       = 4000
-    to_port         = 4000
-    protocol        = "tcp"
-    self            = true
-    cidr_blocks     = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "agent-api" {
+  type              = "ingress"
+  from_port         = 4000
+  to_port           = 4000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.agent.id
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "agent-egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.agent.id
 }
 
 resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
-  count                    = var.app_instance_count > 1 ? 1 : 0
+  count                    = var.app_instance_count > 0 ? 1 : 0
   type                     = "ingress"
   from_port                = 4000
   to_port                  = 4000
@@ -466,7 +471,7 @@ resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
 }
 
 resource "aws_security_group_rule" "agent-node-exporter" {
-  count                    = var.app_instance_count > 1 ? 1 : 0
+  count                    = var.app_instance_count > 0 ? 1 : 0
   type                     = "ingress"
   from_port                = 9100
   to_port                  = 9100
@@ -476,37 +481,52 @@ resource "aws_security_group_rule" "agent-node-exporter" {
 }
 
 resource "aws_security_group" "metrics" {
-  count         = var.app_instance_count > 0 ? 1 : 0
-  name          = "${var.cluster_name}-metrics-security-group"
+  count = var.app_instance_count > 0 ? 1 : 0
+  name  = "${var.cluster_name}-metrics-security-group"
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 9090
-    to_port     = 9090
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "metrics-ssh" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-prometheus" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 9090
+  to_port           = 9090
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-grafana" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 3000
+  to_port           = 3000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-egress" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
 }
 
 resource "aws_security_group" "elastic" {
-  name = "${var.cluster_name}-elastic-security-group"
+  name        = "${var.cluster_name}-elastic-security-group"
   description = "Security group for elastic instance"
 
   ingress {

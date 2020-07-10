@@ -23,9 +23,9 @@ output "elasticServer" {
 }
 
 output "s3bucket" {
-    value = "${aws_s3_bucket.s3bucket}"
+  value = "${aws_s3_bucket.s3bucket}"
 }
 
 output "s3Key" {
-    value = "${aws_iam_access_key.s3key}"
+  value = "${aws_iam_access_key.s3key}"
 }
