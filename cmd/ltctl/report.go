@@ -60,7 +60,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		var confirm string
 		fmt.Scanln(&confirm)
 		if !regexp.MustCompile(`(?i)^(y|yes)?$`).MatchString(confirm) {
-			return errors.New("incorrect response")
+			return nil
 		}
 	}
 
