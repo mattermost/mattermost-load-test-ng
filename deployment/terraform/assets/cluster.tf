@@ -78,7 +78,7 @@ resource "aws_instance" "metrics_server" {
 
   ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
   instance_type = "t3.xlarge"
-  count = var.app_instance_count > 0 ? 1 : 0
+  count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
 
   vpc_security_group_ids = [
