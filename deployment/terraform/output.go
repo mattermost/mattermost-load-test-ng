@@ -25,7 +25,7 @@ type output struct {
 		Value []Instance `json:"value"`
 	} `json:"metricsServer"`
 	ElasticServer struct {
-		Value []ElasticsearchDomain `json:"value"`
+		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
 	S3Bucket struct {
 		Value []S3Bucket `json:"value"`
@@ -43,7 +43,7 @@ type Output struct {
 	DBCluster           DBCluster           `json:"dbCluster"`
 	Agents              []Instance          `json:"agents"`
 	MetricsServer       Instance            `json:"metricsServer"`
-	ElasticSearchServer ElasticsearchDomain `json:"elasticServer"`
+	ElasticSearchServer ElasticSearchDomain `json:"elasticServer"`
 	S3Bucket            S3Bucket            `json:"s3Bucket"`
 	S3Key               IAMAccess           `json:"s3Key"`
 }
@@ -56,7 +56,7 @@ type Instance struct {
 	Tags       Tags   `json:"tags"`
 }
 
-type ElasticsearchDomain struct {
+type ElasticSearchDomain struct {
 	Endpoint string `json:"endpoint"`
 	Tags     Tags   `json:"tags"`
 }
