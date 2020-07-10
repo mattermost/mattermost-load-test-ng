@@ -189,7 +189,7 @@ func runCmdF(cmd *cobra.Command, args []string) error {
 
 func main() {
 	cmd := &cobra.Command{
-		Use:          "go run ./examples/api",
+		Use:          "go run ./examples/api -c config.json",
 		RunE:         runCmdF,
 		SilenceUsage: true,
 	}
