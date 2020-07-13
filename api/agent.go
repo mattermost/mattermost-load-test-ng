@@ -116,7 +116,12 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	a.setResource(agentId, lt)
+	if ok := a.setResource(agentId, lt); !ok {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Error: fmt.Sprintf("resource with id %s already exists", agentId),
+		})
+		return
+	}
 
 	writeAgentResponse(w, http.StatusCreated, &client.AgentResponse{
 		Id:      agentId,
@@ -192,7 +197,13 @@ func (a *api) destroyLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = lt.Stop() // we are ignoring the error here in case the load test was previously stopped
 
-	a.deleteResource(mux.Vars(r)["id"])
+	id := mux.Vars(r)["id"]
+	if ok := a.deleteResource(id); !ok {
+		writeAgentResponse(w, http.StatusNotFound, &client.AgentResponse{
+			Error: fmt.Sprintf("load-test agent with id %s not found", id),
+		})
+		return
+	}
 	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent destroyed",
 		Status:  lt.Status(),
