@@ -17,8 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func dummyWebsocketHandler(t *testing.T) http.HandlerFunc {
+func dummyWebsocketHandler(t *testing.T, wg *sync.WaitGroup) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		defer wg.Done()
 		upgrader := &websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -42,8 +43,12 @@ func dummyWebsocketHandler(t *testing.T) http.HandlerFunc {
 
 // TestClose verifies that the client is properly and safely closed in all possible ways.
 func TestClose(t *testing.T) {
-	s := httptest.NewServer(dummyWebsocketHandler(t))
-	defer s.Close()
+	var wg sync.WaitGroup
+	s := httptest.NewServer(dummyWebsocketHandler(t, &wg))
+	defer func() {
+		wg.Wait()
+		s.Close()
+	}()
 
 	checkEventChan := func(eventChan chan *model.WebSocketEvent) {
 		defer func() {
@@ -55,6 +60,7 @@ func TestClose(t *testing.T) {
 	}
 
 	t.Run("Sudden", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -79,6 +85,7 @@ func TestClose(t *testing.T) {
 	})
 
 	t.Run("Normal", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -99,6 +106,7 @@ func TestClose(t *testing.T) {
 	})
 
 	t.Run("Concurrent", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -112,19 +120,19 @@ func TestClose(t *testing.T) {
 		err = c.UserTyping("channelId", "parentId")
 		assert.Nil(t, err)
 
-		var wg sync.WaitGroup
-		wg.Add(2)
+		var wg2 sync.WaitGroup
+		wg2.Add(2)
 		go func() {
-			defer wg.Done()
+			defer wg2.Done()
 			c.Close()
 		}()
 
 		go func() {
-			defer wg.Done()
+			defer wg2.Done()
 			c.conn.Close()
 		}()
 
-		wg.Wait()
+		wg2.Wait()
 		// Verify that event channel is closed.
 		checkEventChan(c.EventChannel)
 	})
@@ -133,10 +141,15 @@ func TestClose(t *testing.T) {
 // TestSendMessage verifies that there are no races or panics during message send
 // in various conditions.
 func TestSendMessage(t *testing.T) {
-	s := httptest.NewServer(dummyWebsocketHandler(t))
-	defer s.Close()
+	var wg sync.WaitGroup
+	s := httptest.NewServer(dummyWebsocketHandler(t, &wg))
+	defer func() {
+		wg.Wait()
+		s.Close()
+	}()
 
 	t.Run("SendAfterSuddenClose", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -158,6 +171,7 @@ func TestSendMessage(t *testing.T) {
 	})
 
 	t.Run("SendAfterClose", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -178,6 +192,7 @@ func TestSendMessage(t *testing.T) {
 	})
 
 	t.Run("SendDuringSuddenClose", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
@@ -200,6 +215,7 @@ func TestSendMessage(t *testing.T) {
 	})
 
 	t.Run("SendDuringClose", func(t *testing.T) {
+		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
 		c, err := NewClient4(url, "authToken")
 		require.Nil(t, err)
