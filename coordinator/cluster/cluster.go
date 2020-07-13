@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
-	"github.com/mattermost/mattermost-load-test-ng/coordinator/agent"
+	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
@@ -18,15 +21,38 @@ import (
 // LoadAgentCluster is the object holding information about all the load-test
 // agents available in the cluster.
 type LoadAgentCluster struct {
-	config LoadAgentClusterConfig
-	agents []*agent.LoadAgent
-	errMap map[*agent.LoadAgent]errorTrack
-	log    *mlog.Logger
+	config   LoadAgentClusterConfig
+	ltConfig loadtest.Config
+	agents   []*client.Agent
+	errMap   map[*client.Agent]*errorTrack
+	log      *mlog.Logger
 }
 
 type errorTrack struct {
 	lastError   int64
 	totalErrors int64
+}
+
+func createAgent(agent *client.Agent, ltConfig loadtest.Config) error {
+	// TODO: UserController config should probably come from the upper layer
+	// and be passed through.
+	var ucConfig interface{}
+	var err error
+	switch ltConfig.UserControllerConfiguration.Type {
+	case loadtest.UserControllerSimple:
+		ucConfig, err = simplecontroller.ReadConfig("")
+	case loadtest.UserControllerSimulative:
+		ucConfig, err = simulcontroller.ReadConfig("")
+	}
+	if err != nil {
+		return fmt.Errorf("cluster: failed to read controller config: %w", err)
+	}
+
+	if _, err := agent.Create(&ltConfig, ucConfig); err != nil {
+		return fmt.Errorf("cluster: failed to create agent: %w", err)
+	}
+
+	return nil
 }
 
 // New creates and initializes a new LoadAgentCluster for the given config.
@@ -38,35 +64,39 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
-	agents := make([]*agent.LoadAgent, len(config.Agents))
-	errMap := make(map[*agent.LoadAgent]errorTrack)
+	agents := make([]*client.Agent, len(config.Agents))
+	errMap := make(map[*client.Agent]*errorTrack)
 	for i := 0; i < len(agents); i++ {
-		agentConfig := agent.Config{
-			Id:             config.Agents[i].Id,
-			ApiURL:         config.Agents[i].ApiURL,
-			LoadTestConfig: ltConfig,
-		}
-		agent, err := agent.New(agentConfig, log)
+		agent, err := client.New(config.Agents[i].Id, config.Agents[i].ApiURL, nil)
 		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to create agent: %w", err)
+			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
 		}
 		agents[i] = agent
-		errMap[agent] = errorTrack{}
+		errMap[agent] = &errorTrack{}
+
+		// We check if the agent has already been created.
+		if _, err := agent.Status(); err == nil {
+			continue
+		}
+
+		if err := createAgent(agent, ltConfig); err != nil {
+			return nil, err
+		}
 	}
 
 	return &LoadAgentCluster{
-		agents: agents,
-		config: config,
-		errMap: errMap,
-		log:    log,
+		agents:   agents,
+		config:   config,
+		ltConfig: ltConfig,
+		errMap:   errMap,
+		log:      log,
 	}, nil
 }
 
 // Run starts all the load-test agents available in the cluster.
 func (c *LoadAgentCluster) Run() error {
 	for _, agent := range c.agents {
-		err := agent.Start()
-		if err != nil {
+		if _, err := agent.Run(); err != nil {
 			return fmt.Errorf("cluster: failed to start agent: %w", err)
 		}
 	}
@@ -76,24 +106,22 @@ func (c *LoadAgentCluster) Run() error {
 // Stop stops all the load-test agents available in the cluster.
 func (c *LoadAgentCluster) Stop() error {
 	for _, agent := range c.agents {
-		err := agent.Stop()
-		if err != nil {
+		if _, err := agent.Stop(); err != nil {
 			return fmt.Errorf("cluster: failed to stop agent: %w", err)
 		}
 	}
 	return nil
 }
 
-// Shutdown stops all the load-test agents available in the cluster.
-// It differs from Stop() as it won't return early in case of an error.
-// It makes sure agent.Stop() is called once for every agent in the cluster.
+// Shutdown stops and destroys all the load-test agents available in the cluster.
+// It makes sure agent.Destroy() is called once for every agent in the cluster.
 func (c *LoadAgentCluster) Shutdown() {
 	var wg sync.WaitGroup
 	wg.Add(len(c.agents))
 	for _, ag := range c.agents {
-		go func(ag *agent.LoadAgent) {
+		go func(ag *client.Agent) {
 			defer wg.Done()
-			if err := ag.Stop(); err != nil {
+			if _, err := ag.Destroy(); err != nil {
 				c.log.Error("cluster: failed to stop agent", mlog.Err(err))
 			}
 		}(ag)
@@ -108,22 +136,22 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 		return nil
 	}
 
-	dist, err := additionDistribution(c.agents, n)
+	amounts, err := getUsersAmounts(c.agents)
+	if err != nil {
+		return err
+	}
+	dist, err := additionDistribution(amounts, n)
 	if err != nil {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 	for i, inc := range dist {
 		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
-
-		if err := c.agents[i].AddUsers(inc); err != nil {
-			// Most probably the agent restarted, so we just start the agent again.
-			if errors.Is(err, agent.ErrAgentNotFound) {
-				if err := c.agents[i].Start(); err != nil {
-					c.log.Error("agent restart failed", mlog.Err(err))
-				}
-				continue
+		if _, err := c.agents[i].AddUsers(inc); err != nil {
+			// Most probably the agent crashed, so we just start it again.
+			if _, err := c.agents[i].Run(); err != nil {
+				c.log.Error("agent restart failed", mlog.Err(err))
+				return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 			}
-			return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 		}
 	}
 	return nil
@@ -136,45 +164,57 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 		return nil
 	}
 
-	dist, err := deletionDistribution(c.agents, n)
+	amounts, err := getUsersAmounts(c.agents)
+	if err != nil {
+		return err
+	}
+	dist, err := deletionDistribution(amounts, n)
 	if err != nil {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 	for i, dec := range dist {
 		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
-		if err := c.agents[i].RemoveUsers(dec); err != nil {
-			// Most probably the agent restarted, so we just start the agent again.
-			if errors.Is(err, agent.ErrAgentNotFound) {
-				if err := c.agents[i].Start(); err != nil {
-					c.log.Error("agent restart failed", mlog.Err(err))
-				}
-				continue
+		if _, err := c.agents[i].RemoveUsers(dec); err != nil {
+			// Most probably the agent crashed, so we just start it again.
+			if _, err := c.agents[i].Run(); err != nil {
+				c.log.Error("agent restart failed", mlog.Err(err))
+				return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 			}
-			return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 		}
 	}
 	return nil
 }
 
 // Status returns the current status of the LoadAgentCluster.
-func (c *LoadAgentCluster) Status() Status {
+func (c *LoadAgentCluster) Status() (Status, error) {
 	var status Status
 	for _, agent := range c.agents {
-		st := agent.Status()
+		st, err := agent.Status()
+		// Agent probably crashed. We create it again.
+		if errors.Is(err, client.ErrAgentNotFound) {
+			if err := createAgent(agent, c.ltConfig); err != nil {
+				c.log.Error("agent create failed", mlog.Err(err))
+			}
+		} else if err != nil {
+			c.log.Error("cluster: failed to get status for agent:", mlog.Err(err))
+		}
+
 		status.ActiveUsers += int(st.NumUsers)
 		currentError := st.NumErrors
 		errInfo := c.errMap[agent]
-		if currentError < errInfo.lastError {
+		lastError := atomic.LoadInt64(&errInfo.lastError)
+		totalErrors := atomic.LoadInt64(&errInfo.totalErrors)
+		if currentError < lastError {
 			// crash
 			// We increment the total accumulated errors by the
 			// last error count.
-			errInfo.totalErrors += errInfo.lastError
+			atomic.AddInt64(&errInfo.totalErrors, lastError)
+			totalErrors += lastError
 		}
-		errInfo.lastError = currentError
-		c.errMap[agent] = errInfo
+		atomic.StoreInt64(&errInfo.lastError, currentError)
 
 		// Total errors = current errors + past accumulated errors from restarts.
-		status.NumErrors += currentError + c.errMap[agent].totalErrors
+		status.NumErrors += currentError + totalErrors
 	}
-	return status
+	return status, nil
 }

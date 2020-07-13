@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -65,7 +66,12 @@ func TestNew(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, c)
 
-	c, err = New(newConfig(t), newLoadTestConfig(t), logger.New(&logger.Settings{}))
+	srv := setupAPIServer(t)
+	defer srv.Close()
+
+	cfg := newConfig(t)
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
+	c, err = New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 }
@@ -84,22 +90,30 @@ func TestRun(t *testing.T) {
 	done, err := c.Run()
 	require.NoError(t, err)
 	require.NotNil(t, done)
+	c.mut.RLock()
 	require.Equal(t, Running, c.status.State)
+	c.mut.RUnlock()
 
 	done, err = c.Run()
 	require.Error(t, err)
 	require.Equal(t, ErrNotStopped, err)
 	require.Nil(t, done)
+	c.mut.RLock()
 	require.Equal(t, Running, c.status.State)
+	c.mut.RUnlock()
 
 	err = c.Stop()
 	require.NoError(t, err)
-	require.Equal(t, c.status.State, Done)
+	c.mut.RLock()
+	require.Equal(t, Done, c.status.State)
+	c.mut.RUnlock()
 
 	done, err = c.Run()
 	require.Error(t, err)
 	require.Nil(t, done)
+	c.mut.RLock()
 	require.Equal(t, ErrAlreadyDone, err)
+	c.mut.RUnlock()
 }
 
 func TestStop(t *testing.T) {
@@ -112,7 +126,9 @@ func TestStop(t *testing.T) {
 	c, err := New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
-	require.Equal(t, c.status.State, Stopped)
+	c.mut.RLock()
+	require.Equal(t, Stopped, c.status.State)
+	c.mut.RUnlock()
 
 	err = c.Stop()
 	require.Error(t, err)
@@ -120,11 +136,15 @@ func TestStop(t *testing.T) {
 	done, err := c.Run()
 	require.NoError(t, err)
 	require.NotNil(t, done)
+	c.mut.RLock()
 	require.Equal(t, Running, c.status.State)
+	c.mut.RUnlock()
 
 	err = c.Stop()
 	require.NoError(t, err)
-	require.Equal(t, c.status.State, Done)
+	c.mut.RLock()
+	require.Equal(t, Done, c.status.State)
+	c.mut.RUnlock()
 
 	err = c.Stop()
 	require.Error(t, err)
@@ -142,7 +162,8 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	status := c.Status()
+	status, err := c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Stopped, status.State)
 	require.Empty(t, status)
 
@@ -150,13 +171,50 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, done)
 
-	status = c.Status()
+	status, err = c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Running, status.State)
 
 	err = c.Stop()
 	require.NoError(t, err)
 
-	status = c.Status()
+	status, err = c.Status()
+	require.NoError(t, err)
 	require.Equal(t, Done, status.State)
 	require.NotEmpty(t, status)
+}
+
+func TestConcurrency(t *testing.T) {
+	srv := setupAPIServer(t)
+	defer srv.Close()
+
+	cfg := newConfig(t)
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
+
+	c, err := New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
+	require.NoError(t, err)
+	require.NotNil(t, c)
+
+	// level of concurrency
+	n := 8
+
+	t.Run("status", func(t *testing.T) {
+		var wg sync.WaitGroup
+		wg.Add(n)
+		done, err := c.Run()
+		require.NoError(t, err)
+		require.NotNil(t, done)
+		for i := 0; i < n; i++ {
+			go func() {
+				c.Status()
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		err = c.Stop()
+		require.NoError(t, err)
+		c.mut.RLock()
+		require.Equal(t, c.status.State, Done)
+		c.mut.RUnlock()
+	})
 }

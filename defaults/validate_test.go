@@ -124,6 +124,20 @@ func TestValidate(t *testing.T) {
 		err = Validate(cfg3)
 		require.Error(t, err, "should fail on wrong range declaration")
 	})
+
+	t.Run("notempty on slices", func(t *testing.T) {
+		type testStruct struct {
+			Slice []struct{} `validate:"notempty"`
+		}
+
+		t1 := testStruct{make([]struct{}, 0)}
+		t2 := testStruct{make([]struct{}, 1)}
+
+		err := Validate(t1)
+		require.Error(t, err)
+		err = Validate(t2)
+		require.NoError(t, err)
+	})
 }
 
 type testConfig struct {

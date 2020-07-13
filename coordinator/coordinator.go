@@ -112,7 +112,11 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				lastAlertTime = time.Now()
 			}
 
-			status := c.cluster.Status()
+			status, err := c.cluster.Status()
+			if err != nil {
+				c.log.Error("coordinator: cluster status error:", mlog.Err(err))
+				continue
+			}
 			c.log.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
 
 			if !lastAlertTime.IsZero() {
@@ -178,24 +182,41 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 }
 
 // Stop stops the coordinator.
-// It returns an error if the coordinator was not running.
+// It returns an error in case of failure.
 func (c *Coordinator) Stop() error {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	if c.status.State != Running {
 		return ErrNotRunning
 	}
+	clusterStatus, err := c.cluster.Status()
+	if err != nil {
+		return fmt.Errorf("coordinator: failed to get cluster status: %w", err)
+	}
 	close(c.stopChan)
 	<-c.doneChan
-	c.status.State = Done
+	c.status = Status{
+		State:          Done,
+		StartTime:      c.status.StartTime,
+		StopTime:       c.status.StopTime,
+		ActiveUsers:    clusterStatus.ActiveUsers,
+		NumErrors:      clusterStatus.NumErrors,
+		SupportedUsers: c.status.SupportedUsers,
+	}
 	return nil
 }
 
 // Status returns the coordinator's status.
-func (c *Coordinator) Status() Status {
+func (c *Coordinator) Status() (Status, error) {
 	c.mut.RLock()
 	defer c.mut.RUnlock()
-	clusterStatus := c.cluster.Status()
+	if c.status.State != Running {
+		return c.status, nil
+	}
+	clusterStatus, err := c.cluster.Status()
+	if err != nil {
+		return Status{}, fmt.Errorf("coordinator: failed to get cluster status: %w", err)
+	}
 	return Status{
 		State:          c.status.State,
 		StartTime:      c.status.StartTime,
@@ -203,7 +224,7 @@ func (c *Coordinator) Status() Status {
 		ActiveUsers:    clusterStatus.ActiveUsers,
 		NumErrors:      clusterStatus.NumErrors,
 		SupportedUsers: c.status.SupportedUsers,
-	}
+	}, nil
 }
 
 // New creates and initializes a new Coordinator for the given config.
