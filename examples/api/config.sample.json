@@ -1,0 +1,32 @@
+{
+  "AppInstances": [
+    {
+      "Id": "app0",
+      "ServerURL": "http://localhost:8065",
+      "WebSocketURL": "ws://localhost:8065"
+    },
+    {
+      "Id": "app1",
+      "ServerURL": "http://fakehost:8065",
+      "WebSocketURL": "ws://fakehost:8065"
+    }
+  ],
+  "AgentInstances": [
+    {
+      "Id": "lt0",
+      "ApiURL": "http://localhost:4000"
+    },
+    {
+      "Id": "lt1",
+      "ApiURL": "http://localhost:4001"
+    },
+    {
+      "Id": "lt2",
+      "ApiURL": "http://localhost:4002"
+    },
+    {
+      "Id": "lt3",
+      "ApiURL": "http://localhost:4003"
+    }
+  ]
+}

@@ -69,6 +69,11 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 			client: appClient,
 		},
 		{
+			msg:    "Restarting app server",
+			value:  fmt.Sprintf("sudo systemctl restart mattermost"),
+			client: appClient,
+		},
+		{
 			msg: "Creating sysadmin",
 			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin",
 				binaryPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),

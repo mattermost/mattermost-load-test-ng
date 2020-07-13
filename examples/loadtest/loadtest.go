@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/example/samplecontroller"
-	"github.com/mattermost/mattermost-load-test-ng/example/samplestore"
-	"github.com/mattermost/mattermost-load-test-ng/example/sampleuser"
+	"github.com/mattermost/mattermost-load-test-ng/examples/loadtest/samplecontroller"
+	"github.com/mattermost/mattermost-load-test-ng/examples/loadtest/samplestore"
+	"github.com/mattermost/mattermost-load-test-ng/examples/loadtest/sampleuser"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
