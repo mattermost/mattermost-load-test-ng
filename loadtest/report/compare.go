@@ -57,6 +57,9 @@ func Compare(target *os.File, genGraph bool, reports ...Report) error {
 	if genGraph {
 		gPlots := getPlots(reports[1:]...)
 		for i, plot := range gPlots {
+			if i >= len(base.Graphs) {
+				continue
+			}
 			err := generateGraph(plot.name, base.Label, base.Graphs[i], plot.graphs)
 			if err != nil {
 				return fmt.Errorf("error while generating graph for %s: %w", plot.name, err)
