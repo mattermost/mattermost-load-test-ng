@@ -128,6 +128,12 @@ func (t *Terraform) StartCoordinator() error {
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator client: %w", err)
 	}
+	if st, err := coord.Status(); err == nil && st.State == coordinator.Done {
+		mlog.Info("coordinator exists and its state is done, destroying", mlog.String("status", fmt.Sprintf("%+v", st)))
+		if _, err := coord.Destroy(); err != nil {
+			return fmt.Errorf("failed to destroy coordinator: %w", err)
+		}
+	}
 	if _, err := coord.Create(coordinatorConfig, agentConfig); err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
