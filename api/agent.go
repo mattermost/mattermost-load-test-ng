@@ -96,11 +96,11 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	agentId := r.FormValue("id")
 	if val, ok := a.getResource(agentId); ok && val != nil {
 		if _, ok := val.(*loadtest.LoadTester); ok {
-			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
 				Error: fmt.Sprintf("load-test agent with id %s already exists", agentId),
 			})
 		} else {
-			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
 				Error: fmt.Sprintf("resource with id %s already exists", agentId),
 			})
 		}
@@ -117,7 +117,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok := a.setResource(agentId, lt); !ok {
-		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+		writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
 			Error: fmt.Sprintf("resource with id %s already exists", agentId),
 		})
 		return

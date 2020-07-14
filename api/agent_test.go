@@ -77,7 +77,7 @@ func TestAgentAPI(t *testing.T) {
 			JSON().Object().NotContainsKey("error")
 
 		obj = e.POST("/create").WithQuery("id", ltId).WithJSON(rd).
-			Expect().Status(http.StatusBadRequest).
+			Expect().Status(http.StatusConflict).
 			JSON().Object().ContainsKey("error")
 		rawMsg = obj.Value("error").String().Raw()
 		require.Equal(t, fmt.Sprintf("load-test agent with id %s already exists", ltId), rawMsg)
