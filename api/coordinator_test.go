@@ -64,7 +64,7 @@ func TestCoordinatorAPI(t *testing.T) {
 		require.Equal(t, "load-test coordinator created", rawMsg)
 
 		obj = e.POST("/create").WithQuery("id", id).WithJSON(data).
-			Expect().Status(http.StatusBadRequest).
+			Expect().Status(http.StatusConflict).
 			JSON().Object().ContainsKey("error")
 		rawMsg = obj.Value("error").String().Raw()
 		require.Equal(t, "load-test coordinator with id ltc0 already exists", rawMsg)

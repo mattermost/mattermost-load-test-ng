@@ -30,16 +30,24 @@ func (a *api) getResource(id string) (interface{}, bool) {
 	return val, ok
 }
 
-func (a *api) setResource(id string, res interface{}) {
+func (a *api) setResource(id string, res interface{}) bool {
 	a.mut.Lock()
 	defer a.mut.Unlock()
-	a.resources[id] = res
+	if _, ok := a.resources[id]; !ok {
+		a.resources[id] = res
+		return true
+	}
+	return false
 }
 
-func (a *api) deleteResource(id string) {
+func (a *api) deleteResource(id string) bool {
 	a.mut.Lock()
 	defer a.mut.Unlock()
-	delete(a.resources, id)
+	if _, ok := a.resources[id]; ok {
+		delete(a.resources, id)
+		return true
+	}
+	return false
 }
 
 func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {

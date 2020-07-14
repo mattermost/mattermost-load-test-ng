@@ -71,11 +71,11 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if val, ok := a.getResource(id); ok && val != nil {
 		if _, ok := val.(*coordinator.Coordinator); ok {
-			writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+			writeCoordinatorResponse(w, http.StatusConflict, &client.CoordinatorResponse{
 				Error: fmt.Sprintf("load-test coordinator with id %s already exists", id),
 			})
 		} else {
-			writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+			writeCoordinatorResponse(w, http.StatusConflict, &client.CoordinatorResponse{
 				Error: fmt.Sprintf("resource with id %s already exists", id),
 			})
 		}
@@ -92,7 +92,12 @@ func (a *api) createCoordinatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.setResource(id, c)
+	if ok := a.setResource(id, c); !ok {
+		writeCoordinatorResponse(w, http.StatusConflict, &client.CoordinatorResponse{
+			Error: fmt.Sprintf("resource with id %s already exists", id),
+		})
+		return
+	}
 
 	status, err := c.Status()
 	if err != nil {
@@ -117,7 +122,14 @@ func (a *api) destroyCoordinatorHandler(w http.ResponseWriter, r *http.Request) 
 
 	_ = c.Stop() // we are ignoring the error here in case the coordinator was previously stopped
 
-	a.deleteResource(mux.Vars(r)["id"])
+	id := mux.Vars(r)["id"]
+	if ok := a.deleteResource(id); !ok {
+		writeCoordinatorResponse(w, http.StatusNotFound, &client.CoordinatorResponse{
+			Error: fmt.Sprintf("load-test coordinator with id %s not found", id),
+		})
+		return
+	}
+
 	status, err := c.Status()
 	if err != nil {
 		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
