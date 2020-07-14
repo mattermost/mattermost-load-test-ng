@@ -19,13 +19,13 @@ type Config struct {
 	MonitorConfig performance.MonitorConfig
 	// The number of active users to increment at each iteration of the feedback loop.
 	// It should be proportional to the maximum number of users expected to test.
-	NumUsersInc int `default:"16" validate:"range:(0,]"`
+	NumUsersInc int `default:"8" validate:"range:(0,]"`
 	// The number of users to decrement at each iteration of the feedback loop.
 	// It should be proportional to the maximum number of users expected to test.
-	NumUsersDec int `default:"16" validate:"range:(0,]"`
+	NumUsersDec int `default:"8" validate:"range:(0,]"`
 	// The number of seconds to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
-	RestTimeSec int `default:"10" validate:"range:(0,]"`
+	RestTimeSec int `default:"2" validate:"range:(0,]"`
 	LogSettings logger.Settings
 }
 
