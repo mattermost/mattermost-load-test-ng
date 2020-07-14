@@ -35,7 +35,6 @@ func TestAgentClientConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 
 	t.Run("create", func(t *testing.T) {
-		wg.Add(n)
 		id := "test"
 		var success int
 		var ltConfig loadtest.Config
@@ -45,9 +44,12 @@ func TestAgentClientConcurrency(t *testing.T) {
 		agent, err := agentClient.New(id, server.URL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, agent)
+		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
 				if _, err := agent.Create(&ltConfig, &ucConfig); err == nil {
+					// Purposely not using atomics here. The race condition would only
+					// trigger if the test were to fail.
 					success += 1
 				}
 				wg.Done()
@@ -68,6 +70,8 @@ func TestAgentClientConcurrency(t *testing.T) {
 			go func() {
 				_, err := agent.Destroy()
 				if err == nil {
+					// Purposely not using atomics here. The race condition would only
+					// trigger if the test were to fail.
 					success += 1
 				}
 				wg.Done()
@@ -148,21 +152,18 @@ func TestAgentClientConcurrency(t *testing.T) {
 		require.Equal(t, int64(n), st.NumUsers)
 		wg.Add(n)
 		for i := 0; i < n; i++ {
-			if i%2 == 0 {
-				go func() {
+			go func(add bool) {
+				defer wg.Done()
+				if add {
 					st, err := agent.AddUsers(2)
 					require.NoError(t, err)
 					require.NotEmpty(t, st)
-					wg.Done()
-				}()
-			} else {
-				go func() {
-					st, err := agent.RemoveUsers(2)
-					require.NoError(t, err)
-					require.NotEmpty(t, st)
-					wg.Done()
-				}()
-			}
+					return
+				}
+				st, err := agent.RemoveUsers(2)
+				require.NoError(t, err)
+				require.NotEmpty(t, st)
+			}(i%2 == 0)
 		}
 		wg.Wait()
 		_, err = agent.Destroy()
@@ -206,7 +207,6 @@ func TestCoordClientConcurrency(t *testing.T) {
 	}
 
 	t.Run("create/destroy", func(t *testing.T) {
-		wg.Add(n)
 		coord := createClient(t, 0)
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
@@ -217,10 +217,13 @@ func TestCoordClientConcurrency(t *testing.T) {
 		coordConfig.MonitorConfig.Queries[0].Description = "Query"
 		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		var success int
+		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
 				_, err := coord.Create(&coordConfig, &ltConfig)
 				if err == nil {
+					// Purposely not using atomics here. The race condition would only
+					// trigger if the test were to fail.
 					success += 1
 				}
 				wg.Done()
@@ -239,6 +242,8 @@ func TestCoordClientConcurrency(t *testing.T) {
 			go func() {
 				_, err := coord.Destroy()
 				if err == nil {
+					// Purposely not using atomics here. The race condition would only
+					// trigger if the test were to fail.
 					success += 1
 				}
 				wg.Done()
