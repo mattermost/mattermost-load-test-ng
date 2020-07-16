@@ -13,18 +13,6 @@
     "UpdateIntervalMs": 2000,
     "Queries": [
       {
-        "Description": "Average server request duration (old)",
-        "Query": "rate(mattermost_http_request_duration_seconds_sum[1m])/rate(mattermost_http_request_duration_seconds_count[1m])",
-        "Threshold": 0.1,
-        "Alert": true
-      },
-      {
-        "Description": "Average server request duration",
-        "Query": "sum(rate(mattermost_api_time_sum[1m]))/sum(rate(mattermost_api_time_count[1m]))",
-        "Threshold": 0.1,
-        "Alert": true
-      },
-      {
         "Description": "Percentage of HTTP 5xx server errors",
         "Query": "(sum(rate(mattermost_api_time_count{status_code=~\"5..\"}[1m]))/sum(rate(mattermost_api_time_count[1m])))*100",
         "Threshold": 0.025,
