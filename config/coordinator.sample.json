@@ -42,6 +42,7 @@
         "Threshold": 0.025,
         "Alert": true
       }
+    ]
   },
   "NumUsersInc": 8,
   "NumUsersDec": 8,
