@@ -117,6 +117,13 @@ func main() {
 		Short: "Manage the load-test",
 	}
 
+	resetCmd := &cobra.Command{
+		Use:   "reset",
+		Short: "Reset and re-initialize target instance database",
+		RunE:  RunResetCmdF,
+	}
+	resetCmd.Flags().Bool("confirm", false, "Confirm you really want to reset the database and re-initialize it.")
+
 	loadtestComands := []*cobra.Command{
 		{
 			Use:   "start",
@@ -133,11 +140,7 @@ func main() {
 			Short: "Shows the status of the current load-test",
 			RunE:  RunLoadTestStatusCmdF,
 		},
-		{
-			Use:   "reset",
-			Short: "Reset and re-initialize target instance database",
-			RunE:  RunResetCmdF,
-		},
+		resetCmd,
 	}
 
 	loadtestCmd.AddCommand(loadtestComands...)
