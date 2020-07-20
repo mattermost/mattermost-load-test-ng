@@ -28,12 +28,9 @@ The results.txt will be a markdown formatted table comparing the average and p99
 
 - Always use the same cluster setup to compare different tests.
 - Calculate the number of users required to reach an average time of at least 10ms. And then compare the tests using that number of users. Anything less than that means the DB is not being stressed well enough and can introduce a lot of noise in the results.
-- While starting another test, it is recommended to reset the DB and initialize it again to start with the exact same state as the previous test. Follow these steps to accomplish that.
+- While starting another test, it is recommended to reset the DB and initialize it again to start with the exact same state as the previous test. This can be done by running the following command:
 
-On the app server's instance, run:
-- `/opt/mattermost$ echo YES | ./bin/mattermost reset`
-- `/opt/mattermost$ ./bin/mattermost user create --email sysadmin@sample.mattermost.com --username sysadmin --password Sys@dmin-sample1 --system_admin`
-- `sudo service mattermost restart`
+```sh
+go run ./cmd/ltctl loadtest reset
+```
 
-Then on the coordinator's instance, run:
-- `/home/ubuntu/mattermost-load-test-ng$ ./bin/ltagent init`

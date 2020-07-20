@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -146,10 +147,25 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
+	// Waiting for Grafana to be back up.
+	url := fmt.Sprintf("http://%s@%s:3000/api/user/preferences", defaultGrafanaUsernamePass, output.MetricsServer.PublicIP)
+	timeout := time.After(10 * time.Second)
+	for {
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+		mlog.Info("Server not up yet, waiting...")
+		select {
+		case <-timeout:
+			return errors.New("timeout: server is not responding")
+		case <-time.After(1 * time.Second):
+		}
+	}
+
 	// Set preference to new dashboard.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
 	defer cancel()
-	url := "http://" + defaultGrafanaUsernamePass + "@" + output.MetricsServer.PublicIP + ":3000/api/user/preferences"
 	payload := struct {
 		Theme           string `json:"theme"`
 		HomeDashboardID int    `json:"homeDashboardId"`
