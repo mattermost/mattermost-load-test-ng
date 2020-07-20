@@ -117,7 +117,7 @@ func calculateDeltas(reports ...Report) comp {
 		for label, value := range base.AvgStoreTimes {
 			actual := getDuration(float64(r.AvgStoreTimes[label]))
 			delta := actual - getDuration(float64(value))
-			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			deltaP := (delta.Seconds() / float64(value)) * 100
 			if math.IsNaN(deltaP) {
 				deltaP = 0
 			}
@@ -134,7 +134,7 @@ func calculateDeltas(reports ...Report) comp {
 		for label, value := range base.P99StoreTimes {
 			actual := getDuration(float64(r.P99StoreTimes[label]))
 			delta := actual - getDuration(float64(value))
-			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			deltaP := (delta.Seconds() / float64(value)) * 100
 			if math.IsNaN(deltaP) {
 				deltaP = 0
 			}
@@ -151,7 +151,7 @@ func calculateDeltas(reports ...Report) comp {
 		for label, value := range base.AvgAPITimes {
 			actual := getDuration(float64(r.AvgAPITimes[label]))
 			delta := actual - getDuration(float64(value))
-			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			deltaP := (delta.Seconds() / float64(value)) * 100
 			if math.IsNaN(deltaP) {
 				deltaP = 0
 			}
@@ -168,7 +168,7 @@ func calculateDeltas(reports ...Report) comp {
 		for label, value := range base.P99APITimes {
 			actual := getDuration(float64(r.P99APITimes[label]))
 			delta := actual - getDuration(float64(value))
-			deltaP := (delta.Seconds() / actual.Seconds()) * 100
+			deltaP := (delta.Seconds() / float64(value)) * 100
 			if math.IsNaN(deltaP) {
 				deltaP = 0
 			}
