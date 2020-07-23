@@ -67,7 +67,7 @@ func (t *Terraform) Create() error {
 			return err
 		}
 
-		if info.Mode().Perm() != 0775 {
+		if info.Mode()&0110 != 0110 {
 			return fmt.Errorf("file %s has to be an executable", binaryPath)
 		}
 
