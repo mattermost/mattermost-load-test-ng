@@ -249,7 +249,7 @@ func validateFromOneofValues(value reflect.Value, values []string) error {
 	default:
 		return errors.New("unsupported field type for oneof validation")
 	}
-	return errors.New("value is not one of valid values")
+	return fmt.Errorf("value is not one of valid values: %q", values)
 }
 
 func isAlphanumeric(s string) bool {
