@@ -216,18 +216,22 @@ func validateFromField(value reflect.Value, valuestr string) (string, error) {
 }
 
 func validateFromOneofValues(value reflect.Value, values []string) error {
+	valids := make([]string, len(values))
+	for i, s := range values {
+		valids[i] = strings.TrimSpace(s)
+	}
 	switch value.Kind() {
 	case reflect.String:
 		s := value.String()
-		for _, str := range values {
-			if s == strings.TrimSpace(str) {
+		for _, str := range valids {
+			if s == str {
 				return nil
 			}
 		}
 	case reflect.Int:
 		d := value.Int()
-		for _, str := range values {
-			n, err := strconv.Atoi(strings.TrimSpace(str))
+		for _, str := range valids {
+			n, err := strconv.Atoi(str)
 			if err != nil {
 				return err
 			}
@@ -237,8 +241,8 @@ func validateFromOneofValues(value reflect.Value, values []string) error {
 		}
 	case reflect.Float64:
 		f := value.Float()
-		for _, str := range values {
-			n, err := strconv.ParseFloat(strings.TrimSpace(str), 64)
+		for _, str := range valids {
+			n, err := strconv.ParseFloat(str, 64)
 			if err != nil {
 				return err
 			}
@@ -249,7 +253,7 @@ func validateFromOneofValues(value reflect.Value, values []string) error {
 	default:
 		return errors.New("unsupported field type for oneof validation")
 	}
-	return fmt.Errorf("value is not one of valid values: %q", values)
+	return fmt.Errorf("value is not one of valid values: %q", valids)
 }
 
 func isAlphanumeric(s string) bool {

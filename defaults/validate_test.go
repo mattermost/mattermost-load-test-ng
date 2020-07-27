@@ -2,6 +2,7 @@ package defaults
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -66,8 +67,10 @@ func TestValidate(t *testing.T) {
 		Set(&cfg)
 
 		cfg.LogLevel = "DEBUG"
+		valids := []string{"TRACE", "INFO", "WARN", "ERROR"}
 		err := Validate(cfg)
 		require.Error(t, err)
+		require.Contains(t, err.Error(), fmt.Sprintf("% q", valids))
 	})
 
 	t.Run("invalid field reference", func(t *testing.T) {
