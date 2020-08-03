@@ -67,6 +67,13 @@ func (c *GenController) Run() {
 		c.sendStopStatus()
 	}()
 
+	done := func() bool {
+		return st.get("teams") >= c.config.NumTeams &&
+			st.get("channels") >= c.config.NumChannels &&
+			st.get("posts") >= c.config.NumPosts &&
+			st.get("reactions") >= c.config.NumReactions
+	}
+
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	initActions := []control.UserAction{
@@ -78,6 +85,11 @@ func (c *GenController) Run() {
 	}
 
 	for i := 0; i < len(initActions); i++ {
+		if done() {
+			c.status <- c.newInfoStatus("user done")
+			return
+		}
+
 		if resp := initActions[i](c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 			i--
@@ -107,32 +119,32 @@ func (c *GenController) Run() {
 		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
+			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
 			idleTimeMs: 1000,
 		},
 		"createPrivateChannel": {
 			run:        c.createPrivateChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentPrivateChannels)),
+			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPrivateChannels)),
 			idleTimeMs: 1000,
 		},
 		"createDirectChannel": {
 			run:        c.createDirectChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentDirectChannels)),
+			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentDirectChannels)),
 			idleTimeMs: 1000,
 		},
 		"createGroupChannel": {
 			run:        c.createGroupChannel,
-			frequency:  int(math.Round(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
+			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
 			idleTimeMs: 1000,
 		},
 		"createPost": {
 			run:        c.createPost,
-			frequency:  int(math.Round(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
+			frequency:  int(math.Ceil(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
 			idleTimeMs: 1000,
 		},
 		"createReply": {
 			run:        c.createReply,
-			frequency:  int(math.Round(float64(c.config.NumPosts) * c.config.PercentReplies)),
+			frequency:  int(math.Ceil(float64(c.config.NumPosts) * c.config.PercentReplies)),
 			idleTimeMs: 1000,
 		},
 		"addReaction": {
@@ -140,13 +152,6 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumReactions),
 			idleTimeMs: 1000,
 		},
-	}
-
-	done := func() bool {
-		return st.get("teams") == c.config.NumTeams &&
-			st.get("channels") == c.config.NumChannels &&
-			st.get("posts") == c.config.NumPosts &&
-			st.get("reactions") == c.config.NumReactions
 	}
 
 	for {
@@ -167,19 +172,19 @@ func (c *GenController) Run() {
 			return
 		}
 
-		if st.get("channels") == c.config.NumChannels {
+		if st.get("channels") >= c.config.NumChannels {
 			delete(actions, "createPublicChannel")
 			delete(actions, "createPrivateChannel")
 			delete(actions, "createDirectChannel")
 			delete(actions, "createGroupChannel")
 		}
 
-		if st.get("posts") == c.config.NumPosts {
+		if st.get("posts") >= c.config.NumPosts {
 			delete(actions, "createPost")
 			delete(actions, "createReply")
 		}
 
-		if st.get("reactions") == c.config.NumReactions {
+		if st.get("reactions") >= c.config.NumReactions {
 			delete(actions, "addReaction")
 		}
 
