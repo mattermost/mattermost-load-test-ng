@@ -902,8 +902,14 @@ func searchPosts(u user.User) control.UserActionResponse {
 		opts.In = channel.Name
 	}
 
+	timeOpts := []*time.Time{
+		&opts.On,
+		&opts.Before,
+		&opts.After,
+	}
 	if rand.Float64() < 0.2 {
-		opts.On = time.Now()
+		to := timeOpts[rand.Intn(len(timeOpts))]
+		*to = time.Now().Add(-time.Duration(rand.Intn(7)) * time.Hour * 24)
 	}
 
 	if rand.Float64() < 0.2 {
