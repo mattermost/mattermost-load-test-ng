@@ -15,6 +15,16 @@ import (
 	"time"
 )
 
+type PostsSearchOpts struct {
+	From     string
+	In       string
+	On       time.Time
+	Before   time.Time
+	After    time.Time
+	Excluded []string
+	IsPhrase bool
+}
+
 func init() {
 	words = strings.Split(MustAssetString("test_text.txt"), "\n")
 }
@@ -144,4 +154,49 @@ func SelectWeighted(weights []int) (int, error) {
 		}
 	}
 	return -1, errors.New("should not be able to reach this point")
+}
+
+// PickRandomWord returns a random  word.
+func PickRandomWord() string {
+	return words[rand.Intn(len(words))]
+}
+
+// GeneratePostsSearchTerm generates a posts search term from the given
+// words and options.
+func GeneratePostsSearchTerm(words []string, opts PostsSearchOpts) string {
+	var term string
+
+	if opts.From != "" {
+		term += fmt.Sprintf("from:%s ", opts.From)
+	}
+
+	if opts.In != "" {
+		term += fmt.Sprintf("in:%s ", opts.In)
+	}
+
+	if !opts.On.IsZero() {
+		term += fmt.Sprintf("on:%s ", opts.On.Format("2006-01-02"))
+	}
+
+	if !opts.Before.IsZero() {
+		term += fmt.Sprintf("before:%s ", opts.Before.Format("2006-01-02"))
+	}
+
+	if !opts.After.IsZero() {
+		term += fmt.Sprintf("after:%s ", opts.After.Format("2006-01-02"))
+	}
+
+	if len(opts.Excluded) > 0 {
+		for _, w := range opts.Excluded {
+			term += fmt.Sprintf("-%s ", w)
+		}
+	}
+
+	if opts.IsPhrase {
+		term += "\"" + strings.Join(words, " ") + "\""
+	} else {
+		term += strings.Join(words, " ")
+	}
+
+	return term
 }

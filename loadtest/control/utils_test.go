@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/stretchr/testify/assert"
@@ -122,5 +123,99 @@ func TestSelectWeighted(t *testing.T) {
 
 		require.Greater(t, distribution[0], distribution[1])
 		require.Greater(t, distribution[1], distribution[2])
+	})
+}
+
+func TestGeneratePostsSearchTerm(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		var opts PostsSearchOpts
+		words := []string{}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Empty(t, term)
+	})
+
+	t.Run("simple", func(t *testing.T) {
+		var opts PostsSearchOpts
+		words := []string{"one", "two"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, "one two", term)
+	})
+
+	t.Run("from modifier", func(t *testing.T) {
+		opts := PostsSearchOpts{
+			From: "user1",
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, "from:user1 one", term)
+	})
+
+	t.Run("in modifier", func(t *testing.T) {
+		opts := PostsSearchOpts{
+			In: "town-square",
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, "in:town-square one", term)
+	})
+
+	t.Run("on modifier", func(t *testing.T) {
+		now := time.Now()
+		opts := PostsSearchOpts{
+			On: now,
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, fmt.Sprintf("on:%s one", now.Format("2006-01-02")), term)
+	})
+
+	t.Run("before modifier", func(t *testing.T) {
+		now := time.Now()
+		opts := PostsSearchOpts{
+			Before: now,
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, fmt.Sprintf("before:%s one", now.Format("2006-01-02")), term)
+	})
+
+	t.Run("after modifier", func(t *testing.T) {
+		now := time.Now()
+		opts := PostsSearchOpts{
+			After: now,
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, fmt.Sprintf("after:%s one", now.Format("2006-01-02")), term)
+	})
+
+	t.Run("excluded words", func(t *testing.T) {
+		opts := PostsSearchOpts{
+			Excluded: []string{"two", "three"},
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, "-two -three one", term)
+	})
+
+	t.Run("phrase", func(t *testing.T) {
+		opts := PostsSearchOpts{
+			IsPhrase: true,
+		}
+		words := []string{"one", "two"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, "\"one two\"", term)
+	})
+
+	t.Run("mixed", func(t *testing.T) {
+		now := time.Now()
+		opts := PostsSearchOpts{
+			From: "user1",
+			In:   "town-square",
+			On:   now,
+		}
+		words := []string{"one"}
+		term := GeneratePostsSearchTerm(words, opts)
+		require.Equal(t, fmt.Sprintf("from:user1 in:town-square on:%s one", now.Format("2006-01-02")), term)
 	})
 }

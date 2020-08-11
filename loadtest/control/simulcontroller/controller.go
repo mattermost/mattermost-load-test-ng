@@ -161,6 +161,18 @@ func (c *SimulController) Run() {
 			run:       c.logoutLogin,
 			frequency: 1,
 		},
+		{
+			run:       searchUsers,
+			frequency: 1,
+		},
+		{
+			run:       searchPosts,
+			frequency: 1,
+		},
+		{
+			run:       searchGroupChannels,
+			frequency: 1,
+		},
 	}
 
 	for {

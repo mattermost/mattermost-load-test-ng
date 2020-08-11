@@ -148,6 +148,9 @@ type User interface {
 	// SearchChannels performs a search for channels in the specified team.
 	// It returns channels that matches the search.
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	// SearchGroupChannels performs a search for group channels.
+	// It returns channels whose members' usernames match the search term.
+	SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error)
 	// RemoveUserFromChannel removes the specified user from the specified channel.
 	// It returns whether the user was successfully removed or not.
 	RemoveUserFromChannel(channelId, userId string) (bool, error)

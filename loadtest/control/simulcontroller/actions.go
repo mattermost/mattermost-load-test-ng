@@ -870,3 +870,95 @@ func searchChannels(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 	})
 }
+
+func searchPosts(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	var words []string
+	var opts control.PostsSearchOpts
+	// This is an arbitrary limit on the number of words to search for.
+	// TODO: possibly use user analytics data to improve this.
+	count := 1 + rand.Intn(4)
+
+	// TODO: back the probability of these choices with real data.
+	if rand.Float64() < 0.2 {
+		user, err := u.Store().RandomUser()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		opts.From = user.Username
+	}
+
+	if rand.Float64() < 0.2 {
+		channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotDirect|store.SelectNotGroup)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		opts.In = channel.Name
+	}
+
+	if rand.Float64() < 0.2 {
+		opts.On = time.Now()
+	}
+
+	if rand.Float64() < 0.2 {
+		opts.Excluded = []string{control.PickRandomWord()}
+	}
+
+	if rand.Float64() < 0.2 {
+		opts.IsPhrase = true
+	}
+
+	for i := 0; i < count; i++ {
+		words = append(words, control.PickRandomWord())
+	}
+
+	term := control.GeneratePostsSearchTerm(words, opts)
+
+	list, err := u.SearchPosts(team.Id, term, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+func searchUsers(u user.User) control.UserActionResponse {
+	user, err := u.Store().RandomUser()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.EmulateUserTyping(user.Username, func(term string) control.UserActionResponse {
+		users, err := u.SearchUsers(&model.UserSearch{
+			Term:  term,
+			Limit: 100,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		return control.UserActionResponse{Info: fmt.Sprintf("found %d users", len(users))}
+	})
+}
+
+func searchGroupChannels(u user.User) control.UserActionResponse {
+	user, err := u.Store().RandomUser()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.EmulateUserTyping(user.Username[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
+		channels, err := u.SearchGroupChannels(&model.ChannelSearch{
+			Term: user.Username,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+	})
+}

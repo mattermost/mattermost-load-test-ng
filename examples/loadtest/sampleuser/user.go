@@ -475,3 +475,7 @@ func (u *SampleUser) GetPluginStatuses() error {
 func (u *SampleUser) UpdateConfig(*model.Config) error {
 	return nil
 }
+
+func (u *SampleUser) SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error) {
+	return nil, nil
+}

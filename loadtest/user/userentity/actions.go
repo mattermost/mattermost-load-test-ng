@@ -416,6 +416,16 @@ func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch)
 	return channels, nil
 }
 
+// SearchGroupChannels performs a search for group channels.
+// It returns channels whose members' usernames match the search term.
+func (ue *UserEntity) SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error) {
+	channels, resp := ue.client.SearchGroupChannels(search)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return channels, nil
+}
+
 // GetChannelsForTeamForUser fetches and stores chanels for the specified user in
 // the specified team. It returns a list of those channels.
 func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error) {
