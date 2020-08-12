@@ -89,10 +89,14 @@ type User interface {
 	GetProfileImageForUser(userId string) error
 	// SearchUsers performs a user search. It returns a list of users that matched.
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
-	// AutoCompleteUsersInChannel performs autocomplete of a username
+	// AutocompleteUsersInChannel performs autocomplete of a username
 	// in a specified team and channel.
 	// It returns the users in the system based on the given username.
-	AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error)
+	AutocompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error)
+	// AutocompleteUsersInTeam performs autocomplete of a username
+	// in a specified team.
+	// It returns the users in the system based on the given username.
+	AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error)
 
 	// posts
 	// CreatePost creates and stores a new post made by the user.
@@ -148,6 +152,9 @@ type User interface {
 	// SearchChannels performs a search for channels in the specified team.
 	// It returns channels that matches the search.
 	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	// SearchGroupChannels performs a search for group channels.
+	// It returns channels whose members' usernames match the search term.
+	SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error)
 	// RemoveUserFromChannel removes the specified user from the specified channel.
 	// It returns whether the user was successfully removed or not.
 	RemoveUserFromChannel(channelId, userId string) (bool, error)
@@ -174,6 +181,9 @@ type User interface {
 	// AutocompleteChannelsForTeam returns an ordered list of channels for a given
 	// name in a specified team.
 	AutocompleteChannelsForTeam(teamId, name string) error
+	// AutocompleteChannelsForTeamForSearch fetches and stores an ordered list of the
+	// user's channels autocomplete suggestions. It returns a map of found channel names.
+	AutocompleteChannelsForTeamForSearch(teamId, name string) (map[string]bool, error)
 
 	// teams
 	// GetAllTeams returns all teams based on permissions.

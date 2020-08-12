@@ -452,7 +452,7 @@ func (u *SampleUser) GetUsers(page, perPage int) ([]string, error) {
 	return nil, nil
 }
 
-func (u *SampleUser) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
+func (u *SampleUser) AutocompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
 	return nil, nil
 }
 
@@ -474,4 +474,16 @@ func (u *SampleUser) GetPluginStatuses() error {
 
 func (u *SampleUser) UpdateConfig(*model.Config) error {
 	return nil
+}
+
+func (u *SampleUser) SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error) {
+	return nil, nil
+}
+
+func (u *SampleUser) AutocompleteChannelsForTeamForSearch(teamId, name string) (map[string]bool, error) {
+	return nil, nil
+}
+
+func (u *SampleUser) AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error) {
+	return nil, nil
 }
