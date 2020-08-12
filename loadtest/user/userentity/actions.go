@@ -518,7 +518,7 @@ func (ue *UserEntity) GetChannelStats(channelId string) error {
 	return nil
 }
 
-// AutocompleteChannelsForTeam returns an ordered list of channels for a given
+// AutocompleteChannelsForTeam fetches and stores an ordered list of channels for a given
 // name in a specified team.
 func (ue *UserEntity) AutocompleteChannelsForTeam(teamId, name string) error {
 	channelList, resp := ue.client.AutocompleteChannelsForTeam(teamId, name)
@@ -527,6 +527,25 @@ func (ue *UserEntity) AutocompleteChannelsForTeam(teamId, name string) error {
 	}
 
 	return ue.store.SetChannels(*channelList)
+}
+
+// AutocompleteChannelsForTeamForSearch fetches and stores an ordered list of the
+// user's channels autocomplete suggestions. It returns a map of found channel names.
+func (ue *UserEntity) AutocompleteChannelsForTeamForSearch(teamId, name string) (map[string]bool, error) {
+	channelList, resp := ue.client.AutocompleteChannelsForTeamForSearch(teamId, name)
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	if channelList == nil {
+		return nil, errors.New("nil channel list")
+	}
+	channelsMap := make(map[string]bool, len(*channelList))
+	for _, u := range *channelList {
+		channelsMap[u.Name] = true
+	}
+
+	return channelsMap, ue.store.SetChannels(*channelList)
 }
 
 // CreateTeam creates a new team with the given information.
@@ -839,10 +858,32 @@ func (ue *UserEntity) SearchUsers(search *model.UserSearch) ([]*model.User, erro
 	return users, nil
 }
 
-// AutoCompleteUsersInChannel performs autocomplete of a username in a specified team and channel.
+// AutocompleteUsersInChannel performs autocomplete of a username in a specified team and channel.
 // It returns the users in the system based on the given username.
-func (ue *UserEntity) AutoCompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
+func (ue *UserEntity) AutocompleteUsersInChannel(teamId, channelId, username string, limit int) (map[string]bool, error) {
 	users, resp := ue.client.AutocompleteUsersInChannel(teamId, channelId, username, limit, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	if users == nil {
+		return nil, errors.New("nil users")
+	}
+	usersMap := make(map[string]bool, len(users.Users)+len(users.OutOfChannel))
+	for _, u := range users.Users {
+		usersMap[u.Username] = true
+	}
+	for _, u := range users.OutOfChannel {
+		usersMap[u.Username] = false
+	}
+
+	return usersMap, nil
+}
+
+// AutoCompleteUsersInTeam performs autocomplete of a username
+// in a specified team.
+// It returns the users in the system based on the given username.
+func (ue *UserEntity) AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error) {
+	users, resp := ue.client.AutocompleteUsersInTeam(teamId, username, limit, "")
 	if resp.Error != nil {
 		return nil, resp.Error
 	}

@@ -803,7 +803,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err != nil {
 			return "", err
 		}
-		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutoCompleteUsersInChannel); err != nil {
+		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil {
 			return "", err
 		}
 		message = "@" + user.Username + " "
@@ -892,6 +892,16 @@ func searchPosts(u user.User) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		opts.From = user.Username
+		control.EmulateUserTyping(opts.From, func(term string) control.UserActionResponse {
+			users, err := u.AutocompleteUsersInTeam(team.Id, term, 25)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if len(users) == 1 {
+				return control.UserActionResponse{Err: errors.New("found")}
+			}
+			return control.UserActionResponse{}
+		})
 	}
 
 	if rand.Float64() < 0.2 {
@@ -900,16 +910,30 @@ func searchPosts(u user.User) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		opts.In = channel.Name
+		control.EmulateUserTyping(opts.In, func(term string) control.UserActionResponse {
+			fmt.Println(term)
+			channels, err := u.AutocompleteChannelsForTeamForSearch(team.Id, term)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if len(channels) == 1 {
+				return control.UserActionResponse{Err: errors.New("found")}
+			}
+			return control.UserActionResponse{}
+		})
 	}
 
-	timeOpts := []*time.Time{
-		&opts.On,
-		&opts.Before,
-		&opts.After,
-	}
 	if rand.Float64() < 0.2 {
-		to := timeOpts[rand.Intn(len(timeOpts))]
-		*to = time.Now().Add(-time.Duration(rand.Intn(7)) * time.Hour * 24)
+		// We limit the search to 7 days.
+		t := time.Now().Add(-time.Duration(rand.Intn(7)) * time.Hour * 24)
+		switch rand.Intn(3) {
+		case 0:
+			opts.On = t
+		case 1:
+			opts.Before = t
+		case 2:
+			opts.After = t
+		}
 	}
 
 	if rand.Float64() < 0.2 {
@@ -925,7 +949,6 @@ func searchPosts(u user.User) control.UserActionResponse {
 	}
 
 	term := control.GeneratePostsSearchTerm(words, opts)
-
 	list, err := u.SearchPosts(team.Id, term, false)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -958,6 +981,9 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	// We simulate the user typing up to 4 characters when searching for
+	// a group channel. This is an arbitrary value which fits well with the current
+	// frequency value for this action.
 	return control.EmulateUserTyping(user.Username[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchGroupChannels(&model.ChannelSearch{
 			Term: user.Username,
