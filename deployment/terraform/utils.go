@@ -6,6 +6,7 @@ package terraform
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -14,6 +15,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/utils"
 )
 
 type uploadInfo struct {
@@ -113,4 +116,31 @@ func openBrowser(url string) (err error) {
 		err = errors.New("unsupported platform")
 	}
 	return
+}
+
+func validateLicense(filename string) error {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read license file: %w", err)
+	}
+
+	ok, licenseStr := utils.ValidateLicense(data)
+	if !ok {
+		return errors.New("failed to validate license")
+	}
+
+	license := model.LicenseFromJson(strings.NewReader(licenseStr))
+	if license == nil {
+		return errors.New("failed to parse license")
+	}
+
+	if !license.IsStarted() {
+		return errors.New("license has not started")
+	}
+
+	if license.IsExpired() {
+		return errors.New("license has expired")
+	}
+
+	return nil
 }

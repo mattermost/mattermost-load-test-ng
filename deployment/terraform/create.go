@@ -47,10 +47,12 @@ func New(cfg *deployment.Config) *Terraform {
 
 // Create creates a new load test environment.
 func (t *Terraform) Create() error {
-	err := t.preFlightCheck()
-
-	if err != nil {
+	if err := t.preFlightCheck(); err != nil {
 		return err
+	}
+
+	if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
+		return fmt.Errorf("license validation failed: %w", err)
 	}
 
 	extAgent, err := ssh.NewAgent()
