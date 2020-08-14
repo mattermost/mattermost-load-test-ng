@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/spf13/cobra"
 )
 
@@ -92,6 +93,33 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		mlog.Warn("init already done")
 		return nil
 	}
+
+	// temporary disabling server metrics during the init process
+	// to avoid polluting the data.
+	client := model.NewAPIv4Client(config.ConnectionConfiguration.ServerURL)
+	if _, resp := client.Login(config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword); resp.Error != nil {
+		return fmt.Errorf("failed to login as sysadmin: %w", resp.Error)
+	}
+	mlog.Info("Disabled server metrics")
+	serverConfig := &model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: model.NewString(config.ConnectionConfiguration.ServerURL),
+		},
+		MetricsSettings: model.MetricsSettings{
+			Enable: model.NewBool(false),
+		},
+	}
+	if _, resp := client.PatchConfig(serverConfig); resp.Error != nil {
+		return fmt.Errorf("failed to patch config: %w", resp.Error)
+	}
+	defer func() {
+		serverConfig.MetricsSettings.Enable = model.NewBool(true)
+		if _, resp := client.PatchConfig(serverConfig); resp.Error != nil {
+			mlog.Error("Failed to patch config", mlog.Err(resp.Error))
+			return
+		}
+		mlog.Info("Enabled server metrics")
+	}()
 
 	seed := memstore.SetRandomSeed()
 	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
