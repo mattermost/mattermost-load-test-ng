@@ -9,9 +9,18 @@ type Configuration struct {
 	HealthcheckUpdateIntervalInMS int    `default:"60000" validate:"range:[0,]"`
 }
 
+// Query contains the needed information to perform a query.
 type Query struct {
-	Description string  `validate:"notempty"`
-	Query       string  `validate:"notempty"`
-	Threshold   float64 `validate:"range:[0,]"`
-	Alert       bool
+	// The description for the query.
+	Description string `validate:"notempty"`
+	// The PromQL query to be run.
+	Query string `validate:"notempty"`
+	// The value over which the performance monitor will fire an alert
+	// to the coordinator's feedback loop.
+	Threshold float64 `validate:"range:[0,]"`
+	// The minimum amount of time (in seconds) that needs to have passed
+	// since the start of the monitoring process before the query can be run.
+	MinIntervalSec int `validate:"range:[0,]"`
+	// The value indicating whether or not to fire an alert.
+	Alert bool
 }
