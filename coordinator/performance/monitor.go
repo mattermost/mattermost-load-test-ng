@@ -19,6 +19,7 @@ type Monitor struct {
 	stopChan   chan struct{}
 	statusChan chan Status
 	log        *mlog.Logger
+	startTime  time.Time
 }
 
 // NewMonitor creates and initializes a new Monitor.
@@ -39,6 +40,7 @@ func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
 		stopChan:   make(chan struct{}),
 		statusChan: make(chan Status),
 		log:        log,
+		startTime:  time.Now(),
 	}, nil
 }
 
@@ -74,11 +76,16 @@ func (m *Monitor) runQueries() Status {
 			return Status{}
 		default:
 		}
+		if time.Now().Before(m.startTime.Add(time.Duration(query.MinIntervalSec) * time.Second)) {
+			m.log.Info("monitor: MinIntervalSec has not passed yet, skipping query")
+			continue
+		}
 		value, err := m.helper.VectorFirst(query.Query)
 		if err != nil {
 			m.log.Warn("monitor: error while querying Prometheus:", mlog.String("query_description", query.Description), mlog.Err(err))
 			continue
 		}
+
 		m.log.Debug("monitor: ran query",
 			mlog.String("query_description", query.Description),
 			mlog.String("query_returned_value", fmt.Sprintf("%2.8f", value)),
