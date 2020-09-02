@@ -28,7 +28,7 @@ const (
 	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.0.0/mattermost-load-test-ng-v1.0.0-linux-amd64.tar.gz"
 	filePrefix                 = "file://"
 	minSupportedVersion        = 0.12
-	maxSupportedVersion        = 0.12
+	maxSupportedVersion        = 0.13
 )
 
 // Terraform manages all operations related to interacting with
@@ -89,6 +89,8 @@ func (t *Terraform) Create() error {
 
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
+		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
+		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),

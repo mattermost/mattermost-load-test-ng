@@ -1,5 +1,7 @@
 {
   "ClusterName": "loadtest",
+  "ClusterVpcID": "",
+  "ClusterSubnetID": "",
   "AppInstanceCount": 1,
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,

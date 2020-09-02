@@ -6,6 +6,18 @@
 
 The name of the cluster. This will be prefixed to all resources in AWS that are built with the configuration.
 
+## ClusterVpcID
+
+*string*
+
+The ID of the VPC associated to the resources.
+
+## ClusterSubnetID
+
+*string*
+
+The ID of the subnet associated to the resources.
+
 ## AppInstanceCount
 
 *int*

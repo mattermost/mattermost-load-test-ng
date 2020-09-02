@@ -21,6 +21,10 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
+	// ClusterVpcID is the id of the VPC associated to the resources.
+	ClusterVpcID string
+	// ClusterSubnetID is the id of the subnet associated to the resources.
+	ClusterSubnetID string
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.

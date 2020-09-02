@@ -305,10 +305,12 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami           = "ami-0ac80df6eff0e70b5"
-  instance_type = var.agent_instance_type
-  key_name      = aws_key_pair.key.id
-  count         = var.agent_instance_count
+  ami                         = "ami-0ac80df6eff0e70b5"
+  instance_type               = var.agent_instance_type
+  key_name                    = aws_key_pair.key.id
+  count                       = var.agent_instance_count
+  subnet_id                   = var.cluster_subnet_id
+  associate_public_ip_address = true
 
   vpc_security_group_ids = ["${aws_security_group.agent.id}"]
 
@@ -376,6 +378,7 @@ resource "aws_security_group" "app_gossip" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
+
   ingress {
     from_port       = 8074
     to_port         = 8074
@@ -431,6 +434,7 @@ resource "aws_security_group" "db" {
 resource "aws_security_group" "agent" {
   name        = "${var.cluster_name}-agent-security-group"
   description = "Loadtest agent security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
 }
 
 resource "aws_security_group_rule" "agent-ssh" {
