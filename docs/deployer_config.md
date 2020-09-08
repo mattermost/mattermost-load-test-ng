@@ -6,6 +6,26 @@
 
 The name of the cluster. This will be prefixed to all resources in AWS that are built with the configuration.
 
+## ClusterVpcID
+
+*string*
+
+The ID of the VPC associated to the resources.
+
+**Note**
+
+This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+
+## ClusterSubnetID
+
+*string*
+
+The ID of the subnet associated to the resources.
+
+**Note**
+
+This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+
 ## AppInstanceCount
 
 *int*

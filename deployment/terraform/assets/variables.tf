@@ -1,6 +1,12 @@
 variable "cluster_name" {
 }
 
+variable "cluster_vpc_id" {
+}
+
+variable "cluster_subnet_id" {
+}
+
 variable "app_instance_count" {
 }
 
