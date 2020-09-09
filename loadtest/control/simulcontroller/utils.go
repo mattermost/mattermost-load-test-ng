@@ -14,6 +14,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
+var errNoMatch = errors.New("could not match username")
+
 // pickAction randomly selects an action from a slice of userAction with
 // probability proportional to the action's frequency.
 func pickAction(actions []userAction) (*userAction, error) {
@@ -101,7 +103,7 @@ func emulateMention(teamId, channelId, name string, auto func(teamId, channelId,
 		return resp.Err
 	}
 
-	return errors.New("could not match username")
+	return errNoMatch
 }
 
 func pickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duration {

@@ -803,7 +803,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err != nil {
 			return "", err
 		}
-		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil {
+		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil && !errors.Is(err, errNoMatch) {
 			return "", err
 		}
 		message = "@" + user.Username + " "
