@@ -24,7 +24,7 @@ Code specific documentation can be found on [GoDoc](https://godoc.org/github.com
 
 ## Development
 
-A sample implementation can be found in the [example](example/) folder.
+A sample implementation can be found in the [examples](examples/) folder.
 
 ## Help
 
