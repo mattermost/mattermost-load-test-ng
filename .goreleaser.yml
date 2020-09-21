@@ -1,0 +1,48 @@
+before:
+  hooks:
+    - go mod download
+    - go mod verify
+builds:
+  - main: ./cmd/ltagent
+    id: "ltagent"
+    binary: bin/ltagent
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+  - main: ./cmd/ltapi
+    id: "ltapi"
+    binary: bin/ltapi
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+archives:
+  -
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    wrap_in_directory: true
+    format: tar.gz
+    files:
+      - LICENSE.txt
+      - config/config.sample.json
+      - config/coordinator.sample.json
+      - config/simplecontroller.sample.json
+      - config/simulcontroller.sample.json
+changelog:
+  sort: desc
+release:
+  github:
+    owner: mattermost
+    name: mattermost-load-test-ng
+  name_template: "{{ .ProjectName }}-v{{ .Version }}"
+  disable: false

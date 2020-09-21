@@ -95,6 +95,37 @@ golangci-lint:
 test:
 	$(GO) test -v -mod=readonly -failfast -race ./...
 
+MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
+REPLACE=$(NEXT_VER)\/mattermost-load-test-ng-$(NEXT_VER)-linux-amd64.tar.gz
+TAG_EXISTS=$(shell git rev-parse $(NEXT_VER) >/dev/null 2>&1; echo $$?)
+
+release:
+	@if [[ -z "${NEXT_VER}" ]]; then \
+		echo "Error: NEXT_VER must be defined"; \
+		exit -1; \
+	else \
+		if [[ "${TAG_EXISTS}" -eq 0 ]]; then \
+		  echo "Error: tag ${NEXT_VER} already exists"; \
+			exit -1; \
+		else \
+			if ! [ -x "$$(command -v goreleaser)" ]; then \
+			echo "goreleaser is not installed, do you want to download it? [y/N] " && read ans && [ $${ans:-N} = y ]; \
+				if [ $$ans = y ] || [ $$ans = Y ]  ; then \
+					curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh; \
+				else \
+					echo "aborting make release."; \
+					exit -1; \
+				fi; \
+			fi; \
+			for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
+			sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
+			done; \
+			git commit -a -m 'Releasing $(NEXT_VER)'; \
+			git tag $(NEXT_VER); \
+			goreleaser --rm-dist; \
+		fi; \
+	fi;\
+
 clean:
 	rm -f errors.log cache.db stats.log status.log
 	rm -f .installdeps
