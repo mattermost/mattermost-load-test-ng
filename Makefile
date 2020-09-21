@@ -108,6 +108,15 @@ release:
 		  echo "Error: tag ${NEXT_VER} already exists"; \
 			exit -1; \
 		else \
+			if ! [ -x "$(command -v goreleaser)" ]; then \
+			echo "goreleaser is not installed, do you want to download it? [y/N] " && read ans && [ $${ans:-N} = y ]; \
+				if [ $$ans = y ] || [ $$ans = Y ]  ; then \
+					curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh; \
+				else \
+					echo "aborting make release."; \
+					exit -1; \
+				fi; \
+			fi; \
 			for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
 			sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
 			done; \
