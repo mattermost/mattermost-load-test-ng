@@ -10,6 +10,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
@@ -25,10 +26,6 @@ func (t *Terraform) StartCoordinator() error {
 	output, err := t.Output()
 	if err != nil {
 		return err
-	}
-
-	if len(output.Instances) == 0 {
-		return errors.New("there are no app server instances to run the load-test")
 	}
 
 	if len(output.Agents) == 0 {
@@ -76,9 +73,14 @@ func (t *Terraform) StartCoordinator() error {
 
 	mlog.Info("Uploading other load-test config files")
 
-	agentConfig, err := t.generateLoadtestAgentConfig(output)
+	var agentConfig *loadtest.Config
+	if len(output.Instances) > 0 {
+		agentConfig, err = t.generateLoadtestAgentConfig(output)
+	} else {
+		agentConfig, err = loadtest.ReadConfig("")
+	}
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read config: %w", err)
 	}
 
 	simulConfig, err := simulcontroller.ReadConfig("")
