@@ -242,3 +242,19 @@ A friendly name for the graph.
 *string*
 
 The Prometheus query to run.
+
+### FAQ
+
+##### Providing custom build of mattermost binary doesn't work.
+If you are specifying a custom Mattermost build, you might get the following message:
+```
+2020-10-01T11:23:42.484+0300    info    terraform/create.go:441 Waiting for the server...
+Error: error whiling pinging server: timeout after 30 seconds, server is not responding
+```
+If this happens, disable CGO and rebuild `mattermost-server` like so:
+```
+CGO_ENABLED=0 make build
+```
+
+##### Load test doesn't stop
+Make sure that the number of active users is set up correctly, it should look like: `UsersConfiguration.MaxActiveUsers = AgentInstanceCount * 1000`
