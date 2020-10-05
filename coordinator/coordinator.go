@@ -87,12 +87,19 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 
 		defer func() {
 			c.monitor.Stop()
+			clusterStatus, err := c.cluster.Status()
+			if err != nil {
+				c.log.Error("coordinator: cluster status error:", mlog.Err(err))
+			}
 			c.cluster.Shutdown()
 			close(c.doneChan)
 			c.mut.Lock()
 			c.status.State = Done
 			c.status.SupportedUsers = supported
 			c.status.StopTime = time.Now()
+			if clusterStatus.NumErrors > 0 {
+				c.status.NumErrors = clusterStatus.NumErrors
+			}
 			c.mut.Unlock()
 		}()
 

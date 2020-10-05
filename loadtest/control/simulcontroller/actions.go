@@ -911,7 +911,6 @@ func searchPosts(u user.User) control.UserActionResponse {
 		}
 		opts.In = channel.Name
 		control.EmulateUserTyping(opts.In, func(term string) control.UserActionResponse {
-			fmt.Println(term)
 			channels, err := u.AutocompleteChannelsForTeamForSearch(team.Id, term)
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
