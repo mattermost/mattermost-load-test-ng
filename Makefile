@@ -27,8 +27,8 @@ all: install
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(AGENT) $(AGENT_ARGS)
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 build-osx:
 	@echo Build OSX amd64
