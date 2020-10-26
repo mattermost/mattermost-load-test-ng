@@ -52,12 +52,27 @@
         "Query": "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})"
       },
       {
+        "Name": "Goroutines In Use",
+        "Query": "sum(go_goroutines{instance=~\"app.*:8067\"})"
+      {
         "Name":  "RPS",
         "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
       },
       {
         "Name":  "Avg Store times",
         "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name":  "P99 Store times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name":  "Avg API times",
+        "Query": "sum(rate(mattermost_api_time_sum[1m])) / sum(rate(mattermost_api_time_count[1m]))"
+      },
+      {
+        "Name":  "P99 API times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
       }
     ]
   }
