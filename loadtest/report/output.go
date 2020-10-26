@@ -17,12 +17,88 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+type sortByType int
+
+const (
+	sortByLabel sortByType = iota
+	sortByAvg
+	sortByP99
+)
+
+func printSummary(c comp, target *os.File, base Report, cols int) {
+	printTimes := func(data map[model.LabelValue]avgp99, metric string, showImproved bool) {
+		var keys []model.LabelValue
+		var sortBy sortByType
+		if metric == "avg" {
+			sortBy = sortByAvg
+		} else if metric == "p99" {
+			sortBy = sortByP99
+		}
+		if showImproved {
+			keys = sortKeys(data, sortBy, false)
+		} else {
+			keys = sortKeys(data, sortBy, true)
+		}
+
+		for _, label := range keys {
+			measurement := data[label]
+			var d []diff
+			if metric == "avg" {
+				d = measurement[0]
+			} else if metric == "p99" {
+				d = measurement[1]
+			}
+			if len(d) != 1 {
+				break
+			}
+			if (showImproved && d[0].deltaPercent >= 0) || (!showImproved && d[0].deltaPercent <= 0) {
+				break
+			}
+			fmt.Fprintf(target, "| %s", label)
+			fmt.Fprintf(target, " |  %s", metric)
+			fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgStoreTimes[label])))
+			fmt.Fprintf(target, "| %s | %s | %.3f", d[0].actual, d[0].delta, d[0].deltaPercent)
+			fmt.Fprintln(target)
+		}
+	}
+
+	fmt.Fprintln(target, "### Store times avg (worsened):")
+	printHeader(target, cols)
+	printTimes(c.store, "avg", false)
+	fmt.Fprintln(target, "### Store times p99 (worsened):")
+	printHeader(target, cols)
+	printTimes(c.store, "p99", false)
+
+	fmt.Fprintln(target, "### Store times avg (improved):")
+	printHeader(target, cols)
+	printTimes(c.store, "avg", true)
+	fmt.Fprintln(target, "### Store times p99 (improved):")
+	printHeader(target, cols)
+	printTimes(c.store, "p99", true)
+
+	fmt.Fprintln(target, "### API times avg (worsened):")
+	printHeader(target, cols)
+	printTimes(c.api, "avg", false)
+	fmt.Fprintln(target, "### API times p99 (worsened):")
+	printHeader(target, cols)
+	printTimes(c.api, "p99", false)
+
+	fmt.Fprintln(target, "### API times avg (improved):")
+	printHeader(target, cols)
+	printTimes(c.api, "avg", true)
+	fmt.Fprintln(target, "### API times p99 (improved):")
+	printHeader(target, cols)
+	printTimes(c.api, "p99", true)
+}
+
 // displayMarkdown prints a given comparison in markdown to the given target.
 func displayMarkdown(c comp, target *os.File, base Report, cols int) {
+	printSummary(c, target, base, cols)
+
 	fmt.Fprintln(target, "### Store times:")
 	printHeader(target, cols)
 
-	keys := sortKeys(c.store)
+	keys := sortKeys(c.store, sortByLabel, false)
 	for _, label := range keys {
 		measurement := c.store[label]
 		fmt.Fprint(target, "| "+label)
@@ -47,7 +123,7 @@ func displayMarkdown(c comp, target *os.File, base Report, cols int) {
 	fmt.Fprintln(target, "### API times:")
 	printHeader(target, cols)
 
-	keys = sortKeys(c.api)
+	keys = sortKeys(c.api, sortByLabel, false)
 	for _, label := range keys {
 		measurement := c.api[label]
 		fmt.Fprint(target, "| ", label)
@@ -159,12 +235,24 @@ func plot(metric, fileName string, others []labelValues, baseLabel string) error
 	return nil
 }
 
-func sortKeys(m map[model.LabelValue]avgp99) []model.LabelValue {
+func sortKeys(m map[model.LabelValue]avgp99, t sortByType, desc bool) []model.LabelValue {
 	var labels []model.LabelValue
 	for key := range m {
 		labels = append(labels, key)
 	}
 	sort.Slice(labels, func(i, j int) bool {
+		if desc {
+			i, j = j, i
+		}
+		switch t {
+		case sortByLabel:
+			return labels[i] < labels[j]
+		case sortByAvg:
+			return m[labels[i]][0][0].deltaPercent < m[labels[j]][0][0].deltaPercent
+		case sortByP99:
+			return m[labels[i]][1][0].deltaPercent < m[labels[j]][1][0].deltaPercent
+		}
+
 		return labels[i] < labels[j]
 	})
 	return labels
