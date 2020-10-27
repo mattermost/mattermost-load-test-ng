@@ -41,7 +41,7 @@
     "GraphQueries": [
       {
         "Name":  "CPU Utilization",
-        "Query": "avg(irate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
+        "Query": "avg(rate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
       },
       {
         "Name":  "Heap In Use",
