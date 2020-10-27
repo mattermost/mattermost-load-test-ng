@@ -251,9 +251,9 @@ func sortKeys(m map[model.LabelValue]avgp99, t sortByType, desc bool) []model.La
 			return m[labels[i]][0][0].deltaPercent < m[labels[j]][0][0].deltaPercent
 		case sortByP99:
 			return m[labels[i]][1][0].deltaPercent < m[labels[j]][1][0].deltaPercent
+		default:
+			return labels[i] < labels[j]
 		}
-
-		return labels[i] < labels[j]
 	})
 	return labels
 }
