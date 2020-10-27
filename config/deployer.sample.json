@@ -54,6 +54,7 @@
       {
         "Name": "Goroutines In Use",
         "Query": "sum(go_goroutines{instance=~\"app.*:8067\"})"
+      },
       {
         "Name":  "RPS",
         "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
