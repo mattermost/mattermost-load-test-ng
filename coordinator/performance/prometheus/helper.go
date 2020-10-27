@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	requestTimeout = 5 * time.Second
+	requestTimeout = 60 * time.Second
 )
 
 type Helper struct {
