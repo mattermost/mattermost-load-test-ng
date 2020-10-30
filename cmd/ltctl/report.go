@@ -1,3 +1,4 @@
+//go:generate go-bindata -nometadata -mode 0644 -pkg main -o ./bindata.go -prefix "assets/" assets/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
@@ -105,6 +107,49 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func generateDashboard(reports []report.Report) error {
+	dashboardFile, err := os.Create("dashboard.json")
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer dashboardFile.Close()
+
+	baseReport := reports[0]
+	newReport := reports[1]
+	baseLabel := baseReport.Label
+	newLabel := newReport.Label
+	from := newReport.StartTime
+	to := newReport.EndTime
+	offset := newReport.StartTime.Sub(baseReport.StartTime)
+
+	// We swap everything if it happens that the load-tests were done in the
+	// inverse than expected order (next then base).
+	if baseReport.StartTime.After(newReport.StartTime) {
+		from = baseReport.StartTime
+		to = baseReport.EndTime
+		offset = baseReport.StartTime.Sub(newReport.StartTime)
+		baseLabel, newLabel = newLabel, baseLabel
+	}
+
+	tmpl, err := template.New("").Parse(MustAssetString("comparison.tmpl.json"))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+	data := map[string]interface{}{
+		"title":     "Comparison - " + newReport.Label,
+		"offset":    offset.Seconds(),
+		"baseLabel": baseLabel,
+		"newLabel":  newLabel,
+		"from":      from.Format(time.RFC3339),
+		"to":        to.Format(time.RFC3339),
+	}
+	if err := tmpl.Execute(dashboardFile, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
+}
+
 func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 	err := cobra.MinimumNArgs(2)(cmd, args)
 	if err != nil {
@@ -142,6 +187,16 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		defer target.Close()
+	}
+
+	genDashboard, err := cmd.Flags().GetBool("dashboard")
+	if err != nil {
+		return err
+	}
+	if genDashboard {
+		if err := generateDashboard(reports); err != nil {
+			return err
+		}
 	}
 
 	return report.Compare(target, genGraph, reports...)

@@ -205,8 +205,12 @@ func TestGenerate(t *testing.T) {
 	}
 
 	label := "base"
+	endTime := time.Now()
+	startTime := endTime.Add(-10 * time.Second)
 	var output = Report{
 		Label:         label,
+		StartTime:     startTime,
+		EndTime:       endTime,
 		AvgStoreTimes: storeMap,
 		P99StoreTimes: storeMap,
 		AvgAPITimes:   apiMap,
@@ -241,8 +245,7 @@ func TestGenerate(t *testing.T) {
 	})
 
 	g := New(label, helper, cfg)
-	now := time.Now()
-	r, err := g.Generate(now.Add(-10*time.Second), now)
+	r, err := g.Generate(startTime, endTime)
 	require.NoError(t, err)
 	assert.Equal(t, output, r, "incorrect report generated")
 }

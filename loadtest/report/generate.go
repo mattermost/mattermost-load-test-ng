@@ -39,6 +39,8 @@ type Generator struct {
 // that are needed to compare load test runs.
 type Report struct {
 	Label         string // A friendly name of the report.
+	StartTime     time.Time
+	EndTime       time.Time
 	AvgStoreTimes map[model.LabelValue]model.SampleValue
 	P99StoreTimes map[model.LabelValue]model.SampleValue
 	AvgAPITimes   map[model.LabelValue]model.SampleValue
@@ -78,7 +80,9 @@ func Load(path string) (Report, error) {
 // Generate returns a report from a given start time to end time.
 func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	data := Report{
-		Label: g.label,
+		Label:     g.label,
+		StartTime: startTime,
+		EndTime:   endTime,
 	}
 
 	var err error

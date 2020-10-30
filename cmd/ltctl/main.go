@@ -220,6 +220,7 @@ func main() {
 	}
 	compareReport.Flags().StringP("output", "o", "", "Path to the output file to write the comparison to. If this is not set, the report is displayed to stdout.")
 	compareReport.Flags().Bool("graph", false, "If set to true, it also generates graphs comparing different metrics from the load tests. This needs gnuplot to be present in the system.")
+	compareReport.Flags().Bool("dashboard", false, "If set to true, it also generates a comparative Grafana dashboard between the load tests.")
 
 	reportCmds := []*cobra.Command{genReport, compareReport}
 	reportCmd.AddCommand(reportCmds...)
