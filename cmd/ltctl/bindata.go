@@ -227,7 +227,7 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"comparison.tmpl.json": &bintree{comparisonTmplJson, map[string]*bintree{}},
+	"comparison.tmpl.json": {comparisonTmplJson, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory.
