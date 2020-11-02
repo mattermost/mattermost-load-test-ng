@@ -107,15 +107,13 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func generateDashboard(reports []report.Report) error {
+func generateDashboard(baseReport, newReport report.Report) error {
 	dashboardFile, err := os.Create("dashboard.json")
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer dashboardFile.Close()
 
-	baseReport := reports[0]
-	newReport := reports[1]
 	baseLabel := baseReport.Label
 	newLabel := newReport.Label
 	from := newReport.StartTime
@@ -194,7 +192,10 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if genDashboard {
-		if err := generateDashboard(reports); err != nil {
+		if len(reports) != 2 {
+			return errors.New("cannot generate dashboard for more than 2 reports")
+		}
+		if err := generateDashboard(reports[0], reports[1]); err != nil {
 			return err
 		}
 	}
