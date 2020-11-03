@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func getErrorsInfo(t *terraform.Terraform, status coordinator.Status) (map[string]int64, error) {
-	timeRange := int(time.Since(status.StartTime).Round(time.Second).Seconds())
+func getErrorsInfo(helper *prometheus.Helper, startTime time.Time) (map[string]int64, error) {
+	timeRange := int(time.Since(startTime).Round(time.Second).Seconds())
 	queries := []struct {
 		description string
 		query       string
@@ -34,19 +34,8 @@ func getErrorsInfo(t *terraform.Terraform, status coordinator.Status) (map[strin
 			fmt.Sprintf("sum(increase(loadtest_http_errors_total{status_code=~\"4..\"}[%ds]))", timeRange),
 		},
 	}
+
 	info := make(map[string]int64, len(queries)+1)
-
-	output, err := t.Output()
-	if err != nil {
-		return info, err
-	}
-
-	prometheusURL := fmt.Sprintf("http://%s:9090", output.MetricsServer.PublicIP)
-	helper, err := prometheus.NewHelper(prometheusURL)
-	if err != nil {
-		return info, fmt.Errorf("failed to create prometheus.Helper: %w", err)
-	}
-
 	for _, q := range queries {
 		value, err := helper.VectorFirst(q.query)
 		if err != nil {
@@ -125,7 +114,18 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	errInfo, err := getErrorsInfo(t, status)
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	prometheusURL := fmt.Sprintf("http://%s:9090", output.MetricsServer.PublicIP)
+	helper, err := prometheus.NewHelper(prometheusURL)
+	if err != nil {
+		return fmt.Errorf("failed to create prometheus.Helper: %w", err)
+	}
+
+	errInfo, err := getErrorsInfo(helper, status.StartTime)
 	if err != nil {
 		return err
 	}
