@@ -359,13 +359,13 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"cluster.tf":             &bintree{clusterTf, map[string]*bintree{}},
-	"dashboard.yaml":         &bintree{dashboardYaml, map[string]*bintree{}},
-	"dashboard_data.json":    &bintree{dashboard_dataJson, map[string]*bintree{}},
-	"datasource.yaml":        &bintree{datasourceYaml, map[string]*bintree{}},
-	"es_dashboard_data.json": &bintree{es_dashboard_dataJson, map[string]*bintree{}},
-	"outputs.tf":             &bintree{outputsTf, map[string]*bintree{}},
-	"variables.tf":           &bintree{variablesTf, map[string]*bintree{}},
+	"cluster.tf": {clusterTf, map[string]*bintree{}},
+	"dashboard.yaml": {dashboardYaml, map[string]*bintree{}},
+	"dashboard_data.json": {dashboard_dataJson, map[string]*bintree{}},
+	"datasource.yaml": {datasourceYaml, map[string]*bintree{}},
+	"es_dashboard_data.json": {es_dashboard_dataJson, map[string]*bintree{}},
+	"outputs.tf": {outputsTf, map[string]*bintree{}},
+	"variables.tf": {variablesTf, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory.
