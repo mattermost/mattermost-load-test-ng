@@ -28,8 +28,5 @@ func (c MonitorConfig) IsValid() error {
 	if c.UpdateIntervalMs < 1000 {
 		return errors.New("UpdateInterval cannot be less than 1000")
 	}
-	if len(c.Queries) == 0 {
-		return errors.New("Queries cannot be empty")
-	}
 	return nil
 }
