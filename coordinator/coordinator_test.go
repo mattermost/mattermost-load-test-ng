@@ -74,6 +74,14 @@ func TestNew(t *testing.T) {
 	c, err = New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
 	require.NoError(t, err)
 	require.NotNil(t, c)
+
+	// should also work with empty/nil queries
+	cfg = newConfig(t)
+	cfg.ClusterConfig.Agents[0].ApiURL = srv.URL
+	cfg.MonitorConfig.Queries = nil
+	c, err = New(cfg, newLoadTestConfig(t), logger.New(&logger.Settings{}))
+	require.NoError(t, err)
+	require.NotNil(t, c)
 }
 
 func TestRun(t *testing.T) {
