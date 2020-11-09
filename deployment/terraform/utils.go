@@ -144,3 +144,11 @@ func validateLicense(filename string) error {
 
 	return nil
 }
+
+func (t *Terraform) getStatePath() string {
+	statePath := "terraform.tfstate"
+	if t.id != "" {
+		statePath = t.id + ".tfstate"
+	}
+	return statePath
+}

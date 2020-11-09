@@ -25,7 +25,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := terraform.New(config).Output()
+	output, err := terraform.New("", config).Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
