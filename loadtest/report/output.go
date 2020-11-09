@@ -1,3 +1,4 @@
+//go:generate go-bindata -nometadata -mode 0644 -pkg report -o ./bindata.go -prefix "assets/" assets/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
@@ -5,12 +6,14 @@ package report
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -25,7 +28,7 @@ const (
 	sortByP99
 )
 
-func printSummary(c comp, target *os.File, base Report, cols int) {
+func printSummary(c comp, target io.Writer, base Report, cols int) {
 	printTimes := func(data map[model.LabelValue]avgp99, metric string, showImproved bool) {
 		var keys []model.LabelValue
 		var sortBy sortByType
@@ -92,7 +95,7 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 }
 
 // displayMarkdown prints a given comparison in markdown to the given target.
-func displayMarkdown(c comp, target *os.File, base Report, cols int) {
+func displayMarkdown(c comp, target io.Writer, base Report, cols int) {
 	printSummary(c, target, base, cols)
 
 	fmt.Fprintln(target, "### Store times:")
@@ -147,7 +150,7 @@ func displayMarkdown(c comp, target *os.File, base Report, cols int) {
 }
 
 // printHeader prints the header row of a markdown table.
-func printHeader(target *os.File, cols int) {
+func printHeader(target io.Writer, cols int) {
 	fmt.Fprint(target, "| | | Base | ")
 	header := ""
 	for i := 0; i < cols; i++ {
@@ -262,4 +265,39 @@ func getDuration(f float64) time.Duration {
 	ms := int64(math.Round(f * 1000))    // convert seconds to ms and round it off.
 	d := time.Duration(ms * 1000 * 1000) // convert to ns for duration.
 	return d
+}
+
+func GenerateDashboard(title string, baseReport, newReport Report, out io.Writer) error {
+	baseLabel := baseReport.Label
+	newLabel := newReport.Label
+	from := newReport.StartTime
+	to := newReport.EndTime
+	offset := newReport.StartTime.Sub(baseReport.StartTime)
+
+	// We swap everything if it happens that the load-tests were done in the
+	// inverse than expected order (next then base).
+	if baseReport.StartTime.After(newReport.StartTime) {
+		from = baseReport.StartTime
+		to = baseReport.EndTime
+		offset = baseReport.StartTime.Sub(newReport.StartTime)
+		baseLabel, newLabel = newLabel, baseLabel
+	}
+
+	tmpl, err := template.New("").Parse(MustAssetString("comparison.tmpl.json"))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+	data := map[string]interface{}{
+		"title":     title,
+		"offset":    int(math.Round(offset.Seconds())),
+		"baseLabel": baseLabel,
+		"newLabel":  newLabel,
+		"from":      from.Format(time.RFC3339),
+		"to":        to.Format(time.RFC3339),
+	}
+	if err := tmpl.Execute(out, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
 }

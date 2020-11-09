@@ -474,7 +474,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(mattermost_api_time_sum[1m] offset {{.offset}}s)) / sum(rate(mattermost_api_time_count[1m] offset 10460s))",
+          "expr": "sum(rate(mattermost_api_time_sum[1m] offset {{.offset}}s)) / sum(rate(mattermost_api_time_count[1m] offset {{.offset}}s))",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -604,7 +604,7 @@
           "step": 5
         },
         {
-          "expr": "sum(rate(loadtest_http_request_time_sum[1m] offset {{.offset}}s)) / sum(rate(loadtest_http_request_time_count[1m] offset 10460s))",
+          "expr": "sum(rate(loadtest_http_request_time_sum[1m] offset {{.offset}}s)) / sum(rate(loadtest_http_request_time_count[1m] offset {{.offset}}s))",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1070,6 +1070,6 @@
   },
   "timezone": "browser",
   "title": "{{.title}}",
-  "uid": "zX6_4UtMb",
+  "uid": null,
   "version": 4
 }

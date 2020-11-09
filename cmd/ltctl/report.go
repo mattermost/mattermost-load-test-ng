@@ -1,4 +1,3 @@
-//go:generate go-bindata -nometadata -mode 0644 -pkg main -o ./bindata.go -prefix "assets/" assets/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
@@ -11,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
@@ -78,7 +76,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	if promURL == "" {
-		t := terraform.New(nil)
+		t := terraform.New("", nil)
 		output, err := t.Output()
 		if err != nil {
 			return fmt.Errorf("could not parse output: %w", err)
@@ -102,47 +100,6 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	err = enc.Encode(data)
 	if err != nil {
 		return fmt.Errorf("error while encoding report to JSON: %w", err)
-	}
-
-	return nil
-}
-
-func generateDashboard(baseReport, newReport report.Report) error {
-	dashboardFile, err := os.Create("dashboard.json")
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer dashboardFile.Close()
-
-	baseLabel := baseReport.Label
-	newLabel := newReport.Label
-	from := newReport.StartTime
-	to := newReport.EndTime
-	offset := newReport.StartTime.Sub(baseReport.StartTime)
-
-	// We swap everything if it happens that the load-tests were done in the
-	// inverse than expected order (next then base).
-	if baseReport.StartTime.After(newReport.StartTime) {
-		from = baseReport.StartTime
-		to = baseReport.EndTime
-		offset = baseReport.StartTime.Sub(newReport.StartTime)
-		baseLabel, newLabel = newLabel, baseLabel
-	}
-
-	tmpl, err := template.New("").Parse(MustAssetString("comparison.tmpl.json"))
-	if err != nil {
-		return fmt.Errorf("failed to parse template: %w", err)
-	}
-	data := map[string]interface{}{
-		"title":     "Comparison - " + newReport.Label,
-		"offset":    offset.Seconds(),
-		"baseLabel": baseLabel,
-		"newLabel":  newLabel,
-		"from":      from.Format(time.RFC3339),
-		"to":        to.Format(time.RFC3339),
-	}
-	if err := tmpl.Execute(dashboardFile, data); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return nil
@@ -195,7 +152,13 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 		if len(reports) != 2 {
 			return errors.New("cannot generate dashboard for more than 2 reports")
 		}
-		if err := generateDashboard(reports[0], reports[1]); err != nil {
+		dashboardFile, err := os.Create("dashboard.json")
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer dashboardFile.Close()
+		title := "Comparison - " + reports[1].Label
+		if err := report.GenerateDashboard(title, reports[0], reports[1], dashboardFile); err != nil {
 			return err
 		}
 	}
