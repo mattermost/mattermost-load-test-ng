@@ -4,9 +4,10 @@
 package userentity
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
