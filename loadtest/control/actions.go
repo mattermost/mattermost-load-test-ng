@@ -4,10 +4,12 @@
 package control
 
 import (
-       "github.com/pkg/errors"
 	"fmt"
 	"math/rand"
-       // "strings"
+
+	"github.com/pkg/errors"
+
+	// "strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -36,16 +38,16 @@ func SignUp(u user.User) UserActionResponse {
 		return UserActionResponse{Info: "user already signed up"}
 	}
 
-       //email := u.Store().Email()
+	//email := u.Store().Email()
 	username := u.Store().Username()
-       //password := u.Store().Password()
+	//password := u.Store().Password()
 
-       //if err := u.SignUp(email, username, password); err != nil {
-               //if strings.Contains(err.Error(), "already exists") {
-			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
-               //}
-               //return UserActionResponse{Err: NewUserError(err)}
-       //}
+	//if err := u.SignUp(email, username, password); err != nil {
+	//if strings.Contains(err.Error(), "already exists") {
+	return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
+	//}
+	//return UserActionResponse{Err: NewUserError(err)}
+	//}
 
 	return UserActionResponse{Info: fmt.Sprintf("signed up as %s", username)}
 }
@@ -55,7 +57,7 @@ func SignUp(u user.User) UserActionResponse {
 func Login(u user.User) UserActionResponse {
 	err := u.Login()
 	if err != nil {
-               return UserActionResponse{Err: errors.Wrapf(NewUserError(err), "username %s failed to login", u.Store().Username())}
+		return UserActionResponse{Err: errors.Wrapf(NewUserError(err), "username %s failed to login", u.Store().Username())}
 	}
 
 	// Populate teams and channels.

@@ -35,7 +35,7 @@ func (ue *UserEntity) Login() error {
 		return err
 	}
 
-       loggedUser, resp := ue.client.Login(user.Username, user.Password)
+	loggedUser, resp := ue.client.Login(user.Username, user.Password)
 	if resp.Error != nil {
 		return resp.Error
 	}
