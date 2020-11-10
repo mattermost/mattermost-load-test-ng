@@ -57,7 +57,7 @@ func SignUp(u user.User) UserActionResponse {
 func Login(u user.User) UserActionResponse {
 	err := u.Login()
 	if err != nil {
-		return UserActionResponse{Err: errors.Wrapf(NewUserError(err), "username %s failed to login", u.Store().Username())}
+		return UserActionResponse{Err: errors.Wrapf(NewUserError(err), "username %s failed to login with password %s", u.Store().Username(), u.Store().Password())}
 	}
 
 	// Populate teams and channels.
