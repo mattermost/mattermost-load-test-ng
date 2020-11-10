@@ -37,7 +37,7 @@ func (ue *UserEntity) Login() error {
 
 	loggedUser, resp := ue.client.Login(user.Username, user.Password)
 	if resp.Error != nil {
-		return resp.Error
+		return errors.Wrapf(resp.Error, "failed to login as %s", user.Username)
 	}
 
 	// We need to set user again because the user ID does not get set
