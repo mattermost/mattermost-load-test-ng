@@ -167,7 +167,7 @@ func printHeader(target io.Writer, cols int) {
 }
 
 // generateGraph creates an input file for GNUplot to create a plot from.
-func generateGraph(name, baseLabel string, base graph, others []labelValues) error {
+func generateGraph(name, prefix, baseLabel string, base graph, others []labelValues) error {
 	f, err := ioutil.TempFile("", "tmp.out")
 	if err != nil {
 		return err
@@ -196,7 +196,7 @@ func generateGraph(name, baseLabel string, base graph, others []labelValues) err
 		return err
 	}
 
-	err = plot(name, f.Name(), others, baseLabel)
+	err = plot(name, prefix, f.Name(), others, baseLabel)
 	if err != nil {
 		return fmt.Errorf("error while plotting %s graph: %s", name, err)
 	}
@@ -204,14 +204,14 @@ func generateGraph(name, baseLabel string, base graph, others []labelValues) err
 }
 
 // plot creates a gnu plot file and then creates a png output file from it.
-func plot(metric, fileName string, others []labelValues, baseLabel string) error {
+func plot(metric, prefix, fileName string, others []labelValues, baseLabel string) error {
 	f, err := ioutil.TempFile("", "tmp.plt")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(f.Name())
 
-	imageFile := strings.Replace(strings.ToLower(metric), " ", "-", -1)
+	imageFile := prefix + strings.Replace(strings.ToLower(metric), " ", "-", -1)
 	fmt.Fprintln(f, "set grid")
 	fmt.Fprintln(f, "set terminal png")
 	fmt.Fprintf(f, "set output '%s.png'\n", imageFile)

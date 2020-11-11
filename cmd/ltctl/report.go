@@ -163,5 +163,5 @@ func RunCompareReportCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	return report.Compare(target, genGraph, reports...)
+	return report.Compare(target, report.CompareOpts{GenGraph: genGraph}, reports...)
 }

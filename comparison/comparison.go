@@ -347,8 +347,11 @@ func (c *Comparison) getResults(resultsCh <-chan Result) ([]Result, error) {
 
 		if c.config.Output.GenerateReport {
 			var buf bytes.Buffer
-			// TODO: fix images getting overwritten cause of same name
-			err := report.Compare(&buf, c.config.Output.GenerateGraphs, baseReport, newReport)
+			opts := report.CompareOpts{
+				GenGraph:     c.config.Output.GenerateGraphs,
+				GraphsPrefix: fmt.Sprintf("%s%d_", res.deploymentID, res.LoadTests[0].loadTestID),
+			}
+			err := report.Compare(&buf, opts, baseReport, newReport)
 			if err != nil {
 				return results, err
 			}
