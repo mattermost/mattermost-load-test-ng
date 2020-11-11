@@ -66,8 +66,8 @@ func (c *SimulController) Run() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	defer func() {
-		if resp := c.logout(); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
+		if err := c.disconnect(); err != nil {
+			c.status <- c.newErrorStatus(control.NewUserError(err))
 		}
 		c.user.ClearUserData()
 		c.sendStopStatus()
