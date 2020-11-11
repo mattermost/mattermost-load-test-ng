@@ -31,7 +31,7 @@ type Client struct {
 }
 
 // NewAgent connects to the local ssh agent and validates
-// that it has atleast one key added. It returns the agent
+// that it has at least one key added. It returns the agent
 // if everything looks good.
 func NewAgent() (*ExtAgent, error) {
 	conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))

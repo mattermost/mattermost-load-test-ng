@@ -5,8 +5,8 @@ package report
 
 import (
 	"fmt"
+	"io"
 	"math"
-	"os"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -43,7 +43,7 @@ type gplot struct {
 
 // Compare compares the given set of reports.
 // The first report is considered to be the base.
-func Compare(target *os.File, genGraph bool, reports ...Report) error {
+func Compare(target io.Writer, genGraph bool, reports ...Report) error {
 	base := reports[0]
 
 	// Calculate the deltas.

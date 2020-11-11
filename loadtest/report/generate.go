@@ -89,6 +89,10 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 	diff := endTime.Sub(startTime)
 	sec := int(diff.Seconds())
 
+	if sec <= 0 {
+		return data, fmt.Errorf("duration should be greater than 0: %v %v", startTime, endTime)
+	}
+
 	// Avg store times.
 	tmpl := `sum(rate(mattermost_db_store_time_sum%s[%ds])) by (method) / sum(rate(mattermost_db_store_time_count%s[%ds])) by (method)`
 	query := fmt.Sprintf(tmpl, g.cfg.Label, sec, g.cfg.Label, sec)
