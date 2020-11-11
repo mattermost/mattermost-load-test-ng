@@ -75,8 +75,7 @@ type OutputConfig struct {
 	GenerateGraphs bool `default:"false"`
 }
 
-// Config holds information needed to create and run a new
-// automated load-test comparison.
+// Config holds information needed perform automated load-test comparisons.
 type Config struct {
 	BaseBuild BuildConfig
 	NewBuild  BuildConfig

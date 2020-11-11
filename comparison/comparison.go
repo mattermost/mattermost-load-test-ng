@@ -61,8 +61,8 @@ type Result struct {
 	deploymentID string
 }
 
-// New creates and initializes a new Comparison object to be used to run an
-// automated load-test comparison. It returns an error in case of failure.
+// New creates and initializes a new Comparison object to be used to run
+// automated load-test comparisons. It returns an error in case of failure.
 func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 	if err := defaults.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
@@ -190,7 +190,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 				return status, err
 			}
 			return coordinator.Status{}, errors.New("canceled")
-		case <-time.After(1 * time.Minute):
+		case <-time.After(time.Minute):
 		}
 	}
 }
@@ -432,7 +432,7 @@ func provisionBuilds(t *terraform.Terraform, baseBuildURL, newBuildURL string) e
 	return nil
 }
 
-// Run performs a fully automated load-test comparison.
+// Run performs fully automated load-test comparisons.
 // It returns a list of results or an error in case of failure.
 func (c *Comparison) Run() ([]Result, error) {
 	// create deployments
@@ -490,13 +490,9 @@ func (c *Comparison) Run() ([]Result, error) {
 	}()
 
 	if err := <-errsCh; err != nil {
-		mlog.Error(err.Error())
-		mlog.Debug("an error has occurred, cancelling")
+		mlog.Error("an error has occurred, cancelling", mlog.Err(err))
 		close(c.cancelCh)
 		wg.Wait()
-		for err := range errsCh {
-			mlog.Error(err.Error())
-		}
 		return nil, err
 	}
 
@@ -504,8 +500,8 @@ func (c *Comparison) Run() ([]Result, error) {
 	return c.getResults(resultsCh)
 }
 
-// Destroy destroys all resources associated with the deployments in the
-// current automated load-test comparison.
+// Destroy destroys all resources associated with the deployments for the
+// current automated load-test comparisons.
 func (c *Comparison) Destroy() error {
 	return c.deploymentAction(func(t *terraform.Terraform) error {
 		return t.Destroy()
