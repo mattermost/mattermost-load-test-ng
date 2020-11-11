@@ -205,7 +205,7 @@ func (c *Coordinator) Stop() error {
 	c.status = Status{
 		State:          Done,
 		StartTime:      c.status.StartTime,
-		StopTime:       c.status.StopTime,
+		StopTime:       time.Now(),
 		ActiveUsers:    clusterStatus.ActiveUsers,
 		NumErrors:      clusterStatus.NumErrors,
 		SupportedUsers: c.status.SupportedUsers,

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -148,10 +149,14 @@ func TestStop(t *testing.T) {
 	require.Equal(t, Running, c.status.State)
 	c.mut.RUnlock()
 
+	time.Sleep(time.Millisecond)
+
 	err = c.Stop()
 	require.NoError(t, err)
 	c.mut.RLock()
 	require.Equal(t, Done, c.status.State)
+	require.NotEmpty(t, c.status.StopTime)
+	require.True(t, c.status.StopTime.After(c.status.StartTime))
 	c.mut.RUnlock()
 
 	err = c.Stop()
