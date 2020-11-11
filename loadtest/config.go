@@ -39,7 +39,7 @@ const (
 // at that rate.
 type RatesDistribution struct {
 	Rate       float64 `default:"1.0" validate:"range:[0,)"`
-	Percentage float64 `default:"1.0" validate:"range:(0,100]"`
+	Percentage float64 `default:"1.0" validate:"range:[0,1]"`
 }
 
 // UserControllerConfiguration holds information about the UserController to
@@ -131,6 +131,18 @@ type Config struct {
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
 	LogSettings                 logger.Settings
+}
+
+// IsValid reports whether a given Config is valid or not.
+// Returns an error if the validation fails.
+func (c *Config) IsValid() error {
+	if err := c.UserControllerConfiguration.IsValid(); err != nil {
+		return err
+	}
+	if err := c.InstanceConfiguration.IsValid(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
