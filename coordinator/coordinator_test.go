@@ -149,7 +149,7 @@ func TestStop(t *testing.T) {
 	require.Equal(t, Running, c.status.State)
 	c.mut.RUnlock()
 
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 
 	err = c.Stop()
 	require.NoError(t, err)
