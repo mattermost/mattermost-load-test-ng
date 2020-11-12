@@ -72,7 +72,7 @@ func Login(u user.User) UserActionResponse {
 	for _, teamId := range teamIds {
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
 			if err := u.GetChannelsForTeam(teamId, true); err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
+				return UserActionResponse{Err: errors.Wrapf(NewUserError(err), "userid: %s", tm.UserId)}
 			}
 		}
 	}
