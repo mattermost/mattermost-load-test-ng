@@ -51,13 +51,18 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 			if len(d) != 1 {
 				break
 			}
-			if (showImproved && d[0].deltaPercent >= 0) || (!showImproved && d[0].deltaPercent <= 0) {
+			// Skip delta percentages smaller than 1.
+			if math.Abs(d[0].deltaPercent) < 1 {
 				break
 			}
-			fmt.Fprintf(target, "| %s", label)
-			fmt.Fprintf(target, " |  %s", metric)
-			fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgStoreTimes[label])))
-			fmt.Fprintf(target, "| %s | %s | %.3f", d[0].actual, d[0].delta, d[0].deltaPercent)
+			// Skip deltas smaller than 2ms.
+			if math.Abs(float64(d[0].delta.Milliseconds())) < 2 {
+				continue
+			}
+			fmt.Fprintf(target, "| %s ", label)
+			fmt.Fprintf(target, "| %s ", metric)
+			fmt.Fprintf(target, "| %s ", d[0].base)
+			fmt.Fprintf(target, "| %s | %s | %.2f", d[0].actual, d[0].delta, d[0].deltaPercent)
 			fmt.Fprintln(target)
 		}
 	}
