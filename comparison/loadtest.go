@@ -66,6 +66,9 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 		return coordinator.Status{}, err
 	}
 
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
 	for {
 		status, err := t.GetCoordinatorStatus()
 		if err != nil {
@@ -88,7 +91,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 				return status, err
 			}
 			return coordinator.Status{}, errors.New("canceled")
-		case <-time.After(time.Minute):
+		case <-ticker.C:
 		}
 	}
 }
