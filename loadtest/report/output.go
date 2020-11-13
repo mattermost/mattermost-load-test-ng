@@ -267,6 +267,8 @@ func getDuration(f float64) time.Duration {
 	return d
 }
 
+// GenerateDashboard generates a comparative Grafana dashboard for the given
+// reports and writes its result to the provided io.Writer.
 func GenerateDashboard(title string, baseReport, newReport Report, out io.Writer) error {
 	baseLabel := baseReport.Label
 	newLabel := newReport.Label
