@@ -40,6 +40,11 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform) error)
 	return err
 }
 
+// provisionBuilds loads the provided build files into the app servers to be
+// used later on during initialization.
+// If the build URL is an HTTP URL then the file is directly downloaded into the
+// servers. If the build URL is prefixed by `file://` then the build is uploaded
+// from the local filesystem.
 func provisionBuilds(t *terraform.Terraform, baseBuildURL, newBuildURL string) error {
 	output, err := t.Output()
 	if err != nil {
