@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 
 	"github.com/mattermost/mattermost-load-test-ng/comparison"
-	"github.com/mattermost/mattermost-load-test-ng/defaults"
 
 	"github.com/spf13/cobra"
 )
@@ -56,18 +55,14 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	if err := defaults.Validate(cfg); err != nil {
-		return fmt.Errorf("failed to validate comparison config: %w", err)
-	}
-
 	cmp, err := comparison.New(cfg, deployerConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create comparison: %w", err)
 	}
 
 	results, err := cmp.Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to run comparisons: %w", err)
 	}
 
 	if err := processResults(results); err != nil {
@@ -75,4 +70,24 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
+	deployerConfig, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	configFilePath, _ := cmd.Flags().GetString("comparison-config")
+	cfg, err := comparison.ReadConfig(configFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read comparison config: %w", err)
+	}
+
+	cmp, err := comparison.New(cfg, deployerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create comparison: %w", err)
+	}
+
+	return cmp.Destroy()
 }

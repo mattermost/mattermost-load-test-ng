@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mattermost/mattermost-load-test-ng/comparison"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
@@ -62,30 +61,6 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 
 	}
 	return nil
-}
-
-func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
-	deployerConfig, err := getConfig(cmd)
-	if err != nil {
-		return err
-	}
-
-	configFilePath, _ := cmd.Flags().GetString("comparison-config")
-	cfg, err := comparison.ReadConfig(configFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to read comparison config: %w", err)
-	}
-
-	if err := defaults.Validate(cfg); err != nil {
-		return fmt.Errorf("failed to validate comparison config: %w", err)
-	}
-
-	cmp, err := comparison.New(cfg, deployerConfig)
-	if err != nil {
-		return err
-	}
-
-	return cmp.Destroy()
 }
 
 func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
