@@ -61,16 +61,25 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 }
 
 func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, cancelCh <-chan struct{}) (coordinator.Status, error) {
+	var err error
+	var status coordinator.Status
+
 	mlog.Info("starting unbounded load-test")
 	if err := t.StartCoordinator(coordConfig); err != nil {
-		return coordinator.Status{}, err
+		return status, err
 	}
+
+	defer func() {
+		if _, err := t.StopCoordinator(); err != nil {
+			mlog.Error("stopping coordinator failed", mlog.Err(err))
+		}
+	}()
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for {
-		status, err := t.GetCoordinatorStatus()
+		status, err = t.GetCoordinatorStatus()
 		if err != nil {
 			return status, err
 		}
@@ -87,10 +96,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 		select {
 		case <-cancelCh:
 			mlog.Info("cancelling load-test")
-			if status, err := t.StopCoordinator(); err != nil {
-				return status, err
-			}
-			return coordinator.Status{}, errors.New("canceled")
+			return status, errors.New("canceled")
 		case <-ticker.C:
 		}
 	}
