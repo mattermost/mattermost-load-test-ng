@@ -25,7 +25,7 @@ const (
 	sortByP99
 )
 
-func printSummary(c comp, target *os.File, base Report, cols int) {
+func printSummary(c comp, target *os.File, cols int) {
 	printTimes := func(data map[model.LabelValue]avgp99, metric string, showImproved bool) {
 		var keys []model.LabelValue
 		var sortBy sortByType
@@ -48,11 +48,16 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 			} else if metric == "p99" {
 				d = measurement[1]
 			}
+			// We only handle comparisons between 2 reports.
 			if len(d) != 1 {
 				break
 			}
 			// Skip delta percentages smaller than 1.
 			if math.Abs(d[0].deltaPercent) < 1 {
+				break
+			}
+			// Only show requested data.
+			if showImproved && d[0].delta > 0 || !showImproved && d[0].delta < 0 {
 				break
 			}
 			// Skip deltas smaller than 2ms.
@@ -98,7 +103,7 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 
 // displayMarkdown prints a given comparison in markdown to the given target.
 func displayMarkdown(c comp, target *os.File, base Report, cols int) {
-	printSummary(c, target, base, cols)
+	printSummary(c, target, cols)
 
 	fmt.Fprintln(target, "### Store times:")
 	printHeader(target, cols)
