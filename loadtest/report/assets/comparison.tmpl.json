@@ -563,6 +563,126 @@
       "gridPos": {
         "h": 9,
         "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "hiddenSeries": false,
+      "id": 34,
+      "legend": {
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(mattermost_db_store_time_sum[1m] offset {{.offset}}s)) / sum(rate(mattermost_db_store_time_count[1m] offset {{.offset}}s))",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "avg {{.baseLabel}}",
+          "metric": "mattermost_api_time_sum",
+          "refId": "A",
+          "step": 5
+        },
+        {
+          "expr": "sum(rate(mattermost_db_store_time_sum[1m])) / sum(rate(mattermost_db_store_time_count[1m]))",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "avg {{.newLabel}}",
+          "metric": "mattermost_api_time_sum",
+          "refId": "B",
+          "step": 5
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m] offset {{.offset}}s)) by (le))",
+          "format": "time_series",
+          "hide": false,
+          "legendFormat": "p99 {{.baseLabel}}",
+          "refId": "C"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))",
+          "format": "time_series",
+          "hide": false,
+          "legendFormat": "p99 {{.newLabel}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Store Call Time (Server)",
+      "tooltip": {
+        "msResolution": false,
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": "",
+          "logBase": 2,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "loadtest-source",
+      "editable": true,
+      "error": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
         "x": 12,
         "y": 18
       },
