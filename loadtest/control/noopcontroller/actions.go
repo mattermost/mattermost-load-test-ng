@@ -78,21 +78,6 @@ func (c *NoopController) login(u user.User) control.UserActionResponse {
 	}
 }
 
-func (c *NoopController) logout() control.UserActionResponse {
-	err := c.disconnect()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	ok, err := c.user.Logout()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if !ok {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
-	}
-	return control.UserActionResponse{Info: "logged out"}
-}
-
 func (c *NoopController) joinTeam(u user.User) control.UserActionResponse {
 	userStore := u.Store()
 	userID := userStore.Id()
