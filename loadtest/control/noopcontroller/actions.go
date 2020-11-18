@@ -73,7 +73,7 @@ func (c *NoopController) login(u user.User) control.UserActionResponse {
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "login canceled"}
-		case <-time.After(pickIdleTimeMs(1000, 20000, 1.0)):
+		case <-time.After(control.PickIdleTimeMs(1000, 20000, 1.0)):
 		}
 	}
 }
