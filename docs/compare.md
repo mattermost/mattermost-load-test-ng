@@ -22,7 +22,11 @@ To compare two load test reports, run:
 go run ./cmd/ltctl report compare base.out new.out --output=results.txt --graph
 ```
 
-The results.txt will be a markdown formatted table comparing the average and p99 times of the store and API metrics. Additionally, a `--graph` parameter can also be passed which can be used to generate graphs comparing different metrics like CPU, Memory etc. This also requires the `gnuplot` command to be installed on the system for it to plot graphs.
+The results.txt will be a Markdown formatted table comparing the average and p99 times of the store and API metrics. Additionally, a `--graph` parameter can also be passed which can be used to generate graphs comparing different metrics like CPU, Memory etc. This also requires the `gnuplot` command to be installed on the system for it to plot graphs.
+
+#### Note
+
+The Markdown output contains an initial section with a sorted summary of worsened/improved calls. This list does automatically exclude calls with (absolute) delta values smaller than 2ms and (absolute) delta percentage values smaller than 1%.
 
 ## Best practices while comparing load-tests
 
