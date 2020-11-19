@@ -85,7 +85,7 @@ type Config struct {
 
 func (c *Config) IsValid() error {
 	for _, ltConfig := range c.LoadTests {
-		if err := ltConfig.IsValid(); err != nil {
+		if err := defaults.Validate(ltConfig); err != nil {
 			return err
 		}
 	}
