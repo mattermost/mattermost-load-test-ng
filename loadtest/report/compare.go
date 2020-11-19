@@ -14,6 +14,7 @@ import (
 
 // diff contains the differences from a base measurement.
 type diff struct {
+	base         time.Duration
 	actual       time.Duration
 	delta        time.Duration
 	deltaPercent float64
@@ -130,6 +131,7 @@ func calculateDeltas(reports ...Report) comp {
 
 			diffs := c.store[label]
 			diffs[0] = append(diffs[0], diff{
+				base:         getDuration(float64(value)),
 				actual:       actual,
 				delta:        delta,
 				deltaPercent: deltaP,
@@ -147,6 +149,7 @@ func calculateDeltas(reports ...Report) comp {
 
 			diffs := c.store[label]
 			diffs[1] = append(diffs[1], diff{
+				base:         getDuration(float64(value)),
 				actual:       actual,
 				delta:        delta,
 				deltaPercent: deltaP,
@@ -164,6 +167,7 @@ func calculateDeltas(reports ...Report) comp {
 
 			diffs := c.api[label]
 			diffs[0] = append(diffs[0], diff{
+				base:         getDuration(float64(value)),
 				actual:       actual,
 				delta:        delta,
 				deltaPercent: deltaP,
@@ -181,6 +185,7 @@ func calculateDeltas(reports ...Report) comp {
 
 			diffs := c.api[label]
 			diffs[1] = append(diffs[1], diff{
+				base:         getDuration(float64(value)),
 				actual:       actual,
 				delta:        delta,
 				deltaPercent: deltaP,

@@ -15,6 +15,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func getUsersCount(helper *prometheus.Helper) (int, error) {
+	value, err := helper.VectorFirst("sum(mattermost_http_websockets_total)")
+	if err != nil {
+		return 0, fmt.Errorf("failed to query Prometheus: %w", err)
+	}
+	return int(value), nil
+}
+
 func getErrorsInfo(helper *prometheus.Helper, startTime time.Time) (map[string]int64, error) {
 	timeRange := int(time.Since(startTime).Round(time.Second).Seconds())
 	queries := []struct {
@@ -72,7 +80,7 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func printCoordinatorStatus(status coordinator.Status, errInfo map[string]int64) {
+func printCoordinatorStatus(status coordinator.Status, errInfo map[string]int64, usersCount int) {
 	fmt.Println("==================================================")
 	fmt.Println("load-test status:")
 	fmt.Println("")
@@ -85,6 +93,7 @@ func printCoordinatorStatus(status coordinator.Status, errInfo map[string]int64)
 		fmt.Println("Running time:", time.Since(status.StartTime).Round(time.Second))
 	}
 	fmt.Println("Active users:", status.ActiveUsers)
+	fmt.Println("Connected users:", usersCount)
 	numErrs := status.NumErrors
 	if numErrs < errInfo["total"] {
 		numErrs = errInfo["total"]
@@ -131,7 +140,12 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	printCoordinatorStatus(status, errInfo)
+	usersCount, err := getUsersCount(helper)
+	if err != nil {
+		return err
+	}
+
+	printCoordinatorStatus(status, errInfo, usersCount)
 
 	return nil
 }

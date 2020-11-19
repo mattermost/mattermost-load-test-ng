@@ -28,7 +28,7 @@ const (
 	sortByP99
 )
 
-func printSummary(c comp, target io.Writer, base Report, cols int) {
+func printSummary(c comp, target io.Writer, cols int) {
 	printTimes := func(data map[model.LabelValue]avgp99, metric string, showImproved bool) {
 		var keys []model.LabelValue
 		var sortBy sortByType
@@ -51,16 +51,26 @@ func printSummary(c comp, target io.Writer, base Report, cols int) {
 			} else if metric == "p99" {
 				d = measurement[1]
 			}
+			// We only handle comparisons between 2 reports.
 			if len(d) != 1 {
 				break
 			}
-			if (showImproved && d[0].deltaPercent >= 0) || (!showImproved && d[0].deltaPercent <= 0) {
+			// Skip delta percentages smaller than 1.
+			if math.Abs(d[0].deltaPercent) < 1 {
 				break
 			}
-			fmt.Fprintf(target, "| %s", label)
-			fmt.Fprintf(target, " |  %s", metric)
-			fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgStoreTimes[label])))
-			fmt.Fprintf(target, "| %s | %s | %.3f", d[0].actual, d[0].delta, d[0].deltaPercent)
+			// Only show requested data.
+			if showImproved && d[0].delta > 0 || !showImproved && d[0].delta < 0 {
+				break
+			}
+			// Skip deltas smaller than 2ms.
+			if math.Abs(float64(d[0].delta.Milliseconds())) < 2 {
+				continue
+			}
+			fmt.Fprintf(target, "| %s ", label)
+			fmt.Fprintf(target, "| %s ", metric)
+			fmt.Fprintf(target, "| %s ", d[0].base)
+			fmt.Fprintf(target, "| %s | %s | %.2f", d[0].actual, d[0].delta, d[0].deltaPercent)
 			fmt.Fprintln(target)
 		}
 	}
@@ -96,7 +106,7 @@ func printSummary(c comp, target io.Writer, base Report, cols int) {
 
 // displayMarkdown prints a given comparison in markdown to the given target.
 func displayMarkdown(c comp, target io.Writer, base Report, cols int) {
-	printSummary(c, target, base, cols)
+	printSummary(c, target, cols)
 
 	fmt.Fprintln(target, "### Store times:")
 	printHeader(target, cols)
