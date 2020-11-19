@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func processResults(results []comparison.Result) error {
+func printResults(results []comparison.Result) error {
 	for i, res := range results {
 		fmt.Println("==================================================")
 		fmt.Println("Comparison result:")
@@ -57,7 +57,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 
 	cmp, err := comparison.New(cfg, deployerConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create comparison: %w", err)
+		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
 	results, err := cmp.Run()
@@ -65,7 +65,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to run comparisons: %w", err)
 	}
 
-	if err := processResults(results); err != nil {
+	if err := printResults(results); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
 
 	cmp, err := comparison.New(cfg, deployerConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create comparison: %w", err)
+		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
 	return cmp.Destroy()
