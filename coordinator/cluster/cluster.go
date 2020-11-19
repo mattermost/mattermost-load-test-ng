@@ -147,6 +147,7 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	for i, inc := range dist {
 		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
 		if _, err := c.agents[i].AddUsers(inc); err != nil {
+			c.log.Error("adding users failed", mlog.Err(err))
 			// Most probably the agent crashed, so we just start it again.
 			if _, err := c.agents[i].Run(); err != nil {
 				c.log.Error("agent restart failed", mlog.Err(err))
