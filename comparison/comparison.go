@@ -126,8 +126,8 @@ func (c *Comparison) Run() ([]Result, error) {
 		return nil, err
 	}
 
-	mlog.Info("load-tests have completed, going to generate some output")
-	// do actual comparisons and generate some output
+	mlog.Info("load-tests have completed, going to generate some results")
+	// do actual comparisons and generate some results
 	return c.getResults(resultsCh)
 }
 
