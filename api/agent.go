@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +12,9 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
@@ -110,7 +113,15 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lt, err := loadtest.New(&ltConfig, NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics), a.agentLog)
+	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics)
+	if err != nil {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Id:      agentId,
+			Message: "load-test agent creation failed",
+			Error:   fmt.Sprintf("could not create agent: %s", err),
+		})
+	}
+	lt, err := loadtest.New(&ltConfig, newC, a.agentLog)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -295,7 +306,7 @@ func getServerVersion(serverURL string) (string, error) {
 
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
-func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
+func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) (loadtest.NewController, error) {
 	// http.Transport to be shared amongst all clients.
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -322,15 +333,60 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 	}
 
+	var creds []string
+	f, err := os.Open(config.UsersConfiguration.UsersFilePath)
+	if err == nil {
+		// The file is an optional parameter which may not be present.
+		// So we
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			creds = append(creds, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, fmt.Errorf("failed to read from %s: %w", f.Name(), err)
+		}
+	} else if !os.IsNotExist(err) {
+		// If the file exists, but failed to open, then probably it is worthwhile
+		// logging it.
+		mlog.Warn("Failed to open UsersFilePath. Continuing with default signup", mlog.Err(err))
+	}
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
+
+		var username, password, email string
+
+		if len(creds) > 0 {
+			// We do not allow to mix user-defined and auto signup modes.
+			// If the user specifies a custom login file, then it should contain
+			// all the users that is expected to login during a load-test.
+			if id >= len(creds) {
+				return nil, errors.New("exceeded user list limit")
+			}
+			// Emails and passwords are separated by space.
+			split := strings.Split(creds[id], " ")
+			if len(split) < 2 {
+				return nil, errors.New("user credential does not have space in between")
+			}
+			email = split[0]
+			password = split[1]
+			// Quick and dirty hack to extract username from email.
+			// This is not terribly important to be correct.
+			username = strings.Split(email, "@")[0]
+			username = strings.Replace(username, "+", "-", -1)
+		} else {
+			username = fmt.Sprintf("%s-%d", namePrefix, id)
+			email = fmt.Sprintf("%s-%d@example.com", namePrefix, id)
+			password = "testPass123$"
+		}
 
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-%d", namePrefix, id),
-			Email:        fmt.Sprintf("%s-%d@example.com", namePrefix, id),
-			Password:     "testPass123$",
+			Username:     username,
+			Email:        email,
+			Password:     password,
 		}
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          500,
@@ -376,5 +432,5 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		default:
 			panic("controller type must be valid")
 		}
-	}
+	}, nil
 }
