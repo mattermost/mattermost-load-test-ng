@@ -21,7 +21,7 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	// TODO: add a config file for the API server.
 	logger.Init(&logger.Settings{
 		EnableConsole: true,
-		ConsoleLevel:  "ERROR",
+		ConsoleLevel:  "INFO",
 		ConsoleJson:   false,
 		EnableFile:    true,
 		FileLevel:     "INFO",
@@ -40,8 +40,8 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	})
 
 	alog := logger.New(&logger.Settings{
-		EnableConsole: false,
-		ConsoleLevel:  "ERROR",
+		EnableConsole: true,
+		ConsoleLevel:  "INFO",
 		ConsoleJson:   false,
 		EnableFile:    true,
 		FileLevel:     "INFO",

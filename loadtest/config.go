@@ -114,6 +114,7 @@ func (c *InstanceConfiguration) IsValid() error {
 
 // UsersConfiguration holds information about the users of the load-test.
 type UsersConfiguration struct {
+	UsersFilePath string
 	// The number of initial users the load-test should start with.
 	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
 	// The maximum number of users that can be simulated by a single load-test

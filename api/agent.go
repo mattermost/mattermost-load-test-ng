@@ -4,11 +4,15 @@
 package api
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
@@ -289,15 +293,38 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
+	f, err := os.Open(config.UsersConfiguration.UsersFilePath)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	emails := make([]string, 0, 5000)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		emails = append(emails, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
+
+		if id >= len(emails) {
+			return nil, errors.New("exceeded user list limit")
+		}
+
+		username := strings.Split(emails[id], "@")[0]
+		username = strings.Replace(username, "+", "-", -1)
 
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     fmt.Sprintf("%s-%d", namePrefix, id),
-			Email:        fmt.Sprintf("%s-%d@example.com", namePrefix, id),
-			Password:     "testPass123$",
+			Username:     username,
+			Email:        emails[id],
+			// Password:     "testPass123$",
+			Password: "Password1",
 		}
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          500,
