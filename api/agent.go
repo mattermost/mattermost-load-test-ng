@@ -323,8 +323,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
 			Username:     username,
 			Email:        emails[id],
-			// Password:     "testPass123$",
-			Password: "Password1",
+			Password:     config.UsersConfiguration.UserPassword,
 		}
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          500,
