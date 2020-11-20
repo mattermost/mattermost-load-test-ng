@@ -93,7 +93,7 @@ func (c *SimulController) Run() {
 		select {
 		case <-c.stopChan:
 			return
-		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
+		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
 		}
 
 		if resp := initActions[i].run(c.user); resp.Err != nil {
@@ -190,7 +190,7 @@ func (c *SimulController) Run() {
 		select {
 		case <-c.stopChan:
 			return
-		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		}
 	}
 
