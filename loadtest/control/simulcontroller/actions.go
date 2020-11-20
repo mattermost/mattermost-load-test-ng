@@ -508,9 +508,9 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 
 	// TODO: possibly add some additional idle time here to simulate the
 	// user actually taking time to type a post message.
-	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+	// if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+	// 	return control.UserActionResponse{Err: control.NewUserError(err)}
+	// }
 
 	message, err := createMessage(u, channel, true)
 	if err != nil {
@@ -547,9 +547,9 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 
 	// TODO: possibly add some additional idle time here to simulate the
 	// user actually taking time to type a post message.
-	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+	// if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+	// 	return control.UserActionResponse{Err: control.NewUserError(err)}
+	// }
 
 	message, err := createMessage(u, channel, false)
 	if err != nil {
