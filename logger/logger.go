@@ -13,10 +13,10 @@ import (
 type Settings struct {
 	EnableConsole bool   `default:"true"`
 	ConsoleJson   bool   `default:"false"`
-	ConsoleLevel  string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+	ConsoleLevel  string `default:"ERROR" validate:"oneof:{TRACE, DEBUG, INFO, WARN, ERROR}"`
 	EnableFile    bool   `default:"true"`
 	FileJson      bool   `default:"false"`
-	FileLevel     string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+	FileLevel     string `default:"ERROR" validate:"oneof:{TRACE, DEBUG, INFO, WARN, ERROR}"`
 	FileLocation  string `default:"loadtest.log"`
 }
 

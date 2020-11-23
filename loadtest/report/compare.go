@@ -5,8 +5,8 @@ package report
 
 import (
 	"fmt"
+	"io"
 	"math"
-	"os"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -42,9 +42,15 @@ type gplot struct {
 	graphs []labelValues
 }
 
+// CompareOpts holds options to customize a comparison.
+type CompareOpts struct {
+	GenGraph     bool   // A boolean indicating whether to generate plotted graphs.
+	GraphsPrefix string // A prefix to prepend to the filename of the generated graphs.
+}
+
 // Compare compares the given set of reports.
 // The first report is considered to be the base.
-func Compare(target *os.File, genGraph bool, reports ...Report) error {
+func Compare(target io.Writer, opts CompareOpts, reports ...Report) error {
 	base := reports[0]
 
 	// Calculate the deltas.
@@ -55,13 +61,13 @@ func Compare(target *os.File, genGraph bool, reports ...Report) error {
 
 	// TODO: generate a single image combining all the graphs.
 	// Printing the graphs.
-	if genGraph {
+	if opts.GenGraph {
 		gPlots := getPlots(reports[1:]...)
 		for i, plot := range gPlots {
 			if i >= len(base.Graphs) {
 				continue
 			}
-			err := generateGraph(plot.name, base.Label, base.Graphs[i], plot.graphs)
+			err := generateGraph(plot.name, opts.GraphsPrefix, base.Label, base.Graphs[i], plot.graphs)
 			if err != nil {
 				return fmt.Errorf("error while generating graph for %s: %w", plot.name, err)
 			}

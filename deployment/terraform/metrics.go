@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -24,6 +25,60 @@ const (
 	defaultGrafanaUsernamePass = "admin:admin"
 	defaultRequestTimeout      = 10 * time.Second
 )
+
+func doAPIRequest(url, method string, payload io.Reader) (string, error) {
+	// Set preference to new dashboard.
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, method, url, payload)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Dump body.
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("bad response: %s", string(data))
+	}
+
+	return string(data), nil
+}
+
+// UploadDashboard uploads the given dashboard to Grafana and returns its URL.
+// Returns an error in case of failure.
+func (t *Terraform) UploadDashboard(dashboard string) (string, error) {
+	output, err := t.Output()
+	if err != nil {
+		return "", err
+	}
+	url := fmt.Sprintf("http://%s@%s:3000/api/dashboards/db", defaultGrafanaUsernamePass, output.MetricsServer.PublicIP)
+	data := fmt.Sprintf(`{"dashboard":%s,"folderId":0,"overwrite":true}`, dashboard)
+	data, err = doAPIRequest(url, http.MethodPost, strings.NewReader(data))
+	if err != nil {
+		return "", fmt.Errorf("Grafana API request failed: %w", err)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &resp); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+	url, ok := resp["url"].(string)
+	if !ok {
+		return "", fmt.Errorf("bad response, missing url")
+	}
+
+	return url, nil
+}
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	// Updating Prometheus config
@@ -163,9 +218,6 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 		}
 	}
 
-	// Set preference to new dashboard.
-	ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
-	defer cancel()
 	payload := struct {
 		Theme           string `json:"theme"`
 		HomeDashboardID int    `json:"homeDashboardId"`
@@ -173,30 +225,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent, output *Output) error {
 	}{
 		HomeDashboardID: 2,
 	}
-	buf, err = json.Marshal(&payload)
+	data, err := json.Marshal(&payload)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(buf))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 
-	// Dump body.
-	buf, err = ioutil.ReadAll(resp.Body)
+	resp, err := doAPIRequest(url, http.MethodPut, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad response: %s", string(buf))
-	}
-	mlog.Info("Response: " + string(buf))
+	mlog.Info("Response: " + resp)
 
 	return nil
 }

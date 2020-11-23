@@ -107,7 +107,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 	return nil
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output, initData bool) error {
 	if len(output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
@@ -131,16 +131,19 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output) error {
 		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 	}
 
-	mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-	cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name)
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		// TODO: make this fully atomic. See MM-23998.
-		// ltagent init should drop teams and channels before creating them.
-		// This needs additional delete actions to be added.
-		if strings.Contains(string(out), "with that name already exists") {
-			return nil
+	if initData {
+		mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
+		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name)
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			// TODO: make this fully atomic. See MM-23998.
+			// ltagent init should drop teams and channels before creating them.
+			// This needs additional delete actions to be added.
+			if strings.Contains(string(out), "with that name already exists") {
+				return nil
+			}
+			return fmt.Errorf("error running ssh command, output: %q, error: %w", out, err)
 		}
-		return fmt.Errorf("error running ssh command, output: %q, error: %w", out, err)
 	}
+
 	return nil
 }

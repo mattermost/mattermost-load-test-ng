@@ -25,7 +25,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := terraform.New(config).Output()
+	output, err := terraform.New("", config).Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
@@ -45,6 +45,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
+		defer client.Close()
 		appClients[i] = client
 	}
 
@@ -52,6 +53,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
+	defer agentClient.Close()
 
 	confirmFlag, _ := cmd.Flags().GetBool("confirm")
 	if !confirmFlag {

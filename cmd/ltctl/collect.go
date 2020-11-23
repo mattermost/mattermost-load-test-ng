@@ -144,7 +144,7 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 
 	output, err := t.Output()
 	if err != nil {

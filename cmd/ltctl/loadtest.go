@@ -63,9 +63,9 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	defer t.Cleanup()
-	return t.StartCoordinator()
+	return t.StartCoordinator(nil)
 }
 
 func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
@@ -74,9 +74,10 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	defer t.Cleanup()
-	return t.StopCoordinator()
+	_, err = t.StopCoordinator()
+	return err
 }
 
 func printCoordinatorStatus(status coordinator.Status, errInfo map[string]int64, usersCount int) {
@@ -115,7 +116,7 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	defer t.Cleanup()
 
 	status, err := t.GetCoordinatorStatus()

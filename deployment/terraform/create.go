@@ -34,19 +34,21 @@ const (
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
 type Terraform struct {
+	id     string
 	config *deployment.Config
 	dir    string
 }
 
 // New returns a new Terraform instance.
-func New(cfg *deployment.Config) *Terraform {
+func New(id string, cfg *deployment.Config) *Terraform {
 	return &Terraform{
+		id:     id,
 		config: cfg,
 	}
 }
 
 // Create creates a new load test environment.
-func (t *Terraform) Create() error {
+func (t *Terraform) Create(initData bool) error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -111,6 +113,8 @@ func (t *Terraform) Create() error {
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
 		"-auto-approve",
+		"-input=false",
+		"-state="+t.getStatePath(),
 		t.dir,
 	)
 	if err != nil {
@@ -144,12 +148,14 @@ func (t *Terraform) Create() error {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
 
-		if err := t.createAdminUser(extAgent, output); err != nil {
-			return fmt.Errorf("could not create admin user: %w", err)
+		if initData {
+			if err := t.createAdminUser(extAgent, output); err != nil {
+				return fmt.Errorf("could not create admin user: %w", err)
+			}
 		}
 	}
 
-	if err := t.setupLoadtestAgents(extAgent, output); err != nil {
+	if err := t.setupLoadtestAgents(extAgent, output, initData); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
@@ -222,7 +228,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 	}
 }
 
-func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output) error {
+func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output, initData bool) error {
 	if err := t.configureAndRunAgents(extAgent, output); err != nil {
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
@@ -231,7 +237,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output) 
 		return nil
 	}
 
-	if err := t.initLoadtest(extAgent, output); err != nil {
+	if err := t.initLoadtest(extAgent, output, initData); err != nil {
 		return err
 	}
 
