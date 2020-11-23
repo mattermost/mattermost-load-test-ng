@@ -19,7 +19,7 @@ There are mainly two ways to run a load-test:
 
 ## FAQ
 
-Answers to frequent questions and troubleshoot for common issues can be found in our [FAQ](docs/faq.md) section.
+Answers to frequent questions and troubleshooting for common issues can be found in our [FAQ](docs/faq.md) section.
 
 ## Documentation
 

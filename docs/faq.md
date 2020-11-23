@@ -16,7 +16,7 @@ This type of load-test is used to determine the capacity of a system and will ou
 The rule of thumb is that when starting an unbounded load-test we should always shoot for more users than what we think an installation can support.
 `ClusterConfig.MaxActiveUsers`  should be set to  `AgentInstanceCount * UsersConfiguration.MaxActiveUsers`.
 
-## Troubleshoot
+## Troubleshooting
 
 ### Users are not connecting
 
