@@ -122,7 +122,7 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "login canceled"}
-		case <-time.After(pickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
+		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
 		}
 	}
 }

@@ -89,7 +89,8 @@ type S3Bucket struct {
 // Output reads the current terraform output
 func (t *Terraform) Output() (*Output, error) {
 	var buf bytes.Buffer
-	if err := t.runCommand(&buf, "output", "-json"); err != nil {
+
+	if err := t.runCommand(&buf, "output", "-json", "-state="+t.getStatePath()); err != nil {
 		return nil, err
 	}
 	var o output

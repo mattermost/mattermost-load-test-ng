@@ -71,6 +71,7 @@ config/simplecontroller.json
 config/simulcontroller.json
 config/gencontroller.json
 config/deployer.json
+config/comparison.json
 
 # binaries
 ltagent
@@ -80,7 +81,7 @@ ltapi
 # terraform stuff
 /terraformenv
 .terraform
-terraform.tfstate*
+*.tfstate*
 
 .idea
 mattermost-load-test.iml

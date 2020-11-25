@@ -18,7 +18,7 @@ import (
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
-func (t *Terraform) StartCoordinator() error {
+func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -52,16 +52,18 @@ func (t *Terraform) StartCoordinator() error {
 
 	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
 
-	coordinatorConfig, err := coordinator.ReadConfig("")
-	if err != nil {
-		return err
+	if config == nil {
+		config, err = coordinator.ReadConfig("")
+		if err != nil {
+			return err
+		}
 	}
-	coordinatorConfig.ClusterConfig.Agents = loadAgentConfigs
-	coordinatorConfig.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.PrivateIP + ":9090"
+	config.ClusterConfig.Agents = loadAgentConfigs
+	config.MonitorConfig.PrometheusURL = "http://" + output.MetricsServer.PrivateIP + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating
 	// a coordinator resource through the API.
-	data, err := json.MarshalIndent(coordinatorConfig, "", "  ")
+	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -136,7 +138,7 @@ func (t *Terraform) StartCoordinator() error {
 			return fmt.Errorf("failed to destroy coordinator: %w", err)
 		}
 	}
-	if _, err := coord.Create(coordinatorConfig, agentConfig); err != nil {
+	if _, err := coord.Create(config, agentConfig); err != nil {
 		return fmt.Errorf("failed to create coordinator: %w", err)
 	}
 	if _, err := coord.Run(); err != nil {
@@ -148,18 +150,19 @@ func (t *Terraform) StartCoordinator() error {
 }
 
 // StopCoordinator stops the coordinator in the current load-test deployment.
-func (t *Terraform) StopCoordinator() error {
+func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
+	var status coordinator.Status
 	if err := t.preFlightCheck(); err != nil {
-		return err
+		return status, err
 	}
 
 	output, err := t.Output()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	if len(output.Agents) == 0 {
-		return errors.New("there are no agents to initialize load-test")
+		return status, errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents[0].PublicIP
 
@@ -168,14 +171,16 @@ func (t *Terraform) StopCoordinator() error {
 	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
-		return fmt.Errorf("failed to create coordinator client: %w", err)
+		return status, fmt.Errorf("failed to create coordinator client: %w", err)
 	}
-	if _, err := coord.Destroy(); err != nil {
-		return fmt.Errorf("failed to stop coordinator: %w", err)
+
+	status, err = coord.Destroy()
+	if err != nil {
+		return status, fmt.Errorf("failed to stop coordinator: %w", err)
 	}
 
 	mlog.Info("Done")
-	return nil
+	return status, nil
 }
 
 // GetCoordinatorStatus returns information about the status of the

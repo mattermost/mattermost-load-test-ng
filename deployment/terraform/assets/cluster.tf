@@ -9,7 +9,7 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 data "aws_subnet_ids" "selected" {
-  vpc_id = "${var.es_vpc}"
+  vpc_id = var.es_vpc
 }
 
 resource "aws_key_pair" "key" {
@@ -34,8 +34,8 @@ resource "aws_instance" "app_server" {
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
   vpc_security_group_ids = [
-    "${aws_security_group.app[0].id}",
-    "${aws_security_group.app_gossip[0].id}"
+    aws_security_group.app[0].id,
+    aws_security_group.app_gossip[0].id
   ]
 
   dynamic "root_block_device" {
@@ -82,7 +82,7 @@ resource "aws_instance" "metrics_server" {
   key_name      = aws_key_pair.key.id
 
   vpc_security_group_ids = [
-    "${aws_security_group.metrics[0].id}",
+    aws_security_group.metrics[0].id,
   ]
 
   dynamic "root_block_device" {
@@ -126,7 +126,7 @@ resource "aws_instance" "proxy_server" {
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
   vpc_security_group_ids = [
-    "${aws_security_group.proxy[0].id}"
+    aws_security_group.proxy[0].id
   ]
   key_name = aws_key_pair.key.id
 
@@ -176,7 +176,7 @@ resource "aws_elasticsearch_domain" "es_server" {
     subnet_ids = [
       element(tolist(data.aws_subnet_ids.selected.ids), 0)
     ]
-    security_group_ids = ["${aws_security_group.elastic[0].id}"]
+    security_group_ids = [aws_security_group.elastic[0].id]
   }
 
   dynamic "ebs_options" {
@@ -291,7 +291,7 @@ resource "aws_rds_cluster" "db_cluster" {
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
 
-  vpc_security_group_ids = ["${aws_security_group.db[0].id}"]
+  vpc_security_group_ids = [aws_security_group.db[0].id]
 }
 
 resource "aws_instance" "loadtest_agent" {
@@ -312,7 +312,7 @@ resource "aws_instance" "loadtest_agent" {
   subnet_id                   = var.cluster_subnet_id
   associate_public_ip_address = true
 
-  vpc_security_group_ids = ["${aws_security_group.agent.id}"]
+  vpc_security_group_ids = [aws_security_group.agent.id]
 
   dynamic "root_block_device" {
     for_each = var.root_block_device
@@ -364,7 +364,7 @@ resource "aws_security_group" "app" {
     from_port       = 9100
     to_port         = 9100
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.metrics[0].id}"]
+    security_groups = [aws_security_group.metrics[0].id]
   }
   egress {
     from_port   = 0
@@ -383,25 +383,25 @@ resource "aws_security_group" "app_gossip" {
     from_port       = 8074
     to_port         = 8074
     protocol        = "udp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
   ingress {
     from_port       = 8074
     to_port         = 8074
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
   ingress {
     from_port       = 8075
     to_port         = 8075
     protocol        = "udp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
   ingress {
     from_port       = 8075
     to_port         = 8075
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
   egress {
     from_port   = 0
@@ -420,14 +420,14 @@ resource "aws_security_group" "db" {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
 
   ingress {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app[0].id}"]
+    security_groups = [aws_security_group.app[0].id]
   }
 }
 
@@ -537,7 +537,7 @@ resource "aws_security_group" "elastic" {
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.app[0].id}", "${aws_security_group.metrics[0].id}"]
+    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
   }
 
   count = var.es_instance_count > 0 ? 1 : 0
@@ -578,7 +578,7 @@ resource "aws_security_group" "proxy" {
     from_port       = 9100
     to_port         = 9100
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.metrics[0].id}"]
+    security_groups = [aws_security_group.metrics[0].id]
   }
 
   egress {

@@ -21,9 +21,9 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	defer t.Cleanup()
-	return t.Create()
+	return t.Create(true)
 }
 
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
@@ -32,7 +32,7 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	defer t.Cleanup()
 	return t.Destroy()
 }
@@ -43,12 +43,12 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New(config)
+	t := terraform.New("", config)
 	return t.Info()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
-	t := terraform.New(nil)
+	t := terraform.New("", nil)
 	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
@@ -155,7 +155,7 @@ func main() {
 				fmt.Println("Available instances:")
 				return RunSSHListCmdF(cmd, args)
 			}
-			return terraform.New(nil).OpenSSHFor(args[0])
+			return terraform.New("", nil).OpenSSHFor(args[0])
 		},
 	}
 
@@ -181,7 +181,7 @@ func main() {
 				}
 				return nil
 			}
-			return terraform.New(nil).OpenBrowserFor(args[0])
+			return terraform.New("", nil).OpenBrowserFor(args[0])
 		},
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
@@ -225,6 +225,24 @@ func main() {
 	reportCmds := []*cobra.Command{genReport, compareReport}
 	reportCmd.AddCommand(reportCmds...)
 	rootCmd.AddCommand(reportCmd)
+
+	comparisonCmd := &cobra.Command{
+		Use:   "comparison",
+		Short: "Manage fully automated load-test comparisons environments",
+	}
+	comparisonCmd.Flags().StringP("comparison-config", "", "", "path to the comparison config file to use")
+	runComparisonCmd := &cobra.Command{
+		Use:   "run",
+		Short: "Run fully automated load-test comparisons",
+		RunE:  RunComparisonCmdF,
+	}
+	destroyComparisonCmd := &cobra.Command{
+		Use:   "destroy",
+		Short: "Destroy the current load-test comparison environment",
+		RunE:  DestroyComparisonCmdF,
+	}
+	comparisonCmd.AddCommand(runComparisonCmd, destroyComparisonCmd)
+	rootCmd.AddCommand(comparisonCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

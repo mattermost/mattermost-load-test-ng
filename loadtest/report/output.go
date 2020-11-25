@@ -1,3 +1,4 @@
+//go:generate go-bindata -nometadata -mode 0644 -pkg report -o ./bindata.go -prefix "assets/" assets/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
@@ -5,12 +6,14 @@ package report
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
@@ -25,7 +28,7 @@ const (
 	sortByP99
 )
 
-func printSummary(c comp, target *os.File, base Report, cols int) {
+func printSummary(c comp, target io.Writer, cols int) {
 	printTimes := func(data map[model.LabelValue]avgp99, metric string, showImproved bool) {
 		var keys []model.LabelValue
 		var sortBy sortByType
@@ -48,16 +51,26 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 			} else if metric == "p99" {
 				d = measurement[1]
 			}
+			// We only handle comparisons between 2 reports.
 			if len(d) != 1 {
 				break
 			}
-			if (showImproved && d[0].deltaPercent >= 0) || (!showImproved && d[0].deltaPercent <= 0) {
+			// Skip delta percentages smaller than 1.
+			if math.Abs(d[0].deltaPercent) < 1 {
 				break
 			}
-			fmt.Fprintf(target, "| %s", label)
-			fmt.Fprintf(target, " |  %s", metric)
-			fmt.Fprintf(target, "| %s", getDuration(float64(base.AvgStoreTimes[label])))
-			fmt.Fprintf(target, "| %s | %s | %.3f", d[0].actual, d[0].delta, d[0].deltaPercent)
+			// Only show requested data.
+			if showImproved && d[0].delta > 0 || !showImproved && d[0].delta < 0 {
+				break
+			}
+			// Skip deltas smaller than 2ms.
+			if math.Abs(float64(d[0].delta.Milliseconds())) < 2 {
+				continue
+			}
+			fmt.Fprintf(target, "| %s ", label)
+			fmt.Fprintf(target, "| %s ", metric)
+			fmt.Fprintf(target, "| %s ", d[0].base)
+			fmt.Fprintf(target, "| %s | %s | %.2f", d[0].actual, d[0].delta, d[0].deltaPercent)
 			fmt.Fprintln(target)
 		}
 	}
@@ -92,8 +105,8 @@ func printSummary(c comp, target *os.File, base Report, cols int) {
 }
 
 // displayMarkdown prints a given comparison in markdown to the given target.
-func displayMarkdown(c comp, target *os.File, base Report, cols int) {
-	printSummary(c, target, base, cols)
+func displayMarkdown(c comp, target io.Writer, base Report, cols int) {
+	printSummary(c, target, cols)
 
 	fmt.Fprintln(target, "### Store times:")
 	printHeader(target, cols)
@@ -147,7 +160,7 @@ func displayMarkdown(c comp, target *os.File, base Report, cols int) {
 }
 
 // printHeader prints the header row of a markdown table.
-func printHeader(target *os.File, cols int) {
+func printHeader(target io.Writer, cols int) {
 	fmt.Fprint(target, "| | | Base | ")
 	header := ""
 	for i := 0; i < cols; i++ {
@@ -164,7 +177,7 @@ func printHeader(target *os.File, cols int) {
 }
 
 // generateGraph creates an input file for GNUplot to create a plot from.
-func generateGraph(name, baseLabel string, base graph, others []labelValues) error {
+func generateGraph(name, prefix, baseLabel string, base graph, others []labelValues) error {
 	f, err := ioutil.TempFile("", "tmp.out")
 	if err != nil {
 		return err
@@ -193,7 +206,7 @@ func generateGraph(name, baseLabel string, base graph, others []labelValues) err
 		return err
 	}
 
-	err = plot(name, f.Name(), others, baseLabel)
+	err = plot(name, prefix, f.Name(), others, baseLabel)
 	if err != nil {
 		return fmt.Errorf("error while plotting %s graph: %s", name, err)
 	}
@@ -201,14 +214,14 @@ func generateGraph(name, baseLabel string, base graph, others []labelValues) err
 }
 
 // plot creates a gnu plot file and then creates a png output file from it.
-func plot(metric, fileName string, others []labelValues, baseLabel string) error {
+func plot(metric, prefix, fileName string, others []labelValues, baseLabel string) error {
 	f, err := ioutil.TempFile("", "tmp.plt")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(f.Name())
 
-	imageFile := strings.Replace(strings.ToLower(metric), " ", "-", -1)
+	imageFile := prefix + strings.Replace(strings.ToLower(metric), " ", "-", -1)
 	fmt.Fprintln(f, "set grid")
 	fmt.Fprintln(f, "set terminal png")
 	fmt.Fprintf(f, "set output '%s.png'\n", imageFile)
@@ -262,4 +275,41 @@ func getDuration(f float64) time.Duration {
 	ms := int64(math.Round(f * 1000))    // convert seconds to ms and round it off.
 	d := time.Duration(ms * 1000 * 1000) // convert to ns for duration.
 	return d
+}
+
+// GenerateDashboard generates a comparative Grafana dashboard for the given
+// reports and writes its result to the provided io.Writer.
+func GenerateDashboard(title string, baseReport, newReport Report, out io.Writer) error {
+	baseLabel := baseReport.Label
+	newLabel := newReport.Label
+	from := newReport.StartTime
+	to := newReport.EndTime
+	offset := newReport.StartTime.Sub(baseReport.StartTime)
+
+	// We swap everything if it happens that the load-tests were done in the
+	// inverse than expected order (next then base).
+	if baseReport.StartTime.After(newReport.StartTime) {
+		from = baseReport.StartTime
+		to = baseReport.EndTime
+		offset = baseReport.StartTime.Sub(newReport.StartTime)
+		baseLabel, newLabel = newLabel, baseLabel
+	}
+
+	tmpl, err := template.New("").Parse(MustAssetString("comparison.tmpl.json"))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+	data := map[string]interface{}{
+		"title":     title,
+		"offset":    int(math.Round(offset.Seconds())),
+		"baseLabel": baseLabel,
+		"newLabel":  newLabel,
+		"from":      from.Format(time.RFC3339),
+		"to":        to.Format(time.RFC3339),
+	}
+	if err := tmpl.Execute(out, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
 }

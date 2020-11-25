@@ -105,9 +105,6 @@ func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtes
 	if ltConfig == nil {
 		return status, errors.New("client: ltConfig should not be nil")
 	}
-	if ucConfig == nil {
-		return status, errors.New("client: ucConfig should not be nil")
-	}
 
 	data := struct {
 		LoadTestConfig         *loadtest.Config
@@ -119,6 +116,10 @@ func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtes
 
 	switch ltConfig.UserControllerConfiguration.Type {
 	case loadtest.UserControllerSimple:
+		if ucConfig == nil {
+			return status, errors.New("client: ucConfig should not be nil")
+		}
+
 		var scc *simplecontroller.Config
 		scc, ok := ucConfig.(*simplecontroller.Config)
 		if !ok {
@@ -126,11 +127,16 @@ func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtes
 		}
 		data.SimpleControllerConfig = scc
 	case loadtest.UserControllerSimulative:
+		if ucConfig == nil {
+			return status, errors.New("client: ucConfig should not be nil")
+		}
+
 		scc, ok := ucConfig.(*simulcontroller.Config)
 		if !ok {
 			return status, errors.New("client: ucConfig has the wrong type")
 		}
 		data.SimulControllerConfig = scc
+	case loadtest.UserControllerNoop:
 	default:
 		return status, errors.New("client: UserController type is not set")
 	}

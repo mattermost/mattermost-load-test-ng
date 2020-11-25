@@ -50,15 +50,34 @@ func TestCreateAgent(t *testing.T) {
 		require.Empty(t, status)
 	})
 
-	t.Run("missing ucConfig", func(t *testing.T) {
-		status, err := agent.Create(&loadtest.Config{}, nil)
+	t.Run("missing uc type", func(t *testing.T) {
+		status, err := agent.Create(&loadtest.Config{}, &simulcontroller.Config{})
+		require.EqualError(t, err, "client: UserController type is not set")
+		require.Empty(t, status)
+	})
+
+	t.Run("missing ucConfig, simulcontroller", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		ltConfig.UserControllerConfiguration.Type = "simulative"
+		status, err := agent.Create(&ltConfig, nil)
 		require.EqualError(t, err, "client: ucConfig should not be nil")
 		require.Empty(t, status)
 	})
 
-	t.Run("missing uc type", func(t *testing.T) {
-		status, err := agent.Create(&loadtest.Config{}, &simulcontroller.Config{})
-		require.EqualError(t, err, "client: UserController type is not set")
+	t.Run("missing ucConfig, simplecontroller", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		ltConfig.UserControllerConfiguration.Type = "simple"
+		status, err := agent.Create(&ltConfig, nil)
+		require.EqualError(t, err, "client: ucConfig should not be nil")
+		require.Empty(t, status)
+	})
+
+	t.Run("missing ucConfig, noopcontroller, invalid configs", func(t *testing.T) {
+		var ltConfig loadtest.Config
+		ltConfig.UserControllerConfiguration.Type = "noop"
+		status, err := agent.Create(&ltConfig, nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "could not validate config")
 		require.Empty(t, status)
 	})
 
