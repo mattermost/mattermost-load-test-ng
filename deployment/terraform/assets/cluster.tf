@@ -1,7 +1,7 @@
 provider "aws" {
   profile = "mm-loadtest"
   region  = "us-east-1"
-  version = "~> 2.47"
+  version = "~> 3.0"
 }
 
 data "aws_region" "current" {}
