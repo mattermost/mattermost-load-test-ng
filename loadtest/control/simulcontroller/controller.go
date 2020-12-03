@@ -74,6 +74,8 @@ func (c *SimulController) Run() {
 		close(c.stoppedChan)
 	}()
 
+	serverVersion, _ := c.user.Store().ServerVersion()
+
 	initActions := []userAction{
 		{
 			run: control.SignUp,
@@ -179,6 +181,15 @@ func (c *SimulController) Run() {
 		action, err := pickAction(actions)
 		if err != nil {
 			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
+		}
+
+		if action.minServerVersion != "" {
+			supported, err := control.IsVersionSupported(action.minServerVersion, serverVersion)
+			if err != nil {
+				c.status <- c.newErrorStatus(err)
+			} else if !supported {
+				continue
+			}
 		}
 
 		if resp := action.run(c.user); resp.Err != nil {

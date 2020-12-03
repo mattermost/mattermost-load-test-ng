@@ -5,7 +5,10 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -269,6 +272,27 @@ func (a *api) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeAgentResponse(w, http.StatusOK, &resp)
 }
 
+func getServerVersion(serverURL string) (string, error) {
+	var version string
+	resp, err := http.Get(serverURL)
+	if err != nil {
+		return version, fmt.Errorf("failed to get server version: %w", err)
+	}
+	defer resp.Body.Close()
+	io.Copy(ioutil.Discard, resp.Body)
+
+	header := resp.Header["X-Version-Id"]
+	if len(header) > 0 {
+		version = header[0]
+	}
+
+	if version == "" {
+		return version, errors.New("server version should not be empty")
+	}
+
+	return version, nil
+}
+
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
 func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) loadtest.NewController {
@@ -287,6 +311,15 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	var err error
+	serverVersion := config.UserControllerConfiguration.ServerVersion
+	if serverVersion == "" {
+		serverVersion, err = getServerVersion(config.ConnectionConfiguration.ServerURL)
+		if err != nil {
+			mlog.Error("Failed to get server version", mlog.Err(err))
+		}
 	}
 
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
@@ -308,6 +341,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		if err != nil {
 			return nil, err
 		}
+
+		if err := store.SetServerVersion(serverVersion); err != nil {
+			return nil, err
+		}
+
 		ueSetup := userentity.Setup{
 			Store:     store,
 			Transport: transport,

@@ -58,6 +58,13 @@ A rate > 1.0 will run actions at a slower pace.
 
 Percentage is the percentage of controllers that should run with the specified rate.
 
+### ServerVersion
+
+*string*
+
+An optional MM server version to use when running actions (e.g. `5.30.0`).
+This value overrides the actual server version. If left empty, the one returned by the server is used instead.
+
 ## InstanceConfiguration
 
 ### NumTeams

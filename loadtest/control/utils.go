@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/blang/semver"
 )
 
 type PostsSearchOpts struct {
@@ -40,6 +42,7 @@ var (
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
 	words             = []string{}
 	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
+	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -212,4 +215,22 @@ func PickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duratio
 	idleTimeMs := time.Duration(math.Round(float64(idleMs) * rate))
 
 	return idleTimeMs * time.Millisecond
+}
+
+// IsVersionSupported returns whether a given version is supported
+// by the provided server version string.
+func IsVersionSupported(version, serverVersionString string) (bool, error) {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return false, err
+	}
+
+	serverVersion := serverVersionRE.FindString(serverVersionString)
+
+	sv, err := semver.Parse(serverVersion)
+	if err != nil {
+		return false, err
+	}
+
+	return v.LTE(sv), nil
 }

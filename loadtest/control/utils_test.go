@@ -219,3 +219,65 @@ func TestGeneratePostsSearchTerm(t *testing.T) {
 		require.Equal(t, fmt.Sprintf("from:user1 in:town-square on:%s one", now.Format("2006-01-02")), term)
 	})
 }
+
+func TestIsVersionSupported(t *testing.T) {
+	testCases := []struct {
+		version       string
+		serverVersion string
+		expected      bool
+		expectedErr   string
+	}{
+		{
+			version:       "",
+			serverVersion: "",
+			expected:      false,
+			expectedErr:   "Version string empty",
+		},
+		{
+			version:       "invalid",
+			serverVersion: "",
+			expected:      false,
+			expectedErr:   "No Major.Minor.Patch elements found",
+		},
+		{
+			version:       "5.30.0",
+			serverVersion: "invalid",
+			expected:      false,
+			expectedErr:   "Version string empty",
+		},
+		{
+			version:       "5.30.1",
+			serverVersion: "5.30.0",
+			expected:      false,
+			expectedErr:   "",
+		},
+		{
+			version:       "5.30.0",
+			serverVersion: "5.30.0",
+			expected:      true,
+			expectedErr:   "",
+		},
+		{
+			version:       "5.29.0",
+			serverVersion: "5.30.0",
+			expected:      true,
+			expectedErr:   "",
+		},
+		{
+			version:       "5.29.0",
+			serverVersion: "5.30.0.dev.d74e4887bd588dbe342a45c77d6dc52a.false",
+			expected:      true,
+			expectedErr:   "",
+		},
+	}
+
+	for _, tc := range testCases {
+		ok, err := IsVersionSupported(tc.version, tc.serverVersion)
+		if tc.expectedErr == "" {
+			require.Nil(t, err)
+		} else {
+			require.Equal(t, tc.expectedErr, err.Error())
+		}
+		require.Equal(t, tc.expected, ok)
+	}
+}

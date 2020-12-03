@@ -3,6 +3,7 @@ module github.com/mattermost/mattermost-load-test-ng
 go 1.12
 
 require (
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/gavv/httpexpect v2.0.0+incompatible
 	github.com/gocolly/colly/v2 v2.0.1
