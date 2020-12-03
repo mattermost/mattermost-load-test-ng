@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/v5/model"
 )
 
 // SimulController is a simulative implementation of a UserController.
@@ -104,7 +105,7 @@ func (c *SimulController) Run() {
 		}
 	}
 
-	actions := []userAction{
+	runningActions := []userAction{
 		{
 			run:       switchChannel,
 			frequency: 70,
@@ -175,15 +176,36 @@ func (c *SimulController) Run() {
 		},
 	}
 
+	resetActions := []userAction{
+		{
+			run:       c.logoutLogin,
+			frequency: 1,
+		},
+	}
+
+	actions := &runningActions
 	for {
-		action, err := pickAction(actions)
+		action, err := pickAction(*actions)
 		if err != nil {
 			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 		}
 
-		if resp := action.run(c.user); resp.Err != nil {
+		resp := action.run(c.user)
+		if resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
+
+			if controlErr, ok := resp.Err.(*control.UserError); ok {
+				if appErr, ok := controlErr.Err.(*model.AppError); ok && appErr.Id == "api.context.session_expired.app_error" {
+					actions = &resetActions
+				}
+			} else if appErr, ok := resp.Err.(*model.AppError); ok && appErr.Id == "api.context.session_expired.app_error" {
+				actions = &resetActions
+			}
 		} else {
+			if actions != &runningActions {
+				actions = &runningActions
+			}
+
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 
