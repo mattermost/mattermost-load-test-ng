@@ -195,10 +195,10 @@ func (c *SimulController) Run() {
 			c.status <- c.newErrorStatus(resp.Err)
 
 			if controlErr, ok := resp.Err.(*control.UserError); ok {
-				if appErr, ok := controlErr.Err.(*model.AppError); ok && appErr.Id == "api.context.session_expired.app_error" {
+				if appErr, ok := controlErr.Err.(*model.AppError); ok && (appErr.Id == "api.context.session_expired.app_error" || appErr.Id == "api.context.invalid_token.error") {
 					actions = &resetActions
 				}
-			} else if appErr, ok := resp.Err.(*model.AppError); ok && appErr.Id == "api.context.session_expired.app_error" {
+			} else if appErr, ok := resp.Err.(*model.AppError); ok && (appErr.Id == "api.context.session_expired.app_error" || appErr.Id == "api.context.invalid_token.error") {
 				actions = &resetActions
 			}
 		} else {
