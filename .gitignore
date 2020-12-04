@@ -72,6 +72,7 @@ config/simulcontroller.json
 config/gencontroller.json
 config/deployer.json
 config/comparison.json
+config/metricswatcher.json
 
 # binaries
 ltagent
