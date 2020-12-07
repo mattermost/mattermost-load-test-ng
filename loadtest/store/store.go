@@ -113,6 +113,9 @@ type UserStore interface {
 	// PostsIdsSince returns a list of post ids for posts created
 	// after a specified timestamp in milliseconds.
 	PostsIdsSince(ts int64) ([]string, error)
+
+	// ServerVersion returns the server version string.
+	ServerVersion() (string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -209,4 +212,7 @@ type MutableUserStore interface {
 	// profile
 	// SetProfileImage sets as stored the profile image for the given user.
 	SetProfileImage(userId string) error
+
+	// SetServerVersion sets the server version string.
+	SetServerVersion(version string) error
 }

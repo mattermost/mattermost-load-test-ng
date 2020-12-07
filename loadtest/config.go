@@ -58,6 +58,10 @@ type UserControllerConfiguration struct {
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
 	RatesDistribution []RatesDistribution `default_len:"1"`
+	// An optional MM server version to use when running actions (e.g. `5.30.0`).
+	// This value overrides the actual server version. If left empty,
+	// the one returned by the server is used instead.
+	ServerVersion string
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.

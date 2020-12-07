@@ -22,6 +22,8 @@ import (
 type userAction struct {
 	run       control.UserAction
 	frequency int
+	// Minimum supported server version
+	minServerVersion string
 }
 
 func (c *SimulController) connect() error {

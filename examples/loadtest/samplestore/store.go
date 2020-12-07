@@ -370,3 +370,11 @@ func (s *SampleStore) UserForPost(postId string) (string, error) {
 func (s *SampleStore) FileInfoForPost(postId string) ([]*model.FileInfo, error) {
 	return nil, nil
 }
+
+func (s *SampleStore) ServerVersion() (string, error) {
+	return "", nil
+}
+
+func (s *SampleStore) SetServerVersion(version string) error {
+	return nil
+}
