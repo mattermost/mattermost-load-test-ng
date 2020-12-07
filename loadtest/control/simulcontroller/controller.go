@@ -76,10 +76,7 @@ func (c *SimulController) Run() {
 
 	initActions := []userAction{
 		{
-			run: control.SignUp,
-		},
-		{
-			run: c.login,
+			run: c.loginOrSignUp,
 		},
 		{
 			run: c.joinTeam,
