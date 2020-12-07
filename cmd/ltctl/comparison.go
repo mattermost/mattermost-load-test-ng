@@ -60,12 +60,12 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
-	results, err := cmp.Run()
+	output, err := cmp.Run()
 	if err != nil {
 		return fmt.Errorf("failed to run comparisons: %w", err)
 	}
 
-	if err := printResults(results); err != nil {
+	if err := printResults(output.Results); err != nil {
 		return err
 	}
 

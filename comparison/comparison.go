@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-type deploymentInfo struct {
+type deploymentConfig struct {
 	config    deployment.Config
 	loadTests []LoadTestConfig
 }
@@ -22,9 +22,10 @@ type deploymentInfo struct {
 // Comparison holds the state needed to perform automated
 // load-test comparisons.
 type Comparison struct {
-	config      *Config
-	deployments map[string]*deploymentInfo
-	cancelCh    chan struct{}
+	config         *Config
+	deploymentInfo DeploymentInfo
+	deployments    map[string]*deploymentConfig
+	cancelCh       chan struct{}
 }
 
 // New creates and initializes a new Comparison object to be used to run
@@ -35,18 +36,19 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 	}
 
 	cmp := &Comparison{
-		config:      cfg,
-		deployments: map[string]*deploymentInfo{},
-		cancelCh:    make(chan struct{}),
+		config:         cfg,
+		deploymentInfo: getDeploymentInfo(deployerCfg),
+		deployments:    map[string]*deploymentConfig{},
+		cancelCh:       make(chan struct{}),
 	}
 
 	var i int
 	deployments := map[string]string{}
 	for _, lt := range cfg.LoadTests {
 		key := string(lt.Type) + string(lt.DBEngine)
-		var dp *deploymentInfo
+		var dp *deploymentConfig
 		if id, ok := deployments[key]; !ok {
-			dp = &deploymentInfo{config: *deployerCfg}
+			dp = &deploymentConfig{config: *deployerCfg}
 			dp.config.DBInstanceEngine = "aurora-" + string(lt.DBEngine)
 			dp.config.ClusterName = fmt.Sprintf("%s%d", dp.config.ClusterName, i)
 			id = fmt.Sprintf("deployment%d", i)
@@ -64,7 +66,8 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 
 // Run performs fully automated load-test comparisons.
 // It returns a list of results or an error in case of failure.
-func (c *Comparison) Run() ([]Result, error) {
+func (c *Comparison) Run() (Output, error) {
+	var output Output
 	// create deployments
 	err := c.deploymentAction(func(t *terraform.Terraform) error {
 		if err := t.Create(false); err != nil {
@@ -73,7 +76,7 @@ func (c *Comparison) Run() ([]Result, error) {
 		return provisionBuilds(t, c.config.BaseBuild.URL, c.config.NewBuild.URL)
 	})
 	if err != nil {
-		return nil, err
+		return output, err
 	}
 
 	// run load-tests
@@ -83,7 +86,7 @@ func (c *Comparison) Run() ([]Result, error) {
 	errsCh := make(chan error, nLoadTests)
 	resultsCh := make(chan Result, nLoadTests)
 	for dpID, dp := range c.deployments {
-		go func(dpID string, dp *deploymentInfo) {
+		go func(dpID string, dp *deploymentConfig) {
 			defer wg.Done()
 			t := terraform.New(dpID, &dp.config)
 			defer t.Cleanup()
@@ -123,12 +126,21 @@ func (c *Comparison) Run() ([]Result, error) {
 		mlog.Error("an error has occurred, cancelling", mlog.Err(err))
 		close(c.cancelCh)
 		wg.Wait()
-		return nil, err
+		return output, err
 	}
 
 	mlog.Info("load-tests have completed, going to generate some results")
+
 	// do actual comparisons and generate some results
-	return c.getResults(resultsCh)
+	results, err := c.getResults(resultsCh)
+	if err != nil {
+		return output, err
+	}
+
+	output.DeploymentInfo = c.deploymentInfo
+	output.Results = results
+
+	return output, nil
 }
 
 // Destroy destroys all resources associated with the deployments for the

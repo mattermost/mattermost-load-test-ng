@@ -9,9 +9,28 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 )
+
+// DeploymentInfo holds information regarding a deployment.
+type DeploymentInfo struct {
+	// Number of application instances.
+	AppInstanceCount int
+	// Type of EC2 application instances.
+	AppInstanceType string
+	// Number of load-test agent instances.
+	AgentInstanceCount int
+	// Type of EC2 load-test agent instances.
+	AgentInstanceType string
+	// Type of EC2 proxy instance.
+	ProxyInstanceType string
+	// Number of RDS nodes.
+	DBInstanceCount int
+	// Type of RDS instance.
+	DBInstanceType string
+}
 
 // LoadTestResult holds information regarding a load-test
 // performed during a comparison.
@@ -35,6 +54,25 @@ type Result struct {
 	DashboardURL string
 
 	deploymentID string
+}
+
+type Output struct {
+	// Information about the deployment in which the comparison ran.
+	DeploymentInfo DeploymentInfo
+	// A list of results.
+	Results []Result
+}
+
+func getDeploymentInfo(config *deployment.Config) DeploymentInfo {
+	return DeploymentInfo{
+		AppInstanceCount:   config.AppInstanceCount,
+		AppInstanceType:    config.AppInstanceType,
+		AgentInstanceCount: config.AgentInstanceCount,
+		AgentInstanceType:  config.AgentInstanceType,
+		ProxyInstanceType:  config.ProxyInstanceType,
+		DBInstanceCount:    config.DBInstanceCount,
+		DBInstanceType:     config.DBInstanceType,
+	}
 }
 
 func (c *Comparison) getResults(resultsCh <-chan Result) ([]Result, error) {
