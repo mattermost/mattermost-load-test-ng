@@ -287,7 +287,7 @@ func getServerVersion(serverURL string) (string, error) {
 	}
 
 	if version == "" {
-		return version, errors.New("server version should not be empty")
+		return version, errors.New("server version is empty")
 	}
 
 	return version, nil
