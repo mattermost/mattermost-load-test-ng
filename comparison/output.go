@@ -6,6 +6,7 @@ package comparison
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
@@ -105,9 +106,12 @@ func (c *Comparison) getResults(resultsCh <-chan Result) ([]Result, error) {
 		if c.config.Output.GenerateReport {
 			var buf bytes.Buffer
 			opts := report.CompareOpts{
-				GenGraph:     c.config.Output.GenerateGraphs,
-				GraphsPrefix: fmt.Sprintf("%s%d_", res.deploymentID, res.LoadTests[0].loadTestID),
+				GenGraph: c.config.Output.GenerateGraphs,
+				GraphsPrefix: fmt.Sprintf("%s_%s_%d_", res.LoadTests[0].Config.DBEngine,
+					res.LoadTests[0].Config.Type, res.LoadTests[0].loadTestID),
 			}
+			opts.GraphsPrefix = filepath.Join(c.config.Output.GraphsPath, opts.GraphsPrefix)
+
 			err := report.Compare(&buf, opts, baseReport, newReport)
 			if err != nil {
 				return results, err

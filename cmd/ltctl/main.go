@@ -236,6 +236,10 @@ func main() {
 		Short: "Run fully automated load-test comparisons",
 		RunE:  RunComparisonCmdF,
 	}
+	runComparisonCmd.Flags().Bool("archive", false, "create zip archive")
+	runComparisonCmd.Flags().StringP("output-dir", "d", "", "path to output directory")
+	runComparisonCmd.Flags().StringP("format", "f", "plain", "output format [plain, json]")
+
 	destroyComparisonCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy the current load-test comparison environment",
