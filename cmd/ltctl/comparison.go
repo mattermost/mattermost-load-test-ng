@@ -90,11 +90,12 @@ func printResults(results []comparison.Result) {
 
 func writeReports(results []comparison.Result, outPath string) error {
 	for i, res := range results {
-		if res.Report != "" {
-			filePath := filepath.Join(outPath, getReportFilename(i, res))
-			if err := ioutil.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
-				return err
-			}
+		if res.Report == "" {
+			continue
+		}
+		filePath := filepath.Join(outPath, getReportFilename(i, res))
+		if err := ioutil.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
+			return err
 		}
 	}
 	return nil
