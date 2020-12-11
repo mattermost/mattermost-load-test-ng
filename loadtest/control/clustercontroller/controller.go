@@ -122,6 +122,24 @@ func (c *ClusterController) Run() {
 				Info: fmt.Sprintf("updated config"),
 			}
 		},
+		func(u user.User) control.UserActionResponse {
+			if err := u.GetConfig(); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+
+			cfg := u.Store().Config()
+
+			if !*cfg.MessageExportSettings.EnableExport {
+				return control.UserActionResponse{Info: "message export is not enabled"}
+			}
+
+			err := u.MessageExport()
+			if err != nil {
+				return control.UserActionResponse{Err: err}
+			}
+
+			return control.UserActionResponse{Info: "message export triggered"}
+		},
 	}
 
 	for {

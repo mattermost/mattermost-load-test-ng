@@ -487,3 +487,7 @@ func (u *SampleUser) AutocompleteChannelsForTeamForSearch(teamId, name string) (
 func (u *SampleUser) AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error) {
 	return nil, nil
 }
+
+func (u *SampleUser) MessageExport() error {
+	return nil
+}
