@@ -60,13 +60,13 @@ Possible values:
 
 *int*
 
-The number of users to run. This is only considered if Type is "bounded"
+The number of users to run. This is only considered if `Type` is "bounded".
 
 ### Duration 
 
 *string*
 
-The duration of the load-test. This is only considered if Type is "bounded"
+The duration of the load-test. This is only considered if `Type` is "bounded".
 
 ## Output
 

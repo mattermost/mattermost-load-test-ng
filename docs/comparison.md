@@ -7,8 +7,8 @@ This document explains how to run an automated load-test comparison.
 ## Prerequisites
 
 - [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). The minimum supported version is 0.12.
-- AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication)
-- A Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md)
+- AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
+- A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
 
 ## Configuration
 
@@ -73,7 +73,7 @@ There are a few interesting flags that the `comparison run` command supports:
 
 #### Note
 
-Depending on how it was configured, the comparison process could take hours to complete.
+Depending on how it was configured, the comparison process can take hours to complete.
 
 ## Destroy 
 
