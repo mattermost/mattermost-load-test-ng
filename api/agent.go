@@ -337,7 +337,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	f, err := os.Open(config.UsersConfiguration.UsersFilePath)
 	if err == nil {
 		// The file is an optional parameter which may not be present.
-		// So we
+		// So we read it only if it opens successfully.
 		defer f.Close()
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
