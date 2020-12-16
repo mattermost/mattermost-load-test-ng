@@ -357,7 +357,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
-			return simplecontroller.New(id, ue, controllerConfig.(*simplecontroller.Config), status)
+			admin := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
+			return simplecontroller.New(id, ue, admin, controllerConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
@@ -367,14 +368,17 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerCluster:
 			// For cluster controller, we only use the sysadmin
 			// because we are just testing system console APIs.
-			ueConfig.Username = ""
-			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
-			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
-
-			admin := userentity.New(ueSetup, ueConfig)
+			admin := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
 			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
 		}
 	}
+}
+func admin(ueSetup userentity.Setup, ueConfig userentity.Config, email, password string) *userentity.UserEntity {
+	ueConfig.Username = ""
+	ueConfig.Email = email
+	ueConfig.Password = password
+
+	return userentity.New(ueSetup, ueConfig)
 }

@@ -179,3 +179,22 @@ func (c *SimpleController) disconnect() error {
 	c.wg.Wait()
 	return nil
 }
+
+func (c *SimpleController) messageExport(user.User) control.UserActionResponse {
+	if err := c.admin.GetConfig(); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	cfg := c.admin.Store().Config()
+
+	if !*cfg.MessageExportSettings.EnableExport {
+		return control.UserActionResponse{Info: "message export is not enabled"}
+	}
+
+	err := c.admin.MessageExport()
+	if err != nil {
+		return control.UserActionResponse{Err: err}
+	}
+
+	return control.UserActionResponse{Info: "message export triggered"}
+}

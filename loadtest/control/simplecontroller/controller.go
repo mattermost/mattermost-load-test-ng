@@ -19,6 +19,7 @@ import (
 type SimpleController struct {
 	id            int
 	user          user.User
+	admin         user.User
 	status        chan<- control.UserStatus
 	rate          float64
 	actions       []*UserAction
@@ -31,7 +32,7 @@ type SimpleController struct {
 // New creates and initializes a new SimpleController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*SimpleController, error) {
+func New(id int, user, admin user.User, config *Config, status chan<- control.UserStatus) (*SimpleController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -39,6 +40,7 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	sc := &SimpleController{
 		id:          id,
 		user:        user,
+		admin:       admin,
 		status:      status,
 		stopChan:    make(chan struct{}),
 		stoppedChan: make(chan struct{}),
@@ -79,6 +81,16 @@ func (c *SimpleController) Run() {
 		{
 			run: func(u user.User) control.UserActionResponse {
 				resp := control.Login(u)
+				if resp.Err != nil {
+					return resp
+				}
+				c.connect()
+				return resp
+			},
+		},
+		{
+			run: func(user.User) control.UserActionResponse {
+				resp := control.Login(c.admin)
 				if resp.Err != nil {
 					return resp
 				}
@@ -211,6 +223,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"ViewUser":           control.ViewUser,
 		"FetchStaticAssets":  control.FetchStaticAssets,
 		"UpdateTeam":         c.updateTeam,
+		"MessageExport":      c.messageExport,
 	}
 
 	for _, def := range definitions {

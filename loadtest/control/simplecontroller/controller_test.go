@@ -17,7 +17,7 @@ func TestSetRate(t *testing.T) {
 	err := defaults.Set(&cfg)
 	require.Nil(t, err)
 
-	c, err := New(1, &userentity.UserEntity{}, &cfg, make(chan control.UserStatus))
+	c, err := New(1, &userentity.UserEntity{}, &userentity.UserEntity{}, &cfg, make(chan control.UserStatus))
 	require.Nil(t, err)
 
 	require.Equal(t, 1.0, c.rate)

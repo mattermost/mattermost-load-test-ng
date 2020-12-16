@@ -64,7 +64,7 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 		return nil, err
 	}
 
-	return simplecontroller.New(id, ue, cfg, status)
+	return simplecontroller.New(id, ue, ue, cfg, status)
 }
 
 func TestNew(t *testing.T) {

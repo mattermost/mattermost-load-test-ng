@@ -104,6 +104,11 @@
       "ActionId": "Login",
       "WaitAfterMs": 1000,
       "RunPeriod": 20
+    },
+    {
+      "ActionId": "MessageExport",
+      "WaitAfterMs": 1000,
+      "RunPeriod": 1
     }
   ]
 }
