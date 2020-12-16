@@ -322,7 +322,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 	}
 
-	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
+	return func(index, id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
 		ueConfig := userentity.Config{
@@ -353,12 +353,17 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
-		ue := userentity.New(ueSetup, ueConfig)
+		var ue *userentity.UserEntity
+		if index == 0 {
+			// We want a user to be admin in order to be able to perform admin allowed actions
+			ue = admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
+		} else {
+			ue = userentity.New(ueSetup, ueConfig)
+		}
 
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
-			admin := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
-			return simplecontroller.New(id, ue, admin, controllerConfig.(*simplecontroller.Config), status)
+			return simplecontroller.New(id, ue, controllerConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:

@@ -37,7 +37,7 @@ type LoadTester struct {
 // It is passed during LoadTester initialization to provide a way to create
 // concrete UserController values from within the loadtest package without the
 // need of those being passed from the upper layer (the user of this API).
-type NewController func(int, chan<- control.UserStatus) (control.UserController, error)
+type NewController func(int, int, chan<- control.UserStatus) (control.UserController, error)
 
 func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 	// Copy the channel to prevent race conditions.
@@ -72,7 +72,7 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 		return 0, ErrNotRunning
 	}
 	for i := 0; i < numUsers; i++ {
-		if err := lt.addUser(); err != nil {
+		if err := lt.addUser(i); err != nil {
 			return i, err
 		}
 	}
@@ -81,7 +81,7 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 
 // addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
-func (lt *LoadTester) addUser() error {
+func (lt *LoadTester) addUser(index int) error {
 	activeUsers := len(lt.activeControllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
@@ -99,7 +99,7 @@ func (lt *LoadTester) addUser() error {
 			userId = rand.Intn(activeUsers)
 		}
 		var err error
-		controller, err = lt.newController(userId, lt.statusChan)
+		controller, err = lt.newController(index, userId, lt.statusChan)
 		if err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (lt *LoadTester) Run() error {
 	go lt.handleStatus(startedChan)
 	<-startedChan
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
-		if err := lt.addUser(); err != nil {
+		if err := lt.addUser(i); err != nil {
 			lt.log.Error(err.Error())
 		}
 	}

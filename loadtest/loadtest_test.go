@@ -49,7 +49,7 @@ var ltConfig = Config{
 	},
 }
 
-func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
+func newController(_index, id int, status chan<- control.UserStatus) (control.UserController, error) {
 	ueConfig := userentity.Config{
 		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
@@ -64,7 +64,7 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 		return nil, err
 	}
 
-	return simplecontroller.New(id, ue, ue, cfg, status)
+	return simplecontroller.New(id, ue, cfg, status)
 }
 
 func TestNew(t *testing.T) {
