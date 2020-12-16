@@ -47,6 +47,7 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 }
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
+	collapsedThreads := *c.user.Store().Config().ServiceSettings.CollapsedThreads == model.COLLAPSED_THREADS_DEFAULT_ON
 	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -56,7 +57,7 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	err = c.user.GetPostsForChannel(channel.Id, 0, 1)
+	err = c.user.GetPostsForChannel(channel.Id, 0, 1, collapsedThreads)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -73,7 +74,7 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 	const NUM_OF_SCROLLS = 3
 	const SLEEP_BETWEEN_SCROLL = 1000
 	for i := 0; i < NUM_OF_SCROLLS; i++ {
-		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10); err != nil {
+		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10, collapsedThreads); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)

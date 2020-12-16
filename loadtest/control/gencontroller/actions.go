@@ -281,6 +281,8 @@ func (c *GenController) addReaction(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
+	collapsedThreads := *u.Store().Config().ServiceSettings.CollapsedThreads == model.COLLAPSED_THREADS_DEFAULT_ON
+
 	resp := control.JoinChannel(u)
 	if resp.Err != nil {
 		return resp
@@ -297,7 +299,7 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := c.user.GetPostsForChannel(channel.Id, 0, 60); err != nil {
+	if err := c.user.GetPostsForChannel(channel.Id, 0, 60, collapsedThreads); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

@@ -106,21 +106,21 @@ type User interface {
 	// SearchPosts performs a search for posts in the given teamId with the given terms.
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	// GetPostsForChannel fetches and stores posts in a given channelId.
-	GetPostsForChannel(channelId string, page, perPage int) error
+	GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error
 	// GetPostsBefore fetches and stores posts in a given channelId that were made
 	// before a given postId.
-	GetPostsBefore(channelId, postId string, page, perPage int) error
+	GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error
 	// GetPostsAfter fetches and stores posts in a given channelId that were made
 	// after a given postId.
-	GetPostsAfter(channelId, postId string, page, perPage int) error
+	GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error
 	// GetPostsSince fetches and stores posts in a given channelId that were made
 	// since the given time. It returns a list of posts ids.
-	GetPostsSince(channelId string, time int64) ([]string, error)
+	GetPostsSince(channelId string, time int64, collapsedThreads bool) ([]string, error)
 	// GetPinnedPosts fetches and returns pinned posts in a given channelId.
 	GetPinnedPosts(channelId string) (*model.PostList, error)
 	// GetPostsAroundLastUnread fetches and stores the posts made around last
 	// unread in a given channelId. It returns a list of posts ids.
-	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error)
+	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int, collapsedThreads bool) ([]string, error)
 
 	// files
 	// UploadFile uploads the given data in the specified channel.

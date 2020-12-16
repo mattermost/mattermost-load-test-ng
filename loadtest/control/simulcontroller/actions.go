@@ -280,6 +280,8 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 }
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
+	collapsedThreads := *u.Store().Config().ServiceSettings.CollapsedThreads == model.COLLAPSED_THREADS_DEFAULT_ON
+
 	var currentChanId string
 	if current, err := u.Store().CurrentChannel(); err == nil {
 		currentChanId = current.Id
@@ -295,12 +297,12 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	if view, err := u.Store().ChannelView(channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if view == 0 {
-		postsIds, err = u.GetPostsAroundLastUnread(channel.Id, 30, 30)
+		postsIds, err = u.GetPostsAroundLastUnread(channel.Id, 30, 30, collapsedThreads)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
-		postsIds, err = u.GetPostsSince(channel.Id, view)
+		postsIds, err = u.GetPostsSince(channel.Id, view, collapsedThreads)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

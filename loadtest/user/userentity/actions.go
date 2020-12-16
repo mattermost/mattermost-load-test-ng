@@ -215,8 +215,8 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 }
 
 // GetPostsForChannel fetches and stores posts in a given channelId.
-func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) error {
-	postList, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "")
+func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
+	postList, resp := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads)
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -228,8 +228,8 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int) er
 
 // GetPostsBefore fetches and stores posts in a given channelId that were made before
 // a given postId.
-func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int) error {
-	postList, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "")
+func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error {
+	postList, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads)
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -241,8 +241,8 @@ func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int
 
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
 // a given postId.
-func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int) error {
-	postList, resp := ue.client.GetPostsAfter(channelId, postId, page, perPage, "")
+func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error {
+	postList, resp := ue.client.GetPostsAfter(channelId, postId, page, perPage, "", collapsedThreads)
 	if resp.Error != nil {
 		return resp.Error
 	}
@@ -254,8 +254,8 @@ func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int)
 
 // GetPostsSince fetches and stores posts in a given channelId that were made
 // since the given time. It returns a list of posts ids.
-func (ue *UserEntity) GetPostsSince(channelId string, time int64) ([]string, error) {
-	postList, resp := ue.client.GetPostsSince(channelId, time)
+func (ue *UserEntity) GetPostsSince(channelId string, time int64, collapsedThreads bool) ([]string, error) {
+	postList, resp := ue.client.GetPostsSince(channelId, time, collapsedThreads)
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
@@ -277,13 +277,13 @@ func (ue *UserEntity) GetPinnedPosts(channelId string) (*model.PostList, error) 
 
 // GetPostsAroundLastUnread fetches and stores the posts made around last
 // unread in a given channelId. It returns a list of posts ids.
-func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error) {
+func (ue *UserEntity) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int, collapsedThreads bool) ([]string, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return nil, err
 	}
 
-	postList, resp := ue.client.GetPostsAroundLastUnread(user.Id, channelId, limitBefore, limitAfter)
+	postList, resp := ue.client.GetPostsAroundLastUnread(user.Id, channelId, limitBefore, limitAfter, collapsedThreads)
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
