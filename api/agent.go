@@ -322,7 +322,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 	}
 
-	return func(index, id int, status chan<- control.UserStatus) (control.UserController, error) {
+	return func(isAdmin bool, id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
 		ueConfig := userentity.Config{
@@ -354,8 +354,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
 		var ue *userentity.UserEntity
-		if index == 0 {
-			// We want a user to be admin in order to be able to perform admin allowed actions
+		if isAdmin {
 			ue = admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
 		} else {
 			ue = userentity.New(ueSetup, ueConfig)

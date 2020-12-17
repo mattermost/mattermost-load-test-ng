@@ -28,9 +28,10 @@ var ltConfig = Config{
 		Type: "simple",
 	},
 	UsersConfiguration: UsersConfiguration{
-		MaxActiveUsers:     8,
-		InitialActiveUsers: 0,
-		AvgSessionsPerUser: 1,
+		MaxActiveUsers:         8,
+		InitialActiveUsers:     0,
+		AvgSessionsPerUser:     1,
+		PercentageOfAdminUsers: 0.0,
 	},
 	InstanceConfiguration: InstanceConfiguration{
 		NumTeams:               1,
@@ -49,7 +50,7 @@ var ltConfig = Config{
 	},
 }
 
-func newController(_index, id int, status chan<- control.UserStatus) (control.UserController, error) {
+func newController(_isAdmin bool, id int, status chan<- control.UserStatus) (control.UserController, error) {
 	ueConfig := userentity.Config{
 		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
