@@ -344,17 +344,10 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		var username, password, email string
 
 		if len(creds) > 0 {
-			// Emails and passwords are separated by space.
-			split := strings.Split(creds[id], " ")
-			if len(split) < 2 {
-				return nil, errors.New("user credential does not have space in between")
-			}
-			email = split[0]
-			password = split[1]
-			// Quick and dirty hack to extract username from email.
-			// This is not terribly important to be correct.
-			username = strings.Split(email, "@")[0]
-			username = strings.Replace(username, "+", "-", -1)
+			// The bounds check is already done during creation of the creds slice.
+			username = creds[id].username
+			email = creds[id].email
+			password = creds[id].password
 		} else {
 			username = fmt.Sprintf("%s-%d", namePrefix, id)
 			email = fmt.Sprintf("%s-%d@example.com", namePrefix, id)
@@ -415,10 +408,16 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	}, nil
 }
 
-func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]string, error) {
-	var lines []string
+type user struct {
+	email    string
+	username string
+	password string
+}
+
+func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, error) {
+	var users []user
 	if usersFilePath == "" {
-		return lines, nil
+		return users, nil
 	}
 	f, err := os.Open(usersFilePath)
 	if err != nil {
@@ -427,7 +426,24 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]string
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		line := scanner.Text()
+		// Emails and passwords are separated by space.
+		split := strings.Split(line, " ")
+		if len(split) < 2 {
+			return nil, fmt.Errorf("user credential %q does not have space in between", line)
+		}
+		email := split[0]
+		password := split[1]
+		// Quick and dirty hack to extract username from email.
+		// This is not terribly important to be correct.
+		username := strings.Split(email, "@")[0]
+		username = strings.Replace(username, "+", "-", -1)
+
+		users = append(users, user{
+			email:    email,
+			username: username,
+			password: password,
+		})
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from %s: %w", f.Name(), err)
@@ -435,8 +451,9 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]string
 	// We do not allow to mix user-defined and auto signup modes.
 	// If the user specifies a custom login file, then it should contain
 	// all the users that is expected to login during a load-test.
-	if len(lines) < config.UsersConfiguration.MaxActiveUsers+1 {
-		return nil, fmt.Errorf("number of lines in %q is %d, which is less than MaxActiveUsers+1(%d)", usersFilePath, len(lines), config.UsersConfiguration.MaxActiveUsers+1)
+	if len(users) < config.UsersConfiguration.MaxActiveUsers+1 {
+		return nil, fmt.Errorf("number of lines in %q is %d, which is less than MaxActiveUsers+1(%d)", usersFilePath, len(users), config.UsersConfiguration.MaxActiveUsers+1)
 	}
-	return lines, nil
+
+	return users, nil
 }
