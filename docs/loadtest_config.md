@@ -12,7 +12,7 @@ The URL to direct the load. Should be the public facing URL of the target Matter
 
 *string*
 
-The URL to the WebSocket endpoint the users will connect to.
+The URL to the WebSocket endpoint the users will connect to.  
 In most cases this will be the same as `ServerURL` with `http` replaced with `ws` or `https` replaced with `wss`.
 
 ### AdminEmail
@@ -52,9 +52,9 @@ The distribution of action rates for running controllers.
 
 Rate is a multiplier that will affect the speed at which user actions are executed by the `UserController`.
 
-A rate < 1.0 will run actions at a faster pace.
-A rate == 1.0 will run actions at the default pace.
-A rate > 1.0 will run actions at a slower pace.
+A rate < 1.0 will run actions at a faster pace.   
+A rate == 1.0 will run actions at the default pace.    
+A rate > 1.0 will run actions at a slower pace.  
 
 Percentage is the percentage of controllers that should run with the specified rate.
 
@@ -71,7 +71,7 @@ This value overrides the actual server version. If left empty, the one returned 
 
 *int*
 
-The number of teams the target Mattermost instance should have.
+The number of teams the target Mattermost instance should have.  
 These will be created during the `init` process.
 
 ## UsersConfiguration
@@ -86,7 +86,7 @@ The amount of active users to run when the load-test starts.
 
 *string*
 
-The path to the file which contains a list of user email and passwords that will be used by the tool if set. Each line should be for a user containing an email and password separated by space. It should have enough lines to contain the maximum number of users a load-test is expected to reach.
+The path to the file which contains a list of user email and passwords that will be used by the tool if set. Each line should be for a user containing an email and password separated by space. The number of lines in the file should be at least equal to MaxActiveUsers.
 
 ### MaxActiveUsers
 

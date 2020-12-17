@@ -333,23 +333,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 	}
 
-	var creds []string
-	f, err := os.Open(config.UsersConfiguration.UsersFilePath)
-	if err == nil {
-		// The file is an optional parameter which may not be present.
-		// So we read it only if it opens successfully.
-		defer f.Close()
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			creds = append(creds, scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			return nil, fmt.Errorf("failed to read from %s: %w", f.Name(), err)
-		}
-	} else if !os.IsNotExist(err) {
-		// If the file exists, but failed to open, then probably it is worthwhile
-		// logging it.
-		mlog.Warn("Failed to open UsersFilePath. Continuing with default signup", mlog.Err(err))
+	creds, err := getUserCredentials(config.UsersConfiguration.UsersFilePath, config)
+	if err != nil {
+		return nil, err
 	}
 
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
@@ -358,12 +344,6 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		var username, password, email string
 
 		if len(creds) > 0 {
-			// We do not allow to mix user-defined and auto signup modes.
-			// If the user specifies a custom login file, then it should contain
-			// all the users that is expected to login during a load-test.
-			if id >= len(creds) {
-				return nil, errors.New("exceeded user list limit")
-			}
 			// Emails and passwords are separated by space.
 			split := strings.Split(creds[id], " ")
 			if len(split) < 2 {
@@ -433,4 +413,30 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			panic("controller type must be valid")
 		}
 	}, nil
+}
+
+func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]string, error) {
+	var lines []string
+	if usersFilePath == "" {
+		return lines, nil
+	}
+	f, err := os.Open(usersFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %q: %w", usersFilePath, err)
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read from %s: %w", f.Name(), err)
+	}
+	// We do not allow to mix user-defined and auto signup modes.
+	// If the user specifies a custom login file, then it should contain
+	// all the users that is expected to login during a load-test.
+	if len(lines) < config.UsersConfiguration.MaxActiveUsers+1 {
+		return nil, fmt.Errorf("number of lines in %q is %d, which is less than MaxActiveUsers+1(%d)", usersFilePath, len(lines), config.UsersConfiguration.MaxActiveUsers+1)
+	}
+	return lines, nil
 }
