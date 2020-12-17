@@ -50,7 +50,7 @@ type Config struct {
 	// Password to connect to the DB.
 	DBPassword string `default:"mostest80098bigpass_" validate:"notempty"`
 	// Use an external DB for no RDS instance engines.
-	ExternalDBHost string `default:"" validate:"notempty"`
+	ExternalDBHost string `default:""`
 	// Use an external DB Port for no RDS instance engines.
 	ExternalDBPort string `default:"26257" validate:"notempty"`
 	// Use an external DB Name for no RDS instance engines.
