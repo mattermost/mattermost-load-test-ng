@@ -317,6 +317,10 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
 		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
 		driverName = "postgres"
+	case "cockroachdb":
+		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + t.config.ExternalDBHost + ":" + t.config.ExternalDBPort + "/" + t.config.ExternalDBName + "?sslmode=require"
+		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + t.config.ExternalDBHost + ":" + t.config.ExternalDBPort + "/" + t.config.ExternalDBName + "?sslmode=require"}
+		driverName = "cockroach"
 	case "aurora-mysql":
 		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
 		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}

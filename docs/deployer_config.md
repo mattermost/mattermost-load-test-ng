@@ -135,6 +135,24 @@ The username to connect to the database.
 
 The password to connect to the database.
 
+## ExternalDBHost
+
+*string*
+
+The url of the external DB for no RDS instance engines.
+
+## ExternalDBPort
+
+*string*
+
+The port of the external DB for no RDS instance engines.
+
+## ExternalDBName
+
+*string*
+
+The database name of the external DB for no RDS instance engines.
+
 ## MattermostDownloadURL
 
 *string*

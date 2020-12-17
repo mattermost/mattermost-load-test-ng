@@ -62,6 +62,7 @@ variable "db_engine_version" {
   default = {
     "aurora-mysql"      = "5.7.mysql_aurora.2.09.0"
     "aurora-postgresql" = "11.7"
+    "cockroachdb"       = "20.1.2"
   }
 }
 

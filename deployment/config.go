@@ -44,11 +44,17 @@ type Config struct {
 	// Type of the DB instance.
 	DBInstanceType string `default:"db.r4.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
-	DBInstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
+	DBInstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql, cockroachdb}"`
 	// Username to connect to the DB.
 	DBUserName string `default:"mmuser" validate:"notempty"`
 	// Password to connect to the DB.
 	DBPassword string `default:"mostest80098bigpass_" validate:"notempty"`
+	// Use an external DB for no RDS instance engines.
+	ExternalDBHost string `default:"" validate:"notempty"`
+	// Use an external DB Port for no RDS instance engines.
+	ExternalDBPort string `default:"26257" validate:"notempty"`
+	// Use an external DB Name for no RDS instance engines.
+	ExternalDBName string `default:"mattermostdb" validate:"notempty"`
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
