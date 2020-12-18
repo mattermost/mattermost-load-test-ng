@@ -105,53 +105,63 @@ The type of the EC2 instance of the proxy server. See type [here](https://aws.am
 
 The path to the SSH public key, this key is used for establishing an SSH connection to the AWS instances.
 
-## DBInstanceCount
+## TerraformDBSettings
+
+### InstanceCount
 
 *int*
 
 The number of database instances.
 
-## DBInstanceType
+### InstanceType
 
 *string*
 
 The type of database instance. See types [here](https://aws.amazon.com/rds/instance-types/).
 
-## DBInstanceEngine
+### InstanceEngine
 
 *string*
 
 The type of database backend. This can be either `aurora-mysql` or `aurora-postgresql`.
 
-## DBUserName
+### UserName
 
 *string*
 
 The username to connect to the database.
 
-## DBPassword
+### Password
 
 *string*
 
 The password to connect to the database.
 
-## ExternalDBHost
+## ExternalDBSettings
+
+### DriverName
 
 *string*
 
-The url of the external DB for no RDS instance engines.
+The Mattermost driver to use to access to the external database.
 
-## ExternalDBPort
-
-*string*
-
-The port of the external DB for no RDS instance engines.
-
-## ExternalDBName
+### DataSource
 
 *string*
 
-The database name of the external DB for no RDS instance engines.
+The dsn of the external database.
+
+### DataSourceReplicas
+
+*[]string*
+
+The list of dsn for external database read replicas
+
+### DataSourceSearchReplicas
+
+*[]string*
+
+The list of dsn for external database search replicas
 
 ## MattermostDownloadURL
 
