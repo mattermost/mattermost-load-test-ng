@@ -39,6 +39,7 @@ type MemStore struct {
 	currentTeam         *model.Team
 	channelViews        map[string]int64
 	profileImages       map[string]bool
+	serverVersion       string
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -908,5 +909,20 @@ func (s *MemStore) SetProfileImage(userId string) error {
 	}
 
 	s.profileImages[userId] = true
+	return nil
+}
+
+// ServerVersion returns the server version string.
+func (s *MemStore) ServerVersion() (string, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.serverVersion, nil
+}
+
+// SetProfileImage sets as stored the profile image for the given user.
+func (s *MemStore) SetServerVersion(version string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.serverVersion = version
 	return nil
 }

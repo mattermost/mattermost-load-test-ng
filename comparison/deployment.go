@@ -22,7 +22,7 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform) error)
 	wg.Add(len(c.deployments))
 	errsCh := make(chan error, len(c.deployments))
 	for id, dp := range c.deployments {
-		go func(id string, dp *deploymentInfo) {
+		go func(id string, dp *deploymentConfig) {
 			defer wg.Done()
 			t := terraform.New(id, &dp.config)
 			defer t.Cleanup()

@@ -58,6 +58,13 @@ A rate > 1.0 will run actions at a slower pace.
 
 Percentage is the percentage of controllers that should run with the specified rate.
 
+### ServerVersion
+
+*string*
+
+An optional MM server version to use when running actions (e.g. `5.30.0`).
+This value overrides the actual server version. If left empty, the one returned by the server is used instead.
+
 ## InstanceConfiguration
 
 ### NumTeams
@@ -74,6 +81,12 @@ These will be created during the `init` process.
 *int*
 
 The amount of active users to run when the load-test starts.
+
+### UsersFilePath
+
+*string*
+
+The path to the file which contains a list of user email and passwords that will be used by the tool if set. Each line should be for a user containing an email and password separated by space. The number of lines in the file should be at least equal to MaxActiveUsers.
 
 ### MaxActiveUsers
 

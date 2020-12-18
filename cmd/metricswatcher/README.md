@@ -4,11 +4,12 @@
 
 ## Configuration
 
-The file `config.metricswatcher.json` contains all the needed configuration, such as Prometheus server URL, interval to update the metrics, logging and Prometheus queries.
+The file `config/metricswatcher.sample.json` contains all the needed configuration, such as Prometheus server URL, interval to update the metrics, logging and Prometheus queries.
 
 ## Running
 
 ```
-metricswatcher --config config/config.metricswatcher.json
+cp config/metricswatcher.sample.json config/metricswatcher.json
+metricswatcher --config config/metricswatcher.json
 ```
 

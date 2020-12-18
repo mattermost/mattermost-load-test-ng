@@ -58,6 +58,10 @@ type UserControllerConfiguration struct {
 	// A Rate of 1.0 will run actions at the default pace.
 	// A Rate > 1.0 will run actions at a slower pace.
 	RatesDistribution []RatesDistribution `default_len:"1"`
+	// An optional MM server version to use when running actions (e.g. `5.30.0`).
+	// This value overrides the actual server version. If left empty,
+	// the one returned by the server is used instead.
+	ServerVersion string
 }
 
 // IsValid reports whether a given UserControllerConfiguration is valid or not.
@@ -114,6 +118,10 @@ func (c *InstanceConfiguration) IsValid() error {
 
 // UsersConfiguration holds information about the users of the load-test.
 type UsersConfiguration struct {
+	// The file which contains the user emails and passwords in case the operator
+	// wants to login using a different set of credentials. This is helpful during
+	// LDAP logins.
+	UsersFilePath string
 	// The number of initial users the load-test should start with.
 	InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
 	// The maximum number of users that can be simulated by a single load-test

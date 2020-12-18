@@ -22,6 +22,8 @@ import (
 type userAction struct {
 	run       control.UserAction
 	frequency int
+	// Minimum supported server version
+	minServerVersion string
 }
 
 func (c *SimulController) connect() error {
@@ -106,6 +108,18 @@ func (c *SimulController) fullReload(u user.User) control.UserActionResponse {
 	return c.reload(true)
 }
 
+func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse {
+	resp := c.login(u)
+	if resp.Err != nil {
+		if resp = control.SignUp(u); resp.Err != nil {
+			return resp
+		}
+		c.status <- c.newInfoStatus(resp.Info)
+		return c.login(u)
+	}
+	return resp
+}
+
 func (c *SimulController) login(u user.User) control.UserActionResponse {
 	for {
 		resp := control.Login(u)
@@ -115,6 +129,11 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
+		}
+
+		errId := resp.Err.(*control.UserError).Err.(*model.AppError).Id
+		if errId == "api.user.login.invalid_credentials_email_username" {
+			return resp
 		}
 
 		c.status <- c.newErrorStatus(resp.Err)

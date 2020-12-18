@@ -39,6 +39,7 @@
   },
   "UsersConfiguration": {
     "InitialActiveUsers": 0,
+    "UsersFilePath": "",
     "MaxActiveUsers": 2000,
     "AvgSessionsPerUser": 1
   },

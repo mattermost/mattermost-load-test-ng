@@ -53,7 +53,7 @@ func (c *LoadTestConfig) IsValid() error {
 
 // BuildConfig holds information about a build.
 type BuildConfig struct {
-	// A label identifying the build
+	// A label identifying the build.
 	Label string `validate:"notempty"`
 
 	// URL from where to download a build release.
@@ -73,6 +73,8 @@ type OutputConfig struct {
 	// A boolean indicating whether to generate gnuplot graphs
 	// at the end of the comparison.
 	GenerateGraphs bool `default:"false"`
+	// An optional path indicating where to write the graphs.
+	GraphsPath string
 }
 
 // Config holds information needed perform automated load-test comparisons.

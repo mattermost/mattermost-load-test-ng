@@ -4,24 +4,70 @@
 package main
 
 import (
+	"archive/zip"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/comparison"
 
 	"github.com/spf13/cobra"
 )
 
-func printResults(results []comparison.Result) error {
+func createArchive(inPath, outPath string) error {
+	files, err := ioutil.ReadDir(inPath)
+	if err != nil {
+		return err
+	}
+
+	zipFile, err := os.Create(filepath.Join(outPath,
+		fmt.Sprintf("comparison_%d.zip", time.Now().Unix())))
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+	wr := zip.NewWriter(zipFile)
+	defer wr.Close()
+
+	for _, file := range files {
+		fwr, err := wr.Create(file.Name())
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Open(filepath.Join(inPath, file.Name()))
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if _, err := io.Copy(fwr, f); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getReportFilename(id int, res comparison.Result) string {
+	ltConfig := res.LoadTests[0].Config
+	name := fmt.Sprintf("%d_%s_%s", id, ltConfig.DBEngine, ltConfig.Type)
+	if ltConfig.Type == comparison.LoadTestTypeBounded {
+		name += fmt.Sprintf("_%d", ltConfig.NumUsers)
+	}
+	return fmt.Sprintf("report_%s.md", name)
+}
+
+func printResults(results []comparison.Result) {
 	for i, res := range results {
 		fmt.Println("==================================================")
 		fmt.Println("Comparison result:")
 		if res.Report != "" {
-			filename := fmt.Sprintf("report_%d.md", i)
-			if err := ioutil.WriteFile(filename, []byte(res.Report), 0660); err != nil {
-				return err
-			}
-			fmt.Printf("Report: %s\n", filename)
+			fmt.Printf("Report: %s\n", getReportFilename(i, res))
 		}
 		if res.DashboardURL != "" {
 			fmt.Printf("Grafana Dashboard: %s\n", res.DashboardURL)
@@ -40,6 +86,18 @@ func printResults(results []comparison.Result) error {
 		}
 		fmt.Printf("==================================================\n\n")
 	}
+}
+
+func writeReports(results []comparison.Result, outPath string) error {
+	for i, res := range results {
+		if res.Report == "" {
+			continue
+		}
+		filePath := filepath.Join(outPath, getReportFilename(i, res))
+		if err := ioutil.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -55,18 +113,54 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
+	outputPath, _ := cmd.Flags().GetString("output-dir")
+	if outputPath != "" {
+		cfg.Output.GraphsPath = outputPath
+	}
+
+	archivePath := outputPath
+	archive, _ := cmd.Flags().GetBool("archive")
+	if archive {
+		dir, err := ioutil.TempDir("", "comparison")
+		if err != nil {
+			return fmt.Errorf("failed to create temp dir: %w", err)
+		}
+		defer os.RemoveAll(dir)
+		cfg.Output.GraphsPath = dir
+		outputPath = dir
+	}
+
 	cmp, err := comparison.New(cfg, deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
-	results, err := cmp.Run()
+	output, err := cmp.Run()
 	if err != nil {
 		return fmt.Errorf("failed to run comparisons: %w", err)
 	}
 
-	if err := printResults(results); err != nil {
-		return err
+	if format, _ := cmd.Flags().GetString("format"); format == "json" {
+		f, err := os.Create(filepath.Join(outputPath, "comparison.json"))
+		if err != nil {
+			return fmt.Errorf("failed to create file: %w", err)
+		}
+		defer f.Close()
+
+		if err := json.NewEncoder(f).Encode(output.Results); err != nil {
+			return fmt.Errorf("failed to encode results: %w", err)
+		}
+	} else {
+		if err := writeReports(output.Results, outputPath); err != nil {
+			return fmt.Errorf("failed to write reports: %w", err)
+		}
+		printResults(output.Results)
+	}
+
+	if archive {
+		if err := createArchive(outputPath, archivePath); err != nil {
+			return fmt.Errorf("failed to create archive: %w", err)
+		}
 	}
 
 	return nil
