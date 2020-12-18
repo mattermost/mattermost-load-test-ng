@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -250,6 +251,18 @@ func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error
 
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
+	}
+
+	var rlimit syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rlimit); err != nil {
+		return nil, fmt.Errorf("could not get the Rlimit value: %w", err)
+	}
+
+	if maxActiveUsers := config.UsersConfiguration.MaxActiveUsers; uint64(
+		maxActiveUsers+(maxActiveUsers/4)) > rlimit.Max {
+		return nil, fmt.Errorf("MaxActiveUsers is not compatible with max Rlimit value. "+
+			"MaxActiveUsers = %d, max_Rlimit = %d",
+			maxActiveUsers, rlimit.Max)
 	}
 
 	return &LoadTester{
