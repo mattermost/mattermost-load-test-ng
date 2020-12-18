@@ -142,7 +142,12 @@ func genDataWithPrefix(config *loadtest.Config, genConfig gencontroller.Config, 
 		if err != nil {
 			return fmt.Errorf("error while creating new controller: %w", err)
 		}
+
 		lt, err := loadtest.New(config, newC, logger)
+		if err != nil {
+			return fmt.Errorf("error while initializing loadtest: %w", err)
+		}
+
 		mlog.Info(fmt.Sprintf("generating %d users with prefix %s", numUsers, userPrefix))
 		err = genData(lt, numUsers)
 		if err != nil {
