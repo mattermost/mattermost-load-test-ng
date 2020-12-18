@@ -138,10 +138,11 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 
 func genDataWithPrefix(config *loadtest.Config, genConfig gencontroller.Config, logger *mlog.Logger, seedData map[string]int64) error {
 	for userPrefix, numUsers := range seedData {
-		lt, err := loadtest.New(config, api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil), logger)
+		newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil)
 		if err != nil {
-			return fmt.Errorf("error while initializing loadtest: %w", err)
+			return fmt.Errorf("error while creating new controller: %w", err)
 		}
+		lt, err := loadtest.New(config, newC, logger)
 		mlog.Info(fmt.Sprintf("generating %d users with prefix %s", numUsers, userPrefix))
 		err = genData(lt, numUsers)
 		if err != nil {

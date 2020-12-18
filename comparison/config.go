@@ -53,7 +53,7 @@ func (c *LoadTestConfig) IsValid() error {
 
 // BuildConfig holds information about a build.
 type BuildConfig struct {
-	// A label identifying the build
+	// A label identifying the build.
 	Label string `validate:"notempty"`
 
 	// URL from where to download a build release.
