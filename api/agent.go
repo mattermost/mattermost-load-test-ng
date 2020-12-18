@@ -322,7 +322,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 	}
 
-	return func(isAdmin bool, id int, status chan<- control.UserStatus) (control.UserController, error) {
+	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
 		ueConfig := userentity.Config{
@@ -353,12 +353,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
-		var ue *userentity.UserEntity
-		if isAdmin {
-			ue = admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
-		} else {
-			ue = userentity.New(ueSetup, ueConfig)
-		}
+
+		ue := userentity.New(ueSetup, ueConfig)
 
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
@@ -366,23 +362,45 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
-			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
+			// In case that we need to promote users to admins we need the existing system admin to promote them
+			admin, err := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
+			if err != nil {
+				return nil, err
+			}
+
+			return gencontroller.New(id, ue, admin, controllerConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		case loadtest.UserControllerCluster:
 			// For cluster controller, we only use the sysadmin
 			// because we are just testing system console APIs.
-			admin := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
+			admin, err := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
+			if err != nil {
+				return nil, err
+			}
+
 			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
 		}
 	}
 }
-func admin(ueSetup userentity.Setup, ueConfig userentity.Config, email, password string) *userentity.UserEntity {
-	ueConfig.Username = ""
-	ueConfig.Email = email
-	ueConfig.Password = password
+func admin(ueSetup userentity.Setup, ueConfig userentity.Config, email, password string) (*userentity.UserEntity, error) {
+	adminStore, err := memstore.New(&memstore.Config{
+		MaxStoredPosts:          500,
+		MaxStoredUsers:          1000,
+		MaxStoredChannelMembers: 1000,
+		MaxStoredStatuses:       1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	adminUeSetup := ueSetup
+	adminUeSetup.Store = adminStore
+	adminUeConfig := ueConfig
+	adminUeConfig.Username = ""
+	adminUeConfig.Email = email
+	adminUeConfig.Password = password
 
-	return userentity.New(ueSetup, ueConfig)
+	return userentity.New(adminUeSetup, adminUeConfig), nil
 }

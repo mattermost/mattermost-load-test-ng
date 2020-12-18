@@ -42,7 +42,7 @@ func SignUp(u user.User) UserActionResponse {
 
 	if err := u.SignUp(email, username, password); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
+			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", email)}
 		}
 		return UserActionResponse{Err: NewUserError(err)}
 	}

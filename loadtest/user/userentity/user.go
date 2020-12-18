@@ -16,6 +16,8 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
+const AdminPrefix = "adminuser"
+
 // UserEntity is an implementation of the User interface
 // which provides methods to interact with the Mattermost server.
 type UserEntity struct {

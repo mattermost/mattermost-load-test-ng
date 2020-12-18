@@ -21,6 +21,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	initialUserCount = 50 // The number of initial user to be created
+	userBatchSize    = 10 // How many users will be added at each iteration
+)
+
 func isInitDone(serverURL, userPrefix string) (bool, error) {
 	ueConfig := userentity.Config{
 		ServerURL: serverURL,
@@ -49,7 +54,7 @@ func genData(lt *loadtest.LoadTester, numUsers int64) error {
 	}(time.Now())
 
 	for lt.Status().NumUsersAdded != numUsers {
-		if _, err := lt.AddUsers(10); err != nil {
+		if _, err := lt.AddUsers(userBatchSize); err != nil {
 			return fmt.Errorf("failed to add users %w", err)
 		}
 		time.Sleep(5 * time.Second)
@@ -85,6 +90,10 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	adminPercent, err := cmd.Flags().GetFloat64("admin-percent")
+	if err != nil {
+		return err
+	}
 
 	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
 		return err
@@ -110,6 +119,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
 	config.UsersConfiguration.InitialActiveUsers = 0
+	config.UsersConfiguration.PercentageOfAdminUsers = adminPercent
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
@@ -117,12 +127,29 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	lt, err := loadtest.New(config, api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil), log)
-	if err != nil {
-		return fmt.Errorf("error while initializing loadtest: %w", err)
+	adminUserCount := int64(config.UsersConfiguration.PercentageOfAdminUsers * float64(initialUserCount))
+	data := map[string]int64{
+		userentity.AdminPrefix: adminUserCount,
+		userPrefix:             initialUserCount - adminUserCount,
 	}
 
-	return genData(lt, 50)
+	return genDataWithPrefix(config, genConfig, log, data)
+}
+
+func genDataWithPrefix(config *loadtest.Config, genConfig gencontroller.Config, logger *mlog.Logger, seedData map[string]int64) error {
+	for userPrefix, numUsers := range seedData {
+		lt, err := loadtest.New(config, api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil), logger)
+		if err != nil {
+			return fmt.Errorf("error while initializing loadtest: %w", err)
+		}
+		mlog.Info(fmt.Sprintf("generating %d users with prefix %s", numUsers, userPrefix))
+		err = genData(lt, numUsers)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func MakeInitCommand() *cobra.Command {
@@ -134,6 +161,7 @@ func MakeInitCommand() *cobra.Command {
 		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
+	cmd.PersistentFlags().Float64P("admin-percent", "", 0.0, "value that determines how many users will be promoted to admins")
 	return cmd
 }
 

@@ -50,7 +50,7 @@ var ltConfig = Config{
 	},
 }
 
-func newController(_isAdmin bool, id int, status chan<- control.UserStatus) (control.UserController, error) {
+func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
 	ueConfig := userentity.Config{
 		ServerURL:    ltConfig.ConnectionConfiguration.ServerURL,
 		WebSocketURL: ltConfig.ConnectionConfiguration.WebSocketURL,
@@ -121,8 +121,8 @@ func TestAddUsers(t *testing.T) {
 func TestRemoveUsers(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
 	lt, err := New(&ltConfig, newController, log)
+	require.NoError(t, err)
 	defer close(lt.statusChan)
-	require.Nil(t, err)
 
 	n, err := lt.RemoveUsers(0)
 	require.Equal(t, ErrInvalidNumUsers, err)

@@ -37,7 +37,7 @@ type LoadTester struct {
 // It is passed during LoadTester initialization to provide a way to create
 // concrete UserController values from within the loadtest package without the
 // need of those being passed from the upper layer (the user of this API).
-type NewController func(bool, int, chan<- control.UserStatus) (control.UserController, error)
+type NewController func(int, chan<- control.UserStatus) (control.UserController, error)
 
 func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 	// Copy the channel to prevent race conditions.
@@ -72,7 +72,7 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 		return 0, ErrNotRunning
 	}
 	for i := 0; i < numUsers; i++ {
-		if err := lt.addUser(lt.isAdmin(i+1, numUsers)); err != nil {
+		if err := lt.addUser(); err != nil {
 			return i, err
 		}
 	}
@@ -81,7 +81,7 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 
 // addUser is an internal API called from Run and AddUsers both.
 // DO NOT call this by itself, because this method is not protected by a mutex.
-func (lt *LoadTester) addUser(isAdmin bool) error {
+func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.activeControllers)
 	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
@@ -99,7 +99,7 @@ func (lt *LoadTester) addUser(isAdmin bool) error {
 			userId = rand.Intn(activeUsers)
 		}
 		var err error
-		controller, err = lt.newController(isAdmin, userId, lt.statusChan)
+		controller, err = lt.newController(userId, lt.statusChan)
 		if err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (lt *LoadTester) Run() error {
 	go lt.handleStatus(startedChan)
 	<-startedChan
 	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
-		if err := lt.addUser(lt.isAdmin(i+1, lt.config.UsersConfiguration.InitialActiveUsers)); err != nil {
+		if err := lt.addUser(); err != nil {
 			lt.log.Error(err.Error())
 		}
 	}
@@ -238,11 +238,6 @@ func (lt *LoadTester) Status() *Status {
 		NumErrors:       numErrors,
 		StartTime:       lt.status.StartTime,
 	}
-}
-
-func (lt *LoadTester) isAdmin(i int, totalUsersNum int) bool {
-	maxIndexForAdmins := int64(lt.config.UsersConfiguration.PercentageOfAdminUsers * float64(totalUsersNum))
-	return int64(i) <= maxIndexForAdmins
 }
 
 // New creates and initializes a new LoadTester with given config. A factory
