@@ -71,7 +71,7 @@ type Config struct {
 // and provisioned.
 type TerraformDBSettings struct {
 	// Number of DB instances.
-	InstanceCount int `default:"1" validate:"range:[1,)"`
+	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
 	InstanceType string `default:"db.r4.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
