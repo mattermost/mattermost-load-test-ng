@@ -104,7 +104,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg BuildConfig, cancelCh <-chan struct{}) error {
+func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -180,8 +180,31 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		clients: []*ssh.Client{agentClient},
 	}
 
-	cmds := []cmd{stopCmd, installCmd, resetCmd, startCmd, createAdminCmd, initDataCmd}
+	cmds := []cmd{stopCmd, installCmd, resetCmd}
+
+	loadDBDumpCmd := cmd{
+		msg:     "Loading DB dump",
+		clients: []*ssh.Client{appClients[0]},
+	}
+	switch config.DBInstanceEngine {
+	case "aurora-postgresql":
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%sdb?sslmode=disable'", dumpFilename,
+			config.DBUserName, config.DBPassword, output.DBCluster.ClusterEndpoint, config.ClusterName)
+	case "aurora-mysql":
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %sdb", dumpFilename,
+			output.DBCluster.ClusterEndpoint, config.DBUserName, config.DBPassword, config.ClusterName)
+	default:
+		return fmt.Errorf("invalid db engine %s", config.DBInstanceEngine)
+	}
+
+	if dumpFilename == "" {
+		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
+	} else {
+		cmds = append(cmds, loadDBDumpCmd, startCmd)
+	}
+
 	for _, c := range cmds {
+		mlog.Info(c.msg)
 		for _, client := range c.clients {
 			select {
 			case <-cancelCh:

@@ -56,6 +56,13 @@ Possible values:
 - "mysql"
 - "postgresql"
 
+### DBDumpURL
+
+*string*
+
+An optional URL to a MM server database dump file to be loaded before running the load-test.  
+The file is expected to be gzip compressed. This can also point to a local file if prefixed with "file://". In such case, the dump file will be uploaded to the app servers.
+
 ### NumUsers
 
 *int*
