@@ -18,6 +18,10 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
+const (
+	connFactor = 4
+)
+
 // LoadTester is a structure holding all the state needed to run a load-test.
 type LoadTester struct {
 	mut           sync.RWMutex
@@ -241,6 +245,11 @@ func (lt *LoadTester) Status() *Status {
 	}
 }
 
+// MaxHTTPConns returns the maximum number of HTTP connections to be used for the given number of users.
+func MaxHTTPConns(maxUsers int) int {
+	return maxUsers / connFactor
+}
+
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
@@ -259,7 +268,7 @@ func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error
 	}
 
 	if maxActiveUsers := config.UsersConfiguration.MaxActiveUsers; uint64(
-		maxActiveUsers+(maxActiveUsers/4)) > rlimit.Max {
+		maxActiveUsers+MaxHTTPConns(maxActiveUsers)) > rlimit.Max {
 		return nil, fmt.Errorf("MaxActiveUsers is not compatible with max Rlimit value. "+
 			"MaxActiveUsers = %d, max_Rlimit = %d",
 			maxActiveUsers, rlimit.Max)
