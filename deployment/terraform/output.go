@@ -129,7 +129,7 @@ func (o *Output) HasProxy() bool {
 	return o.Proxy.PrivateIP != ""
 }
 
-// HasProxy returns whether a deployment has proxy installed in it or not.
+// HasDB returns whether a deployment has database installed in it or not.
 func (o *Output) HasDB() bool {
 	return o.DBCluster.ClusterEndpoint != ""
 }
