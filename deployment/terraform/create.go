@@ -317,7 +317,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	readerDSN = t.config.ExternalDBSettings.DataSourceReplicas
 	driverName = t.config.ExternalDBSettings.DriverName
 
-	if t.config.TerraformDBSettings.InstanceCount > 0 {
+	if output.HasDB() {
 		switch t.config.TerraformDBSettings.InstanceEngine {
 		case "aurora-postgresql":
 			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
