@@ -39,6 +39,8 @@ type User interface {
 	//server
 	// GetConfig fetches and stores the server's configuration.
 	GetConfig() error
+	// GetClientConfig fetches and stores the limited server's configuration for logged in user.
+	GetClientConfig() error
 	// FetchStaticAssets parses index.html and fetches static assets mentioned in link/script tags.
 	FetchStaticAssets() error
 	// GetClientLicense fetched and stores the client license.
