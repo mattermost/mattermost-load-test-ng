@@ -616,19 +616,20 @@ func Reload(u user.User) UserActionResponse {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 	}
-
-	if ok, err := u.IsSysAdmin(); ok && err == nil {
+	isSysAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if isSysAdmin {
 		err = u.GetConfig()
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-	} else if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	err = u.GetClientLicense()
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+	} else {
+		err = u.GetClientConfig()
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	// Getting the user.

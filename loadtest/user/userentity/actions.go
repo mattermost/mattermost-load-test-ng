@@ -59,6 +59,16 @@ func (ue *UserEntity) Logout() (bool, error) {
 	return ok, nil
 }
 
+// GetClientConfig fetches and stores the server's configuration.
+func (ue *UserEntity) GetClientConfig() error {
+	config, resp := ue.client.GetOldClientConfig("")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	ue.store.SetClientConfig(config)
+	return nil
+}
+
 // GetConfig fetches and stores the server's configuration.
 func (ue *UserEntity) GetConfig() error {
 	config, resp := ue.client.GetConfig()

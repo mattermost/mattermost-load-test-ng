@@ -280,8 +280,18 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 }
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
-	collapsedThreads := *u.Store().Config().ServiceSettings.CollapsedThreads == model.COLLAPSED_THREADS_DEFAULT_ON
+	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
+	prefs, err := u.Store().Preferences()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
 
+	for _, p := range prefs {
+		if p.Category == model.PREFERENCE_CATEGORY_COLLAPSED_THREADS_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
+			collapsedThreads = p.Value == "true"
+			break
+		}
+	}
 	var currentChanId string
 	if current, err := u.Store().CurrentChannel(); err == nil {
 		currentChanId = current.Id

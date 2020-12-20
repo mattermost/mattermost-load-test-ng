@@ -331,7 +331,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
-
+	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.COLLAPSED_THREADS_DEFAULT_ON)
 	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 

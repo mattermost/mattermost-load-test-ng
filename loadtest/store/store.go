@@ -37,6 +37,8 @@ type UserStore interface {
 
 	// Config returns the server configuration settings.
 	Config() model.Config
+	// ClientConfig returns the partial server configuration settings for logged in user.
+	ClientConfig() map[string]string
 	// Channel returns the channel for the given channelId.
 	Channel(channelId string) (*model.Channel, error)
 	// Channels returns the channels for a team.
@@ -130,6 +132,8 @@ type MutableUserStore interface {
 	// server
 	// SetConfig stores the given configuration settings.
 	SetConfig(*model.Config)
+	// SetClientConfig stores the given client configuration settings.
+	SetClientConfig(map[string]string)
 
 	// users
 	// SetUser stores the given user.

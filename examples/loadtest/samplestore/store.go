@@ -13,6 +13,7 @@ import (
 type SampleStore struct {
 	user           *model.User
 	config         *model.Config
+	clientConfig   map[string]string
 	posts          map[string]*model.Post
 	preferences    *model.Preferences
 	teams          map[string]*model.Team
@@ -62,7 +63,9 @@ func (s *SampleStore) Password() string {
 func (s *SampleStore) Config() model.Config {
 	return *s.config
 }
-
+func (s *SampleStore) ClientConfig() map[string]string {
+	return s.clientConfig
+}
 func (s *SampleStore) SetConfig(config *model.Config) {
 	s.config = config
 }

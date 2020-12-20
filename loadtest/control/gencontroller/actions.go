@@ -281,7 +281,7 @@ func (c *GenController) addReaction(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
-	collapsedThreads := *u.Store().Config().ServiceSettings.CollapsedThreads == model.COLLAPSED_THREADS_DEFAULT_ON
+	collapsedThreads := false
 
 	resp := control.JoinChannel(u)
 	if resp.Err != nil {

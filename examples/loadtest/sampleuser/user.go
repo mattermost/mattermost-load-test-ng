@@ -243,6 +243,15 @@ func (u *SampleUser) GetConfig() error {
 	return nil
 }
 
+func (u *SampleUser) GetClientConfig() error {
+	config, resp := u.client.GetOldClientConfig("")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	u.store.SetClientConfig(config)
+	return nil
+}
+
 func (u *SampleUser) GetMe() (string, error) {
 	user, resp := u.client.GetMe("")
 	if resp.Error != nil {
