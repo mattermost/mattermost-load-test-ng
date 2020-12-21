@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -30,6 +31,9 @@ const (
 	minSupportedVersion        = 0.12
 	maxSupportedVersion        = 0.13
 )
+
+// A global mutex used to make t.init() safe for concurrent use.
+var initMut sync.Mutex
 
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
@@ -423,6 +427,11 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(dir, "dashboard_data.json")
 	assets.RestoreAssets(dir, "es_dashboard_data.json")
 
+	// We lock to make this call safe for concurrent use
+	// since "terraform init" command can write to common files under
+	// the .terraform directory.
+	initMut.Lock()
+	defer initMut.Unlock()
 	return t.runCommand(nil, "init", t.dir)
 }
 
