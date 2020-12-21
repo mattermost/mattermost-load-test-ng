@@ -66,8 +66,13 @@ func (s *SampleStore) Config() model.Config {
 func (s *SampleStore) ClientConfig() map[string]string {
 	return s.clientConfig
 }
+
 func (s *SampleStore) SetConfig(config *model.Config) {
 	s.config = config
+}
+
+func (s *SampleStore) SetClientConfig(config map[string]string) {
+	s.clientConfig = config
 }
 
 func (s *SampleStore) User() (*model.User, error) {
