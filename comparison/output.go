@@ -71,8 +71,8 @@ func getDeploymentInfo(config *deployment.Config) DeploymentInfo {
 		AgentInstanceCount: config.AgentInstanceCount,
 		AgentInstanceType:  config.AgentInstanceType,
 		ProxyInstanceType:  config.ProxyInstanceType,
-		DBInstanceCount:    config.DBInstanceCount,
-		DBInstanceType:     config.DBInstanceType,
+		DBInstanceCount:    config.TerraformDBSettings.InstanceCount,
+		DBInstanceType:     config.TerraformDBSettings.InstanceType,
 	}
 }
 
