@@ -307,6 +307,8 @@ func getServerVersion(serverURL string) (string, error) {
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
 func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) (loadtest.NewController, error) {
+	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
+
 	// http.Transport to be shared amongst all clients.
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -315,9 +317,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).DialContext,
-		MaxConnsPerHost:       500,
-		MaxIdleConns:          500,
-		MaxIdleConnsPerHost:   500,
+		MaxConnsPerHost:       maxHTTPconns,
+		MaxIdleConns:          maxHTTPconns,
+		MaxIdleConnsPerHost:   maxHTTPconns,
 		ResponseHeaderTimeout: 5 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,

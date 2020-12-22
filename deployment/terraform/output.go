@@ -129,6 +129,11 @@ func (o *Output) HasProxy() bool {
 	return o.Proxy.PrivateIP != ""
 }
 
+// HasDB returns whether a deployment has database installed in it or not.
+func (o *Output) HasDB() bool {
+	return o.DBCluster.ClusterEndpoint != ""
+}
+
 //HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
 func (o *Output) HasElasticSearch() bool {
 	return o.ElasticSearchServer.Endpoint != ""

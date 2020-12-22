@@ -108,11 +108,11 @@ func (t *Terraform) Create(initData bool) error {
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
-		"-var", fmt.Sprintf("db_instance_count=%d", t.config.DBInstanceCount),
-		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.DBInstanceEngine),
-		"-var", fmt.Sprintf("db_instance_class=%s", t.config.DBInstanceType),
-		"-var", fmt.Sprintf("db_username=%s", t.config.DBUserName),
-		"-var", fmt.Sprintf("db_password=%s", t.config.DBPassword),
+		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
+		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.TerraformDBSettings.InstanceEngine),
+		"-var", fmt.Sprintf("db_instance_class=%s", t.config.TerraformDBSettings.InstanceType),
+		"-var", fmt.Sprintf("db_username=%s", t.config.TerraformDBSettings.UserName),
+		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
@@ -316,15 +316,22 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *Output) erro
 func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
-	switch t.config.DBInstanceEngine {
-	case "aurora-postgresql":
-		clusterDSN = "postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
-		readerDSN = []string{"postgres://" + t.config.DBUserName + ":" + t.config.DBPassword + "@" + output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
-		driverName = "postgres"
-	case "aurora-mysql":
-		clusterDSN = t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-		readerDSN = []string{t.config.DBUserName + ":" + t.config.DBPassword + "@tcp(" + output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
-		driverName = "mysql"
+
+	clusterDSN = t.config.ExternalDBSettings.DataSource
+	readerDSN = t.config.ExternalDBSettings.DataSourceReplicas
+	driverName = t.config.ExternalDBSettings.DriverName
+
+	if output.HasDB() {
+		switch t.config.TerraformDBSettings.InstanceEngine {
+		case "aurora-postgresql":
+			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
+			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+			driverName = "postgres"
+		case "aurora-mysql":
+			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+			driverName = "mysql"
+		}
 	}
 
 	cfg := &model.Config{}

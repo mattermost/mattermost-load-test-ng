@@ -120,8 +120,8 @@ func TestAddUsers(t *testing.T) {
 func TestRemoveUsers(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
 	lt, err := New(&ltConfig, newController, log)
-	defer close(lt.statusChan)
 	require.Nil(t, err)
+	defer close(lt.statusChan)
 
 	n, err := lt.RemoveUsers(0)
 	require.Equal(t, ErrInvalidNumUsers, err)

@@ -39,16 +39,10 @@ type Config struct {
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
 	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
-	// Number of DB instances.
-	DBInstanceCount int `default:"1" validate:"range:[1,)"`
-	// Type of the DB instance.
-	DBInstanceType string `default:"db.r4.large" validate:"notempty"`
-	// Type of the DB instance - postgres or mysql.
-	DBInstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
-	// Username to connect to the DB.
-	DBUserName string `default:"mmuser" validate:"notempty"`
-	// Password to connect to the DB.
-	DBPassword string `default:"mostest80098bigpass_" validate:"notempty"`
+	// Terraform database connection and provision settings.
+	TerraformDBSettings TerraformDBSettings
+	// External database connection settings
+	ExternalDBSettings ExternalDBSettings
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -70,6 +64,36 @@ type Config struct {
 	ElasticSearchSettings ElasticSearchSettings
 	LogSettings           logger.Settings
 	Report                report.Config
+}
+
+// TerraformDBSettings contains the necessary data
+// to configure an instance to be deployed
+// and provisioned.
+type TerraformDBSettings struct {
+	// Number of DB instances.
+	InstanceCount int `default:"1" validate:"range:[0,)"`
+	// Type of the DB instance.
+	InstanceType string `default:"db.r4.large" validate:"notempty"`
+	// Type of the DB instance - postgres or mysql.
+	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
+	// Username to connect to the DB.
+	UserName string `default:"mmuser" validate:"notempty"`
+	// Password to connect to the DB.
+	Password string `default:"mostest80098bigpass_" validate:"notempty"`
+}
+
+// ExternalDBSettings contains the necessary data
+// to configure an instance to be deployed
+// and provisioned.
+type ExternalDBSettings struct {
+	// Mattermost database driver
+	DriverName string `default:"" validate:"oneof:{mysql, postgres, cockroach}"`
+	// DSN to connect to the database
+	DataSource string `default:""`
+	// DSN to connect to the database replicas
+	DataSourceReplicas []string `default:""`
+	// DSN to connect to the database search replicas
+	DataSourceSearchReplicas []string `default:""`
 }
 
 // ElasticSearchSettings contains the necessary data

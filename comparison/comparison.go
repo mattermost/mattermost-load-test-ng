@@ -49,7 +49,7 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 		var dp *deploymentConfig
 		if id, ok := deployments[key]; !ok {
 			dp = &deploymentConfig{config: *deployerCfg}
-			dp.config.DBInstanceEngine = "aurora-" + string(lt.DBEngine)
+			dp.config.TerraformDBSettings.InstanceEngine = "aurora-" + string(lt.DBEngine)
 			dp.config.ClusterName = fmt.Sprintf("%s%d", dp.config.ClusterName, i)
 			id = fmt.Sprintf("deployment%d", i)
 			cmp.deployments[id] = dp
