@@ -69,11 +69,11 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 func (c *Comparison) Run() (Output, error) {
 	var output Output
 	// create deployments
-	err := c.deploymentAction(func(t *terraform.Terraform) error {
+	err := c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
 		if err := t.Create(false); err != nil {
 			return err
 		}
-		return provisionBuilds(t, c.config.BaseBuild.URL, c.config.NewBuild.URL)
+		return provisionFiles(t, dpConfig, c.config.BaseBuild.URL, c.config.NewBuild.URL)
 	})
 	if err != nil {
 		return output, err
@@ -93,10 +93,11 @@ func (c *Comparison) Run() (Output, error) {
 
 			for ltID, lt := range dp.loadTests {
 				res := Result{deploymentID: dpID}
+				dumpFilename := lt.getDumpFilename(ltID)
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, &dp.config, buildCfg, c.cancelCh); err != nil {
+					if err := initLoadTest(t, &dp.config, buildCfg, dumpFilename, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}
@@ -146,7 +147,7 @@ func (c *Comparison) Run() (Output, error) {
 // Destroy destroys all resources associated with the deployments for the
 // current automated load-test comparisons.
 func (c *Comparison) Destroy() error {
-	return c.deploymentAction(func(t *terraform.Terraform) error {
+	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
 		return t.Destroy()
 	})
 }
