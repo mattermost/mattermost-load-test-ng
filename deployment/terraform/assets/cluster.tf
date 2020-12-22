@@ -285,7 +285,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster" "db_cluster" {
-  count               = var.app_instance_count > 0 ? 1 : 0
+  count               = var.app_instance_count > 0 && var.db_instance_count > 0 ? 1 : 0
   cluster_identifier  = "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username

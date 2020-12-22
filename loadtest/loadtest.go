@@ -9,12 +9,17 @@ import (
 	"math/rand"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
+)
+
+const (
+	connFactor = 4
 )
 
 // LoadTester is a structure holding all the state needed to run a load-test.
@@ -240,6 +245,11 @@ func (lt *LoadTester) Status() *Status {
 	}
 }
 
+// MaxHTTPConns returns the maximum number of HTTP connections to be used for the given number of users.
+func MaxHTTPConns(maxUsers int) int {
+	return maxUsers / connFactor
+}
+
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
@@ -250,6 +260,18 @@ func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error
 
 	if err := defaults.Validate(config); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
+	}
+
+	var rlimit syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rlimit); err != nil {
+		return nil, fmt.Errorf("could not get the Rlimit value: %w", err)
+	}
+
+	if maxActiveUsers := config.UsersConfiguration.MaxActiveUsers; uint64(
+		maxActiveUsers+MaxHTTPConns(maxActiveUsers)) > rlimit.Max {
+		return nil, fmt.Errorf("MaxActiveUsers is not compatible with max Rlimit value. "+
+			"MaxActiveUsers = %d, max_Rlimit = %d",
+			maxActiveUsers, rlimit.Max)
 	}
 
 	return &LoadTester{

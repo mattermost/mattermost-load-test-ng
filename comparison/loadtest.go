@@ -186,15 +186,15 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		msg:     "Loading DB dump",
 		clients: []*ssh.Client{appClients[0]},
 	}
-	switch config.DBInstanceEngine {
+	switch config.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
 		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%sdb?sslmode=disable'", dumpFilename,
-			config.DBUserName, config.DBPassword, output.DBCluster.ClusterEndpoint, config.ClusterName)
+			config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, output.DBCluster.ClusterEndpoint, config.ClusterName)
 	case "aurora-mysql":
 		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %sdb", dumpFilename,
-			output.DBCluster.ClusterEndpoint, config.DBUserName, config.DBPassword, config.ClusterName)
+			output.DBCluster.ClusterEndpoint, config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, config.ClusterName)
 	default:
-		return fmt.Errorf("invalid db engine %s", config.DBInstanceEngine)
+		return fmt.Errorf("invalid db engine %s", config.TerraformDBSettings.InstanceEngine)
 	}
 
 	if dumpFilename == "" {

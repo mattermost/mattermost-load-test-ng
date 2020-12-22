@@ -82,6 +82,12 @@ These will be created during the `init` process.
 
 The amount of active users to run when the load-test starts.
 
+### UsersFilePath
+
+*string*
+
+The path to the file which contains a list of user email and passwords that will be used by the tool if set. Each line should be for a user containing an email and password separated by space. The number of lines in the file should be at least equal to MaxActiveUsers.
+
 ### MaxActiveUsers
 
 *int*

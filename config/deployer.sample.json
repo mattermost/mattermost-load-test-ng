@@ -16,11 +16,19 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "m4.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
-  "DBInstanceCount": 1,
-  "DBInstanceEngine": "aurora-postgresql",
-  "DBInstanceType": "db.r4.large",
-  "DBUserName": "mmuser",
-  "DBPassword": "mostest80098bigpass_",
+  "TerraformDBSettings": {
+    "InstanceCount": 1,
+    "InstanceEngine": "aurora-postgresql",
+    "InstanceType": "db.r4.large",
+    "UserName": "mmuser",
+    "Password": "mostest80098bigpass_"
+  },
+  "ExternalDBSettings": {
+    "DriverName": "cockroach",
+    "DataSource": "",
+    "DataSourceReplicas": [],
+    "DataSourceSearchReplicas": []
+  },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
   "MattermostLicenseFile": "",
   "AdminEmail": "sysadmin@sample.mattermost.com",
