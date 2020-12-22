@@ -33,6 +33,10 @@ const (
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
+// This is needed to prevent a data race caused by the "terraform init"
+// command which can modify common files in the .terraform directory.
+// Making this a global variable to avoid exporting more methods and
+// having the user of this package deal with this special case.
 var initMut sync.Mutex
 
 // Terraform manages all operations related to interacting with
