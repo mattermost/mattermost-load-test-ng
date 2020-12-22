@@ -193,12 +193,6 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 				}
 			}()
 
-			mlog.Info("Updating config", mlog.String("host", ip))
-			if err := t.updateAppConfig(ip, sshc, output); err != nil {
-				mlog.Error("error updating config", mlog.Err(err))
-				return
-			}
-
 			// Upload files
 			batch := []uploadInfo{
 				{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
@@ -210,14 +204,21 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 				return
 			}
 
+			cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
+				return
+			}
+
+			mlog.Info("Updating config", mlog.String("host", ip))
+			if err := t.updateAppConfig(ip, sshc, output); err != nil {
+				mlog.Error("error updating config", mlog.Err(err))
+				return
+			}
+
 			// Upload binary if needed.
 			if uploadBinary {
 				mlog.Info("Uploading binary", mlog.String("host", ip))
-				cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
-				if out, err := sshc.RunCommand(cmd); err != nil {
-					mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
-					return
-				}
 
 				if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.String("output", string(out)), mlog.Err(err))
@@ -227,7 +228,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 
 			// Starting mattermost.
 			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-			cmd := "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
+			cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
 				return
