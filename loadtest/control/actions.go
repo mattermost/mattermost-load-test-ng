@@ -730,3 +730,19 @@ func Reload(u user.User) UserActionResponse {
 
 	return UserActionResponse{Info: "page reloaded"}
 }
+
+func CollapsedThreadsEnabled(u user.User) (bool, *UserActionResponse) {
+	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
+	prefs, err := u.Store().Preferences()
+	if err != nil {
+		return false, &UserActionResponse{Err: NewUserError(err)}
+	}
+
+	for _, p := range prefs {
+		if p.Category == model.PREFERENCE_CATEGORY_COLLAPSED_THREADS_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
+			collapsedThreads = p.Value == "true"
+			break
+		}
+	}
+	return collapsedThreads, nil
+}

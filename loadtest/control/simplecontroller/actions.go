@@ -47,17 +47,9 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 }
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
-	collapsedThreads := c.user.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
-	prefs, err := u.Store().Preferences()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	for _, p := range prefs {
-		if p.Category == model.PREFERENCE_CATEGORY_COLLAPSED_THREADS_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
-			collapsedThreads = p.Value == "true"
-			break
-		}
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp != nil {
+		return *resp
 	}
 
 	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)

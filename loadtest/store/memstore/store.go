@@ -179,7 +179,7 @@ func (s *MemStore) Password() string {
 	return s.user.Password
 }
 
-// Config returns the server configuration settings.
+// ClientConfig  returns the limited server configuration settings for user.
 func (s *MemStore) ClientConfig() map[string]string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -200,7 +200,7 @@ func (s *MemStore) SetConfig(config *model.Config) {
 	s.config = config
 }
 
-// SetConfig stores the given configuration settings.
+// Set ClientConfig stores the given  limited configuration settings.
 func (s *MemStore) SetClientConfig(config map[string]string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
