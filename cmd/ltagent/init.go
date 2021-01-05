@@ -5,7 +5,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"time"
@@ -141,32 +140,12 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 func genAdmins(config *loadtest.Config, userPrefix string) error {
 	mlog.Info(fmt.Sprintf("generating %d admins", config.InstanceConfiguration.NumAdmins))
 
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   1 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		MaxConnsPerHost:       500,
-		MaxIdleConns:          500,
-		MaxIdleConnsPerHost:   500,
-		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	adminStore, err := memstore.New(&memstore.Config{
-		MaxStoredPosts:          1,
-		MaxStoredUsers:          1,
-		MaxStoredChannelMembers: 1,
-		MaxStoredStatuses:       1,
-	})
+	adminStore, err := memstore.New(nil)
 	if err != nil {
 		return err
 	}
 	adminUeSetup := userentity.Setup{
-		Store:     adminStore,
-		Transport: transport,
+		Store: adminStore,
 	}
 	adminUeConfig := userentity.Config{
 		ServerURL:    config.ConnectionConfiguration.ServerURL,
@@ -178,12 +157,7 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 	sysadmin := userentity.New(adminUeSetup, adminUeConfig)
 
 	for i := 0; i < int(config.InstanceConfiguration.NumAdmins); i++ {
-		userStore, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          1,
-			MaxStoredUsers:          1,
-			MaxStoredChannelMembers: 1,
-			MaxStoredStatuses:       1,
-		})
+		userStore, err := memstore.New(nil)
 		if err != nil {
 			return err
 		}
@@ -199,20 +173,21 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 			Email:        user.Email,
 			Password:     user.Password,
 		}
+
 		userId, err := sysadmin.CreateUser(user)
 		if err != nil {
 			return err
 		}
+
 		user.Id = userId
 		err = userStore.SetUser(user)
 		if err != nil {
 			return err
 		}
 		userSetup := userentity.Setup{
-			Store:     userStore,
-			Transport: transport,
+			Store: userStore,
 		}
-		err = sysadmin.PromoteToAdmin(userentity.New(userSetup, ueConfig))
+		err = loadtest.PromoteToAdmin(sysadmin, userentity.New(userSetup, ueConfig))
 		if err != nil {
 			return err
 		}

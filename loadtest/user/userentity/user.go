@@ -5,7 +5,6 @@ package userentity
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -199,56 +198,6 @@ func (ue *UserEntity) IsTeamAdmin() (bool, error) {
 	}
 
 	return user.IsInRole(model.TEAM_ADMIN_ROLE_ID), nil
-}
-
-// PromoteToAdmin promotes the given user to a sysadmin role
-func (ue *UserEntity) PromoteToAdmin(u *UserEntity) error {
-	if err := ue.Login(); err != nil {
-		return err
-	}
-
-	isAdmin, err := ue.IsSysAdmin()
-	if err != nil {
-		return err
-	}
-	if !isAdmin {
-		return errors.New("user is not an admin, cannot perform promoteAdmin")
-	}
-
-	isAdmin, err = u.IsSysAdmin()
-	if err != nil {
-		return err
-	}
-
-	// User is already an admin, so early return
-	if isAdmin {
-		return nil
-	}
-
-	err = ue.UpdateUserRoles(u.Store().Id(), fmt.Sprintf("%s %s", model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID))
-	if err != nil {
-		return err
-	}
-	if _, err := ue.Logout(); err != nil {
-		return err
-	}
-
-	if err := u.Login(); err != nil {
-		return err
-	}
-
-	roleIds, err := u.GetRolesByNames([]string{model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID})
-	if err != nil {
-		return err
-	}
-	if len(roleIds) != 2 {
-		return errors.New("user does not have the right roles updated")
-	}
-	if _, err := ue.Logout(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {

@@ -74,6 +74,34 @@ This value overrides the actual server version. If left empty, the one returned 
 The number of teams the target Mattermost instance should have.  
 These will be created during the `init` process.
 
+### NumChannels
+
+*int*
+
+The number of channels the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumPosts
+
+*int*
+
+The number of posts the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumReactions
+
+*int*
+
+The number of reactions the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumAdmins
+
+*int*
+
+The number of admins the target Mattermost instance should have.  
+These will be created during the `init` process.
+	
 ## UsersConfiguration
 
 ### InitialActiveUsers

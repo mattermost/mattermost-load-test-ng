@@ -748,7 +748,7 @@ func MessageExport(u user.User) UserActionResponse {
 
 	cfg := u.Store().Config()
 
-	if &cfg != nil && !*cfg.MessageExportSettings.EnableExport {
+	if cfg.MessageExportSettings.EnableExport == nil || !*cfg.MessageExportSettings.EnableExport {
 		return UserActionResponse{Info: "message export is not enabled"}
 	}
 
