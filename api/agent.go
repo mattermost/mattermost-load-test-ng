@@ -391,13 +391,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
-			// In case that we need to promote users to admins we need the existing system admin to promote them
-			admin, err := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
-			if err != nil {
-				return nil, err
-			}
-
-			return gencontroller.New(id, ue, admin, controllerConfig.(*gencontroller.Config), status)
+			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		case loadtest.UserControllerCluster:

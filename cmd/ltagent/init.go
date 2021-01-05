@@ -5,9 +5,12 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -19,11 +22,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/spf13/cobra"
-)
-
-const (
-	initialUserCount = 50 // The number of initial user to be created
-	userBatchSize    = 10 // How many users will be added at each iteration
 )
 
 func isInitDone(serverURL, userPrefix string) (bool, error) {
@@ -54,7 +52,7 @@ func genData(lt *loadtest.LoadTester, numUsers int64) error {
 	}(time.Now())
 
 	for lt.Status().NumUsersAdded != numUsers {
-		if _, err := lt.AddUsers(userBatchSize); err != nil {
+		if _, err := lt.AddUsers(10); err != nil {
 			return fmt.Errorf("failed to add users %w", err)
 		}
 		time.Sleep(5 * time.Second)
@@ -90,10 +88,6 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	adminPercent, err := cmd.Flags().GetFloat64("admin-percent")
-	if err != nil {
-		return err
-	}
 
 	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
 		return err
@@ -119,7 +113,6 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
 	config.UsersConfiguration.InitialActiveUsers = 0
-	config.UsersConfiguration.PercentageOfAdminUsers = adminPercent
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
@@ -127,29 +120,99 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	adminUserCount := int64(config.UsersConfiguration.PercentageOfAdminUsers * float64(initialUserCount))
-	data := map[string]int64{
-		userentity.AdminPrefix: adminUserCount,
-		userPrefix:             initialUserCount - adminUserCount,
+	newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil)
+	if err != nil {
+		return fmt.Errorf("error while creating new controller: %w", err)
+	}
+	lt, err := loadtest.New(config, newC, log)
+	if err != nil {
+		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
 
-	return genDataWithPrefix(config, genConfig, log, data)
+	err = genAdmins(config, userPrefix)
+	if err != nil {
+		return fmt.Errorf("error while generating admin users: %w", err)
+	}
+	mlog.Info("admin generation completed")
+
+	return genData(lt, 50)
 }
 
-func genDataWithPrefix(config *loadtest.Config, genConfig gencontroller.Config, logger *mlog.Logger, seedData map[string]int64) error {
-	for userPrefix, numUsers := range seedData {
-		newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil)
-		if err != nil {
-			return fmt.Errorf("error while creating new controller: %w", err)
-		}
+func genAdmins(config *loadtest.Config, userPrefix string) error {
+	mlog.Info(fmt.Sprintf("generating %d admins", config.InstanceConfiguration.NumAdmins))
 
-		lt, err := loadtest.New(config, newC, logger)
-		if err != nil {
-			return fmt.Errorf("error while initializing loadtest: %w", err)
-		}
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   1 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxConnsPerHost:       500,
+		MaxIdleConns:          500,
+		MaxIdleConnsPerHost:   500,
+		ResponseHeaderTimeout: 5 * time.Second,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   1 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	adminStore, err := memstore.New(&memstore.Config{
+		MaxStoredPosts:          1,
+		MaxStoredUsers:          1,
+		MaxStoredChannelMembers: 1,
+		MaxStoredStatuses:       1,
+	})
+	if err != nil {
+		return err
+	}
+	adminUeSetup := userentity.Setup{
+		Store:     adminStore,
+		Transport: transport,
+	}
+	adminUeConfig := userentity.Config{
+		ServerURL:    config.ConnectionConfiguration.ServerURL,
+		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+		Username:     "",
+		Email:        config.ConnectionConfiguration.AdminEmail,
+		Password:     config.ConnectionConfiguration.AdminPassword,
+	}
+	sysadmin := userentity.New(adminUeSetup, adminUeConfig)
 
-		mlog.Info(fmt.Sprintf("generating %d users with prefix %s", numUsers, userPrefix))
-		err = genData(lt, numUsers)
+	for i := 0; i < int(config.InstanceConfiguration.NumAdmins); i++ {
+		userStore, err := memstore.New(&memstore.Config{
+			MaxStoredPosts:          1,
+			MaxStoredUsers:          1,
+			MaxStoredChannelMembers: 1,
+			MaxStoredStatuses:       1,
+		})
+		if err != nil {
+			return err
+		}
+		user := &model.User{
+			Password: "testPass123$",
+			Email:    fmt.Sprintf("%s-%d@example.com", userPrefix, i),
+			Username: fmt.Sprintf("%s-%d", userPrefix, i),
+		}
+		ueConfig := userentity.Config{
+			ServerURL:    config.ConnectionConfiguration.ServerURL,
+			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     user.Username,
+			Email:        user.Email,
+			Password:     user.Password,
+		}
+		userId, err := sysadmin.CreateUser(user)
+		if err != nil {
+			return err
+		}
+		user.Id = userId
+		err = userStore.SetUser(user)
+		if err != nil {
+			return err
+		}
+		userSetup := userentity.Setup{
+			Store:     userStore,
+			Transport: transport,
+		}
+		err = sysadmin.PromoteToAdmin(userentity.New(userSetup, ueConfig))
 		if err != nil {
 			return err
 		}
@@ -167,7 +230,6 @@ func MakeInitCommand() *cobra.Command {
 		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
-	cmd.PersistentFlags().Float64P("admin-percent", "", 0.0, "value that determines how many users will be promoted to admins")
 	return cmd
 }
 

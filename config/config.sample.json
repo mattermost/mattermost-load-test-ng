@@ -31,6 +31,7 @@
     "NumChannels": 10,
     "NumPosts": 0,
     "NumReactions": 0,
+    "NumAdmins": 0,
     "PercentReplies": 0.5,
     "PercentPublicChannels": 0.2,
     "PercentPrivateChannels": 0.1,

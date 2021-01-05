@@ -330,36 +330,3 @@ func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
 
 	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
 }
-
-// promoteToAdmin promotes the current user to a sysadmin role
-func (c *GenController) promoteToAdmin(u user.User) control.UserActionResponse {
-	isAdmin, err := u.IsSysAdmin()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if isAdmin {
-		return control.UserActionResponse{Info: "user already an admin, proceeding."}
-	}
-
-	if err := c.admin.Login(); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	err = c.admin.UpdateUserRoles(u.Store().Id(), fmt.Sprintf("%s %s", model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID))
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if _, err := c.admin.Logout(); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	roleIds, err := u.GetRolesByNames([]string{model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID})
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if len(roleIds) != 2 {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("user does not have the right roles updated"))}
-	}
-
-	return control.UserActionResponse{Info: "user promoted to admin"}
-}

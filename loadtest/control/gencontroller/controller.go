@@ -7,10 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"time"
-
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -21,7 +18,6 @@ import (
 type GenController struct {
 	id     int
 	user   user.User
-	admin  user.User
 	stop   chan struct{}
 	status chan<- control.UserStatus
 	rate   float64
@@ -31,7 +27,7 @@ type GenController struct {
 // New creates and initializes a new GenController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user, admin user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
+func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -43,7 +39,6 @@ func New(id int, user, admin user.User, config *Config, status chan<- control.Us
 	sc := &GenController{
 		id:     id,
 		user:   user,
-		admin:  admin,
 		stop:   make(chan struct{}),
 		status: status,
 		rate:   1.0,
@@ -87,10 +82,6 @@ func (c *GenController) Run() {
 		c.createTeam,
 		c.joinTeam,
 		c.joinChannel,
-	}
-
-	if strings.HasPrefix(c.user.Store().Username(), userentity.AdminPrefix) {
-		initActions = append(initActions, c.promoteToAdmin)
 	}
 
 	for i := 0; i < len(initActions); i++ {
