@@ -37,6 +37,7 @@ var ltConfig = Config{
 		NumChannels:            10,
 		NumPosts:               100,
 		NumReactions:           50,
+		NumAdmins:              2,
 		PercentReplies:         0.5,
 		PercentPublicChannels:  0.2,
 		PercentPrivateChannels: 0.1,
@@ -120,7 +121,7 @@ func TestAddUsers(t *testing.T) {
 func TestRemoveUsers(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
 	lt, err := New(&ltConfig, newController, log)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer close(lt.statusChan)
 
 	n, err := lt.RemoveUsers(0)

@@ -1091,3 +1091,16 @@ func (ue *UserEntity) UpdateConfig(cfg *model.Config) error {
 	ue.store.SetConfig(cfg)
 	return nil
 }
+
+// MessageExport creates a job for a compliance message export
+func (ue *UserEntity) MessageExport() error {
+	messageExportJob := &model.Job{
+		Type: "message_export",
+	}
+
+	_, resp := ue.client.CreateJob(messageExportJob)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}

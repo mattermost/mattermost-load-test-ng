@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/mattermost/mattermost-server/v5/model"
+
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -126,7 +128,80 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
 
+	err = genAdmins(config, userPrefix)
+	if err != nil {
+		return fmt.Errorf("error while generating admin users: %w", err)
+	}
+	mlog.Info("admin generation completed")
+
 	return genData(lt, 50)
+}
+
+func genAdmins(config *loadtest.Config, userPrefix string) error {
+	mlog.Info(fmt.Sprintf("generating %d admins", config.InstanceConfiguration.NumAdmins))
+
+	adminStore, err := memstore.New(nil)
+	if err != nil {
+		return err
+	}
+	adminUeSetup := userentity.Setup{
+		Store: adminStore,
+	}
+	adminUeConfig := userentity.Config{
+		ServerURL:    config.ConnectionConfiguration.ServerURL,
+		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+		Username:     "",
+		Email:        config.ConnectionConfiguration.AdminEmail,
+		Password:     config.ConnectionConfiguration.AdminPassword,
+	}
+	sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+	if err := sysadmin.Login(); err != nil {
+		return err
+	}
+
+	for i := 0; i < int(config.InstanceConfiguration.NumAdmins); i++ {
+		userStore, err := memstore.New(nil)
+		if err != nil {
+			return err
+		}
+		user := &model.User{
+			Password: "testPass123$",
+			Email:    fmt.Sprintf("%s-%d@example.com", userPrefix, i),
+			Username: fmt.Sprintf("%s-%d", userPrefix, i),
+		}
+		ueConfig := userentity.Config{
+			ServerURL:    config.ConnectionConfiguration.ServerURL,
+			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+			Username:     user.Username,
+			Email:        user.Email,
+			Password:     user.Password,
+		}
+
+		userId, err := sysadmin.CreateUser(user)
+		if err != nil {
+			return err
+		}
+
+		user.Id = userId
+		err = userStore.SetUser(user)
+		if err != nil {
+			return err
+		}
+		userSetup := userentity.Setup{
+			Store: userStore,
+		}
+
+		err = loadtest.PromoteToAdmin(sysadmin, userentity.New(userSetup, ueConfig))
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := sysadmin.Logout(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func MakeInitCommand() *cobra.Command {

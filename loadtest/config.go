@@ -88,6 +88,8 @@ type InstanceConfiguration struct {
 	NumPosts int64 `default:"0" validate:"range:[0,]"`
 	// The target number of reactions to be created.
 	NumReactions int64 `default:"0" validate:"range:[0,]"`
+	// The target number of admin users to be created.
+	NumAdmins int64 `default:"0" validate:"range:[0,]"`
 
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`

@@ -211,6 +211,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"ViewUser":           control.ViewUser,
 		"FetchStaticAssets":  control.FetchStaticAssets,
 		"UpdateTeam":         c.updateTeam,
+		"MessageExport":      control.MessageExport,
 	}
 
 	for _, def := range definitions {

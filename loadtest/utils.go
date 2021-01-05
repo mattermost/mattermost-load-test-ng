@@ -4,7 +4,12 @@
 package loadtest
 
 import (
+	"errors"
 	"fmt"
+
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 )
@@ -26,4 +31,47 @@ func pickRate(config UserControllerConfiguration) (float64, error) {
 	}
 
 	return dist[idx].Rate, nil
+}
+
+// PromoteToAdmin promotes user to a sysadmin role
+func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
+	isAdmin, err := admin.IsSysAdmin()
+	if err != nil {
+		return err
+	}
+	if !isAdmin {
+		return errors.New("user is not an admin, cannot perform promoteAdmin")
+	}
+
+	isAdmin, err = userForPromotion.IsSysAdmin()
+	if err != nil {
+		return err
+	}
+
+	// User is already an admin, so early return
+	if isAdmin {
+		return nil
+	}
+
+	err = admin.UpdateUserRoles(userForPromotion.Store().Id(), fmt.Sprintf("%s %s", model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID))
+	if err != nil {
+		return err
+	}
+
+	if err := userForPromotion.Login(); err != nil {
+		return err
+	}
+
+	roleIds, err := userForPromotion.GetRolesByNames([]string{model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID})
+	if err != nil {
+		return err
+	}
+	if len(roleIds) != 2 {
+		return errors.New("user does not have the right roles updated")
+	}
+	if _, err := userForPromotion.Logout(); err != nil {
+		return err
+	}
+
+	return nil
 }

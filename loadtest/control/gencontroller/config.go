@@ -21,7 +21,6 @@ type Config struct {
 	NumPosts int64 `default:"1000" validate:"range:[0,]"`
 	// The target number of reactions to be created.
 	NumReactions int64 `default:"200" validate:"range:[0,]"`
-
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`
 

@@ -259,4 +259,6 @@ type User interface {
 	GetPluginStatuses() error
 	// UpdateConfig updates the config with cfg.
 	UpdateConfig(cfg *model.Config) error
+	// MessageExport triggers a message export
+	MessageExport() error
 }
