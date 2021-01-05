@@ -35,10 +35,6 @@ func pickRate(config UserControllerConfiguration) (float64, error) {
 
 // PromoteToAdmin promotes user to a sysadmin role
 func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
-	if err := admin.Login(); err != nil {
-		return err
-	}
-
 	isAdmin, err := admin.IsSysAdmin()
 	if err != nil {
 		return err
@@ -59,9 +55,6 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 
 	err = admin.UpdateUserRoles(userForPromotion.Store().Id(), fmt.Sprintf("%s %s", model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID))
 	if err != nil {
-		return err
-	}
-	if _, err := admin.Logout(); err != nil {
 		return err
 	}
 

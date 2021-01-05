@@ -155,6 +155,9 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 		Password:     config.ConnectionConfiguration.AdminPassword,
 	}
 	sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+	if err := sysadmin.Login(); err != nil {
+		return err
+	}
 
 	for i := 0; i < int(config.InstanceConfiguration.NumAdmins); i++ {
 		userStore, err := memstore.New(nil)
@@ -187,10 +190,15 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 		userSetup := userentity.Setup{
 			Store: userStore,
 		}
+
 		err = loadtest.PromoteToAdmin(sysadmin, userentity.New(userSetup, ueConfig))
 		if err != nil {
 			return err
 		}
+	}
+
+	if _, err := sysadmin.Logout(); err != nil {
+		return err
 	}
 
 	return nil
