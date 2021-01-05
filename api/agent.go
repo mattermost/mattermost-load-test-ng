@@ -384,7 +384,6 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
-
 		ue := userentity.New(ueSetup, ueConfig)
 
 		switch config.UserControllerConfiguration.Type {
@@ -399,11 +398,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerCluster:
 			// For cluster controller, we only use the sysadmin
 			// because we are just testing system console APIs.
-			admin, err := admin(ueSetup, ueConfig, config.ConnectionConfiguration.AdminEmail, config.ConnectionConfiguration.AdminPassword)
-			if err != nil {
-				return nil, err
-			}
+			ueConfig.Username = ""
+			ueConfig.Email = config.ConnectionConfiguration.AdminEmail
+			ueConfig.Password = config.ConnectionConfiguration.AdminPassword
 
+			admin := userentity.New(ueSetup, ueConfig)
 			return clustercontroller.New(id, admin, status)
 		default:
 			panic("controller type must be valid")
@@ -459,23 +458,4 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 	}
 
 	return users, nil
-}
-func admin(ueSetup userentity.Setup, ueConfig userentity.Config, email, password string) (*userentity.UserEntity, error) {
-	adminStore, err := memstore.New(&memstore.Config{
-		MaxStoredPosts:          500,
-		MaxStoredUsers:          1000,
-		MaxStoredChannelMembers: 1000,
-		MaxStoredStatuses:       1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	adminUeSetup := ueSetup
-	adminUeSetup.Store = adminStore
-	adminUeConfig := ueConfig
-	adminUeConfig.Username = ""
-	adminUeConfig.Email = email
-	adminUeConfig.Password = password
-
-	return userentity.New(adminUeSetup, adminUeConfig), nil
 }

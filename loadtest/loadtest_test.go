@@ -28,10 +28,9 @@ var ltConfig = Config{
 		Type: "simple",
 	},
 	UsersConfiguration: UsersConfiguration{
-		MaxActiveUsers:         8,
-		InitialActiveUsers:     0,
-		AvgSessionsPerUser:     1,
-		PercentageOfAdminUsers: 0.0,
+		MaxActiveUsers:     8,
+		InitialActiveUsers: 0,
+		AvgSessionsPerUser: 1,
 	},
 	InstanceConfiguration: InstanceConfiguration{
 		NumTeams:               1,
