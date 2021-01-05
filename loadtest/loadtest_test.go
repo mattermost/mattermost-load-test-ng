@@ -38,6 +38,7 @@ var ltConfig = Config{
 		NumChannels:            10,
 		NumPosts:               100,
 		NumReactions:           50,
+		NumAdmins:              2,
 		PercentReplies:         0.5,
 		PercentPublicChannels:  0.2,
 		PercentPrivateChannels: 0.1,

@@ -55,7 +55,11 @@ resource "aws_instance" "app_server" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
+      "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
+      "sudo apt-get install -y mysql-client-5.7",
+      "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter",
       "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
       "tar xzf mattermost-dist.tar.gz",
@@ -281,7 +285,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster" "db_cluster" {
-  count               = var.app_instance_count > 0 ? 1 : 0
+  count               = var.app_instance_count > 0 && var.db_instance_count > 0 ? 1 : 0
   cluster_identifier  = "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username
