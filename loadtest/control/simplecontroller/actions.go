@@ -48,8 +48,8 @@ func (c *SimpleController) sendDirectMessage(userID string) control.UserStatus {
 
 func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse {
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
-	if resp != nil {
-		return *resp
+	if resp.Err != nil {
+		return resp
 	}
 
 	team, err := c.user.Store().RandomTeam(store.SelectMemberOf)

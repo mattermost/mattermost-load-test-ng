@@ -281,8 +281,8 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
-	if resp != nil {
-		return *resp
+	if resp.Err != nil {
+		return resp
 	}
 
 	var currentChanId string

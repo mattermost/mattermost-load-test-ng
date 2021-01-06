@@ -731,11 +731,11 @@ func Reload(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "page reloaded"}
 }
 
-func CollapsedThreadsEnabled(u user.User) (bool, *UserActionResponse) {
+func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
 	prefs, err := u.Store().Preferences()
 	if err != nil {
-		return false, &UserActionResponse{Err: NewUserError(err)}
+		return false, UserActionResponse{Err: NewUserError(err)}
 	}
 
 	for _, p := range prefs {
@@ -744,5 +744,5 @@ func CollapsedThreadsEnabled(u user.User) (bool, *UserActionResponse) {
 			break
 		}
 	}
-	return collapsedThreads, nil
+	return collapsedThreads, UserActionResponse{}
 }
