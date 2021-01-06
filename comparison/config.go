@@ -5,6 +5,7 @@ package comparison
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -30,6 +31,12 @@ type LoadTestConfig struct {
 	Type LoadTestType `validate:"oneof:{bounded,unbounded}"`
 	// The database engine for the app server.
 	DBEngine DatabaseEngine `validate:"oneof:{mysql,postgresql}"`
+	// An optional URL to a MM server database dump file
+	// to be loaded before running the load-test.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	// In such case, the dump file will be uploaded to the app servers.
+	DBDumpURL string
 
 	// The number of users to run.
 	// This is only considered if Type is "bounded"
@@ -49,6 +56,14 @@ func (c *LoadTestConfig) IsValid() error {
 	}
 
 	return nil
+}
+
+func (c *LoadTestConfig) getDumpFilename(ltID int) string {
+	var filename string
+	if c.DBDumpURL != "" {
+		filename = fmt.Sprintf("%d_%s", ltID, filepath.Base(c.DBDumpURL))
+	}
+	return filename
 }
 
 // BuildConfig holds information about a build.

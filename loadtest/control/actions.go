@@ -42,7 +42,7 @@ func SignUp(u user.User) UserActionResponse {
 
 	if err := u.SignUp(email, username, password); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", username)}
+			return UserActionResponse{Info: fmt.Sprintf("%s has already signed up", email)}
 		}
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -745,4 +745,34 @@ func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 		}
 	}
 	return collapsedThreads, UserActionResponse{}
+}
+
+// MessageExport simulates the given user performing
+// a compliance message export
+func MessageExport(u user.User) UserActionResponse {
+	isAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if !isAdmin {
+		return UserActionResponse{Info: "user is not a sysadmin and cannot perform a message export"}
+	}
+
+	if err := u.GetConfig(); err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	cfg := u.Store().Config()
+
+	if cfg.MessageExportSettings.EnableExport == nil || !*cfg.MessageExportSettings.EnableExport {
+		return UserActionResponse{Info: "message export is not enabled"}
+	}
+
+	err = u.MessageExport()
+	if err != nil {
+		return UserActionResponse{Err: err}
+	}
+
+	return UserActionResponse{Info: "message export triggered"}
 }

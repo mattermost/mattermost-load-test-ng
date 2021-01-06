@@ -74,6 +74,34 @@ This value overrides the actual server version. If left empty, the one returned 
 The number of teams the target Mattermost instance should have.  
 These will be created during the `init` process.
 
+### NumChannels
+
+*int*
+
+The number of channels the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumPosts
+
+*int*
+
+The number of posts the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumReactions
+
+*int*
+
+The number of reactions the target Mattermost instance should have.  
+These will be created during the `init` process.
+
+### NumAdmins
+
+*int*
+
+The number of admins the target Mattermost instance should have.  
+These will be created during the `init` process.
+	
 ## UsersConfiguration
 
 ### InitialActiveUsers
@@ -81,6 +109,12 @@ These will be created during the `init` process.
 *int*
 
 The amount of active users to run when the load-test starts.
+
+### UsersFilePath
+
+*string*
+
+The path to the file which contains a list of user email and passwords that will be used by the tool if set. Each line should be for a user containing an email and password separated by space. The number of lines in the file should be at least equal to MaxActiveUsers.
 
 ### MaxActiveUsers
 

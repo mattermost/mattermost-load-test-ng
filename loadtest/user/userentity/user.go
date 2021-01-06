@@ -108,6 +108,7 @@ func New(setup Setup, config Config) *UserEntity {
 		Username: config.Username,
 		Email:    config.Email,
 		Password: config.Password,
+		Id:       ue.store.Id(),
 	})
 	if err != nil {
 		return nil

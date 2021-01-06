@@ -131,7 +131,7 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: (fmt.Sprintf("direct channel created, id %s", channelId))}
+	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
 }
 
 func (c *GenController) createGroupChannel(u user.User) control.UserActionResponse {
@@ -161,7 +161,7 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: (fmt.Sprintf("group channel created, id %s", channelId))}
+	return control.UserActionResponse{Info: fmt.Sprintf("group channel created, id %s", channelId)}
 }
 
 func (c *GenController) createPost(u user.User) control.UserActionResponse {

@@ -17,7 +17,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func (c *Comparison) deploymentAction(action func(t *terraform.Terraform) error) error {
+func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConfig *deploymentConfig) error) error {
 	var wg sync.WaitGroup
 	wg.Add(len(c.deployments))
 	errsCh := make(chan error, len(c.deployments))
@@ -26,7 +26,7 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform) error)
 			defer wg.Done()
 			t := terraform.New(id, &dp.config)
 			defer t.Cleanup()
-			if err := action(t); err != nil {
+			if err := action(t, dp); err != nil {
 				errsCh <- fmt.Errorf("deployment action failed: %w", err)
 			}
 		}(id, dp)
@@ -40,12 +40,39 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform) error)
 	return err
 }
 
-// provisionBuilds loads the provided build files into the app servers to be
-// used later on during initialization.
-// If the build URL is an HTTP URL then the file is directly downloaded into the
-// servers. If the build URL is prefixed by `file://` then the build is uploaded
+// provisionURL takes a URL pointing to a file to be provisioned.
+func provisionURL(client *ssh.Client, url string, filename string) error {
+	filePrefix := "file://"
+	if strings.HasPrefix(url, filePrefix) {
+		// upload file from local filesystem
+		path := strings.TrimPrefix(url, filePrefix)
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("build file %s has to be a regular file", path)
+		}
+		if out, err := client.UploadFile(path, "/home/ubuntu/"+filename, false); err != nil {
+			return fmt.Errorf("error uploading build: %w %s", err, out)
+		}
+	} else {
+		// download build file from URL
+		cmd := fmt.Sprintf("wget -O %s %s", filename, url)
+		if out, err := client.RunCommand(cmd); err != nil {
+			return fmt.Errorf("failed to run cmd %q: %w %s", cmd, err, out)
+		}
+	}
+
+	return nil
+}
+
+// provisionFiles loads the provided build and (optionally) db dump files
+// into the app servers to be used later on during initialization.
+// If the URL is an HTTP URL then the file is directly downloaded into the
+// servers. If the URL is prefixed by `file://` then the file is uploaded
 // from the local filesystem.
-func provisionBuilds(t *terraform.Terraform, baseBuildURL, newBuildURL string) error {
+func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuildURL, newBuildURL string) error {
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -69,28 +96,16 @@ func provisionBuilds(t *terraform.Terraform, baseBuildURL, newBuildURL string) e
 	}
 
 	for _, client := range clients {
-		for _, url := range []string{baseBuildURL, newBuildURL} {
-			filePrefix := "file://"
-			buildFileName := filepath.Base(url)
-			if strings.HasPrefix(url, filePrefix) {
-				// upload build file from local filesystem
-				buildPath := strings.TrimPrefix(url, filePrefix)
-				info, err := os.Stat(buildPath)
-				if err != nil {
+		for id, ltConfig := range dpConfig.loadTests {
+			if ltConfig.DBDumpURL != "" {
+				if err := provisionURL(client, ltConfig.DBDumpURL, ltConfig.getDumpFilename(id)); err != nil {
 					return err
 				}
-				if !info.Mode().IsRegular() {
-					return fmt.Errorf("build file %s has to be a regular file", buildPath)
-				}
-				if out, err := client.UploadFile(buildPath, "/home/ubuntu/"+buildFileName, false); err != nil {
-					return fmt.Errorf("error uploading build: %w %s", err, out)
-				}
-			} else {
-				// download build file from URL
-				cmd := fmt.Sprintf("wget -O %s %s", buildFileName, url)
-				if out, err := client.RunCommand(cmd); err != nil {
-					return fmt.Errorf("failed to run cmd %q: %w %s", cmd, err, out)
-				}
+			}
+		}
+		for _, url := range []string{baseBuildURL, newBuildURL} {
+			if err := provisionURL(client, url, filepath.Base(url)); err != nil {
+				return err
 			}
 		}
 	}
