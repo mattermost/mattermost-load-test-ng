@@ -72,19 +72,19 @@ func (u *SampleUser) SearchPosts(teamId, terms string, isOrSearch bool) (*model.
 	return nil, nil
 }
 
-func (u *SampleUser) GetPostsForChannel(channelId string, page, perPage int) error {
+func (u *SampleUser) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
 	return nil
 }
 
-func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int) error {
+func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error {
 	return nil
 }
 
-func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int) error {
+func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error {
 	return nil
 }
 
-func (u *SampleUser) GetPostsSince(channelId string, time int64) ([]string, error) {
+func (u *SampleUser) GetPostsSince(channelId string, time int64, collapsedThreads bool) ([]string, error) {
 	return nil, nil
 }
 
@@ -93,7 +93,7 @@ func (u *SampleUser) GetPinnedPosts(channelId string) (*model.PostList, error) {
 }
 
 // GetPostsAroundLastUnread returns the list of posts around last unread post by the current user in a channel.
-func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int) ([]string, error) {
+func (u *SampleUser) GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int, collapsedThreads bool) ([]string, error) {
 	return nil, nil
 }
 
@@ -240,6 +240,15 @@ func (u *SampleUser) Logout() (bool, error) {
 }
 
 func (u *SampleUser) GetConfig() error {
+	return nil
+}
+
+func (u *SampleUser) GetClientConfig() error {
+	config, resp := u.client.GetOldClientConfig("")
+	if resp.Error != nil {
+		return resp.Error
+	}
+	u.store.SetClientConfig(config)
 	return nil
 }
 

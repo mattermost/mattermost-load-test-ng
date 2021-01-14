@@ -20,6 +20,7 @@ type MemStore struct {
 	user                *model.User
 	preferences         *model.Preferences
 	config              *model.Config
+	clientConfig        map[string]string
 	emojis              []*model.Emoji
 	posts               map[string]*model.Post
 	postsQueue          *CQueue
@@ -73,6 +74,7 @@ func (s *MemStore) Clear() {
 	s.config = nil
 	s.emojis = []*model.Emoji{}
 	s.posts = map[string]*model.Post{}
+	s.clientConfig = map[string]string{}
 	s.postsQueue.Reset()
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
@@ -177,6 +179,13 @@ func (s *MemStore) Password() string {
 	return s.user.Password
 }
 
+// ClientConfig  returns the limited server configuration settings for user.
+func (s *MemStore) ClientConfig() map[string]string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.clientConfig
+}
+
 // Config returns the server configuration settings.
 func (s *MemStore) Config() model.Config {
 	s.lock.RLock()
@@ -189,6 +198,13 @@ func (s *MemStore) SetConfig(config *model.Config) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.config = config
+}
+
+// Set ClientConfig stores the given  limited configuration settings.
+func (s *MemStore) SetClientConfig(config map[string]string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.clientConfig = config
 }
 
 // User returns the stored user.

@@ -616,19 +616,20 @@ func Reload(u user.User) UserActionResponse {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 	}
-
-	if ok, err := u.IsSysAdmin(); ok && err == nil {
+	isSysAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if isSysAdmin {
 		err = u.GetConfig()
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-	} else if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	err = u.GetClientLicense()
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+	} else {
+		err = u.GetClientConfig()
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	// Getting the user.
@@ -728,6 +729,22 @@ func Reload(u user.User) UserActionResponse {
 	}
 
 	return UserActionResponse{Info: "page reloaded"}
+}
+
+func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
+	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
+	prefs, err := u.Store().Preferences()
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
+
+	for _, p := range prefs {
+		if p.Category == model.PREFERENCE_CATEGORY_COLLAPSED_THREADS_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
+			collapsedThreads = p.Value == "true"
+			break
+		}
+	}
+	return collapsedThreads, UserActionResponse{}
 }
 
 // MessageExport simulates the given user performing
