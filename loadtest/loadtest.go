@@ -270,8 +270,10 @@ func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error
 	if maxActiveUsers := config.UsersConfiguration.MaxActiveUsers; uint64(
 		maxActiveUsers+MaxHTTPConns(maxActiveUsers)) > rlimit.Max {
 		return nil, fmt.Errorf("MaxActiveUsers is not compatible with max Rlimit value. "+
-			"MaxActiveUsers = %d, max_Rlimit = %d",
-			maxActiveUsers, rlimit.Max)
+			"MaxActiveUsers = %d, max_Rlimit = %d. Suggested value is %d. "+
+			"You can check how to raise this value in the documentation at: "+
+			"https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/faq.md#agent-failing-with-maxactiveusers-is-not-compatible-with-max-rlimit-value-error",
+			maxActiveUsers, rlimit.Max, nextPowerOf2(maxActiveUsers+MaxHTTPConns(maxActiveUsers)+1))
 	}
 
 	return &LoadTester{

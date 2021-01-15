@@ -26,3 +26,11 @@ Make sure that both `Enable Account Creation` and `Enable Open Server` settings 
 
 This can be caused by the app server not being initialized (at least one open team should be created). This can be done manually or through the `ltctl loadtest init` command.
 Also the `Max Users Per Team` setting in Mattermost System Console should be enough to account for the number of simulated users.
+
+### Agent failing with `MaxActiveUsers is not compatible with max Rlimit value` error
+
+This means the maximum number of file descriptors is lower than what the agent needs to operate.  
+The following command can be run to raise the limit to the suggested value:
+```sh
+ulimit -n VALUE
+```
