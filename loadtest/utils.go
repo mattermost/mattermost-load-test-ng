@@ -75,3 +75,16 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 
 	return nil
 }
+
+// nextPowerOf2 rounds its input value to the next power of 2 and returns it.
+// courtesy of https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2.
+func nextPowerOf2(val int) int {
+	val--
+	val |= val >> 1
+	val |= val >> 2
+	val |= val >> 4
+	val |= val >> 8
+	val |= val >> 16
+	val++
+	return val
+}
