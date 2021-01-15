@@ -48,6 +48,11 @@ go run ./cmd/ltagent init
 
 Running this command will create initial teams and channels for the users to join on the target MM instance.
 
+#### Note
+
+The `init` command generates data as configured by the `InstanceConfiguration` section. It does not pre-populate all the users.  
+In fact, only 50 users are created and used to generate data. This value was chosen to maximize overall throughput.
+
 ## Running a basic load-test
 
 A new load-test can be started with the following command:
