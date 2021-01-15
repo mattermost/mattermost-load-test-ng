@@ -1,5 +1,9 @@
 ## FAQ
 
+### What login methods does the load-test agent support?
+
+The load-test agent currently supports only the email/password authentication method.
+
 ### What is a bounded load-test?
 
 We define a load-test to be bounded when the number of simulated users is fixed.
@@ -22,7 +26,8 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 
 Make sure that both `Enable Account Creation` and `Enable Open Server` settings are set to `true` in MM System Console.
 
-### Agent logs show several `current team should be set` errors.
+### Agent logs show several `current team should be set` errors. As a result, users are not joining teams and channels
 
 This can be caused by the app server not being initialized (at least one open team should be created). This can be done manually or through the `ltctl loadtest init` command.
+If done manually, `Allow any user with an account on this server to join this team` under `Team Settings` should be set to `Yes`.
 Also the `Max Users Per Team` setting in Mattermost System Console should be enough to account for the number of simulated users.
