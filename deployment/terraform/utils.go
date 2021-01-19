@@ -68,6 +68,14 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 		}
 	}
 	if cmd == nil {
+		switch resource {
+		case "proxy", output.Proxy.Tags.Name:
+			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.Proxy.PublicIP))
+		case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
+			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP))
+		}
+	}
+	if cmd == nil {
 		return fmt.Errorf("could not find any resource with name %q", resource)
 	}
 
