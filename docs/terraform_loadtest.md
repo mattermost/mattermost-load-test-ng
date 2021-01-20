@@ -133,3 +133,12 @@ go run ./cmd/ltctl deployment destroy
 
 This will permanently destroy all resources for the current deployment.
 
+## Debugging
+
+### SSH access to the terraformed hosts
+
+To access one of the terraformed hosts via ssh, invoke `ltctl ssh` with the appropriate target:
+* One of the instance names (invoke `ltctl ssh` to list them)
+* `coordinator` to connect to the first agent doing double duty as the loadtest coordinator
+* `proxy` to connect to the instance running Nginx
+* `metrics`, `prometheus` or `grafana` to connect to the instance running all metrics related services
