@@ -48,27 +48,9 @@ func uploadBatch(sshc *ssh.Client, batch []uploadInfo) error {
 
 // OpenSSHFor starts a ssh connection to the resource
 func (t *Terraform) OpenSSHFor(resource string) error {
-	output, err := t.Output()
+	cmd, err := t.makeCmdForResource(resource)
 	if err != nil {
-		return fmt.Errorf("could not parse output: %w", err)
-	}
-	var cmd *exec.Cmd
-	for i, agent := range output.Agents {
-		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP))
-			break
-		}
-	}
-	if cmd == nil {
-		for _, instance := range output.Instances {
-			if resource == instance.Tags.Name {
-				cmd = exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP))
-				break
-			}
-		}
-	}
-	if cmd == nil {
-		return fmt.Errorf("could not find any resource with name %q", resource)
+		return fmt.Errorf("failed to make cmd for resource: %w", err)
 	}
 
 	cmd.Stdout = os.Stdout
@@ -79,6 +61,38 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 	}
 
 	return cmd.Wait()
+}
+
+func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
+	output, err := t.Output()
+	if err != nil {
+		return nil, fmt.Errorf("could not parse output: %w", err)
+	}
+
+	// Match against the agent names, or the reserved "coordinator" keyword referring to the
+	// first agent.
+	for i, agent := range output.Agents {
+		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP)), nil
+		}
+	}
+
+	// Match against the instance names.
+	for _, instance := range output.Instances {
+		if resource == instance.Tags.Name {
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+		}
+	}
+
+	// Match against the proxy or metrics servers, as well as convenient aliases.
+	switch resource {
+	case "proxy", output.Proxy.Tags.Name:
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.Proxy.PublicIP)), nil
+	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
+	}
+
+	return nil, fmt.Errorf("could not find any resource with name %q", resource)
 }
 
 // OpenBrowserFor opens a web browser for the resource

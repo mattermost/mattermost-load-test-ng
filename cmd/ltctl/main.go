@@ -58,8 +58,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	}
 	for _, instance := range output.Instances {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
-
 	}
+	fmt.Printf(" - %s\n", output.Proxy.Tags.Name)
+	fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)
 	return nil
 }
 
