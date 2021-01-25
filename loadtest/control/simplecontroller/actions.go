@@ -78,7 +78,7 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 	const NUM_OF_SCROLLS = 3
 	const SLEEP_BETWEEN_SCROLL = 1000
 	for i := 0; i < NUM_OF_SCROLLS; i++ {
-		if err = c.user.GetPostsBefore(channel.Id, postId, 0, 10, collapsedThreads); err != nil {
+		if _, err = c.user.GetPostsBefore(channel.Id, postId, 0, 10, collapsedThreads); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)

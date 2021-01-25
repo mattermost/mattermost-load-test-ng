@@ -106,71 +106,83 @@ func (c *SimulController) Run() {
 	actions := []userAction{
 		{
 			run:       switchChannel,
-			frequency: 70,
-		},
-		{
-			run:       c.switchTeam,
-			frequency: 30,
-		},
-		{
-			run:       openDirectOrGroupChannel,
-			frequency: 30,
-		},
-		{
-			run:       unreadCheck,
-			frequency: 25,
-		},
-		{
-			run:       c.createPost,
-			frequency: 25,
-		},
-		{
-			run:       c.createPostReply,
-			frequency: 15,
-		},
-		{
-			run:       c.joinChannel,
-			frequency: 8,
-		},
-		{
-			run:       editPost,
-			frequency: 8,
-		},
-		{
-			run:       searchChannels,
-			frequency: 5,
-		},
-		{
-			run:       c.addReaction,
-			frequency: 5,
-		},
-		{
-			run:       c.fullReload,
 			frequency: 4,
 		},
 		{
-			run:       c.createDirectChannel,
+			run:       c.switchTeam,
+			frequency: 3,
+		},
+		{
+			run:       c.scrollChannel,
 			frequency: 2,
 		},
 		{
-			run:       c.createGroupChannel,
-			frequency: 1,
+			run:       openDirectOrGroupChannel,
+			frequency: 2,
+		},
+		{
+			run:       unreadCheck,
+			frequency: 1.5,
+		},
+		{
+			run:       c.createPost,
+			frequency: 1.5,
+		},
+		{
+			run:       c.createPostReply,
+			frequency: 0.5,
+		},
+		{
+			run:       c.joinChannel,
+			frequency: 0.8,
+		},
+		{
+			run:       searchChannels,
+			frequency: 0.5,
+		},
+		{
+			run:       c.addReaction,
+			frequency: 0.5,
+		},
+		{
+			run:       c.fullReload,
+			frequency: 0.2,
+		},
+		{
+			run:       c.createDirectChannel,
+			frequency: 0.25,
 		},
 		{
 			run:       c.logoutLogin,
-			frequency: 1,
+			frequency: 0.1,
 		},
 		{
 			run:       searchUsers,
-			frequency: 1,
+			frequency: 0.1,
 		},
 		{
 			run:       searchPosts,
-			frequency: 1,
+			frequency: 0.1,
+		},
+		{
+			run:       editPost,
+			frequency: 0.1,
 		},
 		{
 			run:       searchGroupChannels,
-			frequency: 1,
+			frequency: 0.1,
+		},
+		{
+			run:       c.createGroupChannel,
+			frequency: 0.05,
+		},
+		{
+			run:       createPrivateChannel,
+			frequency: 0.022,
+		},
+		{
+			run:       control.CreatePublicChannel,
+			frequency: 0.011,
 		},
 	}
 

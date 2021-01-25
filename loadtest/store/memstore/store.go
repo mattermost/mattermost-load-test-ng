@@ -61,6 +61,7 @@ func New(config *Config) (*MemStore, error) {
 	}
 
 	s.Clear()
+	s.profileImages = map[string]bool{}
 
 	return s, nil
 }
@@ -89,7 +90,6 @@ func (s *MemStore) Clear() {
 	s.roles = map[string]*model.Role{}
 	s.license = map[string]string{}
 	s.channelViews = map[string]int64{}
-	s.profileImages = map[string]bool{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {

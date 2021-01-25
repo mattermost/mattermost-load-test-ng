@@ -76,8 +76,8 @@ func (u *SampleUser) GetPostsForChannel(channelId string, page, perPage int, col
 	return nil
 }
 
-func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error {
-	return nil
+func (u *SampleUser) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error) {
+	return nil, nil
 }
 
 func (u *SampleUser) GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error {
@@ -499,4 +499,8 @@ func (u *SampleUser) AutocompleteUsersInTeam(teamId, username string, limit int)
 
 func (u *SampleUser) MessageExport() error {
 	return nil
+}
+
+func (u *SampleUser) GetUsersNotInChannel(teamId, channelId string, page, perPage int) ([]string, error) {
+	return nil, nil
 }

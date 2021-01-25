@@ -237,16 +237,17 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, co
 }
 
 // GetPostsBefore fetches and stores posts in a given channelId that were made before
-// a given postId.
-func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error {
+// a given postId. It returns a list of posts ids.
+func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error) {
 	postList, resp := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads)
 	if resp.Error != nil {
-		return resp.Error
+		return nil, resp.Error
 	}
 	if postList == nil || len(postList.Posts) == 0 {
-		return nil
+		return nil, nil
 	}
-	return ue.store.SetPosts(postsMapToSlice(postList.Posts))
+
+	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
 }
 
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
@@ -737,6 +738,21 @@ func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) err
 // GetUsers fetches and stores all users. It returns a list of those users' ids.
 func (ue *UserEntity) GetUsers(page, perPage int) ([]string, error) {
 	users, resp := ue.client.GetUsers(page, perPage, "")
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	userIds := make([]string, len(users))
+	for i := range users {
+		userIds[i] = users[i].Id
+	}
+
+	return userIds, ue.store.SetUsers(users)
+}
+
+// GetUsersNotInChannel returns a list of user ids not in a given channel.
+func (ue *UserEntity) GetUsersNotInChannel(teamId, channelId string, page, perPage int) ([]string, error) {
+	users, resp := ue.client.GetUsersNotInChannel(teamId, channelId, page, perPage, "")
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
