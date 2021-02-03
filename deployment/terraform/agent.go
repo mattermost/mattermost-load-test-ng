@@ -9,13 +9,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Config, error) {
+func generateLoadtestAgentConfig(dpConfig *deployment.Config, output *Output) (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
 	if err != nil {
 		return nil, err
@@ -27,8 +28,8 @@ func (t *Terraform) generateLoadtestAgentConfig(output *Output) (*loadtest.Confi
 
 	cfg.ConnectionConfiguration.ServerURL = "http://" + url
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
-	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
-	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
+	cfg.ConnectionConfiguration.AdminEmail = dpConfig.AdminEmail
+	cfg.ConnectionConfiguration.AdminPassword = dpConfig.AdminPassword
 
 	return cfg, nil
 }
@@ -117,7 +118,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output, initDat
 		return err
 	}
 	mlog.Info("Generating load-test config")
-	cfg, err := t.generateLoadtestAgentConfig(output)
+	cfg, err := generateLoadtestAgentConfig(t.config, output)
 	if err != nil {
 		return err
 	}

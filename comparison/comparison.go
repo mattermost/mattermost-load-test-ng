@@ -15,6 +15,7 @@ import (
 )
 
 type deploymentConfig struct {
+	tfOutput  *terraform.Output
 	config    deployment.Config
 	loadTests []LoadTestConfig
 }
@@ -73,6 +74,13 @@ func (c *Comparison) Run() (Output, error) {
 		if err := t.Create(false); err != nil {
 			return err
 		}
+
+		tfOutput, err := t.Output()
+		if err != nil {
+			return err
+		}
+		dpConfig.tfOutput = tfOutput
+
 		return provisionFiles(t, dpConfig, c.config.BaseBuild.URL, c.config.NewBuild.URL)
 	})
 	if err != nil {
@@ -97,13 +105,13 @@ func (c *Comparison) Run() (Output, error) {
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, &dp.config, buildCfg, dumpFilename, c.cancelCh); err != nil {
+					if err := initLoadTest(dp, buildCfg, dumpFilename, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}
 					mlog.Debug("load-test init done")
 
-					status, err := runLoadTest(t, lt, c.cancelCh)
+					status, err := runLoadTest(dp, lt, c.cancelCh)
 					if err != nil {
 						errsCh <- err
 						return

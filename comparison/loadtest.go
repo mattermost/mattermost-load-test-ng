@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -27,11 +26,12 @@ func (c *Comparison) getLoadTestsCount() int {
 	return count
 }
 
-func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, d time.Duration, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runBoundedLoadTest(dp *deploymentConfig, coordConfig *coordinator.Config,
+	d time.Duration, cancelCh <-chan struct{}) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 	mlog.Info("starting bounded load-test")
-	if err := t.StartCoordinator(coordConfig); err != nil {
+	if err := terraform.StartCoordinator(&dp.config, dp.tfOutput, coordConfig); err != nil {
 		return status, err
 	}
 
@@ -44,7 +44,7 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 	}
 
 	mlog.Info("stopping bounded load-test")
-	status, err = t.StopCoordinator()
+	status, err = terraform.StopCoordinator(&dp.config, dp.tfOutput)
 	if err != nil {
 		return status, err
 	}
@@ -62,17 +62,18 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 	return status, nil
 }
 
-func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runUnboundedLoadTest(dp *deploymentConfig, coordConfig *coordinator.Config,
+	cancelCh <-chan struct{}) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 
 	mlog.Info("starting unbounded load-test")
-	if err := t.StartCoordinator(coordConfig); err != nil {
+	if err := terraform.StartCoordinator(&dp.config, dp.tfOutput, coordConfig); err != nil {
 		return status, err
 	}
 
 	defer func() {
-		if _, err := t.StopCoordinator(); err != nil {
+		if _, err := terraform.StopCoordinator(&dp.config, dp.tfOutput); err != nil {
 			mlog.Error("stopping coordinator failed", mlog.Err(err))
 		}
 	}()
@@ -81,7 +82,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	defer ticker.Stop()
 
 	for {
-		status, err = t.GetCoordinatorStatus()
+		status, err = terraform.GetCoordinatorStatus(&dp.config, dp.tfOutput)
 		if err != nil {
 			return status, err
 		}
@@ -104,13 +105,8 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
-	output, err := t.Output()
-	if err != nil {
-		return err
-	}
-
-	if !output.HasAppServers() {
+func initLoadTest(dp *deploymentConfig, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
+	if !dp.tfOutput.HasAppServers() {
 		return errors.New("no app servers in this deployment")
 	}
 
@@ -119,14 +115,14 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		return err
 	}
 
-	agentClient, err := extAgent.NewClient(output.Agents[0].PublicIP)
+	agentClient, err := extAgent.NewClient(dp.tfOutput.Agents[0].PublicIP)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
 	defer agentClient.Close()
 
-	appClients := make([]*ssh.Client, len(output.Instances))
-	for i, instance := range output.Instances {
+	appClients := make([]*ssh.Client, len(dp.tfOutput.Instances))
+	for i, instance := range dp.tfOutput.Instances {
 		client, err := extAgent.NewClient(instance.PublicIP)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
@@ -171,12 +167,12 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 	createAdminCmd := cmd{
 		msg: "Creating sysadmin",
 		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin || true",
-			binaryPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
+			binaryPath, dp.config.AdminEmail, dp.config.AdminUsername, dp.config.AdminPassword),
 		clients: []*ssh.Client{appClients[0]},
 	}
 	initDataCmd := cmd{
 		msg:     "Initializing data",
-		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", output.Agents[0].Tags.Name),
+		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", dp.tfOutput.Agents[0].Tags.Name),
 		clients: []*ssh.Client{agentClient},
 	}
 
@@ -186,15 +182,15 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		msg:     "Loading DB dump",
 		clients: []*ssh.Client{appClients[0]},
 	}
-	switch config.TerraformDBSettings.InstanceEngine {
+	switch dp.config.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
 		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%sdb?sslmode=disable'", dumpFilename,
-			config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, output.DBCluster.ClusterEndpoint, config.ClusterName)
+			dp.config.TerraformDBSettings.UserName, dp.config.TerraformDBSettings.Password, dp.tfOutput.DBCluster.ClusterEndpoint, dp.config.ClusterName)
 	case "aurora-mysql":
 		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %sdb", dumpFilename,
-			output.DBCluster.ClusterEndpoint, config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, config.ClusterName)
+			dp.tfOutput.DBCluster.ClusterEndpoint, dp.config.TerraformDBSettings.UserName, dp.config.TerraformDBSettings.Password, dp.config.ClusterName)
 	default:
-		return fmt.Errorf("invalid db engine %s", config.TerraformDBSettings.InstanceEngine)
+		return fmt.Errorf("invalid db engine %s", dp.config.TerraformDBSettings.InstanceEngine)
 	}
 
 	if dumpFilename == "" {
@@ -221,7 +217,7 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 	return nil
 }
 
-func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runLoadTest(dp *deploymentConfig, lt LoadTestConfig, cancelCh <-chan struct{}) (coordinator.Status, error) {
 	var status coordinator.Status
 	coordConfig, err := coordinator.ReadConfig("")
 	if err != nil {
@@ -241,10 +237,10 @@ func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan stru
 		if parseErr != nil {
 			return status, parseErr
 		}
-		return runBoundedLoadTest(t, coordConfig, duration, cancelCh)
+		return runBoundedLoadTest(dp, coordConfig, duration, cancelCh)
 	case LoadTestTypeUnbounded:
 		// TODO: cleverly set MaxActiveUsers to (numAgents * UsersConfiguration.MaxActiveUsers)
-		return runUnboundedLoadTest(t, coordConfig, cancelCh)
+		return runUnboundedLoadTest(dp, coordConfig, cancelCh)
 	}
 
 	return status, fmt.Errorf("unimplemented LoadTestType %s", lt.Type)

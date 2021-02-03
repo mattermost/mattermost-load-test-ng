@@ -9,6 +9,7 @@ import (
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -18,16 +19,7 @@ import (
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
-func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
-	if err := t.preFlightCheck(); err != nil {
-		return err
-	}
-
-	output, err := t.Output()
-	if err != nil {
-		return err
-	}
-
+func StartCoordinator(dpConfig *deployment.Config, output *Output, config *coordinator.Config) error {
 	if len(output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
@@ -77,7 +69,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 
 	var agentConfig *loadtest.Config
 	if len(output.Instances) > 0 {
-		agentConfig, err = t.generateLoadtestAgentConfig(output)
+		agentConfig, err = generateLoadtestAgentConfig(dpConfig, output)
 	} else {
 		agentConfig, err = loadtest.ReadConfig("")
 	}
@@ -127,7 +119,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 
 	mlog.Info("Starting the coordinator")
 
-	id := t.config.ClusterName + "-coordinator-0"
+	id := dpConfig.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator client: %w", err)
@@ -150,16 +142,8 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 }
 
 // StopCoordinator stops the coordinator in the current load-test deployment.
-func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
+func StopCoordinator(dpConfig *deployment.Config, output *Output) (coordinator.Status, error) {
 	var status coordinator.Status
-	if err := t.preFlightCheck(); err != nil {
-		return status, err
-	}
-
-	output, err := t.Output()
-	if err != nil {
-		return status, err
-	}
 
 	if len(output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
@@ -168,7 +152,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
 
-	id := fmt.Sprintf("%s-coordinator-%d", t.config.ClusterName, 0)
+	id := fmt.Sprintf("%s-coordinator-%d", dpConfig.ClusterName, 0)
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
 		return status, fmt.Errorf("failed to create coordinator client: %w", err)
@@ -185,23 +169,15 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 
 // GetCoordinatorStatus returns information about the status of the
 // coordinator in the current load-test deployment.
-func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
+func GetCoordinatorStatus(dpConfig *deployment.Config, output *Output) (coordinator.Status, error) {
 	var status coordinator.Status
-	if err := t.preFlightCheck(); err != nil {
-		return status, err
-	}
-
-	output, err := t.Output()
-	if err != nil {
-		return status, err
-	}
 
 	if len(output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
 	ip := output.Agents[0].PublicIP
 
-	id := t.config.ClusterName + "-coordinator-0"
+	id := dpConfig.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
 	if err != nil {
 		return status, fmt.Errorf("failed to create coordinator client: %w", err)

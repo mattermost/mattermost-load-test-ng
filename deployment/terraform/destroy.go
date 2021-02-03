@@ -9,7 +9,7 @@ import (
 
 // Destroy destroys the created load-test environment.
 func (t *Terraform) Destroy() error {
-	err := t.preFlightCheck()
+	err := t.PreFlightCheck()
 	if err != nil {
 		return err
 	}

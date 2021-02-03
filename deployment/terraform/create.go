@@ -57,7 +57,7 @@ func New(id string, cfg *deployment.Config) *Terraform {
 
 // Create creates a new load test environment.
 func (t *Terraform) Create(initData bool) error {
-	if err := t.preFlightCheck(); err != nil {
+	if err := t.PreFlightCheck(); err != nil {
 		return err
 	}
 
@@ -406,7 +406,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	return nil
 }
 
-func (t *Terraform) preFlightCheck() error {
+func (t *Terraform) PreFlightCheck() error {
 	if os.Getenv("SSH_AUTH_SOCK") == "" {
 		return errors.New("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
