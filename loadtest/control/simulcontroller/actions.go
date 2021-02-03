@@ -1063,10 +1063,12 @@ func createPrivateChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	channelName := model.NewId()
 	channelId, err := u.CreateChannel(&model.Channel{
-		Name:   model.NewId(),
-		TeamId: team.Id,
-		Type:   "P",
+		Name:        channelName,
+		DisplayName: "Channel " + channelName,
+		TeamId:      team.Id,
+		Type:        "P",
 	})
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}

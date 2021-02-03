@@ -369,10 +369,12 @@ func CreatePublicChannel(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	channelName := model.NewId()
 	channelId, err := u.CreateChannel(&model.Channel{
-		Name:   model.NewId(),
-		TeamId: team.Id,
-		Type:   "O",
+		Name:        channelName,
+		DisplayName: "Channel " + channelName,
+		TeamId:      team.Id,
+		Type:        "O",
 	})
 
 	if err != nil {

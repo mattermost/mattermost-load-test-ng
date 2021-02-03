@@ -73,7 +73,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	// TODO: considering making the following values configurable.
 
 	// The threshold at which we consider the load-test done and we are ready to
-	// give an answer. The value represent the slope of the best fine line for
+	// give an answer. The value represents the slope of the best fit line for
 	// the gathered samples. This value approaching zero means we have found
 	// an equilibrium point.
 	stopThreshold := 0.1
