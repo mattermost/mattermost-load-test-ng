@@ -34,7 +34,7 @@ func generateLoadtestAgentConfig(dpConfig *deployment.Config, output *Output) (*
 	return cfg, nil
 }
 
-func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output) error {
+func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	var uploadBinary bool
 	var packagePath string
 	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
@@ -49,7 +49,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 		uploadBinary = true
 	}
 
-	for _, val := range output.Agents {
+	for _, val := range t.output.Agents {
 		sshc, err := extAgent.NewClient(val.PublicIP)
 		if err != nil {
 			return err
@@ -108,17 +108,17 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent, output *Output
 	return nil
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output, initData bool) error {
-	if len(output.Agents) == 0 {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
+	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
-	ip := output.Agents[0].PublicIP
+	ip := t.output.Agents[0].PublicIP
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return err
 	}
 	mlog.Info("Generating load-test config")
-	cfg, err := generateLoadtestAgentConfig(t.config, output)
+	cfg, err := generateLoadtestAgentConfig(t.config, t.output)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, output *Output, initDat
 
 	if initData {
 		mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name)
+		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", t.output.Agents[0].Tags.Name)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			// TODO: make this fully atomic. See MM-23998.
 			// ltagent init should drop teams and channels before creating them.

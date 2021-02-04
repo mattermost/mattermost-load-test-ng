@@ -65,14 +65,7 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 
 	t := terraform.New("", config)
 	defer t.Cleanup()
-	if err := t.PreFlightCheck(); err != nil {
-		return err
-	}
-	output, err := t.Output()
-	if err != nil {
-		return err
-	}
-	return terraform.StartCoordinator(config, output, nil)
+	return t.StartCoordinator(nil)
 }
 
 func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
@@ -83,15 +76,7 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 
 	t := terraform.New("", config)
 	defer t.Cleanup()
-	if err := t.PreFlightCheck(); err != nil {
-		return err
-	}
-	output, err := t.Output()
-	if err != nil {
-		return err
-	}
-
-	_, err = terraform.StopCoordinator(config, output)
+	_, err = t.StopCoordinator()
 	return err
 }
 
@@ -134,20 +119,17 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 	t := terraform.New("", config)
 	defer t.Cleanup()
 
-	if err := t.PreFlightCheck(); err != nil {
-		return err
-	}
-	output, err := t.Output()
+	status, err := t.GetCoordinatorStatus()
 	if err != nil {
 		return err
 	}
 
-	status, err := terraform.GetCoordinatorStatus(config, output)
+	tfOutput, err := t.Output()
 	if err != nil {
 		return err
 	}
 
-	prometheusURL := fmt.Sprintf("http://%s:9090", output.MetricsServer.PublicIP)
+	prometheusURL := fmt.Sprintf("http://%s:9090", tfOutput.MetricsServer.PublicIP)
 	helper, err := prometheus.NewHelper(prometheusURL)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus.Helper: %w", err)

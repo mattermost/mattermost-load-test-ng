@@ -86,16 +86,15 @@ type S3Bucket struct {
 	Region string `json:"region"`
 }
 
-// Output reads the current terraform output
-func (t *Terraform) Output() (*Output, error) {
+func (t *Terraform) loadOutput() error {
 	var buf bytes.Buffer
 
 	if err := t.runCommand(&buf, "output", "-json", "-state="+t.getStatePath()); err != nil {
-		return nil, err
+		return err
 	}
 	var o output
 	if err := json.Unmarshal(buf.Bytes(), &o); err != nil {
-		return nil, err
+		return err
 	}
 
 	outputv2 := &Output{
@@ -121,7 +120,19 @@ func (t *Terraform) Output() (*Output, error) {
 	if len(o.S3Key.Value) > 0 {
 		outputv2.S3Key = o.S3Key.Value[0]
 	}
-	return outputv2, nil
+
+	t.output = outputv2
+
+	return nil
+}
+
+// Output reads the current terraform output
+func (t *Terraform) Output() (*Output, error) {
+	var err error
+	if t.output == nil {
+		err = t.loadOutput()
+	}
+	return t.output, err
 }
 
 // HasProxy returns whether a deployment has proxy installed in it or not.

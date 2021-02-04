@@ -9,12 +9,11 @@ import (
 
 // Destroy destroys the created load-test environment.
 func (t *Terraform) Destroy() error {
-	err := t.PreFlightCheck()
-	if err != nil {
+	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
 
-	return t.runCommand(nil, "destroy",
+	if err := t.runCommand(nil, "destroy",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
@@ -37,6 +36,9 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("load_test_download_url=%s", t.config.LoadTestDownloadURL),
 		"-auto-approve",
 		"-state="+t.getStatePath(),
-		t.dir,
-	)
+		t.dir); err != nil {
+		return err
+	}
+
+	return t.loadOutput()
 }
