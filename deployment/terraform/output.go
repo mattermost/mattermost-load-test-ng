@@ -136,7 +136,10 @@ func (t *Terraform) setOutput() error {
 // Output reads the current terraform output and caches it internally for future use.
 // The output is guaranteed to be up to date after calls to Create and Destroy.
 func (t *Terraform) Output() (*Output, error) {
-	return t.output, t.setOutput()
+	if err := t.setOutput(); err != nil {
+		return nil, err
+	}
+	return t.output, nil
 }
 
 // HasProxy returns whether a deployment has proxy installed in it or not.
