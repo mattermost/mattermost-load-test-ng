@@ -9,27 +9,26 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
-func generateLoadtestAgentConfig(dpConfig *deployment.Config, output *Output) (*loadtest.Config, error) {
+func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
 	if err != nil {
 		return nil, err
 	}
-	url := output.Instances[0].PrivateIP + ":8065"
-	if output.HasProxy() {
-		url = output.Proxy.PrivateIP
+	url := t.output.Instances[0].PrivateIP + ":8065"
+	if t.output.HasProxy() {
+		url = t.output.Proxy.PrivateIP
 	}
 
 	cfg.ConnectionConfiguration.ServerURL = "http://" + url
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
-	cfg.ConnectionConfiguration.AdminEmail = dpConfig.AdminEmail
-	cfg.ConnectionConfiguration.AdminPassword = dpConfig.AdminPassword
+	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
+	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
 	return cfg, nil
 }
@@ -118,7 +117,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 		return err
 	}
 	mlog.Info("Generating load-test config")
-	cfg, err := generateLoadtestAgentConfig(t.config, t.output)
+	cfg, err := t.generateLoadtestAgentConfig()
 	if err != nil {
 		return err
 	}

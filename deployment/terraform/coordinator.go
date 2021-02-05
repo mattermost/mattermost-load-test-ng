@@ -23,7 +23,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 
-	if _, err := t.Output(); err != nil {
+	if err := t.setOutput(); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 
 	var agentConfig *loadtest.Config
 	if len(t.output.Instances) > 0 {
-		agentConfig, err = generateLoadtestAgentConfig(t.config, t.output)
+		agentConfig, err = t.generateLoadtestAgentConfig()
 	} else {
 		agentConfig, err = loadtest.ReadConfig("")
 	}
@@ -152,7 +152,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 	var status coordinator.Status
 
-	if _, err := t.Output(); err != nil {
+	if err := t.setOutput(); err != nil {
 		return status, err
 	}
 
@@ -183,7 +183,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 	var status coordinator.Status
 
-	if _, err := t.Output(); err != nil {
+	if err := t.setOutput(); err != nil {
 		return status, err
 	}
 
