@@ -42,9 +42,11 @@ var initMut sync.Mutex
 // Terraform manages all operations related to interacting with
 // an AWS environment using Terraform.
 type Terraform struct {
-	id     string
-	config *deployment.Config
-	dir    string
+	id          string
+	config      *deployment.Config
+	output      *Output
+	dir         string
+	initialized bool
 }
 
 // New returns a new Terraform instance.
@@ -129,27 +131,26 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
-	output, err := t.Output()
-	if err != nil {
+	if err := t.loadOutput(); err != nil {
 		return err
 	}
 
-	if output.HasMetrics() {
+	if t.output.HasMetrics() {
 		// Setting up metrics server.
-		if err := t.setupMetrics(extAgent, output); err != nil {
+		if err := t.setupMetrics(extAgent); err != nil {
 			return fmt.Errorf("error setting up metrics server: %w", err)
 		}
 	}
 
-	if output.HasAppServers() {
-		url := output.Instances[0].PublicDNS + ":8065"
+	if t.output.HasAppServers() {
+		url := t.output.Instances[0].PublicDNS + ":8065"
 
 		// Updating the config.json for each instance of app server
-		t.setupAppServers(output, extAgent, uploadBinary, binaryPath)
-		if output.HasProxy() {
+		t.setupAppServers(extAgent, uploadBinary, binaryPath)
+		if t.output.HasProxy() {
 			// Updating the nginx config on proxy server
-			t.setupProxyServer(output, extAgent)
-			url = output.Proxy.PublicDNS
+			t.setupProxyServer(extAgent)
+			url = t.output.Proxy.PublicDNS
 		}
 
 		if err := pingServer("http://" + url); err != nil {
@@ -157,18 +158,18 @@ func (t *Terraform) Create(initData bool) error {
 		}
 
 		if initData {
-			if err := t.createAdminUser(extAgent, output); err != nil {
+			if err := t.createAdminUser(extAgent); err != nil {
 				return fmt.Errorf("could not create admin user: %w", err)
 			}
 		}
 	}
 
-	if err := t.setupLoadtestAgents(extAgent, output, initData); err != nil {
+	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
 	mlog.Info("Deployment complete.")
-	t.displayInfo(output)
+	displayInfo(t.output)
 	runcmd := "go run ./cmd/ltctl"
 	if strings.HasPrefix(os.Args[0], "ltctl") {
 		runcmd = "ltctl"
@@ -177,8 +178,8 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
-	for _, val := range output.Instances {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
+	for _, val := range t.output.Instances {
 		ip := val.PublicIP
 		sshc, err := extAgent.NewClient(ip)
 		if err != nil {
@@ -211,7 +212,7 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 			}
 
 			mlog.Info("Updating config", mlog.String("host", ip))
-			if err := t.updateAppConfig(ip, sshc, output); err != nil {
+			if err := t.updateAppConfig(ip, sshc); err != nil {
 				mlog.Error("error updating config", mlog.Err(err))
 				return
 			}
@@ -237,24 +238,24 @@ func (t *Terraform) setupAppServers(output *Output, extAgent *ssh.ExtAgent, uplo
 	}
 }
 
-func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, output *Output, initData bool) error {
-	if err := t.configureAndRunAgents(extAgent, output); err != nil {
+func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) error {
+	if err := t.configureAndRunAgents(extAgent); err != nil {
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
-	if !output.HasAppServers() {
+	if !t.output.HasAppServers() {
 		return nil
 	}
 
-	if err := t.initLoadtest(extAgent, output, initData); err != nil {
+	if err := t.initLoadtest(extAgent, initData); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
-	ip := output.Proxy.PublicDNS
+func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
+	ip := t.output.Proxy.PublicDNS
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
@@ -273,7 +274,7 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 		mlog.Info("Uploading nginx config", mlog.String("host", ip))
 
 		backends := ""
-		for _, addr := range output.Instances {
+		for _, addr := range t.output.Instances {
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
 		}
 
@@ -297,14 +298,14 @@ func (t *Terraform) setupProxyServer(output *Output, extAgent *ssh.ExtAgent) {
 	}()
 }
 
-func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *Output) error {
+func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(output.Instances[0].PublicIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
 	if err != nil {
 		return err
 	}
@@ -318,7 +319,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent, output *Output) erro
 	return nil
 }
 
-func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output) error {
+func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
 
@@ -326,15 +327,15 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	readerDSN = t.config.ExternalDBSettings.DataSourceReplicas
 	driverName = t.config.ExternalDBSettings.DriverName
 
-	if output.HasDB() {
+	if t.output.HasDB() {
 		switch t.config.TerraformDBSettings.InstanceEngine {
 		case "aurora-postgresql":
-			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
-			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
+			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
 			driverName = "postgres"
 		case "aurora-mysql":
-			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
 			driverName = "mysql"
 		}
 	}
@@ -348,15 +349,15 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.COLLAPSED_THREADS_DEFAULT_OFF)
-	cfg.EmailSettings.SMTPServer = model.NewString(output.MetricsServer.PrivateIP)
+	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
-	if output.HasProxy() && output.HasS3Key() && output.HasS3Bucket() {
+	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
 		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(output.S3Key.Id)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(output.S3Key.Secret)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(output.S3Bucket.Id)
-		cfg.FileSettings.AmazonS3Region = model.NewString(output.S3Bucket.Region)
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.output.S3Key.Id)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.output.S3Key.Secret)
+		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.output.S3Bucket.Id)
+		cfg.FileSettings.AmazonS3Region = model.NewString(t.output.S3Bucket.Region)
 	}
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
@@ -384,8 +385,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, output *Output)
 	cfg.PluginSettings.Enable = model.NewBool(true)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
 
-	if output.HasElasticSearch() {
-		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + output.ElasticSearchServer.Endpoint)
+	if t.output.HasElasticSearch() {
+		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
 		cfg.ElasticsearchSettings.Username = model.NewString("")
 		cfg.ElasticsearchSettings.Password = model.NewString("")
 		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
@@ -415,13 +416,17 @@ func (t *Terraform) preFlightCheck() error {
 		return fmt.Errorf("failed when checking terraform version: %w", err)
 	}
 
-	if err := t.init(); err != nil {
-		return err
+	if !t.initialized {
+		if err := t.init(); err != nil {
+			return err
+		}
+		if err := t.validate(); err != nil {
+			return err
+		}
 	}
 
-	if err := t.validate(); err != nil {
-		return err
-	}
+	t.initialized = true
+
 	return nil
 }
 

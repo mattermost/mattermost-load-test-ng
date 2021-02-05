@@ -15,8 +15,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
+
+// Config returns the deployment config associated with the Terraform instance.
+func (t *Terraform) Config() *deployment.Config {
+	return t.config
+}
 
 // Cleanup is called at the end of each command to clean temporary files
 func (t *Terraform) Cleanup() {

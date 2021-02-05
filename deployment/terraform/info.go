@@ -14,12 +14,12 @@ func (t *Terraform) Info() error {
 		return err
 	}
 
-	t.displayInfo(output)
+	displayInfo(output)
 
 	return nil
 }
 
-func (t *Terraform) displayInfo(output *Output) {
+func displayInfo(output *Output) {
 	if len(output.Agents) == 0 {
 		fmt.Println("No active deployment found.")
 		return

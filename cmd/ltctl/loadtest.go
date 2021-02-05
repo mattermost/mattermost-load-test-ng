@@ -124,12 +124,12 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := t.Output()
+	tfOutput, err := t.Output()
 	if err != nil {
 		return err
 	}
 
-	prometheusURL := fmt.Sprintf("http://%s:9090", output.MetricsServer.PublicIP)
+	prometheusURL := fmt.Sprintf("http://%s:9090", tfOutput.MetricsServer.PublicIP)
 	helper, err := prometheus.NewHelper(prometheusURL)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus.Helper: %w", err)
