@@ -157,11 +157,19 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		clients: appClients,
 	}
 
-	binaryPath := "/opt/mattermost/bin/mattermost"
 	resetCmd := cmd{
 		msg:     "Resetting database",
-		value:   fmt.Sprintf("%s reset --confirm", binaryPath),
 		clients: []*ssh.Client{appClients[0]},
+	}
+	switch dpConfig.TerraformDBSettings.InstanceEngine {
+	case "aurora-postgresql":
+		subCmd := fmt.Sprintf("-U %s -h %s %sdb", dpConfig.TerraformDBSettings.UserName, tfOutput.DBCluster.ClusterEndpoint, dpConfig.ClusterName)
+		resetCmd.value = fmt.Sprintf("export PGPASSWORD='%s' && dropdb %s && createdb %s", dpConfig.TerraformDBSettings.Password, subCmd, subCmd)
+	case "aurora-mysql":
+		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
+		resetCmd.value = fmt.Sprintf("%s drop %sdb && %s create %sdb", subCmd, dpConfig.ClusterName, subCmd, dpConfig.ClusterName)
+	default:
+		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
 	startCmd := cmd{
@@ -171,6 +179,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 
 	// do init process
+	binaryPath := "/opt/mattermost/bin/mattermost"
 	createAdminCmd := cmd{
 		msg: "Creating sysadmin",
 		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin || true",
