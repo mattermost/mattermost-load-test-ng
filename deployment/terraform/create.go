@@ -334,7 +334,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client) error {
 			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ReaderEndpoint + "/" + t.config.DBName() + "?sslmode=disable"}
 			driverName = "postgres"
 		case "aurora-mysql":
-			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ClusterEndpoint + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=300s\u0026writeTimeout=300s"
+			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ClusterEndpoint + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
 			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ReaderEndpoint + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
 			driverName = "mysql"
 		}
