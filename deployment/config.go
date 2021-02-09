@@ -128,6 +128,11 @@ func (c *Config) IsValid() error {
 	return nil
 }
 
+// DBName returns the database name for the deployment.
+func (c *Config) DBName() string {
+	return c.ClusterName + "db"
+}
+
 func checkPrefix(str string) bool {
 	return strings.HasPrefix(str, "https://") ||
 		strings.HasPrefix(str, "http://") ||

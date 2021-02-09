@@ -157,7 +157,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		clients: appClients,
 	}
 
-	dbName := dpConfig.ClusterName + "db"
+	dbName := dpConfig.DBName()
 	resetCmd := cmd{
 		msg:     "Resetting database",
 		clients: []*ssh.Client{appClients[0]},
