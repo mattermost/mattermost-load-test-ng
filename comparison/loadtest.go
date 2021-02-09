@@ -157,17 +157,18 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		clients: appClients,
 	}
 
+	dbName := dpConfig.ClusterName + "db"
 	resetCmd := cmd{
 		msg:     "Resetting database",
 		clients: []*ssh.Client{appClients[0]},
 	}
 	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
-		subCmd := fmt.Sprintf("-U %s -h %s %sdb", dpConfig.TerraformDBSettings.UserName, tfOutput.DBCluster.ClusterEndpoint, dpConfig.ClusterName)
+		subCmd := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBCluster.ClusterEndpoint, dbName)
 		resetCmd.value = fmt.Sprintf("export PGPASSWORD='%s' && dropdb %s && createdb %s", dpConfig.TerraformDBSettings.Password, subCmd, subCmd)
 	case "aurora-mysql":
 		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
-		resetCmd.value = fmt.Sprintf("%s drop %sdb && %s create %sdb", subCmd, dpConfig.ClusterName, subCmd, dpConfig.ClusterName)
+		resetCmd.value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
 	default:
 		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
@@ -200,11 +201,11 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%sdb?sslmode=disable'", dumpFilename,
-			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBCluster.ClusterEndpoint, dpConfig.ClusterName)
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%s?sslmode=disable'", dumpFilename,
+			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBCluster.ClusterEndpoint, dbName)
 	case "aurora-mysql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %sdb", dumpFilename,
-			tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dpConfig.ClusterName)
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %s", dumpFilename,
+			tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dbName)
 	default:
 		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
