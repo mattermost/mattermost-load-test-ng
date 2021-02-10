@@ -330,12 +330,12 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client) error {
 	if t.output.HasDB() {
 		switch t.config.TerraformDBSettings.InstanceEngine {
 		case "aurora-postgresql":
-			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ClusterEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"
-			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ReaderEndpoint + "/" + t.config.ClusterName + "db?sslmode=disable"}
+			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ClusterEndpoint + "/" + t.config.DBName() + "?sslmode=disable"
+			readerDSN = []string{"postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBCluster.ReaderEndpoint + "/" + t.config.DBName() + "?sslmode=disable"}
 			driverName = "postgres"
 		case "aurora-mysql":
-			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ClusterEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
-			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ReaderEndpoint + ")/" + t.config.ClusterName + "db?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ClusterEndpoint + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
+			readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBCluster.ReaderEndpoint + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
 			driverName = "mysql"
 		}
 	}
