@@ -14,7 +14,7 @@
     "CreateRole": false
   },
   "EnableAgentFullLogs": true,
-  "ProxyInstanceType": "m4.xlarge",
+  "ProxyInstanceType": "c5.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformDBSettings": {
     "InstanceCount": 1,
