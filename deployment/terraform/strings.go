@@ -127,6 +127,7 @@ server {
      proxy_connect_timeout   30s;
      proxy_send_timeout      90s;
      proxy_read_timeout      90s;
+     proxy_http_version 1.1;
      proxy_pass http://backend;
    }
 
