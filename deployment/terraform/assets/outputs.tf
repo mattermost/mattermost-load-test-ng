@@ -29,3 +29,7 @@ output "s3bucket" {
 output "s3Key" {
   value = aws_iam_access_key.s3key
 }
+
+output "jobServers" {
+  value = aws_instance.job_server.*
+}

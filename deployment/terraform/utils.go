@@ -84,6 +84,13 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
+	// Match against the job server names.
+	for _, instance := range output.JobServers {
+		if resource == instance.Tags.Name {
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+		}
+	}
+
 	// Match against the proxy or metrics servers, as well as convenient aliases.
 	switch resource {
 	case "proxy", output.Proxy.Tags.Name:

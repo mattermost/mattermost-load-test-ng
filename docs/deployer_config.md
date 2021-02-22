@@ -87,6 +87,20 @@ Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` servi
 
 You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
+## JobServerSettings
+
+### InstanceCount
+
+*int*
+
+Number of the instances to be created. Right now only support 1 o 0 values. Once a job server is deployed, all of the periodic jobs will run in this service.
+
+### InstanceType
+
+*string*
+
+The type of instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+
 ## EnableAgentFullLogs
 
 *bool*

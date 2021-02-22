@@ -40,6 +40,13 @@ func displayInfo(output *Output) {
 		}
 	}
 
+	if output.HasJobServer() {
+		fmt.Println("Job Server(s):")
+		for _, instance := range output.JobServers {
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+		}
+	}
+
 	fmt.Println("Load Agent(s):")
 	for _, agent := range output.Agents {
 		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)

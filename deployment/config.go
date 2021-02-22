@@ -62,6 +62,7 @@ type Config struct {
 	// the deployment process.
 	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.2.0/mattermost-load-test-ng-v1.2.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
 }
@@ -110,6 +111,15 @@ type ElasticSearchSettings struct {
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
+}
+
+// JobServerSettings contains the necessary data to deploy a job
+// server in a clustered deployment.
+type JobServerSettings struct {
+	// Job server instances count.
+	InstanceCount int `default:"0" validate:"range:[0,1]"`
+	// Job server instance type to be created.
+	InstanceType string `default:"t3a.micro"`
 }
 
 // IsValid reports whether a given deployment config is valid or not.
