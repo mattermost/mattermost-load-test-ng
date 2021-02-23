@@ -27,6 +27,9 @@ type output struct {
 	ElasticServer struct {
 		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
+	JobServers struct {
+		Value []Instance `json:"value"`
+	} `json:"jobServers"`
 	S3Bucket struct {
 		Value []S3Bucket `json:"value"`
 	} `json:"s3Bucket"`
@@ -44,6 +47,7 @@ type Output struct {
 	Agents              []Instance          `json:"agents"`
 	MetricsServer       Instance            `json:"metricsServer"`
 	ElasticSearchServer ElasticSearchDomain `json:"elasticServer"`
+	JobServers          []Instance          `json:"jobServers"`
 	S3Bucket            S3Bucket            `json:"s3Bucket"`
 	S3Key               IAMAccess           `json:"s3Key"`
 }
@@ -98,8 +102,9 @@ func (t *Terraform) loadOutput() error {
 	}
 
 	outputv2 := &Output{
-		Instances: o.Instances.Value,
-		Agents:    o.Agents.Value,
+		Instances:  o.Instances.Value,
+		Agents:     o.Agents.Value,
+		JobServers: o.JobServers.Value,
 	}
 
 	if len(o.Proxy.Value) > 0 {
@@ -175,4 +180,9 @@ func (o *Output) HasS3Bucket() bool {
 // HasS3Key returns whether a deployment includes the S3 Key.
 func (o *Output) HasS3Key() bool {
 	return o.S3Key.Secret != ""
+}
+
+// HasJobServer returns whether a deployment has a dedicated job server.
+func (o *Output) HasJobServer() bool {
+	return len(o.JobServers) > 0
 }

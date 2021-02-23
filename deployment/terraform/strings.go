@@ -3,7 +3,7 @@
 
 package terraform
 
-const serviceFile = `
+const mattermostServiceFile = `
 [Unit]
 Description=Mattermost
 After=network.target
@@ -210,6 +210,25 @@ RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
 User=ubuntu
 Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const jobServerServiceFile = `
+[Unit]
+Description=Mattermost Job Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mattermost/bin/mattermost jobserver
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/mattermost
+User=ubuntu
+Group=ubuntu
+LimitNOFILE=49152
 
 [Install]
 WantedBy=multi-user.target

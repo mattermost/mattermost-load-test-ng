@@ -13,6 +13,10 @@
     "Version": 6.5,
     "CreateRole": false
   },
+  "JobServerSettings":{
+    "InstanceCount": 0,
+    "InstanceType": "c5.xlarge"
+  },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "c5.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",

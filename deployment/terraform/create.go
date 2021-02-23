@@ -122,6 +122,8 @@ func (t *Terraform) Create(initData bool) error {
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
+		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
+		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 		"-auto-approve",
 		"-input=false",
 		"-state="+t.getStatePath(),
@@ -180,62 +182,77 @@ func (t *Terraform) Create(initData bool) error {
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
 	for _, val := range t.output.Instances {
-		ip := val.PublicIP
-		sshc, err := extAgent.NewClient(ip)
+		err := t.setupMMServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
-			mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
-			continue
+			mlog.Error("error while setting up app server", mlog.Err(err))
 		}
-		func() {
-			defer func() {
-				err := sshc.Close()
-				if err != nil {
-					mlog.Error("error closing ssh connection", mlog.Err(err))
-				}
-			}()
-
-			// Upload files
-			batch := []uploadInfo{
-				{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
-				{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
-				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-			}
-			if err := uploadBatch(sshc, batch); err != nil {
-				mlog.Error("batch upload failed", mlog.Err(err))
-				return
-			}
-
-			cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
-			if out, err := sshc.RunCommand(cmd); err != nil {
-				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
-				return
-			}
-
-			mlog.Info("Updating config", mlog.String("host", ip))
-			if err := t.updateAppConfig(ip, sshc); err != nil {
-				mlog.Error("error updating config", mlog.Err(err))
-				return
-			}
-
-			// Upload binary if needed.
-			if uploadBinary {
-				mlog.Info("Uploading binary", mlog.String("host", ip))
-
-				if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-					mlog.Error("error uploading file", mlog.String("file", binaryPath), mlog.String("output", string(out)), mlog.Err(err))
-					return
-				}
-			}
-
-			// Starting mattermost.
-			mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-			cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
-			if out, err := sshc.RunCommand(cmd); err != nil {
-				mlog.Error("error running ssh command", mlog.String("cmd", cmd), mlog.String("output", string(out)), mlog.Err(err))
-				return
-			}
-		}()
 	}
+
+	for _, val := range t.output.JobServers {
+		err := t.setupJobServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
+		if err != nil {
+			mlog.Error("error while setting up job server", mlog.Err(err))
+		}
+	}
+}
+
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+}
+
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, jobServerServiceFile, uploadBinary, binaryPath, true)
+}
+
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
+	}
+	defer func() {
+		err := sshc.Close()
+		if err != nil {
+			mlog.Error("error closing ssh connection", mlog.Err(err))
+		}
+	}()
+
+	// Upload files
+	batch := []uploadInfo{
+		{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
+		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
+		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+	}
+	if err := uploadBatch(sshc, batch); err != nil {
+		return fmt.Errorf("batch upload failed: %w", err)
+	}
+
+	cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
+	}
+
+	mlog.Info("Updating config", mlog.String("host", ip))
+	if err := t.updateAppConfig(ip, sshc, jobServerEnabled); err != nil {
+		return fmt.Errorf("error updating config: %w", err)
+	}
+
+	// Upload binary if needed.
+	if uploadBinary {
+		mlog.Info("Uploading binary", mlog.String("host", ip))
+
+		if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", binaryPath, string(out), err)
+		}
+	}
+
+	// Starting mattermost.
+	mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
+	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
+	return nil
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) error {
@@ -319,7 +336,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
-func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client) error {
+func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnabled bool) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
 
@@ -384,6 +401,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client) error {
 
 	cfg.PluginSettings.Enable = model.NewBool(true)
 	cfg.PluginSettings.EnableUploads = model.NewBool(true)
+
+	cfg.JobSettings.RunJobs = model.NewBool(jobServerEnabled)
 
 	if t.output.HasElasticSearch() {
 		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
