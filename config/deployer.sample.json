@@ -15,7 +15,7 @@
   },
   "JobServerSettings":{
     "InstanceCount": 0,
-    "InstanceType": "t3a.micro"
+    "InstanceType": "c5.xlarge"
   },
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "c5.xlarge",

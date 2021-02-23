@@ -114,12 +114,12 @@ type ElasticSearchSettings struct {
 }
 
 // JobServerSettings contains the necessary data to deploy a job
-// server in a clustered deployment.
+// server.
 type JobServerSettings struct {
 	// Job server instances count.
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
-	InstanceType string `default:"t3a.micro"`
+	InstanceType string `default:"c5.xlarge"`
 }
 
 // IsValid reports whether a given deployment config is valid or not.

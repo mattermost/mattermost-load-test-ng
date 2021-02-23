@@ -182,21 +182,29 @@ func (t *Terraform) Create(initData bool) error {
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
 	for _, val := range t.output.Instances {
-		err := t.setupAppServer(extAgent, val.PublicIP, uploadBinary, binaryPath, false, !t.output.HasJobServer())
+		err := t.setupMMServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
 			mlog.Error("error while setting up app server", mlog.Err(err))
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupAppServer(extAgent, val.PublicIP, uploadBinary, binaryPath, true, true)
+		err := t.setupJobServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
 			mlog.Error("error while setting up job server", mlog.Err(err))
 		}
 	}
 }
 
-func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string, jobServer, jobServerEnabled bool) error {
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+}
+
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, jobServerServiceFile, uploadBinary, binaryPath, true)
+}
+
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
@@ -208,15 +216,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip string, uploadBina
 		}
 	}()
 
-	serviceFileName := serviceFile
-	if jobServer {
-		serviceFileName = jobServerServiceFile
-	}
-
 	// Upload files
 	batch := []uploadInfo{
 		{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
-		{srcData: strings.TrimSpace(serviceFileName), dstPath: "/lib/systemd/system/mattermost.service"},
+		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
 	if err := uploadBatch(sshc, batch); err != nil {

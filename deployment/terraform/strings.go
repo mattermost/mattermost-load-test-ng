@@ -3,7 +3,7 @@
 
 package terraform
 
-const serviceFile = `
+const mattermostServiceFile = `
 [Unit]
 Description=Mattermost
 After=network.target
