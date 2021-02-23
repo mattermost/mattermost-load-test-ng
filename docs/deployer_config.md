@@ -93,13 +93,13 @@ You can check if the role is already created [here](https://console.aws.amazon.c
 
 *int*
 
-Number of the instances to be created. Right now only support 1 o 0 values. Once a job server is deployed, all of the periodic jobs will run in this service.
+Number of instances to be created. Supported values are `1` or `0`. Once a job server is deployed, all of the periodic jobs will run on this instance.
 
 ### InstanceType
 
 *string*
 
-The type of instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/)).
 
 ## EnableAgentFullLogs
 
