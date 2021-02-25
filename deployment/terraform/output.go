@@ -6,6 +6,7 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 )
 
 type output struct {
@@ -16,7 +17,9 @@ type output struct {
 		Value []Instance `json:"value"`
 	} `json:"instances"`
 	DBCluster struct {
-		Value []DBCluster `json:"value"`
+		Value []struct {
+			Endpoint string `json:"endpoint"`
+		} `json:"value"`
 	} `json:"dbCluster"`
 	Agents struct {
 		Value []Instance `json:"value"`
@@ -41,6 +44,7 @@ type output struct {
 // Output contains the output variables which are
 // created after a deployment.
 type Output struct {
+	ClusterName         string
 	Proxy               Instance            `json:"proxy"`
 	Instances           []Instance          `json:"instances"`
 	DBCluster           DBCluster           `json:"dbCluster"`
@@ -74,8 +78,7 @@ type Tags struct {
 
 // DBCluster defines a RDS cluster instance resource.
 type DBCluster struct {
-	ClusterEndpoint string `json:"endpoint"`
-	ReaderEndpoint  string `json:"reader_endpoint"`
+	Endpoints []string `json:"endpoint"`
 }
 
 // IAMAccess is a set of credentials that allow API requests to be made as an IAM user.
@@ -102,16 +105,19 @@ func (t *Terraform) loadOutput() error {
 	}
 
 	outputv2 := &Output{
-		Instances:  o.Instances.Value,
-		Agents:     o.Agents.Value,
-		JobServers: o.JobServers.Value,
+		ClusterName: t.config.ClusterName,
+		Instances:   o.Instances.Value,
+		Agents:      o.Agents.Value,
+		JobServers:  o.JobServers.Value,
 	}
 
 	if len(o.Proxy.Value) > 0 {
 		outputv2.Proxy = o.Proxy.Value[0]
 	}
 	if len(o.DBCluster.Value) > 0 {
-		outputv2.DBCluster = o.DBCluster.Value[0]
+		for _, ep := range o.DBCluster.Value {
+			outputv2.DBCluster.Endpoints = append(outputv2.DBCluster.Endpoints, ep.Endpoint)
+		}
 	}
 	if len(o.MetricsServer.Value) > 0 {
 		outputv2.MetricsServer = o.MetricsServer.Value[0]
@@ -154,7 +160,7 @@ func (o *Output) HasProxy() bool {
 
 // HasDB returns whether a deployment has database installed in it or not.
 func (o *Output) HasDB() bool {
-	return o.DBCluster.ClusterEndpoint != ""
+	return len(o.DBCluster.Endpoints) > 0
 }
 
 //HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
@@ -185,4 +191,29 @@ func (o *Output) HasS3Key() bool {
 // HasJobServer returns whether a deployment has a dedicated job server.
 func (o *Output) HasJobServer() bool {
 	return len(o.JobServers) > 0
+}
+
+// DBReaders returns the list of db reader endpoints.
+func (o *Output) DBReaders() []string {
+	var rds []string
+	prefix := o.ClusterName + "-rd"
+	for _, ep := range o.DBCluster.Endpoints {
+		if strings.HasPrefix(ep, prefix) {
+			rds = append(rds, ep)
+		}
+	}
+	return rds
+}
+
+// DBWriter returns the db writer endpoint.
+func (o *Output) DBWriter() string {
+	var wr string
+	prefix := o.ClusterName + "-wr"
+	for _, ep := range o.DBCluster.Endpoints {
+		if strings.HasPrefix(ep, prefix) {
+			wr = ep
+			break
+		}
+	}
+	return wr
 }
