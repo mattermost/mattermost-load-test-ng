@@ -233,3 +233,15 @@ LimitNOFILE=49152
 [Install]
 WantedBy=multi-user.target
 `
+
+const grafanaConfigFile = `
+[auth]
+disable_login_form = false
+
+[auth.anonymous]
+enabled = true
+org_role = Editor
+
+[dashboards]
+default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json
+`
