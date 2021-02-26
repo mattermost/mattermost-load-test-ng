@@ -154,6 +154,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	mlog.Info("Setting up Grafana", mlog.String("host", t.output.MetricsServer.PublicIP))
 
+	// Upload config file
+	rdr = strings.NewReader(grafanaConfigFile)
+	if out, err := sshc.Upload(rdr, "/etc/grafana/grafana.ini", true); err != nil {
+		return fmt.Errorf("error upload grafana config: output: %s, error: %w", out, err)
+	}
+
 	// Upload datasource file
 	buf, err := ioutil.ReadFile(path.Join(t.dir, "datasource.yaml"))
 	if err != nil {
