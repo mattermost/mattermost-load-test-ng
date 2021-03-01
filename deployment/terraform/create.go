@@ -355,7 +355,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		case "aurora-mysql":
 			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBWriter() + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
 			for _, rd := range t.output.DBReaders() {
-				readerDSN = []string{t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + rd + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"}
+				readerDSN = append(readerDSN, t.config.TerraformDBSettings.UserName+":"+t.config.TerraformDBSettings.Password+"@tcp("+rd+")/"+t.config.DBName()+"?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s")
 			}
 			driverName = "mysql"
 		}
