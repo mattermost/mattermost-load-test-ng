@@ -273,17 +273,6 @@ resource "aws_iam_user_policy" "s3userpolicy" {
 EOF
 }
 
-
-resource "aws_rds_cluster_instance" "cluster_instances" {
-  count                      = var.app_instance_count > 0 ? var.db_instance_count : 0
-  identifier                 = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier         = aws_rds_cluster.db_cluster[0].id
-  instance_class             = var.db_instance_class
-  engine                     = var.db_instance_engine
-  apply_immediately          = true
-  auto_minor_version_upgrade = false
-}
-
 resource "aws_rds_cluster" "db_cluster" {
   count               = var.app_instance_count > 0 && var.db_instance_count > 0 ? 1 : 0
   cluster_identifier  = "${var.cluster_name}-db"
@@ -296,6 +285,25 @@ resource "aws_rds_cluster" "db_cluster" {
   engine_version      = var.db_engine_version[var.db_instance_engine]
 
   vpc_security_group_ids = [aws_security_group.db[0].id]
+}
+
+resource "aws_rds_cluster_instance" "cluster_instances" {
+  count                      = var.app_instance_count > 0 ? var.db_instance_count : 0
+  identifier                 = "${var.cluster_name}-db-${count.index}"
+  cluster_identifier         = aws_rds_cluster.db_cluster[0].id
+  instance_class             = var.db_instance_class
+  engine                     = var.db_instance_engine
+  apply_immediately          = true
+  auto_minor_version_upgrade = false
+}
+
+resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
+  count                       = var.db_instance_count > 1 ? var.db_instance_count : 0
+  cluster_identifier          = aws_rds_cluster.db_cluster[0].id
+  cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}" 
+  custom_endpoint_type        = "ANY"
+
+  static_members = [aws_rds_cluster_instance.cluster_instances[count.index].id]
 }
 
 resource "aws_instance" "loadtest_agent" {

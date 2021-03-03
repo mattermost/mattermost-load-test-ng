@@ -57,9 +57,11 @@ func displayInfo(output *Output) {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
 	}
-	if output.HasAppServers() {
-		fmt.Println("DB reader endpoint: " + output.DBCluster.ReaderEndpoint)
-		fmt.Println("DB cluster endpoint: " + output.DBCluster.ClusterEndpoint)
+	if output.HasDB() {
+		fmt.Println("DB writer endpoint: " + output.DBWriter())
+		for _, rd := range output.DBReaders() {
+			fmt.Println("DB reader endpoint: " + rd)
+		}
 	}
 
 	if output.HasElasticSearch() {
