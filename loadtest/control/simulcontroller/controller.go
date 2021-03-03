@@ -81,10 +81,7 @@ func (c *SimulController) Run() {
 			run: c.loginOrSignUp,
 		},
 		{
-			run: c.joinTeam,
-		},
-		{
-			run: c.joinChannel,
+			run: c.initialJoinTeam,
 		},
 	}
 

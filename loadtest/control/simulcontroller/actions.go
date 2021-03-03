@@ -1147,3 +1147,20 @@ func (c *SimulController) scrollChannel(u user.User) control.UserActionResponse 
 	}
 	return control.UserActionResponse{Info: fmt.Sprintf("scrolled channel %v %d times", channel.Id, numScrolls)}
 }
+
+func (c *SimulController) initialJoinTeam(u user.User) control.UserActionResponse {
+	resp := c.reload(false)
+	if resp.Err != nil {
+		return resp
+	}
+
+	team, err := c.user.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		// only join a team if we are not in one already.
+		return c.joinTeam(c.user)
+	}
+
+	return resp
+}
