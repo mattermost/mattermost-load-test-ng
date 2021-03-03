@@ -104,8 +104,12 @@ func (t *Terraform) loadOutput() error {
 		return err
 	}
 
+	var clusterName string
+	if t.config != nil {
+		clusterName = t.config.ClusterName
+	}
 	outputv2 := &Output{
-		ClusterName: t.config.ClusterName,
+		ClusterName: clusterName,
 		Instances:   o.Instances.Value,
 		Agents:      o.Agents.Value,
 		JobServers:  o.JobServers.Value,
