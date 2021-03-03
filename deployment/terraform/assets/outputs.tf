@@ -3,7 +3,7 @@ output "instances" {
 }
 
 output "dbCluster" {
-  value = aws_rds_cluster.db_cluster
+  value = aws_rds_cluster_endpoint.cluster_endpoints.*
 }
 
 output "agents" {
