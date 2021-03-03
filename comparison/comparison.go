@@ -97,7 +97,7 @@ func (c *Comparison) Run() (Output, error) {
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, &dp.config, buildCfg, dumpFilename, c.cancelCh); err != nil {
+					if err := initLoadTest(t, buildCfg, dumpFilename, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}
@@ -132,14 +132,9 @@ func (c *Comparison) Run() (Output, error) {
 
 	mlog.Info("load-tests have completed, going to generate some results")
 
-	// do actual comparisons and generate some results
-	results, err := c.getResults(resultsCh)
-	if err != nil {
-		return output, err
-	}
-
 	output.DeploymentInfo = c.deploymentInfo
-	output.Results = results
+	// do actual comparisons and generate some results
+	output.Results = c.getResults(resultsCh)
 
 	return output, nil
 }

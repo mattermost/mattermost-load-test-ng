@@ -91,3 +91,9 @@ variable "root_block_device" {
     },
   ]
 }
+
+variable "job_server_instance_count" {
+}
+
+variable "job_server_instance_type" {
+}

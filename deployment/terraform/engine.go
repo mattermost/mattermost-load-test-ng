@@ -6,6 +6,7 @@ package terraform
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,8 +16,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+
 	"github.com/mattermost/mattermost-server/v5/mlog"
 )
+
+// Config returns the deployment config associated with the Terraform instance.
+func (t *Terraform) Config() *deployment.Config {
+	return t.config
+}
 
 // Cleanup is called at the end of each command to clean temporary files
 func (t *Terraform) Cleanup() {
@@ -112,7 +120,7 @@ Do you want to proceed ? (Y/n).`, maxSupportedVersion, version))
 		var confirm string
 		fmt.Scanln(&confirm)
 		if !regexp.MustCompile(`(?i)^(y|yes)?$`).MatchString(confirm) {
-			return nil
+			return errors.New("incorrect response")
 		}
 	}
 

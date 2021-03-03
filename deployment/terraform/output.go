@@ -27,6 +27,9 @@ type output struct {
 	ElasticServer struct {
 		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
+	JobServers struct {
+		Value []Instance `json:"value"`
+	} `json:"jobServers"`
 	S3Bucket struct {
 		Value []S3Bucket `json:"value"`
 	} `json:"s3Bucket"`
@@ -44,6 +47,7 @@ type Output struct {
 	Agents              []Instance          `json:"agents"`
 	MetricsServer       Instance            `json:"metricsServer"`
 	ElasticSearchServer ElasticSearchDomain `json:"elasticServer"`
+	JobServers          []Instance          `json:"jobServers"`
 	S3Bucket            S3Bucket            `json:"s3Bucket"`
 	S3Key               IAMAccess           `json:"s3Key"`
 }
@@ -86,21 +90,21 @@ type S3Bucket struct {
 	Region string `json:"region"`
 }
 
-// Output reads the current terraform output
-func (t *Terraform) Output() (*Output, error) {
+func (t *Terraform) loadOutput() error {
 	var buf bytes.Buffer
 
 	if err := t.runCommand(&buf, "output", "-json", "-state="+t.getStatePath()); err != nil {
-		return nil, err
+		return err
 	}
 	var o output
 	if err := json.Unmarshal(buf.Bytes(), &o); err != nil {
-		return nil, err
+		return err
 	}
 
 	outputv2 := &Output{
-		Instances: o.Instances.Value,
-		Agents:    o.Agents.Value,
+		Instances:  o.Instances.Value,
+		Agents:     o.Agents.Value,
+		JobServers: o.JobServers.Value,
 	}
 
 	if len(o.Proxy.Value) > 0 {
@@ -121,7 +125,26 @@ func (t *Terraform) Output() (*Output, error) {
 	if len(o.S3Key.Value) > 0 {
 		outputv2.S3Key = o.S3Key.Value[0]
 	}
-	return outputv2, nil
+
+	t.output = outputv2
+
+	return nil
+}
+
+func (t *Terraform) setOutput() error {
+	if t.output == nil {
+		return t.loadOutput()
+	}
+	return nil
+}
+
+// Output reads the current terraform output and caches it internally for future use.
+// The output is guaranteed to be up to date after calls to Create and Destroy.
+func (t *Terraform) Output() (*Output, error) {
+	if err := t.setOutput(); err != nil {
+		return nil, err
+	}
+	return t.output, nil
 }
 
 // HasProxy returns whether a deployment has proxy installed in it or not.
@@ -157,4 +180,9 @@ func (o *Output) HasS3Bucket() bool {
 // HasS3Key returns whether a deployment includes the S3 Key.
 func (o *Output) HasS3Key() bool {
 	return o.S3Key.Secret != ""
+}
+
+// HasJobServer returns whether a deployment has a dedicated job server.
+func (o *Output) HasJobServer() bool {
+	return len(o.JobServers) > 0
 }

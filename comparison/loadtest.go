@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -27,7 +26,8 @@ func (c *Comparison) getLoadTestsCount() int {
 	return count
 }
 
-func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, d time.Duration, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
+	d time.Duration, cancelCh <-chan struct{}) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 	mlog.Info("starting bounded load-test")
@@ -62,7 +62,8 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 	return status, nil
 }
 
-func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
+	cancelCh <-chan struct{}) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 
@@ -104,13 +105,15 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
-	output, err := t.Output()
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
+	tfOutput, err := t.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get terraform output: %w", err)
 	}
 
-	if !output.HasAppServers() {
+	dpConfig := t.Config()
+
+	if !tfOutput.HasAppServers() {
 		return errors.New("no app servers in this deployment")
 	}
 
@@ -119,14 +122,14 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		return err
 	}
 
-	agentClient, err := extAgent.NewClient(output.Agents[0].PublicIP)
+	agentClient, err := extAgent.NewClient(tfOutput.Agents[0].PublicIP)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
 	defer agentClient.Close()
 
-	appClients := make([]*ssh.Client, len(output.Instances))
-	for i, instance := range output.Instances {
+	appClients := make([]*ssh.Client, len(tfOutput.Instances))
+	for i, instance := range tfOutput.Instances {
 		client, err := extAgent.NewClient(instance.PublicIP)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
@@ -154,11 +157,20 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		clients: appClients,
 	}
 
-	binaryPath := "/opt/mattermost/bin/mattermost"
+	dbName := dpConfig.DBName()
 	resetCmd := cmd{
 		msg:     "Resetting database",
-		value:   fmt.Sprintf("%s reset --confirm", binaryPath),
 		clients: []*ssh.Client{appClients[0]},
+	}
+	switch dpConfig.TerraformDBSettings.InstanceEngine {
+	case "aurora-postgresql":
+		subCmd := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBCluster.ClusterEndpoint, dbName)
+		resetCmd.value = fmt.Sprintf("export PGPASSWORD='%s' && dropdb %s && createdb %s", dpConfig.TerraformDBSettings.Password, subCmd, subCmd)
+	case "aurora-mysql":
+		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
+		resetCmd.value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
+	default:
+		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
 	startCmd := cmd{
@@ -168,15 +180,16 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 	}
 
 	// do init process
+	binaryPath := "/opt/mattermost/bin/mattermost"
 	createAdminCmd := cmd{
 		msg: "Creating sysadmin",
 		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin || true",
-			binaryPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
+			binaryPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
 		clients: []*ssh.Client{appClients[0]},
 	}
 	initDataCmd := cmd{
 		msg:     "Initializing data",
-		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", output.Agents[0].Tags.Name),
+		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
 		clients: []*ssh.Client{agentClient},
 	}
 
@@ -186,15 +199,15 @@ func initLoadTest(t *terraform.Terraform, config *deployment.Config, buildCfg Bu
 		msg:     "Loading DB dump",
 		clients: []*ssh.Client{appClients[0]},
 	}
-	switch config.TerraformDBSettings.InstanceEngine {
+	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%sdb?sslmode=disable'", dumpFilename,
-			config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, output.DBCluster.ClusterEndpoint, config.ClusterName)
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%s?sslmode=disable'", dumpFilename,
+			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBCluster.ClusterEndpoint, dbName)
 	case "aurora-mysql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %sdb", dumpFilename,
-			output.DBCluster.ClusterEndpoint, config.TerraformDBSettings.UserName, config.TerraformDBSettings.Password, config.ClusterName)
+		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %s", dumpFilename,
+			tfOutput.DBCluster.ClusterEndpoint, dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dbName)
 	default:
-		return fmt.Errorf("invalid db engine %s", config.TerraformDBSettings.InstanceEngine)
+		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
 	if dumpFilename == "" {

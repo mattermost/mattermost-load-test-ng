@@ -105,8 +105,8 @@ resource "aws_instance" "metrics_server" {
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
       "sudo apt-get install -y adduser libfontconfig1",
-      "wget https://dl.grafana.com/oss/release/grafana_6.6.2_amd64.deb",
-      "sudo dpkg -i grafana_6.6.2_amd64.deb",
+      "wget https://dl.grafana.com/oss/release/grafana_7.3.7_amd64.deb",
+      "sudo dpkg -i grafana_7.3.7_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
@@ -590,5 +590,55 @@ resource "aws_security_group" "proxy" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "job_server" {
+  tags = {
+    Name = "${var.cluster_name}-job-server-${count.index}"
+  }
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
+  instance_type = var.job_server_instance_type
+  key_name      = aws_key_pair.key.id
+  count         = var.job_server_instance_count
+  vpc_security_group_ids = [
+    aws_security_group.app[0].id,
+  ]
+
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+    content {
+      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_type = lookup(root_block_device.value, "volume_type", null)
+    }
+  }
+
+  provisioner "file" {
+    source      = var.mattermost_license_file
+    destination = "/home/ubuntu/mattermost.mattermost-license"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
+      "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
+      "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
+      "sudo apt-get -y update",
+      "sudo apt-get install -y mysql-client-5.7",
+      "sudo apt-get install -y postgresql-client-11",
+      "sudo apt-get install -y prometheus-node-exporter",
+      "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
+      "tar xzf mattermost-dist.tar.gz",
+      "sudo mv mattermost /opt/"
+    ]
   }
 }

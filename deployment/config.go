@@ -62,6 +62,7 @@ type Config struct {
 	// the deployment process.
 	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.2.0/mattermost-load-test-ng-v1.2.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
 }
@@ -112,6 +113,15 @@ type ElasticSearchSettings struct {
 	CreateRole bool
 }
 
+// JobServerSettings contains the necessary data to deploy a job
+// server.
+type JobServerSettings struct {
+	// Job server instances count.
+	InstanceCount int `default:"0" validate:"range:[0,1]"`
+	// Job server instance type to be created.
+	InstanceType string `default:"c5.xlarge"`
+}
+
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
 	if !checkPrefix(c.MattermostDownloadURL) {
@@ -126,6 +136,11 @@ func (c *Config) IsValid() error {
 		return err
 	}
 	return nil
+}
+
+// DBName returns the database name for the deployment.
+func (c *Config) DBName() string {
+	return c.ClusterName + "db"
 }
 
 func checkPrefix(str string) bool {

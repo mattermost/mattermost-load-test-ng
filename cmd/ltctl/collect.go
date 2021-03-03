@@ -178,7 +178,7 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 			addInfo(name, "/opt/mattermost/logs/mattermost.log", true)
 			addInfo(name, "/opt/mattermost/config/config.json", false)
 		case strings.HasPrefix(name, "agent"):
-			addInfo(name, "/home/ubuntu/agent.log", true)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true)
 		case name == "coordinator":
 			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true)
 			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false)

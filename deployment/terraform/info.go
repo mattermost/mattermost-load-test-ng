@@ -14,12 +14,12 @@ func (t *Terraform) Info() error {
 		return err
 	}
 
-	t.displayInfo(output)
+	displayInfo(output)
 
 	return nil
 }
 
-func (t *Terraform) displayInfo(output *Output) {
+func displayInfo(output *Output) {
 	if len(output.Agents) == 0 {
 		fmt.Println("No active deployment found.")
 		return
@@ -36,6 +36,13 @@ func (t *Terraform) displayInfo(output *Output) {
 		}
 		fmt.Println("App Server(s):")
 		for _, instance := range output.Instances {
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+		}
+	}
+
+	if output.HasJobServer() {
+		fmt.Println("Job Server(s):")
+		for _, instance := range output.JobServers {
 			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
 		}
 	}
