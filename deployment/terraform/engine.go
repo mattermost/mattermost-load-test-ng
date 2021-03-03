@@ -6,6 +6,7 @@ package terraform
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -119,7 +120,7 @@ Do you want to proceed ? (Y/n).`, maxSupportedVersion, version))
 		var confirm string
 		fmt.Scanln(&confirm)
 		if !regexp.MustCompile(`(?i)^(y|yes)?$`).MatchString(confirm) {
-			return nil
+			return errors.New("incorrect response")
 		}
 	}
 
