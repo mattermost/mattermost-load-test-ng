@@ -298,7 +298,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
-  count                       = var.db_instance_count > 1 ? var.db_instance_count : 0
+  count                       = var.db_instance_count > 0 ? var.db_instance_count : 0
   cluster_identifier          = aws_rds_cluster.db_cluster[0].id
   cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}" 
   custom_endpoint_type        = "ANY"
