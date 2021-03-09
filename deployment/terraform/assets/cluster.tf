@@ -339,10 +339,6 @@ resource "aws_instance" "loadtest_agent" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
-      "wget -O tmp.tar.gz ${var.load_test_download_url}",
-      "tar xzf tmp.tar.gz",
-      "mv mattermost-load-test-ng* mattermost-load-test-ng",
-      "rm tmp.tar.gz"
     ]
   }
 }

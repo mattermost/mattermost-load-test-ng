@@ -25,11 +25,10 @@ import (
 const cmdExecTimeoutMinutes = 30
 
 const (
-	latestReleaseURL           = "https://latest.mattermost.com/mattermost-enterprise-linux"
-	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.2.0/mattermost-load-test-ng-v1.2.0-linux-amd64.tar.gz"
-	filePrefix                 = "file://"
-	minSupportedVersion        = 0.12
-	maxSupportedVersion        = 0.13
+	latestReleaseURL    = "https://latest.mattermost.com/mattermost-enterprise-linux"
+	filePrefix          = "file://"
+	minSupportedVersion = 0.12
+	maxSupportedVersion = 0.13
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
@@ -94,11 +93,6 @@ func (t *Terraform) Create(initData bool) error {
 		uploadBinary = true
 	}
 
-	loadTestDownloadURL := t.config.LoadTestDownloadURL
-	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
-		loadTestDownloadURL = defaultLoadTestDownloadURL
-	}
-
 	err = t.runCommand(nil, "apply",
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
@@ -121,7 +115,6 @@ func (t *Terraform) Create(initData bool) error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 		"-auto-approve",

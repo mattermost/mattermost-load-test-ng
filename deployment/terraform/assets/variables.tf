@@ -80,9 +80,6 @@ variable "mattermost_download_url" {
 variable "mattermost_license_file" {
 }
 
-variable "load_test_download_url" {
-}
-
 variable "root_block_device" {
   default = [
     {

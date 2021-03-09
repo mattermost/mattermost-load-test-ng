@@ -48,6 +48,16 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		uploadBinary = true
 	}
 
+	commands := []string{
+		"rm -rf mattermost-load-test-ng*",
+		"tar xzf tmp.tar.gz",
+		"mv mattermost-load-test-ng* mattermost-load-test-ng",
+		"rm tmp.tar.gz",
+	}
+	if !uploadBinary {
+		commands = append([]string{"wget -O tmp.tar.gz " + t.config.LoadTestDownloadURL}, commands...)
+	}
+
 	for _, val := range t.output.Agents {
 		sshc, err := extAgent.NewClient(val.PublicIP)
 		if err != nil {
@@ -55,21 +65,16 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		}
 		mlog.Info("Configuring agent", mlog.String("ip", val.PublicIP))
 		if uploadBinary {
-			dstFile := "/home/ubuntu/tmp.tar.gz"
+			dstFilePath := "/home/ubuntu/tmp.tar.gz"
 			mlog.Info("Uploading binary", mlog.String("file", packagePath))
-			if out, err := sshc.UploadFile(packagePath, dstFile, false); err != nil {
+			if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
 			}
-			commands := []string{
-				"rm -rf mattermost-load-test-ng*",
-				"tar xzf tmp.tar.gz",
-				"mv mattermost-load-test-ng* mattermost-load-test-ng",
-				"rm tmp.tar.gz",
-			}
-			cmd := strings.Join(commands, " && ")
-			if out, err := sshc.RunCommand(cmd); err != nil {
-				return fmt.Errorf("error running command, got output: %q: %w", out, err)
-			}
+		}
+
+		cmd := strings.Join(commands, " && ")
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running command, got output: %q: %w", out, err)
 		}
 
 		tpl, err := template.New("").Parse(apiServiceFile)
