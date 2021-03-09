@@ -33,7 +33,6 @@ func (t *Terraform) Destroy() error {
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("load_test_download_url=%s", t.config.LoadTestDownloadURL),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 		"-auto-approve",
