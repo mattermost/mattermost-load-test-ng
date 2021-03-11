@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/examples/loadtest/sampleuser"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
 
 type SampleLoadTester struct {

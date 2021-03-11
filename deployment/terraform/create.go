@@ -18,8 +18,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
 
 const cmdExecTimeoutMinutes = 30
@@ -393,6 +393,9 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
+	cfg.ClusterSettings.UseExperimentalGossip = model.NewBool(true)
+	cfg.ClusterSettings.EnableGossipCompression = model.NewBool(false)
+	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewBool(true)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 
