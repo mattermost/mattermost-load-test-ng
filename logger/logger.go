@@ -6,7 +6,7 @@ package logger
 import (
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
 
 // Settings holds information used to initialize a new logger.
