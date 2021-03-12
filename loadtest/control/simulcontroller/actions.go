@@ -881,10 +881,15 @@ func searchChannels(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// We simulate the user typing up to 4 characters when searching for
-	// a channel. This is an arbitrary value which fits well with the current
+	// numChars simulates how many characters does a user type
+	// to search for a channel. This is an arbitrary value which fits well with the current
 	// frequency value for this action.
-	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
+	numChars := 4
+	if len(channel.Name) < numChars {
+		return control.UserActionResponse{Info: "channel name too short"}
+	}
+
+	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
