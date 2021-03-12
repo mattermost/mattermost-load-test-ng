@@ -885,8 +885,10 @@ func searchChannels(u user.User) control.UserActionResponse {
 	// to search for a channel. This is an arbitrary value which fits well with the current
 	// frequency value for this action.
 	numChars := 4
-	if len(channel.Name) < numChars {
-		return control.UserActionResponse{Info: "channel name too short"}
+	if numChars > len(channel.Name) {
+		// rand.Intn returns a number exclusive of the max limit.
+		// So there's no need to subtract 1.
+		numChars = len(channel.Name)
 	}
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
