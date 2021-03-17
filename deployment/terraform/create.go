@@ -301,10 +301,12 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		}
 
 		batch := []uploadInfo{
-			{srcData: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), dstPath: "/etc/nginx/sites-available/mattermost"},
-			{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
-			{srcData: strings.TrimSpace(nginxConfig), dstPath: "/etc/nginx/nginx.conf"},
-			{srcData: strings.TrimSpace(limitsConfig), dstPath: "/etc/security/limits.conf"},
+			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
+			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
+			{srcData: strings.TrimLeft(fmt.Sprintf(nginxSiteConfig, backends), "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
+			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
+			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
