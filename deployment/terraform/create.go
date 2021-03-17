@@ -113,7 +113,6 @@ func (t *Terraform) Create(initData bool) error {
 		"-var", fmt.Sprintf("db_instance_class=%s", t.config.TerraformDBSettings.InstanceType),
 		"-var", fmt.Sprintf("db_username=%s", t.config.TerraformDBSettings.UserName),
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
-		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
@@ -220,6 +219,19 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 	}
 
 	cmd := "sudo systemctl daemon-reload && sudo service mattermost stop"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
+	}
+
+	// provision MM build
+	commands := []string{
+		"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
+		"tar xzf mattermost-dist.tar.gz",
+		"sudo rm -rf /opt/mattermost",
+		"sudo mv mattermost /opt/",
+	}
+	mlog.Info("Provisioning MM build", mlog.String("host", ip))
+	cmd = strings.Join(commands, " && ")
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
 	}
