@@ -393,6 +393,11 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.LogSettings.EnableFile = model.NewBool(true)
 	cfg.LogSettings.FileLevel = model.NewString("WARN")
 
+	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
+	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
+	cfg.NotificationLogSettings.EnableFile = model.NewBool(true)
+	cfg.NotificationLogSettings.FileLevel = model.NewString("WARN")
+
 	cfg.SqlSettings.DriverName = model.NewString(driverName)
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
