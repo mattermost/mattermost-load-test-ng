@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
-	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210310173921-05720f627b91
+	github.com/mattermost/mattermost-server/v5 v5.3.2-0.20210324153418-f60b7437da9a
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/common v0.17.0
 	github.com/sergi/go-diff v1.1.0 // indirect
