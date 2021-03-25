@@ -280,7 +280,7 @@ func genNginxConfig() (string, error) {
 	data := map[string]string{
 		"tcpNoDelay": "off",
 	}
-	if val := os.Getenv(deployment.EnvVarTCPNoDelay); val == "on" {
+	if val := os.Getenv(deployment.EnvVarTCPNoDelay); strings.ToLower(val) == "on" {
 		data["tcpNoDelay"] = "on"
 	}
 	return fillConfigTemplate(nginxConfigTmpl, data)
