@@ -70,10 +70,9 @@ pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-	worker_connections 16384;
-	use epoll;
+  worker_connections 16384;
+  use epoll;
 }
-
 
 http {
   map $status $loggable {
@@ -81,27 +80,54 @@ http {
     default 1;
   }
 
-	sendfile on;
-	tcp_nopush on;
-	tcp_nodelay on;
-	keepalive_timeout 75s;
-	keepalive_requests 16384;
-	types_hash_max_size 2048;
-	include /etc/nginx/mime.types;
-	default_type application/octet-stream;
-	ssl_prefer_server_ciphers on;
-	access_log /var/log/nginx/access.log combined if=$loggable;
-	error_log /var/log/nginx/error.log;
-	gzip on;
-	include /etc/nginx/conf.d/*.conf;
-	include /etc/nginx/sites-enabled/*;
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+  keepalive_timeout 75s;
+  keepalive_requests 16384;
+  types_hash_max_size 2048;
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+  ssl_prefer_server_ciphers on;
+  access_log /var/log/nginx/access.log combined if=$loggable;
+  error_log /var/log/nginx/error.log;
+  gzip on;
+  include /etc/nginx/conf.d/*.conf;
+  include /etc/nginx/sites-enabled/*;
 }
+`
+
+const nginxProxyCommonConfig = `
+client_max_body_size 50M;
+proxy_set_header Host $http_host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Frame-Options SAMEORIGIN;
+proxy_buffers 256 16k;
+proxy_buffer_size 16k;
+client_body_timeout 60s;
+send_timeout        300s;
+lingering_timeout   5s;
+proxy_connect_timeout   30s;
+proxy_send_timeout      90s;
+proxy_read_timeout      90s;
+proxy_http_version 1.1;
+proxy_pass http://backend;
+`
+
+const nginxCacheCommonConfig = `
+proxy_cache mattermost_cache;
+proxy_cache_revalidate on;
+proxy_cache_min_uses 2;
+proxy_cache_use_stale timeout;
+proxy_cache_lock on;
 `
 
 const nginxSiteConfig = `
 upstream backend {
 %s
-    keepalive 256;
+  keepalive 256;
 }
 
 proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
@@ -111,47 +137,24 @@ server {
   server_name _;
 
   location ~ /api/v[0-9]+/(users/)?websocket$ {
-     proxy_set_header Upgrade $http_upgrade;
-     proxy_set_header Connection "upgrade";
-     client_max_body_size 50M;
-     proxy_set_header Host $http_host;
-     proxy_set_header X-Real-IP $remote_addr;
-     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-     proxy_set_header X-Forwarded-Proto $scheme;
-     proxy_set_header X-Frame-Options SAMEORIGIN;
-     proxy_buffers 256 16k;
-     proxy_buffer_size 16k;
-     client_body_timeout 60;
-     send_timeout        300;
-     lingering_timeout   5;
-     proxy_connect_timeout   30s;
-     proxy_send_timeout      90s;
-     proxy_read_timeout      90s;
-     proxy_http_version 1.1;
-     proxy_pass http://backend;
-   }
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    include /etc/nginx/snippets/proxy.conf;
+  }
 
-   location / {
-     client_max_body_size 50M;
-     proxy_set_header Connection "";
-     proxy_set_header Host $http_host;
-     proxy_set_header X-Real-IP $remote_addr;
-     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-     proxy_set_header X-Forwarded-Proto $scheme;
-     proxy_set_header X-Frame-Options SAMEORIGIN;
-     proxy_buffers 256 16k;
-     proxy_buffer_size 16k;
-     proxy_connect_timeout   30s;
-     proxy_read_timeout      90s;
-     proxy_send_timeout      90s;
-     proxy_cache mattermost_cache;
-     proxy_cache_revalidate on;
-     proxy_cache_min_uses 2;
-     proxy_cache_use_stale timeout;
-     proxy_cache_lock on;
-     proxy_http_version 1.1;
-     proxy_pass http://backend;
-   }
+  location ~ /api/v[0-9]+/users/[a-z0-9]+/image$ {
+    proxy_set_header Connection "";
+    include /etc/nginx/snippets/proxy.conf;
+    include /etc/nginx/snippets/cache.conf;
+    proxy_ignore_headers Cache-Control Expires;
+    proxy_cache_valid 200 24h;
+  }
+
+  location / {
+    proxy_set_header Connection "";
+    include /etc/nginx/snippets/proxy.conf;
+    include /etc/nginx/snippets/cache.conf;
+  }
 }
 `
 

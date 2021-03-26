@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -43,8 +44,16 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	return t.Info()
+	return terraform.New("", config).Info()
+}
+
+func RunSyncCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	return terraform.New("", config).Sync()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
@@ -59,8 +68,12 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	for _, instance := range output.Instances {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
 	}
-	fmt.Printf(" - %s\n", output.Proxy.Tags.Name)
-	fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)
+	if output.HasProxy() {
+		fmt.Printf(" - %s\n", output.Proxy.Tags.Name)
+	}
+	if output.HasMetrics() {
+		fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)
+	}
 	return nil
 }
 
@@ -107,6 +120,11 @@ func main() {
 			Use:   "info",
 			Short: "Display information about the current load-test deployment",
 			RunE:  RunInfoCmdF,
+		},
+		{
+			Use:   "sync",
+			Short: "Syncs the local .tfstate file with any changes made remotely",
+			RunE:  RunSyncCmdF,
 		},
 	}
 
@@ -156,6 +174,11 @@ func main() {
 				fmt.Println("Available instances:")
 				return RunSSHListCmdF(cmd, args)
 			}
+
+			runCmd, _ := cmd.Flags().GetString("run")
+			if runCmd != "" {
+				return terraform.New("", nil).RunSSHCommand(args[0], strings.Split(runCmd, " "))
+			}
 			return terraform.New("", nil).OpenSSHFor(args[0])
 		},
 	}
@@ -166,6 +189,7 @@ func main() {
 		RunE:  RunSSHListCmdF,
 		Args:  cobra.NoArgs,
 	}
+	sshCmd.Flags().StringP("run", "r", "", "command to run")
 	sshCmd.AddCommand(sshListCmd)
 	rootCmd.AddCommand(sshCmd)
 

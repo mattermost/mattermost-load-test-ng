@@ -741,7 +741,7 @@ func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 	}
 
 	for _, p := range prefs {
-		if p.Category == model.PREFERENCE_CATEGORY_COLLAPSED_THREADS_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
+		if p.Category == model.PREFERENCE_CATEGORY_DISPLAY_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
 			collapsedThreads = p.Value == "true"
 			break
 		}

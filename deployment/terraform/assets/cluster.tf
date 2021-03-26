@@ -60,10 +60,7 @@ resource "aws_instance" "app_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-5.7",
       "sudo apt-get install -y postgresql-client-11",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
-      "tar xzf mattermost-dist.tar.gz",
-      "sudo mv mattermost /opt/"
+      "sudo apt-get install -y prometheus-node-exporter"
     ]
   }
 }
@@ -298,7 +295,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
-  count                       = var.db_instance_count > 1 ? var.db_instance_count : 0
+  count                       = var.db_instance_count > 0 ? var.db_instance_count : 0
   cluster_identifier          = aws_rds_cluster.db_cluster[0].id
   cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}" 
   custom_endpoint_type        = "ANY"
@@ -339,10 +336,6 @@ resource "aws_instance" "loadtest_agent" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
-      "wget -O tmp.tar.gz ${var.load_test_download_url}",
-      "tar xzf tmp.tar.gz",
-      "mv mattermost-load-test-ng* mattermost-load-test-ng",
-      "rm tmp.tar.gz"
     ]
   }
 }
@@ -643,10 +636,7 @@ resource "aws_instance" "job_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-5.7",
       "sudo apt-get install -y postgresql-client-11",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "wget -O mattermost-dist.tar.gz ${var.mattermost_download_url}",
-      "tar xzf mattermost-dist.tar.gz",
-      "sudo mv mattermost /opt/"
+      "sudo apt-get install -y prometheus-node-exporter"
     ]
   }
 }

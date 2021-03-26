@@ -18,18 +18,17 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
 
 const cmdExecTimeoutMinutes = 30
 
 const (
-	latestReleaseURL           = "https://latest.mattermost.com/mattermost-enterprise-linux"
-	defaultLoadTestDownloadURL = "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.2.0/mattermost-load-test-ng-v1.2.0-linux-amd64.tar.gz"
-	filePrefix                 = "file://"
-	minSupportedVersion        = 0.12
-	maxSupportedVersion        = 0.13
+	latestReleaseURL    = "https://latest.mattermost.com/mattermost-enterprise-linux"
+	filePrefix          = "file://"
+	minSupportedVersion = 0.12
+	maxSupportedVersion = 0.13
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
@@ -94,41 +93,15 @@ func (t *Terraform) Create(initData bool) error {
 		uploadBinary = true
 	}
 
-	loadTestDownloadURL := t.config.LoadTestDownloadURL
-	if strings.HasPrefix(t.config.LoadTestDownloadURL, filePrefix) {
-		loadTestDownloadURL = defaultLoadTestDownloadURL
-	}
-
-	err = t.runCommand(nil, "apply",
-		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
-		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
-		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
-		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
-		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
-		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
-		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
-		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
-		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
-		"-var", fmt.Sprintf("es_version=%.1f", t.config.ElasticSearchSettings.Version),
-		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
-		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
-		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
-		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
-		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
-		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.TerraformDBSettings.InstanceEngine),
-		"-var", fmt.Sprintf("db_instance_class=%s", t.config.TerraformDBSettings.InstanceType),
-		"-var", fmt.Sprintf("db_username=%s", t.config.TerraformDBSettings.UserName),
-		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
-		"-var", fmt.Sprintf("mattermost_download_url=%s", t.config.MattermostDownloadURL),
-		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
-		"-var", fmt.Sprintf("load_test_download_url=%s", loadTestDownloadURL),
-		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
-		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
-		"-auto-approve",
+	var params []string
+	params = append(params, "apply")
+	params = append(params, t.getParams()...)
+	params = append(params, "-auto-approve",
 		"-input=false",
 		"-state="+t.getStatePath(),
-		t.dir,
-	)
+		t.dir)
+
+	err = t.runCommand(nil, params...)
 	if err != nil {
 		return err
 	}
@@ -231,6 +204,19 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
 	}
 
+	// provision MM build
+	commands := []string{
+		"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
+		"tar xzf mattermost-dist.tar.gz",
+		"sudo rm -rf /opt/mattermost",
+		"sudo mv mattermost /opt/",
+	}
+	mlog.Info("Provisioning MM build", mlog.String("host", ip))
+	cmd = strings.Join(commands, " && ")
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
+	}
+
 	mlog.Info("Updating config", mlog.String("host", ip))
 	if err := t.updateAppConfig(ip, sshc, jobServerEnabled); err != nil {
 		return fmt.Errorf("error updating config: %w", err)
@@ -296,10 +282,12 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		}
 
 		batch := []uploadInfo{
-			{srcData: strings.TrimSpace(fmt.Sprintf(nginxSiteConfig, backends)), dstPath: "/etc/nginx/sites-available/mattermost"},
-			{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
-			{srcData: strings.TrimSpace(nginxConfig), dstPath: "/etc/nginx/nginx.conf"},
-			{srcData: strings.TrimSpace(limitsConfig), dstPath: "/etc/security/limits.conf"},
+			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
+			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
+			{srcData: strings.TrimLeft(fmt.Sprintf(nginxSiteConfig, backends), "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
+			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
+			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
@@ -386,6 +374,11 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.LogSettings.EnableFile = model.NewBool(true)
 	cfg.LogSettings.FileLevel = model.NewString("WARN")
 
+	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
+	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
+	cfg.NotificationLogSettings.EnableFile = model.NewBool(true)
+	cfg.NotificationLogSettings.FileLevel = model.NewString("WARN")
+
 	cfg.SqlSettings.DriverName = model.NewString(driverName)
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
@@ -400,6 +393,9 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
+	cfg.ClusterSettings.UseExperimentalGossip = model.NewBool(true)
+	cfg.ClusterSettings.EnableGossipCompression = model.NewBool(false)
+	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewBool(true)
 
 	cfg.MetricsSettings.Enable = model.NewBool(true)
 
