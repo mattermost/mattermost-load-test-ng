@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -152,19 +153,20 @@ func main() {
 	rootCmd.AddCommand(loadtestCmd)
 
 	sshCmd := &cobra.Command{
-		Use:     "ssh [instance] [command]",
+		Use:     "ssh [instance]",
 		Short:   "ssh into instance",
-		Example: "ltctl ssh agent-0 [command]",
+		Example: "ltctl ssh agent-0",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			switch len(args) {
-			case 0:
+			if len(args) == 0 {
 				fmt.Println("Available instances:")
 				return RunSSHListCmdF(cmd, args)
-			case 1:
-				return terraform.New("", nil).OpenSSHFor(args[0])
-			default: // run a command on a machine
-				return terraform.New("", nil).RunSSHCommand(args[0], args[1:])
 			}
+
+			runCmd, _ := cmd.Flags().GetString("run")
+			if runCmd != "" {
+				return terraform.New("", nil).RunSSHCommand(args[0], strings.Split(runCmd, " "))
+			}
+			return terraform.New("", nil).OpenSSHFor(args[0])
 		},
 	}
 
@@ -174,6 +176,7 @@ func main() {
 		RunE:  RunSSHListCmdF,
 		Args:  cobra.NoArgs,
 	}
+	sshCmd.Flags().StringP("run", "r", "", "command to run")
 	sshCmd.AddCommand(sshListCmd)
 	rootCmd.AddCommand(sshCmd)
 
