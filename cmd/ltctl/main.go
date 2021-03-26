@@ -152,15 +152,19 @@ func main() {
 	rootCmd.AddCommand(loadtestCmd)
 
 	sshCmd := &cobra.Command{
-		Use:     "ssh [instance]",
+		Use:     "ssh [instance] [command]",
 		Short:   "ssh into instance",
-		Example: "ltctl ssh agent-0",
+		Example: "ltctl ssh agent-0 [command]",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
+			switch len(args) {
+			case 0:
 				fmt.Println("Available instances:")
 				return RunSSHListCmdF(cmd, args)
+			case 1:
+				return terraform.New("", nil).OpenSSHFor(args[0])
+			default: // run a command on a machine
+				return terraform.New("", nil).RunSSHCommand(args[0], args[1:])
 			}
-			return terraform.New("", nil).OpenSSHFor(args[0])
 		},
 	}
 

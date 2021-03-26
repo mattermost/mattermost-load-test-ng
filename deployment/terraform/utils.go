@@ -63,6 +63,24 @@ func (t *Terraform) OpenSSHFor(resource string) error {
 	return cmd.Wait()
 }
 
+// RunSSHCommand runs a command on a given machine.
+func (t *Terraform) RunSSHCommand(resource string, args []string) error {
+	cmd, err := t.makeCmdForResource(resource)
+	if err != nil {
+		return fmt.Errorf("failed to make cmd for resource: %w", err)
+	}
+	cmd.Args = append(cmd.Args, args...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	return cmd.Wait()
+}
+
 func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	output, err := t.Output()
 	if err != nil {
