@@ -1,7 +1,7 @@
 # Running a load-test with a Terraform deployment
 
-This guide describes how to setup and run a load-test using a [Terraform](https://www.terraform.io/intro/index.html) deployment.  
-Following this process it is possible to create a complete [load-test system](loadtest_system.md) in a mostly automated form.  
+This guide describes how to setup and run a load-test using a [Terraform](https://www.terraform.io/intro/index.html) deployment.
+Following this process it is possible to create a complete [load-test system](loadtest_system.md) in a mostly automated form.
 This is the recommended way to load-test a Mattermost instance for production.
 
 ## Prerequisites
@@ -55,7 +55,7 @@ ssh-add PATH_TO_KEY
 go run ./cmd/ltctl deployment create
 ```
 
-This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.  
+This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
 ### Get information on the current deployment
@@ -66,14 +66,22 @@ go run ./cmd/ltctl deployment info
 
 This will show information about the current deployment.
 
+### Synchronize the current deployment
+
+```sh
+go run ./cmd/ltctl deployment sync
+```
+
+This command will synchronize any changes made manually to the AWS cluster.
+
 ### Optionally configure coordinator and load-test
 
-When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md). 
+When starting a load-test with the `ltctl` command, required configuration files are automatically uploaded to the instance hosting the [coordinator](coordinator.md).
 If no files are found, defaults will be used.
 
 #### Copy default config
 
-To configure the [coordinator](coordinator.md), `config/coordinator.json` should be created and/or edited. 
+To configure the [coordinator](coordinator.md), `config/coordinator.json` should be created and/or edited.
 
 ```sh
 cp config/coordinator.sample.json config/coordinator.json

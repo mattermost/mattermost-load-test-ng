@@ -47,6 +47,16 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 	return t.Info()
 }
 
+func RunSyncCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t := terraform.New("", config)
+	return t.Sync()
+}
+
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	t := terraform.New("", nil)
 	output, err := t.Output()
@@ -111,6 +121,11 @@ func main() {
 			Use:   "info",
 			Short: "Display information about the current load-test deployment",
 			RunE:  RunInfoCmdF,
+		},
+		{
+			Use:   "sync",
+			Short: "Syncs the local .tfstate file with any changes made remotely",
+			RunE:  RunSyncCmdF,
 		},
 	}
 
