@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -173,6 +174,11 @@ func main() {
 				fmt.Println("Available instances:")
 				return RunSSHListCmdF(cmd, args)
 			}
+
+			runCmd, _ := cmd.Flags().GetString("run")
+			if runCmd != "" {
+				return terraform.New("", nil).RunSSHCommand(args[0], strings.Split(runCmd, " "))
+			}
 			return terraform.New("", nil).OpenSSHFor(args[0])
 		},
 	}
@@ -183,6 +189,7 @@ func main() {
 		RunE:  RunSSHListCmdF,
 		Args:  cobra.NoArgs,
 	}
+	sshCmd.Flags().StringP("run", "r", "", "command to run")
 	sshCmd.AddCommand(sshListCmd)
 	rootCmd.AddCommand(sshCmd)
 
