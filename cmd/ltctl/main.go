@@ -43,8 +43,7 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	return t.Info()
+	return terraform.New("", config).Info()
 }
 
 func RunSyncCmdF(cmd *cobra.Command, args []string) error {
@@ -53,8 +52,7 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	return t.Sync()
+	return terraform.New("", config).Sync()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
