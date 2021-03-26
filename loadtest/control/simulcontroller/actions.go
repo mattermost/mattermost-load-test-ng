@@ -6,7 +6,6 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -1132,8 +1131,6 @@ func (c *SimulController) scrollChannel(u user.User) control.UserActionResponse 
 	postId := posts[0].Id
 	// scrolling between 1 and 5 times
 	numScrolls := rand.Intn(5) + 1
-	// idle time between scrolls
-	idleTime := time.Duration(math.Round(1000*c.rate)) * time.Millisecond
 	for i := 0; i < numScrolls; i++ {
 		postsIds, err := c.user.GetPostsBefore(channel.Id, postId, 0, 30, collapsedThreads)
 		if err != nil {
@@ -1150,7 +1147,14 @@ func (c *SimulController) scrollChannel(u user.User) control.UserActionResponse 
 		}
 		// get the newest post
 		postId = posts[0].Id
-		time.Sleep(idleTime)
+
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
 	}
 	return control.UserActionResponse{Info: fmt.Sprintf("scrolled channel %v %d times", channel.Id, numScrolls)}
 }
