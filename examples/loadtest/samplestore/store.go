@@ -386,3 +386,11 @@ func (s *SampleStore) ServerVersion() (string, error) {
 func (s *SampleStore) SetServerVersion(version string) error {
 	return nil
 }
+
+func (s *SampleStore) ChannelStats(channelId string) (*model.ChannelStats, error) {
+	return nil, nil
+}
+
+func (s *SampleStore) SetChannelStats(channelId string, stats *model.ChannelStats) error {
+	return nil
+}
