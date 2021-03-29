@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -530,9 +531,13 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		rootId = post.Id
 	}
 
-	// TODO: possibly add some additional idle time here to simulate the
-	// user actually taking time to type a post message.
-	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+	if ok, err := shouldSendTypingEvent(u, channel.Id); ok && err == nil {
+		// TODO: possibly add some additional idle time here to simulate the
+		// user actually taking time to type a post message.
+		if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -569,9 +574,13 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: possibly add some additional idle time here to simulate the
-	// user actually taking time to type a post message.
-	if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+	if ok, err := shouldSendTypingEvent(u, channel.Id); ok && err == nil {
+		// TODO: possibly add some additional idle time here to simulate the
+		// user actually taking time to type a post message.
+		if err := u.SendTypingEvent(channel.Id, ""); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -1023,4 +1032,20 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 		}
 		return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 	})
+}
+
+func shouldSendTypingEvent(u user.User, channelId string) (bool, error) {
+	channelStats, err := u.Store().ChannelStats(channelId)
+	if err != nil {
+		return false, err
+	}
+	maxNotifications, err := strconv.ParseInt(u.Store().ClientConfig()["MaxNotificationsPerChannel"], 10, 64)
+	if err != nil {
+		return false, err
+	}
+	enableTyping, err := strconv.ParseBool(u.Store().ClientConfig()["EnableUserTypingMessages"])
+	if err != nil {
+		return false, err
+	}
+	return channelStats.MemberCount < maxNotifications && enableTyping, nil
 }

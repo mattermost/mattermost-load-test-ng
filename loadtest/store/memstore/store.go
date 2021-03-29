@@ -26,6 +26,7 @@ type MemStore struct {
 	postsQueue          *CQueue
 	teams               map[string]*model.Team
 	channels            map[string]*model.Channel
+	channelStats        map[string]*model.ChannelStats
 	channelMembers      map[string]map[string]*model.ChannelMember
 	channelMembersQueue *CQueue
 	teamMembers         map[string]map[string]*model.TeamMember
@@ -78,6 +79,7 @@ func (s *MemStore) Clear() {
 	s.postsQueue.Reset()
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
+	s.channelStats = map[string]*model.ChannelStats{}
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
 	s.channelMembersQueue.Reset()
 	s.teamMembers = map[string]map[string]*model.TeamMember{}
@@ -501,6 +503,32 @@ func (s *MemStore) ChannelView(channelId string) (int64, error) {
 	}
 
 	return s.channelViews[channelId], nil
+}
+
+// ChannelStats returns statistics for the given channelId.
+func (s *MemStore) ChannelStats(channelId string) (*model.ChannelStats, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if channelId == "" {
+		return nil, errors.New("memstore: channelId should not be empty")
+	}
+
+	return s.channelStats[channelId], nil
+}
+
+// SetChannelStats stores statistics for the given channelId.
+func (s *MemStore) SetChannelStats(channelId string, stats *model.ChannelStats) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if channelId == "" {
+		return errors.New("memstore: channelId should not be empty")
+	}
+
+	s.channelStats[channelId] = stats
+
+	return nil
 }
 
 // Team returns the team for the given teamId.
