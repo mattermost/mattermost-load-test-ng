@@ -531,13 +531,7 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		rootId = post.Id
 	}
 
-	if ok, err := shouldSendTypingEvent(u, channel.Id); ok && err == nil {
-		// TODO: possibly add some additional idle time here to simulate the
-		// user actually taking time to type a post message.
-		if err := u.SendTypingEvent(channel.Id, ""); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	} else if err != nil {
+	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -574,13 +568,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if ok, err := shouldSendTypingEvent(u, channel.Id); ok && err == nil {
-		// TODO: possibly add some additional idle time here to simulate the
-		// user actually taking time to type a post message.
-		if err := u.SendTypingEvent(channel.Id, ""); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	} else if err != nil {
+	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -1048,4 +1036,15 @@ func shouldSendTypingEvent(u user.User, channelId string) (bool, error) {
 		return false, err
 	}
 	return channelStats.MemberCount < maxNotifications && enableTyping, nil
+}
+
+func sendTypingEventIfEnabled(u user.User, channelId string) error {
+	if ok, err := shouldSendTypingEvent(u, channelId); ok && err == nil {
+		// TODO: possibly add some additional idle time here to simulate the
+		// user actually taking time to type a post message.
+		return u.SendTypingEvent(channelId, "")
+	} else if err != nil {
+		return err
+	}
+	return nil
 }
