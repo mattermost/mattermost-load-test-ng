@@ -30,6 +30,7 @@ Code specific documentation can be found on [GoDoc](https://godoc.org/github.com
 
 A sample implementation can be found in the [examples](examples/) folder.
 Information about the development workflow and release process can be found in [Developer's workflow](docs/developing.md).
+A guide on how to add load-test coverage for new or missing functionality can be found in [Adding functionality](docs/coverage.md).
 
 ## Help
 
