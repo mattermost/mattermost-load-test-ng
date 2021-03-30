@@ -520,12 +520,12 @@ func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
 
 // GetChannelStats fetches statistics for the specified channel.
 func (ue *UserEntity) GetChannelStats(channelId string) error {
-	_, resp := ue.client.GetChannelStats(channelId, "")
+	stats, resp := ue.client.GetChannelStats(channelId, "")
 	if resp.Error != nil {
 		return resp.Error
 	}
 
-	return nil
+	return ue.store.SetChannelStats(channelId, stats)
 }
 
 // AutocompleteChannelsForTeam fetches and stores an ordered list of channels for a given

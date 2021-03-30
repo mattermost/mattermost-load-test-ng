@@ -53,6 +53,8 @@ type UserStore interface {
 	ChannelPostsSorted(channelId string, asc bool) ([]*model.Post, error)
 	// ChannelView returns the timestamp of the last view for the given channelId.
 	ChannelView(channelId string) (int64, error)
+	// ChannelStats returns statistics for the given channelId.
+	ChannelStats(channelId string) (*model.ChannelStats, error)
 
 	// GetUser returns the user for the given userId.
 	GetUser(userId string) (model.User, error)
@@ -185,6 +187,8 @@ type MutableUserStore interface {
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	// RemoveChannelMember removes the channel member for the specified channel and user.
 	RemoveChannelMember(channelId string, userId string) error
+	// SetChannelStats stores statistics for the given channelId.
+	SetChannelStats(channelId string, stats *model.ChannelStats) error
 
 	// teams
 	SetTeam(team *model.Team) error
