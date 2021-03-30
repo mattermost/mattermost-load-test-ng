@@ -10,7 +10,7 @@ This is a quick overview of the main components involved when it comes to adding
 
 ### High level diagram
 
-![lt_dev](https://user-images.githubusercontent.com/1832946/112978806-0f9c8e80-9158-11eb-9aa8-c6bbbcc6106e.png)
+![lt_dev](https://user-images.githubusercontent.com/1832946/112990833-c6a00680-9166-11eb-9442-4437e918a649.png)
 
 ### `UserController`
 
