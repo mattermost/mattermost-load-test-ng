@@ -4,6 +4,7 @@
 package terraform
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -190,6 +192,19 @@ func (t *Terraform) getStatePath() string {
 		statePath = t.id + ".tfstate"
 	}
 	return statePath
+}
+
+func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {
+	var buf bytes.Buffer
+	tmpl := template.New("template")
+	tmpl, err := tmpl.Parse(configTmpl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+	return buf.String(), nil
 }
 
 func (t *Terraform) getParams() []string {

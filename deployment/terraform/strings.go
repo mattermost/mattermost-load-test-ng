@@ -62,15 +62,15 @@ ff02::3 ip6-allhosts
 %s
 `
 
-const nginxConfig = `
+const nginxConfigTmpl = `
 user www-data;
 worker_processes auto;
-worker_rlimit_nofile 65536;
+worker_rlimit_nofile 100000;
 pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-  worker_connections 16384;
+  worker_connections 20000;
   use epoll;
 }
 
@@ -82,7 +82,7 @@ http {
 
   sendfile on;
   tcp_nopush on;
-  tcp_nodelay on;
+  tcp_nodelay {{.tcpNoDelay}};
   keepalive_timeout 75s;
   keepalive_requests 16384;
   types_hash_max_size 2048;
@@ -159,23 +159,65 @@ server {
 `
 
 const limitsConfig = `
-* soft nofile 65536
-* hard nofile 65536
+* soft nofile 100000
+* hard nofile 100000
 * soft nproc 8192
 * hard nproc 8192
 `
 
 const clientSysctlConfig = `
+# Extending default port range to handle lots of concurrent connections.
 net.ipv4.ip_local_port_range = 1025 65000
+
+# Lowering the timeout to faster recycle connections in the FIN-WAIT-2 state.
 net.ipv4.tcp_fin_timeout = 30
+
+# Reuse TIME-WAIT sockets for new outgoing connections.
+net.ipv4.tcp_tw_reuse = 1
 `
 
 const serverSysctlConfig = `
+# Extending default port range to handle lots of concurrent connections.
 net.ipv4.ip_local_port_range = 1025 65000
+
+# Lowering the timeout to faster recycle connections in the FIN-WAIT-2 state.
 net.ipv4.tcp_fin_timeout = 30
+
+# Reuse TIME-WAIT sockets for new outgoing connections.
 net.ipv4.tcp_tw_reuse = 1
+
+# Bumping the limit of a listen() backlog.
+# This is maximum number of established sockets (with an ACK)
+# waiting to be accepted by the listening process.
 net.core.somaxconn = 4096
+
+# Increasing the maximum number of connection requests which have
+# not received an acknowledgment from the client.
+# This is helpful to handle sudden bursts of new incoming connections.
 net.ipv4.tcp_max_syn_backlog = 8192
+
+# This is tuned to be 2% of the available memory.
+vm.min_free_kbytes = 167772
+
+# Disabling slow start helps increasing overall throughput
+# and performance of persistent single connections.
+net.ipv4.tcp_slow_start_after_idle = 0
+
+# These show a good performance improvement over defaults.
+# More info at https://blog.cloudflare.com/http-2-prioritization-with-nginx/
+net.ipv4.tcp_congestion_control = bbr
+net.core.default_qdisc = fq
+net.ipv4.tcp_notsent_lowat = 16384
+
+# TCP buffer sizes are tuned for 10Gbit/s bandwidth and 0.5ms RTT (as measured intra EC2 cluster).
+# This gives a BDP (bandwidth-delay-product) of 625000 bytes.
+net.ipv4.tcp_rmem = 4096 156250 625000
+net.ipv4.tcp_wmem = 4096 156250 625000
+net.core.rmem_max = 312500
+net.core.wmem_max = 312500
+net.core.rmem_default = 312500
+net.core.wmem_default = 312500
+net.ipv4.tcp_mem = 1638400 1638400 1638400
 `
 
 const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`

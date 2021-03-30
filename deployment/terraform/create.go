@@ -191,7 +191,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 
 	// Upload files
 	batch := []uploadInfo{
-		{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
+		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
@@ -257,6 +257,16 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 	return nil
 }
 
+func genNginxConfig() (string, error) {
+	data := map[string]string{
+		"tcpNoDelay": "off",
+	}
+	if val := os.Getenv(deployment.EnvVarTCPNoDelay); strings.ToLower(val) == "on" {
+		data["tcpNoDelay"] = "on"
+	}
+	return fillConfigTemplate(nginxConfigTmpl, data)
+}
+
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 	ip := t.output.Proxy.PublicDNS
 
@@ -279,6 +289,12 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		backends := ""
 		for _, addr := range t.output.Instances {
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
+		}
+
+		nginxConfig, err := genNginxConfig()
+		if err != nil {
+			mlog.Error("Failed to generate nginx config", mlog.Err(err))
+			return
 		}
 
 		batch := []uploadInfo{
@@ -383,7 +399,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
 	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
-	cfg.SqlSettings.MaxOpenConns = model.NewInt(512)
+	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
@@ -412,6 +428,12 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+	}
+
+	if val := os.Getenv(deployment.EnvVarTCPNoDelay); val == "on" {
+		cfg.FeatureFlags = &model.FeatureFlags{
+			WebSocketDelay: true,
+		}
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
