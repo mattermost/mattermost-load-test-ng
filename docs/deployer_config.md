@@ -191,6 +191,12 @@ Only the binary gets replaced, and the rest of the build comes from the latest s
 
 The location of the Mattermost Enterprise Edition license file.
 
+## MattermostConfigPatchFile
+
+*string*
+
+An optional path to a partial Mattermost config file to be applied as patch during app server deployment.
+
 ## AdminEmail
 
 *string*
