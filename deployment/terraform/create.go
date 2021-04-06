@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/mattermost/mattermost-server/v5/config"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
@@ -121,7 +122,9 @@ func (t *Terraform) Create(initData bool) error {
 		url := t.output.Instances[0].PublicDNS + ":8065"
 
 		// Updating the config.json for each instance of app server
-		t.setupAppServers(extAgent, uploadBinary, binaryPath)
+		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath); err != nil {
+			return fmt.Errorf("error setting up app servers: %w", err)
+		}
 		if t.output.HasProxy() {
 			// Updating the nginx config on proxy server
 			t.setupProxyServer(extAgent)
@@ -153,20 +156,22 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) error {
 	for _, val := range t.output.Instances {
 		err := t.setupMMServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
-			mlog.Error("error while setting up app server", mlog.Err(err))
+			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
 		err := t.setupJobServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
-			mlog.Error("error while setting up job server", mlog.Err(err))
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
@@ -433,6 +438,23 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	if val := os.Getenv(deployment.EnvVarTCPNoDelay); val == "on" {
 		cfg.FeatureFlags = &model.FeatureFlags{
 			WebSocketDelay: true,
+		}
+	}
+
+	if t.config.MattermostConfigPatchFile != "" {
+		data, err := ioutil.ReadFile(t.config.MattermostConfigPatchFile)
+		if err != nil {
+			return fmt.Errorf("error reading MattermostConfigPatchFile: %w", err)
+		}
+
+		var patch model.Config
+		if err := json.Unmarshal(data, &patch); err != nil {
+			return fmt.Errorf("error parsing patch config: %w", err)
+		}
+
+		cfg, err = config.Merge(cfg, &patch, nil)
+		if err != nil {
+			return fmt.Errorf("error patching config: %w", err)
 		}
 	}
 
