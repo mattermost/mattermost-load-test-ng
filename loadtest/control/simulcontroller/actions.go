@@ -322,6 +322,11 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 			if err := u.GetFileThumbnail(info.Id); err != nil {
 				return err
 			}
+			if info.HasPreviewImage {
+				if err := u.GetFilePreview(info.Id); err != nil {
+					return err
+				}
+			}
 		}
 
 		userId := post.UserId
