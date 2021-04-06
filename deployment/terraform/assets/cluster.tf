@@ -29,7 +29,7 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
+  ami           = "ami-0fa37863afb290840" # 20.04 LTS
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
@@ -54,13 +54,16 @@ resource "aws_instance" "app_server" {
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "echo 'tcp_bbr' | sudo tee -a /etc/modules",
+      "sudo modprobe tcp_bbr",
       "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
       "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
       "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
-      "sudo apt-get install -y mysql-client-5.7",
+      "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
-      "sudo apt-get install -y prometheus-node-exporter"
+      "sudo apt-get install -y prometheus-node-exporter",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
     ]
   }
 }
@@ -77,7 +80,7 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
+  ami           = "ami-0fa37863afb290840" # 20.04 LTS
   instance_type = "t3.xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
@@ -122,7 +125,7 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy"
   }
-  ami                         = "ami-0ac80df6eff0e70b5"
+  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
@@ -149,9 +152,12 @@ resource "aws_instance" "proxy_server" {
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "echo 'tcp_bbr' | sudo tee -a /etc/modules",
+      "sudo modprobe tcp_bbr",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
       "sudo rm -f /etc/nginx/sites-enabled/default",
@@ -185,7 +191,7 @@ resource "aws_elasticsearch_domain" "es_server" {
     content {
       ebs_enabled = true
       volume_type = lookup(ebs_options.value, "volume_type", "gp2")
-      volume_size = lookup(ebs_options.value, "volume_size", 10)
+      volume_size = lookup(ebs_options.value, "volume_size", 20)
     }
   }
 
@@ -314,7 +320,7 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami                         = "ami-0ac80df6eff0e70b5"
+  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
@@ -336,6 +342,7 @@ resource "aws_instance" "loadtest_agent" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
     ]
   }
 }
@@ -606,7 +613,7 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0ac80df6eff0e70b5" # 18.04 LTS
+  ami           = "ami-0fa37863afb290840" # 20.04 LTS
   instance_type = var.job_server_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.job_server_instance_count
@@ -634,7 +641,7 @@ resource "aws_instance" "job_server" {
       "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
       "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
-      "sudo apt-get install -y mysql-client-5.7",
+      "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter"
     ]

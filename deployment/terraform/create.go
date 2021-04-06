@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/mattermost/mattermost-server/v5/config"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 )
@@ -121,7 +122,9 @@ func (t *Terraform) Create(initData bool) error {
 		url := t.output.Instances[0].PublicDNS + ":8065"
 
 		// Updating the config.json for each instance of app server
-		t.setupAppServers(extAgent, uploadBinary, binaryPath)
+		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath); err != nil {
+			return fmt.Errorf("error setting up app servers: %w", err)
+		}
 		if t.output.HasProxy() {
 			// Updating the nginx config on proxy server
 			t.setupProxyServer(extAgent)
@@ -153,20 +156,22 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) error {
 	for _, val := range t.output.Instances {
 		err := t.setupMMServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
-			mlog.Error("error while setting up app server", mlog.Err(err))
+			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
 		err := t.setupJobServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
 		if err != nil {
-			mlog.Error("error while setting up job server", mlog.Err(err))
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
@@ -191,7 +196,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 
 	// Upload files
 	batch := []uploadInfo{
-		{srcData: strings.TrimSpace(serverSysctlConfig), dstPath: "/etc/sysctl.conf"},
+		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
@@ -257,6 +262,16 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 	return nil
 }
 
+func genNginxConfig() (string, error) {
+	data := map[string]string{
+		"tcpNoDelay": "off",
+	}
+	if val := os.Getenv(deployment.EnvVarTCPNoDelay); strings.ToLower(val) == "on" {
+		data["tcpNoDelay"] = "on"
+	}
+	return fillConfigTemplate(nginxConfigTmpl, data)
+}
+
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 	ip := t.output.Proxy.PublicDNS
 
@@ -279,6 +294,12 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		backends := ""
 		for _, addr := range t.output.Instances {
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
+		}
+
+		nginxConfig, err := genNginxConfig()
+		if err != nil {
+			mlog.Error("Failed to generate nginx config", mlog.Err(err))
+			return
 		}
 
 		batch := []uploadInfo{
@@ -383,7 +404,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
 	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
-	cfg.SqlSettings.MaxOpenConns = model.NewInt(512)
+	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
@@ -412,6 +433,29 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+	}
+
+	if val := os.Getenv(deployment.EnvVarTCPNoDelay); val == "on" {
+		cfg.FeatureFlags = &model.FeatureFlags{
+			WebSocketDelay: true,
+		}
+	}
+
+	if t.config.MattermostConfigPatchFile != "" {
+		data, err := ioutil.ReadFile(t.config.MattermostConfigPatchFile)
+		if err != nil {
+			return fmt.Errorf("error reading MattermostConfigPatchFile: %w", err)
+		}
+
+		var patch model.Config
+		if err := json.Unmarshal(data, &patch); err != nil {
+			return fmt.Errorf("error parsing patch config: %w", err)
+		}
+
+		cfg, err = config.Merge(cfg, &patch, nil)
+		if err != nil {
+			return fmt.Errorf("error patching config: %w", err)
+		}
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")

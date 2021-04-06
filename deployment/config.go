@@ -51,6 +51,9 @@ type Config struct {
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
 	MattermostLicenseFile string `default:"" validate:"file"`
+	// Optional path to a partial Mattermost config file to be applied as patch during
+	// app server deployment.
+	MattermostConfigPatchFile string `default:""`
 	// Mattermost instance sysadmin e-mail.
 	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
 	// Mattermost instance sysadmin user name.
