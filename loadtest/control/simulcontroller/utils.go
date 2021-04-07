@@ -5,7 +5,9 @@ package simulcontroller
 
 import (
 	"errors"
+	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -13,13 +15,33 @@ import (
 )
 
 var errNoMatch = errors.New("could not match username")
+var userMentionRe = regexp.MustCompile(`@[a-z0-9_.-]+`)
 
 // pickAction randomly selects an action from a slice of userAction with
 // probability proportional to the action's frequency.
 func pickAction(actions []userAction) (*userAction, error) {
+	if len(actions) == 0 {
+		return nil, errors.New("failed to pick action: slice is empty")
+	}
+
 	weights := make([]int, len(actions))
+
+	// finding the minimum, non-zero frequency.
+	var minFreq float64
+	for _, action := range actions {
+		if minFreq == 0 && action.frequency > 0 {
+			minFreq = action.frequency
+		} else if action.frequency < minFreq && action.frequency > 0 {
+			minFreq = action.frequency
+		}
+	}
+
+	if minFreq == 0 {
+		return nil, errors.New("all actions have zero frequency")
+	}
+
 	for i := range actions {
-		weights[i] = actions[i].frequency
+		weights[i] = int(math.Round(actions[i].frequency / minFreq))
 	}
 
 	idx, err := control.SelectWeighted(weights)
@@ -102,4 +124,33 @@ func emulateMention(teamId, channelId, name string, auto func(teamId, channelId,
 	}
 
 	return errNoMatch
+}
+
+func pickIds(input []string, n int) []string {
+	var ids []string
+	l := len(input)
+	if l < n {
+		return ids
+	}
+
+	ids = make([]string, n)
+	for i := 0; i < n; i++ {
+		idx := rand.Intn(l)
+		ids[i] = input[idx]
+
+		// remove picked element
+		input[l-1], input[idx] = input[idx], input[l-1]
+		input = input[:l-1]
+		l--
+	}
+
+	return ids
+}
+
+func extractMentionFromMessage(msg string) string {
+	mention := userMentionRe.FindString(msg)
+	if mention == "" {
+		return mention
+	}
+	return mention[1:]
 }

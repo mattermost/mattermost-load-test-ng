@@ -73,10 +73,10 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	// TODO: considering making the following values configurable.
 
 	// The threshold at which we consider the load-test done and we are ready to
-	// give an answer. The value represent the slope of the best fine line for
+	// give an answer. The value represents the slope of the best fit line for
 	// the gathered samples. This value approaching zero means we have found
 	// an equilibrium point.
-	stopThreshold := 0.1
+	stopThreshold := 0.2
 	// The timespan to consider when calculating the best fit line. A higher
 	// value means considering a higher number of samples which improves the precision of
 	// the final result.
@@ -132,6 +132,10 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 					y: status.ActiveUsers,
 				})
 				latest := getLatestSamples(samples, samplesTimeRange)
+				if len(latest) > 0 {
+					c.log.Debug(fmt.Sprintf("feeback loop info: %d/%d samples, %0.3f slope",
+						len(latest), len(samples), slope(latest)))
+				}
 				if len(latest) > 0 && len(latest) < len(samples) && math.Abs(slope(latest)) < stopThreshold {
 					c.log.Info("coordinator done!")
 					supported = int(math.Round(avg(latest)))

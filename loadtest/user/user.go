@@ -82,6 +82,9 @@ type User interface {
 	GetUsersInChannel(channelId string, page, perPage int) error
 	// GetUsers fetches and stores all users. It returns a list of those users' ids.
 	GetUsers(page, perPage int) ([]string, error)
+	// GetUsersNotInChannel returns a list of user ids not in a given channel.
+	GetUsersNotInChannel(teamId, channelId string, page, perPage int) ([]string, error)
+
 	// SetProfileImage sets the profile image for the user.
 	SetProfileImage(data []byte) error
 	// GetProfileImage fetches the profile image for the user.
@@ -110,8 +113,8 @@ type User interface {
 	// GetPostsForChannel fetches and stores posts in a given channelId.
 	GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error
 	// GetPostsBefore fetches and stores posts in a given channelId that were made
-	// before a given postId.
-	GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) error
+	// before a given postId. It returns a list of posts ids.
+	GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error)
 	// GetPostsAfter fetches and stores posts in a given channelId that were made
 	// after a given postId.
 	GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error

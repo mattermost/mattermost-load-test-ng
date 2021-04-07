@@ -22,7 +22,7 @@ import (
 
 type userAction struct {
 	run       control.UserAction
-	frequency int
+	frequency float64
 	// Minimum supported server version
 	minServerVersion string
 }
@@ -280,6 +280,104 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channel.Id)}
 }
 
+// fetchPostsInfo fetches additional information for the given posts ids like
+// statuses and profile pictures of the posters and thumbnails for file
+// attachments.
+func fetchPostsInfo(u user.User, postsIds []string) error {
+	// We loop through the fetched posts to gather the ids for the users who made
+	// those posts. These are later needed to fetch profile images.
+	// We also check if posts have any image attachments and if so we fetch the
+	// respective thumbnails.
+	var missingUsers []string
+	var missingStatuses []string
+	var missingPictures []string
+	var missingUsernames []string
+
+	// used for deduplication
+	users := map[string]bool{}
+	statuses := map[string]bool{}
+	pictures := map[string]bool{}
+	mentions := map[string]bool{}
+
+	for _, postId := range postsIds {
+		post, err := u.Store().Post(postId)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			continue
+		} else if err != nil {
+			return err
+		}
+		if username := extractMentionFromMessage(post.Message); username != "" && !mentions[username] {
+			missingUsernames = append(missingUsernames, username)
+			mentions[username] = true
+		}
+
+		var fileInfo []*model.FileInfo
+		if post.Metadata != nil {
+			fileInfo = post.Metadata.Files
+		}
+		for _, info := range fileInfo {
+			if info.Extension != "png" && info.Extension != "jpg" {
+				continue
+			}
+			if err := u.GetFileThumbnail(info.Id); err != nil {
+				return err
+			}
+			if info.HasPreviewImage {
+				if err := u.GetFilePreview(info.Id); err != nil {
+					return err
+				}
+			}
+		}
+
+		userId := post.UserId
+
+		if !pictures[userId] {
+			missingPictures = append(missingPictures, userId)
+			pictures[userId] = true
+		}
+
+		if status, err := u.Store().Status(userId); err != nil {
+			return err
+		} else if status.UserId == "" && !statuses[userId] {
+			missingStatuses = append(missingStatuses, userId)
+			statuses[userId] = true
+		}
+
+		if user, err := u.Store().GetUser(userId); err != nil {
+			return err
+		} else if user.Id == "" && !users[userId] {
+			missingUsers = append(missingUsers, userId)
+			users[userId] = true
+		}
+	}
+
+	if len(missingStatuses) > 0 {
+		if err := u.GetUsersStatusesByIds(missingStatuses); err != nil {
+			return err
+		}
+	}
+
+	if len(missingUsers) > 0 {
+		if _, err := u.GetUsersByIds(missingUsers); err != nil {
+			return err
+		}
+	}
+
+	if len(missingPictures) > 0 {
+		if err := getProfileImageForUsers(u, missingPictures); err != nil {
+			return err
+		}
+	}
+
+	if len(missingUsernames) > 0 {
+		if _, err := u.GetUsersByUsernames(missingUsernames); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
 	if resp.Err != nil {
@@ -312,62 +410,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		}
 	}
 
-	// We loop through the fetched posts to gather the ids for the users who made
-	// those posts. These are later needed to fetch profile images.
-	// We also check if posts have any image attachments and if so we fetch the
-	// respective thumbnails.
-	var userIds []string
-	var missingStatuses []string
-	var missingUsers []string
-	for _, postId := range postsIds {
-		fileInfo, err := u.Store().FileInfoForPost(postId)
-		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		for _, info := range fileInfo {
-			if info.Extension != "png" && info.Extension != "jpg" {
-				continue
-			}
-			if err := u.GetFileThumbnail(info.Id); err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-		}
-
-		userId, err := u.Store().UserForPost(postId)
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			continue
-		} else if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		userIds = append(userIds, userId)
-
-		if status, err := u.Store().Status(userId); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		} else if status.UserId == "" {
-			missingStatuses = append(missingStatuses, userId)
-		}
-
-		if user, err := u.Store().GetUser(userId); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		} else if user.Id == "" {
-			missingUsers = append(missingUsers, userId)
-		}
-	}
-
-	if len(missingStatuses) > 0 {
-		if err := u.GetUsersStatusesByIds(missingStatuses); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	}
-
-	if len(missingUsers) > 0 {
-		if _, err := u.GetUsersByIds(missingUsers); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	}
-
-	if err := getProfileImageForUsers(u, userIds); err != nil {
+	if err := fetchPostsInfo(u, postsIds); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -818,8 +861,8 @@ func getProfileImageForUsers(u user.User, userIds []string) error {
 
 func createMessage(u user.User, channel *model.Channel, isReply bool) (string, error) {
 	var message string
-	// 25% of messages will contain a mention.
-	if rand.Float64() < 0.25 {
+	// 10% of messages will contain a mention.
+	if rand.Float64() < 0.10 {
 		user, err := u.Store().RandomUser()
 		if err != nil {
 			return "", err
@@ -1020,6 +1063,119 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 		}
 		return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
 	})
+}
+
+func createPrivateChannel(u user.User) control.UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channelName := model.NewId()
+	channelId, err := u.CreateChannel(&model.Channel{
+		Name:        channelName,
+		DisplayName: "Channel " + channelName,
+		TeamId:      team.Id,
+		Type:        "P",
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// This is a series of calls made by the webapp client
+	// when opening the `Add Members` dialog.
+	if err := u.GetUsersInChannel(channelId, 0, 100); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetChannelMembers(channelId, 0, 50); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	ids, err := u.GetUsersNotInChannel(team.Id, channelId, 0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// we pick up to 4 users to add to the channel.
+	for _, id := range pickIds(ids, 1+rand.Intn(4)) {
+		if err := u.AddChannelMember(channelId, id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
+}
+
+func (c *SimulController) scrollChannel(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	channel, err := c.user.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "scrollChannel: current channel not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	posts, err := c.user.Store().ChannelPostsSorted(channel.Id, true)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if len(posts) == 0 {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts in channel %v", channel.Id)}
+	}
+
+	// get the oldest post
+	postId := posts[0].Id
+	// scrolling between 1 and 5 times
+	numScrolls := rand.Intn(5) + 1
+	for i := 0; i < numScrolls; i++ {
+		postsIds, err := c.user.GetPostsBefore(channel.Id, postId, 0, 30, collapsedThreads)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if err := fetchPostsInfo(u, postsIds); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		// get the newest post
+		postId = posts[0].Id
+
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("scrolled channel %v %d times", channel.Id, numScrolls)}
+}
+
+func (c *SimulController) initialJoinTeam(u user.User) control.UserActionResponse {
+	resp := c.reload(false)
+	if resp.Err != nil {
+		return resp
+	}
+
+	team, err := c.user.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		// only join a team if we are not in one already.
+		return c.joinTeam(c.user)
+	}
+
+	return resp
 }
 
 func shouldSendTypingEvent(u user.User, channelId string) (bool, error) {

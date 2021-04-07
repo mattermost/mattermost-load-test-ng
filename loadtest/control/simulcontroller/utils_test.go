@@ -187,3 +187,97 @@ func TestGetCutoff(t *testing.T) {
 		require.Equal(t, tc.cutoff, getCutoff(tc.prefix, tc.typed, newRand))
 	}
 }
+
+func TestPickIds(t *testing.T) {
+	t.Run("empty slice", func(t *testing.T) {
+		ids := pickIds([]string{}, 1)
+		require.Empty(t, ids)
+	})
+
+	t.Run("not enough elements", func(t *testing.T) {
+		ids := pickIds([]string{"id0"}, 2)
+		require.Empty(t, ids)
+	})
+
+	t.Run("one element", func(t *testing.T) {
+		ids := pickIds([]string{"id0"}, 1)
+		require.Len(t, ids, 1)
+		require.Equal(t, "id0", ids[0])
+	})
+
+	t.Run("two elements", func(t *testing.T) {
+		input := []string{"id0", "id1"}
+		ids := pickIds(input, 1)
+		require.Len(t, ids, 1)
+		require.Contains(t, input, ids[0])
+
+		ids = pickIds(input, 2)
+		require.Len(t, ids, 2)
+		require.Contains(t, ids, "id0")
+		require.Contains(t, ids, "id1")
+	})
+}
+
+func TestExtractMentionFromMessage(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "",
+			expected: "",
+		},
+		{
+			input:    "@",
+			expected: "",
+		},
+		{
+			input:    "@ ",
+			expected: "",
+		},
+		{
+			input:    "@@",
+			expected: "",
+		},
+		{
+			input:    "@;/",
+			expected: "",
+		},
+		{
+			input:    "@user",
+			expected: "user",
+		},
+		{
+			input:    "@user ",
+			expected: "user",
+		},
+		{
+			input:    "@user1",
+			expected: "user1",
+		},
+		{
+			input:    "@user1-0",
+			expected: "user1-0",
+		},
+		{
+			input:    "@1user1-0",
+			expected: "1user1-0",
+		},
+		{
+			input:    "@user_test",
+			expected: "user_test",
+		},
+		{
+			input:    "@user.test",
+			expected: "user.test",
+		},
+		{
+			input:    "someone mentioned @user",
+			expected: "user",
+		},
+	}
+
+	for _, tc := range testCases {
+		require.Equal(t, tc.expected, extractMentionFromMessage(tc.input))
+	}
+}

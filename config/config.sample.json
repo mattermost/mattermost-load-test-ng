@@ -10,19 +10,23 @@
     "RatesDistribution":[
       {
         "Rate": 1.0,
-        "Percentage": 0.2
+        "Percentage": 0.05
+      },
+      {
+        "Rate": 2.0,
+        "Percentage": 0.1
       },
       {
         "Rate": 3.0,
-        "Percentage": 0.3
+        "Percentage": 0.15
       },
       {
         "Rate": 6.0,
-        "Percentage": 0.3
+        "Percentage": 0.4
       },
       {
         "Rate": 30.0,
-        "Percentage": 0.2
+        "Percentage": 0.3
       }
     ]
   },
