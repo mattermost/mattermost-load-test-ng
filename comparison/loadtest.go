@@ -175,7 +175,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 
 	startCmd := cmd{
 		msg:     "Restarting app server",
-		value:   fmt.Sprintf("sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;"),
+		value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 		clients: appClients,
 	}
 

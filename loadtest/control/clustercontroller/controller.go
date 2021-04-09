@@ -5,7 +5,6 @@ package clustercontroller
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"time"
 
@@ -65,7 +64,7 @@ func (c *ClusterController) Run() {
 				}
 			}
 			return control.UserActionResponse{
-				Info: fmt.Sprintf("got logs"),
+				Info: "got logs",
 			}
 		},
 		func(u user.User) control.UserActionResponse {
@@ -76,7 +75,7 @@ func (c *ClusterController) Run() {
 				}
 			}
 			return control.UserActionResponse{
-				Info: fmt.Sprintf("got analytics"),
+				Info: "got analytics",
 			}
 		},
 		func(u user.User) control.UserActionResponse {
@@ -87,7 +86,7 @@ func (c *ClusterController) Run() {
 				}
 			}
 			return control.UserActionResponse{
-				Info: fmt.Sprintf("got cluster stats"),
+				Info: "got cluster stats",
 			}
 		},
 		func(u user.User) control.UserActionResponse {
@@ -98,7 +97,7 @@ func (c *ClusterController) Run() {
 				}
 			}
 			return control.UserActionResponse{
-				Info: fmt.Sprintf("got plugin statuses"),
+				Info: "got plugin statuses",
 			}
 		},
 		func(u user.User) control.UserActionResponse {
@@ -119,7 +118,7 @@ func (c *ClusterController) Run() {
 				}
 			}
 			return control.UserActionResponse{
-				Info: fmt.Sprintf("updated config"),
+				Info: "updated config",
 			}
 		},
 	}
