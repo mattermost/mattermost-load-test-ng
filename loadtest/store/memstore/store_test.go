@@ -629,3 +629,43 @@ outer:
 	}
 	require.Equal(t, 2, doneCount)
 }
+
+func TestChannelStats(t *testing.T) {
+	s := newStore(t)
+
+	channelId := model.NewId()
+	stats := model.ChannelStats{
+		ChannelId: channelId,
+	}
+
+	t.Run("Set", func(t *testing.T) {
+		err := s.SetChannelStats(channelId, &stats)
+		require.NoError(t, err)
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		storedStats, err := s.ChannelStats(channelId)
+		require.NoError(t, err)
+		require.Equal(t, &stats, storedStats)
+	})
+
+	t.Run("Clear", func(t *testing.T) {
+		s.Clear()
+
+		storedStats, err := s.ChannelStats(channelId)
+		require.NoError(t, err)
+		require.Nil(t, storedStats)
+
+		err = s.SetCurrentChannel(&model.Channel{Id: channelId})
+		require.NoError(t, err)
+
+		err = s.SetChannelStats(channelId, &stats)
+		require.NoError(t, err)
+
+		s.Clear()
+
+		storedStats, err = s.ChannelStats(channelId)
+		require.NoError(t, err)
+		require.Equal(t, &stats, storedStats)
+	})
+}

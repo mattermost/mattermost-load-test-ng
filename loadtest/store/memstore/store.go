@@ -80,7 +80,11 @@ func (s *MemStore) Clear() {
 	s.postsQueue.Reset()
 	s.teams = map[string]*model.Team{}
 	s.channels = map[string]*model.Channel{}
-	s.channelStats = map[string]*model.ChannelStats{}
+	channelStats := map[string]*model.ChannelStats{}
+	if s.currentChannel != nil && s.channelStats[s.currentChannel.Id] != nil {
+		channelStats[s.currentChannel.Id] = s.channelStats[s.currentChannel.Id]
+	}
+	s.channelStats = channelStats
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
 	s.channelMembersQueue.Reset()
 	s.teamMembers = map[string]map[string]*model.TeamMember{}

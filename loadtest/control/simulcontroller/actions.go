@@ -1182,6 +1182,8 @@ func shouldSendTypingEvent(u user.User, channelId string) (bool, error) {
 	channelStats, err := u.Store().ChannelStats(channelId)
 	if err != nil {
 		return false, err
+	} else if channelStats == nil {
+		return false, fmt.Errorf("no stats found for channel %q", channelId)
 	}
 	maxNotifications, err := strconv.ParseInt(u.Store().ClientConfig()["MaxNotificationsPerChannel"], 10, 64)
 	if err != nil {
