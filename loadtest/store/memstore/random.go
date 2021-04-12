@@ -217,11 +217,18 @@ func (s *MemStore) RandomPost() (model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	key, err := pickRandomKeyFromMap(s.posts)
-	if err != nil {
-		return model.Post{}, err
+	var postIds []string
+	for _, p := range s.posts {
+		if p.Type == "" {
+			postIds = append(postIds, p.Id)
+		}
 	}
-	return *s.posts[key.(string)].Clone(), nil
+
+	if len(postIds) == 0 {
+		return model.Post{}, ErrPostNotFound
+	}
+
+	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
 }
 
 // RandomPostForChannel returns a random post for the given channel.
@@ -231,7 +238,7 @@ func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
 
 	var postIds []string
 	for _, p := range s.posts {
-		if p.ChannelId == channelId {
+		if p.ChannelId == channelId && p.Type == "" {
 			postIds = append(postIds, p.Id)
 		}
 	}

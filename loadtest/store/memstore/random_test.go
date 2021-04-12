@@ -221,6 +221,28 @@ func TestRandomPost(t *testing.T) {
 			return false
 		}
 	})
+
+	s = newStore(t)
+	for i := 0; i < 10; i++ {
+		err := s.SetPost(&model.Post{
+			Id:   model.NewId(),
+			Type: "some_type",
+		})
+		require.NoError(t, err)
+	}
+
+	p, err = s.RandomPost()
+	require.Equal(t, ErrPostNotFound, err)
+	require.Empty(t, p.Clone())
+
+	err = s.SetPost(&model.Post{
+		Id: id1,
+	})
+	require.NoError(t, err)
+
+	p, err = s.RandomPost()
+	require.NoError(t, err)
+	require.Equal(t, id1, p.Id)
 }
 
 func TestRandomPostForChannel(t *testing.T) {
