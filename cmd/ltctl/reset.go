@@ -79,7 +79,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		},
 		{
 			msg:     "Restarting app server",
-			value:   fmt.Sprintf("sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;"),
+			value:   "sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 			clients: appClients,
 		},
 		{
