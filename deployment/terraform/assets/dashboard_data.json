@@ -1191,26 +1191,26 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"user\"}[1m])) by (instance)",
+          "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"user\"}[1m])) by (instance)",
           "hide": false,
           "instant": false,
           "legendFormat": "User {{instance}}",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"system\"}[1m])) by (instance)",
+          "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"system\"}[1m])) by (instance)",
           "hide": false,
           "legendFormat": "System {{instance}}",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=\"idle\"}[1m])) by (instance)",
+          "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"idle\"}[1m])) by (instance)",
           "hide": false,
           "legendFormat": "Idle {{instance}}",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(node_cpu{instance=~\"$server\",mode=~\"irq|softirq|iowait\"}[1m])) by (instance)",
+          "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=~\"irq|softirq|iowait\"}[1m])) by (instance)",
           "hide": false,
           "legendFormat": "Other {{instance}}",
           "refId": "D"
@@ -1391,14 +1391,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(rate(node_network_transmit_bytes{instance=~\"$server\"}[1m])) by (instance))*8",
+          "expr": "(sum(rate(node_network_transmit_bytes_total{instance=~\"$server\"}[1m])) by (instance))*8",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "TX Rate {{ instance }}",
           "refId": "A"
         },
         {
-          "expr": "(sum(rate(node_network_receive_bytes{instance=~\"$server\"}[1m])) by (instance))*8",
+          "expr": "(sum(rate(node_network_receive_bytes_total{instance=~\"$server\"}[1m])) by (instance))*8",
           "hide": false,
           "instant": false,
           "intervalFactor": 1,
@@ -1492,14 +1492,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(node_memory_MemTotal{instance=~\"$server\"} - node_memory_MemFree{instance=~\"$server\"} - node_memory_Buffers{instance=~\"$server\"} - node_memory_Cached{instance=~\"$server\"})",
+          "expr": "(node_memory_MemTotal_bytes{instance=~\"$server\"} - node_memory_MemFree_bytes{instance=~\"$server\"} - node_memory_Buffers_bytes{instance=~\"$server\"} - node_memory_Cached_bytes{instance=~\"$server\"})",
           "hide": false,
           "instant": false,
           "legendFormat": "Used {{ instance }}",
           "refId": "A"
         },
         {
-          "expr": "node_memory_MemTotal{instance=~\"$server\"}",
+          "expr": "node_memory_MemTotal_bytes{instance=~\"$server\"}",
           "legendFormat": "Total {{ instance }}",
           "refId": "B"
         }
