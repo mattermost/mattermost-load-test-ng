@@ -40,7 +40,7 @@ variable "es_ebs_options" {
   default = [
     {
       volume_type = "gp2"
-      volume_size = 10
+      volume_size = 20
     },
   ]
 }
@@ -58,7 +58,7 @@ variable "db_instance_class" {
 }
 
 variable "db_engine_version" {
-  type = map
+  type = map(any)
   default = {
     "aurora-mysql"      = "5.7.mysql_aurora.2.09.2"
     "aurora-postgresql" = "11.7"

@@ -6,7 +6,7 @@ This is the recommended way to load-test a Mattermost instance for production.
 
 ## Prerequisites
 
-- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.12 is required.
+- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required.
 - AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
 - A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
 
