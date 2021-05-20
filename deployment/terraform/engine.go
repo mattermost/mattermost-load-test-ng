@@ -6,7 +6,6 @@ package terraform
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -111,17 +110,8 @@ func checkTerraformVersion() error {
 	if err != nil {
 		return fmt.Errorf("could not parse terraform command output: %w", err)
 	}
-	if version < minSupportedVersion {
-		return fmt.Errorf("minimum version of terraform %.2f is required, you have %.2f", minSupportedVersion, version)
-	}
-	if version > maxSupportedVersion {
-		mlog.Warn(fmt.Sprintf(`This tool officially supports till terraform %.2f, you have %.2f.
-Do you want to proceed ? (Y/n).`, maxSupportedVersion, version))
-		var confirm string
-		fmt.Scanln(&confirm)
-		if !regexp.MustCompile(`(?i)^(y|yes)?$`).MatchString(confirm) {
-			return errors.New("incorrect response")
-		}
+	if version != supportedVersion {
+		return fmt.Errorf("Terraform version %.2f is required, you have %.2f", supportedVersion, version)
 	}
 
 	return nil

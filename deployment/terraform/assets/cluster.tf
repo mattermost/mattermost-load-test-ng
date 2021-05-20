@@ -1,7 +1,16 @@
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "aws" {
-  profile = "mm-loadtest"
   region  = "us-east-1"
-  version = "~> 3.0"
+  profile = "mm-loadtest"
 }
 
 data "aws_region" "current" {}
@@ -255,6 +264,8 @@ resource "aws_iam_user_policy" "s3userpolicy" {
           "Effect": "Allow",
           "Action": [
               "s3:ListBucket",
+              "s3:ListBucketMultiPartUploads",
+              "s3:DeleteBucket",
               "s3:GetBucketLocation"
           ],
           "Resource": "arn:aws:s3:::${aws_s3_bucket.s3bucket[0].id}"
@@ -262,6 +273,7 @@ resource "aws_iam_user_policy" "s3userpolicy" {
       {
           "Action": [
               "s3:AbortMultipartUpload",
+              "s3:ListMultipartUploadParts",
               "s3:DeleteObject",
               "s3:GetObject",
               "s3:GetObjectAcl",
@@ -303,7 +315,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
   count                       = var.db_instance_count > 0 ? var.db_instance_count : 0
   cluster_identifier          = aws_rds_cluster.db_cluster[0].id
-  cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}" 
+  cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}"
   custom_endpoint_type        = "ANY"
 
   static_members = [aws_rds_cluster_instance.cluster_instances[count.index].id]

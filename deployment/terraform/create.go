@@ -26,10 +26,9 @@ import (
 const cmdExecTimeoutMinutes = 30
 
 const (
-	latestReleaseURL    = "https://latest.mattermost.com/mattermost-enterprise-linux"
-	filePrefix          = "file://"
-	minSupportedVersion = 0.12
-	maxSupportedVersion = 0.13
+	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
+	filePrefix       = "file://"
+	supportedVersion = 0.14
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
@@ -530,9 +529,9 @@ func pingServer(addr string) error {
 		case <-timeout:
 			return errors.New("timeout after 30 seconds, server is not responding")
 		case <-time.After(3 * time.Second):
-			_, resp := client.GetPingWithServerStatus()
+			status, resp := client.GetPingWithServerStatus()
 			if resp.Error != nil {
-				mlog.Debug("got error", mlog.Err(resp.Error))
+				mlog.Debug("got error", mlog.Err(resp.Error), mlog.String("status", status))
 				mlog.Info("Waiting for the server...")
 				continue
 			}
