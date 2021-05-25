@@ -5,7 +5,7 @@
   "AppInstanceCount": 1,
   "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
-  "AgentInstanceType": "t3.xlarge",
+  "AgentInstanceType": "c5.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r4.large.elasticsearch",

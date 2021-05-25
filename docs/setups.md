@@ -35,7 +35,7 @@ Supported users values are calculated using default config settings which in tur
 
 `c5.xlarge` were specifically chosen to host Mattermost server as they provide the most stable results between different deployments (fluctuation in performance is minimized).
 
-`t3.xlarge` were chosen and tested to simulate a maximum of `2000` users on default settings (simulative controller with default rates). The average amount of memory for each user has been measured at around ~4MB.
+`t3.xlarge` were chosen and tested to simulate a maximum of `2000` users on default settings (simulative controller with default rates). The average amount of memory for each user has been measured at around ~4MB. We recently started using `c5.xlarge` as well for improved CPU performance.
 
 By default, the first load-test agent instance will be also be running the [`coordinator`](coordinator.md). This is acceptable as its overhead is almost negligible compared to the agent itself.
 
