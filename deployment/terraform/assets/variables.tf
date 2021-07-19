@@ -71,6 +71,9 @@ variable "db_username" {
 variable "db_password" {
 }
 
+variable "db_enable_performance_insights" {
+}
+
 variable "ssh_public_key" {
 }
 
