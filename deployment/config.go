@@ -84,6 +84,8 @@ type TerraformDBSettings struct {
 	UserName string `default:"mmuser" validate:"notempty"`
 	// Password to connect to the DB.
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
+	// If set to true enables performance insights for the created DB instances.
+	EnablePerformanceInsights bool `default:"false"`
 }
 
 // ExternalDBSettings contains the necessary data
