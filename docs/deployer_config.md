@@ -151,6 +151,12 @@ The username to connect to the database.
 
 The password to connect to the database.
 
+### EnablePerformanceInsights
+
+*bool*
+
+If set to true enables performance insights for the created DB instances.
+
 ## ExternalDBSettings
 
 ### DriverName

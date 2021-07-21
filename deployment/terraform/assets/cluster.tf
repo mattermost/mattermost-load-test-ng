@@ -303,13 +303,14 @@ resource "aws_rds_cluster" "db_cluster" {
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
-  count                      = var.app_instance_count > 0 ? var.db_instance_count : 0
-  identifier                 = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier         = aws_rds_cluster.db_cluster[0].id
-  instance_class             = var.db_instance_class
-  engine                     = var.db_instance_engine
-  apply_immediately          = true
-  auto_minor_version_upgrade = false
+  count                        = var.app_instance_count > 0 ? var.db_instance_count : 0
+  identifier                   = "${var.cluster_name}-db-${count.index}"
+  cluster_identifier           = aws_rds_cluster.db_cluster[0].id
+  instance_class               = var.db_instance_class
+  engine                       = var.db_instance_engine
+  apply_immediately            = true
+  auto_minor_version_upgrade   = false
+  performance_insights_enabled = var.db_enable_performance_insights
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
