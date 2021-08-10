@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -133,7 +134,7 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 		}
 
 		errId := resp.Err.(*control.UserError).Err.(*model.AppError).Id
-		if errId == "api.user.login.invalid_credentials_email_username" {
+		if strings.Contains(errId, "invalid_credentials") {
 			return resp
 		}
 
