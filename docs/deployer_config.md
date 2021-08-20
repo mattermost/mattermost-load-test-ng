@@ -157,6 +157,13 @@ The password to connect to the database.
 
 If set to true enables performance insights for the created DB instances.
 
+### DBParameters
+
+*map[string]string*
+
+A (name,value) map of DB specific parameters to use for the created instance.
+Detailed information on these values can be found [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithParamGroups.html).
+
 ## ExternalDBSettings
 
 ### DriverName

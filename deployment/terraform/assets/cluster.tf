@@ -311,6 +311,19 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   apply_immediately            = true
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
+  db_parameter_group_name      = "${var.cluster_name}-db-pg"
+}
+
+resource "aws_db_parameter_group" "default" {
+  name   = "${var.cluster_name}-db-pg"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql11"
+  dynamic "parameter" {
+    for_each = var.db_parameters
+    content {
+      name  = parameter.value["name"]
+      value = parameter.value["value"]
+    }
+  }
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {

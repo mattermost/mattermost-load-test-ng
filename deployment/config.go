@@ -86,6 +86,8 @@ type TerraformDBSettings struct {
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
 	EnablePerformanceInsights bool `default:"false"`
+	// A (name,value) map of DB specific parameters to use for the created instance.
+	DBParameters DBParameters
 }
 
 // ExternalDBSettings contains the necessary data
@@ -125,6 +127,18 @@ type JobServerSettings struct {
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
 	InstanceType string `default:"c5.xlarge"`
+}
+
+type DBParameters map[string]string
+
+func (p DBParameters) String() string {
+	var b strings.Builder
+	b.WriteString("[")
+	for k, v := range p {
+		fmt.Fprintf(&b, `{name = "%s", value = "%s"}`, k, v)
+	}
+	b.WriteString("]")
+	return b.String()
 }
 
 // IsValid reports whether a given deployment config is valid or not.

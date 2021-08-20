@@ -74,6 +74,10 @@ variable "db_password" {
 variable "db_enable_performance_insights" {
 }
 
+variable "db_parameters" {
+  type = list(map(string))
+}
+
 variable "ssh_public_key" {
 }
 
