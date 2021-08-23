@@ -135,7 +135,7 @@ func (p DBParameters) String() string {
 	var b strings.Builder
 	b.WriteString("[")
 	for k, v := range p {
-		fmt.Fprintf(&b, `{name = "%s", value = "%s"}`, k, v)
+		fmt.Fprintf(&b, `{name = %q, value = %q}`, k, v)
 	}
 	b.WriteString("]")
 	return b.String()
