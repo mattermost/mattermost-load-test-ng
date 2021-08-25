@@ -159,10 +159,22 @@ If set to true enables performance insights for the created DB instances.
 
 ### DBParameters
 
-*map[string]string*
+*[]DBParameter*
 
-A (name,value) map of DB specific parameters to use for the created instance.
+A list of DB specific parameters to use for the created instance.
 Detailed information on these values can be found [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithParamGroups.html).
+
+Example:
+
+```
+    "DBParameters": [
+      {
+        "Name": "innodb_buffer_pool_size",
+        "Value": "2147483648",
+        "ApplyMethod": "pending-reboot"
+      }
+    ]
+```
 
 ## ExternalDBSettings
 

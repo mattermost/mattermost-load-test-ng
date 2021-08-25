@@ -314,7 +314,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   db_parameter_group_name      = "${var.cluster_name}-db-pg"
 }
 
-resource "aws_db_parameter_group" "default" {
+resource "aws_db_parameter_group" "db_params_group" {
   name   = "${var.cluster_name}-db-pg"
   family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql11"
   dynamic "parameter" {
@@ -322,6 +322,7 @@ resource "aws_db_parameter_group" "default" {
     content {
       name  = parameter.value["name"]
       value = parameter.value["value"]
+      apply_method = parameter.value["apply_method"]
     }
   }
 }

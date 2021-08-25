@@ -27,7 +27,7 @@
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": false,
-    "DBParameters": {}
+    "DBParameters": []
   },
   "ExternalDBSettings": {
     "DriverName": "cockroach",

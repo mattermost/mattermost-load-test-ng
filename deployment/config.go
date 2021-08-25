@@ -86,7 +86,7 @@ type TerraformDBSettings struct {
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
 	EnablePerformanceInsights bool `default:"false"`
-	// A (name,value) map of DB specific parameters to use for the created instance.
+	// A list of DB specific parameters to use for the created instance.
 	DBParameters DBParameters
 }
 
@@ -129,13 +129,27 @@ type JobServerSettings struct {
 	InstanceType string `default:"c5.xlarge"`
 }
 
-type DBParameters map[string]string
+// DBParameter contains info regarding a single RDS DB specific parameter.
+type DBParameter struct {
+	// The unique name for the parameter.
+	Name string `validate:"notempty"`
+	// The value for the parameter.
+	Value string `validate:"notempty"`
+	// The apply method for the parameter. Can be either "immediate" or
+	// "pending-reboot". It depends on the db engine used and parameter type.
+	ApplyMethod string `validate:"oneof:{immediate, pending-reboot}"`
+}
+
+type DBParameters []DBParameter
 
 func (p DBParameters) String() string {
 	var b strings.Builder
 	b.WriteString("[")
-	for k, v := range p {
-		fmt.Fprintf(&b, `{name = %q, value = %q}`, k, v)
+	for i, param := range p {
+		fmt.Fprintf(&b, `{name = %q, value = %q, apply_method = %q}`, param.Name, param.Value, param.ApplyMethod)
+		if i != len(p)-1 {
+			b.WriteString(",")
+		}
 	}
 	b.WriteString("]")
 	return b.String()
