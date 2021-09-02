@@ -143,6 +143,9 @@ func (c *Comparison) Run() (Output, error) {
 // current automated load-test comparisons.
 func (c *Comparison) Destroy() error {
 	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+		if err := t.Sync(); err != nil {
+			return err
+		}
 		return t.Destroy()
 	})
 }

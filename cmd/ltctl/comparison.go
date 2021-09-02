@@ -147,7 +147,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		}
 		defer f.Close()
 
-		if err := json.NewEncoder(f).Encode(output.Results); err != nil {
+		if err := json.NewEncoder(f).Encode(output); err != nil {
 			return fmt.Errorf("failed to encode results: %w", err)
 		}
 	} else {
