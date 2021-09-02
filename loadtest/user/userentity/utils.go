@@ -3,7 +3,7 @@
 
 package userentity
 
-import "github.com/mattermost/mattermost-server/v5/model"
+import "github.com/mattermost/mattermost-server/v6/model"
 
 func postsMapToSlice(postsMap map[string]*model.Post) []*model.Post {
 	posts := make([]*model.Post, len(postsMap))

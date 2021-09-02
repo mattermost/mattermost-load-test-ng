@@ -271,6 +271,12 @@ When true, logged events are written in a machine-readable JSON format. Otherwis
 
 The location of the log file.
 
+### EnableColor
+
+*bool*
+
+When true enables colored output.
+
 ## Report
 
 ### Label

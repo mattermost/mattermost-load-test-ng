@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -364,7 +364,7 @@ func TestRandomChannelMember(t *testing.T) {
 	channelId := model.NewId()
 	userId := model.NewId()
 	userId2 := model.NewId()
-	cms := &model.ChannelMembers{
+	cms := model.ChannelMembers{
 		{
 			ChannelId: channelId,
 			UserId:    userId,
@@ -759,7 +759,7 @@ func TestRandomChannel(t *testing.T) {
 			{Id: channelId3, TeamId: teamId},
 		})
 		require.NoError(t, err)
-		err = s.SetChannelMembers(&model.ChannelMembers{
+		err = s.SetChannelMembers(model.ChannelMembers{
 			{
 				ChannelId: channelId1,
 				UserId:    user.Id,
@@ -838,7 +838,7 @@ func TestRandomChannel(t *testing.T) {
 			{Id: channelId3, TeamId: teamId},
 		})
 		require.NoError(t, err)
-		err = s.SetChannelMembers(&model.ChannelMembers{
+		err = s.SetChannelMembers(model.ChannelMembers{
 			{
 				ChannelId: channelId1,
 				UserId:    user.Id,
@@ -882,13 +882,13 @@ func TestRandomChannel(t *testing.T) {
 		channelId3 := model.NewId()
 		channelId4 := model.NewId()
 		err = s.SetChannels([]*model.Channel{
-			{Id: channelId1, TeamId: teamId, Type: model.CHANNEL_OPEN},
-			{Id: channelId2, TeamId: teamId, Type: model.CHANNEL_PRIVATE},
-			{Id: channelId3, Type: model.CHANNEL_DIRECT},
-			{Id: channelId4, Type: model.CHANNEL_GROUP},
+			{Id: channelId1, TeamId: teamId, Type: model.ChannelTypeOpen},
+			{Id: channelId2, TeamId: teamId, Type: model.ChannelTypePrivate},
+			{Id: channelId3, Type: model.ChannelTypeDirect},
+			{Id: channelId4, Type: model.ChannelTypeGroup},
 		})
 		require.NoError(t, err)
-		err = s.SetChannelMembers(&model.ChannelMembers{
+		err = s.SetChannelMembers(model.ChannelMembers{
 			{
 				ChannelId: channelId1,
 				UserId:    user.Id,

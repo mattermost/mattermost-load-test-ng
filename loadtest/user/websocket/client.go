@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 const avgReadMsgSizeBytes = 1024
@@ -30,7 +30,7 @@ type Client struct {
 
 // NewClient4 constructs a new WebSocket client.
 func NewClient4(url, authToken string) (*Client, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url+model.API_URL_SUFFIX+"/websocket", nil)
+	conn, _, err := websocket.DefaultDialer.Dial(url+model.APIURLSuffix+"/websocket", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func NewClient4(url, authToken string) (*Client, error) {
 	go client.reader()
 
 	client.SendMessage(
-		model.WEBSOCKET_AUTHENTICATION_CHALLENGE,
+		model.WebsocketAuthenticationChallenge,
 		map[string]interface{}{"token": authToken})
 
 	return client, nil
@@ -95,8 +95,8 @@ func (c *Client) reader() {
 			return
 		}
 
-		event := model.WebSocketEventFromJson(&buf)
-		if event == nil {
+		event, err := model.WebSocketEventFromJSON(&buf)
+		if event == nil || err != nil {
 			continue
 		}
 		if event.IsValid() {

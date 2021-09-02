@@ -4,7 +4,7 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // SelectionType is the selection parameter for a store entity.
@@ -168,7 +168,7 @@ type MutableUserStore interface {
 
 	// preferences
 	// Preferences stores the preferences for the stored user.
-	SetPreferences(preferences *model.Preferences) error
+	SetPreferences(preferences model.Preferences) error
 
 	// channels
 	SetChannel(channel *model.Channel) error
@@ -180,9 +180,9 @@ type MutableUserStore interface {
 	// current timestamp.
 	SetChannelView(channelId string) error
 	// SetChannelMembers stores the given channel members in the store.
-	SetChannelMembers(channelMembers *model.ChannelMembers) error
+	SetChannelMembers(channelMembers model.ChannelMembers) error
 	// ChannelMembers returns a list of members for the specified channel.
-	ChannelMembers(channelId string) (*model.ChannelMembers, error)
+	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// SetChannelMember stores the given channel member.
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	// RemoveChannelMember removes the channel member for the specified channel and user.

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // MemStore is a simple implementation of MutableUserStore
@@ -18,7 +18,7 @@ import (
 type MemStore struct {
 	lock                sync.RWMutex
 	user                *model.User
-	preferences         *model.Preferences
+	preferences         model.Preferences
 	config              *model.Config
 	clientConfig        map[string]string
 	emojis              []*model.Emoji
@@ -240,13 +240,13 @@ func (s *MemStore) Preferences() (model.Preferences, error) {
 	if s.preferences == nil {
 		return nil, nil
 	}
-	newPref := make(model.Preferences, len(*s.preferences))
-	copy(newPref, *s.preferences)
+	newPref := make(model.Preferences, len(s.preferences))
+	copy(newPref, s.preferences)
 	return newPref, nil
 }
 
 // Preferences stores the preferences for the stored user.
-func (s *MemStore) SetPreferences(preferences *model.Preferences) error {
+func (s *MemStore) SetPreferences(preferences model.Preferences) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.preferences = preferences
@@ -604,7 +604,7 @@ func (s *MemStore) SetTeams(teams []*model.Team) error {
 }
 
 // SetChannelMembers stores the given channel members in the store.
-func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error {
+func (s *MemStore) SetChannelMembers(channelMembers model.ChannelMembers) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -612,7 +612,7 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 		return errors.New("memstore: channelMembers should not be nil")
 	}
 
-	cms := *channelMembers
+	cms := channelMembers
 	for i := range cms {
 		cm := &cms[i]
 		if s.channelMembers == nil {
@@ -639,7 +639,7 @@ func (s *MemStore) SetChannelMembers(channelMembers *model.ChannelMembers) error
 }
 
 // ChannelMembers returns a list of members for the specified channel.
-func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, error) {
+func (s *MemStore) ChannelMembers(channelId string) (model.ChannelMembers, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -647,7 +647,7 @@ func (s *MemStore) ChannelMembers(channelId string) (*model.ChannelMembers, erro
 	for key := range s.channelMembers[channelId] {
 		channelMembers = append(channelMembers, *s.channelMembers[channelId][key])
 	}
-	return &channelMembers, nil
+	return channelMembers, nil
 }
 
 // SetChannelMember stores the given channel member.

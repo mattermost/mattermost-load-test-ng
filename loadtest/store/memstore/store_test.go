@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/stretchr/testify/require"
 )
@@ -94,7 +94,7 @@ func TestUser(t *testing.T) {
 			{UserId: "user-id-1", Category: "category-1", Name: "name-1", Value: "value-1"},
 			{UserId: "user-id-2", Category: "category-2", Name: "name-2", Value: "value-2"},
 		}
-		err := s.SetPreferences(&p)
+		err := s.SetPreferences(p)
 		require.NoError(t, err)
 		pp, err := s.Preferences()
 		require.NoError(t, err)
@@ -458,11 +458,11 @@ func TestChannelMembers(t *testing.T) {
 				UserId:    userId,
 			},
 		}
-		err = s.SetChannelMembers(&expected)
+		err = s.SetChannelMembers(expected)
 		require.NoError(t, err)
 		members, err := s.ChannelMembers(channelId)
 		require.NoError(t, err)
-		require.Equal(t, &expected, members)
+		require.Equal(t, expected, members)
 	})
 
 	t.Run("SetChannelMember", func(t *testing.T) {
@@ -498,7 +498,7 @@ func TestChannelMembers(t *testing.T) {
 			UserId:    model.NewId(),
 		}
 		channelMembers := append(model.ChannelMembers{}, channelMember1, channelMember2)
-		err = s.SetChannelMembers(&channelMembers)
+		err = s.SetChannelMembers(channelMembers)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(s.channelMembers[channel.Id]))
 		err = s.RemoveChannelMember(channel.Id, channelMember1.UserId)
@@ -506,7 +506,7 @@ func TestChannelMembers(t *testing.T) {
 		members, err := s.ChannelMembers(channel.Id)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(s.channelMembers[channel.Id]))
-		require.Equal(t, channelMember2, (*members)[0])
+		require.Equal(t, channelMember2, members[0])
 	})
 }
 
