@@ -324,7 +324,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 }
 
 func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
-	cmd := fmt.Sprintf("/opt/mattermost/bin/mattermost user create --email %s --username %s --password %s --system_admin",
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mmctl user create --email %s --username %s --password %s --system_admin --local",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
 		t.config.AdminPassword,
@@ -377,7 +377,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
-	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.COLLAPSED_THREADS_DEFAULT_OFF)
+	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.COLLAPSED_THREADS_DEFAULT_ON)
+	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
