@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 type userAction struct {
@@ -24,13 +24,9 @@ type userAction struct {
 }
 
 func logout(u user.User) control.UserActionResponse {
-	ok, err := u.Logout()
+	err := u.Logout()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if !ok {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 	}
 
 	return control.UserActionResponse{Info: "logged out"}
@@ -43,7 +39,7 @@ func (c *GenController) createTeam(u user.User) control.UserActionResponse {
 
 	team := &model.Team{
 		AllowOpenInvite: true,
-		Type:            model.TEAM_OPEN,
+		Type:            model.TeamOpen,
 	}
 	team.Name = "team-" + model.NewId()
 	team.DisplayName = team.Name
@@ -70,7 +66,7 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 	channel := &model.Channel{
 		Name:   "ch-" + model.NewId(),
 		TeamId: team.Id,
-		Type:   model.CHANNEL_OPEN,
+		Type:   model.ChannelTypeOpen,
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)
@@ -97,7 +93,7 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 	channel := &model.Channel{
 		Name:   "ch-" + model.NewId(),
 		TeamId: team.Id,
-		Type:   model.CHANNEL_PRIVATE,
+		Type:   model.ChannelTypePrivate,
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)

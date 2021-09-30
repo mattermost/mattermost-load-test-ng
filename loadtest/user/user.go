@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // TestUserSuffixRegexp matches the numerical suffix of test usernames,
@@ -53,13 +53,13 @@ type User interface {
 	// Login logs the user in. It authenticates a user and starts a new session.
 	Login() error
 	// Logout logs the user out. It terminates the current user's session.
-	Logout() (bool, error)
+	Logout() error
 	// GetMe loads user's information into the store and returns its id.
 	GetMe() (string, error)
 	// GetPreferences fetches and store the user's preferences.
 	GetPreferences() error
 	// UpdatePreferences updates the user's preferences.
-	UpdatePreferences(pref *model.Preferences) error
+	UpdatePreferences(pref model.Preferences) error
 	// CreateUser creates a new user with the given information.
 	CreateUser(user *model.User) (string, error)
 	// UpdateUser updates the given user with the given information.
@@ -161,8 +161,7 @@ type User interface {
 	// It returns channels whose members' usernames match the search term.
 	SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error)
 	// RemoveUserFromChannel removes the specified user from the specified channel.
-	// It returns whether the user was successfully removed or not.
-	RemoveUserFromChannel(channelId, userId string) (bool, error)
+	RemoveUserFromChannel(channelId, userId string) error
 	// ViewChannels performs a channel view for the user.
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	// GetChannelUnread fetches and returns information about the specified channel's unread
@@ -213,7 +212,7 @@ type User interface {
 	GetTeamStats(teamId string) error
 	// GetTeamsUnread fetches and returns information about unreads messages for
 	// the user in the teams it belongs to.
-	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
+	GetTeamsUnread(teamIdToExclude string, includeCollapsedThreads bool) ([]*model.TeamUnread, error)
 	// AddTeamMemberFromInvite adds a user to a team using the given token and
 	// inviteId.
 	AddTeamMemberFromInvite(token, inviteId string) error

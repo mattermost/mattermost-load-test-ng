@@ -9,7 +9,7 @@ import (
 	"reflect"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 var (
@@ -68,12 +68,12 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	return *teams[idx], nil
 }
 
-func excludeChannelType(st store.SelectionType, channelType string) bool {
-	m := map[store.SelectionType]string{
-		store.SelectNotPublic:  model.CHANNEL_OPEN,
-		store.SelectNotPrivate: model.CHANNEL_PRIVATE,
-		store.SelectNotDirect:  model.CHANNEL_DIRECT,
-		store.SelectNotGroup:   model.CHANNEL_GROUP,
+func excludeChannelType(st store.SelectionType, channelType model.ChannelType) bool {
+	m := map[store.SelectionType]model.ChannelType{
+		store.SelectNotPublic:  model.ChannelTypeOpen,
+		store.SelectNotPrivate: model.ChannelTypePrivate,
+		store.SelectNotDirect:  model.ChannelTypeDirect,
+		store.SelectNotGroup:   model.ChannelTypeGroup,
 	}
 
 	for s, t := range m {
@@ -115,7 +115,7 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 			continue
 		}
 		_, isMember := s.channelMembers[channelId][userId]
-		if (channel.Type == model.CHANNEL_OPEN || channel.Type == model.CHANNEL_PRIVATE) && channel.TeamId != teamId {
+		if (channel.Type == model.ChannelTypeOpen || channel.Type == model.ChannelTypePrivate) && channel.TeamId != teamId {
 			continue
 		}
 		if isMember && isSelectionType(st, store.SelectMemberOf) {

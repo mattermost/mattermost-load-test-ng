@@ -59,6 +59,7 @@
     "EnableFile": true,
     "FileLevel": "INFO",
     "FileJson": true,
-    "FileLocation": "ltcoordinator.log"
+    "FileLocation": "ltcoordinator.log",
+    "EnableColor": false
   }
 }

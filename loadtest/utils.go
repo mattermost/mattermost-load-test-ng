@@ -9,7 +9,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 )
@@ -53,7 +53,7 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 		return nil
 	}
 
-	err = admin.UpdateUserRoles(userForPromotion.Store().Id(), fmt.Sprintf("%s %s", model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID))
+	err = admin.UpdateUserRoles(userForPromotion.Store().Id(), fmt.Sprintf("%s %s", model.SystemUserRoleId, model.SystemAdminRoleId))
 	if err != nil {
 		return err
 	}
@@ -62,14 +62,14 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 		return err
 	}
 
-	roleIds, err := userForPromotion.GetRolesByNames([]string{model.SYSTEM_USER_ROLE_ID, model.SYSTEM_ADMIN_ROLE_ID})
+	roleIds, err := userForPromotion.GetRolesByNames([]string{model.SystemUserRoleId, model.SystemAdminRoleId})
 	if err != nil {
 		return err
 	}
 	if len(roleIds) != 2 {
 		return errors.New("user does not have the right roles updated")
 	}
-	if _, err := userForPromotion.Logout(); err != nil {
+	if err := userForPromotion.Logout(); err != nil {
 		return err
 	}
 

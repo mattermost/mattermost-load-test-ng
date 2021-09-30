@@ -182,13 +182,9 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			return resp
 		},
 		"Logout": func(u user.User) control.UserActionResponse {
-			ok, err := u.Logout()
+			err := u.Logout()
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-
-			if !ok {
-				return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 			}
 
 			c.disconnect()

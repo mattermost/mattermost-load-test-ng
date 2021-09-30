@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 type UserAction struct {

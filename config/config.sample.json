@@ -55,6 +55,7 @@
     "EnableFile": true,
     "FileLevel": "INFO",
     "FileJson": true,
-    "FileLocation": "ltagent.log"
+    "FileLocation": "ltagent.log",
+    "EnableColor": false
   }
 }

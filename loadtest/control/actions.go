@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 // UserActionResponse is a structure containing information about the result
@@ -85,13 +85,9 @@ func Logout(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	ok, err := u.Logout()
+	err = u.Logout()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	if !ok {
-		return UserActionResponse{Err: NewUserError(errors.New("user did not logout"))}
 	}
 
 	return UserActionResponse{Info: "logged out"}
@@ -144,7 +140,7 @@ func LeaveChannel(u user.User) UserActionResponse {
 		}
 		for _, channel := range channels {
 			// don't try to leave default channel
-			if channel.Name == model.DEFAULT_CHANNEL {
+			if channel.Name == model.DefaultChannelName {
 				continue
 			}
 			cm, err := userStore.ChannelMember(channel.Id, userId)
@@ -152,7 +148,7 @@ func LeaveChannel(u user.User) UserActionResponse {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 			if cm.UserId != "" {
-				_, err := u.RemoveUserFromChannel(channel.Id, userId)
+				err = u.RemoveUserFromChannel(channel.Id, userId)
 				if err != nil {
 					return UserActionResponse{Err: NewUserError(err)}
 				}
@@ -592,7 +588,7 @@ func Reload(u user.User) UserActionResponse {
 	var userIds []string
 	for _, p := range prefs {
 		switch {
-		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
+		case p.Category == model.PreferenceCategoryDirectChannelShow:
 			userIds = append(userIds, p.Name)
 		case p.Category == "group_channel_show":
 			if err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
@@ -692,7 +688,7 @@ func Reload(u user.User) UserActionResponse {
 	}
 
 	// Getting unread teams.
-	_, err = u.GetTeamsUnread("")
+	_, err = u.GetTeamsUnread("", false)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -734,14 +730,14 @@ func Reload(u user.User) UserActionResponse {
 }
 
 func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
-	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.COLLAPSED_THREADS_DEFAULT_ON
+	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsDefaultOn
 	prefs, err := u.Store().Preferences()
 	if err != nil {
 		return false, UserActionResponse{Err: NewUserError(err)}
 	}
 
 	for _, p := range prefs {
-		if p.Category == model.PREFERENCE_CATEGORY_DISPLAY_SETTINGS && p.Name == model.PREFERENCE_NAME_COLLAPSED_THREADS_ENABLED {
+		if p.Category == model.PreferenceCategoryDisplaySettings && p.Name == model.PreferenceNameCollapsedThreadsEnabled {
 			collapsedThreads = p.Value == "true"
 			break
 		}
