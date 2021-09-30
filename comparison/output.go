@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 // DeploymentInfo holds information regarding a deployment.

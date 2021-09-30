@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 func checkMetrics(errChan chan error, config *config.MetricsWatcherConfiguration) {
