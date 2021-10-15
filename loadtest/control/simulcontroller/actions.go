@@ -870,6 +870,12 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		}
 		message = "@" + user.Username + " "
 	}
+
+	// 25% of messages will contain a link.
+	if rand.Float64() < 0.25 {
+		message = control.AddLink(message)
+	}
+
 	message += genMessage(isReply)
 	return message, nil
 }

@@ -43,6 +43,15 @@ var (
 	words             = []string{}
 	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
 	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
+	links             = []string{
+		"https://github.com/mattermost/mattermost-server",
+		"https://www.youtube.com/watch?v=-5jompL6G-k",
+		"https://www.youtube.com/watch?v=GKLyAVHgNzY",
+		"https://mattermost.com",
+		"https://developers.mattermost.com",
+		"https://golang.org",
+		"https://reactjs.org",
+	}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -136,6 +145,14 @@ func GenerateRandomSentences(count int) string {
 	}
 
 	return random[:len(random)-1] + "."
+}
+
+// AddLink appends a link to a string to test the LinkPreview feature.
+func AddLink(input string) string {
+	n := rand.Int() % len(links)
+	link := links[n]
+
+	return input + " " + link + " "
 }
 
 // SelectWeighted does a random weighted selection on a given slice of weights.
