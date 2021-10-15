@@ -882,14 +882,17 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 			return "", err
 		}
-		siteURL := u.Store().ClientConfig()["SiteURL"]
-		team, err := u.Store().CurrentTeam()
-		if err != nil {
-			return "", err
-		}
-		pl := siteURL + "/" + team.Name + "/pl/" + post.Id
+		// We ignore in case a post is not found.
+		if err == nil {
+			siteURL := u.Store().ClientConfig()["SiteURL"]
+			team, err := u.Store().CurrentTeam()
+			if err != nil {
+				return "", err
+			}
+			pl := siteURL + "/" + team.Name + "/pl/" + post.Id
 
-		message += " " + pl + " "
+			message += " " + pl + " "
+		}
 	}
 
 	message += genMessage(isReply)
