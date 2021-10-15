@@ -133,8 +133,8 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 			c.status <- c.newErrorStatus(err)
 		}
 
-		errId := resp.Err.(*control.UserError).Err.(*model.AppError).Id
-		if strings.Contains(errId, "invalid_credentials") {
+		appErr, ok := resp.Err.(*control.UserError).Err.(*model.AppError)
+		if !ok || strings.Contains(appErr.Id, "invalid_credentials") {
 			return resp
 		}
 
