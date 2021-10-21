@@ -66,6 +66,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	binaryPath := "/opt/mattermost/bin/mattermost"
+	mmctlPath := "/opt/mattermost/bin/mmctl"
 
 	cmds := []struct {
 		msg     string
@@ -74,7 +75,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	}{
 		{
 			msg:     "Resetting database",
-			value:   fmt.Sprintf("%s reset --confirm", binaryPath),
+			value:   fmt.Sprintf("%s db reset --confirm", binaryPath),
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
@@ -84,8 +85,8 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		},
 		{
 			msg: "Creating sysadmin",
-			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin",
-				binaryPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
+			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local",
+				mmctlPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{

@@ -180,11 +180,11 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 
 	// do init process
-	binaryPath := "/opt/mattermost/bin/mattermost"
+	mmctlPath := "/opt/mattermost/bin/mmctl"
 	createAdminCmd := cmd{
 		msg: "Creating sysadmin",
-		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin || true",
-			binaryPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
+		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local || true",
+			mmctlPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
 		clients: []*ssh.Client{appClients[0]},
 	}
 	initDataCmd := cmd{
