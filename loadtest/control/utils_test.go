@@ -87,6 +87,14 @@ func TestGenerateRandomSentences(t *testing.T) {
 	require.Equal(t, s[0], "🙂")
 }
 
+func TestAddLink(t *testing.T) {
+	msg := "hello world"
+	out := AddLink(msg)
+	words := strings.Split(out, " ")
+	require.Len(t, words, 4)
+	assert.Contains(t, links, words[2])
+}
+
 func TestSelectWeighted(t *testing.T) {
 	t.Run("empty weights", func(t *testing.T) {
 		idx, err := SelectWeighted([]int{})

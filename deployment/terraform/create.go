@@ -18,9 +18,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/config"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/config"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 const cmdExecTimeoutMinutes = 30
@@ -381,8 +381,10 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
-	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.COLLAPSED_THREADS_DEFAULT_ON)
 	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
+	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
+	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
+	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
@@ -418,7 +420,6 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
-	cfg.ClusterSettings.UseExperimentalGossip = model.NewBool(true)
 	cfg.ClusterSettings.EnableGossipCompression = model.NewBool(false)
 	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewBool(true)
 
@@ -430,19 +431,13 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.JobSettings.RunJobs = model.NewBool(jobServerEnabled)
 
 	if t.output.HasElasticSearch() {
-		cfg.ElasticsearchSettings.ConnectionUrl = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
+		cfg.ElasticsearchSettings.ConnectionURL = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
 		cfg.ElasticsearchSettings.Username = model.NewString("")
 		cfg.ElasticsearchSettings.Password = model.NewString("")
 		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
-	}
-
-	if val := os.Getenv(deployment.EnvVarTCPNoDelay); val == "on" {
-		cfg.FeatureFlags = &model.FeatureFlags{
-			WebSocketDelay: true,
-		}
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
@@ -526,7 +521,7 @@ func (t *Terraform) validate() error {
 func pingServer(addr string) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
-	client.HttpClient.Timeout = 10 * time.Second
+	client.HTTPClient.Timeout = 10 * time.Second
 	timeout := time.After(30 * time.Second)
 
 	for {
@@ -534,9 +529,9 @@ func pingServer(addr string) error {
 		case <-timeout:
 			return errors.New("timeout after 30 seconds, server is not responding")
 		case <-time.After(3 * time.Second):
-			status, resp := client.GetPingWithServerStatus()
-			if resp.Error != nil {
-				mlog.Debug("got error", mlog.Err(resp.Error), mlog.String("status", status))
+			status, _, err := client.GetPingWithServerStatus()
+			if err != nil {
+				mlog.Debug("got error", mlog.Err(err), mlog.String("status", status))
 				mlog.Info("Waiting for the server...")
 				continue
 			}

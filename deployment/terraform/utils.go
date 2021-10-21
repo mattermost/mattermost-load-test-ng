@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -16,9 +17,9 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
-	"github.com/mattermost/mattermost-server/v5/utils"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/utils"
 )
 
 type uploadInfo struct {
@@ -165,14 +166,15 @@ func validateLicense(filename string) error {
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
-	ok, licenseStr := utils.ValidateLicense(data)
+	validator := &utils.LicenseValidatorImpl{}
+	ok, licenseStr := validator.ValidateLicense(data)
 	if !ok {
 		return errors.New("failed to validate license")
 	}
 
-	license := model.LicenseFromJson(strings.NewReader(licenseStr))
-	if license == nil {
-		return errors.New("failed to parse license")
+	var license model.License
+	if err := json.Unmarshal([]byte(licenseStr), &license); err != nil {
+		return fmt.Errorf("failed to parse license: %w", err)
 	}
 
 	if !license.IsStarted() {

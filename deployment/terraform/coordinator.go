@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.

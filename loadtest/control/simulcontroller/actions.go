@@ -18,7 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 type userAction struct {
@@ -133,8 +133,8 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 			c.status <- c.newErrorStatus(err)
 		}
 
-		errId := resp.Err.(*control.UserError).Err.(*model.AppError).Id
-		if strings.Contains(errId, "invalid_credentials") {
+		appErr, ok := resp.Err.(*control.UserError).Err.(*model.AppError)
+		if !ok || strings.Contains(appErr.Id, "invalid_credentials") {
 			return resp
 		}
 
@@ -153,12 +153,9 @@ func (c *SimulController) logout() control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	ok, err := c.user.Logout()
+	err = c.user.Logout()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if !ok {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 	}
 	return control.UserActionResponse{Info: "logged out"}
 }
@@ -217,7 +214,7 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetTeamsUnread(""); err != nil {
+	if _, err := u.GetTeamsUnread("", false); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -419,15 +416,15 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if channel.Type == model.CHANNEL_DIRECT || channel.Type == model.CHANNEL_GROUP {
-		category := map[string]string{
-			model.CHANNEL_DIRECT: model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW,
-			model.CHANNEL_GROUP:  "group_channel_show",
+	if channel.Type == model.ChannelTypeDirect || channel.Type == model.ChannelTypeGroup {
+		category := map[model.ChannelType]string{
+			model.ChannelTypeDirect: model.PreferenceCategoryDirectChannelShow,
+			model.ChannelTypeGroup:  "group_channel_show",
 		}
 
 		// We need to update the user's preferences so that
 		// on next reload we can properly fetch opened DMs.
-		pref := &model.Preferences{
+		pref := model.Preferences{
 			model.Preference{
 				UserId:   u.Store().Id(),
 				Category: category[channel.Type],
@@ -514,7 +511,7 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 
 	for _, p := range prefs {
 		switch {
-		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
+		case p.Category == model.PreferenceCategoryDirectChannelShow:
 			userIds = append(userIds, p.Name)
 		}
 	}
@@ -873,6 +870,31 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		}
 		message = "@" + user.Username + " "
 	}
+
+	// 10% of messages will contain a link.
+	if rand.Float64() < 0.10 {
+		message = control.AddLink(message)
+	}
+
+	// 10% of messages will contain a permalink
+	if rand.Float64() < 0.10 {
+		post, err := u.Store().RandomPostForChannel(channel.Id)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+			return "", err
+		}
+		// We ignore in case a post is not found.
+		if err == nil {
+			siteURL := u.Store().ClientConfig()["SiteURL"]
+			team, err := u.Store().CurrentTeam()
+			if err != nil {
+				return "", err
+			}
+			pl := siteURL + "/" + team.Name + "/pl/" + post.Id
+
+			message += " " + pl + " "
+		}
+	}
+
 	message += genMessage(isReply)
 	return message, nil
 }
