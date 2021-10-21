@@ -234,3 +234,15 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 	}
 }
+
+func (t *Terraform) getClusterDSN() (string, error) {
+	switch t.config.TerraformDBSettings.InstanceEngine {
+	case "aurora-postgresql":
+		return "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBWriter() + "/" + t.config.DBName() + "?sslmode=disable", nil
+
+	case "aurora-mysql":
+		return t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBWriter() + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s", nil
+	default:
+		return "", errors.New("unsupported database engine")
+	}
+}

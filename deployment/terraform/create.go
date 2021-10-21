@@ -324,7 +324,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 }
 
 func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
-	cmd := fmt.Sprintf("/opt/mattermost/bin/mmctl user create --email %s --username %s --password %s --system_admin --local",
+	cmd := fmt.Sprintf("/opt/mattermost/bin/mmctl user create --email %s --username %s --password %s --system-admin --local",
 		t.config.AdminEmail,
 		t.config.AdminUsername,
 		t.config.AdminPassword,
@@ -353,15 +353,19 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	driverName = t.config.ExternalDBSettings.DriverName
 
 	if t.output.HasDB() {
+		var err error
+		clusterDSN, err = t.getClusterDSN()
+		if err != nil {
+			return fmt.Errorf("could not update config: %w", err)
+		}
+
 		switch t.config.TerraformDBSettings.InstanceEngine {
 		case "aurora-postgresql":
-			clusterDSN = "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBWriter() + "/" + t.config.DBName() + "?sslmode=disable"
 			for _, rd := range t.output.DBReaders() {
 				readerDSN = append(readerDSN, "postgres://"+t.config.TerraformDBSettings.UserName+":"+t.config.TerraformDBSettings.Password+"@"+rd+"/"+t.config.DBName()+"?sslmode=disable")
 			}
 			driverName = "postgres"
 		case "aurora-mysql":
-			clusterDSN = t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBWriter() + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s"
 			for _, rd := range t.output.DBReaders() {
 				readerDSN = append(readerDSN, t.config.TerraformDBSettings.UserName+":"+t.config.TerraformDBSettings.Password+"@tcp("+rd+")/"+t.config.DBName()+"?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s")
 			}
