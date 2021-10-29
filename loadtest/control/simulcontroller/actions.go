@@ -950,11 +950,9 @@ func unreadCheck(u user.User) control.UserActionResponse {
 }
 
 func searchChannels(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
@@ -975,7 +973,7 @@ func searchChannels(u user.User) control.UserActionResponse {
 	}
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
-		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+		channels, err := u.SearchChannels(&model.ChannelSearch{
 			Term: term,
 		})
 		if err != nil {

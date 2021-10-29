@@ -490,7 +490,7 @@ func SearchChannels(u user.User) UserActionResponse {
 	}
 
 	return EmulateUserTyping("ch-", func(term string) UserActionResponse {
-		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+		channels, err := u.SearchChannelsForTeam(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
 		if err != nil {
@@ -724,6 +724,11 @@ func Reload(u user.User) UserActionResponse {
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
+	}
+
+	_, err = u.GetChannelsForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	return UserActionResponse{Info: "page reloaded"}

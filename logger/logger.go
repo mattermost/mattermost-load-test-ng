@@ -38,7 +38,7 @@ func New(logSettings *Settings) *mlog.Logger {
 	}, nil, func(filename string) string {
 		return logSettings.FileLocation
 	})
-	logger.ConfigureTargets(cfg)
+	logger.ConfigureTargets(cfg, nil)
 	return logger
 }
 
@@ -57,7 +57,7 @@ func Init(logSettings *Settings) {
 	}, nil, func(filename string) string {
 		return logSettings.FileLocation
 	})
-	logger.ConfigureTargets(cfg)
+	logger.ConfigureTargets(cfg, nil)
 	// Redirect default golang logger to this logger
 	logger.RedirectStdLog(mlog.LvlStdLog)
 	// Use this app logger as the global logger
