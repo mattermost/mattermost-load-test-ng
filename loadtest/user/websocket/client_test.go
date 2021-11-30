@@ -62,7 +62,10 @@ func TestClose(t *testing.T) {
 	t.Run("Sudden", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -87,7 +90,10 @@ func TestClose(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -108,7 +114,10 @@ func TestClose(t *testing.T) {
 	t.Run("Concurrent", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -151,7 +160,10 @@ func TestSendMessage(t *testing.T) {
 	t.Run("SendAfterSuddenClose", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -173,7 +185,10 @@ func TestSendMessage(t *testing.T) {
 	t.Run("SendAfterClose", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -194,7 +209,10 @@ func TestSendMessage(t *testing.T) {
 	t.Run("SendDuringSuddenClose", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
@@ -217,7 +235,10 @@ func TestSendMessage(t *testing.T) {
 	t.Run("SendDuringClose", func(t *testing.T) {
 		wg.Add(1)
 		url := strings.Replace(s.URL, "http://", "ws://", 1)
-		c, err := NewClient4(url, "authToken")
+		c, err := NewClient4(&ClientParams{
+			WsURL:     url,
+			AuthToken: "authToken",
+		})
 		require.Nil(t, err)
 
 		go func() {
