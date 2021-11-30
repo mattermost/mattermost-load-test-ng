@@ -29,6 +29,8 @@ type UserEntity struct {
 	connected   bool
 	config      Config
 	metrics     *performance.UserEntityMetrics
+	wsConnID    string
+	wsServerSeq int64
 }
 
 // Config holds necessary information required by a UserEntity.

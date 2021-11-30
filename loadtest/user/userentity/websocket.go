@@ -13,6 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 const (
@@ -98,6 +99,32 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 // sync with the server. Any response to the event should be made by handling
 // the same event at the upper layer (controller).
 func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
+	if ev.EventType() == model.WebsocketEventHello {
+		if connID, ok := ev.GetData()["connection_id"].(string); ok {
+			// If we already have a connectionId present, and server sends a different one,
+			// that means it's either a long timeout, or server restart, or sequence number is not found.
+			// Then we reset sequence number to 0.
+			if ue.wsConnID != "" && ue.wsConnID != connID {
+				mlog.Debug("Long timeout, or server restart, or sequence number not found")
+				// In future, we can add the missed event callback here.
+				ue.wsServerSeq = 0
+			}
+			ue.wsConnID = connID
+		}
+	}
+
+	// Now we check for sequence number, and if it does not match,
+	// we just disconnect and reconnect.
+	if ev.GetSequence() != ue.wsServerSeq {
+		mlog.Warn("Missed websocket event", mlog.Int64("got", ev.GetSequence()), mlog.Int64("expected", ue.wsServerSeq))
+		if err := ue.Disconnect(); err != nil {
+			return err
+		}
+		// TODO: reconnect?
+	}
+
+	ue.wsServerSeq = ev.GetSequence() + 1
+
 	switch ev.EventType() {
 	case model.WebsocketEventReactionAdded, model.WebsocketEventReactionRemoved:
 		return ue.handleReactionEvent(ev)
@@ -114,7 +141,12 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
 	for {
-		client, err := websocket.NewClient4(ue.config.WebSocketURL, ue.client.AuthToken)
+		client, err := websocket.NewClient4(&websocket.ClientParams{
+			WsURL:          ue.config.WebSocketURL,
+			AuthToken:      ue.client.AuthToken,
+			ConnID:         ue.wsConnID,
+			ServerSequence: ue.wsServerSeq,
+		})
 		if err != nil {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)
 			connectionFailCount++

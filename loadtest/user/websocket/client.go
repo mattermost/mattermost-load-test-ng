@@ -7,6 +7,8 @@ package websocket
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -18,7 +20,6 @@ const avgReadMsgSizeBytes = 1024
 
 // Client is the websocket client to perform all actions.
 type Client struct {
-	Url          string
 	EventChannel chan *model.WebSocketEvent
 
 	conn      *websocket.Conn
@@ -28,28 +29,35 @@ type Client struct {
 	writeMut  sync.RWMutex
 }
 
+type ClientParams struct {
+	WsURL          string
+	AuthToken      string
+	ConnID         string
+	ServerSequence int64
+}
+
 // NewClient4 constructs a new WebSocket client.
-func NewClient4(url, authToken string) (*Client, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url+model.APIURLSuffix+"/websocket", nil)
+func NewClient4(param *ClientParams) (*Client, error) {
+	header := http.Header{
+		"Authorization": []string{"Bearer " + param.AuthToken},
+	}
+
+	url := param.WsURL + model.APIURLSuffix + "/websocket" + fmt.Sprintf("?connection_id=%s&sequence_number=%d", param.ConnID, param.ServerSequence)
+	conn, _, err := websocket.DefaultDialer.Dial(url, header)
 	if err != nil {
 		return nil, err
 	}
 
 	client := &Client{
-		Url:          url,
 		EventChannel: make(chan *model.WebSocketEvent, 100),
 
 		conn:      conn,
-		authToken: authToken,
+		authToken: param.AuthToken,
 		sequence:  1,
 	}
 
 	client.readWg.Add(1)
 	go client.reader()
-
-	client.SendMessage(
-		model.WebsocketAuthenticationChallenge,
-		map[string]interface{}{"token": authToken})
 
 	return client, nil
 }
