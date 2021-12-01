@@ -23,6 +23,8 @@ const (
 	maxWebsocketFails             = 7
 )
 
+var errSeqMismatch = errors.New("mismatch in server sequence number")
+
 func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	var data string
 	if el, ok := ev.GetData()["reaction"]; !ok {
@@ -117,10 +119,7 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 	// we just disconnect and reconnect.
 	if ev.GetSequence() != ue.wsServerSeq {
 		mlog.Warn("Missed websocket event", mlog.Int64("got", ev.GetSequence()), mlog.Int64("expected", ue.wsServerSeq))
-		if err := ue.Disconnect(); err != nil {
-			return err
-		}
-		// TODO: reconnect?
+		return errSeqMismatch
 	}
 
 	ue.wsServerSeq = ev.GetSequence() + 1
@@ -140,6 +139,7 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 // Only on calling Disconnect explicitly, it will return.
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
+start:
 	for {
 		client, err := websocket.NewClient4(&websocket.ClientParams{
 			WsURL:          ue.config.WebSocketURL,
@@ -174,6 +174,12 @@ func (ue *UserEntity) listen(errChan chan error) {
 					break
 				}
 				if err := ue.wsEventHandler(ev); err != nil {
+					if err == errSeqMismatch {
+						// Disconnect and reconnect.
+						client.Close()
+						ue.decWebSocketConnections()
+						continue start
+					}
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
 				ue.wsEventChan <- ev
