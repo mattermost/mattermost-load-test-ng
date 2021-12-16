@@ -166,6 +166,10 @@ func (c *SimulController) Run() {
 			frequency: 0.1,
 		},
 		{
+			run:       deletePost,
+			frequency: 0.06,
+		},
+		{
 			run:       searchGroupChannels,
 			frequency: 0.1,
 		},

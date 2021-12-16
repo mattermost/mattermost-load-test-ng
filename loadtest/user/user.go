@@ -108,6 +108,8 @@ type User interface {
 	CreatePost(post *model.Post) (string, error)
 	// PatchPost modifies a post for the given postId and stores the updated result.
 	PatchPost(postId string, patch *model.PostPatch) (string, error)
+	// DeletePost deletes a post for the given postId.
+	DeletePost(postId string) error
 	// SearchPosts performs a search for posts in the given teamId with the given terms.
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	// GetPostsForChannel fetches and stores posts in a given channelId.
