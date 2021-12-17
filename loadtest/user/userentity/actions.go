@@ -211,6 +211,20 @@ func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, 
 	return post.Id, nil
 }
 
+// DeletePost deletes a post for the given postId.
+func (ue *UserEntity) DeletePost(postId string) error {
+	_, err := ue.client.DeletePost(postId)
+	if err != nil {
+		return err
+	}
+
+	if err := ue.store.DeletePost(postId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SearchPosts performs a search for posts in the given teamId with the given terms.
 func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error) {
 	postList, _, err := ue.client.SearchPosts(teamId, terms, isOrSearch)

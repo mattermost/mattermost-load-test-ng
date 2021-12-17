@@ -523,6 +523,26 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 	return control.UserActionResponse{Info: "got statuses"}
 }
 
+func deletePost(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannelByUser(channel.Id, u.Store().Id())
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: "no posts to delete"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.DeletePost(post.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("post deleted, id %v", post.Id)}
+}
+
 func editPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
