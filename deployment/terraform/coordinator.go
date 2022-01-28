@@ -144,7 +144,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return fmt.Errorf("failed to start coordinator: %w", err)
 	}
 
-	mlog.Info("Done")
+	mlog.Info("Started the coordinator")
 	return nil
 }
 
@@ -174,7 +174,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 		return status, fmt.Errorf("failed to stop coordinator: %w", err)
 	}
 
-	mlog.Info("Done")
+	mlog.Info("Stopped the coordinator")
 	return status, nil
 }
 
