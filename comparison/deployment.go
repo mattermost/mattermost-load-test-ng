@@ -42,6 +42,8 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 
 // provisionURL takes a URL pointing to a file to be provisioned.
 func provisionURL(client *ssh.Client, url string, filename string) error {
+	mlog.Info("Provisioning URL", mlog.String("url", url), mlog.String("filename"))
+
 	filePrefix := "file://"
 	if strings.HasPrefix(url, filePrefix) {
 		// upload file from local filesystem
