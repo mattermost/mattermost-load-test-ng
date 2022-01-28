@@ -66,13 +66,11 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	mlog.Info("Uploading updated coordinator config file")
 	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	mlog.Info("Uploading updated coordinator config file", mlog.String("destination_path", dstPath))
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
-
-	mlog.Info("Uploading other load-test config files")
 
 	var agentConfig *loadtest.Config
 	if len(t.output.Instances) > 0 {
@@ -118,7 +116,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 			return err
 		}
 
-		mlog.Info(info.dstPath)
+		mlog.Info("Uploading load-test config file", mlog.String("destination_path", info.dstPath))
 		if out, err := sshc.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
 			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
 		}
