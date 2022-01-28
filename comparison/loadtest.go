@@ -35,6 +35,8 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 		return status, err
 	}
 
+	mlog.Info("waiting for bounded load-test", mlog.Duration("time", d), mlog.Time("stops_at", time.Now().Add(d)))
+
 	var canceled bool
 	select {
 	case <-cancelCh:
