@@ -422,6 +422,8 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 	if usersFilePath == "" {
 		return users, nil
 	}
+
+	mlog.Info("Reading users from configured file", mlog.String("path", usersFilePath))
 	f, err := os.Open(usersFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %q: %w", usersFilePath, err)
@@ -432,11 +434,17 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 		line := scanner.Text()
 		// Emails and passwords are separated by space.
 		split := strings.Split(line, " ")
-		if len(split) < 2 {
+		var email, password string
+		if len(split) == 0 {
 			return nil, fmt.Errorf("user credential %q does not have space in between", line)
+		} else if len(split) == 1 {
+			email = split[0]
+			password = "testPass123$"
+		} else if len(split) == 2 {
+			email = split[0]
+			password = split[1]
 		}
-		email := split[0]
-		password := split[1]
+
 		// Quick and dirty hack to extract username from email.
 		// This is not terribly important to be correct.
 		username := strings.Split(email, "@")[0]
