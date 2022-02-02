@@ -949,10 +949,28 @@ func unreadCheck(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: "unread check done"}
 }
 
-func searchChannels(u user.User) control.UserActionResponse {
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+func (c *SimulController) searchChannels(u user.User) control.UserActionResponse {
+	ok, err := control.IsVersionSupported("6.4.0", c.serverVersion)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	var team model.Team
+	if ok {
+		// Selecting any random team if >=6.4 version.
+		team, err = u.Store().RandomTeam(store.SelectMemberOf)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		// Selecting only current team otherwise.
+		teamPtr, err2 := u.Store().CurrentTeam()
+		if err2 != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err2)}
+		} else if teamPtr == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+		}
+		team = *teamPtr
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
@@ -972,17 +990,8 @@ func searchChannels(u user.User) control.UserActionResponse {
 		numChars = len(channel.Name)
 	}
 
-	ver, err := u.Store().ServerVersion()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	ok, err := control.IsVersionSupported("6.4.0", ver)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
+		// Searching channels from all teams if >= 6.4 version.
 		if ok {
 			channels, err := u.SearchChannels(&model.ChannelSearch{
 				Term: term,
