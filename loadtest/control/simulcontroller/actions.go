@@ -972,10 +972,31 @@ func searchChannels(u user.User) control.UserActionResponse {
 		numChars = len(channel.Name)
 	}
 
+	ver, err := u.Store().ServerVersion()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	ok, err := control.IsVersionSupported("6.4.0", ver)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
-		channels, err := u.SearchChannels(&model.ChannelSearch{
+		if ok {
+			channels, err := u.SearchChannels(&model.ChannelSearch{
+				Term: term,
+			})
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+		}
+		channels, err := u.SearchChannelsForTeam(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
+		// Duplicating the else part because the channels types are different.
+		// One is []*model.Channel, other is model.ChannelListWithTeamData
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

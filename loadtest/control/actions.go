@@ -726,9 +726,20 @@ func Reload(u user.User) UserActionResponse {
 		}
 	}
 
-	_, err = u.GetChannelsForUser(userId)
+	ver, err := u.Store().ServerVersion()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	ok, err := IsVersionSupported("6.4.0", ver)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if ok {
+		_, err = u.GetChannelsForUser(userId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	return UserActionResponse{Info: "page reloaded"}
