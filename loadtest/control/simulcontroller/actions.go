@@ -949,12 +949,28 @@ func unreadCheck(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: "unread check done"}
 }
 
-func searchChannels(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+func (c *SimulController) searchChannels(u user.User) control.UserActionResponse {
+	ok, err := control.IsVersionSupported("6.4.0", c.serverVersion)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	var team model.Team
+	if ok {
+		// Selecting any random team if >=6.4 version.
+		team, err = u.Store().RandomTeam(store.SelectMemberOf)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		// Selecting only current team otherwise.
+		teamPtr, err2 := u.Store().CurrentTeam()
+		if err2 != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err2)}
+		} else if teamPtr == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+		}
+		team = *teamPtr
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
@@ -975,9 +991,21 @@ func searchChannels(u user.User) control.UserActionResponse {
 	}
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
-		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+		// Searching channels from all teams if >= 6.4 version.
+		if ok {
+			channels, err := u.SearchChannels(&model.ChannelSearch{
+				Term: term,
+			})
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+		}
+		channels, err := u.SearchChannelsForTeam(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
+		// Duplicating the else part because the channels types are different.
+		// One is []*model.Channel, other is model.ChannelListWithTeamData
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

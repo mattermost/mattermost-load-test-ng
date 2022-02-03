@@ -156,9 +156,11 @@ type User interface {
 	// GetPublicChannelsForTeam fetches and stores public channels in the
 	// specified team.
 	GetPublicChannelsForTeam(teamId string, page, perPage int) error
-	// SearchChannels performs a search for channels in the specified team.
+	// SearchChannelsForTeam performs a search for channels in the specified team.
 	// It returns channels that matches the search.
-	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	SearchChannelsForTeam(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	// SearchChannels performs a search for channels in all teams for a user.
+	SearchChannels(search *model.ChannelSearch) (model.ChannelListWithTeamData, error)
 	// SearchGroupChannels performs a search for group channels.
 	// It returns channels whose members' usernames match the search term.
 	SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error)
@@ -190,6 +192,8 @@ type User interface {
 	// AutocompleteChannelsForTeamForSearch fetches and stores an ordered list of the
 	// user's channels autocomplete suggestions. It returns a map of found channel names.
 	AutocompleteChannelsForTeamForSearch(teamId, name string) (map[string]bool, error)
+	// GetChannelsForUser returns all channels from all teams for a given user.
+	GetChannelsForUser(userID string) ([]*model.Channel, error)
 
 	// teams
 	// GetAllTeams returns all teams based on permissions.

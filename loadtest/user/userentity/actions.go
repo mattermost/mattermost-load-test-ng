@@ -427,10 +427,19 @@ func (ue *UserEntity) GetPublicChannelsForTeam(teamId string, page, perPage int)
 	return ue.store.SetChannels(channels)
 }
 
-// SearchChannels performs a search for channels in the specified team.
+// SearchChannelsForTeam performs a search for channels in the specified team.
 // It returns channels that matches the search.
-func (ue *UserEntity) SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
+func (ue *UserEntity) SearchChannelsForTeam(teamId string, search *model.ChannelSearch) ([]*model.Channel, error) {
 	channels, _, err := ue.client.SearchChannels(teamId, search)
+	if err != nil {
+		return nil, err
+	}
+	return channels, nil
+}
+
+// SearchChannels performs a search for channels in all teams for a user.
+func (ue *UserEntity) SearchChannels(search *model.ChannelSearch) (model.ChannelListWithTeamData, error) {
+	channels, _, err := ue.client.SearchAllChannelsForUser(search.Term)
 	if err != nil {
 		return nil, err
 	}
@@ -451,6 +460,20 @@ func (ue *UserEntity) SearchGroupChannels(search *model.ChannelSearch) ([]*model
 // the specified team. It returns a list of those channels.
 func (ue *UserEntity) GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error) {
 	channels, _, err := ue.client.GetChannelsForTeamForUser(teamId, userId, includeDeleted, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ue.store.SetChannels(channels); err != nil {
+		return nil, err
+	}
+
+	return channels, nil
+}
+
+// GetChannelsForUser returns all channels from all teams for a given user.
+func (ue *UserEntity) GetChannelsForUser(userID string) ([]*model.Channel, error) {
+	channels, _, err := ue.client.GetChannelsForUserWithLastDeleteAt(userID, 0)
 	if err != nil {
 		return nil, err
 	}
