@@ -214,7 +214,12 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetTeamsUnread("", false); err != nil {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	if _, err := u.GetTeamsUnread("", collapsedThreads); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
