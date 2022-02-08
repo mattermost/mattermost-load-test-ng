@@ -274,7 +274,7 @@ type User interface {
 	// UpdateThreadFollow updates the follow state of the thread
 	UpdateThreadFollow(teamId, threadId string, state bool) error
 	// GetPostThread gets a post with all the other posts in the same thread.
-	GetPostThread(threadId, etag string, collapsedThreads bool) (*model.PostList, error)
+	GetPostThread(threadId, etag string, collapsedThreads bool) ([]string, error)
 	// MarkAllThreadsInTeamAsRead marks all threads in a team as read
 	MarkAllThreadsInTeamAsRead(teamId string) error
 	// UpdateThreadRead updates the read timestamp of the thread
