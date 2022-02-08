@@ -26,6 +26,7 @@ type SimulController struct {
 	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
 	connectedFlag  int32           // indicates that the controller is connected
 	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	serverVersion  string          // stores the current server version
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -74,7 +75,7 @@ func (c *SimulController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	serverVersion, _ := c.user.Store().ServerVersion()
+	c.serverVersion, _ = c.user.Store().ServerVersion()
 
 	initActions := []userAction{
 		{
@@ -134,7 +135,7 @@ func (c *SimulController) Run() {
 			frequency: 0.8,
 		},
 		{
-			run:       searchChannels,
+			run:       c.searchChannels,
 			frequency: 0.5,
 		},
 		{
@@ -218,7 +219,7 @@ func (c *SimulController) Run() {
 		}
 
 		if action.minServerVersion != "" {
-			supported, err := control.IsVersionSupported(action.minServerVersion, serverVersion)
+			supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
 			if err != nil {
 				c.status <- c.newErrorStatus(err)
 			} else if !supported {
