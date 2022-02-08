@@ -101,6 +101,8 @@ type UserStore interface {
 	RandomChannelMember(channelId string) (model.ChannelMember, error)
 	// RandomTeamMember returns a random team member for a team.
 	RandomTeamMember(teamId string) (model.TeamMember, error)
+	// RandomThread returns a random thread.
+	RandomThread() (model.ThreadResponse, error)
 
 	// profile
 	// ProfileImage returns whether the profile image for the given user has been
@@ -120,6 +122,10 @@ type UserStore interface {
 
 	// ServerVersion returns the server version string.
 	ServerVersion() (string, error)
+
+	// Threads
+	// ThreadsSorted returns all threads, sorted by LastReplyAt
+	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -223,4 +229,10 @@ type MutableUserStore interface {
 
 	// SetServerVersion sets the server version string.
 	SetServerVersion(version string) error
+
+	// Threads
+	// SetThreads stores the given posts.
+	SetThreads(threads []*model.ThreadResponse) error
+	// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
+	MarkAllThreadsInTeamAsRead(teamId string) error
 }

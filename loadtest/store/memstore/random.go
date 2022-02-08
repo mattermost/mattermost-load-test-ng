@@ -23,6 +23,7 @@ var (
 	ErrChannelNotFound   = errors.New("memstore: channel not found")
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
+	ErrThreadNotFound    = errors.New("memstore: thread not found")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -330,4 +331,22 @@ func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
 	}
 	idx := rand.Intn(len(keys))
 	return keys[idx].Interface(), nil
+}
+
+// RandomThread returns a random post.
+func (s *MemStore) RandomThread() (model.ThreadResponse, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if len(s.threads) == 0 {
+		return model.ThreadResponse{}, ErrThreadNotFound
+	}
+
+	threadIds := make([]string, 0, len(s.threads))
+	for _, t := range s.threads {
+		threadIds = append(threadIds, t.PostId)
+	}
+
+	randomThread := s.threads[threadIds[rand.Intn(len(threadIds))]]
+	return *cloneThreadResponse(randomThread, &model.ThreadResponse{}), nil
 }

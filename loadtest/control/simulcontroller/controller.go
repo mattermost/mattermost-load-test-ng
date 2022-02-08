@@ -185,6 +185,30 @@ func (c *SimulController) Run() {
 			run:       control.CreatePublicChannel,
 			frequency: 0.011,
 		},
+		{
+			run:       c.viewGlobalThreads,
+			frequency: 5.4,
+		},
+		{
+			run:       c.followThread,
+			frequency: 0.041,
+		},
+		{
+			run:       c.unfollowThread,
+			frequency: 0.055,
+		},
+		{
+			run:       c.viewThread,
+			frequency: 4.8,
+		},
+		{
+			run:       c.markAllThreadsInTeamAsRead,
+			frequency: 0.013,
+		},
+		{
+			run:       c.updateThreadRead,
+			frequency: 1.17,
+		},
 	}
 
 	for {
