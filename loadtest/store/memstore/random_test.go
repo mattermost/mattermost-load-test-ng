@@ -931,3 +931,32 @@ func TestRandomChannel(t *testing.T) {
 		})
 	})
 }
+
+func TestRandomThread(t *testing.T) {
+	t.Run("basic", func(t *testing.T) {
+		s := newStore(t)
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetThreads([]*model.ThreadResponse{
+			{PostId: id1},
+			{PostId: id2},
+		})
+		fmt.Println(id1, id2)
+		require.NoError(t, err)
+		th, err := s.RandomThread()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch th.PostId {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+	t.Run("emptyslice", func(t *testing.T) {
+		s := newStore(t)
+		_, err := s.RandomThread()
+		require.Equal(t, ErrThreadNotFound, err)
+	})
+}
