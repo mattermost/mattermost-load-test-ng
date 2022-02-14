@@ -1175,15 +1175,15 @@ func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) er
 }
 
 // GetPostThread gets a post with all the other posts in the same thread.
-func (ue *UserEntity) GetPostThread(threadId, etag string, collapsedThreads bool) ([]string, error) {
-	postList, _, err := ue.client.GetPostThread(threadId, "", true)
+func (ue *UserEntity) GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error) {
+	postList, _, err := ue.client.GetPostThreadWithOpts(threadId, "", opts)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if postList == nil || len(postList.Posts) == 0 {
-		return nil, nil
+		return nil, false, nil
 	}
-	return postList.Order, ue.store.SetPosts(postListToSlice(postList))
+	return postList.Order, postList.HasNext, ue.store.SetPosts(postListToSlice(postList))
 }
 
 // MarkAllThreadsInTeamAsRead marks all threads in the given team as read

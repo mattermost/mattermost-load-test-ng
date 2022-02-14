@@ -1499,9 +1499,61 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
-	_, err = u.GetPostThread(thread.PostId, "", true)
+
+	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+		CollapsedThreads: true,
+		Direction:        "down",
+		PerPage:          25,
+	})
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	newestPostId := postIds[len(postIds)-1]
+	newestPost, err := u.Store().Post(newestPostId)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	var newestCreateAt int64
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		newestCreateAt = thread.Post.CreateAt
+	} else {
+		newestCreateAt = newestPost.CreateAt
+	}
+
+	// scrolling between 1 and 3 times
+	numScrolls := rand.Intn(3) + 1
+	for i := 0; i < numScrolls && hasNext; i++ {
+		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+			CollapsedThreads: true,
+			Direction:        "down",
+			PerPage:          25,
+			FromPost:         newestPostId,
+			FromCreateAt:     newestCreateAt,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if !hasNext {
+			break
+		}
+		newestPostId = postIds[len(postIds)-1]
+		newestPost, err = u.Store().Post(newestPostId)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			newestCreateAt = thread.Post.CreateAt
+		} else {
+			newestCreateAt = newestPost.CreateAt
+		}
+
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
