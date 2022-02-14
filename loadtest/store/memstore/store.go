@@ -1049,21 +1049,20 @@ func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse,
 }
 
 func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *model.ThreadResponse {
-	src.PostId = dst.PostId
-	src.ReplyCount = dst.ReplyCount
-	src.LastReplyAt = dst.LastReplyAt
-	src.LastViewedAt = dst.LastViewedAt
-	src.Participants = dst.Participants
-	src.Post = dst.Post
-	src.UnreadReplies = dst.UnreadReplies
-	src.UnreadMentions = dst.UnreadMentions
+	dst.PostId = src.PostId
+	dst.ReplyCount = src.ReplyCount
+	dst.LastReplyAt = src.LastReplyAt
+	dst.LastViewedAt = src.LastViewedAt
+	dst.Participants = src.Participants
+	dst.Post = src.Post
+	dst.UnreadReplies = src.UnreadReplies
+	dst.UnreadMentions = src.UnreadMentions
 	return dst
 }
 
 // MarkAllThreadsInTeamAsRead marks all threads in the given team as read
 func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 	s.lock.RLock()
-	defer s.lock.RUnlock()
 	threads, err := s.getThreads(false)
 	if err != nil {
 		return err
@@ -1082,6 +1081,16 @@ func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 		thread.UnreadReplies = 0
 		thread.LastViewedAt = now
 	}
+	s.lock.RUnlock()
+	return s.SetThreads(threads)
+}
 
-	return nil
+// Thread returns the thread for the given the threadId.
+func (s *MemStore) Thread(threadId string) (*model.ThreadResponse, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if thread, ok := s.threads[threadId]; ok {
+		return cloneThreadResponse(thread, &model.ThreadResponse{}), nil
+	}
+	return nil, ErrThreadNotFound
 }
