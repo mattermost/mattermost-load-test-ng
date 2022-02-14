@@ -124,7 +124,7 @@ type UserStore interface {
 	ServerVersion() (string, error)
 
 	// Threads
-	Thread(threadId string) *model.ThreadResponse
+	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
 }
