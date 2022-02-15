@@ -154,3 +154,29 @@ func extractMentionFromMessage(msg string) string {
 	}
 	return mention[1:]
 }
+
+func shouldMakeLongRunningThread(channelId string) bool {
+
+	// 2% of the the time we check if we should make a long running thread
+	// this way we don't make all long running threads near the start
+	// of the load test
+	if rand.Float64() > 0.02 {
+		return false
+	}
+	// one long running thread per channel
+	if len(st.getLongRunningThreadsInChannel(channelId)) > 0 {
+		return false
+	}
+	return true
+}
+
+func shouldReplyToLongRunningThread(channelId string) bool {
+	// 5% of the time we reply to a long running thread
+	if rand.Float64() > 0.05 {
+		return false
+	}
+	if len(st.getLongRunningThreadsInChannel(channelId)) == 0 {
+		return false
+	}
+	return true
+}
