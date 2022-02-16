@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 // MemStore is a simple implementation of MutableUserStore
@@ -1010,7 +1011,8 @@ func (s *MemStore) SetThread(thread *model.ThreadResponse) error {
 // SetThreads stores the given thread response as a thread.
 func (s *MemStore) SetThreads(trs []*model.ThreadResponse) error {
 	if len(trs) == 0 {
-		return errors.New("memstore: threads should not be nil or empty")
+		mlog.Info("No threads to add to store")
+		return nil
 	}
 	for _, tr := range trs {
 		if err := s.SetThread(tr); err != nil {

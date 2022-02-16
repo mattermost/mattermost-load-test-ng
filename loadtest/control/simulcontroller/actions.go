@@ -1329,6 +1329,9 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no threads"}
+		}
 	}
 
 	oldestThreadId := threads[len(threads)-1].PostId
@@ -1346,6 +1349,9 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			break
 		}
 		oldestThreadId = threads[len(threads)-1].PostId
 		// idle time between scrolls, between 1 and 10 seconds.
@@ -1373,6 +1379,9 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		if len(unreadThreads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no unread threads"}
+		}
 	}
 
 	oldestUnreadThreadId := unreadThreads[len(unreadThreads)-1].PostId
@@ -1390,6 +1399,9 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			break
 		}
 		oldestUnreadThreadId = unreadThreads[len(unreadThreads)-1].PostId
 		// idle time between scrolls, between 1 and 10 seconds.
