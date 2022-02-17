@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 const avgReadMsgSizeBytes = 1024
@@ -133,6 +134,27 @@ func (c *Client) SendMessage(action string, data map[string]interface{}) error {
 
 	c.sequence++
 	return c.conn.WriteJSON(req)
+}
+
+// SendBinaryMessage is the method to write to the websocket using binary data type
+// (MessagePack encoded).
+func (c *Client) SendBinaryMessage(action string, data map[string]interface{}) error {
+	req := &model.WebSocketRequest{
+		Seq:    c.sequence,
+		Action: action,
+		Data:   data,
+	}
+
+	binaryData, err := msgpack.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request to msgpack: %w", err)
+	}
+
+	c.writeMut.Lock()
+	defer c.writeMut.Unlock()
+
+	c.sequence++
+	return c.conn.WriteMessage(websocket.BinaryMessage, binaryData)
 }
 
 // Helper utilities that call SendMessage.
