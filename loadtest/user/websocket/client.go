@@ -11,9 +11,10 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/websocket"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+
+	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
