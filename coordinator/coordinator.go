@@ -252,7 +252,13 @@ func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinat
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	cluster, err := cluster.New(config.ClusterConfig, ltConfig, log)
+	clusterConfig := config.ClusterConfig
+
+	if ltConfig.UsersConfiguration.MaxActiveUsers < clusterConfig.MaxActiveUsers {
+		return nil, errors.New("coordinator: ltConfig.UsersConfiguration.MaxActiveUsers should not be less than config.clusterConfig.MaxActiveUsers")
+	}
+
+	cluster, err := cluster.New(clusterConfig, ltConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}
