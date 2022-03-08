@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
 // MemStore is a simple implementation of MutableUserStore
@@ -1011,7 +1010,6 @@ func (s *MemStore) SetThread(thread *model.ThreadResponse) error {
 // SetThreads stores the given thread response as a thread.
 func (s *MemStore) SetThreads(trs []*model.ThreadResponse) error {
 	if len(trs) == 0 {
-		mlog.Info("No threads to add to store")
 		return nil
 	}
 	for _, tr := range trs {
@@ -1050,6 +1048,12 @@ func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse,
 	return threads, nil
 }
 
+// cloneThreadResponse copies the given source threadResponse into the given destination
+// ThreadResponse.
+// It also returns the destination ThreadReponse. This lets us:
+// 1. directly call this function in the parent's return statement, i.e. return cloneThreadResponse(...)
+// 2. use inplace, e.g. append(threads, cloneThreadResponse(thread, &model.ThreadResponse{}))
+// 3. pass the threadResponse object in the case where we need to update an existing object
 func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *model.ThreadResponse {
 	dst.PostId = src.PostId
 	dst.ReplyCount = src.ReplyCount
@@ -1066,6 +1070,7 @@ func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *
 func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 	s.lock.RLock()
 	threads, err := s.getThreads(false)
+	s.lock.RUnlock()
 	if err != nil {
 		return err
 	}
@@ -1083,7 +1088,6 @@ func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 		thread.UnreadReplies = 0
 		thread.LastViewedAt = now
 	}
-	s.lock.RUnlock()
 	return s.SetThreads(threads)
 }
 

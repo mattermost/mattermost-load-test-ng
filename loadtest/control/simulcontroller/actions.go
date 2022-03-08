@@ -1480,7 +1480,10 @@ func (c *SimulController) unfollowThread(u user.User) control.UserActionResponse
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		channel, err := u.Store().Channel(thread.Post.ChannelId)
-		if err != nil || channel == nil {
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if channel == nil {
 			return control.UserActionResponse{Err: control.NewUserError(errors.New("unfollow thread: can't get channel for thread"))}
 		}
 	}
@@ -1524,10 +1527,7 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		if len(threads) == 0 {
 			return control.UserActionResponse{Info: "viewthread: no threads available to view"}
 		}
-		thread, err = u.Store().RandomThread()
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
+		thread = *threads[0]
 	}
 
 	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
@@ -1585,7 +1585,6 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		case <-time.After(idleTime):
 		}
 	}
-
 	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
 }
 
