@@ -291,6 +291,61 @@ func TestRandomPostForChannel(t *testing.T) {
 	}
 }
 
+func TestRandomReplyPostForChannel(t *testing.T) {
+	s := newStore(t)
+	post, err := s.RandomReplyPostForChannel("someId")
+	require.Empty(t, &post)
+	require.Equal(t, ErrPostNotFound, err)
+
+	channelId := "ch-" + model.NewId()
+
+	id1 := model.NewId()
+	id2 := model.NewId()
+	id3 := model.NewId()
+	rootId := model.NewId()
+	err = s.SetPosts([]*model.Post{
+		{
+			Id:        id1,
+			ChannelId: channelId,
+		},
+		{Id: id2},
+		{
+			Id:        id3,
+			ChannelId: channelId,
+			RootId:    rootId,
+		},
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomReplyPostForChannel(channelId)
+		require.NoError(t, err)
+		require.Equal(t, id3, p.Id)
+		require.Equal(t, rootId, p.RootId)
+	}
+
+	id4 := model.NewId()
+	err = s.SetPost(&model.Post{
+		Id:        id4,
+		ChannelId: channelId,
+		RootId:    rootId,
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomReplyPostForChannel(channelId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch p.Id {
+			case id3, id4:
+				return true
+			default:
+				return false
+			}
+		})
+	}
+}
+
 func TestRandomPostForChannelByUser(t *testing.T) {
 	s := newStore(t)
 	post, err := s.RandomPostForChannelByUser("chanId", "userId")

@@ -1429,35 +1429,29 @@ func (c *SimulController) followThread(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if err != nil {
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Info: "followThread: can't find post to follow in channel"}
-		}
+	post, err := u.Store().RandomReplyPostForChannel(channel.Id)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-
-	try := 0
-	for try < 100 && post.RootId != "" {
+	if errors.Is(err, memstore.ErrPostNotFound) {
 		post, err = u.Store().RandomPostForChannel(channel.Id)
 		if err != nil {
 			if errors.Is(err, memstore.ErrPostNotFound) {
-				return control.UserActionResponse{Info: "followThread: can't find post to follow in channel"}
+				return control.UserActionResponse{Info: "followThread: no posts in store to follow"}
 			}
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		try++
 	}
-	if post.RootId != "" {
-		return control.UserActionResponse{Info: "followThread: can't find post to follow in channel"}
+	id := post.RootId
+	if id == "" {
+		id = post.Id
 	}
-
-	err = u.UpdateThreadFollow(channel.TeamId, post.Id, true)
+	err = u.UpdateThreadFollow(channel.TeamId, id, true)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", post.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", id)}
 }
 
 func (c *SimulController) unfollowThread(u user.User) control.UserActionResponse {
