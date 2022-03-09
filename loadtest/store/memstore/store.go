@@ -1060,7 +1060,7 @@ func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *
 	dst.LastReplyAt = src.LastReplyAt
 	dst.LastViewedAt = src.LastViewedAt
 	dst.Participants = src.Participants
-	dst.Post = src.Post
+	src.Post.ShallowCopy(dst.Post)
 	dst.UnreadReplies = src.UnreadReplies
 	dst.UnreadMentions = src.UnreadMentions
 	return dst
