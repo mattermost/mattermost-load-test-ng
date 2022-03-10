@@ -50,7 +50,7 @@ linters:
 issues:
   exclude-rules:
     - linters:
-      # Used to avoid errors regarding ids
+      # Used to avoid errors regarding naming conventions
       # We can remove this section once we decide to fix them
       - golint
       text: "should be.*ID|CamelCase$|FileJSON`$|ConsoleJSON`$|APIURL`$|calling this Response$"
