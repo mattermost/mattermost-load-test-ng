@@ -50,9 +50,8 @@ linters:
 issues:
   exclude-rules:
     - linters:
-      # ignore golint error for a lot of packages for now
-      # This is mainly used to avoid errors regarding ids
+      # Used to avoid errors regarding ids
       # We can remove this section once we decide to fix them
       - golint
-      path: "loadtest|coordinator|logger|cmd|api|websocket|terraform"
+      text: "should be.*ID"
 
