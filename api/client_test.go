@@ -50,7 +50,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 				if _, err := agent.Create(&ltConfig, &ucConfig); err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -72,7 +72,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -224,7 +224,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -244,7 +244,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
