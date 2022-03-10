@@ -179,12 +179,18 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	channelMention := ""
+	shouldLongThread := shouldMakeLongRunningThread((channel.Id))
+	if shouldLongThread {
+		channelMention = control.PickRandomString([]string{"@all ", "@here ", "@channel "})
+	}
+
 	avgWordCount := 34
 	minWordCount := 1
 	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
 
 	postId, err := u.CreatePost(&model.Post{
-		Message:   control.GenerateRandomSentences(wordCount),
+		Message:   control.GenerateRandomSentences(wordCount) + channelMention,
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 	})
@@ -192,7 +198,9 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		st.dec("posts")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-
+	if shouldLongThread {
+		st.setLongRunningThread(postId, channel.Id, channel.TeamId)
+	}
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
@@ -201,17 +209,32 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Info: "target number of posts reached"}
 	}
 
-	root, err := u.Store().RandomPost()
+	var rootId string
+	var channelId string
+	channel, err := u.Store().CurrentChannel()
 	if err != nil {
-		st.dec("posts")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	var rootId string
-	if root.RootId != "" {
-		rootId = root.RootId
-	} else {
-		rootId = root.Id
+	if rand.Float64() < c.config.PercentRepliesInLongThreads {
+		threadInfos := st.getLongRunningThreadsInChannel(channel.Id)
+		if len(threadInfos) > 0 {
+			rootId = threadInfos[0].Id
+			channelId = threadInfos[0].ChannelId
+		}
+	}
+	if rootId == "" {
+		root, err := u.Store().RandomPost()
+		if err != nil {
+			st.dec("posts")
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		channelId = root.ChannelId
+		if root.RootId != "" {
+			rootId = root.RootId
+		} else {
+			rootId = root.Id
+		}
 	}
 
 	avgWordCount := 34
@@ -220,7 +243,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 
 	postId, err := u.CreatePost(&model.Post{
 		Message:   control.GenerateRandomSentences(wordCount),
-		ChannelId: root.ChannelId,
+		ChannelId: channelId,
 		CreateAt:  time.Now().Unix() * 1000,
 		RootId:    rootId,
 	})

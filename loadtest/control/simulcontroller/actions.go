@@ -562,7 +562,7 @@ func editPost(u user.User) control.UserActionResponse {
 	}
 
 	isReply := post.RootId != ""
-	message, err := createMessage(u, channel, isReply, false)
+	message, err := createMessage(u, channel, isReply)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -584,33 +584,24 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 	}
 
 	var rootId string
-	if shouldReplyToLongRunningThread(channel.Id) {
-		threadInfos := st.getLongRunningThreadsInChannel(channel.Id)
-		if len(threadInfos) > 0 {
-			rootId = threadInfos[0].Id
-		}
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if rootId == "" {
-		post, err := u.Store().RandomPostForChannel(channel.Id)
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
-		} else if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		if post.RootId != "" {
-			rootId = post.RootId
-		} else {
-			rootId = post.Id
-		}
+	if post.RootId != "" {
+		rootId = post.RootId
+	} else {
+		rootId = post.Id
 	}
 
 	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := createMessage(u, channel, true, false)
+	message, err := createMessage(u, channel, true)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -647,9 +638,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	shouldLongThread := shouldMakeLongRunningThread((channel.Id))
-
-	message, err := createMessage(u, channel, false, shouldLongThread)
+	message, err := createMessage(u, channel, false)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -670,10 +659,6 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	postId, err := u.CreatePost(post)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if shouldLongThread {
-		st.setLongRunningThread(postId, channel.Id, channel.TeamId)
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
@@ -897,11 +882,8 @@ func getProfileImageForUsers(u user.User, userIds []string) error {
 	return nil
 }
 
-func createMessage(u user.User, channel *model.Channel, isReply, mentionChannel bool) (string, error) {
+func createMessage(u user.User, channel *model.Channel, isReply bool) (string, error) {
 	var message string
-	if mentionChannel {
-		message = control.PickRandomString([]string{"@all ", "@here ", "@channel "})
-	}
 	// 10% of messages will contain a mention.
 	if rand.Float64() < 0.10 {
 		user, err := u.Store().RandomUser()

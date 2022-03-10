@@ -30,6 +30,12 @@ The number of reactions to be created.
 
 The percentage of replies (over the total number of posts) to be created.
 
+## PercentRepliesInLongThreads
+
+*float64*
+
+The percentage of replies (over the total number of  reply posts) to be created in long running threads.
+
 ## PercentPublicChannels
 
 *float64*
