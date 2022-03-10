@@ -1514,6 +1514,9 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+	if len(postIds) == 0 {
+		return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
+	}
 	newestPostId := postIds[len(postIds)-1]
 	newestPost, err := u.Store().Post(newestPostId)
 	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
