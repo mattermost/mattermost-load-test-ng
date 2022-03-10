@@ -46,18 +46,3 @@ func shouldMakeLongRunningThread(channelId string) bool {
 	}
 	return true
 }
-
-// shouldReplyToLongRunningThread returns whether post reply should be made
-// to a long running thread
-// TODO: The rates in this function should be configurable
-
-func shouldReplyToLongRunningThread(channelId string) bool {
-	// 5% of the time we reply to a long running thread
-	if rand.Float64() > 0.05 {
-		return false
-	}
-	if len(st.getLongRunningThreadsInChannel(channelId)) == 0 {
-		return false
-	}
-	return true
-}
