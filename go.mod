@@ -21,6 +21,8 @@ require (
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )
 
+require github.com/vmihailenco/msgpack/v5 v5.3.5
+
 require (
 	github.com/PuerkitoBio/goquery v1.8.0 // indirect
 	github.com/ajg/form v1.5.1 // indirect
@@ -75,7 +77,6 @@ require (
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/wiggin77/merror v1.0.3 // indirect
 	github.com/wiggin77/srslog v1.0.1 // indirect

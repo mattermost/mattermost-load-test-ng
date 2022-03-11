@@ -11,10 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/mattermost/mattermost-server/v6/model"
+
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 func dummyWebsocketHandler(t *testing.T, wg *sync.WaitGroup) http.HandlerFunc {
@@ -256,4 +258,48 @@ func TestSendMessage(t *testing.T) {
 
 		c.Close()
 	})
+}
+
+func TestSendBinaryMessage(t *testing.T) {
+	var wg sync.WaitGroup
+	inputData := map[string]interface{}{
+		"data": "testing binary data",
+	}
+
+	wsHandler := func(w http.ResponseWriter, req *http.Request) {
+		defer wg.Done()
+		upgrader := &websocket.Upgrader{}
+		conn, err := upgrader.Upgrade(w, req, nil)
+		require.NoError(t, err)
+		for {
+			msgType, buf, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+			require.Equal(t, websocket.BinaryMessage, msgType)
+			var outputData map[string]interface{}
+			err = msgpack.Unmarshal(buf, &outputData)
+			require.NoError(t, err)
+			require.Equal(t, "test_action", outputData["action"])
+			require.Equal(t, inputData, outputData["data"])
+		}
+	}
+
+	wg.Add(1)
+	s := httptest.NewServer(http.HandlerFunc(wsHandler))
+	defer func() {
+		wg.Wait()
+		s.Close()
+	}()
+
+	url := strings.Replace(s.URL, "http://", "ws://", 1)
+	c, err := NewClient4(&ClientParams{
+		WsURL:     url,
+		AuthToken: "authToken",
+	})
+	require.Nil(t, err)
+
+	err = c.SendBinaryMessage("test_action", inputData)
+	require.NoError(t, err)
+	c.Close()
 }
