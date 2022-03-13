@@ -254,8 +254,9 @@ func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinat
 
 	clusterConfig := config.ClusterConfig
 
-	if ltConfig.UsersConfiguration.MaxActiveUsers*len(clusterConfig.Agents) < clusterConfig.MaxActiveUsers {
-		return nil, errors.New("coordinator: ltConfig.UsersConfiguration.MaxActiveUsers should not be less than config.clusterConfig.MaxActiveUsers")
+	clusterConfig.IsValid(ltConfig)
+	if err := clusterConfig.IsValid(ltConfig); err != nil {
+		return nil, fmt.Errorf("could not validate ltConfig against clusterConfig: %w", err)
 	}
 
 	cluster, err := cluster.New(clusterConfig, ltConfig, log)
