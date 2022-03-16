@@ -69,7 +69,7 @@ func (st *state) setLongRunningThread(id, channelId, teamId string) {
 func (st *state) getLongRunningThreadsInChannel(channelId string) []*ThreadInfo {
 	st.longRunningThreadsMut.Lock()
 	defer st.longRunningThreadsMut.Unlock()
-	threadInfos := make([]*ThreadInfo, 0, len(st.longRunningThreads))
+	var threadInfos []*ThreadInfo
 	for _, ti := range st.longRunningThreads {
 		if ti.ChannelId == channelId {
 			threadInfos = append(threadInfos, copyThreadInfo(ti))
