@@ -1034,8 +1034,8 @@ func (s *MemStore) getThreads(unreadOnly bool) ([]*model.ThreadResponse, error) 
 // ThreadsSorted returns all threads, sorted by LastReplyAt
 func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error) {
 	s.lock.RLock()
-	defer s.lock.RUnlock()
 	threads, err := s.getThreads(unreadOnly)
+	s.lock.RUnlock()
 	if err != nil {
 		return nil, err
 	}

@@ -354,7 +354,9 @@ func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
 
 // RandomThread returns a random post.
 func (s *MemStore) RandomThread() (model.ThreadResponse, error) {
+	s.lock.RLock()
 	threads, err := s.getThreads(false)
+	s.lock.RUnlock()
 	if err != nil {
 		return model.ThreadResponse{}, err
 	}
