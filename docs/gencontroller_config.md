@@ -34,7 +34,7 @@ The percentage of replies (over the total number of posts) to be created.
 
 *float64*
 
-The percentage of replies (over the total number of  reply posts) to be created in long running threads.
+The percentage of replies (over the total number of reply posts) to be created in long running threads.
 
 ## PercentPublicChannels
 
