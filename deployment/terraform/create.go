@@ -382,7 +382,8 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
-	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
+	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOff)
+	cfg.ServiceSettings.ThreadAutoFollow = model.NewBool(true)
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
@@ -457,6 +458,11 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		}
 	}
 
+	appErr := cfg.IsValid()
+	if appErr != nil {
+		return fmt.Errorf("error while validating server config: %w", appErr)
+	}
+
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in marshalling config: %w", err)
@@ -522,13 +528,13 @@ func pingServer(addr string) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
 	client.HTTPClient.Timeout = 10 * time.Second
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(60 * time.Second)
 
 	for {
 		select {
 		case <-timeout:
 			return errors.New("timeout after 30 seconds, server is not responding")
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 			status, _, err := client.GetPingWithServerStatus()
 			if err != nil {
 				mlog.Debug("got error", mlog.Err(err), mlog.String("status", status))
