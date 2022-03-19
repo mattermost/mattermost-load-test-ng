@@ -97,6 +97,7 @@ func TestCoordinatorAPI(t *testing.T) {
 		}
 
 		data.CoordinatorConfig.ClusterConfig.Agents[0].ApiURL = server.URL
+		data.CoordinatorConfig.ClusterConfig.MaxActiveUsers = 1000
 
 		obj := e.POST("/create").WithQuery("id", id).WithJSON(data).
 			Expect().Status(http.StatusCreated).
