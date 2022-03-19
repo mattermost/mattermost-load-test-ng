@@ -254,7 +254,6 @@ func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinat
 
 	clusterConfig := config.ClusterConfig
 
-	clusterConfig.IsValid(ltConfig)
 	if err := clusterConfig.IsValid(ltConfig); err != nil {
 		return nil, fmt.Errorf("could not validate ltConfig against clusterConfig: %w", err)
 	}
