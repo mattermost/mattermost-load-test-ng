@@ -382,6 +382,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
 	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
+	cfg.ServiceSettings.ThreadAutoFollow = model.NewBool(true)
 	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
