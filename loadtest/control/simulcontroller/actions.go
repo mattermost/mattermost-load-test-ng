@@ -583,6 +583,7 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	var rootId string
 	post, err := u.Store().RandomPostForChannel(channel.Id)
 	if errors.Is(err, memstore.ErrPostNotFound) {
 		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
@@ -590,7 +591,6 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	var rootId string
 	if post.RootId != "" {
 		rootId = post.RootId
 	} else {
@@ -893,7 +893,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil && !errors.Is(err, errNoMatch) {
 			return "", err
 		}
-		message = "@" + user.Username + " "
+		message += "@" + user.Username + " "
 	}
 
 	// 10% of messages will contain a link.
@@ -1281,4 +1281,366 @@ func sendTypingEventIfEnabled(u user.User, channelId string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("viewGlobalThreads: current team should be set"))}
+	}
+
+	// View "All your threads" in the Global Threads Screen
+	threads, err := u.Store().ThreadsSorted(false, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if len(threads) == 0 {
+		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     false,
+			Since:      0,
+			TotalsOnly: false,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no threads"}
+		}
+	}
+
+	oldestThreadId := threads[len(threads)-1].PostId
+	// scrolling between 1 and 3 times
+	numScrolls := rand.Intn(3) + 1
+	for i := 0; i < numScrolls; i++ {
+		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     false,
+			Since:      0,
+			TotalsOnly: false,
+			Before:     oldestThreadId,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			break
+		}
+		oldestThreadId = threads[len(threads)-1].PostId
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+
+	// Switch to "Unread" tabs
+	unreadThreads, err := u.Store().ThreadsSorted(true, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if len(unreadThreads) == 0 {
+		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     true,
+			Since:      0,
+			TotalsOnly: false,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(unreadThreads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no unread threads"}
+		}
+	}
+
+	oldestUnreadThreadId := unreadThreads[len(unreadThreads)-1].PostId
+	// scrolling between 1 and 3 times
+	numScrolls = rand.Intn(3) + 1
+	for i := 0; i < numScrolls; i++ {
+		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     true,
+			Since:      0,
+			TotalsOnly: false,
+			Before:     oldestUnreadThreadId,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			break
+		}
+		oldestUnreadThreadId = unreadThreads[len(unreadThreads)-1].PostId
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+
+	return control.UserActionResponse{Info: "Visited Global Threads Screen"}
+}
+
+func (c *SimulController) followThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		if errors.Is(err, memstore.ErrChannelNotFound) {
+			return control.UserActionResponse{Info: "followThread: current channel not set"}
+		}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomReplyPostForChannel(channel.Id)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		post, err = u.Store().RandomPostForChannel(channel.Id)
+		if err != nil {
+			if errors.Is(err, memstore.ErrPostNotFound) {
+				return control.UserActionResponse{Info: "followThread: no posts in store to follow"}
+			}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+	id := post.RootId
+	if id == "" {
+		id = post.Id
+	}
+	err = u.UpdateThreadFollow(channel.TeamId, id, true)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", id)}
+}
+
+func (c *SimulController) unfollowThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	thread, err := u.Store().RandomThread()
+	if err != nil {
+		if errors.Is(err, memstore.ErrThreadNotFound) {
+			return control.UserActionResponse{Info: "unfollow thread: no thread to unfollow"}
+		}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channel, err := u.Store().Channel(thread.Post.ChannelId)
+	if err != nil || channel == nil {
+		err = u.GetChannel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		channel, err := u.Store().Channel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if channel == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("unfollow thread: can't get channel for thread"))}
+		}
+	}
+	err = u.UpdateThreadFollow(channel.TeamId, thread.PostId, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("unfollowed thread %s", thread.PostId)}
+}
+
+func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	// get a random thread
+	thread, err := u.Store().RandomThread()
+	if err != nil && !errors.Is(err, memstore.ErrThreadNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// we don't have threads in store lets get some
+	if errors.Is(err, memstore.ErrThreadNotFound) {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("viewthread: current team should be set"))}
+		}
+		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     false,
+			Since:      0,
+			TotalsOnly: false,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "viewthread: no threads available to view"}
+		}
+		thread = *threads[0]
+	}
+
+	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+		CollapsedThreads: true,
+		Direction:        "down",
+		PerPage:          25,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if len(postIds) == 0 {
+		return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
+	}
+	newestPostId := postIds[len(postIds)-1]
+	newestPost, err := u.Store().Post(newestPostId)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	var newestCreateAt int64
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		newestCreateAt = thread.Post.CreateAt
+	} else {
+		newestCreateAt = newestPost.CreateAt
+	}
+
+	// scrolling between 1 and 3 times
+	numScrolls := rand.Intn(3) + 1
+	for i := 0; i < numScrolls && hasNext; i++ {
+		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+			CollapsedThreads: true,
+			Direction:        "down",
+			PerPage:          25,
+			FromPost:         newestPostId,
+			FromCreateAt:     newestCreateAt,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if !hasNext {
+			break
+		}
+		newestPostId = postIds[len(postIds)-1]
+		newestPost, err = u.Store().Post(newestPostId)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			newestCreateAt = thread.Post.CreateAt
+		} else {
+			newestCreateAt = newestPost.CreateAt
+		}
+
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
+}
+
+func (c *SimulController) markAllThreadsInTeamAsRead(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("markAllThreadsInTeamAsRead: current team should be set"))}
+	}
+	err = u.MarkAllThreadsInTeamAsRead(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("marked all threads in team %s as read", team.Id)}
+}
+
+func (c *SimulController) updateThreadRead(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	// get a random thread
+	thread, err := u.Store().RandomThread()
+	if err != nil && !errors.Is(err, memstore.ErrThreadNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// we don't have threads in store lets get some
+	if errors.Is(err, memstore.ErrThreadNotFound) {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: current team should be set"))}
+		}
+		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:   25,
+			Extended:   false,
+			Deleted:    false,
+			Unread:     false,
+			Since:      0,
+			TotalsOnly: false,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "updateThreadRead: no threads available"}
+		}
+		thread, err = u.Store().RandomThread()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+	channel, err := u.Store().Channel(thread.Post.ChannelId)
+	if err != nil || channel == nil {
+		err = u.GetChannel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		channel, err := u.Store().Channel(thread.Post.ChannelId)
+		if err != nil || channel == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: can't get channel for thread"))}
+		}
+	}
+
+	// We set thread read time to the createat of the root post.
+	// This is an easy, valid timestamp and causes the server to
+	// recalculate all mentions in the thread.
+	err = u.UpdateThreadRead(channel.TeamId, thread.PostId, thread.Post.CreateAt)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
 }

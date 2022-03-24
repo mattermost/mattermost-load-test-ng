@@ -368,6 +368,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			MaxStoredUsers:          1000,
 			MaxStoredChannelMembers: 1000,
 			MaxStoredStatuses:       1000,
+			MaxStoredThreads:        500,
 		})
 		if err != nil {
 			return nil, err

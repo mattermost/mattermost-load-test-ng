@@ -291,6 +291,61 @@ func TestRandomPostForChannel(t *testing.T) {
 	}
 }
 
+func TestRandomReplyPostForChannel(t *testing.T) {
+	s := newStore(t)
+	post, err := s.RandomReplyPostForChannel("someId")
+	require.Empty(t, &post)
+	require.Equal(t, ErrPostNotFound, err)
+
+	channelId := "ch-" + model.NewId()
+
+	id1 := model.NewId()
+	id2 := model.NewId()
+	id3 := model.NewId()
+	rootId := model.NewId()
+	err = s.SetPosts([]*model.Post{
+		{
+			Id:        id1,
+			ChannelId: channelId,
+		},
+		{Id: id2},
+		{
+			Id:        id3,
+			ChannelId: channelId,
+			RootId:    rootId,
+		},
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomReplyPostForChannel(channelId)
+		require.NoError(t, err)
+		require.Equal(t, id3, p.Id)
+		require.Equal(t, rootId, p.RootId)
+	}
+
+	id4 := model.NewId()
+	err = s.SetPost(&model.Post{
+		Id:        id4,
+		ChannelId: channelId,
+		RootId:    rootId,
+	})
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		p, err := s.RandomReplyPostForChannel(channelId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch p.Id {
+			case id3, id4:
+				return true
+			default:
+				return false
+			}
+		})
+	}
+}
+
 func TestRandomPostForChannelByUser(t *testing.T) {
 	s := newStore(t)
 	post, err := s.RandomPostForChannelByUser("chanId", "userId")
@@ -929,5 +984,34 @@ func TestRandomChannel(t *testing.T) {
 				return false
 			}
 		})
+	})
+}
+
+func TestRandomThread(t *testing.T) {
+	t.Run("basic", func(t *testing.T) {
+		s := newStore(t)
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetThreads([]*model.ThreadResponse{
+			{PostId: id1},
+			{PostId: id2},
+		})
+		fmt.Println(id1, id2)
+		require.NoError(t, err)
+		th, err := s.RandomThread()
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch th.PostId {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+	t.Run("emptyslice", func(t *testing.T) {
+		s := newStore(t)
+		_, err := s.RandomThread()
+		require.Equal(t, ErrThreadNotFound, err)
 	})
 }

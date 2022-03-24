@@ -179,7 +179,12 @@ func SelectWeighted(weights []int) (int, error) {
 
 // PickRandomWord returns a random  word.
 func PickRandomWord() string {
-	return words[rand.Intn(len(words))]
+	return PickRandomString(words)
+}
+
+// PickRandomString returns a random string from the given slice of strings
+func PickRandomString(strings []string) string {
+	return strings[rand.Intn(len(strings))]
 }
 
 // GeneratePostsSearchTerm generates a posts search term from the given

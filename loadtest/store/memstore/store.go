@@ -42,6 +42,8 @@ type MemStore struct {
 	channelViews        map[string]int64
 	profileImages       map[string]bool
 	serverVersion       string
+	threads             map[string]*model.ThreadResponse
+	threadsQueue        *CQueue
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -96,6 +98,8 @@ func (s *MemStore) Clear() {
 	s.roles = map[string]*model.Role{}
 	s.license = map[string]string{}
 	s.channelViews = map[string]int64{}
+	s.threads = map[string]*model.ThreadResponse{}
+	s.threadsQueue.Reset()
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -131,6 +135,13 @@ func (s *MemStore) setupQueues(config *Config) error {
 				return new(model.Status)
 			},
 			&s.statusesQueue,
+		},
+		{
+			config.MaxStoredThreads,
+			func() interface{} {
+				return new(model.ThreadResponse)
+			},
+			&s.threadsQueue,
 		},
 	}
 
@@ -973,4 +984,124 @@ func (s *MemStore) SetServerVersion(version string) error {
 	defer s.lock.Unlock()
 	s.serverVersion = version
 	return nil
+}
+
+// SetThread stores the given thread reponse.
+func (s *MemStore) SetThread(thread *model.ThreadResponse) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if thread == nil {
+		return errors.New("memstore: thread should not be nil")
+	}
+
+	// We get an element from the queue and check if we have it in the map and
+	// if it points to the same memory location. If so, we delete it since it means the queue is full.
+	// This is done to keep the data pointed by the map consistent with the data stored in the queue.
+	t := s.threadsQueue.Get().(*model.ThreadResponse)
+	if tt, ok := s.threads[t.PostId]; ok && tt == t {
+		delete(s.threads, t.PostId)
+	}
+	cloneThreadResponse(thread, t)
+	s.threads[thread.PostId] = t
+
+	return nil
+}
+
+// SetThreads stores the given thread response as a thread.
+func (s *MemStore) SetThreads(trs []*model.ThreadResponse) error {
+	if len(trs) == 0 {
+		return nil
+	}
+	for _, tr := range trs {
+		if err := s.SetThread(tr); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *MemStore) getThreads(unreadOnly bool) ([]*model.ThreadResponse, error) {
+	var threads []*model.ThreadResponse
+	for _, thread := range s.threads {
+		if unreadOnly && thread.UnreadReplies == 0 {
+			continue
+		}
+		threads = append(threads, cloneThreadResponse(thread, &model.ThreadResponse{}))
+	}
+	return threads, nil
+}
+
+// ThreadsSorted returns all threads, sorted by LastReplyAt
+func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error) {
+	s.lock.RLock()
+	threads, err := s.getThreads(unreadOnly)
+	s.lock.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(threads, func(i, j int) bool {
+		if asc {
+			return threads[i].LastReplyAt < threads[j].LastReplyAt
+		}
+		return threads[i].LastReplyAt > threads[j].LastReplyAt
+	})
+	return threads, nil
+}
+
+// cloneThreadResponse copies the given source threadResponse into the given destination
+// ThreadResponse.
+// It also returns the destination ThreadReponse. This lets us:
+// 1. directly call this function in the parent's return statement, i.e. return cloneThreadResponse(...)
+// 2. use inplace, e.g. append(threads, cloneThreadResponse(thread, &model.ThreadResponse{}))
+// 3. pass the threadResponse object in the case where we need to update an existing object
+func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *model.ThreadResponse {
+	dst.PostId = src.PostId
+	dst.ReplyCount = src.ReplyCount
+	dst.LastReplyAt = src.LastReplyAt
+	dst.LastViewedAt = src.LastViewedAt
+	dst.Participants = src.Participants
+	if src.Post != nil {
+		if dst.Post == nil {
+			dst.Post = &model.Post{}
+		}
+		src.Post.ShallowCopy(dst.Post)
+	}
+	dst.UnreadReplies = src.UnreadReplies
+	dst.UnreadMentions = src.UnreadMentions
+	return dst
+}
+
+// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
+func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
+	s.lock.RLock()
+	threads, err := s.getThreads(false)
+	s.lock.RUnlock()
+	if err != nil {
+		return err
+	}
+	now := model.GetMillis()
+	for _, thread := range threads {
+		ch, err := s.Channel(thread.Post.ChannelId)
+		if err != nil || ch.TeamId != teamId {
+			// We do our best to keep the local store threads in sync
+			// If we don't have data in local store, we skip it
+			// instead of making API calls or failing the whole
+			// operation
+			continue
+		}
+		thread.UnreadMentions = 0
+		thread.UnreadReplies = 0
+		thread.LastViewedAt = now
+	}
+	return s.SetThreads(threads)
+}
+
+// Thread returns the thread for the given the threadId.
+func (s *MemStore) Thread(threadId string) (*model.ThreadResponse, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if thread, ok := s.threads[threadId]; ok {
+		return cloneThreadResponse(thread, &model.ThreadResponse{}), nil
+	}
+	return nil, ErrThreadNotFound
 }

@@ -8,8 +8,16 @@ import (
 )
 
 type state struct {
-	targets map[string]int64
-	mut     sync.RWMutex
+	targets               map[string]int64
+	targetsMut            sync.RWMutex
+	longRunningThreads    map[string]*ThreadInfo
+	longRunningThreadsMut sync.RWMutex
+}
+
+type ThreadInfo struct {
+	Id        string
+	ChannelId string
+	TeamId    string
 }
 
 var st *state
@@ -22,12 +30,13 @@ func init() {
 			"posts":     0,
 			"reactions": 0,
 		},
+		longRunningThreads: make(map[string]*ThreadInfo),
 	}
 }
 
 func (st *state) inc(targetId string, targetVal int64) bool {
-	st.mut.Lock()
-	defer st.mut.Unlock()
+	st.targetsMut.Lock()
+	defer st.targetsMut.Unlock()
 	if st.targets[targetId] == targetVal {
 		return false
 	}
@@ -36,13 +45,43 @@ func (st *state) inc(targetId string, targetVal int64) bool {
 }
 
 func (st *state) dec(targetId string) {
-	st.mut.Lock()
-	defer st.mut.Unlock()
+	st.targetsMut.Lock()
+	defer st.targetsMut.Unlock()
 	st.targets[targetId]--
 }
 
 func (st *state) get(targetId string) int64 {
-	st.mut.RLock()
-	defer st.mut.RUnlock()
+	st.targetsMut.RLock()
+	defer st.targetsMut.RUnlock()
 	return st.targets[targetId]
+}
+
+func (st *state) setLongRunningThread(id, channelId, teamId string) {
+	st.longRunningThreadsMut.Lock()
+	defer st.longRunningThreadsMut.Unlock()
+	st.longRunningThreads[id] = &ThreadInfo{
+		Id:        id,
+		ChannelId: channelId,
+		TeamId:    teamId,
+	}
+}
+
+func (st *state) getLongRunningThreadsInChannel(channelId string) []*ThreadInfo {
+	st.longRunningThreadsMut.Lock()
+	defer st.longRunningThreadsMut.Unlock()
+	var threadInfos []*ThreadInfo
+	for _, ti := range st.longRunningThreads {
+		if ti.ChannelId == channelId {
+			threadInfos = append(threadInfos, copyThreadInfo(ti))
+		}
+	}
+	return threadInfos
+}
+
+func copyThreadInfo(src *ThreadInfo) *ThreadInfo {
+	dst := &ThreadInfo{}
+	dst.Id = src.Id
+	dst.ChannelId = src.ChannelId
+	dst.TeamId = src.TeamId
+	return dst
 }

@@ -271,4 +271,16 @@ type User interface {
 	UpdateConfig(cfg *model.Config) error
 	// MessageExport triggers a message export
 	MessageExport() error
+
+	// Threads
+	// GetUserThreads fetches and stores threads. It returns a list of thread ids.
+	GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error)
+	// UpdateThreadFollow updates the follow state of the thread
+	UpdateThreadFollow(teamId, threadId string, state bool) error
+	// GetPostThread gets a post with all the other posts in the same thread.
+	GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error)
+	// MarkAllThreadsInTeamAsRead marks all threads in a team as read
+	MarkAllThreadsInTeamAsRead(teamId string) error
+	// UpdateThreadRead updates the read timestamp of the thread
+	UpdateThreadRead(teamId, threadId string, timestamp int64) error
 }

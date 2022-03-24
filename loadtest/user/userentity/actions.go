@@ -1148,3 +1148,67 @@ func (ue *UserEntity) MessageExport() error {
 	}
 	return nil
 }
+
+// GetPostsAfter fetches and stores posts in a given channelId that were made after
+// a given postId.
+func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error) {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return nil, err
+	}
+	threads, _, err := ue.client.GetUserThreads(user.Id, teamId, *options)
+	if err != nil {
+		return nil, err
+	}
+
+	return threads.Threads, ue.store.SetThreads(threads.Threads)
+}
+
+// UpdateThreadFollow updates the follow state of the the given thread
+func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	_, err = ue.client.UpdateThreadFollowForUser(user.Id, teamId, threadId, state)
+	return err
+}
+
+// GetPostThread gets a post with all the other posts in the same thread.
+func (ue *UserEntity) GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error) {
+	postList, _, err := ue.client.GetPostThreadWithOpts(threadId, "", opts)
+	if err != nil {
+		return nil, false, err
+	}
+	if postList == nil || len(postList.Posts) == 0 {
+		return nil, false, nil
+	}
+	return postList.Order, postList.HasNext, ue.store.SetPosts(postListToSlice(postList))
+}
+
+// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
+func (ue *UserEntity) MarkAllThreadsInTeamAsRead(teamId string) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	_, err = ue.client.UpdateThreadsReadForUser(user.Id, teamId)
+	if err != nil {
+		return err
+	}
+
+	// Keep threads in our local store in sync
+	return ue.store.MarkAllThreadsInTeamAsRead(teamId)
+}
+
+func (ue *UserEntity) UpdateThreadRead(teamId, threadId string, timestamp int64) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+	thread, _, err := ue.client.UpdateThreadReadForUser(user.Id, teamId, threadId, timestamp)
+	if err != nil {
+		return err
+	}
+	return ue.store.SetThreads([]*model.ThreadResponse{thread})
+}
