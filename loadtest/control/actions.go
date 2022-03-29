@@ -746,6 +746,10 @@ func Reload(u user.User) UserActionResponse {
 }
 
 func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
+	if u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsDisabled {
+		return false, UserActionResponse{}
+	}
+
 	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsDefaultOn
 	prefs, err := u.Store().Preferences()
 	if err != nil {
