@@ -902,7 +902,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 	}
 
 	// 1% of messages will contain a permalink
-	if rand.Float64() < 0.1 {
+	if rand.Float64() < 0.01 {
 		post, err := u.Store().RandomPostForChannel(channel.Id)
 		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 			return "", err
