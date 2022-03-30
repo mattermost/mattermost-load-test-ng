@@ -4,6 +4,7 @@
 package userentity
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,10 +22,16 @@ func (ue *UserEntity) decWebSocketConnections() {
 	}
 }
 
+var simplifiedPathRe = regexp.MustCompile("[a-zA-Z0-9]{26}")
+
+func simplifyPath(path string) string {
+	return simplifiedPathRe.ReplaceAllLiteralString(path, ":id")
+}
+
 func (ue *UserEntity) incHTTPErrors(path, method string, status int) {
 	if ue.metrics != nil {
 		ue.metrics.HTTPErrors.With(prometheus.Labels{
-			"path":        path,
+			"path":        simplifyPath(path),
 			"method":      method,
 			"status_code": strconv.Itoa(status),
 		}).Inc()
@@ -40,7 +47,7 @@ func (ue *UserEntity) observeHTTPRequestTimes(elapsed float64) {
 func (ue *UserEntity) incHTTPTimeouts(path, method string) {
 	if ue.metrics != nil {
 		ue.metrics.HTTPTimeouts.With(prometheus.Labels{
-			"path":   path,
+			"path":   simplifyPath(path),
 			"method": method,
 		}).Inc()
 	}
