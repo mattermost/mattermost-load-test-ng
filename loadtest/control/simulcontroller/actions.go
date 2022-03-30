@@ -1382,7 +1382,7 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if len(threads) == 0 {
+		if len(unreadThreads) == 0 {
 			break
 		}
 		oldestUnreadThreadId = unreadThreads[len(unreadThreads)-1].PostId
