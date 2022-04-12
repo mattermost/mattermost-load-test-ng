@@ -1614,11 +1614,13 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: current team should be set"))}
 		}
 		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize: 25,
-			Extended: false,
-			Deleted:  false,
-			Unread:   false,
-			Since:    0,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: false,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
