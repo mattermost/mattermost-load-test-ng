@@ -223,6 +223,14 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	_, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+		TotalsOnly:  true,
+		ThreadsOnly: false,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	// TODO: use more realistic data.
 	var userIds []string
 	userIds = append(userIds, u.Store().Id())
