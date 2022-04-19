@@ -223,6 +223,14 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	_, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+		TotalsOnly:  true,
+		ThreadsOnly: false,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	// TODO: use more realistic data.
 	var userIds []string
 	userIds = append(userIds, u.Store().Id())
@@ -391,7 +399,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	if current, err := u.Store().CurrentChannel(); err == nil {
 		currentChanId = current.Id
 		// Somehow the webapp does a view to the current channel before switching.
-		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
+		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else if !errors.Is(err, memstore.ErrChannelNotFound) {
@@ -449,7 +457,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		}
 	}
 
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -947,7 +955,12 @@ func unreadCheck(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id}); err != nil {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -1301,12 +1314,13 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if len(threads) == 0 {
 		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     false,
-			Since:      0,
-			TotalsOnly: false,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1321,13 +1335,14 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 	numScrolls := rand.Intn(3) + 1
 	for i := 0; i < numScrolls; i++ {
 		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     false,
-			Since:      0,
-			TotalsOnly: false,
-			Before:     oldestThreadId,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+			Before:      oldestThreadId,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1351,12 +1366,13 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	} else if len(unreadThreads) == 0 {
 		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     true,
-			Since:      0,
-			TotalsOnly: false,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      true,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1371,13 +1387,14 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 	numScrolls = rand.Intn(3) + 1
 	for i := 0; i < numScrolls; i++ {
 		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     true,
-			Since:      0,
-			TotalsOnly: false,
-			Before:     oldestUnreadThreadId,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      true,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+			Before:      oldestUnreadThreadId,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1490,12 +1507,13 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(errors.New("viewthread: current team should be set"))}
 		}
 		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     false,
-			Since:      0,
-			TotalsOnly: false,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1604,12 +1622,13 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: current team should be set"))}
 		}
 		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
-			PageSize:   25,
-			Extended:   false,
-			Deleted:    false,
-			Unread:     false,
-			Since:      0,
-			TotalsOnly: false,
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: false,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
