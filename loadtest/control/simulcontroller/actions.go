@@ -1647,7 +1647,7 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		channel, err := u.Store().Channel(thread.Post.ChannelId)
+		channel, err = u.Store().Channel(thread.Post.ChannelId)
 		if err != nil || channel == nil {
 			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: can't get channel for thread"))}
 		}
