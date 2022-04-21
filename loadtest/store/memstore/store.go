@@ -1081,8 +1081,8 @@ func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 	}
 	now := model.GetMillis()
 	for _, thread := range threads {
-		ch, err := s.Channel(thread.Post.ChannelId)
-		if err != nil || ch.TeamId != teamId {
+		ch, _ := s.Channel(thread.Post.ChannelId)
+		if ch == nil || ch.TeamId != teamId {
 			// We do our best to keep the local store threads in sync
 			// If we don't have data in local store, we skip it
 			// instead of making API calls or failing the whole
