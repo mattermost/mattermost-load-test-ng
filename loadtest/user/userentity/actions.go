@@ -1212,3 +1212,36 @@ func (ue *UserEntity) UpdateThreadRead(teamId, threadId string, timestamp int64)
 	}
 	return ue.store.SetThreads([]*model.ThreadResponse{thread})
 }
+
+// GetSidebarCategories fetches and stores the sidebar categories for an user.
+func (ue *UserEntity) GetSidebarCategories(userID, teamID string) error {
+	categories, _, err := ue.client.GetSidebarCategoriesForTeamForUser(userID, teamID, "")
+	if err != nil {
+		return err
+	}
+
+	return ue.store.SetCategories(teamID, categories)
+}
+
+func (ue *UserEntity) CreateSidebarCategory(userID, teamID string, category *model.SidebarCategoryWithChannels) (*model.SidebarCategoryWithChannels, error) {
+	cat, _, err := ue.client.CreateSidebarCategoryForTeamForUser(userID, teamID, category)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	if err := ue.GetSidebarCategories(userID, teamID); err != nil {
+		return nil, err
+	}
+	return cat, nil
+}
+
+func (ue *UserEntity) UpdateSidebarCategory(userID, teamID string, categories []*model.SidebarCategoryWithChannels) error {
+	_, _, err := ue.client.UpdateSidebarCategoriesForTeamForUser(userID, teamID, categories)
+	if err != nil {
+		return err
+	}
+
+	// The client fetches and stores all categories again.
+	return ue.GetSidebarCategories(userID, teamID)
+}
