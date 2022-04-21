@@ -1472,7 +1472,7 @@ func (c *SimulController) unfollowThread(u user.User) control.UserActionResponse
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		channel, err := u.Store().Channel(thread.Post.ChannelId)
+		channel, err = u.Store().Channel(thread.Post.ChannelId)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
