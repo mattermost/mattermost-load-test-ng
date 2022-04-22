@@ -614,12 +614,12 @@ func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionR
 	channelToMove := control.PickRandomString(cat1.Channels)
 
 	// Find index
-	i := 0
-	for i = range cat1.Channels {
-		if cat1.Channels[i] == channelToMove {
-			break
-		}
+	i := findIndex(cat1.Channels, channelToMove)
+	// Defense in depth
+	if i == -1 {
+		return control.UserActionResponse{Info: fmt.Sprintf("Channel %s not found in the category", channelToMove)}
 	}
+
 	// Move from the first, and add to second.
 	cat1.Channels = append(cat1.Channels[:i], cat1.Channels[i+1:]...)
 	cat2.Channels = append(cat2.Channels, channelToMove)

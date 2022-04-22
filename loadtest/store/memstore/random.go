@@ -350,7 +350,11 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 		return model.SidebarCategoryWithChannels{}, err
 	}
 
-	return *teamCat[key.(string)], nil
+	category := *teamCat[key.(string)]
+	tmp := make([]string, len(category.Channels))
+	copy(tmp, category.Channels)
+	category.Channels = tmp
+	return category, nil
 }
 
 func pickRandomKeyFromMap(m interface{}) (interface{}, error) {

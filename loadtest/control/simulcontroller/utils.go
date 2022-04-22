@@ -154,3 +154,13 @@ func extractMentionFromMessage(msg string) string {
 	}
 	return mention[1:]
 }
+
+// findIndex returns the index of needle in a haystack.
+func findIndex(haystack []string, needle string) int {
+	for i := range haystack {
+		if haystack[i] == needle {
+			return i
+		}
+	}
+	return -1
+}
