@@ -105,6 +105,8 @@ type UserStore interface {
 	RandomTeamMember(teamId string) (model.TeamMember, error)
 	// RandomThread returns a random thread.
 	RandomThread() (model.ThreadResponse, error)
+	// RandomCategory returns a random category from a team
+	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 
 	// profile
 	// ProfileImage returns whether the profile image for the given user has been
@@ -238,4 +240,7 @@ type MutableUserStore interface {
 	SetThreads(threads []*model.ThreadResponse) error
 	// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
 	MarkAllThreadsInTeamAsRead(teamId string) error
+
+	// SidebarCategories
+	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error
 }

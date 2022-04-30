@@ -44,6 +44,7 @@ type MemStore struct {
 	serverVersion       string
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue
+	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -100,6 +101,7 @@ func (s *MemStore) Clear() {
 	s.channelViews = map[string]int64{}
 	s.threads = map[string]*model.ThreadResponse{}
 	s.threadsQueue.Reset()
+	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1017,6 +1019,18 @@ func (s *MemStore) SetThreads(trs []*model.ThreadResponse) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *MemStore) SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	teamCat := make(map[string]*model.SidebarCategoryWithChannels)
+	for _, cat := range sidebarCategories.Categories {
+		teamCat[cat.SidebarCategory.Id] = cat
+	}
+	s.sidebarCategories[teamID] = teamCat
 	return nil
 }
 

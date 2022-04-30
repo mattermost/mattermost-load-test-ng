@@ -283,4 +283,9 @@ type User interface {
 	MarkAllThreadsInTeamAsRead(teamId string) error
 	// UpdateThreadRead updates the read timestamp of the thread
 	UpdateThreadRead(teamId, threadId string, timestamp int64) error
+
+	// SidebarCategories
+	GetSidebarCategories(userID, teamID string) error
+	CreateSidebarCategory(userID, teamID string, category *model.SidebarCategoryWithChannels) (*model.SidebarCategoryWithChannels, error)
+	UpdateSidebarCategory(userID, teamID string, categories []*model.SidebarCategoryWithChannels) error
 }

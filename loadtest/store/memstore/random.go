@@ -339,6 +339,24 @@ func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
 	return *teamMemberMap[key.(string)], nil
 }
 
+func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	teamCat := s.sidebarCategories[teamID]
+
+	key, err := pickRandomKeyFromMap(teamCat)
+	if err != nil {
+		return model.SidebarCategoryWithChannels{}, err
+	}
+
+	category := *teamCat[key.(string)]
+	tmp := make([]string, len(category.Channels))
+	copy(tmp, category.Channels)
+	category.Channels = tmp
+	return category, nil
+}
+
 func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Map {

@@ -223,11 +223,14 @@ func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	_, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+	if _, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
 		TotalsOnly:  true,
 		ThreadsOnly: false,
-	})
-	if err != nil {
+	}); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetSidebarCategories(u.Store().Id(), team.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -554,6 +557,78 @@ func deletePost(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post deleted, id %v", post.Id)}
+}
+
+func (c *SimulController) createSidebarCategory(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	category := &model.SidebarCategoryWithChannels{
+		SidebarCategory: model.SidebarCategory{
+			UserId:      u.Store().Id(),
+			TeamId:      team.Id,
+			DisplayName: "category" + control.PickRandomWord(),
+		},
+	}
+
+	sidebarCategory, err := u.CreateSidebarCategory(u.Store().Id(), team.Id, category)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created sidebar category, id %s", sidebarCategory.Id)}
+}
+
+func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	cat1, err := u.Store().RandomCategory(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	cat2, err := u.Store().RandomCategory(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Not repeatedly looping until we get a different category because there have been edge-cases before
+	// ending in infinite loop.s
+	if cat1.Id == cat2.Id {
+		return control.UserActionResponse{Info: "same categories returned. Skipping."}
+	}
+	if len(cat1.Channels) <= 1 {
+		return control.UserActionResponse{Info: "Not enough categories to remove. Skipping."}
+	}
+
+	// We pick a random channel from first category and move to second category.
+	channelToMove := control.PickRandomString(cat1.Channels)
+
+	// Find index
+	i := findIndex(cat1.Channels, channelToMove)
+	// Defense in depth
+	if i == -1 {
+		return control.UserActionResponse{Info: fmt.Sprintf("Channel %s not found in the category", channelToMove)}
+	}
+
+	// Move from the first, and add to second.
+	cat1.Channels = append(cat1.Channels[:i], cat1.Channels[i+1:]...)
+	cat2.Channels = append(cat2.Channels, channelToMove)
+
+	if err := u.UpdateSidebarCategory(u.Store().Id(), team.Id, []*model.SidebarCategoryWithChannels{&cat1, &cat2}); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated sidebar categories, ids [%s, %s]", cat1.Id, cat2.Id)}
 }
 
 func editPost(u user.User) control.UserActionResponse {

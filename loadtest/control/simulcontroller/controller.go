@@ -171,6 +171,14 @@ func (c *SimulController) Run() {
 			frequency: 0.06,
 		},
 		{
+			run:       c.createSidebarCategory,
+			frequency: 0.06,
+		},
+		{
+			run:       c.updateSidebarCategory,
+			frequency: 0.06,
+		},
+		{
 			run:       searchGroupChannels,
 			frequency: 0.1,
 		},
