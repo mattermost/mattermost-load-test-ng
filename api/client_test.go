@@ -199,8 +199,6 @@ func TestCoordClientConcurrency(t *testing.T) {
 		defaults.Set(&ltConfig)
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
 		return coord
@@ -214,8 +212,6 @@ func TestCoordClientConcurrency(t *testing.T) {
 		defaults.Set(&ltConfig)
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		var success int
 		wg.Add(n)
 		for i := 0; i < n; i++ {

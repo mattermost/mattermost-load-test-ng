@@ -24,8 +24,6 @@ func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
-	coordConfig.MonitorConfig.Queries[0].Description = "Query"
-	coordConfig.MonitorConfig.Queries[0].Query = "query"
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, coord)
@@ -66,8 +64,6 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
@@ -78,8 +74,6 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		status, err := coord.Create(&coordConfig, &ltConfig)
 		require.Error(t, err)
