@@ -6,9 +6,11 @@ This is the recommended way to load-test a Mattermost instance for production.
 
 ## Prerequisites
 
-- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required.
+- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required and can be found [here](https://releases.hashicorp.com/terraform/).
 - AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
 - A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
+
+If you're a Mattermost staff member, see the [Vault documentation](https://docs.google.com/document/d/1S4i1XFGn7a1VXbtFV28GtbAe56m7fOHDZDgRmm5FBkg/edit#heading=h.ortqmqq1zjyx) for how to generate AWS keys.
 
 **Note**
 
@@ -140,6 +142,10 @@ go run ./cmd/ltctl deployment destroy
 ```
 
 This will permanently destroy all resources for the current deployment.
+
+## Comparing results
+
+To compare the results of your load tests, see [here](compare.md).
 
 ## Debugging
 
