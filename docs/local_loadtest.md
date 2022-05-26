@@ -2,19 +2,19 @@
 
 ## Introduction
 
-This guide describes how to run a load-test locally (and mostly manually).  
-Doing this is particularly useful when testing changes to the load-test tool itself.  
+This guide describes how to run a load-test locally (and mostly manually).
+Doing this is particularly useful when testing changes to the load-test tool itself.
 It's also a great way to learn how the whole load-testing process works before trying with more advanced deployments.
 
 There are a few ways to run a load-test locally, in order of complexity:
 
-- Run the `ltagent` command directly. 
+- Run the `ltagent` command directly.
 - Run a load-test through the load-test agent API server `ltapi`.
 - Run a load-test through the [`coordinator`](coordinator.md).
 
 ## Prerequisites
 
-Before starting a new load-test, a newly created (and running) Mattermost instance with system admin credentials is required.  
+Before starting a new load-test, a newly created (and running) Mattermost instance with system admin credentials is required.
 
 ### Clone the repository
 
@@ -37,8 +37,8 @@ cp config/config.sample.json config/config.json
 cp config/simplecontroller.sample.json config/simplecontroller.json
 ```
 
-The load-test config file is documented [here](loadtest_config.md).  
-The default [`UserController`](controllers.md) is the `SimpleController`. Its config file is documented [here](simplecontroller_config.md).  
+The load-test config file is documented [here](loadtest_config.md).
+The default [`UserController`](controllers.md) is the `SimpleController`. Its config file is documented [here](simplecontroller_config.md).
 
 ### Run the initialization
 
@@ -50,7 +50,7 @@ Running this command will create initial teams and channels for the users to joi
 
 #### Note
 
-The `init` command generates data as configured by the `InstanceConfiguration` section. It does not pre-populate all the users.  
+The `init` command generates data as configured by the `InstanceConfiguration` section. It does not pre-populate all the users.
 In fact, only 50 users are created and used to generate data. This value was chosen to maximize overall throughput.
 
 ## Running a basic load-test
@@ -77,7 +77,7 @@ A more advanced way to run a load-test is to use the provided load-test agent AP
 go run ./cmd/ltapi
 ```
 
-This will start the server and expose the HTTP API on port 4000 (default).  
+This will start the server and expose the HTTP API on port 4000 (default).
 Using a different terminal it's possible to issue commands to create and run a load-test agent:
 
 ### Create a new load-test agent
@@ -136,14 +136,14 @@ curl -X DELETE http://localhost:4000/loadagent/lt0
 
 ## Running a load-test through the coordinator
 
-An even more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).  
-This is especially needed when we need to figure out the maximum number of users the target instance supports.  
+An even more advanced way to run a load-test is through the use of the [`coordinator`](coordinator.md).
+This is especially needed when we need to figure out the maximum number of users the target instance supports.
 The [`coordinator`](coordinator.md) does also help running a load-test across a cluster of agents.
 
-### Prerequisites 
+### Prerequisites
 
 In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
-correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.  
+correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.
 
 ### Start the load-test agent API server
 
@@ -207,3 +207,6 @@ curl -X POST http://localhost:4000/coordinator/ltc0/stop
 ```sh
 curl -X DELETE http://localhost:4000/coordinator/ltc0
 ```
+## Comparing results
+
+To compare the results of your load tests, see [here](compare.md).
