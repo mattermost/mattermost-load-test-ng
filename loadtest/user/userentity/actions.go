@@ -1292,7 +1292,7 @@ func (ue *UserEntity) GetTopChannelsForUserSince(userID, teamID string, duration
 	return topChannels, nil
 }
 
-// GetTopReactionsForTeamSince fetches statistics for top threads in a team
+// GetTopReactionsForTeamSince fetches statistics for top reactions in a team
 func (ue *UserEntity) GetTopReactionsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error) {
 	topReactions, _, err := ue.client.GetTopReactionsForTeamSince(teamID, duration, offset, limit)
 	if err != nil {
@@ -1303,7 +1303,7 @@ func (ue *UserEntity) GetTopReactionsForTeamSince(userID, teamID string, duratio
 	return topReactions, nil
 }
 
-// GetTopReactionsForUserSince fetches statistics for top threads for the logged in user in a team
+// GetTopReactionsForUserSince fetches statistics for top reactions for the logged in user in a team
 func (ue *UserEntity) GetTopReactionsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error) {
 	topReactions, _, err := ue.client.GetTopReactionsForUserSince(teamID, duration, offset, limit)
 	if err != nil {
