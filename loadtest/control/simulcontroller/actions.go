@@ -1738,3 +1738,40 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
 }
+
+func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		return control.UserActionResponse{Info: "no team set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	userID := u.Store().Id()
+
+	if rand.Float64() < 0.50 {
+		// view user insights
+		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		// view team insights
+		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed insights for user id %s", userID)}
+}

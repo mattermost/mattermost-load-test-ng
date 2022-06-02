@@ -218,6 +218,10 @@ func (c *SimulController) Run() {
 			run:       c.updateThreadRead,
 			frequency: 1.17,
 		},
+		{
+			run:       c.getInsights,
+			frequency: 0.8,
+		},
 	}
 
 	for {

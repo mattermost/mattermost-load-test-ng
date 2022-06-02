@@ -1245,3 +1245,71 @@ func (ue *UserEntity) UpdateSidebarCategory(userID, teamID string, categories []
 	// The client fetches and stores all categories again.
 	return ue.GetSidebarCategories(userID, teamID)
 }
+
+// insights related actions
+
+// GetTopThreadsForTeamSince fetches statistics for top threads in a team
+func (ue *UserEntity) GetTopThreadsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopThreadList, error) {
+	topThreads, _, err := ue.client.GetTopThreadsForTeamSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topThreads, nil
+}
+
+// GetTopThreadsForUserSince fetches statistics for top threads for the logged in user in a team
+func (ue *UserEntity) GetTopThreadsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopThreadList, error) {
+	topThreads, _, err := ue.client.GetTopThreadsForUserSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topThreads, nil
+}
+
+// GetTopChannelsForTeamSince fetches statistics for top channels in a team
+func (ue *UserEntity) GetTopChannelsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopChannelList, error) {
+	topChannels, _, err := ue.client.GetTopChannelsForTeamSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topChannels, nil
+}
+
+// GetTopChannelsForUserSince fetches statistics for top channels for the logged in user in a team
+func (ue *UserEntity) GetTopChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopChannelList, error) {
+	topChannels, _, err := ue.client.GetTopChannelsForUserSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topChannels, nil
+}
+
+// GetTopReactionsForTeamSince fetches statistics for top threads in a team
+func (ue *UserEntity) GetTopReactionsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error) {
+	topReactions, _, err := ue.client.GetTopReactionsForTeamSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topReactions, nil
+}
+
+// GetTopReactionsForUserSince fetches statistics for top threads for the logged in user in a team
+func (ue *UserEntity) GetTopReactionsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error) {
+	topReactions, _, err := ue.client.GetTopReactionsForUserSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client fetches and stores all categories again.
+	return topReactions, nil
+}
