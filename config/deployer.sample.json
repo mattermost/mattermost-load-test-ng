@@ -23,7 +23,7 @@
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r4.large",
+    "InstanceType": "db.r5.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": false
