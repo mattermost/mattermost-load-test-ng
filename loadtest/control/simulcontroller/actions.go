@@ -1745,6 +1745,8 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Info: "no team set"}
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
 	userID := u.Store().Id()
@@ -1757,7 +1759,7 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
@@ -1768,7 +1770,7 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
