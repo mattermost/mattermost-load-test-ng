@@ -220,7 +220,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.getInsights,
-			frequency: 0.8,
+			frequency: 1,
 		},
 	}
 
