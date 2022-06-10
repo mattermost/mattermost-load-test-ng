@@ -288,4 +288,8 @@ type User interface {
 	GetSidebarCategories(userID, teamID string) error
 	CreateSidebarCategory(userID, teamID string, category *model.SidebarCategoryWithChannels) (*model.SidebarCategoryWithChannels, error)
 	UpdateSidebarCategory(userID, teamID string, categories []*model.SidebarCategoryWithChannels) error
+
+	// Custom Status
+	UpdateCustomStatus(userID string, status *model.CustomStatus) error
+	RemoveCustomStatus(userID string) error
 }

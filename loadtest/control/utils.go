@@ -41,7 +41,7 @@ var (
 	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
 	words             = []string{}
-	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
+	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:", ":innocent:", ":hugging_face:"}
 	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
 	links             = []string{
 		"https://github.com/mattermost/mattermost-server",
@@ -145,6 +145,11 @@ func GenerateRandomSentences(count int) string {
 	}
 
 	return random[:len(random)-1] + "."
+}
+
+// RandomEmoji returns a random emoji from a list.
+func RandomEmoji() string {
+	return emojis[rand.Intn(len(emojis))]
 }
 
 // AddLink appends a link to a string to test the LinkPreview feature.
