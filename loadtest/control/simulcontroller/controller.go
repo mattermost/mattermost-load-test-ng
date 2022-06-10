@@ -171,6 +171,14 @@ func (c *SimulController) Run() {
 			frequency: 0.06,
 		},
 		{
+			run:       c.updateCustomStatus,
+			frequency: 0.05,
+		},
+		{
+			run:       c.removeCustomStatus,
+			frequency: 0.05,
+		},
+		{
 			run:       c.createSidebarCategory,
 			frequency: 0.06,
 		},

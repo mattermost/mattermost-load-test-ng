@@ -1245,3 +1245,19 @@ func (ue *UserEntity) UpdateSidebarCategory(userID, teamID string, categories []
 	// The client fetches and stores all categories again.
 	return ue.GetSidebarCategories(userID, teamID)
 }
+
+func (ue *UserEntity) UpdateCustomStatus(userID string, status *model.CustomStatus) error {
+	_, _, err := ue.client.UpdateUserCustomStatus(userID, status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ue *UserEntity) RemoveCustomStatus(userID string) error {
+	_, err := ue.client.RemoveUserCustomStatus(userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
