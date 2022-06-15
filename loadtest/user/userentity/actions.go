@@ -1313,3 +1313,19 @@ func (ue *UserEntity) GetTopReactionsForUserSince(userID, teamID string, duratio
 	// The client fetches and stores all categories again.
 	return topReactions, nil
 }
+
+func (ue *UserEntity) UpdateCustomStatus(userID string, status *model.CustomStatus) error {
+	_, _, err := ue.client.UpdateUserCustomStatus(userID, status)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ue *UserEntity) RemoveCustomStatus(userID string) error {
+	_, err := ue.client.RemoveUserCustomStatus(userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -559,6 +559,28 @@ func deletePost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post deleted, id %v", post.Id)}
 }
 
+func (c *SimulController) updateCustomStatus(u user.User) control.UserActionResponse {
+	status := &model.CustomStatus{
+		Emoji:     control.RandomEmoji(),
+		Text:      control.GenerateRandomSentences(1),
+		Duration:  "thirty_minutes",
+		ExpiresAt: time.Now().UTC().Add(30 * time.Minute),
+	}
+	err := u.UpdateCustomStatus(u.Store().Id(), status)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("updated custom status: %s", status.Emoji)}
+}
+
+func (c *SimulController) removeCustomStatus(u user.User) control.UserActionResponse {
+	err := u.RemoveCustomStatus(u.Store().Id())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: "removed custom status"}
+}
+
 func (c *SimulController) createSidebarCategory(u user.User) control.UserActionResponse {
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
