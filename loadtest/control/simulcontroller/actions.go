@@ -1773,26 +1773,40 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 
 	userID := u.Store().Id()
 
-	if rand.Float64() < 0.50 {
-		// view user insights
-		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+	// select time range
+	timeRange := ""
+	if rand.Float64() < 0.75 {
+		timeRange = "7_day"
+	} else {
+		if rand.Float64() < 0.50 {
+			// choose today
+			timeRange = "today"
+		} else {
+			// choose 28 day
+			timeRange = "28_day"
+		}
+	}
+	// my insights is the default option, so team insights will be viewed less.
+	if rand.Float64() < 0.30 {
+		// view team insights
+		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
-		// view team insights
-		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		// view user insights
+		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, "28_day", 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
