@@ -28,7 +28,6 @@ The steps to load test a feature include:
 
  - Go through [local_loadtest.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md).
  - Some additional information on the above document
-    - In step where configs are copied from samples, `simplecontroller.json` doesn't have to be generated since by default the `config.json` uses a `simulative` controller. <!-- docfix -->
     - Updates to `config.json`
         - Make sure to change `ConnectionConfiguration` section in `config.json` according to the local deployment of mattermost-server.
         - For `InstanceConfiguration`, see [this doc](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration). This configuration setting is used by the `init` command to initially populate the mattermost database.
@@ -56,8 +55,6 @@ The steps to load-test a new feature in production, after testing new actions lo
 
  - Review the [terraform_loadtest.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md) documentation.
  - Some additional information on the above document
-    - AWS credentials are to be fetched from [onelogin](https://mattermost.onelogin.com/) and [added to terraform config](https://registry.terraform.io/providers/hashicorp/aws/latest/docs). <!-- docfix -->
-    - Enterprise license is to be fetched from [Developers:private](https://community.mattermost.com/private-core/channels/core-developers) <!-- docfix;  https://github.com/mattermost/enterprise/pull/1208 -->
     - When performing [this](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-and-modify-the-required-configuration) step, edit `MattermostLicenseFile` value to the path containing the license.
         - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost-server`, and `load-test package`, to be used in the load-test.
         - That's the default option, when there's unmerged changes to `mattermost-server`, or `mattermost-load-test-ng`.
@@ -65,9 +62,8 @@ The steps to load-test a new feature in production, after testing new actions lo
             - `make package` in `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing gzip of load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
     - `go run ./cmd/ltctl deployment create`
-        <!-- devfix; anything to do with deployment spawns zombie processes if the command is cancelled with a shell interruption. Further ltctl deployment commands don't work, so one has to restart the computer before starting again. Haven't tried to kill the processes manually.-->
         - Limit operations of `deployment` to a single shell window.
-        - If the deployment gets stuck, check for `ps -ef | grep terraform`, and if there are running processes, restart the computer and start again.
+        - If the deployment gets stuck, [check if AWS credentials are expired, and add new ones.](https://community.mattermost.com/core/pl/weau31yyp38btddryjuxbsnh1r).
         - [Terraform actions are idempotent](https://community.mattermost.com/core/pl/jtebkneah3futd1y7pj8y9nrqy), so you rarely have to [destroy](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#destroy-the-current-deployment) the deployment, if things go wrong while creating resources.
     - Once the deployment is successful, stdout will contain information on server addresses for app server, agent, coordinator, and Grafana deployments.
         - Open the Mattermost URL in browser to confirm the app is working.
@@ -107,9 +103,9 @@ After all the code changes:
  - `go get -u github.com/mattermost/mattermost-server/v6@<commit-hash-in-master>` && `go mod tidy`
  - Create the PR.
 
-#### NB:
+#### Note:
 
- - **For seeding the database manually** :
+ - **For populating the database manually** :
     - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
     - Post a message in the [Developers:Performance](https://community.mattermost.com/core/channels/developers-performance) channel to request a migration file.
     - `ssh` into the app machine, and `psql` into the connected database.
