@@ -12,7 +12,7 @@
 The steps to load test a feature include:
  - Writing new load testing actions to mattermost-load-test-ng.
  - Testing the changes locally.
- - Testing the changes in terraform: its purpose is to load-test under a heavier load/dataset.
+ - Testing the changes in terraform: its purpose is to load-test with a larger dataset.
  - Analyse load-test results.
  - Getting the changes merged to the load-test repository, so the release manager can test the same changes for unexpected behavior during upcoming releases.
 
@@ -111,5 +111,5 @@ After all the code changes:
     - `ssh` into the app machine, and `psql` into the connected database.
     - Drop all tables, log out of psql. Run the migration, which might take a while. <!-- This might not be necessary, I faced some primary id collision issue while restoring from sql. If someone can confirm it's redundance, we'll delete this instruction.-->
     - Now, the app service needs to be restarted so the server can run the necessary migrations.
-    - `ssh` into app-instance(s) and run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
+    - Run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
  - **If the feature is behind a feature flag**: [see Claudio's message to add environment variables to app-service](https://community.mattermost.com/core/pl/honr5se45f8etpwexgmi9qbe5a).
