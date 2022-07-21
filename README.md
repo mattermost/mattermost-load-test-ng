@@ -17,11 +17,11 @@ There are mainly two ways to run a load-test:
 - On a Terraform deployment. This is the recommended way to start a load-test for production. [Link to the guide](docs/terraform_loadtest.md)
 - Locally. This is a good way to getting started and better understand the inner mechanics. [Link to the guide](docs/local_loadtest.md)
 
-A user workflow guide is available [here](docs/load-test-how-to-use.md)
+See the [user workflow guide](docs/load-test-how-to-use.md) for details.
 
 ## FAQ
 
-Answers to frequent questions and troubleshooting for common issues can be found in our [FAQ](docs/faq.md) section.
+Answers to frequently asked questions and troubleshooting for common issues can be found in the [FAQ](docs/faq.md) section.
 
 ## Documentation
 
