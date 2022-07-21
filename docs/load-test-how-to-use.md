@@ -48,8 +48,8 @@ The steps to load-test a new feature in production, after testing new actions lo
     - When performing [this](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-and-modify-the-required-configuration) step, edit `MattermostLicenseFile` value to the path containing the license.
         - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost-server`, and `load-test package`, to be used in the load-test.
         - That's the default option, when there's unmerged changes to `mattermost-server`, or `mattermost-load-test-ng`.
-            - `make build-linux` in `mattermost-server` directory, change `MattermostDownloadURL` value to the path containing mattermost executable. For example `file:///somepath/mattermost-server/bin/linux_amd64/mattermost`
-            - `make package` in `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing gzip of load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`
+            - Run `make build-linux` in the `mattermost-server` directory, change the `MattermostDownloadURL` value to the path containing the Mattermost executable. For example `file:///somepath/mattermost-server/bin/linux_amd64/mattermost`.
+            - Run `make package` in the `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing the gzip of the load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`.
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
     - `go run ./cmd/ltctl deployment create`
         - Limit operations of `deployment` to a single shell window.
