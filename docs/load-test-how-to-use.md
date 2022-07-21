@@ -21,7 +21,7 @@ The steps to load test a feature include:
 #### Writing new load testing code
 
  - Go through [coverage.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coverage.md#implementation-overview), and make a list of changes needed to load-test the new feature.
- - Optionally check out [this video walkthrough](https://drive.google.com/file/d/1l462zMdANwCRXUtj7nnHv2CX_6BiINHl/view) by @claudio.costa
+ - Optionally check out [this video walkthrough](https://drive.google.com/file/d/1l462zMdANwCRXUtj7nnHv2CX_6BiINHl/view) by @streamer45 
  - Make the necessary changes in `loadtest/`.
 
 #### Testing changes locally
@@ -67,8 +67,8 @@ The steps to load-test a new feature in production, after testing new actions lo
     - `go run ./cmd/ltctl deployment create`
         <!-- devfix; anything to do with deployment spawns zombie processes if the command is cancelled with a shell interruption. Further ltctl deployment commands don't work, so one has to restart the computer before starting again. Haven't tried to kill the processes manually.-->
         - Limit operations of `deployment` to a single shell window.
-        - If the deployment gets stuck, check for `ps -ef | grep terraform`, if there are running processes, restart the computer and start again.
-        - [Terraform actions are idempotent](https://community.mattermost.com/core/pl/jtebkneah3futd1y7pj8y9nrqy), so one would rarely have to [destroy](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#destroy-the-current-deployment) the deployment, if things go wrong while creating resources.
+        - If the deployment gets stuck, check for `ps -ef | grep terraform`, and if there are running processes, restart the computer and start again.
+        - [Terraform actions are idempotent](https://community.mattermost.com/core/pl/jtebkneah3futd1y7pj8y9nrqy), so you rarely have to [destroy](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#destroy-the-current-deployment) the deployment, if things go wrong while creating resources.
     - Once the deployment is successful, stdout will contain information on server addresses for app server, agent, coordinator, and Grafana deployments.
         - Open the Mattermost URL in browser to confirm the app is working.
         - At this point, you can check the server logs by [ssh-ing](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#ssh-access-to-the-terraformed-hosts) into the app instance. Once there, open `/opt/mattermost/logs/mattermost.log`.
