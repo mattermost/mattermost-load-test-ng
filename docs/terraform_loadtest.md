@@ -10,11 +10,7 @@ This is the recommended way to load-test a Mattermost instance for production.
 - AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
 - A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
 
-If you're a Mattermost staff member, see the [Vault documentation](https://docs.google.com/document/d/1S4i1XFGn7a1VXbtFV28GtbAe56m7fOHDZDgRmm5FBkg/edit#heading=h.ortqmqq1zjyx) for how to generate AWS keys.
-
-**Note**
-
-If authenticating using the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file), the profile to use is `mm-loadtest`.
+If you're a Mattermost staff member, please use [AWS Single Sign-On](https://aws.amazon.com/blogs/security/aws-single-sign-on-now-enables-command-line-interface-access-for-aws-accounts-using-corporate-credentials/) to generate API credentials for the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file).
 
 ### Clone the repository
 
