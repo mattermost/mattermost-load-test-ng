@@ -71,7 +71,7 @@ The steps to load-test a new feature in production, after testing new actions lo
     - Gearing up to start the load-test:
         - Use `agents'` URL and Prometheus URL in the `coordinator.json` file generated [here](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-default-config).
         - Change `ConnectionConfiguration` in the `config.json` generated [here](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-default-config-1).
-        - Configure `InstanceConfiguration` in the same `config.json` file (which, as mentioned earlier, populates the Mattermost server's database with required data for the load test). Note that a heavier config with `NumPosts` would take a very long time get seeded. Please refer to the [NB](/#nb) section below to manually seed the database from a backup, in order to bypass 'data-generation.
+        - Configure `InstanceConfiguration` in the same `config.json` file (which, as mentioned earlier, populates the Mattermost server's database with required data for the load test). Note that a heavier config with `NumPosts` would take a very long time get populated. Please refer to the [NB](/#nb) section below to manually populate the database from a backup, in order to bypass 'data-generation.
     
     - Start the load test with `go run ./cmd/ltctl loadtest start`.
         - Once a loadtest is running, its status can be checked with `go run ./cmd/ltctl loadtest status`.
