@@ -40,6 +40,7 @@ func TestCoordinatorAPI(t *testing.T) {
 	config.MonitorConfig.Queries[0].Description = "Query"
 	config.MonitorConfig.Queries[0].Query = "query"
 	config.ClusterConfig.Agents[0].ApiURL = server.URL
+	config.ClusterConfig.MaxActiveUsers = 100
 
 	t.Run("create/destroy", func(t *testing.T) {
 		data := struct {
@@ -97,7 +98,6 @@ func TestCoordinatorAPI(t *testing.T) {
 		}
 
 		data.CoordinatorConfig.ClusterConfig.Agents[0].ApiURL = server.URL
-		data.CoordinatorConfig.ClusterConfig.MaxActiveUsers = 1000
 
 		obj := e.POST("/create").WithQuery("id", id).WithJSON(data).
 			Expect().Status(http.StatusCreated).
