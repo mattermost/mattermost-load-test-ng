@@ -3,7 +3,7 @@
 ## Prerequisites for load-testing a new feature
 
  - Build and test a feature in a mattermost-server branch.
- - Scan through markdown docs in [mattermost-load-test-ng](https://github.com/mattermost/mattermost-load-test-ng/tree/master/docs). Make sure you get an idea of what a coordinator, agent, and controller are, what bounded and unbounded load-tests are, and why metrics collection(a deployment of prometheus) is needed in this setup.
+ - Scan through markdown docs in [mattermost-load-test-ng](https://github.com/mattermost/mattermost-load-test-ng/tree/master/docs). Make sure you get an idea of what a coordinator, agent, and controller are, what bounded and unbounded load-tests are, and why metrics collection (a deployment of prometheus) is needed in this setup.
 
 ## Steps to load test the feature
 
@@ -34,7 +34,7 @@ The steps to load test a feature include:
     - Increase the frequency of the new action, so it's easier to debug while running locally. [sample](https://github.com/mattermost/mattermost-load-test-ng/blob/8faa4dfb485dace3bd65908c0d3d98979b7dfd17/loadtest/control/simulcontroller/controller.go#L227)
     - If you see errors, there's a [troubleshooting guide](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/faq.md#troubleshooting) you can reference to resolve the issues.
     - Check `ltagent.log` located in the `mattermost-load-test-ng` directory, and the server logs for details on errors, if any.
-    - We highly recommend becoming familiar with additional sections of documentation, including [using load-test agent API server](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md#running-a-load-test-through-the-load-test-agent-api-server) and [using load-test coordinator](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md#running-a-load-test-through-the-coordinator), since the Terraform deployment uses the latter method to execute the load-tests, and it'll be easier to debug the setup if the you understand these underlying concepts and principles.
+    - We highly recommend becoming familiar with additional sections of documentation, including [using load-test agent API server](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md#running-a-load-test-through-the-load-test-agent-api-server) and [using load-test coordinator](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md#running-a-load-test-through-the-coordinator), since the Terraform deployment uses the latter method to execute the load-tests, and it'll be easier to debug the setup if you understand these underlying concepts and principles.
 
 
 #### Testing changes in terraform
@@ -61,7 +61,7 @@ The steps to load-test a new feature in production, after testing new actions lo
     - Gearing up to start the load-test:
         - Use `agents'` URL and Prometheus URL in the `coordinator.json` file generated [here](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-default-config).
         - Change `ConnectionConfiguration` in the `config.json` generated [here](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-default-config-1).
-        - Configure `InstanceConfiguration` in the same `config.json` file (which, as mentioned earlier, populates the Mattermost server's database with required data for the load test). Note that a heavier config with `NumPosts` would take a very long time get populated. Please refer to the [NB](/#nb) section below to manually populate the database from a backup, in order to bypass 'data-generation.
+        - Configure `InstanceConfiguration` in the same `config.json` file (which, as mentioned earlier, populates the Mattermost server's database with required data for the load test). Note that a heavier config with `NumPosts` would take a very long time get populated. Please refer to the [NB](/#nb) section below to manually populate the database from a backup, in order to bypass 'data-generation`.
     
     - Start the load test with `go run ./cmd/ltctl loadtest start`.
         - Once a loadtest is running, its status can be checked with `go run ./cmd/ltctl loadtest status`.
