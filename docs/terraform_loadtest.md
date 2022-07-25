@@ -12,8 +12,6 @@ This is the recommended way to load-test a Mattermost instance for production.
 
 If you're a Mattermost staff member, see the [Vault documentation](https://docs.google.com/document/d/1S4i1XFGn7a1VXbtFV28GtbAe56m7fOHDZDgRmm5FBkg/edit#heading=h.ortqmqq1zjyx) for how to generate AWS keys.
 
-If you don't have access to Vault keys, get AWS credentials from [onelogin](https://mattermost.onelogin.com/).
-
 **Note**
 
 If authenticating using the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file), the profile to use is `mm-loadtest`.
