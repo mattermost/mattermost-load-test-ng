@@ -52,7 +52,6 @@ The steps to load-test a new feature in production, after testing new actions lo
             - Run `make package` in the `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing the gzip of the load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`.
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
     - `go run ./cmd/ltctl deployment create`
-        - Limit operations of `deployment` to a single shell window.
         - If the deployment gets stuck, [check if AWS credentials are expired, and add new ones.](https://community.mattermost.com/core/pl/weau31yyp38btddryjuxbsnh1r).
         - [Terraform actions are idempotent](https://community.mattermost.com/core/pl/jtebkneah3futd1y7pj8y9nrqy), so you rarely have to [destroy](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#destroy-the-current-deployment) the deployment, if things go wrong while creating resources.
     - Once the deployment is successful, stdout will contain information on server addresses for app server, agent, coordinator, and Grafana deployments.
@@ -108,7 +107,7 @@ After all the code changes:
     - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
     - Post a message in the [Developers:Performance](https://community.mattermost.com/core/channels/developers-performance) channel to request a migration file.
     - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison_config.md#dbdumpurl). If not,
-        - `ssh` into the app machine, and `psql` into the connected database.
+        - `ssh` into the app machine, and `psql` into the connected database. (Link to the database can be obtained with `ltctl deployment info`)
         - Drop and recreate the target database. Restore backup data with `zcat <backupfile> | psql <dsn>`.
         - Now, the app service needs to be restarted so the server can run the necessary migrations.
         - Run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
