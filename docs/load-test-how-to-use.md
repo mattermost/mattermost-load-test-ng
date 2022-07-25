@@ -46,8 +46,8 @@ The steps to load-test a new feature in production, after testing new actions lo
  - Review the [terraform_loadtest.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md) documentation.
  - Some additional information on the above document
     - When performing [this](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-and-modify-the-required-configuration) step, edit `MattermostLicenseFile` value to the path containing the license.
-        - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost-server`, and `load-test package`, to be used in the load-test.
-        - That's the default option, when there's unmerged changes to `mattermost-server`, or `mattermost-load-test-ng`.
+        - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost-server`, and `load-test package`, to be used in the load-test. These are the default options.
+        - When there's unmerged changes to `mattermost-server`, or `mattermost-load-test-ng`, you need to update these values:
             - Run `make build-linux` in the `mattermost-server` directory, change the `MattermostDownloadURL` value to the path containing the Mattermost executable. For example `file:///somepath/mattermost-server/bin/linux_amd64/mattermost`.
             - Run `make package` in the `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing the gzip of the load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`.
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
@@ -67,12 +67,12 @@ The steps to load-test a new feature in production, after testing new actions lo
         - Once a loadtest is running, its status can be checked with `go run ./cmd/ltctl loadtest status`.
         - `ssh` into one of the agent machines, and `cat ~/mattermost-load-test-ng/logs/ltagent.log` to verify the load-test is working without errors.
         - Open the Grafana deployment with the URL from `go run ./cmd/ltctl deployment info`. 
-        - It takes some time for the deployment to stabilize. When the loadtest tool connects the `MaxActiveUsers` count of users to the app, there might be a big count of HTTP 4xx errors during this time.
+        - It takes some time for the deployment to stabilize. Until the loadtest tool connects the `MaxActiveUsers` count of users to the app, there might be a big count of HTTP 4xx errors during this time.
             
             A sample error count vs time graph: ![error-vs-time](https://i.imgur.com/RSH1Szl.png)
     
     - "My load test is running, now what?"
-        - If it's a [bounded](https://github.com/mattermost/mattermost-load-test-ng/blob/497554e376ef23d548947bf331c8bdce6ce453d6/docs/faq.md#what-is-a-bounded-load-test) loadtest, it has to be manually stopped with `go run ./cmd/ltctl loadtest stop` [after an hour](https://community.mattermost.com/core/pl/45woi49ru7yrj8r8upzaqhog3a).
+        - If it's a [bounded](https://github.com/mattermost/mattermost-load-test-ng/blob/497554e376ef23d548947bf331c8bdce6ce453d6/docs/faq.md#what-is-a-bounded-load-test) loadtest, it has to be manually stopped with `go run ./cmd/ltctl loadtest stop` [one hour after the number of users connected stabilized](https://community.mattermost.com/core/pl/45woi49ru7yrj8r8upzaqhog3a).
         - If it's an [unbounded](https://github.com/mattermost/mattermost-load-test-ng/blob/497554e376ef23d548947bf331c8bdce6ce453d6/docs/faq.md#what-is-an-unbounded-load-test) loadtest, the load-test will finish with a stdout listing the maximum concurrent users the deployment supports. The load-test status check command will say status as `Done` when it's complete.
 
 #### Analysing load-test results
@@ -107,7 +107,7 @@ After all the code changes:
  - **For populating the database manually** :
     - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
     - Post a message in the [Developers:Performance](https://community.mattermost.com/core/channels/developers-performance) channel to request a migration file.
-    - If you're using [comparision](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison_config.md#dbdumpurl). If not,
+    - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison_config.md#dbdumpurl). If not,
         - `ssh` into the app machine, and `psql` into the connected database.
         - Drop and recreate the target database. Restore backup data with `zcat <backupfile> | psql <dsn>`.
         - Now, the app service needs to be restarted so the server can run the necessary migrations.
