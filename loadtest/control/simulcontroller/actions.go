@@ -1813,3 +1813,24 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 
 	return control.UserActionResponse{Info: fmt.Sprintf("viewed insights for user id %s", userID)}
 }
+
+func (c *SimulController) createPostReminder(u user.User) control.UserActionResponse {
+	ch, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(ch.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Going with a hardcoded 10 minute addition for now.
+	// Probably there's no need to randomize this yet.
+	err = u.CreatePostReminder(u.Store().Id(), post.Id, time.Now().Add(10*time.Minute).Unix())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
+}

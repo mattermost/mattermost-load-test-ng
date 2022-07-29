@@ -1329,3 +1329,15 @@ func (ue *UserEntity) RemoveCustomStatus(userID string) error {
 	}
 	return nil
 }
+
+func (ue *UserEntity) CreatePostReminder(userID, postID string, targetTime int64) error {
+	_, err := ue.client.SetPostReminder(&model.PostReminder{
+		TargetTime: targetTime,
+		PostId:     postID,
+		UserId:     userID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
