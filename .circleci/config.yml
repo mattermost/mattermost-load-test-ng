@@ -1,45 +1,5 @@
 version: 2.1
 
-aliases:
-- &restore_cache
-  restore_cache:
-    key: go-mod-v1-{{ checksum "go.sum" }}
-- &save_cache
-  save_cache:
-    key: go-mod-v1-{{ checksum "go.sum" }}
-    paths:
-    - "/go/pkg/mod"
-
-commands:
-  install-golangci-lint:
-    description: Install golangci-lint
-    parameters:
-      version:
-        type: string
-        default: 1.46.2
-      gobin:
-        type: string
-        default: /go/bin
-      prefix:
-        type: string
-        default: v1
-        description: Prefix for cache key to store the binary.
-    steps:
-      - restore_cache:
-          name: Restore golangci-lint cache
-          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
-      - run:
-          name: Install golangci-lint
-          command: |
-            mkdir -p << parameters.gobin >>
-            command -v << parameters.gobin >>/golangci-lint && exit
-            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
-      - save_cache:
-          name: Save golangci-lint cache
-          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
-          paths: [<< parameters.gobin >>/golangci-lint]
-
 jobs:
   test:
     docker:
@@ -47,7 +7,6 @@ jobs:
     steps:
       - checkout
       - install-golangci-lint
-      - *restore_cache
       - run:          
           command: |
             make assets
@@ -56,7 +15,6 @@ jobs:
       - run: make verify-gomod
       - run: make check-style
       - run: make test
-      - *save_cache
 
 workflows:
   version: 2
