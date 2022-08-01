@@ -6,7 +6,6 @@ jobs:
       - image: cimg/go:1.18.4
     steps:
       - checkout
-      - install-golangci-lint
       - run:          
           command: |
             make assets
