@@ -12,7 +12,7 @@
 The steps to load test a feature include:
  - Writing new load testing actions to mattermost-load-test-ng.
  - Testing the changes locally.
- - Testing the changes in terraform: its purpose is to load-test with a larger dataset.
+ - Testing the changes in terraform: its purpose is to test the changes in an environment that resembles to production as much as possible..
  - Analyse load-test results.
  - Getting the changes merged to the load-test repository.
 
@@ -38,8 +38,6 @@ The steps to load test a feature include:
 
 
 #### Testing changes in terraform
-
-Loadtest instances created with this framework achieve the same goals as mentioned above, only some of the things like creating a deployment, running a loadtest, etc. are automated.
 
 The steps to load-test a new feature in production, after testing new actions locally, includes the following:
 
@@ -109,4 +107,6 @@ After all the code changes:
         - Drop and recreate the target database. Restore backup data with `zcat <backupfile> | psql <dsn>`.
         - Now, the app service needs to be restarted so the server can run the necessary migrations.
         - Run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
- - **If the feature is behind a feature flag**: [see Claudio's message to add environment variables to app-service](https://community.mattermost.com/core/pl/honr5se45f8etpwexgmi9qbe5a).
+ - **If the feature is behind a feature flag**:
+
+    Add `Environment=MM_FEATUREFLAGS_<feature_flag_name>=true` to the `mattermostServiceFile` string in [deployment/terraform/strings.go](https://github.com/mattermost/mattermost-load-test-ng/blob/bd72575bd115112274e84823a646d8dda313c451/deployment/terraform/strings.go#L20)
