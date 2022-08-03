@@ -1816,12 +1816,16 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 
 func (c *SimulController) createPostReminder(u user.User) control.UserActionResponse {
 	ch, err := u.Store().CurrentChannel()
-	if err != nil {
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "current channel is not set"}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	post, err := u.Store().RandomPostForChannel(ch.Id)
-	if err != nil {
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no post in channel: %s", ch.Id)}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
