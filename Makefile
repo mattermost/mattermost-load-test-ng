@@ -84,11 +84,7 @@ verify-gomod:
 check-style: golangci-lint
 
 golangci-lint:
-# https://stackoverflow.com/a/677212/1027058 (check if a command exists or not)
-	@if ! [ -x "$$(command -v golangci-lint)" ]; then \
-		echo "golangci-lint is not installed. Please see https://github.com/golangci/golangci-lint#install for installation instructions."; \
-		exit 1; \
-	fi; \
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
 
 	@echo Running golangci-lint
 	golangci-lint run ./...

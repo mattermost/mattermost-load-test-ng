@@ -299,4 +299,7 @@ type User interface {
 	// Custom Status
 	UpdateCustomStatus(userID string, status *model.CustomStatus) error
 	RemoveCustomStatus(userID string) error
+
+	// CreatePostReminder creates a post reminder at a given target time.
+	CreatePostReminder(userID, postID string, targetTime int64) error
 }
