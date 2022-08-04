@@ -95,33 +95,48 @@ test:
 MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
 REPLACE=$(NEXT_VER)\/mattermost-load-test-ng-$(NEXT_VER)-linux-amd64.tar.gz
 TAG_EXISTS=$(shell git rev-parse $(NEXT_VER) >/dev/null 2>&1; echo $$?)
+BRANCH_NAME=bump-$(NEXT_VER)
+PR_URL=https://github.com/mattermost/mattermost-load-test-ng/compare/master...$(BRANCH_NAME)?quick_pull=1&labels=2:+Dev+Review
+
+prepare-release:
+ifndef NEXT_VER
+	@echo "Error: NEXT_VER must be defined"
+else
+ifeq ($(TAG_EXISTS), 0)
+	@echo "Error: tag ${NEXT_VER} already exists"
+else
+	git checkout -b $(BRANCH_NAME) origin/master
+	@echo "Applying changes"
+	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
+		sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
+	done
+	git commit -a -m "Bump version to $(NEXT_VER)"
+	git push --set-upstream origin $(BRANCH_NAME)
+	git checkout master
+	@echo "Visit the following URL to create a PR: ${PR_URL}\nWhen merged, run make release."
+endif
+endif
 
 release:
-	@if [ -z "${NEXT_VER}" ]; then \
-		echo "Error: NEXT_VER must be defined"; \
-		exit 1; \
-	else \
-		if [ "${TAG_EXISTS}" -eq 0 ]; then \
-		  echo "Error: tag ${NEXT_VER} already exists"; \
-			exit 1; \
+ifndef NEXT_VER
+	@echo "Error: NEXT_VER must be defined"
+else
+ifeq ($(TAG_EXISTS), 0)
+	@echo "Error: tag ${NEXT_VER} already exists"
+else
+ifeq ($(command -v goreleaser),)
+	@echo -n "goreleaser is not installed, do you want to download it? [y/N] " && read ans && \
+		if [ $${ans:-N} = y ] || [ $${ans:-N} = Y ]; then \
+			curl -sfL https://goreleaser.com/static/run | bash; \
 		else \
-			if ! [ -x "$$(command -v goreleaser)" ]; then \
-			echo "goreleaser is not installed, do you want to download it? [y/N] " && read ans && [ $${ans:-N} = y ]; \
-				if [ $$ans = y ] || [ $$ans = Y ]  ; then \
-					curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh; \
-				else \
-					echo "aborting make release."; \
-					exit 1; \
-				fi; \
-			fi; \
-			for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
-			sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
-			done; \
-			git commit -a -m 'Releasing $(NEXT_VER)'; \
-			git tag $(NEXT_VER); \
-			goreleaser --rm-dist; \
-		fi; \
-	fi;\
+			echo "aborting make release."; \
+			exit 1; \
+		fi;
+endif
+	git tag $(NEXT_VER)
+	goreleaser --rm-dist
+endif
+endif
 
 clean:
 	rm -f errors.log cache.db stats.log status.log
