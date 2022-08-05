@@ -96,6 +96,7 @@ MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
 REPLACE=$(NEXT_VER)\/mattermost-load-test-ng-$(NEXT_VER)-linux-amd64.tar.gz
 TAG_EXISTS=$(shell git rev-parse $(NEXT_VER) >/dev/null 2>&1; echo $$?)
 BRANCH_NAME=bump-$(NEXT_VER)
+BRANCH_EXISTS=$(shell git rev-parse $(BRANCH_NAME) >/dev/null 2>&1; echo $$?)
 PR_URL=https://github.com/mattermost/mattermost-load-test-ng/compare/master...$(BRANCH_NAME)?quick_pull=1&labels=2:+Dev+Review
 
 prepare-release:
@@ -104,6 +105,9 @@ ifndef NEXT_VER
 else
 ifeq ($(TAG_EXISTS), 0)
 	@echo "Error: tag ${NEXT_VER} already exists"
+else
+ifeq ($(BRANCH_EXISTS), 0)
+	@echo "Error: branch ${BRANCH_NAME} already exists"
 else
 	git checkout -b $(BRANCH_NAME) origin/master
 	@echo "Applying changes"
@@ -114,6 +118,7 @@ else
 	git push --set-upstream origin $(BRANCH_NAME)
 	git checkout master
 	@echo "Visit the following URL to create a PR: ${PR_URL}\nWhen merged, run make release."
+endif
 endif
 endif
 
