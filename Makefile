@@ -129,15 +129,9 @@ else
 ifeq ($(TAG_EXISTS), 0)
 	@echo "Error: tag ${NEXT_VER} already exists"
 else
-ifeq ($(command -v goreleaser),)
-	@echo -n "goreleaser is not installed, do you want to download it? [y/N] " && read ans && \
-		if [ $${ans:-N} = y ] || [ $${ans:-N} = Y ]; then \
-			curl -sfL https://goreleaser.com/static/run | bash; \
-		else \
-			echo "aborting make release."; \
-			exit 1; \
-		fi;
-endif
+	go install github.com/goreleaser/goreleaser@latest
+	git checkout master
+	git pull
 	git tag $(NEXT_VER)
 	goreleaser --rm-dist
 endif
