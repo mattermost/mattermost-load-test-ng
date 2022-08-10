@@ -38,6 +38,7 @@ func TestCoordinatorAPI(t *testing.T) {
 	err = defaults.Set(&config)
 	require.NoError(t, err)
 	config.ClusterConfig.Agents[0].ApiURL = server.URL
+	config.ClusterConfig.MaxActiveUsers = 100
 
 	t.Run("create/destroy", func(t *testing.T) {
 		data := struct {

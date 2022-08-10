@@ -252,7 +252,13 @@ func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinat
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	cluster, err := cluster.New(config.ClusterConfig, ltConfig, log)
+	clusterConfig := config.ClusterConfig
+
+	if err := clusterConfig.IsValid(ltConfig); err != nil {
+		return nil, fmt.Errorf("could not validate ltConfig against clusterConfig: %w", err)
+	}
+
+	cluster, err := cluster.New(clusterConfig, ltConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}

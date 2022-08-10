@@ -3,6 +3,12 @@
 
 package cluster
 
+import (
+	"errors"
+
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+)
+
 // LoadAgentConfig holds information about the load-test agent instance.
 type LoadAgentConfig struct {
 	// A sring that identifies the load-test agent instance.
@@ -21,4 +27,11 @@ type LoadAgentClusterConfig struct {
 	// MaxActiveUsers defines the upper limit of concurrently active users to run across
 	// the whole cluster.
 	MaxActiveUsers int `default:"1000" validate:"range:(0,]"`
+}
+
+func (c *LoadAgentClusterConfig) IsValid(ltConfig loadtest.Config) error {
+	if ltConfig.UsersConfiguration.MaxActiveUsers*len(c.Agents) < c.MaxActiveUsers {
+		return errors.New("coordinator: total MaxActiveUsers in loadTest should not be less than clusterConfig.MaxActiveUsers")
+	}
+	return nil
 }
