@@ -7,10 +7,8 @@ This is the recommended way to load-test a Mattermost instance for production.
 ## Prerequisites
 
 - [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required and can be found [here](https://releases.hashicorp.com/terraform/).
-- AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
-- A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
-
-If you're a Mattermost staff member, please use [AWS Single Sign-On](https://aws.amazon.com/blogs/security/aws-single-sign-on-now-enables-command-line-interface-access-for-aws-accounts-using-corporate-credentials/) to generate API credentials for the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file). Credentials generated for mattermost-loadtest will remain active for 12 hours, at which point you will need to generate new credentials using the Single Sign-On portal.
+- AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication-and-configuration). If you're a Mattermost staff member, please use [AWS Single Sign-On](https://aws.amazon.com/blogs/security/aws-single-sign-on-now-enables-command-line-interface-access-for-aws-accounts-using-corporate-credentials/) to generate API credentials for the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file). Credentials generated for mattermost-loadtest will remain active for 12 hours, at which point you will need to generate new credentials using the Single Sign-On portal. If you save the profile in the credentials file, make sure to use the name `mm-loadtest`.
+- A valid Mattermost Enterprise license, required to run the load-test through the [`coordinator`](coordinator.md). If you're a Mattermost staff member, you can get a test license in the [~Team: Self-Serve](https://community.mattermost.com/private-core/channels/team-self-serve) channel.
 
 ### Clone the repository
 
@@ -32,20 +30,20 @@ In order to start the deployment process, it is required to configure the deploy
 cp config/deployer.sample.json config/deployer.json
 ```
 
-Detailed documentation for the deployer's config can be found [here](deployer_config.md).
+Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key and `MattermostLicenseFile` to the path of an enterprise license.
 
 ## Deployment
 
 ### Setup ssh-agent
 
-For the deployer to work, a [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
+For the deployer to work, an [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
 
 ```sh
 eval $(ssh-agent -s)
-ssh-add PATH_TO_KEY
+ssh-add PATH_TO_PRIVATE_KEY
 ```
 
-`PATH_TO_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
+`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
 
 ### Create a new deployment
 
@@ -53,7 +51,7 @@ ssh-add PATH_TO_KEY
 go run ./cmd/ltctl deployment create
 ```
 
-This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment.
+This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment. By default, the console will keep logging info messages; if it does not, then something's wrong.
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
 ### Get information on the current deployment
