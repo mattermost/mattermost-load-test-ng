@@ -51,7 +51,7 @@ ssh-add PATH_TO_PRIVATE_KEY
 go run ./cmd/ltctl deployment create
 ```
 
-This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment. By default, the console will keep logging info messages; if it does not, then something's wrong.
+This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment. By default, the console will keep logging info messages. If it does not, then something's wrong.
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
 ### Get information on the current deployment
