@@ -46,14 +46,14 @@ When starting a comparison, required configuration files are automatically read 
 
 ### Setup ssh-agent
 
-For the automated deployment to work, a [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
+For the automated deployment to work, an [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
 
 ```sh
 eval $(ssh-agent -s)
-ssh-add PATH_TO_KEY
+ssh-add PATH_TO_PRIVATE_KEY
 ```
 
-`PATH_TO_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
+`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
 
 ### Run the comparison 
 

@@ -16,7 +16,7 @@ We currently provide and support the following implementations:
 
 This is a simple version of a controller. It will run a pre-defined (and
 configurable) set of actions in a loop.  
-It's configurability and granularity make it a good choice to test performance
+Its configurability and granularity make it a good choice to test performance
 changes for single API calls.  
 This is the recommended controller when the goal of the load-test is to figure
 out if some change in the code might have had an impact on performance related

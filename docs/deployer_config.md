@@ -14,7 +14,7 @@ The ID of the VPC associated to the resources.
 
 **Note**
 
-This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+This setting only affects load-test agent instances. It is meant for pre-deployed environments.
 
 ## ClusterSubnetID
 
@@ -24,7 +24,7 @@ The ID of the subnet associated to the resources.
 
 **Note**
 
-This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+This setting only affects load-test agent instances. It is meant for pre-deployed environments.
 
 ## AppInstanceCount
 
@@ -57,13 +57,13 @@ The type of the EC2 instance of the loadtest agent. See type [here](https://aws.
 
 *int*
 
-Number of the instances to be created. Right now only support 1 o 0 values.
+Number of ElasticSearch instances to be created. Right now, this config only supports the values `1` or `0`.
 
 ### InstanceType
 
 *string*
 
-The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ### Version
 
@@ -99,7 +99,7 @@ Number of instances to be created. Supported values are `1` or `0`. Once a job s
 
 *string*
 
-The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ## EnableAgentFullLogs
 

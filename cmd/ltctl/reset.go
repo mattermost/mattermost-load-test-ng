@@ -57,7 +57,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 
 	confirmFlag, _ := cmd.Flags().GetBool("confirm")
 	if !confirmFlag {
-		fmt.Println("Are you sure you want to delete everything? All data will be permanently deleted? [y/N]")
+		fmt.Print("Are you sure you want to delete everything? All data will be permanently deleted? [y/N] ")
 		var confirm string
 		fmt.Scanln(&confirm)
 		if !regexp.MustCompile(`(?i)^(y|yes){1}?$`).MatchString(confirm) {
