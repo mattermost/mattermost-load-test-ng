@@ -12,13 +12,13 @@ endif
 DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
-AGENT=ltagent
-AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
-API_SERVER=ltapi
-API_SERVER_ARGS=-mod=readonly -trimpath ./cmd/ltapi
-
 GOBIN=$(PWD)/bin
 PATH=$(shell printenv PATH):$(GOBIN)
+
+AGENT=$(GOBIN)/ltagent
+AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
+API_SERVER=$(GOBIN)/ltapi
+API_SERVER_ARGS=-mod=readonly -trimpath ./cmd/ltapi
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
