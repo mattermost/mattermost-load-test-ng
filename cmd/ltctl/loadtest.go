@@ -16,9 +16,10 @@ import (
 )
 
 func getUsersCount(helper *prometheus.Helper) (int, error) {
-	value, err := helper.VectorFirst("sum(mattermost_http_websockets_total)")
+	query := "sum(mattermost_http_websockets_total)"
+	value, err := helper.VectorFirst(query)
 	if err != nil {
-		return 0, fmt.Errorf("failed to query Prometheus: %w", err)
+		return 0, fmt.Errorf("failed to query Prometheus with %q: %w", query, err)
 	}
 	return int(value), nil
 }
@@ -47,7 +48,7 @@ func getErrorsInfo(helper *prometheus.Helper, startTime time.Time) (map[string]i
 	for _, q := range queries {
 		value, err := helper.VectorFirst(q.query)
 		if err != nil {
-			fmt.Printf("failed to query Prometheus: %s\n", err.Error())
+			fmt.Printf("failed to query Prometheus with %q: %s\n", q.query, err.Error())
 			continue
 		}
 		info[q.description] = int64(math.Round(value))
