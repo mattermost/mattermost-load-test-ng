@@ -74,6 +74,11 @@ config/deployer.json
 config/comparison.json
 config/metricswatcher.json
 
+# binaries
+/ltagent
+/ltcoordinator
+/ltapi
+
 # terraform stuff
 /terraformenv
 .terraform
