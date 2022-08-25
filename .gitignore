@@ -75,9 +75,9 @@ config/comparison.json
 config/metricswatcher.json
 
 # binaries
-ltagent
-ltcoordinator
-ltapi
+/ltagent
+/ltcoordinator
+/ltapi
 
 # terraform stuff
 /terraformenv
