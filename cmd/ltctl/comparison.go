@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -102,6 +103,10 @@ func writeReports(results []comparison.Result, outPath string) error {
 }
 
 func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
+	if _, err := exec.LookPath("gnuplot"); err != nil {
+		return fmt.Errorf("gnuplot is not installed. The comparison command requires it to be installed: %w", err)
+	}
+
 	deployerConfig, err := getConfig(cmd)
 	if err != nil {
 		return err
