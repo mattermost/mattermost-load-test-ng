@@ -1786,27 +1786,47 @@ func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
 			timeRange = "28_day"
 		}
 	}
+
+	// generally limit would be 5, if the user chooses to open full modal occasionally it'd be 10
+	var limit int
+	if rand.Float64() < 0.05 {
+		limit = 10
+	} else {
+		limit = 5
+	}
 	// my insights is the default option, so team insights will be viewed less.
 	if rand.Float64() < 0.30 {
 		// view team insights
-		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopInactiveChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetNewTeamMembersSince(team.Id, timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else {
 		// view user insights
-		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, timeRange, 0, 100); err != nil {
+		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopInactiveChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopDMsForUserSince(timeRange, 0, limit); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}

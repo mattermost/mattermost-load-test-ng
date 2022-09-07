@@ -296,6 +296,10 @@ type User interface {
 	GetTopChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopChannelList, error)
 	GetTopReactionsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error)
 	GetTopReactionsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error)
+	GetTopInactiveChannelsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error)
+	GetTopInactiveChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error)
+	GetTopDMsForUserSince(duration string, offset int, limit int) (*model.TopDMList, error)
+	GetNewTeamMembersSince(teamID string, duration string, offset int, limit int) (*model.NewTeamMembersList, error)
 	// Custom Status
 	UpdateCustomStatus(userID string, status *model.CustomStatus) error
 	RemoveCustomStatus(userID string) error

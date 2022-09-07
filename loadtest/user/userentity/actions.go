@@ -1255,7 +1255,6 @@ func (ue *UserEntity) GetTopThreadsForTeamSince(userID, teamID string, duration 
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topThreads, nil
 }
 
@@ -1266,7 +1265,6 @@ func (ue *UserEntity) GetTopThreadsForUserSince(userID, teamID string, duration 
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topThreads, nil
 }
 
@@ -1277,7 +1275,6 @@ func (ue *UserEntity) GetTopChannelsForTeamSince(userID, teamID string, duration
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topChannels, nil
 }
 
@@ -1288,7 +1285,6 @@ func (ue *UserEntity) GetTopChannelsForUserSince(userID, teamID string, duration
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topChannels, nil
 }
 
@@ -1299,7 +1295,6 @@ func (ue *UserEntity) GetTopReactionsForTeamSince(userID, teamID string, duratio
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topReactions, nil
 }
 
@@ -1310,8 +1305,45 @@ func (ue *UserEntity) GetTopReactionsForUserSince(userID, teamID string, duratio
 		return nil, err
 	}
 
-	// The client fetches and stores all categories again.
 	return topReactions, nil
+}
+
+// GetTopInactiveChannelsForTeamSince fetches statistics for top inactive channels in a team
+func (ue *UserEntity) GetTopInactiveChannelsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error) {
+	topInactiveChannels, _, err := ue.client.GetTopInactiveChannelsForTeamSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return topInactiveChannels, nil
+}
+
+// GetTopInactiveChannelsForUserSince fetches statistics for top inactive channels for the logged in user in a team
+func (ue *UserEntity) GetTopInactiveChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error) {
+	topChannels, _, err := ue.client.GetTopInactiveChannelsForUserSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return topChannels, nil
+}
+
+// GetTopDMsForUserSince fetches statistics for top direct message channels for the logged in user in a team
+func (ue *UserEntity) GetTopDMsForUserSince(duration string, offset int, limit int) (*model.TopDMList, error) {
+	topDms, _, err := ue.client.GetTopDMsForUserSince(duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return topDms, nil
+}
+
+// GetNewTeamMembersSince fetches statistics for new team members in a team
+func (ue *UserEntity) GetNewTeamMembersSince(teamID string, duration string, offset int, limit int) (*model.NewTeamMembersList, error) {
+	newUsers, _, err := ue.client.GetNewTeamMembersSince(teamID, duration, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return newUsers, nil
 }
 
 func (ue *UserEntity) UpdateCustomStatus(userID string, status *model.CustomStatus) error {
