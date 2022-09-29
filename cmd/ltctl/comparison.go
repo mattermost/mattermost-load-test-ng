@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -111,6 +112,12 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 	cfg, err := comparison.ReadConfig(configFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read comparison config: %w", err)
+	}
+
+	if cfg.Output.GenerateGraphs {
+		if _, err := exec.LookPath("gnuplot"); err != nil {
+			return fmt.Errorf("gnuplot is not installed. The comparison command with generate graph option requires it to be installed: %w", err)
+		}
 	}
 
 	outputPath, _ := cmd.Flags().GetString("output-dir")
