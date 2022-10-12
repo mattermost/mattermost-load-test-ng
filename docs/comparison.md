@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document explains how to run an automated load-test comparison. This configuration is aimed to experienced users running recurrent automatic comparisons; if you want to run a manual comparison once or twice, you should run two individual load-tests and generate a comparison report. See [Comparing load test reports](compare.md) for more information.
+This document explains how to run an automated load-test comparison. **This configuration is aimed to experienced users** running recurring automatic comparisons; if you want to run a manual comparison once or twice, you should run two individual load-tests and generate a comparison report. See [Comparing load test reports](compare.md) for more information.
 
 ## Prerequisites
 
