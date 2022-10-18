@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
@@ -164,8 +165,13 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
-		subCmd := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBWriter(), dbName)
-		resetCmd.value = fmt.Sprintf("export PGPASSWORD='%s' && dropdb %s && createdb %s", dpConfig.TerraformDBSettings.Password, subCmd, subCmd)
+		sqlConnParams := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBWriter(), dbName)
+		resetCmd.value = strings.Join([]string{
+			fmt.Sprintf("export PGPASSWORD='%s'", dpConfig.TerraformDBSettings.Password),
+			fmt.Sprintf("dropdb %s", sqlConnParams),
+			fmt.Sprintf("createdb %s", sqlConnParams),
+			fmt.Sprintf("psql %s -c 'ALTER DATABASE %s SET default_text_search_config TO \"pg_catalog.english\"'", sqlConnParams, dbName),
+		}, " && ")
 	case "aurora-mysql":
 		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
 		resetCmd.value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
