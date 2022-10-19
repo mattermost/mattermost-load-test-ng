@@ -27,7 +27,8 @@ output "s3bucket" {
 }
 
 output "s3Key" {
-  value = aws_iam_access_key.s3key
+  value     = aws_iam_access_key.s3key
+  sensitive = true
 }
 
 output "jobServers" {
