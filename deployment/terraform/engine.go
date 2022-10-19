@@ -27,13 +27,14 @@ func (t *Terraform) Config() *deployment.Config {
 
 // Cleanup is called at the end of each command to clean temporary files
 func (t *Terraform) Cleanup() {
-	if t.dir != "" {
-		os.RemoveAll(t.dir)
+	if t.workingDir != "" {
+		os.RemoveAll(t.workingDir)
 	}
 }
 
-// runCommand runs terraform with the args supplied. If dst is not nil, it writes the output there.
-// Otherwise, it logs the output to console.
+// runCommand runs terraform with the args supplied. Note that any global options such as -chdir need to appear before the subcommand,
+// as in `terraform -chdir=/tmp/dir init`.
+// If dst is not nil, it writes the output there. Otherwise, it logs the output to console.
 func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	terraformBin := "terraform"
 	if _, err := exec.LookPath(terraformBin); err != nil {
