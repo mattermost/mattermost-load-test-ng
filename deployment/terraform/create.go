@@ -28,7 +28,7 @@ const cmdExecTimeoutMinutes = 30
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
-	supportedVersion = 0.14
+	supportedVersion = 0.15
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
