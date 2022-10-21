@@ -4,7 +4,6 @@
 package report
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestPrintSummary(t *testing.T) {
-	f, err := ioutil.TempFile("", "output")
+	f, err := os.CreateTemp("", "output")
 	require.Nil(t, err)
 	defer os.Remove(f.Name())
 
@@ -355,7 +354,7 @@ func TestPrintSummary(t *testing.T) {
 			_, err = f.Seek(0, os.SEEK_SET)
 			require.Nil(t, err)
 			printSummary(c.cmp, f, 1)
-			output, err := ioutil.ReadFile(f.Name())
+			output, err := os.ReadFile(f.Name())
 			require.Nil(t, err)
 			require.Equal(t, c.expectedOutput, string(output))
 		})

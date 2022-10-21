@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -481,7 +480,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
-		data, err := ioutil.ReadFile(t.config.MattermostConfigPatchFile)
+		data, err := os.ReadFile(t.config.MattermostConfigPatchFile)
 		if err != nil {
 			return fmt.Errorf("error reading MattermostConfigPatchFile: %w", err)
 		}
@@ -533,7 +532,7 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	dir, err := ioutil.TempDir("", "terraform")
+	dir, err := os.MkdirTemp("", "terraform")
 	if err != nil {
 		return err
 	}
