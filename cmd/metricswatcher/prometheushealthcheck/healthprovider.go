@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path/filepath"
+	"path"
 	"time"
 )
 
@@ -30,7 +30,7 @@ func NewHealthProvider(server string) (*HealthProvider, error) {
 		return nil, fmt.Errorf("error while starting healthcheck: %w", err)
 	}
 
-	url.Path = filepath.Join(url.Path, "/-/healthy")
+	url.Path = path.Join(url.Path, "/-/healthy")
 
 	return &HealthProvider{url}, nil
 }
