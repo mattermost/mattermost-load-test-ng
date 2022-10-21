@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +19,7 @@ import (
 )
 
 func createArchive(inPath, outPath string) error {
-	files, err := ioutil.ReadDir(inPath)
+	files, err := os.ReadDir(inPath)
 	if err != nil {
 		return err
 	}
@@ -95,7 +94,7 @@ func writeReports(results []comparison.Result, outPath string) error {
 			continue
 		}
 		filePath := filepath.Join(outPath, getReportFilename(i, res))
-		if err := ioutil.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
+		if err := os.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
 			return err
 		}
 	}
@@ -128,7 +127,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 	archivePath := outputPath
 	archive, _ := cmd.Flags().GetBool("archive")
 	if archive {
-		dir, err := ioutil.TempDir("", "comparison")
+		dir, err := os.MkdirTemp("", "comparison")
 		if err != nil {
 			return fmt.Errorf("failed to create temp dir: %w", err)
 		}

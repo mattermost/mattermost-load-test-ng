@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -290,7 +289,7 @@ func getServerVersion(serverURL string) (string, error) {
 		return version, fmt.Errorf("failed to get server version: %w", err)
 	}
 	defer resp.Body.Close()
-	io.Copy(ioutil.Discard, resp.Body)
+	io.Copy(io.Discard, resp.Body)
 
 	header := resp.Header["X-Version-Id"]
 	if len(header) > 0 {

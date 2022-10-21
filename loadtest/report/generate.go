@@ -6,8 +6,8 @@ package report
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
+	"os"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
@@ -66,7 +66,7 @@ func New(label string, helper *prometheus.Helper, cfg Config) *Generator {
 // Load loads a report from a given file path.
 func Load(path string) (Report, error) {
 	var r Report
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return r, err
 	}

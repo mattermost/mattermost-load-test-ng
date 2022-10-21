@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -133,6 +132,14 @@ func (t *Terraform) Create(initData bool) error {
 
 		if err := pingServer("http://" + url); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
+		}
+
+		// Aurora sets the default_text_search_config parameter to 'simple';
+		// a more sane default for a generic deployment is 'english'
+		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
+				return fmt.Errorf("could not modify default_search_text_config: %w", err)
+			}
 		}
 
 		if initData {
@@ -345,6 +352,37 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
+func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config string) error {
+	if t.config.TerraformDBSettings.InstanceEngine != "aurora-postgresql" {
+		return fmt.Errorf("default_text_search_config can only be set in postgres")
+	}
+
+	dns := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
+		t.config.TerraformDBSettings.UserName,
+		t.config.TerraformDBSettings.Password,
+		t.output.DBWriter(),
+		t.config.DBName(),
+	)
+
+	sqlCmd := fmt.Sprintf("ALTER DATABASE %s SET default_text_search_config TO \"%s\"",
+		t.config.DBName(),
+		config,
+	)
+
+	cmd := fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+
+	mlog.Info(fmt.Sprintf("Setting default_text_search_config to %q:", config), mlog.String("cmd", cmd))
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
+	if err != nil {
+		return err
+	}
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
+	}
+
+	return nil
+}
+
 func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnabled bool) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
@@ -443,7 +481,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
-		data, err := ioutil.ReadFile(t.config.MattermostConfigPatchFile)
+		data, err := os.ReadFile(t.config.MattermostConfigPatchFile)
 		if err != nil {
 			return fmt.Errorf("error reading MattermostConfigPatchFile: %w", err)
 		}
@@ -495,7 +533,7 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	dir, err := ioutil.TempDir("", "terraform")
+	dir, err := os.MkdirTemp("", "terraform")
 	if err != nil {
 		return err
 	}

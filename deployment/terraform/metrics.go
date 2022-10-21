@@ -10,9 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"path"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -43,7 +43,7 @@ func doAPIRequest(url, method string, payload io.Reader) (string, error) {
 	defer resp.Body.Close()
 
 	// Dump body.
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -161,7 +161,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload datasource file
-	buf, err := ioutil.ReadFile(path.Join(t.workingDir, "datasource.yaml"))
+	buf, err := os.ReadFile(filepath.Join(t.workingDir, "datasource.yaml"))
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard file
-	buf, err = ioutil.ReadFile(path.Join(t.workingDir, "dashboard.yaml"))
+	buf, err = os.ReadFile(filepath.Join(t.workingDir, "dashboard.yaml"))
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard json
-	buf, err = ioutil.ReadFile(path.Join(t.workingDir, "dashboard_data.json"))
+	buf, err = os.ReadFile(filepath.Join(t.workingDir, "dashboard_data.json"))
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	if t.output.HasElasticSearch() {
-		buf, err = ioutil.ReadFile(path.Join(t.workingDir, "es_dashboard_data.json"))
+		buf, err = os.ReadFile(filepath.Join(t.workingDir, "es_dashboard_data.json"))
 		if err != nil {
 			return err
 		}
