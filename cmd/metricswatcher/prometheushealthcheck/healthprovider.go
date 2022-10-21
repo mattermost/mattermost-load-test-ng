@@ -6,7 +6,7 @@ package prometheushealthcheck
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -51,7 +51,7 @@ func (h *HealthProvider) Check() HealthCheckResult {
 
 	if !healthy {
 		defer response.Body.Close()
-		body, _ := ioutil.ReadAll(response.Body)
+		body, _ := io.ReadAll(response.Body)
 		err = errors.New(string(body))
 	}
 
