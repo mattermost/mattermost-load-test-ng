@@ -27,7 +27,7 @@ const cmdExecTimeoutMinutes = 30
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
-	supportedVersion = 0.14
+	supportedVersion = 0.15
 )
 
 // A global mutex used to make t.init() safe for concurrent use.
@@ -43,7 +43,8 @@ type Terraform struct {
 	id          string
 	config      *deployment.Config
 	output      *Output
-	dir         string
+	workingDir  string
+	stateDir    string
 	initialized bool
 }
 
@@ -93,12 +94,12 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	var params []string
+	params = append(params, "-chdir="+t.workingDir)
 	params = append(params, "apply")
 	params = append(params, t.getParams()...)
 	params = append(params, "-auto-approve",
 		"-input=false",
-		"-state="+t.getStatePath(),
-		t.dir)
+		"-state="+t.getStatePath())
 
 	err = t.runCommand(nil, params...)
 	if err != nil {
@@ -536,7 +537,14 @@ func (t *Terraform) init() error {
 	if err != nil {
 		return err
 	}
-	t.dir = dir
+	t.workingDir = dir
+
+	stateDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	t.stateDir = stateDir
+
 	assets.RestoreAssets(dir, "outputs.tf")
 	assets.RestoreAssets(dir, "variables.tf")
 	assets.RestoreAssets(dir, "cluster.tf")
@@ -550,11 +558,11 @@ func (t *Terraform) init() error {
 	// the .terraform directory.
 	initMut.Lock()
 	defer initMut.Unlock()
-	return t.runCommand(nil, "init", t.dir)
+	return t.runCommand(nil, "-chdir="+t.workingDir, "init")
 }
 
 func (t *Terraform) validate() error {
-	return t.runCommand(nil, "validate", t.dir)
+	return t.runCommand(nil, "-chdir="+t.workingDir, "validate")
 }
 
 func pingServer(addr string) error {

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
 	"strings"
 	"text/template"
@@ -192,7 +193,7 @@ func (t *Terraform) getStatePath() string {
 	if t.id != "" {
 		statePath = t.id + ".tfstate"
 	}
-	return statePath
+	return path.Join(t.stateDir, statePath)
 }
 
 func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {
