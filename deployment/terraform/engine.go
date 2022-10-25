@@ -6,15 +6,15 @@ package terraform
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
@@ -97,22 +97,30 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 }
 
 func checkTerraformVersion() error {
-	out, err := exec.Command("terraform", "version").Output()
+	versionInfoJSON, err := exec.Command("terraform", "version", "-json").Output()
 	if err != nil {
 		return fmt.Errorf("could not run %q command: %w", "terraform version", err)
 	}
 
-	re := regexp.MustCompile(`v\d+.?\d+`)
-	if !re.Match(out) {
-		return fmt.Errorf("could not parse terraform command output: %s", out)
+	var versionInfo struct {
+		Version string `json:"terraform_version"`
 	}
 
-	version, err := strconv.ParseFloat(string(re.Find(out)[1:]), 64)
-	if err != nil {
+	if err := json.Unmarshal(versionInfoJSON, &versionInfo); err != nil {
 		return fmt.Errorf("could not parse terraform command output: %w", err)
 	}
-	if version != supportedVersion {
-		return fmt.Errorf("Terraform version %.2f is required, you have %.2f", supportedVersion, version)
+
+	installedVersion, err := semver.Parse(versionInfo.Version)
+	if err != nil {
+		return fmt.Errorf("could not parse installed version: %w", err)
+	}
+
+	if installedVersion.Major > requiredVersion.Major {
+		return fmt.Errorf("installed major version %q is greater than supported major version %q", installedVersion.Major, requiredVersion.Major)
+	}
+
+	if installedVersion.LT(requiredVersion) {
+		return fmt.Errorf("installed version %q is lower than supported version %q", installedVersion.String(), requiredVersion.String())
 	}
 
 	return nil

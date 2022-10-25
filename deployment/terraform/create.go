@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -27,8 +28,13 @@ const cmdExecTimeoutMinutes = 30
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
-	supportedVersion = 0.15
 )
+
+// requiredVersion specifies the supported versions of Terraform,
+// which are those that meet the following criteria:
+// 1. installedVersion.Major = requiredVersion.Major
+// 2. installedVersion >= requiredVersion
+var requiredVersion = semver.MustParse("1.3.3")
 
 // A global mutex used to make t.init() safe for concurrent use.
 // This is needed to prevent a data race caused by the "terraform init"
