@@ -6,7 +6,7 @@ This is the recommended way to load-test a Mattermost instance for production.
 
 ## Prerequisites
 
-- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required and can be found [here](https://releases.hashicorp.com/terraform/).
+- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 1.3.3 or greater (as long as it's in the v1.x series) is required.
 - AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication-and-configuration). If you're a Mattermost staff member, please use [AWS Single Sign-On](https://aws.amazon.com/blogs/security/aws-single-sign-on-now-enables-command-line-interface-access-for-aws-accounts-using-corporate-credentials/) to generate API credentials for the [AWS credentials file](https://www.terraform.io/docs/providers/aws/index.html#shared-credentials-file). Credentials generated for mattermost-loadtest will remain active for 12 hours, at which point you will need to generate new credentials using the Single Sign-On portal. If you save the profile in the credentials file, make sure to use the name `mm-loadtest`.
 - A valid Mattermost Enterprise license, required to run the load-test through the [`coordinator`](coordinator.md). If you're a Mattermost staff member, you can get a test license in the [~Team: Self-Serve](https://community.mattermost.com/private-core/channels/team-self-serve) channel.
 
