@@ -115,8 +115,12 @@ func checkTerraformVersion() error {
 		return fmt.Errorf("could not parse installed version: %w", err)
 	}
 
-	if installedVersion.LT(minimumRequiredVersion) {
-		return fmt.Errorf("installed version %q is lower than supported version %q", installedVersion.String(), minimumRequiredVersion.String())
+	if installedVersion.Major > requiredVersion.Major {
+		return fmt.Errorf("installed major version %q is greater than supported major version %q", installedVersion.Major, requiredVersion.Major)
+	}
+
+	if installedVersion.LT(requiredVersion) {
+		return fmt.Errorf("installed version %q is lower than supported version %q", installedVersion.String(), requiredVersion.String())
 	}
 
 	return nil

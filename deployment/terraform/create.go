@@ -30,7 +30,11 @@ const (
 	filePrefix       = "file://"
 )
 
-var minimumRequiredVersion = semver.MustParse("1.3.3")
+// requiredVersion specifies the supported versions of Terraform,
+// which are those that meet the following criteria:
+// 1. installedVersion.Major = requiredVersion.Major
+// 2. installedVersion >= requiredVersion
+var requiredVersion = semver.MustParse("1.3.3")
 
 // A global mutex used to make t.init() safe for concurrent use.
 // This is needed to prevent a data race caused by the "terraform init"
