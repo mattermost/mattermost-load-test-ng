@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"text/template"
@@ -189,11 +189,13 @@ func validateLicense(filename string) error {
 }
 
 func (t *Terraform) getStatePath() string {
+	// Get the name of the file
 	statePath := "terraform.tfstate"
 	if t.id != "" {
 		statePath = t.id + ".tfstate"
 	}
-	return path.Join(t.stateDir, statePath)
+
+	return statePath
 }
 
 func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {

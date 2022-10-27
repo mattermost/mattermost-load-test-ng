@@ -48,7 +48,6 @@ type Terraform struct {
 	id          string
 	config      *deployment.Config
 	output      *Output
-	stateDir    string
 	initialized bool
 }
 
@@ -536,12 +535,6 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	stateDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	t.stateDir = stateDir
-
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
 	// the .terraform directory.
