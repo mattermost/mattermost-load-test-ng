@@ -49,7 +49,6 @@ type Terraform struct {
 	id          string
 	config      *deployment.Config
 	output      *Output
-	workingDir  string
 	stateDir    string
 	initialized bool
 }
@@ -100,7 +99,6 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	var params []string
-	params = append(params, "-chdir="+t.workingDir)
 	params = append(params, "apply")
 	params = append(params, t.getParams()...)
 	params = append(params, "-auto-approve",
@@ -543,7 +541,6 @@ func (t *Terraform) init() error {
 	if err != nil {
 		return err
 	}
-	t.workingDir = dir
 
 	stateDir, err := os.Getwd()
 	if err != nil {
@@ -564,11 +561,11 @@ func (t *Terraform) init() error {
 	// the .terraform directory.
 	initMut.Lock()
 	defer initMut.Unlock()
-	return t.runCommand(nil, "-chdir="+t.workingDir, "init")
+	return t.runCommand(nil, "init")
 }
 
 func (t *Terraform) validate() error {
-	return t.runCommand(nil, "-chdir="+t.workingDir, "validate")
+	return t.runCommand(nil, "validate")
 }
 
 func pingServer(addr string) error {

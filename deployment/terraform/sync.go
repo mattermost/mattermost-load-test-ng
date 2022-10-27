@@ -10,7 +10,6 @@ func (t *Terraform) Sync() error {
 	}
 
 	var params []string
-	params = append(params, "-chdir="+t.workingDir)
 	params = append(params, "refresh")
 	params = append(params, t.getParams()...)
 	params = append(params, "-state="+t.getStatePath())

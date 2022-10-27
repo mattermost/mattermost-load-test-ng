@@ -10,7 +10,6 @@ func (t *Terraform) Destroy() error {
 	}
 
 	var params []string
-	params = append(params, "-chdir="+t.workingDir)
 	params = append(params, "destroy")
 	params = append(params, t.getParams()...)
 	params = append(params, "-auto-approve",
