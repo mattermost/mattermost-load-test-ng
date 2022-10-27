@@ -248,3 +248,7 @@ func (t *Terraform) getClusterDSN() (string, error) {
 		return "", errors.New("unsupported database engine")
 	}
 }
+
+func getAsset(filename string) string {
+	return filepath.Join(assetsDir, filename)
+}

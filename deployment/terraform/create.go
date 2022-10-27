@@ -15,7 +15,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v6/config"
@@ -537,24 +536,11 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	dir, err := os.MkdirTemp("", "terraform")
-	if err != nil {
-		return err
-	}
-
 	stateDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 	t.stateDir = stateDir
-
-	assets.RestoreAssets(dir, "outputs.tf")
-	assets.RestoreAssets(dir, "variables.tf")
-	assets.RestoreAssets(dir, "cluster.tf")
-	assets.RestoreAssets(dir, "datasource.yaml")
-	assets.RestoreAssets(dir, "dashboard.yaml")
-	assets.RestoreAssets(dir, "dashboard_data.json")
-	assets.RestoreAssets(dir, "es_dashboard_data.json")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
