@@ -65,7 +65,6 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	t := terraform.New("", config)
-	defer t.Cleanup()
 	return t.StartCoordinator(nil)
 }
 
@@ -76,7 +75,6 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	t := terraform.New("", config)
-	defer t.Cleanup()
 	_, err = t.StopCoordinator()
 	return err
 }
@@ -118,7 +116,6 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	t := terraform.New("", config)
-	defer t.Cleanup()
 
 	status, err := t.GetCoordinatorStatus()
 	if err != nil {

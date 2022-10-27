@@ -91,7 +91,6 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 
 			dp := c.deployments[res.deploymentID]
 			t := terraform.New(res.deploymentID, &dp.config)
-			defer t.Cleanup()
 			output, err := t.Output()
 			if err != nil {
 				mlog.Error("Failed to get terraform output", mlog.Err(err))

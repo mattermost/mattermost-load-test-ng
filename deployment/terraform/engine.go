@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sync"
+
 	"time"
 
 	"github.com/blang/semver"
@@ -28,13 +28,6 @@ const (
 // Config returns the deployment config associated with the Terraform instance.
 func (t *Terraform) Config() *deployment.Config {
 	return t.config
-}
-
-// Cleanup is called at the end of each command to clean temporary files
-func (t *Terraform) Cleanup() {
-	if t.workingDir != "" {
-		os.RemoveAll(t.workingDir)
-	}
 }
 
 // runCommand runs terraform with the args supplied.

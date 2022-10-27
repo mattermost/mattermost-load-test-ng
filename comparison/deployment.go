@@ -25,7 +25,6 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 		go func(id string, dp *deploymentConfig) {
 			defer wg.Done()
 			t := terraform.New(id, &dp.config)
-			defer t.Cleanup()
 			if err := action(t, dp); err != nil {
 				errsCh <- fmt.Errorf("deployment action failed: %w", err)
 			}

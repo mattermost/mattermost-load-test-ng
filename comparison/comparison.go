@@ -89,7 +89,6 @@ func (c *Comparison) Run() (Output, error) {
 		go func(dpID string, dp *deploymentConfig) {
 			defer wg.Done()
 			t := terraform.New(dpID, &dp.config)
-			defer t.Cleanup()
 
 			for ltID, lt := range dp.loadTests {
 				res := Result{deploymentID: dpID}
