@@ -160,7 +160,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload datasource file
-	buf, err := os.ReadFile(getAsset("datasource.yaml"))
+	buf, err := os.ReadFile(t.getAsset("datasource.yaml"))
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard file
-	buf, err = os.ReadFile(getAsset("dashboard.yaml"))
+	buf, err = os.ReadFile(t.getAsset("dashboard.yaml"))
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard json
-	buf, err = os.ReadFile(getAsset("dashboard_data.json"))
+	buf, err = os.ReadFile(t.getAsset("dashboard_data.json"))
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	if t.output.HasElasticSearch() {
-		buf, err = os.ReadFile(getAsset("es_dashboard_data.json"))
+		buf, err = os.ReadFile(t.getAsset("es_dashboard_data.json"))
 		if err != nil {
 			return err
 		}

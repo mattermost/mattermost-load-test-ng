@@ -20,11 +20,6 @@ import (
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 )
 
-const (
-	// All terraform commands are based on the assetsDir through the -chdir global option
-	assetsDir = "./deployment/terraform/assets"
-)
-
 // Config returns the deployment config associated with the Terraform instance.
 func (t *Terraform) Config() *deployment.Config {
 	return t.config
@@ -41,7 +36,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
 	defer cancel()
 
-	args = append([]string{"-chdir=" + assetsDir}, args...)
+	args = append([]string{"-chdir=" + t.config.TerraformStateDir}, args...)
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 

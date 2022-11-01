@@ -64,7 +64,10 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	return t.StartCoordinator(nil)
 }
 
@@ -74,7 +77,10 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	_, err = t.StopCoordinator()
 	return err
 }
@@ -115,7 +121,10 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 
 	status, err := t.GetCoordinatorStatus()
 	if err != nil {

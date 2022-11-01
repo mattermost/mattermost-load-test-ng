@@ -251,6 +251,6 @@ func (t *Terraform) getClusterDSN() (string, error) {
 	}
 }
 
-func getAsset(filename string) string {
-	return filepath.Join(assetsDir, filename)
+func (t *Terraform) getAsset(filename string) string {
+	return filepath.Join(t.config.TerraformStateDir, filename)
 }

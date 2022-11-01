@@ -52,11 +52,32 @@ type Terraform struct {
 }
 
 // New returns a new Terraform instance.
-func New(id string, cfg *deployment.Config) *Terraform {
+func New(id string, cfg *deployment.Config) (*Terraform, error) {
+	if err := ensureTerraformStateDir(cfg.TerraformStateDir); err != nil {
+		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
+	}
+
 	return &Terraform{
 		id:     id,
 		config: cfg,
+	}, nil
+}
+
+func ensureTerraformStateDir(dir string) error {
+	// Make sure that the state directory exists
+	_, err := os.Stat(dir)
+	if err == nil {
+		return nil
 	}
+
+	// Return any error different than the one showing
+	// that the directory does not exist
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	// If it does not exist, create it
+	return os.Mkdir(dir, 0700)
 }
 
 // Create creates a new load test environment.
