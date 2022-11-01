@@ -302,3 +302,7 @@ A friendly name for the graph.
 *string*
 
 The Prometheus query to run.
+
+## TerraformStateDir
+
+The directory under which Terraform-related files are stored. If the directory does not exist, it will be created when running the first command that needs it, defaulting to `/var/lib/mattermost-load-test-ng`. You'll need root permissions to create that specific directory, so you may want to change this setting to something like `/home/youruser/.loadtest`.
