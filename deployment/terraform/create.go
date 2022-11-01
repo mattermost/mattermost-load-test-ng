@@ -15,6 +15,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost-server/v6/config"
@@ -556,6 +557,14 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
+	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
+	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
+	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
 	// the .terraform directory.
