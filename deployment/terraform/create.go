@@ -57,10 +57,10 @@ func New(id string, cfg *deployment.Config) (*Terraform, error) {
 	if err := ensureTerraformStateDir(cfg.TerraformStateDir); err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			errStr := fmt.Sprintf("not enough permissions to create Terraform state directory %q.\n", cfg.TerraformStateDir)
-			errStr += fmt.Sprintf("Here's some alternatives you can try:\n")
-			errStr += fmt.Sprintf("\t1. Change the TerraformStateDir setting in config/deployer.json to a directory you have permissions over (recommended).\n")
+			errStr += "Here's some alternatives you can try:\n"
+			errStr += "\t1. Change the TerraformStateDir setting in config/deployer.json to a directory you have permissions over (recommended).\n"
 			errStr += fmt.Sprintf("\t2. Manually create the currently configured directory %q and change its owner to your current user.\n", cfg.TerraformStateDir)
-			errStr += fmt.Sprintf("\t3. Run this and all next commands as root (not recommended).")
+			errStr += "\t3. Run this and all next commands as root (not recommended)."
 			return nil, fmt.Errorf(errStr)
 		}
 		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
