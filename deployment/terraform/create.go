@@ -49,17 +49,44 @@ type Terraform struct {
 	id          string
 	config      *deployment.Config
 	output      *Output
-	workingDir  string
-	stateDir    string
 	initialized bool
 }
 
 // New returns a new Terraform instance.
-func New(id string, cfg *deployment.Config) *Terraform {
+func New(id string, cfg *deployment.Config) (*Terraform, error) {
+	if err := ensureTerraformStateDir(cfg.TerraformStateDir); err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			errStr := fmt.Sprintf("not enough permissions to create Terraform state directory %q.\n", cfg.TerraformStateDir)
+			errStr += "Here's some alternatives you can try:\n"
+			errStr += "\t1. Change the TerraformStateDir setting in config/deployer.json to a directory you have permissions over (recommended).\n"
+			errStr += fmt.Sprintf("\t2. Manually create the currently configured directory %q and change its owner to your current user.\n", cfg.TerraformStateDir)
+			errStr += "\t3. Run this and all next commands as root (not recommended)."
+			return nil, fmt.Errorf(errStr)
+		}
+		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
+	}
+
 	return &Terraform{
 		id:     id,
 		config: cfg,
+	}, nil
+}
+
+func ensureTerraformStateDir(dir string) error {
+	// Make sure that the state directory exists
+	_, err := os.Stat(dir)
+	if err == nil {
+		return nil
 	}
+
+	// Return any error different than the one showing
+	// that the directory does not exist
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	// If it does not exist, create it
+	return os.Mkdir(dir, 0700)
 }
 
 // Create creates a new load test environment.
@@ -100,7 +127,6 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	var params []string
-	params = append(params, "-chdir="+t.workingDir)
 	params = append(params, "apply")
 	params = append(params, t.getParams()...)
 	params = append(params, "-auto-approve",
@@ -539,36 +565,24 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	dir, err := os.MkdirTemp("", "terraform")
-	if err != nil {
-		return err
-	}
-	t.workingDir = dir
-
-	stateDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	t.stateDir = stateDir
-
-	assets.RestoreAssets(dir, "outputs.tf")
-	assets.RestoreAssets(dir, "variables.tf")
-	assets.RestoreAssets(dir, "cluster.tf")
-	assets.RestoreAssets(dir, "datasource.yaml")
-	assets.RestoreAssets(dir, "dashboard.yaml")
-	assets.RestoreAssets(dir, "dashboard_data.json")
-	assets.RestoreAssets(dir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
+	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
+	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
 	// the .terraform directory.
 	initMut.Lock()
 	defer initMut.Unlock()
-	return t.runCommand(nil, "-chdir="+t.workingDir, "init")
+	return t.runCommand(nil, "init")
 }
 
 func (t *Terraform) validate() error {
-	return t.runCommand(nil, "-chdir="+t.workingDir, "validate")
+	return t.runCommand(nil, "validate")
 }
 
 func pingServer(addr string) error {

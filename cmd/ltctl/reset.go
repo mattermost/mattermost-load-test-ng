@@ -25,7 +25,12 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := terraform.New("", config).Output()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}

@@ -68,6 +68,9 @@ type Config struct {
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
+	// Directory under which the .terraform directory and state files are managed.
+	// It will be created if it does not exist
+	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
 }
 
 // TerraformDBSettings contains the necessary data

@@ -88,8 +88,11 @@ func (c *Comparison) Run() (Output, error) {
 	for dpID, dp := range c.deployments {
 		go func(dpID string, dp *deploymentConfig) {
 			defer wg.Done()
-			t := terraform.New(dpID, &dp.config)
-			defer t.Cleanup()
+			t, err := terraform.New(dpID, &dp.config)
+			if err != nil {
+				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				return
+			}
 
 			for ltID, lt := range dp.loadTests {
 				res := Result{deploymentID: dpID}

@@ -24,8 +24,11 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 	for id, dp := range c.deployments {
 		go func(id string, dp *deploymentConfig) {
 			defer wg.Done()
-			t := terraform.New(id, &dp.config)
-			defer t.Cleanup()
+			t, err := terraform.New(id, &dp.config)
+			if err != nil {
+				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				return
+			}
 			if err := action(t, dp); err != nil {
 				errsCh <- fmt.Errorf("deployment action failed: %w", err)
 			}

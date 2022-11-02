@@ -22,8 +22,10 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	return t.Create(true)
 }
 
@@ -33,8 +35,10 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	return t.Destroy()
 }
 
@@ -44,7 +48,12 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return terraform.New("", config).Info()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.Info()
 }
 
 func RunSyncCmdF(cmd *cobra.Command, args []string) error {
@@ -53,11 +62,20 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return terraform.New("", config).Sync()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.Sync()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
-	t := terraform.New("", nil)
+	t, err := terraform.New("", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
 	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
@@ -175,11 +193,16 @@ func main() {
 				return RunSSHListCmdF(cmd, args)
 			}
 
+			t, err := terraform.New("", nil)
+			if err != nil {
+				return fmt.Errorf("failed to create terraform engine: %w", err)
+			}
+
 			runCmd, _ := cmd.Flags().GetString("run")
 			if runCmd != "" {
-				return terraform.New("", nil).RunSSHCommand(args[0], strings.Split(runCmd, " "))
+				return t.RunSSHCommand(args[0], strings.Split(runCmd, " "))
 			}
-			return terraform.New("", nil).OpenSSHFor(args[0])
+			return t.OpenSSHFor(args[0])
 		},
 	}
 
@@ -206,7 +229,12 @@ func main() {
 				}
 				return nil
 			}
-			return terraform.New("", nil).OpenBrowserFor(args[0])
+
+			t, err := terraform.New("", nil)
+			if err != nil {
+				return fmt.Errorf("failed to create terraform engine: %w", err)
+			}
+			return t.OpenBrowserFor(args[0])
 		},
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"grafana", "mattermost", "prometheus"},
