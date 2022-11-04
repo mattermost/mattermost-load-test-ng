@@ -53,7 +53,7 @@ type Terraform struct {
 }
 
 // New returns a new Terraform instance.
-func New(id string, cfg *deployment.Config) (*Terraform, error) {
+func New(id string, cfg deployment.Config) (*Terraform, error) {
 	if err := ensureTerraformStateDir(cfg.TerraformStateDir); err != nil {
 		if errors.Is(err, os.ErrPermission) {
 			errStr := fmt.Sprintf("not enough permissions to create Terraform state directory %q.\n", cfg.TerraformStateDir)
@@ -68,7 +68,7 @@ func New(id string, cfg *deployment.Config) (*Terraform, error) {
 
 	return &Terraform{
 		id:     id,
-		config: cfg,
+		config: &cfg,
 	}, nil
 }
 

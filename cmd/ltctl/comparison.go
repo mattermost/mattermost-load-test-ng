@@ -136,7 +136,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		outputPath = dir
 	}
 
-	cmp, err := comparison.New(cfg, deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
@@ -184,7 +184,7 @@ func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	cmp, err := comparison.New(cfg, deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}

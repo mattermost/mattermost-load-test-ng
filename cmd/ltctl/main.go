@@ -71,7 +71,12 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
-	t, err := terraform.New("", nil)
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
@@ -95,19 +100,19 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
+func getConfig(cmd *cobra.Command) (deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		return deployment.Config{}, fmt.Errorf("failed to read config: %w", err)
 	}
 
 	if err := defaults.Validate(cfg); err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+		return deployment.Config{}, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	logger.Init(&cfg.LogSettings)
-	return cfg, nil
+	return *cfg, nil
 }
 
 func main() {
@@ -193,7 +198,12 @@ func main() {
 				return RunSSHListCmdF(cmd, args)
 			}
 
-			t, err := terraform.New("", nil)
+			config, err := getConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			t, err := terraform.New("", config)
 			if err != nil {
 				return fmt.Errorf("failed to create terraform engine: %w", err)
 			}
@@ -230,7 +240,12 @@ func main() {
 				return nil
 			}
 
-			t, err := terraform.New("", nil)
+			config, err := getConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			t, err := terraform.New("", config)
 			if err != nil {
 				return fmt.Errorf("failed to create terraform engine: %w", err)
 			}

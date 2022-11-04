@@ -90,7 +90,7 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 			defer wg.Done()
 
 			dp := c.deployments[res.deploymentID]
-			t, err := terraform.New(res.deploymentID, &dp.config)
+			t, err := terraform.New(res.deploymentID, dp.config)
 			if err != nil {
 				mlog.Error("Failed to create terraform engine", mlog.Err(err))
 				return
