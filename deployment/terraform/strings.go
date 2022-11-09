@@ -17,6 +17,7 @@ WorkingDirectory=/opt/mattermost
 User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
+Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 
 [Install]
 WantedBy=multi-user.target
