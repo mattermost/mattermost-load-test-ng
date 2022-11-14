@@ -71,6 +71,8 @@ type Config struct {
 	// Directory under which the .terraform directory and state files are managed.
 	// It will be created if it does not exist
 	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
+	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
+	S3BucketDumpURI string `default:"" validate:"s3uri"`
 }
 
 // TerraformDBSettings contains the necessary data

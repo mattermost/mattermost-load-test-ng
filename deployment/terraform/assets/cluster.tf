@@ -657,3 +657,11 @@ resource "aws_instance" "job_server" {
     ]
   }
 }
+
+resource "null_resource" "s3_dump" {
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "") ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "aws --profile ${aws.profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
+  }
+}

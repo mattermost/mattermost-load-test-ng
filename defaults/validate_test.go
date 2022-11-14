@@ -17,6 +17,7 @@ func TestValidate(t *testing.T) {
 		InitialUsers  int    `default:"0" validate:"range:[0,$MaxUsers]"`
 		MaxUsers      int    `default:"1000" validate:"range:(0,]"`
 		LogLevel      string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+		S3URI         string `default:"" validate:"s3uri"`
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -140,6 +141,36 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 		err = Validate(t2)
 		require.NoError(t, err)
+	})
+
+	t.Run("valid S3 URI", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "s3://test.s3bucket"
+
+		err := Validate(&cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid S3 URI", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "not an url"
+
+		err := Validate(&cfg)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid S3 URI scheme", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "https://validurl.com/but/wrong/scheme"
+
+		err := Validate(&cfg)
+		require.Error(t, err)
 	})
 }
 
