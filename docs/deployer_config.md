@@ -1,5 +1,11 @@
 # Deployer Configuration
 
+## AWSProfile
+
+*string*
+
+AWS profile to use for the deployment. Also used for all AWS CLI commands run locally. See the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) for more information.
+
 ## ClusterName
 
 *string*
