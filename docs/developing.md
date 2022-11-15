@@ -28,6 +28,8 @@ make package
 
 We use a combination of `Makefile` and [Goreleser](https://goreleaser.com/) to automate our release process.
 
+NOTE: Makefile no longer supports building the binary file using Windows on AMD64
+
 The release process consists of two steps:
 1. Prepare the release and get the automatically created PR merged.
 2. Do the actual release.
