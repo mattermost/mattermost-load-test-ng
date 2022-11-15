@@ -63,6 +63,13 @@ Possible values:
 An optional URL to a MM server database dump file to be loaded before running the load-test.  
 The file is expected to be gzip compressed. This can also point to a local file if prefixed with "file://". In such case, the dump file will be uploaded to the app servers.
 
+## S3BucketDumpURI
+
+*string*
+
+An optional URI to an S3 bucket (something like `s3://bucket-name/optional-subdir`) whose contents will be copied to the deployed bucket before running the load-test.
+See [the corresponding setting in the deployer configuration](deployer_config.md#S3BucketDumpURI) to learn more about this value.
+
 ### NumUsers
 
 *int*
