@@ -12,6 +12,7 @@ import (
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
@@ -43,6 +44,8 @@ func createAgent(agent *client.Agent, ltConfig loadtest.Config) error {
 		ucConfig, err = simplecontroller.ReadConfig("")
 	case loadtest.UserControllerSimulative:
 		ucConfig, err = simulcontroller.ReadConfig("")
+	case loadtest.UserControllerGenerative:
+		ucConfig, err = gencontroller.ReadConfig("")
 	}
 	if err != nil {
 		return fmt.Errorf("cluster: failed to read controller config: %w", err)

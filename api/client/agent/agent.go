@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 )
@@ -110,6 +111,7 @@ func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtes
 		LoadTestConfig         *loadtest.Config
 		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
 		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+		GenControllerConfig    *gencontroller.Config    `json:",omitempty"`
 	}{
 		LoadTestConfig: ltConfig,
 	}
@@ -136,6 +138,16 @@ func (a *Agent) Create(ltConfig *loadtest.Config, ucConfig interface{}) (loadtes
 			return status, errors.New("client: ucConfig has the wrong type")
 		}
 		data.SimulControllerConfig = scc
+	case loadtest.UserControllerGenerative:
+		if ucConfig == nil {
+			return status, errors.New("client: ucConfig should not be nil")
+		}
+
+		scc, ok := ucConfig.(*gencontroller.Config)
+		if !ok {
+			return status, errors.New("client: ucConfig has the wrong type")
+		}
+		data.GenControllerConfig = scc
 	case loadtest.UserControllerNoop:
 	default:
 		return status, errors.New("client: UserController type is not set")
