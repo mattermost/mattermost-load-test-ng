@@ -6,6 +6,7 @@ package comparison
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -106,7 +107,7 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -143,6 +144,11 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		msg     string
 		value   string
 		clients []*ssh.Client
+	}
+
+	type localCmd struct {
+		msg   string
+		value []string
 	}
 
 	stopCmd := cmd{
@@ -216,11 +222,39 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
+	resetBucketCmds := []localCmd{}
+	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
+		deleteBucketCmd := localCmd{
+			msg:   "Emptying S3 bucket",
+			value: []string{"--profile", t.Config().AWSProfile, "s3", "rm", "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
+		}
+
+		prepopulateBucketCmd := localCmd{
+			msg:   "Pre-populating S3 bucket",
+			value: []string{"--profile", t.Config().AWSProfile, "s3", "cp", s3BucketURI, "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
+		}
+
+		resetBucketCmds = []localCmd{deleteBucketCmd, prepopulateBucketCmd}
+	}
+
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
 	} else {
 		cmds = append(cmds, loadDBDumpCmd, startCmd)
 	}
+
+	// Resetting the buckets can happen concurrently with the rest of the remote commands
+	resetBucketErrCh := make(chan error)
+	go func() {
+		for _, c := range resetBucketCmds {
+			mlog.Info(c.msg)
+			if err := exec.Command("aws", c.value...).Run(); err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to run local cmd %q: %w", c.value, err)
+				return
+			}
+		}
+		resetBucketErrCh <- nil
+	}()
 
 	for _, c := range cmds {
 		mlog.Info(c.msg)
@@ -237,7 +271,8 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		}
 	}
 
-	return nil
+	// Make sure that the S3 bucket reset routine is finished and return its error, if any
+	return <-resetBucketErrCh
 }
 
 func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan struct{}) (coordinator.Status, error) {

@@ -37,6 +37,9 @@ type LoadTestConfig struct {
 	// This can also point to a local file if prefixed with "file://".
 	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURL string
+	// An optional URI to an S3 bucket whose contents will be copied to
+	// the deployed bucket before running the load-test.
+	S3BucketDumpURI string `default:"" validate:"s3uri"`
 
 	// The number of users to run.
 	// This is only considered if Type is "bounded"
