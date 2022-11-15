@@ -236,6 +236,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
+		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
 	}
 }
 
