@@ -1,6 +1,6 @@
 ## Developer's workflow
 ### Notes
-The load-test tool does not support Windows
+The load-test tool does not support Windows.
 
 ### Code checking
 
