@@ -50,6 +50,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		LoadTestConfig         loadtest.Config
 		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
 		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
+		GenControllerConfig    *gencontroller.Config    `json:",omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
@@ -82,6 +83,13 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		ucConfig = data.SimulControllerConfig
+	case loadtest.UserControllerGenerative:
+		if data.GenControllerConfig == nil {
+			mlog.Warn("could not read controller config from the request")
+			ucConfig, err = gencontroller.ReadConfig("")
+			break
+		}
+		ucConfig = data.GenControllerConfig
 	}
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
