@@ -4,6 +4,7 @@
 package comparison
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -243,12 +244,15 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		cmds = append(cmds, loadDBDumpCmd, startCmd)
 	}
 
-	// Resetting the buckets can happen concurrently with the rest of the remote commands
+	// Resetting the buckets can happen concurrently with the rest of the remote commands,
+	// but we need to cancel them on return in case we return early (as when we receive from cancelCh)
+	resetBucketCtx, resetBucketCancel := context.WithCancel(context.Background())
+	defer resetBucketCancel()
 	resetBucketErrCh := make(chan error)
 	go func() {
 		for _, c := range resetBucketCmds {
 			mlog.Info(c.msg)
-			if err := exec.Command("aws", c.value...).Run(); err != nil {
+			if err := exec.CommandContext(resetBucketCtx, "aws", c.value...).Run(); err != nil {
 				resetBucketErrCh <- fmt.Errorf("failed to run local cmd %q: %w", c.value, err)
 				return
 			}
