@@ -248,7 +248,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	// but we need to cancel them on return in case we return early (as when we receive from cancelCh)
 	resetBucketCtx, resetBucketCancel := context.WithCancel(context.Background())
 	defer resetBucketCancel()
-	resetBucketErrCh := make(chan error)
+	resetBucketErrCh := make(chan error, 1)
 	go func() {
 		for _, c := range resetBucketCmds {
 			mlog.Info(c.msg)
