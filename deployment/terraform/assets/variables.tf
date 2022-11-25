@@ -94,3 +94,9 @@ variable "job_server_instance_count" {
 
 variable "job_server_instance_type" {
 }
+
+variable "s3_bucket_dump_uri" {
+}
+
+variable "aws_profile" {
+}

@@ -105,6 +105,18 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		if _, err := os.Stat(s); os.IsNotExist(err) {
 			return fmt.Errorf("%s: %w", fieldName, err)
 		}
+	case "s3uri":
+		s := v.String()
+		if s == "" {
+			return nil
+		}
+		s3uri, err := url.ParseRequestURI(s)
+		if err != nil {
+			return fmt.Errorf("%q is not an S3 URI: %w", s, err)
+		}
+		if s3uri.Scheme != "s3" {
+			return fmt.Errorf("expected scheme \"s3\", but got %q", s3uri.Scheme)
+		}
 	default:
 		if strings.HasPrefix(validation, "range") {
 			if !rangeRegex.MatchString(validation) {

@@ -10,7 +10,7 @@ terraform {
 
 provider "aws" {
   region  = "us-east-1"
-  profile = "mm-loadtest"
+  profile = var.aws_profile
 }
 
 data "aws_region" "current" {}
@@ -655,5 +655,13 @@ resource "aws_instance" "job_server" {
       "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter"
     ]
+  }
+}
+
+resource "null_resource" "s3_dump" {
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "") ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }

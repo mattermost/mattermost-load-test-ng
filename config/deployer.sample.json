@@ -1,4 +1,5 @@
 {
+  "AWSProfile": "mm-loadtest",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
