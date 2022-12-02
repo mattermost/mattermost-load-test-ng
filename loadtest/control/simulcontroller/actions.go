@@ -769,6 +769,52 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+func (c *SimulController) attachFilesToDraft(u user.User, draft *model.Draft) error {
+	type file struct {
+		data   []byte
+		upload bool
+	}
+	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
+	files := make(map[string]*file, len(filenames))
+
+	for _, filename := range filenames {
+		files[filename] = &file{
+			data:   control.MustAsset(filename),
+			upload: rand.Intn(2) == 0,
+		}
+	}
+
+	// We make sure at least one file gets uploaded.
+	files[filenames[rand.Intn(len(filenames))]].upload = true
+
+	var wg sync.WaitGroup
+	fileIds := make(chan string, len(files))
+	for filename, file := range files {
+		if !file.upload {
+			continue
+		}
+		wg.Add(1)
+		go func(filename string, data []byte) {
+			defer wg.Done()
+			resp, err := u.UploadFile(data, draft.ChannelId, filename)
+			if err != nil {
+				c.status <- c.newErrorStatus(err)
+				return
+			}
+			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
+			fileIds <- resp.FileInfos[0].Id
+		}(filename, file.data)
+	}
+
+	wg.Wait()
+	numFiles := len(fileIds)
+	for i := 0; i < numFiles; i++ {
+		draft.FileIds = append(draft.FileIds, <-fileIds)
+	}
+
+	return nil
+}
+
 func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error {
 	type file struct {
 		data   []byte
@@ -1759,6 +1805,62 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
+}
+
+func (c *SimulController) viewDrafts(u user.User) control.UserActionResponse {
+	userId := u.Store().Id()
+
+	team, err := u.Store().CurrentTeam()
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		return control.UserActionResponse{Info: "no team set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	_, err = u.ViewDrafts(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed drafts for user id %v in team id %v", userId, team.Id)}
+}
+
+func (c *SimulController) createDraft(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	message, err := createMessage(u, channel, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	draft := &model.Draft{
+		Message:   message,
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().Unix() * 1000,
+	}
+
+	// 2% of the times post will have files attached.
+	if rand.Float64() < 0.02 {
+		if err := c.attachFilesToDraft(u, draft); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	_, err = u.CreateDraft(draft)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("draft created in channel id %v", channel.Id)}
 }
 
 func (c *SimulController) getInsights(u user.User) control.UserActionResponse {

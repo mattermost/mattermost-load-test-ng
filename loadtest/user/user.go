@@ -103,6 +103,12 @@ type User interface {
 	// It returns the users in the system based on the given username.
 	AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error)
 
+	// drafts
+	// CreateDraft creates and stores a new draft made by the user.
+	CreateDraft(draft *model.Draft) (*model.Draft, error)
+	// GetDrafts fetches drafts for the given user in a specified team.
+	ViewDrafts(teamId string) ([]*model.Draft, error)
+
 	// posts
 	// CreatePost creates and stores a new post made by the user.
 	CreatePost(post *model.Post) (string, error)
