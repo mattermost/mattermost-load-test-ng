@@ -1241,10 +1241,10 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 	// a group channel. This is an arbitrary value which fits well with the current
 	// frequency value for this action.
 	numChars := 4
-	if numChars > len(channel.Name) {
+	if numChars > len(user.UserName) {
 		// rand.Intn returns a number exclusive of the max limit.
 		// So there's no need to subtract 1.
-		numChars = len(channel.Name)
+		numChars = len(user.UserName)
 	}
 	return control.EmulateUserTyping(user.Username[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchGroupChannels(&model.ChannelSearch{
