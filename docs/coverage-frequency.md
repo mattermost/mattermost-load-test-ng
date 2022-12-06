@@ -4,11 +4,30 @@ When adding coverage for a new action to `SimulController`, you'll need to defin
 
 There's actually not a 100% right way to do it, since ideally we would like to model all types of Mattermost servers out there, and they all differ from each other. Even the same server may show different frequencies now to the ones seen one year ago. However, we can try our best and at least be internally consistent, so the frequencies of all new actions should be calculated following this guide.
 
+Go through the following section for a short bullet list of what's needed, or read the Detailed guide section if you want a more thorough explanation.
+
+## Summary
+
+In short, this whole process can be summarized as follows:
+
+1. Log in to [grafana.internal.mattermost.com](https://grafana.internal.mattermost.com).
+2. Choose the two-hour window with the most traffic for the past seven days.
+3. Run the following query in that window:
+```promql
+sum(rate(mattermost_api_time_count{handler=~"the-name-of-your-handler"}[2h]))
+/
+sum(rate(mattermost_api_time_count{handler=~"createPost"}[2h]))
+```
+4. Get the last value at the very end of the window.
+5. Multiply that value by 1.5 (the frequency of `createPost`). That's your frequency!
+
+## Detailed guide
+
 The frequencies assigned to actions in this controller are extrapolated from real frequencies seen in the Community server, so when adding a new one, we need to look at data from [community.mattermost.com](https://community.mattermost.com) to decide which frequency it'll have. This guide assumes that the feature was deployed to Community at least seven days prior. If you're adding coverage to the load-test before that, you'll have to simply *guess* how your action relates to the other ones, since there's no actual data out there to base your decision on. Once the feature is merged and a week has passed, you can follow this guide and hone that number in a second PR.
 
 The general idea is to analyze metrics data in Grafana and compare the new action against a well-known one during a busy period of time. Let's dissect all that.
 
-## Logging into Grafana
+### Logging into Grafana
 
 The Community server has a Prometheus and Grafana system set up to analyze metrics. All Mattermost developers should have access. To check it:
 
@@ -17,7 +36,7 @@ The Community server has a Prometheus and Grafana system set up to analyze metri
 
 If you have troubles logging in, ask the Security Team for access.
 
-## Choose a busy period of time
+### Choose a busy period of time
 
 All action frequencies should be calculated during a time where the server is under high traffic. To find out such a time, go to the [Number of Connected Devices (Websocket Connections)](https://grafana.internal.mattermost.com/d/000000011/mattermost-performance-monitoring?orgId=4&refresh=5s&viewPanel=6&from=now-7d&to=now) panel and check the concurrent number of connected users at any point during the last seven days. Usually, Wednesdays and Thursdays during US/Canada mornings are the busiest hours, but it may change. Note down the two hours where you see the most traffic: you can simply click and drag in the graph to select the range of time, which will select the start and end time in the time selector.
 
@@ -27,7 +46,7 @@ In this case, the time frame with the most traffics was last Thursday, December 
 
 ![Number of connected devices at window with most traffic](https://community.mattermost.com/files/jd5zupo3qp8tjxamfiotiqfgca/public?h=6VUIEGmLJmMf60ioL5v5vNfqwgGQMDZ8l9e1rshA2G4)
 
-## Comparing actions
+### Comparing actions
 
 Now's the time to do the actual comparison. First:
 
@@ -70,17 +89,3 @@ Given this ratio, and as the frequency of the `createPost` action is [already co
 
 When adding our new action, the `frequency` should be set to `0.678`. Done!
 
-## Summary
-
-This guide shows how to consistently identify the frequency of a new action, and why we do it that way. As a short list for future reference, this whole process can be summarized as follows:
-
-1. Log in to [grafana.internal.mattermost.com](https://grafana.internal.mattermost.com).
-2. Choose the two-hour window with the most traffic for the past seven days.
-3. Run the following query in that window:
-```promql
-sum(rate(mattermost_api_time_count{handler=~"the-name-of-your-handler"}[2h]))
-/
-sum(rate(mattermost_api_time_count{handler=~"createPost"}[2h]))
-```
-4. Get the last value at the very end of the window.
-5. Multiply that value by 1.5 (the frequency of `createPost`). That's your frequency.
