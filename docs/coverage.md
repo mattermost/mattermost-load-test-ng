@@ -80,7 +80,7 @@ Most of the existing actions that can serve as good examples can be found in [`l
 
 If a new action is implemented make sure to add it to the [list of executed actions](https://github.com/mattermost/mattermost-load-test-ng/blob/c76063def0b36d61c0467e18357cf4cca969fe8a/loadtest/control/simulcontroller/controller.go#L106).
 
-The value chosen for the `frequency` field should be the result of an informed decision based on data from the Community server. Check this tutorial to understand how to do it.
+The value chosen for the `frequency` field should be the result of an informed decision based on data from the Community server. Check [this tutorial](coverage-frequency.md) to understand how to do it.
 
 #### Note
 
