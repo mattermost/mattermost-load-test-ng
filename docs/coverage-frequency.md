@@ -10,7 +10,7 @@ Go through the following section for a short bullet list of what's needed, or re
 
 In short, this whole process can be summarized as follows:
 
-1. Log in to [grafana.internal.mattermost.com](https://grafana.internal.mattermost.com).
+1. Log in to your Grafana instance, for Mattermost Community server you can visit [grafana.internal.mattermost.com](https://grafana.internal.mattermost.com).
 2. Choose the two-hour window with the most traffic for the past seven days.
 3. Run the following query in that window:
 ```promql
@@ -23,18 +23,20 @@ sum(rate(mattermost_api_time_count{handler=~"createPost"}[2h]))
 
 ## Detailed guide
 
-The frequencies assigned to actions in this controller are extrapolated from real frequencies seen in the Community server, so when adding a new one, we need to look at data from [community.mattermost.com](https://community.mattermost.com) to decide which frequency it'll have. This guide assumes that the feature was deployed to Community at least seven days prior. If you're adding coverage to the load-test before that, you'll have to simply *guess* how your action relates to the other ones, since there's no actual data out there to base your decision on. Once the feature is merged and a week has passed, you can follow this guide and hone that number in a second PR.
+The default frequencies assigned to actions in this controller are extrapolated from real frequencies seen in the Mattermost Community server, so when adding a new one, we need to look at data from [community.mattermost.com](https://community.mattermost.com) to decide which frequency it'll have. Alternatively, you can check your instance metrics to calculate frequencies. This guide assumes that the feature was deployed at least seven days before. If you're adding coverage to the load-test before that, you'll have to simply *guess* how your action relates to the other ones, since there's no actual data out there to base your decision on. Once the feature is merged and a week has passed, you can follow this guide and hone that number in a second PR.
 
 The general idea is to analyze metrics data in Grafana and compare the new action against a well-known one during a busy period of time. Let's dissect all that.
 
 ### Logging into Grafana
 
-The Community server has a Prometheus and Grafana system set up to analyze metrics. All Mattermost developers should have access. To check it:
+The Mattermost Community server has a Prometheus and Grafana system set up to analyze metrics. All Mattermost staff should have access. To check it:
 
 1. Make sure you're connected to the internal VPN.
 2. Navigate to [grafana.internal.mattermost.com](https://grafana.internal.mattermost.com) and sign in with SAML.
 
 If you have troubles logging in, ask the Security Team for access.
+
+Note that for on-prem instances, you will need to access your own Grafana instance.
 
 ### Choose a busy period of time
 
