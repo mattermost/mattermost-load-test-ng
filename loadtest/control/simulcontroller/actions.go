@@ -1807,7 +1807,7 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
 }
 
-func (c *SimulController) viewDrafts(u user.User) control.UserActionResponse {
+func (c *SimulController) getDrafts(u user.User) control.UserActionResponse {
 	userId := u.Store().Id()
 
 	team, err := u.Store().CurrentTeam()
@@ -1819,7 +1819,7 @@ func (c *SimulController) viewDrafts(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
-	_, err = u.ViewDrafts(team.Id)
+	err = u.GetDrafts(team.Id)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -1827,10 +1827,28 @@ func (c *SimulController) viewDrafts(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("viewed drafts for user id %v in team id %v", userId, team.Id)}
 }
 
-func (c *SimulController) createDraft(u user.User) control.UserActionResponse {
+func (c *SimulController) upsertDraft(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	var rootId = ""
+
+	// 33% of the time draft will be a thread reply
+	if rand.Float64() < 0.33 {
+		post, err := u.Store().RandomPostForChannel(channel.Id)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if post.RootId != "" {
+			rootId = post.RootId
+		} else {
+			rootId = post.Id
+		}
 	}
 
 	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
@@ -1845,6 +1863,7 @@ func (c *SimulController) createDraft(u user.User) control.UserActionResponse {
 	draft := &model.Draft{
 		Message:   message,
 		ChannelId: channel.Id,
+		RootId:    rootId,
 		CreateAt:  time.Now().Unix() * 1000,
 	}
 
@@ -1855,12 +1874,44 @@ func (c *SimulController) createDraft(u user.User) control.UserActionResponse {
 		}
 	}
 
-	_, err = u.CreateDraft(draft)
+	err = u.UpsertDraft(draft)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("draft created in channel id %v", channel.Id)}
+}
+
+func (c *SimulController) deleteDraft(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	var rootId = ""
+
+	// 33% of the time draft will be a thread reply (matches frequency of createPostReply)
+	if rand.Float64() < 0.33 {
+		post, err := u.Store().RandomPostForChannel(channel.Id)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if post.RootId != "" {
+			rootId = post.RootId
+		} else {
+			rootId = post.Id
+		}
+	}
+
+	err = u.DeleteDraft(channel.Id, rootId)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("draft deleted in channel id %v", channel.Id)}
 }
 
 func (c *SimulController) getInsights(u user.User) control.UserActionResponse {

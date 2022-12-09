@@ -235,12 +235,16 @@ func (c *SimulController) Run() {
 			frequency: 0.011,
 		},
 		{
-			run:       c.createDraft,
-			frequency: 0.15,
+			run:       c.upsertDraft,
+			frequency: 0.615,
 		},
 		{
-			run:       c.viewDrafts,
-			frequency: 0.075,
+			run:       c.getDrafts,
+			frequency: 0.555,
+		},
+		{
+			run:       c.deleteDraft,
+			frequency: 1.5,
 		},
 	}
 

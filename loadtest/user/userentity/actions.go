@@ -178,34 +178,48 @@ func (ue *UserEntity) PatchUser(userId string, patch *model.UserPatch) error {
 }
 
 // GetDrafts fetches drafts for the given user in a specified team.
-func (ue *UserEntity) ViewDrafts(teamId string) ([]*model.Draft, error) {
+func (ue *UserEntity) GetDrafts(teamId string) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	drafts, _, err := ue.client.GetDrafts(user.Id, teamId)
+	_, _, err = ue.client.GetDrafts(user.Id, teamId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return drafts, nil
+	return nil
 }
 
-// CreateDraft creates and stores a new draft made by the user.
-func (ue *UserEntity) CreateDraft(draft *model.Draft) (*model.Draft, error) {
+// UpsertDraft creates and stores a new draft made by the user.
+func (ue *UserEntity) UpsertDraft(draft *model.Draft) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	draft.UserId = user.Id
-	draft, _, err = ue.client.UpsertDraft(draft)
+	_, _, err = ue.client.UpsertDraft(draft)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return draft, nil
+	return nil
+}
+
+func (ue *UserEntity) DeleteDraft(channelId string, rootId string) error {
+	user, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	_, _, err = ue.client.DeleteDraft(user.Id, channelId, rootId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CreatePost creates and stores a new post made by the user.
