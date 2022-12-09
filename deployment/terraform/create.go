@@ -457,6 +457,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
+	cfg.ServiceSettings.AllowSyncedDrafts = model.NewBool(true)
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
