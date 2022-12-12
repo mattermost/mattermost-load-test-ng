@@ -21,6 +21,7 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "c5.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
+  "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
