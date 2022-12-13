@@ -34,8 +34,31 @@ Also the `Max Users Per Team` setting in Mattermost System Console should be eno
 
 ### Agent failing with `MaxActiveUsers is not compatible with max Rlimit value` error
 
-This means the maximum number of file descriptors is lower than what the agent needs to operate.  
+This means the maximum number of file descriptors is lower than what the agent needs to operate. 
+
 The following command can be run to raise the limit to the suggested value:
 ```sh
 ulimit -n VALUE
 ```
+
+#### Note
+For terraform deployments, this value is hard coded as 65535 in the `systemd` file for the loadtest api. If you are attempting to test over ~52k users you will need to manually update this file with the instructions below.
+
+1. ssh into your loadtest agents. You can see the agents available by running `go run ./cmd/ltctl ssh`.
+2. Modify the `/lib/systemd/system/ltapi.service` file with the below change.
+
+```diff
++ LimitNOFILE=150000
+- LimitNOFILE=65535
+```
+
+3. Restart the related processes
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart ltapi
+```
+
+You will have to run this for every loadtest agent you have. These will be appended by `agent-` when you run the `ltctl ssh` command above. 
+
+
