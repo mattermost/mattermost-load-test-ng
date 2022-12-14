@@ -28,7 +28,8 @@
         "Rate": 30.0,
         "Percentage": 0.3
       }
-    ]
+    ],
+    "ServerVersion" : ""
   },
   "InstanceConfiguration": {
     "NumTeams": 2,
