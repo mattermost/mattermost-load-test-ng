@@ -168,7 +168,7 @@ func (t *Terraform) Create(initData bool) error {
 
 		// Aurora sets the default_text_search_config parameter to 'simple';
 		// a more sane default for a generic deployment is 'english'
-		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" && t.output.HasDB() {
 			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
 				return fmt.Errorf("could not modify default_search_text_config: %w", err)
 			}
