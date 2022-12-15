@@ -22,62 +22,62 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 
 ### Can I use a pre-existing Mattermost or database deployment?
 
-Yes, you can use an existing Mattermost deployment, or just the database portion. 
+Yes, you can use an existing Mattermost deployment, or just the database portion.
 
 Note: You should **not** utilize an existing production setup to loadtest against because
 #### Using an existing Mattermost deployment
 
 1. Set the `AppInstanceCount` and `TerraformDBSettings.InstanceCount` to `0` in the `config/deployer.json`. This will prevent the Mattermost and database cluster from being created.
-2. Update the `ConnectionConfiguration` values in `config/config.json` to the correct information for your pre-existing Mattermost deployment. 
+2. Update the `ConnectionConfiguration` values in `config/config.json` to the correct information for your pre-existing Mattermost deployment.
 
-    `ServerURL` and `WebSocketURL` can be found in your **Mattermost** config.json file under `ServiceSettings`. If `WebSocketURL` is blank then replace `http` / `https` with the appropriate `ws` or `wss` value. 
+	`ServerURL` and `WebSocketURL` can be found in your **Mattermost** config.json file under `ServiceSettings`. If `WebSocketURL` is blank, then replace `http` / `https` with the appropriate `ws` or `wss` value.
 
-    ```json
-    "ConnectionConfiguration": {
-        "ServerURL": "http://localhost:8065",
-        "WebSocketURL": "ws://localhost:8065",
-        "AdminEmail": "sysadmin@sample.mattermost.com",
-        "AdminPassword": "Sys@dmin-sample1"
-    }
-    ```
+	```json
+	"ConnectionConfiguration": {
+    	"ServerURL": "http://localhost:8065",
+    	"WebSocketURL": "ws://localhost:8065",
+    	"AdminEmail": "sysadmin@sample.mattermost.com",
+    	"AdminPassword": "Sys@dmin-sample1"
+	}
+	```
 
 #### Using an existing database deployment
 
-Before attempting to use an existing database ensure your database will accept the connections from where you've configured your resources to deploy into on AWS.
+Before attempting to use an existing database, ensure your database will accept the connections from where you've configured your resources to deploy into on AWS.
 
-1. Set the `TerraformDBSettings.InstanceCount` to `0` in the `config/deployer.json`. This will prevent the database cluster from being created. 
-2. Create a config patch file with the appropriate config settings to access your database. Your patch file should look like the below file, with the values values representing your deployment. 
+1. Set the `TerraformDBSettings.InstanceCount` to `0` in the `config/deployer.json`. This will prevent the database cluster from being created.
+2. Create a config patch file with the appropriate config settings to access your database. Your patch file should look like the below file, with the values representing your deployment.
 
-    Note: In this example we will created a patch file with the below called `configPatch.json` stored in the root loadtest folder. 
+	Note: In this example, we will create a patch file with the below called `configPatch.json` stored in the root loadtest folder.
 
-    ```json
-    {
-    "SqlSettings": {
-            "DriverName": "postgres",
-            "DataSource": "postgres://mmuser:mostest@databaseURL:port/mattermost?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
-            "DataSourceReplicas": [],
-            "DataSourceSearchReplicas": [],
-            "MaxIdleConns": 20,
-            "ConnMaxLifetimeMilliseconds": 3600000,
-            "ConnMaxIdleTimeMilliseconds": 300000,
-            "MaxOpenConns": 300,
-            "Trace": false,
-            "AtRestEncryptKey": "x85qyzyufe7aoh9a7upbyq6jrf5yas1r",
-            "QueryTimeout": 30,
-            "DisableDatabaseSearch": false,
-            "MigrationsStatementTimeoutSeconds": 100000,
-            "ReplicaLagSettings": []
-        }
-    }
-    ```
+	```json
+	{
+	"SqlSettings": {
+        	"DriverName": "postgres",
+        	"DataSource": "postgres://mmuser:mostest@databaseURL:port/mattermost?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
+        	"DataSourceReplicas": [],
+        	"DataSourceSearchReplicas": [],
+        	"MaxIdleConns": 20,
+        	"ConnMaxLifetimeMilliseconds": 3600000,
+        	"ConnMaxIdleTimeMilliseconds": 300000,
+        	"MaxOpenConns": 300,
+        	"Trace": false,
+        	"AtRestEncryptKey": "x85qyzyufe7aoh9a7upbyq6jrf5yas1r",
+        	"QueryTimeout": 30,
+        	"DisableDatabaseSearch": false,
+        	"MigrationsStatementTimeoutSeconds": 100000,
+        	"ReplicaLagSettings": []
+    	}
+	}
+	```
 
 3. Modify `MattermostConfigPatchFile` within the `config/deployer.json` file to point to your patch file with an absolute path.
 
-    Example:
-    ```json
-    "MattermostConfigPatchFile": "/home/ubuntu/mattermost-load-test-ng/configPatch.json",
-    ```
-4. Continue with the deployment create process. 
+	Example:
+	```json
+	"MattermostConfigPatchFile": "/home/ubuntu/mattermost-load-test-ng/configPatch.json",
+	```
+4. Continue with the deployment create process.
 
 ## Troubleshooting
 
@@ -98,3 +98,5 @@ The following command can be run to raise the limit to the suggested value:
 ```sh
 ulimit -n VALUE
 ```
+
+
