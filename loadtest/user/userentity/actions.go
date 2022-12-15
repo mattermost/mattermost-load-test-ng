@@ -5,6 +5,7 @@ package userentity
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 )
@@ -845,9 +846,9 @@ func (ue *UserEntity) GetFileInfosForPost(postId string) ([]*model.FileInfo, err
 
 // GetFileThumbnail fetches the thumbnail for the specified file.
 func (ue *UserEntity) GetFileThumbnail(fileId string) error {
-	_, _, err := ue.client.GetFileThumbnail(fileId)
+	bytes, resp, err := ue.client.GetFileThumbnail(fileId)
 	if err != nil {
-		return err
+		return fmt.Errorf("bytes: %#v, resp: %#v, err: %w", bytes, resp, err)
 	}
 	return nil
 }

@@ -318,7 +318,7 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 		if errors.Is(err, memstore.ErrPostNotFound) {
 			continue
 		} else if err != nil {
-			return err
+			return fmt.Errorf("failed to get post from store: %w", err)
 		}
 		if username := extractMentionFromMessage(post.Message); username != "" && !mentions[username] {
 			missingUsernames = append(missingUsernames, username)
@@ -334,11 +334,11 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 				continue
 			}
 			if err := u.GetFileThumbnail(info.Id); err != nil {
-				return err
+				return fmt.Errorf("failed to get thumbnail: %w", err)
 			}
 			if info.HasPreviewImage {
 				if err := u.GetFilePreview(info.Id); err != nil {
-					return err
+					return fmt.Errorf("failed to get file preview: %w", err)
 				}
 			}
 		}
@@ -351,14 +351,14 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 		}
 
 		if status, err := u.Store().Status(userId); err != nil {
-			return err
+			return fmt.Errorf("failed to get user status: %w", err)
 		} else if status.UserId == "" && !statuses[userId] {
 			missingStatuses = append(missingStatuses, userId)
 			statuses[userId] = true
 		}
 
 		if user, err := u.Store().GetUser(userId); err != nil {
-			return err
+			return fmt.Errorf("failed to get user: %w", err)
 		} else if user.Id == "" && !users[userId] {
 			missingUsers = append(missingUsers, userId)
 			users[userId] = true
@@ -367,25 +367,25 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 
 	if len(missingStatuses) > 0 {
 		if err := u.GetUsersStatusesByIds(missingStatuses); err != nil {
-			return err
+			return fmt.Errorf("failed to get user statuses by ids: %w", err)
 		}
 	}
 
 	if len(missingUsers) > 0 {
 		if _, err := u.GetUsersByIds(missingUsers); err != nil {
-			return err
+			return fmt.Errorf("failed to get users by ids: %w", err)
 		}
 	}
 
 	if len(missingPictures) > 0 {
 		if err := getProfileImageForUsers(u, missingPictures); err != nil {
-			return err
+			return fmt.Errorf("failed to get profile image for users: %w", err)
 		}
 	}
 
 	if len(missingUsernames) > 0 {
 		if _, err := u.GetUsersByUsernames(missingUsernames); err != nil {
-			return err
+			return fmt.Errorf("failed to get user by usernames: %w", err)
 		}
 	}
 
