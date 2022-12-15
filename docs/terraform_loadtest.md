@@ -30,7 +30,7 @@ In order to start the deployment process, it is required to configure the deploy
 cp config/deployer.sample.json config/deployer.json
 ```
 
-Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key, `MattermostLicenseFile` to the path of an enterprise license, and the `ClusterName` to a unique value. 
+Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key, `MattermostLicenseFile` to the path of an enterprise license, and the `ClusterName` to a unique value within your AWS account. 
 
 ## Deployment
 
