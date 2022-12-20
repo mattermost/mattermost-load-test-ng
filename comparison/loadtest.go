@@ -108,7 +108,55 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
+type cmd struct {
+	msg     string
+	value   string
+	clients []*ssh.Client
+}
+
+type localCmd struct {
+	msg   string
+	value []string
+}
+
+type dbSettings struct {
+	UserName string
+	Password string
+	DBName   string
+	Host     string
+	Engine   string
+}
+
+func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) (cmd, error) {
+	loadDBDumpCmd := cmd{
+		msg:     "Loading DB dump",
+		clients: []*ssh.Client{client},
+	}
+
+	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
+
+	var replacements []string
+	sedRegex := `'s/%s(:[0-9]+)?/%s:8065\1/g'`
+	for _, oldIP := range permalinkIPsToReplace {
+		replacements = append(replacements, fmt.Sprintf(sedRegex, oldIP, newIP))
+	}
+	sedCmd := strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+
+	var dbCmd string
+	switch dbInfo.Engine {
+	case "aurora-postgresql":
+		dbCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
+	case "aurora-mysql":
+		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
+	default:
+		return cmd{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
+	}
+	loadDBDumpCmd.value = strings.Join([]string{zcatCmd, sedCmd, dbCmd}, " | ")
+
+	return loadDBDumpCmd, nil
+}
+
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -139,17 +187,6 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		}
 		defer client.Close()
 		appClients[i] = client
-	}
-
-	type cmd struct {
-		msg     string
-		value   string
-		clients []*ssh.Client
-	}
-
-	type localCmd struct {
-		msg   string
-		value []string
 	}
 
 	stopCmd := cmd{
@@ -208,19 +245,15 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 
 	cmds := []cmd{stopCmd, installCmd, resetCmd}
 
-	loadDBDumpCmd := cmd{
-		msg:     "Loading DB dump",
-		clients: []*ssh.Client{appClients[0]},
-	}
-	switch dpConfig.TerraformDBSettings.InstanceEngine {
-	case "aurora-postgresql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%s?sslmode=disable'", dumpFilename,
-			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBWriter(), dbName)
-	case "aurora-mysql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %s", dumpFilename,
-			tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dbName)
-	default:
-		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
+	loadDBDumpCmd, err := buildLoadDBDumpCmd(appClients[0], dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, dbSettings{
+		UserName: dpConfig.TerraformDBSettings.UserName,
+		Password: dpConfig.TerraformDBSettings.Password,
+		DBName:   dbName,
+		Host:     tfOutput.DBWriter(),
+		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
+	})
+	if err != nil {
+		return fmt.Errorf("error building command for loading DB dump: %w", err)
 	}
 
 	resetBucketCmds := []localCmd{}
