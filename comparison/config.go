@@ -42,7 +42,7 @@ type LoadTestConfig struct {
 	// when ingesting the dump into the database, in every post that
 	// uses them with the public IP of the first app instance, so that
 	// the permalinks are valid in the new deployment.
-	PermalinkIPsToReplace []string `default:"" validate:"ip"`
+	PermalinkIPsToReplace []string
 	// An optional URI to an S3 bucket whose contents will be copied to
 	// the deployed bucket before running the load-test.
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
