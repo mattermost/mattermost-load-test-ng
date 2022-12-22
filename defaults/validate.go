@@ -32,6 +32,14 @@ func Validate(value interface{}) error {
 		}
 	}
 
+	// For non-struct values, we cannot do much, as there's no associated tags
+	// to lookup to decide how to validate, so we have to assume they're valid.
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// For struct values, iterate through the fields and use the type of field
+	// along with its validate tags to decide next steps
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 
