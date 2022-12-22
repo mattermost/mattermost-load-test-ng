@@ -181,3 +181,37 @@ type testConfig struct {
 func (c *testConfig) IsValid() error {
 	return errors.New("some error")
 }
+
+func TestValidateComparisonConfig(t *testing.T) {
+	type LoadTestType string
+	type DatabaseEngine string
+	type LoadTestConfig struct {
+		Type                  LoadTestType   `validate:"oneof:{bounded,unbounded}"`
+		DBEngine              DatabaseEngine `validate:"oneof:{mysql,postgresql}"`
+		DBDumpURL             string
+		PermalinkIPsToReplace []string
+		S3BucketDumpURI       string `default:"" validate:"s3uri"`
+		NumUsers              int    `default:"0" validate:"range:[0,]"`
+		Duration              string
+	}
+
+	config := LoadTestConfig{
+		Type:      "bounded",
+		DBEngine:  "postgresql",
+		DBDumpURL: "file:///home/ubuntu/dump.sql",
+		PermalinkIPsToReplace: []string{
+			"44.201.217.130",
+			"52.87.227.97",
+			"52.91.86.20",
+			"54.174.96.187",
+		},
+		S3BucketDumpURI: "s3://test.bucket/subdir",
+		NumUsers:        100,
+		Duration:        "1h",
+	}
+
+	t.Run("valid config", func(t *testing.T) {
+		err := Validate(config)
+		require.NoError(t, err)
+	})
+}

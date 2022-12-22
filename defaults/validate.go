@@ -23,6 +23,12 @@ func Validate(value interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
 
+	// Look for an IsValid method on value. To check that this IsValid method
+	// exists, we need to retrieve it with MethodByName, which returns a
+	// reflect.Value. This reflect.Value, m, has a method that is called
+	// IsValid as well, which tells us whether v actually represents the
+	// function we're looking for. But they're two completely different IsValid
+	// methods. Yes, this is confusing.
 	m := reflect.ValueOf(value).MethodByName("IsValid")
 	if m.IsValid() {
 		e := m.Call([]reflect.Value{})
