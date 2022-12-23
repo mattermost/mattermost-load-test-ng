@@ -127,6 +127,11 @@ type dbSettings struct {
 	Engine   string
 }
 
+// buildLoadDBDumpCmd returns a command that feeds the provided DB dump file into the database, replacing
+// first the old IPs found in the posts that contain a permalink with the new IP. Something like:
+//
+//     zcat dbdump.sql | sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip' | mysql/psql connection_details
+//
 func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) (cmd, error) {
 	loadDBDumpCmd := cmd{
 		msg:     "Loading DB dump",
@@ -136,9 +141,20 @@ func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, p
 	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
 
 	var replacements []string
-	sedRegex := `'s/%s(:[0-9]+)?/%s:8065\1/g'`
 	for _, oldIP := range permalinkIPsToReplace {
-		replacements = append(replacements, fmt.Sprintf(sedRegex, oldIP, newIP))
+		// Let's build the match and replace parts of a sed command: 's/match/replace/g'
+		// First, the match. We want to match anything of the form
+		//    54.126.54.26:8065/debitis-1/pl/
+		// where the IP is exactly the old one, the port is optional and arbitrary and the
+		// team name can be anything as long as it doesn't have a space (\s) in it
+		match := strings.ReplaceAll(oldIP, ".", "\\.") + `(:[0-9]+)?\/([^\s]+)\/pl\/`
+		// Now, the replace. We need to replace this with the same thing, only changing the
+		// IP with the new one and hard-coding the port to 8065, but maintaining the team
+		// name (hence the second group match, \2)
+		replace := newIP + `:8065\/\2\/pl\/`
+		// We can build the whole command now and add it to the list of replacements
+		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
+		replacements = append(replacements, sedRegex)
 	}
 	sedCmd := strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
 
