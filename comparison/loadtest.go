@@ -146,8 +146,10 @@ func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, p
 		// First, the match. We want to match anything of the form
 		//    54.126.54.26:8065/debitis-1/pl/
 		// where the IP is exactly the old one, the port is optional and arbitrary and the
-		// team name can be anything as long as it doesn't have a space (\s) in it
-		match := strings.ReplaceAll(oldIP, ".", "\\.") + `(:[0-9]+)?\/([^\s]+)\/pl\/`
+		// team name is the pattern defined by the server's function model.IsValidTeamname
+		validTeamName := `[a-z0-9]+([a-z0-9-]+|(__)?)[a-z0-9]+`
+		escapedOldIP := strings.ReplaceAll(oldIP, ".", "\\.")
+		match := escapedOldIP + `(:[0-9]+)?\/(` + validTeamName + `)\/pl\/`
 		// Now, the replace. We need to replace this with the same thing, only changing the
 		// IP with the new one and hard-coding the port to 8065, but maintaining the team
 		// name (hence the second group match, \2)
