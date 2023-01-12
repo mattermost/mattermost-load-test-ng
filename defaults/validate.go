@@ -3,6 +3,7 @@ package defaults
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"reflect"
@@ -130,6 +131,12 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		}
 		if s3uri.Scheme != "s3" {
 			return fmt.Errorf("expected scheme \"s3\", but got %q", s3uri.Scheme)
+		}
+	case "ip":
+		s := v.String()
+		ip := net.ParseIP(s)
+		if ip == nil {
+			return fmt.Errorf("%q is not a valid IP", s)
 		}
 	default:
 		if strings.HasPrefix(validation, "range") {

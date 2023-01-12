@@ -172,6 +172,35 @@ func TestValidate(t *testing.T) {
 		err := Validate(&cfg)
 		require.Error(t, err)
 	})
+
+	t.Run("ip validation", func(t *testing.T) {
+		type ipCfg struct {
+			Ip string `validate:"ip"`
+		}
+
+		testCases := []struct {
+			name        string
+			ip          string
+			expectedErr bool
+		}{
+			{"valid ipv4", "192.168.1.1", false},
+			{"valid ipv6", "2001:db8::8a2e:370:7334", false},
+			{"valid ip, but it contains port", "192.168.1.1:8065", true},
+			{"invalid ip", "ceci n'est pas une ip", true},
+		}
+
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				err := Validate(ipCfg{test.ip})
+				if test.expectedErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+
+	})
 }
 
 type testConfig struct {
