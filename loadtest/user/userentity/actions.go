@@ -197,6 +197,11 @@ func (ue *UserEntity) CreatePost(post *model.Post) (string, error) {
 	return post.Id, err
 }
 
+func (ue *UserEntity) MoveThread(postId, channelId string) (*model.Response, error) {
+	response, err := ue.client.MoveThread(postId, &model.MoveThreadParams{ChannelId: channelId})
+	return response, err
+}
+
 // PatchPost modifies a post for the given postId and stores the updated result.
 func (ue *UserEntity) PatchPost(postId string, patch *model.PostPatch) (string, error) {
 	post, _, err := ue.client.PatchPost(postId, patch)
@@ -236,7 +241,7 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 
 // GetPostsForChannel fetches and stores posts in a given channelId.
 func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}
@@ -249,7 +254,7 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, co
 // GetPostsBefore fetches and stores posts in a given channelId that were made before
 // a given postId. It returns a list of posts ids.
 func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error) {
-	postList, _, err := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +268,7 @@ func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
 // a given postId.
 func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsAfter(channelId, postId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsAfter(channelId, postId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}

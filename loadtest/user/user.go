@@ -128,6 +128,8 @@ type User interface {
 	// GetPostsAroundLastUnread fetches and stores the posts made around last
 	// unread in a given channelId. It returns a list of posts ids.
 	GetPostsAroundLastUnread(channelId string, limitBefore, limitAfter int, collapsedThreads bool) ([]string, error)
+	// MoveThread moves a thread to a different channel.
+	MoveThread(postID string, toChannelID string) (*model.Response, error)
 
 	// files
 	// UploadFile uploads the given data in the specified channel.

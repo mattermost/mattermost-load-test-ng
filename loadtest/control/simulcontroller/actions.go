@@ -733,6 +733,39 @@ func (c *SimulController) createPostReply(u user.User) control.UserActionRespons
 	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", replyId)}
 }
 
+func (c *SimulController) moveThread(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if post.RootId != "" {
+		return control.UserActionResponse{Info: fmt.Sprintf("post %v is a reply, skipping", post.Id)}
+	}
+	currentTeam, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// Get a random channel from the same team.
+	otherChannel, err := u.Store().RandomChannel(currentTeam.Id, store.SelectAny)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if _, err := u.MoveThread(post.Id, otherChannel.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("thread moved from channel %v to %v", channel.Id, otherChannel.Id)}
+}
+
 func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
