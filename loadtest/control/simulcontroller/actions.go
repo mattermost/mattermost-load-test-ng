@@ -738,16 +738,34 @@ func (c *SimulController) moveThread(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
-	} else if err != nil {
+	thread, err := u.Store().RandomThread()
+	if err != nil && !errors.Is(err, memstore.ErrThreadNotFound) {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-
-	if post.RootId != "" {
-		return control.UserActionResponse{Info: fmt.Sprintf("post %v is a reply, skipping", post.Id)}
+	// No threads in store, fetch more
+	if errors.Is(err, memstore.ErrThreadNotFound) {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("viewthread: current team should be set"))}
+		}
+		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "viewthread: no threads available to view"}
+		}
+		thread = *threads[0]
 	}
 	currentTeam, err := u.Store().CurrentTeam()
 	if err != nil {
@@ -759,7 +777,7 @@ func (c *SimulController) moveThread(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.MoveThread(post.Id, otherChannel.Id); err != nil {
+	if _, err := u.MoveThread(thread.PostId, otherChannel.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
