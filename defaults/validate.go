@@ -17,6 +17,7 @@ var (
 	emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	rangeRegex = regexp.MustCompile(`range:(\[|\()(\S*)\,(\S*)(\]|\))`)
 	oneofRegex = regexp.MustCompile(`oneof:(\{)(.*)(\})`)
+	eachRegex  = regexp.MustCompile(`each:(.+)`)
 )
 
 // Validate validates each field of the value
@@ -163,6 +164,22 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			if err := validateFromOneofValues(v, strings.Split(valids, ",")); err != nil {
 				return fmt.Errorf("%s is not valid: %w", fieldName, err)
 			}
+		} else if strings.HasPrefix(validation, "each") {
+			if !eachRegex.MatchString(validation) {
+				return fmt.Errorf("invalid eachstring declaration")
+			}
+			eachValidation := eachRegex.FindStringSubmatch(validation)[1]
+			kind := v.Kind()
+			if kind != reflect.Array && kind != reflect.Slice {
+				return fmt.Errorf("validation 'each' can only be applied to slices or arrays, but the type of this value is %s", kind.String())
+			}
+			for i := 0; i < v.Len(); i++ {
+				if err := validate(eachValidation, "", p, v.Index(i)); err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("validation type %q unknown", validation)
 		}
 	}
 	return nil

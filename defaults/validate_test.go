@@ -201,6 +201,124 @@ func TestValidate(t *testing.T) {
 		}
 
 	})
+
+	t.Run("each validation", func(t *testing.T) {
+		t.Run("invalid type for each field", func(t *testing.T) {
+			type cfg struct {
+				Invalidtype int `validate:"each:ip"`
+			}
+
+			err := Validate(cfg{})
+			require.Error(t, err)
+		})
+
+		t.Run("invalid validation type for each field", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:invalid"`
+			}
+
+			err := Validate(cfg{[]string{"something"}})
+			require.Error(t, err)
+		})
+
+		t.Run("each with a slice of strings", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:url"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]string{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"http://url.tld",
+					"https://example.com",
+				}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"http://url.tld",
+					"an invalid url",
+				}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"an invalid url",
+					"another invalid url",
+				}})
+				require.Error(t, err)
+			})
+		})
+
+		t.Run("each with a slice of ints and range validation", func(t *testing.T) {
+			type cfg struct {
+				Ints []int `validate:"each:range:[2,10]"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]int{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{2, 3, 4, 5, 6, 7, 8, 9, 10}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{-654, 2}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{-10, 1000}})
+				require.Error(t, err)
+			})
+		})
+
+		t.Run("each with a slice of strings and oneof validation", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:oneof:{TRACE,DEBUG,INFO}"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]string{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"TRACE",
+					"DEBUG",
+				}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"TRACE",
+					"invalida value",
+				}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"invalid value",
+					"another invalid value",
+				}})
+				require.Error(t, err)
+			})
+
+		})
+
+	})
 }
 
 type testConfig struct {
