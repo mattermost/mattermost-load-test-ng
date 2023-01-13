@@ -127,17 +127,15 @@ type dbSettings struct {
 	Engine   string
 }
 
-// buildLoadDBDumpCmd returns a command that feeds the provided DB dump file into the database, replacing
-// first the old IPs found in the posts that contain a permalink with the new IP. Something like:
+// buildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
+// provided DB dump file into the database, replacing first the old IPs found
+// in the posts that contain a permalink with the new IP. Something like:
 //
-//     zcat dbdump.sql | sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip' | mysql/psql connection_details
+//     zcat dbdump.sql
+//     sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
+//     mysql/psql connection_details
 //
-func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) (cmd, error) {
-	loadDBDumpCmd := cmd{
-		msg:     "Loading DB dump",
-		clients: []*ssh.Client{client},
-	}
-
+func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) ([]string, error) {
 	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
 
 	var replacements []string
@@ -167,11 +165,10 @@ func buildLoadDBDumpCmd(client *ssh.Client, dumpFilename string, newIP string, p
 	case "aurora-mysql":
 		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
 	default:
-		return cmd{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
+		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
-	loadDBDumpCmd.value = strings.Join([]string{zcatCmd, sedCmd, dbCmd}, " | ")
 
-	return loadDBDumpCmd, nil
+	return []string{zcatCmd, sedCmd, dbCmd}, nil
 }
 
 func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
@@ -263,7 +260,12 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 
 	cmds := []cmd{stopCmd, installCmd, resetCmd}
 
-	loadDBDumpCmd, err := buildLoadDBDumpCmd(appClients[0], dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, dbSettings{
+	loadDBDumpCmd := cmd{
+		msg:     "Loading DB dump",
+		clients: []*ssh.Client{appClients[0]},
+	}
+
+	dbCmds, err := buildLoadDBDumpCmds(dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, dbSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,
@@ -271,8 +273,10 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
 	})
 	if err != nil {
-		return fmt.Errorf("error building command for loading DB dump: %w", err)
+		return fmt.Errorf("error building commands for loading DB dump: %w", err)
 	}
+
+	loadDBDumpCmd.value = strings.Join(dbCmds, " | ")
 
 	resetBucketCmds := []localCmd{}
 	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
