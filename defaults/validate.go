@@ -142,7 +142,7 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 	default:
 		if strings.HasPrefix(validation, "range") {
 			if !rangeRegex.MatchString(validation) {
-				return errors.New("invalid range declaration")
+				return fmt.Errorf("invalid range declaration %q", validation)
 			}
 			matches := rangeRegex.FindStringSubmatch(validation)
 			mins, err := validateFromField(p, matches[2])
@@ -158,7 +158,7 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			}
 		} else if strings.HasPrefix(validation, "oneof") {
 			if !oneofRegex.MatchString(validation) {
-				return errors.New("ivalid oneof declaration")
+				return errors.New("invalid oneof declaration")
 			}
 			valids := oneofRegex.FindStringSubmatch(validation)[2]
 			if err := validateFromOneofValues(v, strings.Split(valids, ",")); err != nil {
