@@ -236,7 +236,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.moveThread,
-			frequency: 100,
+			frequency: 0.1,
 		},
 	}
 
