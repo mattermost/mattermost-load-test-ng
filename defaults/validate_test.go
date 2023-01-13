@@ -336,9 +336,9 @@ func TestValidateComparisonConfig(t *testing.T) {
 		Type                  LoadTestType   `validate:"oneof:{bounded,unbounded}"`
 		DBEngine              DatabaseEngine `validate:"oneof:{mysql,postgresql}"`
 		DBDumpURL             string
-		PermalinkIPsToReplace []string
-		S3BucketDumpURI       string `default:"" validate:"s3uri"`
-		NumUsers              int    `default:"0" validate:"range:[0,]"`
+		PermalinkIPsToReplace []string `validate:"each:ip"`
+		S3BucketDumpURI       string   `default:"" validate:"s3uri"`
+		NumUsers              int      `default:"0" validate:"range:[0,]"`
 		Duration              string
 	}
 
