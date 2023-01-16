@@ -157,12 +157,6 @@ func (t *Terraform) Create(initData bool) error {
 				return fmt.Errorf("could not modify default_search_text_config: %w", err)
 			}
 		}
-
-		if initData {
-			if err := t.createAdminUser(extAgent); err != nil {
-				return fmt.Errorf("could not create admin user: %w", err)
-			}
-		}
 	}
 
 	if t.output.HasAppServers() {
@@ -182,6 +176,12 @@ func (t *Terraform) Create(initData bool) error {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
 
+	}
+
+	if t.output.HasDB() && initData {
+		if err := t.createAdminUser(extAgent); err != nil {
+			return fmt.Errorf("could not create admin user: %w", err)
+		}
 	}
 
 	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
