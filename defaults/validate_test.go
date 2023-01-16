@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 
 	t.Run("ip validation", func(t *testing.T) {
 		type ipCfg struct {
-			Ip string `validate:"ip"`
+			IP string `validate:"ip"`
 		}
 
 		testCases := []struct {
