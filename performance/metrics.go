@@ -17,7 +17,7 @@ const (
 )
 
 type UserEntityMetrics struct {
-	HTTPRequestTimes     prometheus.Histogram
+	HTTPRequestTimes     *prometheus.HistogramVec
 	HTTPErrors           *prometheus.CounterVec
 	HTTPTimeouts         *prometheus.CounterVec
 	WebSocketConnections prometheus.Gauge
@@ -32,12 +32,13 @@ func NewMetrics() *Metrics {
 	var m Metrics
 	m.registry = prometheus.NewRegistry()
 
-	m.ueMetrics.HTTPRequestTimes = prometheus.NewHistogram(prometheus.HistogramOpts{
+	m.ueMetrics.HTTPRequestTimes = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: metricsNamespace,
 		Subsystem: metricsSubSystemHTTP,
 		Name:      "request_time",
 		Help:      "The time taken to execute client requests.",
-	})
+	},
+		[]string{"path", "method", "status_code"})
 	m.registry.MustRegister(m.ueMetrics.HTTPRequestTimes)
 
 	m.ueMetrics.HTTPErrors = prometheus.NewCounterVec(prometheus.CounterOpts{

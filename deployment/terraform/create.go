@@ -149,6 +149,22 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	if t.output.HasDB() {
+		// Aurora sets the default_text_search_config parameter to 'simple';
+		// a more sane default for a generic deployment is 'english'
+		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
+				return fmt.Errorf("could not modify default_search_text_config: %w", err)
+			}
+		}
+
+		if initData {
+			if err := t.createAdminUser(extAgent); err != nil {
+				return fmt.Errorf("could not create admin user: %w", err)
+			}
+		}
+	}
+
 	if t.output.HasAppServers() {
 		url := t.output.Instances[0].PublicDNS + ":8065"
 
@@ -166,19 +182,6 @@ func (t *Terraform) Create(initData bool) error {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
 
-		// Aurora sets the default_text_search_config parameter to 'simple';
-		// a more sane default for a generic deployment is 'english'
-		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
-				return fmt.Errorf("could not modify default_search_text_config: %w", err)
-			}
-		}
-
-		if initData {
-			if err := t.createAdminUser(extAgent); err != nil {
-				return fmt.Errorf("could not create admin user: %w", err)
-			}
-		}
 	}
 
 	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
