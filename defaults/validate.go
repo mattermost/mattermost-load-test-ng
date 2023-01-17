@@ -3,6 +3,7 @@ package defaults
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"reflect"
@@ -16,6 +17,7 @@ var (
 	emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	rangeRegex = regexp.MustCompile(`range:(\[|\()(\S*)\,(\S*)(\]|\))`)
 	oneofRegex = regexp.MustCompile(`oneof:(\{)(.*)(\})`)
+	eachRegex  = regexp.MustCompile(`each:(.+)`)
 )
 
 // Validate validates each field of the value
@@ -23,6 +25,12 @@ func Validate(value interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
 
+	// Look for an IsValid method on value. To check that this IsValid method
+	// exists, we need to retrieve it with MethodByName, which returns a
+	// reflect.Value. This reflect.Value, m, has a method that is called
+	// IsValid as well, which tells us whether v actually represents the
+	// function we're looking for. But they're two completely different IsValid
+	// methods. Yes, this is confusing.
 	m := reflect.ValueOf(value).MethodByName("IsValid")
 	if m.IsValid() {
 		e := m.Call([]reflect.Value{})
@@ -32,6 +40,14 @@ func Validate(value interface{}) error {
 		}
 	}
 
+	// For non-struct values, we cannot do much, as there's no associated tags
+	// to lookup to decide how to validate, so we have to assume they're valid.
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// For struct values, iterate through the fields and use the type of field
+	// along with its validate tags to decide next steps
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 
@@ -117,10 +133,16 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		if s3uri.Scheme != "s3" {
 			return fmt.Errorf("expected scheme \"s3\", but got %q", s3uri.Scheme)
 		}
+	case "ip":
+		s := v.String()
+		ip := net.ParseIP(s)
+		if ip == nil {
+			return fmt.Errorf("%q is not a valid IP", s)
+		}
 	default:
 		if strings.HasPrefix(validation, "range") {
 			if !rangeRegex.MatchString(validation) {
-				return errors.New("invalid range declaration")
+				return fmt.Errorf("invalid range declaration %q", validation)
 			}
 			matches := rangeRegex.FindStringSubmatch(validation)
 			mins, err := validateFromField(p, matches[2])
@@ -136,12 +158,28 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 			}
 		} else if strings.HasPrefix(validation, "oneof") {
 			if !oneofRegex.MatchString(validation) {
-				return errors.New("ivalid oneof declaration")
+				return errors.New("invalid oneof declaration")
 			}
 			valids := oneofRegex.FindStringSubmatch(validation)[2]
 			if err := validateFromOneofValues(v, strings.Split(valids, ",")); err != nil {
 				return fmt.Errorf("%s is not valid: %w", fieldName, err)
 			}
+		} else if strings.HasPrefix(validation, "each") {
+			if !eachRegex.MatchString(validation) {
+				return fmt.Errorf("invalid eachstring declaration")
+			}
+			eachValidation := eachRegex.FindStringSubmatch(validation)[1]
+			kind := v.Kind()
+			if kind != reflect.Array && kind != reflect.Slice {
+				return fmt.Errorf("validation 'each' can only be applied to slices or arrays, but the type of this value is %s", kind.String())
+			}
+			for i := 0; i < v.Len(); i++ {
+				if err := validate(eachValidation, "", p, v.Index(i)); err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("validation type %q unknown", validation)
 		}
 	}
 	return nil

@@ -108,7 +108,70 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
+type cmd struct {
+	msg     string
+	value   string
+	clients []*ssh.Client
+}
+
+type localCmd struct {
+	msg   string
+	value []string
+}
+
+type dbSettings struct {
+	UserName string
+	Password string
+	DBName   string
+	Host     string
+	Engine   string
+}
+
+// buildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
+// provided DB dump file into the database, replacing first the old IPs found
+// in the posts that contain a permalink with the new IP. Something like:
+//
+//     zcat dbdump.sql
+//     sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
+//     mysql/psql connection_details
+//
+func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) ([]string, error) {
+	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
+
+	var replacements []string
+	for _, oldIP := range permalinkIPsToReplace {
+		// Let's build the match and replace parts of a sed command: 's/match/replace/g'
+		// First, the match. We want to match anything of the form
+		//    54.126.54.26:8065/debitis-1/pl/
+		// where the IP is exactly the old one, the port is optional and arbitrary and the
+		// team name is the pattern defined by the server's function model.IsValidTeamname
+		validTeamName := `[a-z0-9]+([a-z0-9-]+|(__)?)[a-z0-9]+`
+		escapedOldIP := strings.ReplaceAll(oldIP, ".", "\\.")
+		match := escapedOldIP + `(:[0-9]+)?\/(` + validTeamName + `)\/pl\/`
+		// Now, the replace. We need to replace this with the same thing, only changing the
+		// IP with the new one and hard-coding the port to 8065, but maintaining the team
+		// name (hence the second group match, \2)
+		replace := newIP + `:8065\/\2\/pl\/`
+		// We can build the whole command now and add it to the list of replacements
+		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
+		replacements = append(replacements, sedRegex)
+	}
+	sedCmd := strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+
+	var dbCmd string
+	switch dbInfo.Engine {
+	case "aurora-postgresql":
+		dbCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
+	case "aurora-mysql":
+		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
+	default:
+		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
+	}
+
+	return []string{zcatCmd, sedCmd, dbCmd}, nil
+}
+
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -139,17 +202,6 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		}
 		defer client.Close()
 		appClients[i] = client
-	}
-
-	type cmd struct {
-		msg     string
-		value   string
-		clients []*ssh.Client
-	}
-
-	type localCmd struct {
-		msg   string
-		value []string
 	}
 
 	stopCmd := cmd{
@@ -212,16 +264,19 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		msg:     "Loading DB dump",
 		clients: []*ssh.Client{appClients[0]},
 	}
-	switch dpConfig.TerraformDBSettings.InstanceEngine {
-	case "aurora-postgresql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%s?sslmode=disable'", dumpFilename,
-			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBWriter(), dbName)
-	case "aurora-mysql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %s", dumpFilename,
-			tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dbName)
-	default:
-		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
+
+	dbCmds, err := buildLoadDBDumpCmds(dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, dbSettings{
+		UserName: dpConfig.TerraformDBSettings.UserName,
+		Password: dpConfig.TerraformDBSettings.Password,
+		DBName:   dbName,
+		Host:     tfOutput.DBWriter(),
+		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
+	})
+	if err != nil {
+		return fmt.Errorf("error building commands for loading DB dump: %w", err)
 	}
+
+	loadDBDumpCmd.value = strings.Join(dbCmds, " | ")
 
 	resetBucketCmds := []localCmd{}
 	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
