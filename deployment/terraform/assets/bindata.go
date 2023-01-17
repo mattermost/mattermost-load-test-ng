@@ -344,13 +344,11 @@ const AssetDebug = false
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
 // following hierarchy:
-//
-//	data/
-//	  foo.txt
-//	  img/
-//	    a.png
-//	    b.png
-//
+//     data/
+//       foo.txt
+//       img/
+//         a.png
+//         b.png
 // then AssetDir("data") would return []string{"foo.txt", "img"},
 // AssetDir("data/img") would return []string{"a.png", "b.png"},
 // AssetDir("foo.txt") and AssetDir("notexist") would return an error, and
@@ -383,14 +381,14 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	".terraform.lock.hcl":    {TerraformLockHcl, map[string]*bintree{}},
-	"cluster.tf":             {clusterTf, map[string]*bintree{}},
-	"dashboard.yaml":         {dashboardYaml, map[string]*bintree{}},
-	"dashboard_data.json":    {dashboard_dataJson, map[string]*bintree{}},
-	"datasource.yaml":        {datasourceYaml, map[string]*bintree{}},
+	".terraform.lock.hcl": {TerraformLockHcl, map[string]*bintree{}},
+	"cluster.tf": {clusterTf, map[string]*bintree{}},
+	"dashboard.yaml": {dashboardYaml, map[string]*bintree{}},
+	"dashboard_data.json": {dashboard_dataJson, map[string]*bintree{}},
+	"datasource.yaml": {datasourceYaml, map[string]*bintree{}},
 	"es_dashboard_data.json": {es_dashboard_dataJson, map[string]*bintree{}},
-	"outputs.tf":             {outputsTf, map[string]*bintree{}},
-	"variables.tf":           {variablesTf, map[string]*bintree{}},
+	"outputs.tf": {outputsTf, map[string]*bintree{}},
+	"variables.tf": {variablesTf, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory.
