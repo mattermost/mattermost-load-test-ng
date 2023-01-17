@@ -18,8 +18,15 @@ func (t *Terraform) Destroy() error {
 		return err
 	}
 
+	// We need to load the output to check whether the deployment has an S3
+	// bucket to destroy
+	if err := t.loadOutput(); err != nil {
+		return err
+	}
+
 	// Empty the S3 bucket concurrently with the main terraform destroy command
-	// to ensure that it is properly destroyed (https://mattermost.atlassian.net/browse/MM-47263)
+	// to ensure that it is properly destroyed
+	// See https://mattermost.atlassian.net/browse/MM-47263
 	emptyBucketCtx, emptyBucketCancel := context.WithCancel(context.Background())
 	defer emptyBucketCancel()
 	emptyBucketErrCh := make(chan error, 1)
