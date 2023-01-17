@@ -167,7 +167,7 @@ func (o *Output) HasDB() bool {
 	return len(o.DBCluster.Endpoints) > 0
 }
 
-//HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
+// HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
 func (o *Output) HasElasticSearch() bool {
 	return o.ElasticSearchServer.Endpoint != ""
 }
