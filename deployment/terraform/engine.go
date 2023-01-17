@@ -118,3 +118,14 @@ func checkTerraformVersion() error {
 
 	return nil
 }
+
+// checkAWSCLI checks that the aws command is available in the system, and that
+// the profile that will be used is correctly configured
+func checkAWSCLI(profile string) error {
+	cmd := exec.Command("aws", "configure", "list", "--profile", profile)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("the AWS CLI is either not installed or the configured profile %q is not stored in the credentials; error: %w", profile, err)
+	}
+	return nil
+}
