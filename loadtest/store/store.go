@@ -131,6 +131,9 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+	PostsWithAckRequests() ([]string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing

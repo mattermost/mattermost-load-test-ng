@@ -215,6 +215,58 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+// CreateAckPost creates a new post with priority label and acknowledgment in a random channel.
+func CreateAckPost(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: fmt.Sprintf("no channels in store for team: %s", team.Id)}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   "Priority Post Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().UnixMilli(),
+		Metadata: &model.PostMetadata{
+			Priority: &model.PostPriority{
+				Priority:     model.NewString(model.PostPriorityUrgent),
+				RequestedAck: model.NewBool(true),
+			},
+		},
+	})
+
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("ack post created, id %v", postId)}
+}
+
+// AckToPost acknowledges a random ackPost.
+func AckToPost(u user.User) UserActionResponse {
+	postsIds, err := u.Store().PostsWithAckRequests()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if len(postsIds) == 0 {
+		return UserActionResponse{Info: "no posts to acknowledge"}
+	}
+
+	postId := postsIds[rand.Intn(len(postsIds))]
+
+	err = u.AckToPost(u.Store().Id(), postId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("acknowledged post %s", postId)}
+}
+
 // EditPost updates a post.
 func EditPost(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)

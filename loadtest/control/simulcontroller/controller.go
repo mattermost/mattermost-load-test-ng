@@ -234,6 +234,14 @@ func (c *SimulController) Run() {
 			run:       c.getInsights,
 			frequency: 0.011,
 		},
+		{
+			run:       control.CreateAckPost,
+			frequency: 1.5,
+		},
+		{
+			run:       control.AckToPost,
+			frequency: 3,
+		},
 	}
 
 	for {

@@ -306,4 +306,7 @@ type User interface {
 
 	// CreatePostReminder creates a post reminder at a given target time.
 	CreatePostReminder(userID, postID string, targetTime int64) error
+
+	// AckToPost acknowledges a post.
+	AckToPost(userID, postID string) error
 }

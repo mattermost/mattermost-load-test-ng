@@ -1119,3 +1119,18 @@ func (s *MemStore) Thread(threadId string) (*model.ThreadResponse, error) {
 	}
 	return nil, ErrThreadNotFound
 }
+
+// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+func (s *MemStore) PostsWithAckRequests() ([]string, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var ids []string
+	for _, p := range s.posts {
+		if p.Metadata != nil && p.Metadata.Priority != nil && p.Metadata.Priority.RequestedAck != nil && *p.Metadata.Priority.RequestedAck {
+			ids = append(ids, p.Id)
+		}
+	}
+
+	return ids, nil
+}
