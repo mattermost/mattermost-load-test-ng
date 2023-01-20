@@ -267,6 +267,59 @@ func AckToPost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("acknowledged post %s", postId)}
 }
 
+// CreatePersistentNotificationPost creates a persistent notification post.
+func CreatePersistentNotificationPost(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: fmt.Sprintf("no channels in store for team: %s", team.Id)}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	postOwner := u.Store().Id()
+	var mentionedUserID string
+	for mentionedUserID == "" {
+		member, err := u.Store().RandomChannelMember(channel.Id)
+		if errors.Is(err, memstore.ErrEmptyMap) {
+			return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
+		} else if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		if member.UserId != postOwner {
+			mentionedUserID = member.UserId
+		}
+	}
+
+	mentionedUser, err := u.Store().GetUser(mentionedUserID)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   fmt.Sprintf("Persistent Notification Post mention @%s", mentionedUser.Username),
+		UserId:    postOwner,
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().UnixMilli(),
+		Metadata: &model.PostMetadata{
+			Priority: &model.PostPriority{
+				Priority:                model.NewString(model.PostPriorityUrgent),
+				RequestedAck:            model.NewBool(false),
+				PersistentNotifications: model.NewBool(true),
+			},
+		},
+	})
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("persistent notification post created, id %v", postId)}
+}
+
 // EditPost updates a post.
 func EditPost(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)

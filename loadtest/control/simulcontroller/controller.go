@@ -236,11 +236,15 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       control.CreateAckPost,
-			frequency: 1.5,
+			frequency: 0.225,
 		},
 		{
 			run:       control.AckToPost,
-			frequency: 3,
+			frequency: 0.5,
+		},
+		{
+			run:       control.CreatePersistentNotificationPost,
+			frequency: 0.025,
 		},
 	}
 
