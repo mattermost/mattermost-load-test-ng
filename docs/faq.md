@@ -42,7 +42,7 @@ ulimit -n VALUE
 ```
 
 #### Note
-For terraform deployments, this value is hard coded as 65535 in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value. 
+For terraform deployments, this value is hard coded in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value.
 
 1. ssh into your loadtest agents. You can see the agents available by running `go run ./cmd/ltctl ssh`.
 2. Modify the `/lib/systemd/system/ltapi.service` file with the new value.
