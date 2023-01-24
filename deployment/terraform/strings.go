@@ -236,7 +236,7 @@ RestartSec=1
 WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
 User=ubuntu
 Group=ubuntu
-LimitNOFILE=65536
+LimitNOFILE=262144
 
 [Install]
 WantedBy=multi-user.target
