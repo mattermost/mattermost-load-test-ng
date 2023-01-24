@@ -553,6 +553,10 @@ func (t *Terraform) preFlightCheck() error {
 		return fmt.Errorf("failed when checking terraform version: %w", err)
 	}
 
+	if err := checkAWSCLI(t.Config().AWSProfile); err != nil {
+		return fmt.Errorf("failed when checking AWS CLI: %w", err)
+	}
+
 	if !t.initialized {
 		if err := t.init(); err != nil {
 			return err
