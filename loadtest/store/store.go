@@ -107,6 +107,8 @@ type UserStore interface {
 	RandomThread() (model.ThreadResponse, error)
 	// RandomCategory returns a random category from a team
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
+	// RandomDraftForTeam returns a random draft id for a team for the current user
+	RandomDraftForTeam(teamId string) (string, error)
 
 	// profile
 	// ProfileImage returns whether the profile image for the given user has been
@@ -131,6 +133,12 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// drafts
+	// Draft
+	Draft(teamId string, id string) (*model.Draft, error)
+	// Drafts
+	Drafts(teamId string) ([]*model.Draft, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -243,4 +251,9 @@ type MutableUserStore interface {
 
 	// SidebarCategories
 	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error
+
+	// SetDraft
+	SetDraft(teamId, id string, draft *model.Draft) error
+	// SetDrafts
+	SetDrafts(teamId string, drafts []*model.Draft) error
 }

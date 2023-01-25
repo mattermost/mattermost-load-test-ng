@@ -1874,7 +1874,7 @@ func (c *SimulController) upsertDraft(u user.User) control.UserActionResponse {
 		}
 	}
 
-	err = u.UpsertDraft(draft)
+	err = u.UpsertDraft(channel.TeamId, draft)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -1888,25 +1888,21 @@ func (c *SimulController) deleteDraft(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	var rootId = ""
-
-	// 33% of the time draft will be a thread reply (matches frequency of createPostReply)
-	if rand.Float64() < 0.33 {
-		post, err := u.Store().RandomPostForChannel(channel.Id)
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
-		} else if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		if post.RootId != "" {
-			rootId = post.RootId
-		} else {
-			rootId = post.Id
-		}
+	team, err := u.Store().CurrentTeam()
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		return control.UserActionResponse{Info: "no team set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
-	err = u.DeleteDraft(channel.Id, rootId)
+	draftId, err := u.Store().RandomDraftForTeam(team.Id)
+	if errors.Is(err, memstore.ErrDraftNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no drafts found in team %v", team.Id)}
+	}
+
+	err = u.DeleteDraft(channel.Id, draftId)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

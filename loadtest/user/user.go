@@ -104,10 +104,10 @@ type User interface {
 	AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error)
 
 	// drafts
-	// GetDrafts fetches drafts for the given user in a specified team.
+	// GetDrafts fetches and stores drafts for the given user in a specified team.
 	GetDrafts(teamId string) error
 	// UpsertDraft creates and stores a new draft made by the user.
-	UpsertDraft(draft *model.Draft) error
+	UpsertDraft(teamId string, draft *model.Draft) error
 	// DeleteDraft deletes the draft for the given user in a specified channel.
 	DeleteDraft(channelId, rootId string) error
 

@@ -24,6 +24,7 @@ var (
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
 	ErrThreadNotFound    = errors.New("memstore: thread not found")
+	ErrDraftNotFound     = errors.New("memstore: draft not found")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -382,4 +383,27 @@ func (s *MemStore) RandomThread() (model.ThreadResponse, error) {
 		return model.ThreadResponse{}, ErrThreadNotFound
 	}
 	return *threads[rand.Intn(len(threads))], nil
+}
+
+// RandomDraftForTeam returns a random draft id for the given team
+func (s *MemStore) RandomDraftForTeam(teamId string) (string, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var draftIds []string
+	for _, draft := range s.drafts[teamId] {
+		if draft.UserId == s.user.Id {
+			if draft.RootId != "" {
+				draftIds = append(draftIds, draft.RootId)
+			} else {
+				draftIds = append(draftIds, draft.ChannelId)
+			}
+		}
+	}
+
+	if len(draftIds) == 0 {
+		return "", ErrDraftNotFound
+	}
+
+	return draftIds[rand.Intn(len(draftIds))], nil
 }

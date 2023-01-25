@@ -184,28 +184,32 @@ func (ue *UserEntity) GetDrafts(teamId string) error {
 		return err
 	}
 
-	_, _, err = ue.client.GetDrafts(user.Id, teamId)
+	drafts, _, err := ue.client.GetDrafts(user.Id, teamId)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return ue.store.SetDrafts(teamId, drafts)
 }
 
 // UpsertDraft creates and stores a new draft made by the user.
-func (ue *UserEntity) UpsertDraft(draft *model.Draft) error {
+func (ue *UserEntity) UpsertDraft(teamId string, draft *model.Draft) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return err
 	}
 
 	draft.UserId = user.Id
-	_, _, err = ue.client.UpsertDraft(draft)
+	upsertedDraft, _, err := ue.client.UpsertDraft(draft)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	if upsertedDraft.RootId == "" {
+		return ue.store.SetDraft(teamId, upsertedDraft.ChannelId, upsertedDraft)
+	}
+
+	return ue.store.SetDraft(teamId, upsertedDraft.ChannelId, upsertedDraft)
 }
 
 func (ue *UserEntity) DeleteDraft(channelId string, rootId string) error {
