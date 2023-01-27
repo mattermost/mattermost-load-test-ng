@@ -55,7 +55,7 @@ Before attempting to use an existing database, ensure your database will accept 
     {
         "SqlSettings": {
             "DriverName": "postgres",
-            "DataSource": "postgres://mmuser:mostest@databaseURL:port/mattermost?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
+            "DataSource": "postgres://mmuser:mostest@databaseURL:port/mattermost_test?sslmode=disable\u0026connect_timeout=10\u0026binary_parameters=yes",
             "DataSourceReplicas": [],
             "DataSourceSearchReplicas": [],
             "MaxIdleConns": 20,
@@ -63,7 +63,7 @@ Before attempting to use an existing database, ensure your database will accept 
             "ConnMaxIdleTimeMilliseconds": 300000,
             "MaxOpenConns": 300,
             "Trace": false,
-            "AtRestEncryptKey": "x85qyzyufe7aoh9a7upbyq6jrf5yas1r",
+            "AtRestEncryptKey": "",
             "QueryTimeout": 30,
             "DisableDatabaseSearch": false,
             "MigrationsStatementTimeoutSeconds": 100000,
