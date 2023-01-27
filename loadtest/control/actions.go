@@ -745,6 +745,136 @@ func Reload(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "page reloaded"}
 }
 
+func ReloadGQL(u user.User) UserActionResponse {
+	err := u.GetInitialDataGQL()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	prefs, err := u.Store().Preferences()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	var userIds []string
+	for _, p := range prefs {
+		switch {
+		case p.Category == model.PreferenceCategoryDirectChannelShow:
+			userIds = append(userIds, p.Name)
+		case p.Category == "group_channel_show":
+			if err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+		}
+	}
+
+	var chanId string
+	if c, err := u.Store().CurrentChannel(); err == nil {
+		chanId = c.Id
+	} else if err != nil && err != memstore.ErrChannelNotFound {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if chanId != "" {
+		// Marking the channel as viewed
+		_, err := u.ViewChannel(&model.ChannelView{
+			ChannelId:     chanId,
+			PrevChannelId: "",
+		})
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	userId := u.Store().Id()
+
+	err = u.GetWebappPlugins()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	_, err = u.GetAllTeams(0, 50)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	var teamId string
+	if team, err := u.Store().CurrentTeam(); err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	} else if team != nil {
+		teamId = team.Id
+	}
+
+	if teamId != "" {
+		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
+			if err := u.GetChannelsForTeam(teamId, true); err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+			err = u.GetChannelMembersForUser(userId, teamId)
+			if err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+		}
+
+		ver, err := u.Store().ServerVersion()
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		ok, err := IsVersionSupported("6.4.0", ver)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+		if ok {
+			_, err = u.GetChannelsForUser(userId)
+			if err != nil {
+				return UserActionResponse{Err: NewUserError(err)}
+			}
+		}
+	}
+
+	// Getting unread teams.
+	_, err = u.GetTeamsUnread("", false)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if len(userIds) > 0 {
+		// Get users by Ids.
+		_, err := u.GetUsersByIds(userIds)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		// Get user statuses by Ids.
+		err = u.GetUsersStatusesByIds(userIds)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	err = u.GetUserStatus()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	if chanId != "" {
+		// Getting the channel stats.
+		err = u.GetChannelStats(chanId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		// Getting channel unread.
+		_, err = u.GetChannelUnread(chanId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
+	return UserActionResponse{Info: "page reloaded"}
+}
+
 func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 	if u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsDisabled {
 		return false, UserActionResponse{}
