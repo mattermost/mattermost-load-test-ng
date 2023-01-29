@@ -156,7 +156,10 @@ func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
 		replacements = append(replacements, sedRegex)
 	}
-	sedCmd := strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+	var sedCmd string
+	if len(replacements) > 0 {
+		sedCmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+	}
 
 	var dbCmd string
 	switch dbInfo.Engine {
@@ -166,6 +169,10 @@ func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
 	default:
 		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
+	}
+
+	if sedCmd == "" {
+		return []string{zcatCmd, dbCmd}, nil
 	}
 
 	return []string{zcatCmd, sedCmd, dbCmd}, nil
