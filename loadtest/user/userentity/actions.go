@@ -209,7 +209,7 @@ func (ue *UserEntity) UpsertDraft(teamId string, draft *model.Draft) error {
 		return ue.store.SetDraft(teamId, upsertedDraft.ChannelId, upsertedDraft)
 	}
 
-	return ue.store.SetDraft(teamId, upsertedDraft.ChannelId, upsertedDraft)
+	return ue.store.SetDraft(teamId, upsertedDraft.RootId, upsertedDraft)
 }
 
 func (ue *UserEntity) DeleteDraft(channelId string, rootId string) error {

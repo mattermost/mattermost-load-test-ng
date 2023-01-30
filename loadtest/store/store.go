@@ -133,12 +133,6 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
-
-	// drafts
-	// Draft
-	Draft(teamId string, id string) (*model.Draft, error)
-	// Drafts
-	Drafts(teamId string) ([]*model.Draft, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
