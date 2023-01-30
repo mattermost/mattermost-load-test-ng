@@ -1,5 +1,11 @@
 # Deployer Configuration
 
+## AWSProfile
+
+*string*
+
+AWS profile to use for the deployment. Also used for all AWS CLI commands run locally. See the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) for more information.
+
 ## ClusterName
 
 *string*
@@ -32,6 +38,7 @@ This setting only affects load-test agent instances. It is meant for pre-deploye
 
 The number of Mattermost application instances.
 This value can be set to zero to enable a load-test agents only deployment.
+When this value is greater than one, an S3 bucket is automatically created in the deployment and the server is configured to use it as a file store.
 
 ## AppInstanceType
 
@@ -305,4 +312,15 @@ The Prometheus query to run.
 
 ## TerraformStateDir
 
+*string*
+
 The directory under which Terraform-related files are stored. If the directory does not exist, it will be created when running the first command that needs it, defaulting to `/var/lib/mattermost-load-test-ng`. You'll need root permissions to create that specific directory, so you may want to change this setting to something like `/home/youruser/.loadtest`.
+
+## S3BucketDumpURI
+
+*string*
+
+URI pointing to an S3 bucket: something of the form `s3://bucket-name/optional-subdir`.
+The contents of this bucket will be copied to the bucket created in the deployment, using `aws s3 cp`. This command is ran locally, so having the AWS CLI installed is required.
+If no bucket is created in the deployment (see [`AppInstanceCount`](#AppInstanceCount) for more information), this value is ignored.
+If a bucket is created in the deployment but this value is empty, the created bucket will not be pre-populated with any data.

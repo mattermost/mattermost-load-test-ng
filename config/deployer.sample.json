@@ -1,4 +1,5 @@
 {
+  "AWSProfile": "mm-loadtest",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
@@ -20,6 +21,8 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceType": "c5.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
+  "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
+  "S3BucketDumpURI" : "",
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",

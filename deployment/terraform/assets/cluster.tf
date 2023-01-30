@@ -10,7 +10,7 @@ terraform {
 
 provider "aws" {
   region  = "us-east-1"
-  profile = "mm-loadtest"
+  profile = var.aws_profile
 }
 
 data "aws_region" "current" {}
@@ -240,13 +240,18 @@ resource "aws_iam_access_key" "s3key" {
 
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
-  acl    = "private"
   count  = var.app_instance_count > 1 ? 1 : 0
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }
 
   force_destroy = true
+}
+
+resource "aws_s3_bucket_acl" "s3bucketacl" {
+  count  = var.app_instance_count > 1 ? 1 : 0
+  bucket = aws_s3_bucket.s3bucket[0].id
+  acl    = "private"
 }
 
 resource "aws_iam_user_policy" "s3userpolicy" {
@@ -655,5 +660,13 @@ resource "aws_instance" "job_server" {
       "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter"
     ]
+  }
+}
+
+resource "null_resource" "s3_dump" {
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "") ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }

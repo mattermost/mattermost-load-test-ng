@@ -19,6 +19,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
+	// AWSProfile is the name of the AWS profile to use for all AWS commands
+	AWSProfile string `default:"mm-loadtest"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
@@ -71,6 +73,8 @@ type Config struct {
 	// Directory under which the .terraform directory and state files are managed.
 	// It will be created if it does not exist
 	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
+	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
+	S3BucketDumpURI string `default:"" validate:"s3uri"`
 }
 
 // TerraformDBSettings contains the necessary data
