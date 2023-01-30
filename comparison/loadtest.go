@@ -131,10 +131,9 @@ type dbSettings struct {
 // provided DB dump file into the database, replacing first the old IPs found
 // in the posts that contain a permalink with the new IP. Something like:
 //
-//     zcat dbdump.sql
-//     sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
-//     mysql/psql connection_details
-//
+//	zcat dbdump.sql
+//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
+//	mysql/psql connection_details
 func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) ([]string, error) {
 	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
 
@@ -156,7 +155,10 @@ func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
 		replacements = append(replacements, sedRegex)
 	}
-	sedCmd := strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+	var sedCmd string
+	if len(replacements) > 0 {
+		sedCmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+	}
 
 	var dbCmd string
 	switch dbInfo.Engine {
@@ -168,7 +170,11 @@ func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	return []string{zcatCmd, sedCmd, dbCmd}, nil
+	if sedCmd != "" {
+		return []string{zcatCmd, sedCmd, dbCmd}, nil
+	}
+
+	return []string{zcatCmd, dbCmd}, nil
 }
 
 func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
