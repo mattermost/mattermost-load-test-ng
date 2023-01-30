@@ -171,11 +171,11 @@ func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	if sedCmd == "" {
-		return []string{zcatCmd, dbCmd}, nil
+	if sedCmd != "" {
+		return []string{zcatCmd, sedCmd, dbCmd}, nil
 	}
 
-	return []string{zcatCmd, sedCmd, dbCmd}, nil
+	return []string{zcatCmd, dbCmd}, nil
 }
 
 func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
