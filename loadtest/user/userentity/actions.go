@@ -1380,7 +1380,7 @@ func (ue *UserEntity) CreatePostReminder(userID, postID string, targetTime int64
 	return nil
 }
 
-// GetInitialDataGQL is a helper method to make GraphQL requests
+// GetInitialDataGQL is a method to get the initial use data via GraphQL.
 func (ue *UserEntity) GetInitialDataGQL() error {
 	var q struct {
 		Config      map[string]string `json:"config"`
@@ -1449,14 +1449,15 @@ func (ue *UserEntity) GetInitialDataGQL() error {
 			}
 	`}
 
-	url := ue.client.URL + model.APIURLSuffixV5 + "/graphql"
-
 	buf, err := json.Marshal(input)
 	if err != nil {
 		return err
 	}
 
-	req, err := ue.prepareRequest(http.MethodPost, url, bytes.NewReader(buf), map[string]string{})
+	req, err := ue.prepareRequest(http.MethodPost,
+		getGQLURL(ue.client.URL),
+		bytes.NewReader(buf),
+		map[string]string{})
 	if err != nil {
 		return err
 	}
@@ -1476,7 +1477,7 @@ func (ue *UserEntity) GetInitialDataGQL() error {
 	if len(gqlResp.Errors) > 0 {
 		tmp := ""
 		for _, err := range gqlResp.Errors {
-			tmp += err.Error()
+			tmp += err.Error() + " "
 		}
 		return errors.New(tmp)
 	}

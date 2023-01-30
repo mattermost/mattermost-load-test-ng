@@ -745,6 +745,7 @@ func Reload(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "page reloaded"}
 }
 
+// ReloadGQL is same as Reload but with the REST calls replaced with GraphQL
 func ReloadGQL(u user.User) UserActionResponse {
 	err := u.GetInitialDataGQL()
 	if err != nil {

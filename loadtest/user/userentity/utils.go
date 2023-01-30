@@ -10,6 +10,14 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
+const (
+	graphQLEndpoint = "/graphql"
+)
+
+func getGQLURL(baseURL string) string {
+	return baseURL + model.APIURLSuffixV5 + graphQLEndpoint
+}
+
 func postsMapToSlice(postsMap map[string]*model.Post) []*model.Post {
 	posts := make([]*model.Post, len(postsMap))
 	i := 0
@@ -48,7 +56,7 @@ func convertToTypedPrefs(input []gqlPreference) model.Preferences {
 	return prefs
 }
 
-func convertToTypesRoles(input []gqlRole) []*model.Role {
+func convertToTypedRoles(input []gqlRole) []*model.Role {
 	roles := []*model.Role{}
 	for _, r := range input {
 		roles = append(roles, &model.Role{
@@ -67,7 +75,7 @@ func convertToTypesRoles(input []gqlRole) []*model.Role {
 
 func convertToTypedUser(input gqlUser) (*model.User, model.Preferences, []*model.Role) {
 	prefs := convertToTypedPrefs(input.Preferences)
-	roles := convertToTypesRoles(input.Roles)
+	roles := convertToTypedRoles(input.Roles)
 	user := &model.User{
 		Id:            input.ID,
 		Username:      input.Username,
