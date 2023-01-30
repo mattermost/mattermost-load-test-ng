@@ -131,10 +131,9 @@ type dbSettings struct {
 // provided DB dump file into the database, replacing first the old IPs found
 // in the posts that contain a permalink with the new IP. Something like:
 //
-//     zcat dbdump.sql
-//     sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
-//     mysql/psql connection_details
-//
+//	zcat dbdump.sql
+//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
+//	mysql/psql connection_details
 func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) ([]string, error) {
 	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
 
