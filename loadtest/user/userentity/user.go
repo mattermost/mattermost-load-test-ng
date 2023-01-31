@@ -72,12 +72,14 @@ type ueTransport struct {
 func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	resp, err := t.transport.RoundTrip(req)
-	t.ue.observeHTTPRequestTimes(req.URL.Path, req.Method, resp.StatusCode, time.Since(startTime).Seconds())
 	if os.IsTimeout(err) {
 		t.ue.incHTTPTimeouts(req.URL.Path, req.Method)
 	}
-	if resp != nil && resp.StatusCode >= 400 {
-		t.ue.incHTTPErrors(req.URL.Path, req.Method, resp.StatusCode)
+	if resp != nil {
+		t.ue.observeHTTPRequestTimes(req.URL.Path, req.Method, resp.StatusCode, time.Since(startTime).Seconds())
+		if resp.StatusCode >= 400 {
+			t.ue.incHTTPErrors(req.URL.Path, req.Method, resp.StatusCode)
+		}
 	}
 	return resp, err
 }
