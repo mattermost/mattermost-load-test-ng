@@ -84,7 +84,7 @@ variable "root_block_device" {
   default = [
     {
       volume_type = "gp2"
-      volume_size = 50
+      volume_size = 100
     },
   ]
 }
