@@ -45,6 +45,7 @@ type MemStore struct {
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
+	drafts              map[string]map[string]*model.Draft
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -102,6 +103,7 @@ func (s *MemStore) Clear() {
 	s.threads = map[string]*model.ThreadResponse{}
 	s.threadsQueue.Reset()
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
+	s.drafts = map[string]map[string]*model.Draft{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1118,4 +1120,38 @@ func (s *MemStore) Thread(threadId string) (*model.ThreadResponse, error) {
 		return cloneThreadResponse(thread, &model.ThreadResponse{}), nil
 	}
 	return nil, ErrThreadNotFound
+}
+
+// SetDraft stores the draft for the given teamId, and channelId or rootId.
+func (s *MemStore) SetDraft(teamId, id string, draft *model.Draft) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if draft == nil {
+		return errors.New("memstore: draft should not be nil")
+	}
+
+	if s.drafts[teamId] == nil {
+		s.drafts[teamId] = map[string]*model.Draft{}
+	}
+
+	s.drafts[teamId][id] = draft
+	return nil
+}
+
+// SetDrafts stores the given drafts.
+func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.drafts[teamId] = map[string]*model.Draft{}
+	for _, d := range drafts {
+		if d.RootId == "" {
+			s.drafts[teamId][d.ChannelId] = d
+		} else {
+			s.drafts[teamId][d.RootId] = d
+		}
+	}
+
+	return nil
 }

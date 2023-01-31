@@ -1015,3 +1015,96 @@ func TestRandomThread(t *testing.T) {
 		require.Equal(t, ErrThreadNotFound, err)
 	})
 }
+
+func TestRandomDraftForTeam(t *testing.T) {
+
+	t.Run("channel draft", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId},
+			{Id: channelId2, TeamId: teamId},
+			{Id: channelId3, TeamId: teamId},
+		})
+		require.NoError(t, err)
+
+		err = s.SetDrafts(teamId, []*model.Draft{
+			{RootId: "", ChannelId: channelId1, UserId: user.Id, Message: "channel 1 draft"},
+			{RootId: "", ChannelId: channelId2, UserId: user.Id, Message: "channel 2 draft"},
+			{RootId: "", ChannelId: channelId3, UserId: user.Id, Message: "channel 3 draft"},
+		})
+		require.NoError(t, err)
+
+		draftId, err := s.RandomDraftForTeam(teamId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch draftId {
+			case channelId1, channelId2, channelId3:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+
+	t.Run("thread draft", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{
+			Id: model.NewId(),
+		}
+		err := s.SetUser(user)
+		require.NoError(t, err)
+		teamId := model.NewId()
+		err = s.SetTeams([]*model.Team{
+			{
+				Id: teamId,
+			},
+		})
+		require.NoError(t, err)
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channelId3 := model.NewId()
+		err = s.SetChannels([]*model.Channel{
+			{Id: channelId1, TeamId: teamId},
+			{Id: channelId2, TeamId: teamId},
+			{Id: channelId3, TeamId: teamId},
+		})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		postId3 := model.NewId()
+
+		err = s.SetDrafts(teamId, []*model.Draft{
+			{RootId: postId1, ChannelId: channelId1, UserId: user.Id, Message: "channel 1 draft"},
+			{RootId: postId2, ChannelId: channelId2, UserId: user.Id, Message: "channel 2 draft"},
+			{RootId: postId3, ChannelId: channelId3, UserId: user.Id, Message: "channel 3 draft"},
+		})
+		require.NoError(t, err)
+
+		draftId, err := s.RandomDraftForTeam(teamId)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch draftId {
+			case postId1, postId2, postId3:
+				return true
+			default:
+				return false
+			}
+		})
+	})
+}

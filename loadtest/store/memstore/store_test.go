@@ -771,3 +771,85 @@ func TestThreads(t *testing.T) {
 
 	})
 }
+
+func TestDrafts(t *testing.T) {
+	t.Run("SetDraft", func(t *testing.T) {
+		s := newStore(t)
+
+		u := &model.User{}
+
+		err := s.SetUser(u)
+		require.NoError(t, err)
+
+		user, err := s.User()
+		require.NoError(t, err)
+
+		channelId := model.NewId()
+		teamId := model.NewId()
+
+		draft := &model.Draft{
+			ChannelId: channelId,
+			UserId:    user.Id,
+		}
+
+		err = s.SetDraft(teamId, channelId, draft)
+		require.NoError(t, err)
+		draftId, err := s.RandomDraftForTeam(teamId)
+		require.NoError(t, err)
+		require.Equal(t, draft.ChannelId, draftId)
+
+		teamId2 := model.NewId()
+		rootId := model.NewId()
+
+		draft2 := &model.Draft{
+			RootId: rootId,
+			UserId: user.Id,
+		}
+
+		err = s.SetDraft(teamId2, rootId, draft2)
+		require.NoError(t, err)
+		draftId2, err := s.RandomDraftForTeam(teamId2)
+		require.NoError(t, err)
+		require.Equal(t, draft2.RootId, draftId2)
+	})
+
+	t.Run("SetDrafts", func(t *testing.T) {
+		s := newStore(t)
+
+		u := &model.User{}
+
+		err := s.SetUser(u)
+		require.NoError(t, err)
+
+		user, err := s.User()
+		require.NoError(t, err)
+
+		channelId := model.NewId()
+		teamId := model.NewId()
+
+		draft := &model.Draft{
+			ChannelId: channelId,
+			UserId:    user.Id,
+		}
+
+		err = s.SetDrafts(teamId, []*model.Draft{draft})
+		require.NoError(t, err)
+		draftId, err := s.RandomDraftForTeam(teamId)
+		require.NoError(t, err)
+		require.Equal(t, draft.ChannelId, draftId)
+
+		teamId2 := model.NewId()
+		rootId := model.NewId()
+
+		draft2 := &model.Draft{
+			RootId: rootId,
+			UserId: user.Id,
+		}
+
+		err = s.SetDrafts(teamId2, []*model.Draft{draft2})
+		require.NoError(t, err)
+		draftId2, err := s.RandomDraftForTeam(teamId2)
+		require.NoError(t, err)
+		require.Equal(t, draft2.RootId, draftId2)
+	})
+}

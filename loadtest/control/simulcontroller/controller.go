@@ -234,6 +234,18 @@ func (c *SimulController) Run() {
 			run:       c.getInsights,
 			frequency: 0.011,
 		},
+		{
+			run:       c.upsertDraft,
+			frequency: 0.615,
+		},
+		{
+			run:       c.getDrafts,
+			frequency: 0.555,
+		},
+		{
+			run:       c.deleteDraft,
+			frequency: 1.5,
+		},
 	}
 
 	for {
