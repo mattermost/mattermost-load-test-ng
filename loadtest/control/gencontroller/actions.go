@@ -195,7 +195,6 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		CreateAt:  time.Now().Unix() * 1000,
 	}
 
-	// 5% of the times post will have urgent priority.
 	if rand.Float64() < c.config.PercentUrgentPosts {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
