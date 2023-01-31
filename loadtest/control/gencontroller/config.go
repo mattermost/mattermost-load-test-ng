@@ -26,7 +26,7 @@ type Config struct {
 	// The percentage of replies that should be in long threads
 	PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
 	// The percentage of post that are marked as urgent
-	PercentUrgentPosts float64 `default:"0.05" validate:"range:[0,1]"`
+	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
 
 	// Percentages of channels to be created, grouped by type.
 	// The total sum of these values must be equal to 1.

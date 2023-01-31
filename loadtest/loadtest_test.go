@@ -40,7 +40,7 @@ var ltConfig = Config{
 		NumAdmins:                   2,
 		PercentReplies:              0.5,
 		PercentRepliesInLongThreads: 0.05,
-		PercentUrgentPosts:          0.05,
+		PercentUrgentPosts:          0.001,
 		PercentPublicChannels:       0.2,
 		PercentPrivateChannels:      0.1,
 		PercentDirectChannels:       0.6,

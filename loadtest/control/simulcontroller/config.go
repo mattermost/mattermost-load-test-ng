@@ -17,7 +17,7 @@ type Config struct {
 	AvgIdleTimeMs int `default:"20000" validate:"range:($MinIdleTimeMs,]"`
 
 	// The percentage of post that are marked as urgent
-	PercentUrgentPosts float64 `default:"0.05" validate:"range:[0,1]"`
+	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
