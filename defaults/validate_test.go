@@ -17,6 +17,7 @@ func TestValidate(t *testing.T) {
 		InitialUsers  int    `default:"0" validate:"range:[0,$MaxUsers]"`
 		MaxUsers      int    `default:"1000" validate:"range:(0,]"`
 		LogLevel      string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
+		S3URI         string `default:"" validate:"s3uri"`
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -141,6 +142,183 @@ func TestValidate(t *testing.T) {
 		err = Validate(t2)
 		require.NoError(t, err)
 	})
+
+	t.Run("valid S3 URI", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "s3://test.s3bucket"
+
+		err := Validate(&cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid S3 URI", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "not an url"
+
+		err := Validate(&cfg)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid S3 URI scheme", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.S3URI = "https://validurl.com/but/wrong/scheme"
+
+		err := Validate(&cfg)
+		require.Error(t, err)
+	})
+
+	t.Run("ip validation", func(t *testing.T) {
+		type ipCfg struct {
+			IP string `validate:"ip"`
+		}
+
+		testCases := []struct {
+			name        string
+			ip          string
+			expectedErr bool
+		}{
+			{"valid ipv4", "192.168.1.1", false},
+			{"valid ipv6", "2001:db8::8a2e:370:7334", false},
+			{"valid ip, but it contains port", "192.168.1.1:8065", true},
+			{"invalid ip", "ceci n'est pas une ip", true},
+		}
+
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				err := Validate(ipCfg{test.ip})
+				if test.expectedErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+
+	})
+
+	t.Run("each validation", func(t *testing.T) {
+		t.Run("invalid type for each field", func(t *testing.T) {
+			type cfg struct {
+				Invalidtype int `validate:"each:ip"`
+			}
+
+			err := Validate(cfg{})
+			require.Error(t, err)
+		})
+
+		t.Run("invalid validation type for each field", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:invalid"`
+			}
+
+			err := Validate(cfg{[]string{"something"}})
+			require.Error(t, err)
+		})
+
+		t.Run("each with a slice of strings", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:url"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]string{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"http://url.tld",
+					"https://example.com",
+				}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"http://url.tld",
+					"an invalid url",
+				}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"an invalid url",
+					"another invalid url",
+				}})
+				require.Error(t, err)
+			})
+		})
+
+		t.Run("each with a slice of ints and range validation", func(t *testing.T) {
+			type cfg struct {
+				Ints []int `validate:"each:range:[2,10]"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]int{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{2, 3, 4, 5, 6, 7, 8, 9, 10}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{-654, 2}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]int{-10, 1000}})
+				require.Error(t, err)
+			})
+		})
+
+		t.Run("each with a slice of strings and oneof validation", func(t *testing.T) {
+			type cfg struct {
+				Strings []string `validate:"each:oneof:{TRACE,DEBUG,INFO}"`
+			}
+
+			t.Run("empty slice is valid", func(t *testing.T) {
+				err := Validate(cfg{[]string{}})
+				require.NoError(t, err)
+			})
+
+			t.Run("valid non-empty slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"TRACE",
+					"DEBUG",
+				}})
+				require.NoError(t, err)
+			})
+
+			t.Run("invalid and valid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"TRACE",
+					"invalida value",
+				}})
+				require.Error(t, err)
+			})
+
+			t.Run("only invalid values in slice", func(t *testing.T) {
+				err := Validate(cfg{[]string{
+					"invalid value",
+					"another invalid value",
+				}})
+				require.Error(t, err)
+			})
+
+		})
+
+	})
 }
 
 type testConfig struct {
@@ -149,4 +327,38 @@ type testConfig struct {
 
 func (c *testConfig) IsValid() error {
 	return errors.New("some error")
+}
+
+func TestValidateComparisonConfig(t *testing.T) {
+	type LoadTestType string
+	type DatabaseEngine string
+	type LoadTestConfig struct {
+		Type                  LoadTestType   `validate:"oneof:{bounded,unbounded}"`
+		DBEngine              DatabaseEngine `validate:"oneof:{mysql,postgresql}"`
+		DBDumpURL             string
+		PermalinkIPsToReplace []string `validate:"each:ip"`
+		S3BucketDumpURI       string   `default:"" validate:"s3uri"`
+		NumUsers              int      `default:"0" validate:"range:[0,]"`
+		Duration              string
+	}
+
+	config := LoadTestConfig{
+		Type:      "bounded",
+		DBEngine:  "postgresql",
+		DBDumpURL: "file:///home/ubuntu/dump.sql",
+		PermalinkIPsToReplace: []string{
+			"44.201.217.130",
+			"52.87.227.97",
+			"52.91.86.20",
+			"54.174.96.187",
+		},
+		S3BucketDumpURI: "s3://test.bucket/subdir",
+		NumUsers:        100,
+		Duration:        "1h",
+	}
+
+	t.Run("valid config", func(t *testing.T) {
+		err := Validate(config)
+		require.NoError(t, err)
+	})
 }

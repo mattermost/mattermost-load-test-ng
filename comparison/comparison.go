@@ -97,10 +97,11 @@ func (c *Comparison) Run() (Output, error) {
 			for ltID, lt := range dp.loadTests {
 				res := Result{deploymentID: dpID}
 				dumpFilename := lt.getDumpFilename(ltID)
+				s3BucketURI := lt.S3BucketDumpURI
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, buildCfg, dumpFilename, c.cancelCh); err != nil {
+					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI, lt.PermalinkIPsToReplace, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}

@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-load-test-ng
 
-go 1.17
+go 1.19
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20221109154702-5284163b04cd
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20220825060614-617eb98d291a
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.33.0
 	github.com/sergi/go-diff v1.1.0 // indirect

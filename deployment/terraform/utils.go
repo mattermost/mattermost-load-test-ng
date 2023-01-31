@@ -213,6 +213,7 @@ func fillConfigTemplate(configTmpl string, data map[string]string) (string, erro
 
 func (t *Terraform) getParams() []string {
 	return []string{
+		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
@@ -236,6 +237,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
+		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
 	}
 }
 
