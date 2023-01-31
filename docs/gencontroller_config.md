@@ -36,6 +36,12 @@ The percentage of replies (over the total number of posts) to be created.
 
 The percentage of replies (over the total number of reply posts) to be created in long running threads.
 
+## PercentUrgentPosts
+
+*float64*
+
+The percentage of posts (over the total number of posts) to be marked with urgent priority.
+
 ## PercentPublicChannels
 
 *float64*
