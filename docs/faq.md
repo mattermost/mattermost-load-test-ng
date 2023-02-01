@@ -24,7 +24,7 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 
 Yes, you can use an existing Mattermost deployment, or just the database portion.
 
-Note: You should **not** utilize an existing production setup to loadtest against because the loadtest agent will create users, posts, teams and channels to utilize and utilize most of your server resources. Best practice is to clone your production setup and loadtest against that.
+Note: You should **not** utilize an existing production setup to loadtest against because the loadtest agent will create users, posts, teams and channels and utilize most of your server resources. Best practice is to clone your production setup and loadtest against that.
 
 #### Using an existing Mattermost deployment
 
