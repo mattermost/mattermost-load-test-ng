@@ -460,6 +460,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
+	cfg.ServiceSettings.PostPriority = model.NewBool(true)
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
@@ -551,6 +552,10 @@ func (t *Terraform) preFlightCheck() error {
 
 	if err := checkTerraformVersion(); err != nil {
 		return fmt.Errorf("failed when checking terraform version: %w", err)
+	}
+
+	if err := checkAWSCLI(t.Config().AWSProfile); err != nil {
+		return fmt.Errorf("failed when checking AWS CLI: %w", err)
 	}
 
 	if !t.initialized {

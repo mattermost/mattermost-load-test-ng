@@ -761,6 +761,15 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		}
 	}
 
+	if rand.Float64() < c.config.PercentUrgentPosts {
+		post.Metadata = &model.PostMetadata{}
+		post.Metadata.Priority = &model.PostPriority{
+			Priority:                model.NewString("urgent"),
+			RequestedAck:            model.NewBool(false),
+			PersistentNotifications: model.NewBool(false),
+		}
+	}
+
 	postId, err := u.CreatePost(post)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}

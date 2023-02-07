@@ -20,11 +20,11 @@ type mockAPI struct {
 	dataMap map[string]model.Matrix
 }
 
-func (m mockAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, apiv1.Warnings, error) {
+func (m mockAPI) Query(ctx context.Context, query string, ts time.Time, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error) {
 	return model.Vector{}, apiv1.Warnings{}, nil
 }
 
-func (m mockAPI) QueryRange(ctx context.Context, query string, r apiv1.Range) (model.Value, apiv1.Warnings, error) {
+func (m mockAPI) QueryRange(ctx context.Context, query string, r apiv1.Range, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error) {
 	return m.dataMap[query], apiv1.Warnings{}, nil
 }
 

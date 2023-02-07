@@ -104,6 +104,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		NumPosts:               config.InstanceConfiguration.NumPosts,
 		NumReactions:           config.InstanceConfiguration.NumReactions,
 		PercentReplies:         config.InstanceConfiguration.PercentReplies,
+		PercentUrgentPosts:     config.InstanceConfiguration.PercentUrgentPosts,
 		PercentPublicChannels:  config.InstanceConfiguration.PercentPublicChannels,
 		PercentPrivateChannels: config.InstanceConfiguration.PercentPrivateChannels,
 		PercentDirectChannels:  config.InstanceConfiguration.PercentDirectChannels,
