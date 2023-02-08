@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20221214122404-8d90c7042f93
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20230208105257-2148d0bd62c2
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.39.0
 	github.com/sergi/go-diff v1.2.0 // indirect
@@ -138,5 +138,3 @@ require (
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
 
 replace github.com/codegangsta/cli v1.22.1 => github.com/urfave/cli v1.22.1
-
-replace github.com/mattermost/mattermost-server/v6 => ../mattermost-server
