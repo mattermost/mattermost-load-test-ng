@@ -78,7 +78,7 @@ verify-gomod: ## Run go mod verify.
 check-style: golangci-lint ## Check the style of the code.
 
 golangci-lint:
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 
 	@echo Running golangci-lint
 	golangci-lint run ./...
@@ -131,6 +131,11 @@ else
 endif
 endif
 
+update-dependencies: ## Uses go get -u to update all dependencies and go mod tidy to clean up after itself.
+	@echo Updating dependencies
+	$(GO) get -u ./... # Update all dependencies (does not update across major versions)
+	$(GO) mod tidy # Tidy up
+
 clean: ## Remove all generated files to start from scratch.
 	rm -f errors.log cache.db stats.log status.log
 	rm -f .installdeps
@@ -139,5 +144,5 @@ clean: ## Remove all generated files to start from scratch.
 
 ## Help documentation à la https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## Print this help text.
-	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' ./Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' ./Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-19s\033[0m %s\n", $$1, $$2}'
 	@echo

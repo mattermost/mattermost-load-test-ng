@@ -242,7 +242,7 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 
 // GetPostsForChannel fetches and stores posts in a given channelId.
 func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,7 @@ func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, co
 // GetPostsBefore fetches and stores posts in a given channelId that were made before
 // a given postId. It returns a list of posts ids.
 func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error) {
-	postList, _, err := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsBefore(channelId, postId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (ue *UserEntity) GetPostsBefore(channelId, postId string, page, perPage int
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
 // a given postId.
 func (ue *UserEntity) GetPostsAfter(channelId, postId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsAfter(channelId, postId, page, perPage, "", collapsedThreads)
+	postList, _, err := ue.client.GetPostsAfter(channelId, postId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}

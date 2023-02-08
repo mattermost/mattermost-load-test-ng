@@ -189,11 +189,22 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 	minWordCount := 1
 	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
 
-	postId, err := u.CreatePost(&model.Post{
+	post := &model.Post{
 		Message:   control.GenerateRandomSentences(wordCount) + channelMention,
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
-	})
+	}
+
+	if rand.Float64() < c.config.PercentUrgentPosts {
+		post.Metadata = &model.PostMetadata{}
+		post.Metadata.Priority = &model.PostPriority{
+			Priority:                model.NewString("urgent"),
+			RequestedAck:            model.NewBool(false),
+			PersistentNotifications: model.NewBool(false),
+		}
+	}
+
+	postId, err := u.CreatePost(post)
 	if err != nil {
 		st.dec("posts")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
