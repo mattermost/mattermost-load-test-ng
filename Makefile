@@ -13,6 +13,10 @@ DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 GOBIN=$(PWD)/bin
+# We need to export GOBIN to allow it to be set
+# for processes spawned from the Makefile
+export GOBIN ?= $(PWD)/bin
+
 PATH=$(shell printenv PATH):$(GOBIN)
 
 AGENT=$(GOBIN)/ltagent
@@ -81,7 +85,7 @@ golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 
 	@echo Running golangci-lint
-	golangci-lint run ./...
+	$(GOBIN)/golangci-lint run ./...
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -failfast -race ./...
