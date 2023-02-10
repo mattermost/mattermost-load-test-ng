@@ -55,7 +55,7 @@ This command can take several minutes to complete when creating a [full](loadtes
 
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
 
-If you see an error when running deployment create mentioning a "resource already exists", it is most likely because your ClusterName is not a unique value within your AWS account. Run go run ./cmd/ltctl deployment destroy to clean up the half created deployment. Then change the ClusterName to something more unique for your loadtest and try again.
+If you see an error when running `deployment create` mentioning a "resource already exists", it is most likely because your `ClusterName` is not a unique value within your AWS account. Run `go run ./cmd/ltctl deployment destroy` to clean up the half created deployment. Then change the `ClusterName` to something more unique for your loadtest and try again.
 
 ### Get information on the current deployment
 
