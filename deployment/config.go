@@ -23,6 +23,8 @@ type Config struct {
 	AWSProfile string `default:"mm-loadtest"`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
+	// AWSAMI is the AMI to use for all EC2 instances.
+	AWSAMI string `default:"ami-0b69ea66ff7391e80"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
