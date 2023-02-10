@@ -21,6 +21,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// AWSProfile is the name of the AWS profile to use for all AWS commands
 	AWSProfile string `default:"mm-loadtest"`
+	// AWSRegion is the region used to deploy all resources.
+	AWSRegion string `default:"us-east-1"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.

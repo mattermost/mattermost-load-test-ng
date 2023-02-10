@@ -1,5 +1,6 @@
 {
   "AWSProfile": "mm-loadtest",
+  "AWSRegion": "us-east-1",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",

@@ -214,6 +214,7 @@ func fillConfigTemplate(configTmpl string, data map[string]string) (string, erro
 func (t *Terraform) getParams() []string {
 	return []string{
 		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
+		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
