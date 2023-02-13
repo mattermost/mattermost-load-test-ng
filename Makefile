@@ -40,7 +40,7 @@ assets: ## Generate the assets. Install go-bindata if needed.
 	go generate ./...
 	go fmt ./...
 
-build: assets build-linux build-windows build-osx ## Generate the assets and build the binary for all platforms.
+build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
 
 
 install: ## Build and install for the current platform.
