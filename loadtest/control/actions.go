@@ -202,11 +202,25 @@ func CreatePost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	postId, err := u.CreatePost(&model.Post{
+	post := &model.Post{
 		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
-	})
+	}
+
+	// 85% of posts are replies
+	if rand.Float64() < 0.85 {
+		rootPost, err := u.Store().RandomPostForChannel(channel.Id)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return UserActionResponse{Info: "no post to reply to"}
+		} else if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		post.RootId = rootPost.Id
+	}
+
+	postId, err := u.CreatePost(post)
 
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
@@ -241,40 +255,6 @@ func EditPost(u user.User) UserActionResponse {
 	}
 
 	return UserActionResponse{Info: fmt.Sprintf("post updated, id %v -> %v", post.Id, postId)}
-}
-
-// CreatePostReply replies to a randomly picked post.
-func CreatePostReply(u user.User) UserActionResponse {
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
-		return UserActionResponse{Info: "no channels in store"}
-	} else if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		return UserActionResponse{Info: "no post to reply to"}
-	} else if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	postId, err := u.CreatePost(&model.Post{
-		Message:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-		ChannelId: channel.Id,
-		CreateAt:  time.Now().Unix() * 1000,
-		RootId:    post.Id,
-	})
-
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
-
-	return UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", postId)}
 }
 
 // AddReaction adds a reaction by the user to a random post.
