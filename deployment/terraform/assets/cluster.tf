@@ -38,7 +38,7 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
@@ -88,7 +88,7 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = "t3.xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
@@ -132,7 +132,7 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy"
   }
-  ami                         = var.aws_ami # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
@@ -336,7 +336,7 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
@@ -629,7 +629,7 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.job_server_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.job_server_instance_count
