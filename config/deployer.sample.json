@@ -1,6 +1,7 @@
 {
   "AWSProfile": "mm-loadtest",
   "AWSRegion": "us-east-1",
+  "AWSAMI": "ami-0d221cb540e0015f4",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
