@@ -166,6 +166,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"CreateDirectChannel":  control.CreateDirectChannel,
 		"CreateGroupChannel":   control.CreateGroupChannel,
 		"CreatePost":           control.CreatePost,
+		"CreatePostReply":      control.CreatePostReply,
 		"CreatePrivateChannel": control.CreatePrivateChannel,
 		"CreatePublicChannel":  control.CreatePublicChannel,
 		"GetPinnedPosts":       control.GetPinnedPosts,
