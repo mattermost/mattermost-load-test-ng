@@ -24,7 +24,7 @@ type Config struct {
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
 	// AWSAMI is the AMI to use for all EC2 instances.
-	AWSAMI string `default:"ami-09cd747c78a9add63"`
+	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
