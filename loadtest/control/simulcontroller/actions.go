@@ -76,7 +76,12 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		}
 	}
 
-	resp := control.Reload(c.user)
+	var resp control.UserActionResponse
+	if c.isGQLEnabled {
+		resp = control.ReloadGQL(c.user)
+	} else {
+		resp = control.Reload(c.user)
+	}
 	if resp.Err != nil {
 		return resp
 	}

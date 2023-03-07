@@ -4,8 +4,14 @@
 package userentity
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 
+	"github.com/graph-gophers/graphql-go"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
@@ -1372,4 +1378,140 @@ func (ue *UserEntity) CreatePostReminder(userID, postID string, targetTime int64
 		return err
 	}
 	return nil
+}
+
+// GetInitialDataGQL is a method to get the initial use data via GraphQL.
+func (ue *UserEntity) GetInitialDataGQL() error {
+	var q struct {
+		Config      map[string]string `json:"config"`
+		User        gqlUser           `json:"user"`
+		TeamMembers []gqlTeamMember   `json:"teamMembers"`
+	}
+
+	input := &user.GraphQLInput{
+		OperationName: "gqlWebCurrentUserInfo",
+		Query: `
+			query gqlWebCurrentUserInfo($id: String = "me") {
+				config
+				user(id: $id) {
+					id
+					username
+					email
+					firstName
+					lastName
+					createAt
+					updateAt
+					deleteAt
+					emailVerified
+					isBot
+					isGuest
+					isSystemAdmin
+					timezone
+					props
+					notifyProps
+					roles {
+						id
+						name
+						permissions
+					}
+					preferences {
+						name
+						user_id: userId
+						category
+						value
+					}
+				}
+				teamMembers(userId: $id) {
+					team {
+						id
+						display_name: displayName
+						name
+						create_at: createAt
+						update_at: updateAt
+						delete_at: deleteAt
+						description
+						email
+						type
+						company_name: companyName
+						allowed_domains: allowedDomains
+						invite_id: inviteId
+						last_team_icon_update: lastTeamIconUpdate
+						group_constrained: groupConstrained
+						allow_open_invite: allowOpenInvite
+						scheme_id: schemeId
+						policy_id: policyId
+					}
+					delete_at: deleteAt
+					scheme_guest: schemeGuest
+					scheme_user: schemeUser
+					scheme_admin: schemeAdmin
+				}
+			}
+	`}
+
+	buf, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+
+	req, err := ue.prepareRequest(http.MethodPost,
+		getGQLURL(ue.client.URL),
+		bytes.NewReader(buf),
+		map[string]string{})
+	if err != nil {
+		return err
+	}
+
+	resp, err := ue.client.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer closeBody(resp)
+
+	var gqlResp *graphql.Response
+	err = json.NewDecoder(resp.Body).Decode(&gqlResp)
+	if err != nil {
+		return err
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		tmp := ""
+		for _, err := range gqlResp.Errors {
+			tmp += err.Error() + " "
+		}
+		return errors.New(tmp)
+	}
+
+	err = json.Unmarshal(gqlResp.Data, &q)
+	if err != nil {
+		return err
+	}
+
+	// And writing them all back to the store.
+	user, prefs, roles := convertToTypedUser(q.User)
+	teams, tms := convertToTypedTeams(user.Id, q.TeamMembers)
+	ue.store.SetPreferences(prefs)
+	ue.store.SetUser(user)
+	ue.store.SetRoles(roles)
+	ue.store.SetClientConfig(q.Config)
+	ue.store.SetTeams(teams)
+	for _, tm := range tms {
+		ue.store.SetTeamMember(tm.TeamId, tm)
+	}
+	return nil
+}
+
+func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers map[string]string) (*http.Request, error) {
+	rq, err := http.NewRequest(method, url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range headers {
+		rq.Header.Set(k, v)
+	}
+
+	rq.Header.Set(model.HeaderAuth, ue.client.AuthType+" "+ue.client.AuthToken)
+
+	return rq, nil
 }
