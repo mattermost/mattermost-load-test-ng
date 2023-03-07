@@ -13,6 +13,10 @@ DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 GOBIN=$(PWD)/bin
+# We need to export GOBIN to allow it to be set
+# for processes spawned from the Makefile
+export GOBIN ?= $(PWD)/bin
+
 PATH=$(shell printenv PATH):$(GOBIN)
 
 AGENT=$(GOBIN)/ltagent
@@ -40,7 +44,7 @@ assets: ## Generate the assets. Install go-bindata if needed.
 	go generate ./...
 	go fmt ./...
 
-build: assets build-linux build-windows build-osx ## Generate the assets and build the binary for all platforms.
+build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
 
 
 install: ## Build and install for the current platform.
@@ -81,7 +85,7 @@ golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 
 	@echo Running golangci-lint
-	golangci-lint run ./...
+	$(GOBIN)/golangci-lint run ./...
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -failfast -race ./...
@@ -103,6 +107,7 @@ else
 ifeq ($(BRANCH_EXISTS), 0)
 	@echo "Error: branch ${BRANCH_NAME} already exists"
 else
+	@echo $(NEXT_VER) | grep -Eq ^v[0-9]+\.[0-9]+\.[0-9]+$ || echo "The next version, '$(NEXT_VER)' is not of the form vMAJOR.MINOR.PATCH" && exit 1
 	git checkout -b $(BRANCH_NAME) origin/master
 	@echo "Applying changes"
 	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \

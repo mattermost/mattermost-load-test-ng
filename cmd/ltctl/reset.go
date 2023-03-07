@@ -79,23 +79,28 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		clients []*ssh.Client
 	}{
 		{
-			msg:     "Resetting database",
+			msg:     "Shutting down MM server on primary...",
+			value:   "sudo systemctl stop mattermost",
+			clients: []*ssh.Client{appClients[0]},
+		},
+		{
+			msg:     "Resetting database...",
 			value:   fmt.Sprintf("%s db reset --confirm", binaryPath),
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Restarting app server",
+			msg:     "Restarting app server...",
 			value:   "sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 			clients: appClients,
 		},
 		{
-			msg: "Creating sysadmin",
+			msg: "Creating sysadmin...",
 			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local",
 				mmctlPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Initializing data",
+			msg:     "Initializing data...",
 			value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name),
 			clients: []*ssh.Client{agentClient},
 		},

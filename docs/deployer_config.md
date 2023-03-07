@@ -6,6 +6,20 @@
 
 AWS profile to use for the deployment. Also used for all AWS CLI commands run locally. See the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) for more information.
 
+## AWSRegion
+
+*string*
+
+AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
+
+## AWSAMI
+
+*string*
+
+AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
+
+
+
 ## ClusterName
 
 *string*
