@@ -315,4 +315,5 @@ type User interface {
 
 	// GraphQL
 	GetInitialDataGQL() error
+	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (error, string, string)
 }
