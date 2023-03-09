@@ -1474,7 +1474,7 @@ func (ue *UserEntity) GetInitialDataGQL() error {
 }
 
 // GetChannelsAndChannelMembersGQL is a method to get channels and channelMember info via GraphQL
-func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (error, string, string) {
+func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error) {
 	var q struct {
 		Channels       []gqlChannel       `json:"channels"`
 		ChannelMembers []gqlChannelMember `json:"channelMembers"`
@@ -1547,12 +1547,12 @@ func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDele
 
 	gqlResp, err := ue.getGqlResponse(input)
 	if err != nil {
-		return err, "", ""
+		return "", "", err
 	}
 
 	err = json.Unmarshal(gqlResp.Data, &q)
 	if err != nil {
-		return err, "", ""
+		return "", "", err
 	}
 
 	// And writing them all back to the store.
@@ -1568,13 +1568,13 @@ func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDele
 	}
 
 	if err := ue.store.SetChannels(channels); err != nil {
-		return err, "", ""
+		return "", "", err
 	}
 	if err := ue.store.SetChannelMembers(cms); err != nil {
-		return err, "", ""
+		return "", "", err
 	}
 
-	return nil, chCursor, cmCursor
+	return chCursor, cmCursor, nil
 }
 
 func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers map[string]string) (*http.Request, error) {

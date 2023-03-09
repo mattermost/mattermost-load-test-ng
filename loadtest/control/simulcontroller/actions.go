@@ -216,7 +216,7 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 		cmCursor := ""
 		var err error
 		for {
-			err, chCursor, cmCursor = u.GetChannelsAndChannelMembersGQL(team.Id, true, chCursor, cmCursor)
+			chCursor, cmCursor, err = u.GetChannelsAndChannelMembersGQL(team.Id, true, chCursor, cmCursor)
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
