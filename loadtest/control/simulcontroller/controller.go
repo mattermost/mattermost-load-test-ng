@@ -170,7 +170,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.createPostReminder,
-			frequency: 0.1,
+			frequency: 0.002,
 		},
 		{
 			run:       editPost,
