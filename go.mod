@@ -21,7 +21,10 @@ require (
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )
 
-require github.com/vmihailenco/msgpack/v5 v5.3.5
+require (
+	github.com/graph-gophers/graphql-go v1.5.0
+	github.com/vmihailenco/msgpack/v5 v5.3.5
+)
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0 // indirect
@@ -46,10 +49,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a // indirect
-	github.com/hashicorp/go-hclog v1.4.0 // indirect
-	github.com/hashicorp/go-plugin v1.4.8 // indirect
-	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect

@@ -42,11 +42,11 @@ Note that for on-prem instances, you will need to access your own Grafana instan
 
 All action frequencies should be calculated during a time where the server is under high traffic. To find out such a time, go to the [Number of Connected Devices (Websocket Connections)](https://grafana.internal.mattermost.com/d/000000011/mattermost-performance-monitoring?orgId=4&refresh=5s&viewPanel=6&from=now-7d&to=now) panel and check the concurrent number of connected users at any point during the last seven days. Usually, Wednesdays and Thursdays during US/Canada mornings are the busiest hours, but it may change. Note down the two hours where you see the most traffic: you can simply click and drag in the graph to select the range of time, which will select the start and end time in the time selector.
 
-![Number of connected devices](https://community.mattermost.com/files/5dz63kgi8id3mfdik6jy9zhddy/public?h=9tK_dYBYiKGyseJvrD3nxLf9EhGXxTcJThFGreJ0LMo)
+![Number of connected devices](https://community.mattermost.com/files/qbcymnb717d1dkbmpe844ctwaw/public?h=NAYS1-R7bFIPi6-r_RaJ4RMlYuzUjLGPGsRxFhCtoXc)
 
-In this case, the time frame with the most traffics was last Thursday, December 01, between 16:00 UTC and 18:00 UTC, where the system consistently supported between 1.8K and 2K users.
+In this case, the time frame with the most traffic was last Thursday, February 02, between 15:00 UTC and 17:00 UTC, where the system consistently supported between 600 and 650 users.
 
-![Number of connected devices at window with most traffic](https://community.mattermost.com/files/jd5zupo3qp8tjxamfiotiqfgca/public?h=6VUIEGmLJmMf60ioL5v5vNfqwgGQMDZ8l9e1rshA2G4)
+![Number of connected devices at window with most traffic](https://community.mattermost.com/files/m46j7xbbspgg8p9a516t1fz37o/public?h=krNMq-W8zsPjOdBsDt8cR9NYEdk6szGy9v9DT4cWGY4)
 
 ### Comparing actions
 

@@ -15,6 +15,12 @@ import (
 // which are assumed to be in this format.
 var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
 
+type GraphQLInput struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName"`
+	Variables     map[string]interface{} `json:"variables"`
+}
+
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.
 type User interface {
@@ -309,4 +315,7 @@ type User interface {
 
 	// AckToPost acknowledges a post.
 	AckToPost(userID, postID string) error
+
+	// GraphQL
+	GetInitialDataGQL() error
 }

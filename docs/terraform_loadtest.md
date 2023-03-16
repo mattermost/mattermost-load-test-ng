@@ -30,7 +30,7 @@ In order to start the deployment process, it is required to configure the deploy
 cp config/deployer.sample.json config/deployer.json
 ```
 
-Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key and `MattermostLicenseFile` to the path of an enterprise license.
+Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key, `MattermostLicenseFile` to the path of an enterprise license, and the `ClusterName` to a unique value within your AWS account. 
 
 ## Deployment
 
@@ -52,7 +52,10 @@ go run ./cmd/ltctl deployment create
 ```
 
 This command can take several minutes to complete when creating a [full](loadtest_system.md) deployment. By default, the console will keep logging info messages. If it does not, then something's wrong.
+
 Once done, it will output information about the entire cluster. Everything will be now ready to start a new load-test.
+
+If you see an error when running `deployment create` mentioning a "resource already exists", it is most likely because your `ClusterName` is not a unique value within your AWS account. Run `go run ./cmd/ltctl deployment destroy` to clean up the half created deployment. Then change the `ClusterName` to something more unique for your loadtest and try again.
 
 ### Get information on the current deployment
 

@@ -100,3 +100,9 @@ variable "s3_bucket_dump_uri" {
 
 variable "aws_profile" {
 }
+
+variable "aws_region" {
+}
+
+variable "aws_ami" {
+}

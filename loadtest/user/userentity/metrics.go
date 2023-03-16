@@ -31,13 +31,9 @@ func (ue *UserEntity) incHTTPErrors(path, method string, status int) {
 	}
 }
 
-func (ue *UserEntity) observeHTTPRequestTimes(path, method string, status int, elapsed float64) {
+func (ue *UserEntity) observeHTTPRequestTimes(elapsed float64) {
 	if ue.metrics != nil {
-		ue.metrics.HTTPRequestTimes.With(prometheus.Labels{
-			"path":        path,
-			"method":      method,
-			"status_code": strconv.Itoa(status),
-		}).Observe(elapsed)
+		ue.metrics.HTTPRequestTimes.Observe(elapsed)
 	}
 }
 
