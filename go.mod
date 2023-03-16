@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
-	github.com/mattermost/mattermost-server/v6 v6.0.0-20230208105257-2148d0bd62c2
+	github.com/mattermost/mattermost-server/v6 v6.0.0-20230315170929-201f6d273d0b
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.39.0
 	github.com/sergi/go-diff v1.2.0 // indirect
@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	github.com/graph-gophers/graphql-go v1.5.0
+	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 )
 
@@ -49,6 +49,9 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/hashicorp/go-hclog v1.4.0 // indirect
+	github.com/hashicorp/go-plugin v1.4.8 // indirect
+	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
