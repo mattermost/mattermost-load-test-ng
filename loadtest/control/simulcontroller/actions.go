@@ -433,7 +433,18 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetChannelStats(channel.Id); err != nil {
+	excludeFileCount := true
+	// 1% of the time, users will open RHS, which will include the file count as well.
+	// This is not an entirely accurate representation of events as we are mixing
+	// a normal viewChannel with a viewRHS event
+	// But we cannot distinguish between the two at an API level, so our action
+	// frequencies are also calculated that way.
+	// This is a good enough approximation.
+	if rand.Float64() < 0.01 {
+		excludeFileCount = false
+	}
+
+	if err := u.GetChannelStats(channel.Id, excludeFileCount); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
