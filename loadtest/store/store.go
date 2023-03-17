@@ -47,6 +47,8 @@ type UserStore interface {
 	CurrentChannel() (*model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
+	// ChannelMembers returns a list of members for the specified channel.
+	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// ChannelPosts returns all posts for the specified channel.
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for specified channel, sorted by CreateAt.

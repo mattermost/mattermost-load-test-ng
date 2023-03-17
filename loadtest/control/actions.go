@@ -280,23 +280,43 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	cms, err := u.Store().ChannelMembers(channel.Id)
+	if err != nil {
+		return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
+	}
+
+	// If not enough members in the channel then populate it.
+	if len(cms) < 2 {
+		err = u.GetChannelMembers(channel.Id, 0, 100)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
 	postOwner := u.Store().Id()
 	var mentionedUserID string
-	for mentionedUserID == "" {
+	// Make limited no. of attempts to find a randomUser that is not a post-owner.
+	for i := 0; i < 5; i++ {
 		member, err := u.Store().RandomChannelMember(channel.Id)
-		if errors.Is(err, memstore.ErrEmptyMap) {
-			return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
-		} else if err != nil {
+		if err != nil {
+			if errors.Is(err, memstore.ErrEmptyMap) {
+				return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
+			}
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 
 		if member.UserId != postOwner {
 			mentionedUserID = member.UserId
+			break
 		}
 	}
 
+	if mentionedUserID == "" {
+		return UserActionResponse{Info: fmt.Sprintf("no user except the post owner found in channel:%s", channel.Id)}
+	}
+
 	mentionedUser, err := u.Store().GetUser(mentionedUserID)
-	if err != nil {
+	if err != nil || mentionedUser.Username == "" {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
