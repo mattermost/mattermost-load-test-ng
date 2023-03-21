@@ -559,8 +559,8 @@ func (ue *UserEntity) GetChannelMember(channelId, userId string) error {
 }
 
 // GetChannelStats fetches statistics for the specified channel.
-func (ue *UserEntity) GetChannelStats(channelId string) error {
-	stats, _, err := ue.client.GetChannelStats(channelId, "")
+func (ue *UserEntity) GetChannelStats(channelId string, excludeFileCount bool) error {
+	stats, _, err := ue.client.GetChannelStats(channelId, "", excludeFileCount)
 	if err != nil {
 		return err
 	}

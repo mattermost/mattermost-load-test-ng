@@ -730,7 +730,7 @@ func Reload(u user.User) UserActionResponse {
 
 	if chanId != "" {
 		// Getting the channel stats.
-		err = u.GetChannelStats(chanId)
+		err = u.GetChannelStats(chanId, true)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
@@ -861,7 +861,7 @@ func ReloadGQL(u user.User) UserActionResponse {
 
 	if chanId != "" {
 		// Getting the channel stats.
-		err = u.GetChannelStats(chanId)
+		err = u.GetChannelStats(chanId, true)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
