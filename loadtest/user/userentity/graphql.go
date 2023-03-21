@@ -68,3 +68,47 @@ type gqlTeamMember struct {
 	SchemeUser  bool    `json:"schemeUser"`
 	SchemeAdmin bool    `json:"schemeAdmin"`
 }
+
+type gqlChannel struct {
+	Cursor   string  `json:"cursor"`
+	ID       string  `json:"id"`
+	CreateAt float64 `json:"createAt"`
+	UpdateAt float64 `json:"updateAt"`
+	DeleteAt float64 `json:"deleteAt"`
+	Team     struct {
+		ID string `json:"id"`
+	} `json:"team"`
+	Type              string         `json:"type"`
+	DisplayName       string         `json:"displayName"`
+	Name              string         `json:"name"`
+	Header            string         `json:"header"`
+	Purpose           string         `json:"purpose"`
+	LastPostAt        int64          `json:"lastPostAt"`
+	LastRootPostAt    int64          `json:"lastRootPostAt"`
+	TotalMsgCount     int64          `json:"totalMsgCount"`
+	TotalMsgCountRoot int64          `json:"totalMsgCountRoot"`
+	CreatorID         string         `json:"creatorId"`
+	SchemeID          *string        `json:"schemeId"`
+	GroupConstrained  *bool          `json:"groupConstrained"`
+	Shared            *bool          `json:"shared"`
+	Props             map[string]any `json:"props"`
+	PolicyID          *string        `json:"policyId"`
+}
+
+type gqlChannelMember struct {
+	Cursor             string          `json:"cursor"`
+	Channel            gqlChannel      `json:"channel"`
+	Roles              []gqlRole       `json:"roles"`
+	User               gqlUser         `json:"user"`
+	LastViewedAt       float64         `json:"lastViewedAt"`
+	LastUpdateAt       float64         `json:"lastUpdateAt"`
+	MsgCount           float64         `json:"msgCount"`
+	MentionCount       float64         `json:"mentionCount"`
+	MentionCountRoot   float64         `json:"mentionCountRoot"`
+	UrgentMentionCount float64         `json:"urgentMentionCount"`
+	MsgCountRoot       float64         `json:"msgCountRoot"`
+	NotifyProps        model.StringMap `json:"notifyProps"`
+	SchemeGuest        bool            `json:"schemeGuest"`
+	SchemeUser         bool            `json:"schemeUser"`
+	SchemeAdmin        bool            `json:"schemeAdmin"`
+}

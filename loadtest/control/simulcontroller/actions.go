@@ -96,7 +96,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.isGQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -210,13 +210,28 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 	return c.switchTeam(u)
 }
 
-func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
-	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserActionResponse {
+	if gqlEnabled {
+		chCursor := ""
+		cmCursor := ""
+		var err error
+		for {
+			chCursor, cmCursor, err = u.GetChannelsAndChannelMembersGQL(team.Id, true, chCursor, cmCursor)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if chCursor == "" || cmCursor == "" {
+				break
+			}
+		}
+	} else {
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 
-	if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
@@ -259,7 +274,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.isGQLEnabled); resp.Err != nil {
 		return resp
 	}
 

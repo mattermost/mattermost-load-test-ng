@@ -1449,37 +1449,9 @@ func (ue *UserEntity) GetInitialDataGQL() error {
 			}
 	`}
 
-	buf, err := json.Marshal(input)
+	gqlResp, err := ue.getGqlResponse(input)
 	if err != nil {
 		return err
-	}
-
-	req, err := ue.prepareRequest(http.MethodPost,
-		getGQLURL(ue.client.URL),
-		bytes.NewReader(buf),
-		map[string]string{})
-	if err != nil {
-		return err
-	}
-
-	resp, err := ue.client.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer closeBody(resp)
-
-	var gqlResp *graphql.Response
-	err = json.NewDecoder(resp.Body).Decode(&gqlResp)
-	if err != nil {
-		return err
-	}
-
-	if len(gqlResp.Errors) > 0 {
-		tmp := ""
-		for _, err := range gqlResp.Errors {
-			tmp += err.Error() + " "
-		}
-		return errors.New(tmp)
 	}
 
 	err = json.Unmarshal(gqlResp.Data, &q)
@@ -1501,6 +1473,110 @@ func (ue *UserEntity) GetInitialDataGQL() error {
 	return nil
 }
 
+// GetChannelsAndChannelMembersGQL is a method to get channels and channelMember info via GraphQL
+func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error) {
+	var q struct {
+		Channels       []gqlChannel       `json:"channels"`
+		ChannelMembers []gqlChannelMember `json:"channelMembers"`
+	}
+	const perPage = 200
+
+	input := &user.GraphQLInput{
+		OperationName: "gqlWebChannelsAndChannelMembers",
+		Query: `
+			query gqlWebChannelsAndChannelMembers($teamId: String, $perPage: Int!, $channelsCursor: String, $channelMembersCursor: String, $includeDeleted: Boolean) {
+				channels(userId: "me", teamId: $teamId, first: $perPage, after: $channelsCursor, includeDeleted: $includeDeleted) {
+		            cursor
+			        id
+			        create_at: createAt
+			        update_at: updateAt
+			        delete_at: deleteAt
+			        team {
+			          id
+			        }
+			        type
+			        display_name: displayName
+			        name
+			        header
+			        purpose
+			        last_post_at: lastPostAt
+			        last_root_post_at: lastRootPostAt
+			        total_msg_count: totalMsgCount
+			        total_msg_count_root: totalMsgCountRoot
+			        creator_id: creatorId
+			        scheme_id: schemeId
+			        group_constrained: groupConstrained
+			        shared
+			        props
+			        policy_id: policyId
+		        }
+		        channelMembers(userId: "me", teamId: $teamId, first: $perPage, after: $channelMembersCursor) {
+		            cursor
+			        channel {
+			            id
+			        }
+			        user {
+			            id
+			        }
+			        roles {
+			            id
+			            name
+			            permissions
+			        }
+			        last_viewed_at: lastViewedAt
+			        msg_count: msgCount
+			        msg_count_root: msgCountRoot
+			        mention_count: mentionCount
+			        mention_count_root: mentionCountRoot
+			        urgent_mention_count: urgentMentionCount
+			        notify_props: notifyProps
+			        last_update_at: lastUpdateAt
+			        scheme_admin: schemeAdmin
+			        scheme_user: schemeUser
+		        }
+			}
+	`,
+		Variables: map[string]interface{}{
+			"teamId":               teamID,
+			"perPage":              perPage,
+			"includeDeleted":       includeDeleted,
+			"channelsCursor":       channelsCursor,
+			"channelMembersCursor": channelMembersCursor,
+		},
+	}
+
+	gqlResp, err := ue.getGqlResponse(input)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = json.Unmarshal(gqlResp.Data, &q)
+	if err != nil {
+		return "", "", err
+	}
+
+	// And writing them all back to the store.
+	channels, chCursor := convertToTypedChannels(q.Channels)
+	cms, cmCursor := convertToTypedChannelMembers(q.ChannelMembers)
+
+	if len(q.Channels) < perPage {
+		chCursor = ""
+	}
+
+	if len(q.ChannelMembers) < perPage {
+		cmCursor = ""
+	}
+
+	if err := ue.store.SetChannels(channels); err != nil {
+		return "", "", err
+	}
+	if err := ue.store.SetChannelMembers(cms); err != nil {
+		return "", "", err
+	}
+
+	return chCursor, cmCursor, nil
+}
+
 func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers map[string]string) (*http.Request, error) {
 	rq, err := http.NewRequest(method, url, data)
 	if err != nil {
@@ -1514,4 +1590,41 @@ func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers
 	rq.Header.Set(model.HeaderAuth, ue.client.AuthType+" "+ue.client.AuthToken)
 
 	return rq, nil
+}
+
+func (ue *UserEntity) getGqlResponse(input any) (*graphql.Response, error) {
+	buf, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := ue.prepareRequest(http.MethodPost,
+		getGQLURL(ue.client.URL),
+		bytes.NewReader(buf),
+		map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := ue.client.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer closeBody(resp)
+
+	var gqlResp *graphql.Response
+	err = json.NewDecoder(resp.Body).Decode(&gqlResp)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		tmp := ""
+		for _, err := range gqlResp.Errors {
+			tmp += err.Error() + " "
+		}
+		return nil, errors.New(tmp)
+	}
+
+	return gqlResp, nil
 }
