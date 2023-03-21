@@ -6,6 +6,7 @@ package userentity
 import (
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 )
@@ -74,11 +75,11 @@ func convertToTypedRoles(input []gqlRole) []*model.Role {
 }
 
 func convertToRoleString(input []gqlRole) string {
-	roles := ""
+	roleNames := make([]string, 0, len(input))
 	for _, r := range input {
-		roles += " " + r.Name
+		roleNames = append(roleNames, r.Name)
 	}
-	return roles
+	return strings.Join(roleNames, " ")
 }
 
 func convertToTypedUser(input gqlUser) (*model.User, model.Preferences, []*model.Role) {

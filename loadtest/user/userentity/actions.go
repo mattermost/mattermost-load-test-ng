@@ -1593,7 +1593,6 @@ func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers
 }
 
 func (ue *UserEntity) getGqlResponse(input any) (*graphql.Response, error) {
-	var gqlResp *graphql.Response
 	buf, err := json.Marshal(input)
 	if err != nil {
 		return nil, err
@@ -1613,6 +1612,7 @@ func (ue *UserEntity) getGqlResponse(input any) (*graphql.Response, error) {
 	}
 	defer closeBody(resp)
 
+	var gqlResp *graphql.Response
 	err = json.NewDecoder(resp.Body).Decode(&gqlResp)
 	if err != nil {
 		return nil, err

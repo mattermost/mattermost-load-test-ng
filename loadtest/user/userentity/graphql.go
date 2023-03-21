@@ -77,7 +77,7 @@ type gqlChannel struct {
 	DeleteAt float64 `json:"deleteAt"`
 	Team     struct {
 		ID string `json:"id"`
-	}
+	} `json:"team"`
 	Type              string         `json:"type"`
 	DisplayName       string         `json:"displayName"`
 	Name              string         `json:"name"`
@@ -89,7 +89,7 @@ type gqlChannel struct {
 	TotalMsgCountRoot int64          `json:"totalMsgCountRoot"`
 	CreatorID         string         `json:"creatorId"`
 	SchemeID          *string        `json:"schemeId"`
-	GroupConstrained  *bool          `json:"GroupConstrained"`
+	GroupConstrained  *bool          `json:"groupConstrained"`
 	Shared            *bool          `json:"shared"`
 	Props             map[string]any `json:"props"`
 	PolicyID          *string        `json:"policyId"`
