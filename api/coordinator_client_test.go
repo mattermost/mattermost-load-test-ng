@@ -21,8 +21,11 @@ func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	t.Helper()
 	var coordConfig coordinator.Config
 	var ltConfig loadtest.Config
-	defaults.Set(&coordConfig)
-	defaults.Set(&ltConfig)
+	require.NoError(t, defaults.Set(&coordConfig))
+	require.NoError(t, defaults.Set(&ltConfig))
+	// Overwrite the server version to bypass the call to the MM server requesting it,
+	// since there is no MM server running in the tests.
+	ltConfig.UserControllerConfiguration.ServerVersion = "5.17.1"
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)

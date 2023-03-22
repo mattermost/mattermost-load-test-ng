@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -26,7 +27,7 @@ type SimulController struct {
 	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
 	connectedFlag  int32           // indicates that the controller is connected
 	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
-	serverVersion  string          // stores the current server version
+	serverVersion  semver.Version  // stores the current server version
 	isGQLEnabled   bool
 }
 
@@ -55,6 +56,9 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}, nil
 }
 
+// This project started on 2019-11-26, when the latest release was 5.17.1
+var initialVersion = semver.MustParse("5.17.1")
+
 // Run begins performing a set of user actions in a loop.
 // It keeps on doing it until Stop() is invoked.
 // This is also a blocking function, so it is recommended to invoke it
@@ -76,8 +80,30 @@ func (c *SimulController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	c.serverVersion, _ = c.user.Store().ServerVersion()
-	err := c.user.GetClientConfig()
+	// Init controller's server version
+	serverVersionString, err := c.user.Store().ServerVersion()
+	if err != nil {
+		c.sendFailStatus("server version could not be retrieved")
+		return
+	}
+	serverVersion, err := control.ParseServerVersion(serverVersionString)
+	if err != nil {
+		c.sendFailStatus("server version could not be parsed")
+		return
+	}
+	c.serverVersion = serverVersion
+
+	// Early check that the server version is greater or equal than the initialVersion
+	if !c.isVersionSupported(initialVersion) {
+		c.sendFailStatus(fmt.Sprintf(
+			"server version %q is lower than the minimum supported version %q",
+			serverVersion.String(),
+			initialVersion.String(),
+		))
+		return
+	}
+
+	err = c.user.GetClientConfig()
 	if err != nil {
 		c.status <- c.newErrorStatus(err)
 	}
@@ -109,152 +135,184 @@ func (c *SimulController) Run() {
 
 	actions := []userAction{
 		{
-			run:       switchChannel,
-			frequency: 4,
+			run:              switchChannel,
+			frequency:        4,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.switchTeam,
-			frequency: 3,
+			run:              c.switchTeam,
+			frequency:        3,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.scrollChannel,
-			frequency: 2,
+			run:              c.scrollChannel,
+			frequency:        2,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       openDirectOrGroupChannel,
-			frequency: 2,
+			run:              openDirectOrGroupChannel,
+			frequency:        2,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       unreadCheck,
-			frequency: 1.5,
+			run:              unreadCheck,
+			frequency:        1.5,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.createPost,
-			frequency: 1.5,
+			run:              c.createPost,
+			frequency:        1.5,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.createPostReply,
-			frequency: 0.5,
+			run:              c.createPostReply,
+			frequency:        0.5,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.joinChannel,
-			frequency: 0.8,
+			run:              c.joinChannel,
+			frequency:        0.8,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.searchChannels,
-			frequency: 0.5,
+			run:              c.searchChannels,
+			frequency:        0.5,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.addReaction,
-			frequency: 0.5,
+			run:              c.addReaction,
+			frequency:        0.5,
+			minServerVersion: semver.MustParse("3.6.0"),
 		},
 		{
-			run:       c.fullReload,
-			frequency: 0.2,
+			run:              c.fullReload,
+			frequency:        0.2,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.createDirectChannel,
-			frequency: 0.25,
+			run:              c.createDirectChannel,
+			frequency:        0.25,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.logoutLogin,
-			frequency: 0.1,
+			run:              c.logoutLogin,
+			frequency:        0.1,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       searchUsers,
-			frequency: 0.1,
+			run:              searchUsers,
+			frequency:        0.1,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       searchPosts,
-			frequency: 0.1,
+			run:              searchPosts,
+			frequency:        0.1,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.createPostReminder,
-			frequency: 0.002,
+			run:              c.createPostReminder,
+			frequency:        0.002,
+			minServerVersion: semver.MustParse("7.3.0"),
 		},
 		{
-			run:       editPost,
-			frequency: 0.1,
+			run:              editPost,
+			frequency:        0.1,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       deletePost,
-			frequency: 0.06,
+			run:              deletePost,
+			frequency:        0.06,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.updateCustomStatus,
-			frequency: 0.05,
+			run:              c.updateCustomStatus,
+			frequency:        0.05,
+			minServerVersion: semver.MustParse("5.33.0"),
 		},
 		{
-			run:       c.removeCustomStatus,
-			frequency: 0.05,
+			run:              c.removeCustomStatus,
+			frequency:        0.05,
+			minServerVersion: semver.MustParse("5.33.0"),
 		},
 		{
-			run:       c.createSidebarCategory,
-			frequency: 0.06,
+			run:              c.createSidebarCategory,
+			frequency:        0.06,
+			minServerVersion: semver.MustParse("5.26.0"),
 		},
 		{
-			run:       c.updateSidebarCategory,
-			frequency: 0.06,
+			run:              c.updateSidebarCategory,
+			frequency:        0.06,
+			minServerVersion: semver.MustParse("5.26.0"),
 		},
 		{
-			run:       searchGroupChannels,
-			frequency: 0.1,
+			run:              searchGroupChannels,
+			frequency:        0.1,
+			minServerVersion: semver.MustParse("5.14.0"),
 		},
 		{
-			run:       c.createGroupChannel,
-			frequency: 0.05,
+			run:              c.createGroupChannel,
+			frequency:        0.05,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       createPrivateChannel,
-			frequency: 0.022,
+			run:              createPrivateChannel,
+			frequency:        0.022,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       control.CreatePublicChannel,
-			frequency: 0.011,
+			run:              control.CreatePublicChannel,
+			frequency:        0.011,
+			minServerVersion: initialVersion,
 		},
 		{
-			run:       c.viewGlobalThreads,
-			frequency: 5.4,
+			run:              c.viewGlobalThreads,
+			frequency:        5.4,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.followThread,
-			frequency: 0.041,
+			run:              c.followThread,
+			frequency:        0.041,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.unfollowThread,
-			frequency: 0.055,
+			run:              c.unfollowThread,
+			frequency:        0.055,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.viewThread,
-			frequency: 4.8,
+			run:              c.viewThread,
+			frequency:        4.8,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.markAllThreadsInTeamAsRead,
-			frequency: 0.013,
+			run:              c.markAllThreadsInTeamAsRead,
+			frequency:        0.013,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.updateThreadRead,
-			frequency: 1.17,
+			run:              c.updateThreadRead,
+			frequency:        1.17,
+			minServerVersion: semver.MustParse("5.37.0"),
 		},
 		{
-			run:       c.getInsights,
-			frequency: 0.011,
+			run:              c.getInsights,
+			frequency:        0.011,
+			minServerVersion: semver.MustParse("7.1.0"),
 		},
 	}
 
+	// Filter only actions that are available for the current server
+	var availableActions []userAction
+	for _, action := range actions {
+		if c.isVersionSupported(action.minServerVersion) {
+			availableActions = append(availableActions, action)
+		}
+	}
+
 	for {
-		action, err := pickAction(actions)
+		action, err := pickAction(availableActions)
 		if err != nil {
 			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
-		}
-
-		if action.minServerVersion != "" {
-			supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
-			if err != nil {
-				c.status <- c.newErrorStatus(err)
-			} else if !supported {
-				continue
-			}
 		}
 
 		if resp := action.run(c.user); resp.Err != nil {
@@ -296,4 +354,8 @@ func (c *SimulController) sendFailStatus(reason string) {
 
 func (c *SimulController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+}
+
+func (c *SimulController) isVersionSupported(version semver.Version) bool {
+	return version.LTE(c.serverVersion)
 }

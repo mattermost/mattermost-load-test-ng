@@ -45,7 +45,9 @@ func TestAgentAPI(t *testing.T) {
 	ltConfig := loadtest.Config{}
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
-
+	// Overwrite the server version to bypass the call to the MM server requesting it,
+	// since fakesitetotallydoesntexist will not return a version.
+	ltConfig.UserControllerConfiguration.ServerVersion = "5.17.1"
 	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 

@@ -39,8 +39,11 @@ func TestAgentClientConcurrency(t *testing.T) {
 		var success int
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
-		defaults.Set(&ltConfig)
-		defaults.Set(&ucConfig)
+		require.NoError(t, defaults.Set(&ltConfig))
+		require.NoError(t, defaults.Set(&ucConfig))
+		// Overwrite the server version to bypass the call to the MM server requesting it,
+		// since there is no MM server running in the tests.
+		ltConfig.UserControllerConfiguration.ServerVersion = "5.17.1"
 		agent, err := agentClient.New(id, server.URL, nil)
 		require.NoError(t, err)
 		require.NotNil(t, agent)
@@ -195,8 +198,11 @@ func TestCoordClientConcurrency(t *testing.T) {
 		coord := createClient(t, i)
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
-		defaults.Set(&coordConfig)
-		defaults.Set(&ltConfig)
+		require.NoError(t, defaults.Set(&coordConfig))
+		require.NoError(t, defaults.Set(&ltConfig))
+		// Overwrite the server version to bypass the call to the MM server requesting it,
+		// since there is no MM server running in the tests.
+		ltConfig.UserControllerConfiguration.ServerVersion = "5.17.1"
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
@@ -208,8 +214,11 @@ func TestCoordClientConcurrency(t *testing.T) {
 		coord := createClient(t, 0)
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
-		defaults.Set(&coordConfig)
-		defaults.Set(&ltConfig)
+		require.NoError(t, defaults.Set(&coordConfig))
+		require.NoError(t, defaults.Set(&ltConfig))
+		// Overwrite the server version to bypass the call to the MM server requesting it,
+		// since there is no MM server running in the tests.
+		ltConfig.UserControllerConfiguration.ServerVersion = "5.17.1"
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		var success int
