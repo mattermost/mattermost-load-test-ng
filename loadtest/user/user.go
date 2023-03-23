@@ -186,7 +186,7 @@ type User interface {
 	// the specified channel.
 	GetChannelMember(channelId string, userId string) error
 	// GetChannelStats fetches statistics for the specified channel.
-	GetChannelStats(channelId string) error
+	GetChannelStats(channelId string, excludeFileCount bool) error
 	// AddChannelMember adds the specified user to the specified channel.
 	AddChannelMember(channelId, userId string) error
 	// GetChannelsForTeamForUser fetches and stores chanels for the specified user in
@@ -318,4 +318,5 @@ type User interface {
 
 	// GraphQL
 	GetInitialDataGQL() error
+	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
 }

@@ -96,7 +96,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.isGQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -210,13 +210,28 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 	return c.switchTeam(u)
 }
 
-func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
-	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserActionResponse {
+	if gqlEnabled {
+		chCursor := ""
+		cmCursor := ""
+		var err error
+		for {
+			chCursor, cmCursor, err = u.GetChannelsAndChannelMembersGQL(team.Id, true, chCursor, cmCursor)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if chCursor == "" || cmCursor == "" {
+				break
+			}
+		}
+	} else {
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 
-	if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
@@ -259,7 +274,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.isGQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -433,7 +448,18 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetChannelStats(channel.Id); err != nil {
+	excludeFileCount := true
+	// 1% of the time, users will open RHS, which will include the file count as well.
+	// This is not an entirely accurate representation of events as we are mixing
+	// a normal viewChannel with a viewRHS event
+	// But we cannot distinguish between the two at an API level, so our action
+	// frequencies are also calculated that way.
+	// This is a good enough approximation.
+	if rand.Float64() < 0.01 {
+		excludeFileCount = false
+	}
+
+	if err := u.GetChannelStats(channel.Id, excludeFileCount); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
