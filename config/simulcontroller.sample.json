@@ -2,5 +2,5 @@
   "MinIdleTimeMs": 1000,
   "AvgIdleTimeMs": 20000,
   "PercentUrgentPosts": 0.001,
-  "PercentReplies": 0.85
+  "PercentReplies": 0.18
 }

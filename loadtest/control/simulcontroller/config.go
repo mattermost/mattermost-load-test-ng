@@ -19,7 +19,7 @@ type Config struct {
 	// The percentage of root posts that are marked as urgent
 	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
 	// The percentage of all posts that are replies
-	PercentReplies float64 `default:"0.85" validate:"range:[0,1]"`
+	PercentReplies float64 `default:"0.18" validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
