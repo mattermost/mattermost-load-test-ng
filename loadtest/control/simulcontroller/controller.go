@@ -166,7 +166,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.createPostReminder,
-			frequency: 0.0000,
+			frequency: 0.0001,
 		},
 		{
 			run:       editPost,
@@ -182,11 +182,11 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.removeCustomStatus,
-			frequency: 0.0000,
+			frequency: 0.0001,
 		},
 		{
 			run:       c.createSidebarCategory,
-			frequency: 0.0000,
+			frequency: 0.0001,
 		},
 		{
 			run:       c.updateSidebarCategory,
@@ -226,7 +226,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.markAllThreadsInTeamAsRead,
-			frequency: 0.0000,
+			frequency: 0.0001,
 		},
 		{
 			run:       c.updateThreadRead,
