@@ -282,7 +282,7 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 
 	cms, err := u.Store().ChannelMembers(channel.Id)
 	if err != nil {
-		return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	// If not enough members in the channel then populate it.
@@ -291,38 +291,34 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-	}
 
-	postOwner := u.Store().Id()
-	var mentionedUserID string
-	// Make limited no. of attempts to find a randomUser that is not a post-owner.
-	for i := 0; i < 5; i++ {
-		member, err := u.Store().RandomChannelMember(channel.Id)
+		// Validate again
+		cms, err = u.Store().ChannelMembers(channel.Id)
 		if err != nil {
-			if errors.Is(err, memstore.ErrEmptyMap) {
-				return UserActionResponse{Info: fmt.Sprintf("no users in the channel: %s", channel.Id)}
-			}
 			return UserActionResponse{Err: NewUserError(err)}
 		}
-
-		if member.UserId != postOwner {
-			mentionedUserID = member.UserId
-			break
+		if len(cms) < 2 {
+			return UserActionResponse{Info: fmt.Sprintf("not enough users in the channel: %s", channel.Id)}
 		}
 	}
 
-	if mentionedUserID == "" {
-		return UserActionResponse{Info: fmt.Sprintf("no user except the post owner found in channel:%s", channel.Id)}
+	postOwnerID := u.Store().Id()
+	idx := rand.Intn(len(cms))
+	if cms[idx].UserId == postOwnerID {
+		idx = (idx + 1) % len(cms)
 	}
 
-	mentionedUser, err := u.Store().GetUser(mentionedUserID)
-	if err != nil || mentionedUser.Username == "" {
+	mentionedUser, err := u.Store().GetUser(cms[idx].UserId)
+	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if mentionedUser.Username == "" {
+		return UserActionResponse{Info: fmt.Sprintf("user has empty username: %s", mentionedUser.Id)}
 	}
 
 	postId, err := u.CreatePost(&model.Post{
 		Message:   fmt.Sprintf("Persistent Notification Post mention @%s", mentionedUser.Username),
-		UserId:    postOwner,
+		UserId:    postOwnerID,
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
@@ -337,7 +333,7 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	return UserActionResponse{Info: fmt.Sprintf("persistent notification post created, id %v", postId)}
+	return UserActionResponse{Info: fmt.Sprintf("persistent notification post created, id %s", postId)}
 }
 
 // EditPost updates a post.

@@ -5,7 +5,6 @@ package memstore
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -776,49 +775,32 @@ func TestThreads(t *testing.T) {
 
 func TestPostsWithAckRequests(t *testing.T) {
 	s := newStore(t)
-	ch := make(chan bool)
 	n := 10
-	ackPosts := make(map[string]bool, n)
-	var mux sync.RWMutex
+	ackPosts := make([]string, n)
 
 	for i := 0; i < n; i++ {
-		// Concurrently create ack and regular posts
-		go func() {
-			p := &model.Post{
-				Id:      model.NewId(),
-				Message: "ack post",
-				Metadata: &model.PostMetadata{
-					Priority: &model.PostPriority{
-						Priority:     model.NewString(model.PostPriorityUrgent),
-						RequestedAck: model.NewBool(true),
-					},
+		p := &model.Post{
+			Id:      model.NewId(),
+			Message: "ack post",
+			Metadata: &model.PostMetadata{
+				Priority: &model.PostPriority{
+					Priority:     model.NewString(model.PostPriorityUrgent),
+					RequestedAck: model.NewBool(true),
 				},
-			}
-			mux.Lock()
-			err := s.SetPost(p)
-			require.NoError(t, err)
-			ackPosts[p.Id] = true
-			mux.Unlock()
-
-			err = s.SetPost(&model.Post{
-				Id:      model.NewId(),
-				Message: "regular post",
-			})
-			require.NoError(t, err)
-			ch <- true
-		}()
-	}
-
-	for i := 0; i < n; i++ {
-		<-ch
-
-		// Concurrently read ack posts
-		posts, err := s.PostsWithAckRequests()
-		require.NoError(t, err)
-		for _, p := range posts {
-			mux.RLock()
-			assert.Contains(t, ackPosts, p)
-			mux.RUnlock()
+			},
 		}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		ackPosts[i] = p.Id
+
+		err = s.SetPost(&model.Post{
+			Id:      model.NewId(),
+			Message: "regular post",
+		})
+		require.NoError(t, err)
 	}
+
+	posts, err := s.PostsWithAckRequests()
+	require.NoError(t, err)
+	assert.ElementsMatch(t, ackPosts, posts)
 }
