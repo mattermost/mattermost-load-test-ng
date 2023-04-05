@@ -713,57 +713,6 @@ func editPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
 }
 
-func (c *SimulController) createPostReply(u user.User) control.UserActionResponse {
-	channel, err := u.Store().CurrentChannel()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	var rootId string
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if post.RootId != "" {
-		rootId = post.RootId
-	} else {
-		rootId = post.Id
-	}
-
-	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	message, err := createMessage(u, channel, true)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	reply := &model.Post{
-		Message:   message,
-		ChannelId: channel.Id,
-		CreateAt:  time.Now().Unix() * 1000,
-		RootId:    rootId,
-	}
-
-	// 2% of the times post will have files attached.
-	if rand.Float64() < 0.02 {
-		if err := c.attachFilesToPost(u, reply); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	}
-
-	replyId, err := u.CreatePost(reply)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", replyId)}
-}
-
 func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
@@ -774,7 +723,12 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := createMessage(u, channel, false)
+	// Select the post characteristics
+	isReply := rand.Float64() < c.config.PercentReplies
+	isUrgent := !isReply && (rand.Float64() < c.config.PercentUrgentPosts)
+	hasFilesAttached := rand.Float64() < 0.02
+
+	message, err := createMessage(u, channel, isReply)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -785,14 +739,33 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		CreateAt:  time.Now().Unix() * 1000,
 	}
 
-	// 2% of the times post will have files attached.
-	if rand.Float64() < 0.02 {
+	if isReply {
+		var rootId string
+		randomPost, err := u.Store().RandomPostForChannel(channel.Id)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// Get the ID of the post to which the randomPost replies to,
+		// or the ID of the randomPost itself if it's a root post
+		if randomPost.RootId != "" {
+			rootId = randomPost.RootId
+		} else {
+			rootId = randomPost.Id
+		}
+
+		post.RootId = rootId
+	}
+
+	if hasFilesAttached {
 		if err := c.attachFilesToPost(u, post); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
-	if rand.Float64() < c.config.PercentUrgentPosts {
+	if isUrgent {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
 			Priority:                model.NewString("urgent"),
