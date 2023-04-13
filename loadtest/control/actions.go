@@ -303,8 +303,10 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 	}
 
 	postOwnerID := u.Store().Id()
+	// Find a random non-postOwner
 	idx := rand.Intn(len(cms))
 	if cms[idx].UserId == postOwnerID {
+		// If postOwner then just pick next user (use modulus to prevent index-out-of-range)
 		idx = (idx + 1) % len(cms)
 	}
 
