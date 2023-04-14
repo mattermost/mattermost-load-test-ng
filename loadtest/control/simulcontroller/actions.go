@@ -77,7 +77,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	}
 
 	var resp control.UserActionResponse
-	if c.isGQLEnabled {
+	if c.featureFlags.GraphQLEnabled {
 		resp = control.ReloadGQL(c.user)
 	} else {
 		resp = control.Reload(c.user)
@@ -96,7 +96,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team, c.isGQLEnabled); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -274,7 +274,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team, c.isGQLEnabled); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
 		return resp
 	}
 

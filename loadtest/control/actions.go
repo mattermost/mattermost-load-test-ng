@@ -58,6 +58,11 @@ func Login(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	// Populate user config
+	if err := u.GetClientConfig(); err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
 	// Populate teams and channels.
 	teamIds, err := u.GetAllTeams(0, 100)
 	if err != nil {
