@@ -107,7 +107,7 @@ else
 ifeq ($(BRANCH_EXISTS), 0)
 	@echo "Error: branch ${BRANCH_NAME} already exists"
 else
-	@echo $(NEXT_VER) | grep -Eq ^v[0-9]+\.[0-9]+\.[0-9]+$ || echo "The next version, '$(NEXT_VER)' is not of the form vMAJOR.MINOR.PATCH" && exit 1
+	@echo $(NEXT_VER) | grep -Eq ^v[0-9]+\.[0-9]+\.[0-9]+$ || (echo "The next version, '$(NEXT_VER)' is not of the form vMAJOR.MINOR.PATCH" && exit 1)
 	git checkout -b $(BRANCH_NAME) origin/master
 	@echo "Applying changes"
 	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
@@ -132,7 +132,7 @@ else
 	git checkout master
 	git pull
 	git tag $(NEXT_VER)
-	goreleaser --rm-dist
+	goreleaser --clean
 endif
 endif
 
