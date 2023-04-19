@@ -132,7 +132,7 @@ else
 	git checkout master
 	git pull
 	git tag $(NEXT_VER)
-	goreleaser --rm-dist
+	goreleaser --clean
 endif
 endif
 

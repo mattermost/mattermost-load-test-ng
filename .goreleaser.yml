@@ -29,6 +29,7 @@ builds:
       - CGO_ENABLED=0
 archives:
   -
+    rlcp: true
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     wrap_in_directory: true
     format: tar.gz
