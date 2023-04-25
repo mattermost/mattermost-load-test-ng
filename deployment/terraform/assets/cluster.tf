@@ -248,12 +248,6 @@ resource "aws_s3_bucket" "s3bucket" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_acl" "s3bucketacl" {
-  count  = var.app_instance_count > 1 ? 1 : 0
-  bucket = aws_s3_bucket.s3bucket[0].id
-  acl    = "private"
-}
-
 resource "aws_iam_user_policy" "s3userpolicy" {
   name  = "${var.cluster_name}-s3userpolicy"
   user  = aws_iam_user.s3user[0].name
