@@ -94,7 +94,7 @@ Even without the framework, a general load-test workflow in the cloud will be si
 After all the code changes:
  - [Add tests](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coverage.md#testing) if required. 
  - Run `make check-style`.
- - `go get -u github.com/mattermost/mattermost-server/v6@<commit-hash-in-master>` && `go mod tidy`
+ - `go get -u github.com/mattermost/mattermost-server/server/v8@<commit-hash-in-master>` && `go mod tidy`
  - Create the PR.
 
 #### Note:
