@@ -1877,3 +1877,62 @@ func (c *SimulController) createPostReminder(u user.User) control.UserActionResp
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
 }
+
+func (c *SimulController) viewChannelThreads(u user.User) control.UserActionResponse {
+	ch, err := u.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "current channel is not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	filters := []model.GetChannelThreadsFilter{
+		model.GetChannelThreadsFilterAll,
+		model.GetChannelThreadsFilterFollowing,
+		model.GetChannelThreadsFilterCurrentUser,
+	}
+
+	for _, f := range filters {
+		threads, err1 := u.GetChannelThreads(ch.Id, &model.GetChannelThreadsOpts{
+			PageSize:    25,
+			ThreadsOnly: true,
+			Filter:      f,
+		})
+		if err1 != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err1)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: fmt.Sprintf(`opened channel threads, using filter "%s", but no threads found`, f)}
+		}
+
+		oldestThreadId := threads[len(threads)-1].PostId
+
+		// scroll through the threads for a random number of times 1-3
+		numScrolls := rand.Intn(3) + 1
+		for i := 0; i < numScrolls; i++ {
+			threads, err1 = u.GetChannelThreads(ch.Id, &model.GetChannelThreadsOpts{
+				PageSize:    25,
+				ThreadsOnly: true,
+				Before:      oldestThreadId,
+				Filter:      f,
+			})
+			if err1 != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err1)}
+			}
+			if len(threads) == 0 {
+				break
+			}
+			oldestThreadId = threads[len(threads)-1].PostId
+
+			// wait for a random amount of time between 1 and 10 seconds
+			idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+			select {
+			case <-c.stopChan:
+				return control.UserActionResponse{Info: "action canceled"}
+			case <-time.After(idleTime):
+			}
+		}
+	}
+
+	return control.UserActionResponse{Info: "viewed channel threads"}
+}

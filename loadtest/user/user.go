@@ -289,6 +289,8 @@ type User interface {
 	MarkAllThreadsInTeamAsRead(teamId string) error
 	// UpdateThreadRead updates the read timestamp of the thread
 	UpdateThreadRead(teamId, threadId string, timestamp int64) error
+	// GetChannelThreads fetches threads of a channel.
+	GetChannelThreads(channelID string, opts *model.GetChannelThreadsOpts) ([]*model.ThreadResponse, error)
 
 	// SidebarCategories
 	GetSidebarCategories(userID, teamID string) error

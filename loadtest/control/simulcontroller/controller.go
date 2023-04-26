@@ -245,6 +245,10 @@ func (c *SimulController) Run() {
 			run:       c.getInsights,
 			frequency: 0.011,
 		},
+		{
+			run:       c.viewChannelThreads,
+			frequency: 4,
+		},
 	}
 
 	for {
