@@ -59,7 +59,7 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}, nil
 }
 
-// Run begins performing a set of user actions in a loop.
+// Run LOL begins performing a set of user actions in a loop.
 // It keeps on doing it until Stop() is invoked.
 // This is also a blocking function, so it is recommended to invoke it
 // inside a goroutine.
@@ -117,134 +117,134 @@ func (c *SimulController) Run() {
 	}
 
 	actions := []userAction{
-		{
-			run:       switchChannel,
-			frequency: 4,
-		},
-		{
-			run:       c.switchTeam,
-			frequency: 3,
-		},
-		{
-			run:       c.scrollChannel,
-			frequency: 2,
-		},
-		{
-			run:       openDirectOrGroupChannel,
-			frequency: 2,
-		},
-		{
-			run:       unreadCheck,
-			frequency: 1.5,
-		},
-		{
-			run:       c.createPost,
-			frequency: 1.5,
-		},
-		{
-			run:       c.joinChannel,
-			frequency: 0.8,
-		},
-		{
-			run:       c.searchChannels,
-			frequency: 0.5,
-		},
-		{
-			run:       c.addReaction,
-			frequency: 0.5,
-		},
-		{
-			run:       c.fullReload,
-			frequency: 0.2,
-		},
-		{
-			run:       c.createDirectChannel,
-			frequency: 0.25,
-		},
-		{
-			run:       c.logoutLogin,
-			frequency: 0.1,
-		},
-		{
-			run:       searchUsers,
-			frequency: 0.1,
-		},
+		//{
+		//	run:       switchChannel,
+		//	frequency: 4,
+		//},
+		//{
+		//	run:       c.switchTeam,
+		//	frequency: 3,
+		//},
+		//{
+		//	run:       c.scrollChannel,
+		//	frequency: 2,
+		//},
+		//{
+		//	run:       openDirectOrGroupChannel,
+		//	frequency: 2,
+		//},
+		//{
+		//	run:       unreadCheck,
+		//	frequency: 1.5,
+		//},
+		//{
+		//	run:       c.createPost,
+		//	frequency: 1.5,
+		//},
+		//{
+		//	run:       c.joinChannel,
+		//	frequency: 0.8,
+		//},
+		//{
+		//	run:       c.searchChannels,
+		//	frequency: 0.5,
+		//},
+		//{
+		//	run:       c.addReaction,
+		//	frequency: 0.5,
+		//},
+		//{
+		//	run:       c.fullReload,
+		//	frequency: 0.2,
+		//},
+		//{
+		//	run:       c.createDirectChannel,
+		//	frequency: 0.25,
+		//},
+		//{
+		//	run:       c.logoutLogin,
+		//	frequency: 0.1,
+		//},
+		//{
+		//	run:       searchUsers,
+		//	frequency: 0.1,
+		//},
 		{
 			run:       searchPosts,
-			frequency: 0.1,
+			frequency: 1,
 		},
-		{
-			run:       c.createPostReminder,
-			frequency: 0.002,
-		},
-		{
-			run:       editPost,
-			frequency: 0.1,
-		},
-		{
-			run:       deletePost,
-			frequency: 0.06,
-		},
-		{
-			run:       c.updateCustomStatus,
-			frequency: 0.05,
-		},
-		{
-			run:       c.removeCustomStatus,
-			frequency: 0.05,
-		},
-		{
-			run:       c.createSidebarCategory,
-			frequency: 0.06,
-		},
-		{
-			run:       c.updateSidebarCategory,
-			frequency: 0.06,
-		},
-		{
-			run:       searchGroupChannels,
-			frequency: 0.1,
-		},
-		{
-			run:       c.createGroupChannel,
-			frequency: 0.05,
-		},
-		{
-			run:       createPrivateChannel,
-			frequency: 0.022,
-		},
-		{
-			run:       control.CreatePublicChannel,
-			frequency: 0.011,
-		},
-		{
-			run:       c.viewGlobalThreads,
-			frequency: 5.4,
-		},
-		{
-			run:       c.followThread,
-			frequency: 0.041,
-		},
-		{
-			run:       c.unfollowThread,
-			frequency: 0.055,
-		},
-		{
-			run:       c.viewThread,
-			frequency: 4.8,
-		},
-		{
-			run:       c.markAllThreadsInTeamAsRead,
-			frequency: 0.013,
-		},
-		{
-			run:       c.updateThreadRead,
-			frequency: 1.17,
-		},
-		{
-			run:       c.getInsights,
-			frequency: 0.011,
-		},
+		//{
+		//	run:       c.createPostReminder,
+		//	frequency: 0.002,
+		//},
+		//{
+		//	run:       editPost,
+		//	frequency: 0.1,
+		//},
+		//{
+		//	run:       deletePost,
+		//	frequency: 0.06,
+		//},
+		//{
+		//	run:       c.updateCustomStatus,
+		//	frequency: 0.05,
+		//},
+		//{
+		//	run:       c.removeCustomStatus,
+		//	frequency: 0.05,
+		//},
+		//{
+		//	run:       c.createSidebarCategory,
+		//	frequency: 0.06,
+		//},
+		//{
+		//	run:       c.updateSidebarCategory,
+		//	frequency: 0.06,
+		//},
+		//{
+		//	run:       searchGroupChannels,
+		//	frequency: 0.1,
+		//},
+		//{
+		//	run:       c.createGroupChannel,
+		//	frequency: 0.05,
+		//},
+		//{
+		//	run:       createPrivateChannel,
+		//	frequency: 0.022,
+		//},
+		//{
+		//	run:       control.CreatePublicChannel,
+		//	frequency: 0.011,
+		//},
+		//{
+		//	run:       c.viewGlobalThreads,
+		//	frequency: 5.4,
+		//},
+		//{
+		//	run:       c.followThread,
+		//	frequency: 0.041,
+		//},
+		//{
+		//	run:       c.unfollowThread,
+		//	frequency: 0.055,
+		//},
+		//{
+		//	run:       c.viewThread,
+		//	frequency: 4.8,
+		//},
+		//{
+		//	run:       c.markAllThreadsInTeamAsRead,
+		//	frequency: 0.013,
+		//},
+		//{
+		//	run:       c.updateThreadRead,
+		//	frequency: 1.17,
+		//},
+		//{
+		//	run:       c.getInsights,
+		//	frequency: 0.011,
+		//},
 	}
 
 	for {

@@ -4,6 +4,9 @@
 
 After a load test is complete, a report can be generated and saved to a file which can be used to compare different load test runs. This can be done using
 
+
+ in UTC
+
 ```sh
 go run ./cmd/ltctl report generate --output=base.out --label=base "2020-06-23 07:23:35" "2020-06-23 07:33:35"
 ```

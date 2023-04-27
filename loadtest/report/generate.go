@@ -143,8 +143,10 @@ func (g *Generator) Generate(startTime, endTime time.Time) (Report, error) {
 func (g *Generator) getValue(endTime time.Time, query, label string) (map[model.LabelValue]model.SampleValue, error) {
 	// We just query from endTime-5s to endTime because the query already computes the values
 	// from startTime to endTime.
+	fmt.Println("AAA")
 	res, err := g.helper.Matrix(query, endTime.Add(-5*time.Second), endTime)
 	if err != nil {
+		fmt.Println("BBB")
 		return nil, err
 	}
 

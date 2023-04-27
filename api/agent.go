@@ -48,7 +48,7 @@ func getAmount(r *http.Request) (int, error) {
 func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		LoadTestConfig         loadtest.Config
-		SimpleControllerConfig *simplecontroller.Config `json:",omitempty"`
+		SimpleControllerConfig *simplecontroller.Config `json:"SimpleControllerConfig,omitempty"`
 		SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {

@@ -5,8 +5,8 @@
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
-  "AppInstanceCount": 1,
-  "AppInstanceType": "c5.xlarge",
+     "AppInstanceCount": 1,
+     "AppInstanceType": "c5.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c5.xlarge",
   "ElasticSearchSettings": {
@@ -25,14 +25,14 @@
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
-  "TerraformDBSettings": {
-    "InstanceCount": 1,
-    "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r6g.large",
-    "UserName": "mmuser",
-    "Password": "mostest80098bigpass_",
-    "EnablePerformanceInsights": false
-  },
+      "TerraformDBSettings": {
+        "InstanceCount": 1,
+        "InstanceEngine": "aurora-postgresql",
+        "InstanceType": "db.r6g.large",
+        "UserName": "mmuser",
+        "Password": "mostest80098bigpass_",
+        "EnablePerformanceInsights": false
+      },
   "ExternalDBSettings": {
     "DriverName": "cockroach",
     "DataSource": "",
@@ -40,7 +40,7 @@
     "DataSourceSearchReplicas": []
   },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
-  "MattermostLicenseFile": "",
+  "MattermostLicenseFile": "/Users/harshilsharma/Downloads/old/dev-enterprise.mattermost-license",
   "MattermostConfigPatchFile": "",
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",

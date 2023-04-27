@@ -108,7 +108,7 @@ func getConfig(cmd *cobra.Command) (deployment.Config, error) {
 	}
 
 	if err := defaults.Validate(cfg); err != nil {
-		return deployment.Config{}, fmt.Errorf("failed to validate config: %w", err)
+		return deployment.Config{}, fmt.Errorf("failed to validate config AAA: %w", err)
 	}
 
 	logger.Init(&cfg.LogSettings)

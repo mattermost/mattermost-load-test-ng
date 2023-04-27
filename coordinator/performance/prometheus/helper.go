@@ -72,6 +72,9 @@ func (p *Helper) Matrix(query string, startTime, endTime time.Time) (model.Matri
 		return nil, fmt.Errorf("expected a matrix, got a %s", value.Type())
 	}
 
+	fmt.Println("Query: " + query)
+	fmt.Println(fmt.Sprintf("%v", value))
+
 	mat := value.(model.Matrix)
 	if len(mat) == 0 {
 		return nil, errors.New("matrix has length = 0")

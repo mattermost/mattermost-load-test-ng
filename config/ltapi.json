@@ -1,0 +1,109 @@
+{
+  "LoadTestConfig": {
+    "ConnectionConfiguration": {
+      "ServerURL": "http://localhost:8065",
+      "WebSocketURL": "ws://localhost:8065",
+      "AdminEmail": "harshil.sharma@mattermost.com",
+      "AdminPassword": "M@tt3rM0st"
+    },
+    "UserControllerConfiguration": {
+      "Type": "simple",
+      "RatesDistribution":[
+        {
+          "Rate": 1,
+          "Percentage": 1
+        }
+      ],
+      "ServerVersion" : ""
+    },
+    "InstanceConfiguration": {
+      "NumTeams": 5,
+      "NumChannels": 100,
+      "NumPosts": 10000,
+      "NumReactions": 0,
+      "NumAdmins": 0,
+      "PercentReplies": 0.1,
+      "PercentRepliesInLongThreads": 0.05,
+      "PercentUrgentPosts": 0.001,
+      "PercentPublicChannels": 0.2,
+      "PercentPrivateChannels": 0.1,
+      "PercentDirectChannels": 0.6,
+      "PercentGroupChannels": 0.1
+    },
+    "UsersConfiguration": {
+      "InitialActiveUsers": 500,
+      "UsersFilePath": "",
+      "MaxActiveUsers": 20000,
+      "AvgSessionsPerUser": 1
+    },
+    "LogSettings": {
+      "EnableConsole": true,
+      "ConsoleLevel": "ERROR",
+      "ConsoleJson": false,
+      "EnableFile": true,
+      "FileLevel": "INFO",
+      "FileJson": true,
+      "FileLocation": "ltagent.log",
+      "EnableColor": false
+    }
+  },
+  "SimpleControllerConfig": {
+    "Actions": [
+      {
+        "ActionId": "Reload",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 0
+      },
+      {
+        "ActionId": "JoinTeam",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 0
+      },
+      {
+        "ActionId": "JoinChannel",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 0
+      },
+      {
+        "ActionId": "SearchPosts",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "RandomSearchPosts",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchPostOperatorFrom",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchPostOperatorInChannel",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchPostOperatorExclude",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchHashtag",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchChannels",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      },
+      {
+        "ActionId": "SearchUsers",
+        "WaitAfterMs": 1000,
+        "RunPeriod": 1
+      }
+    ]
+  }
+}

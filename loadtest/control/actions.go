@@ -520,6 +520,63 @@ func SearchPosts(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
 }
 
+// SearchPosts searches for posts by the given user.
+func randomSearchPostsWithPrefix(prefix string, u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	searchTermWords := (rand.Int() % 10) + 1
+	searchTerm := prefix + GenerateRandomSentences(searchTermWords)
+
+	list, err := u.SearchPosts(team.Id, searchTerm, false)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+func RandomSearchPosts(u user.User) UserActionResponse {
+	response := randomSearchPostsWithPrefix("", u)
+	response.Info = "RandomSearchPosts " + response.Info
+	return response
+}
+
+// SearchPosts searches for posts by the given user.
+func SearchPostOperatorFrom(u user.User) UserActionResponse {
+	response := randomSearchPostsWithPrefix("from:lt0-1 ", u)
+	response.Info = "SearchPostOperatorFrom " + response.Info
+	return response
+}
+
+func SearchPostOperatorInChannel(u user.User) UserActionResponse {
+	response := randomSearchPostsWithPrefix("in:town-square ", u)
+	response.Info = "SearchPostOperatorInChannel " + response.Info
+	return response
+}
+
+func SearchPostOperatorExclude(u user.User) UserActionResponse {
+	response := randomSearchPostsWithPrefix("-rehabilitation ", u)
+	response.Info = "SearchPostOperatorExclude " + response.Info
+	return response
+}
+
+func SearchHashtag(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	list, err := u.SearchPosts(team.Id, "#yolo", false)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
 // FetchStaticAssets parses index.html and fetches static assets mentioned in it
 func FetchStaticAssets(u user.User) UserActionResponse {
 	err := u.FetchStaticAssets()
