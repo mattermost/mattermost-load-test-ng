@@ -3,7 +3,7 @@
     "ConnectionConfiguration": {
       "ServerURL": "http://localhost:8065",
       "WebSocketURL": "ws://localhost:8065",
-      "AdminEmail": "harshil.sharma@mattermost.com",
+      "AdminEmail": "foobar@example.com",
       "AdminPassword": "M@tt3rM0st"
     },
     "UserControllerConfiguration": {
