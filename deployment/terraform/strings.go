@@ -48,6 +48,21 @@ scrape_configs:
         - targets: [%s]
 `
 
+const pyroscopeConfig = `
+log-level: debug
+no-self-profiling: true
+
+scrape-configs:
+  - job-name: pyroscope
+    scheme: http
+    scrape-interval: 60s
+    enabled-profiles: [cpu, mem, goroutines]
+    static-configs:
+    - application: mattermost
+      spy-name: gospy
+      targets: [%s]
+`
+
 const metricsHosts = `
 127.0.0.1 localhost
 

@@ -139,6 +139,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
+	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
+	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig,
+		strings.Join(mmTargets, ","),
+	)
+	rdr = strings.NewReader(pyroscopeConfigFile)
+	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
+		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
+	}
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
 	rdr = strings.NewReader(metricsHostsFile)
 	if out, err := sshc.Upload(rdr, "/etc/hosts", true); err != nil {
@@ -147,6 +155,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PublicIP))
 	cmd := "sudo service prometheus restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
+	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PublicIP))
+	cmd = "sudo service pyroscope-server restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
