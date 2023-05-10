@@ -123,7 +123,10 @@ resource "aws_instance" "metrics_server" {
       "sudo systemctl enable grafana-server",
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
-      "sudo service inbucket start"
+      "sudo service inbucket start",
+      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
+      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
+      "sudo systemctl enable pyroscope-server"
     ]
   }
 }
@@ -536,6 +539,16 @@ resource "aws_security_group_rule" "metrics-grafana" {
   type              = "ingress"
   from_port         = 3000
   to_port           = 3000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-pyroscope" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 4040
+  to_port           = 4040
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
