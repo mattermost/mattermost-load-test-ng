@@ -1044,7 +1044,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 
 // This action includes methods that are called by the webapp client when a user
 // unfocuses (switches browser's tab/window) and goes back to the app after some time.
-func unreadCheck(u user.User) control.UserActionResponse {
+func (c *SimulController) unreadCheck(u user.User) control.UserActionResponse {
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1057,12 +1057,15 @@ func unreadCheck(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+	// We only refetch channels and channel members if 'DisableRefetchingOnBrowserFocus' flag is set to false.
+	if !c.featureFlags.DisableRefetchingOnBrowserFocus {
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 
-	if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
