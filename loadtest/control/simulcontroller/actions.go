@@ -76,6 +76,13 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		}
 	}
 
+	// A full reload always calls GET /api/v4/users?page=0&per_page=100,
+	// regardless of GraphQL enabled or not
+	_, err := c.user.GetUsers(0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	var resp control.UserActionResponse
 	if c.featureFlags.GraphQLEnabled {
 		resp = control.ReloadGQL(c.user)
