@@ -155,7 +155,7 @@ func (c *SimulController) Run() {
 		},
 		{
 			run:       c.fullReload,
-			frequency: 0.0011,
+			frequency: 0.248,
 		},
 		{
 			run:       c.createDirectChannel,
