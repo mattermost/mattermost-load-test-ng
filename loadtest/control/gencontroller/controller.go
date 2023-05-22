@@ -219,3 +219,15 @@ func (c *GenController) sendFailStatus(reason string) {
 func (c *GenController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *GenController) InjectAction(actionID string) control.UserActionResponse {
+	return control.UserActionResponse{
+		Info: fmt.Sprintf("Action %s not supported by GenController", actionID),
+	}
+}
+
+// ensure GenController implements UserController interface
+var _ control.UserController = (*GenController)(nil)

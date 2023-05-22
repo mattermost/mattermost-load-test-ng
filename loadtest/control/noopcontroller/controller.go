@@ -5,6 +5,7 @@ package noopcontroller
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -16,14 +17,16 @@ import (
 // NoopController is a very basic implementation of a controller.
 // NoopController, it just performs a pre-defined set of actions in a loop.
 type NoopController struct {
-	id            int
-	user          user.User
-	status        chan<- control.UserStatus
-	rate          float64
-	stopChan      chan struct{}   // this channel coordinates the stop sequence of the controller
-	stoppedChan   chan struct{}   // blocks until controller cleans up everything
-	connectedFlag int32           // indicates that the controller is connected
-	wg            *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	id                 int
+	user               user.User
+	status             chan<- control.UserStatus
+	rate               float64
+	actionMap          map[string]userAction
+	injectedActionChan chan userAction
+	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan        chan struct{}   // blocks until controller cleans up everything
+	connectedFlag      int32           // indicates that the controller is connected
+	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new NoopController with given parameters.
@@ -35,13 +38,14 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*NoopControl
 	}
 
 	return &NoopController{
-		id:          id,
-		user:        user,
-		status:      status,
-		rate:        1.0,
-		stopChan:    make(chan struct{}),
-		stoppedChan: make(chan struct{}),
-		wg:          &sync.WaitGroup{},
+		id:                 id,
+		user:               user,
+		status:             status,
+		rate:               1.0,
+		injectedActionChan: make(chan userAction, 10),
+		stopChan:           make(chan struct{}),
+		stoppedChan:        make(chan struct{}),
+		wg:                 &sync.WaitGroup{},
 	}, nil
 }
 
@@ -68,17 +72,24 @@ func (c *NoopController) Run() {
 
 	initActions := []userAction{
 		{
-			run: control.SignUp,
+			name: "SignUp",
+			run:  control.SignUp,
 		},
 		{
-			run: c.login,
+			name: "Login",
+			run:  c.login,
 		},
 		{
-			run: c.joinTeam,
+			name: "JoinTeam",
+			run:  c.joinTeam,
 		},
 		{
-			run: c.joinChannel,
+			name: "JoinChannel",
+			run:  c.joinChannel,
 		},
+	}
+	for _, ua := range initActions {
+		c.actionMap[ua.name] = ua
 	}
 
 	for i := 0; i < len(initActions); i++ {
@@ -98,7 +109,19 @@ func (c *NoopController) Run() {
 		}
 	}
 
+	var injectedAction *userAction
+
 	for {
+		// run injected actions (if any) first
+		if injectedAction != nil {
+			if resp := injectedAction.run(c.user); resp.Err != nil {
+				c.status <- c.newErrorStatus(resp.Err)
+			} else {
+				c.status <- c.newInfoStatus(resp.Info)
+			}
+			injectedAction = nil
+		}
+
 		if res, err := c.user.GetMe(); err != nil {
 			c.status <- c.newErrorStatus(err)
 		} else {
@@ -110,6 +133,8 @@ func (c *NoopController) Run() {
 		case <-c.stopChan:
 			return
 		case <-time.After(time.Millisecond * idleTime):
+		case ia := <-c.injectedActionChan: // run injected actions immediately
+			injectedAction = &ia
 		}
 	}
 }
@@ -128,6 +153,7 @@ func (c *NoopController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
 	// re-initialize for the next use
+	c.injectedActionChan = make(chan userAction, 10)
 	c.stopChan = make(chan struct{})
 	c.stoppedChan = make(chan struct{})
 }
@@ -139,3 +165,42 @@ func (c *NoopController) sendFailStatus(reason string) {
 func (c *NoopController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *NoopController) InjectAction(actionID string) control.UserActionResponse {
+	var action userAction
+	var ok bool
+
+	// include some actions that are not normally supported by NoopController
+	switch actionID {
+	case "Reload":
+		action = userAction{
+			name: "Reload",
+			run:  func(_ user.User) control.UserActionResponse { return control.Reload(c.user) },
+		}
+	default:
+		action, ok = c.actionMap[actionID]
+		if !ok {
+			return control.UserActionResponse{
+				Info: fmt.Sprintf("Action %s not supported by NoopController", actionID),
+			}
+		}
+	}
+
+	select {
+	case c.injectedActionChan <- action:
+		return control.UserActionResponse{
+			Info: fmt.Sprintf("Action %s queued successfully", actionID),
+		}
+	case <-time.After(time.Second * 15):
+		return control.UserActionResponse{
+			Info: fmt.Sprintf("Action %s timed out while queuing", actionID),
+			Err:  control.ErrActionTimeout,
+		}
+	}
+}
+
+// ensure NoopController implements UserController interface
+var _ control.UserController = (*NoopController)(nil)

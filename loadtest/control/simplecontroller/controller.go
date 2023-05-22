@@ -17,15 +17,17 @@ import (
 // SimpleController is a very basic implementation of a controller.
 // Currently, it just performs a pre-defined set of actions in a loop.
 type SimpleController struct {
-	id            int
-	user          user.User
-	status        chan<- control.UserStatus
-	rate          float64
-	actions       []*UserAction
-	stopChan      chan struct{}   // this channel coordinates the stop sequence of the controller
-	stoppedChan   chan struct{}   // blocks until controller cleans up everything
-	connectedFlag int32           // indicates that the controller is connected
-	wg            *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	id                 int
+	user               user.User
+	status             chan<- control.UserStatus
+	rate               float64
+	actions            []*UserAction
+	actionMap          map[string]control.UserAction
+	injectedActionChan chan *UserAction
+	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan        chan struct{}   // blocks until controller cleans up everything
+	connectedFlag      int32           // indicates that the controller is connected
+	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimpleController with given parameters.
@@ -37,13 +39,14 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	sc := &SimpleController{
-		id:          id,
-		user:        user,
-		status:      status,
-		stopChan:    make(chan struct{}),
-		stoppedChan: make(chan struct{}),
-		rate:        1.0,
-		wg:          &sync.WaitGroup{},
+		id:                 id,
+		user:               user,
+		status:             status,
+		injectedActionChan: make(chan *UserAction, 10),
+		stopChan:           make(chan struct{}),
+		stoppedChan:        make(chan struct{}),
+		rate:               1.0,
+		wg:                 &sync.WaitGroup{},
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
@@ -69,6 +72,7 @@ func (c *SimpleController) Run() {
 		}
 		c.user.ClearUserData()
 		c.sendStopStatus()
+		close(c.injectedActionChan)
 		close(c.stoppedChan)
 	}()
 
@@ -107,9 +111,38 @@ func (c *SimpleController) Run() {
 		return
 	}
 
+	var injectedAction *UserAction
+
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
+Loop:
 	for {
+		// run injected action (if any) first
+		if injectedAction != nil {
+			if resp := injectedAction.run(c.user); resp.Err != nil {
+				c.status <- c.newErrorStatus(resp.Err)
+			} else {
+				c.status <- c.newInfoStatus(resp.Info)
+			}
+			injectedAction = nil
+		}
+
+		// check for injected actions even if no scripted actions are present
+		select {
+		case ia := <-c.injectedActionChan:
+			injectedAction = ia
+			continue Loop
+		default:
+		}
+
 		for i := 0; i < len(c.actions); i++ {
+			// check for any injected actions each cycle
+			select {
+			case ia := <-c.injectedActionChan:
+				injectedAction = ia
+				break Loop
+			default:
+			}
+
 			if cycleCount%c.actions[i].runPeriod == 0 {
 				// run the action if runPeriod is not set, or else it's set and it's a multiple
 				// of the cycle count.
@@ -146,9 +179,9 @@ func (c *SimpleController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
 	// re-initialize for the next use
+	c.injectedActionChan = make(chan *UserAction, 10)
 	c.stopChan = make(chan struct{})
 	c.stoppedChan = make(chan struct{})
-
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
@@ -161,7 +194,7 @@ func (c *SimpleController) sendStopStatus() {
 
 func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	var actions []*UserAction
-	actionMap := map[string]control.UserAction{
+	c.actionMap = map[string]control.UserAction{
 		"AddReaction":          control.AddReaction,
 		"CreateDirectChannel":  control.CreateDirectChannel,
 		"CreateGroupChannel":   control.CreateGroupChannel,
@@ -211,7 +244,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	}
 
 	for _, def := range definitions {
-		run, ok := actionMap[def.ActionId]
+		run, ok := c.actionMap[def.ActionId]
 		if !ok {
 			return fmt.Errorf("could not find action %q", def.ActionId)
 		}
@@ -231,3 +264,34 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	c.actions = actions
 	return nil
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *SimpleController) InjectAction(actionID string) control.UserActionResponse {
+	action, ok := c.actionMap[actionID]
+	if !ok {
+		return control.UserActionResponse{
+			Info: fmt.Sprintf("Action %s not supported by SimpleController", actionID),
+		}
+	}
+
+	userAction := &UserAction{
+		run: action,
+	}
+
+	select {
+	case c.injectedActionChan <- userAction:
+		return control.UserActionResponse{
+			Info: fmt.Sprintf("Action %s queued successfully", actionID),
+		}
+	case <-time.After(time.Second * 15):
+		return control.UserActionResponse{
+			Info: fmt.Sprintf("Action %s timed out while queuing", actionID),
+			Err:  control.ErrActionTimeout,
+		}
+	}
+}
+
+// ensure SimpleController implements UserController interface
+var _ control.UserController = (*SimpleController)(nil)

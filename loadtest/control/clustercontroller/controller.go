@@ -5,6 +5,7 @@ package clustercontroller
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -195,3 +196,15 @@ func (c *ClusterController) newErrorStatus(err error) control.UserStatus {
 		Err:          err,
 	}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *ClusterController) InjectAction(actionID string) control.UserActionResponse {
+	return control.UserActionResponse{
+		Info: fmt.Sprintf("Action %s not supported by ClusterController", actionID),
+	}
+}
+
+// ensure ClusterController implements UserController interface
+var _ control.UserController = (*ClusterController)(nil)

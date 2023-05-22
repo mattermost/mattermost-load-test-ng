@@ -172,3 +172,15 @@ func (c *Coordinator) Destroy() (coordinator.Status, error) {
 	status = *resp.Status
 	return status, nil
 }
+
+// Stop stops the coordinator.
+// Returns the coordinator status or an error in case of failure.
+func (c *Coordinator) InjectAction(actionID string) (coordinator.Status, error) {
+	var status coordinator.Status
+	resp, err := c.apiPost(c.apiURL+c.id+"/inject?action="+actionID, nil)
+	if err != nil {
+		return status, err
+	}
+	status = *resp.Status
+	return status, nil
+}

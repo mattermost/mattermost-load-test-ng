@@ -219,3 +219,14 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 	}
 	return status, nil
 }
+
+// InjectAction injects an action into all the agents. The action is run once,
+// at the next possible opportunity.
+func (c *LoadAgentCluster) InjectAction(actionID string) error {
+	for _, agent := range c.agents {
+		if _, err := agent.InjectAction(actionID); err != nil {
+			return fmt.Errorf("cluster: failed to inject action %s for agent: %w", actionID, err)
+		}
+	}
+	return nil
+}

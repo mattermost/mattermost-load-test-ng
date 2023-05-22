@@ -282,6 +282,32 @@ func (a *api) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeAgentResponse(w, http.StatusOK, &resp)
 }
 
+func (a *api) agentInjectActionHandler(w http.ResponseWriter, r *http.Request) {
+	lt, err := a.getLoadAgentById(w, r)
+	if err != nil {
+		return
+	}
+
+	action := r.FormValue("action")
+	if action == "" {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Error: "missing 'action' parameter",
+		})
+		return
+	}
+
+	if err := lt.InjectAction(action); err != nil {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Error: fmt.Sprintf("could not inject action '%s': %s", action, err),
+		})
+		return
+	}
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
+		Message: fmt.Sprintf("action %s injected", action),
+		Status:  lt.Status(),
+	})
+}
+
 func getServerVersion(serverURL string) (string, error) {
 	var version string
 	resp, err := http.Get(serverURL)
