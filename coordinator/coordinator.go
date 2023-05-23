@@ -241,8 +241,8 @@ func (c *Coordinator) Status() (Status, error) {
 // InjectAction injects an action into all the agents that is run once,
 // at the next possible opporunity.
 func (c *Coordinator) InjectAction(actionID string) error {
-	c.mut.RLock()
-	defer c.mut.RUnlock()
+	c.mut.Lock()
+	defer c.mut.Unlock()
 
 	return c.cluster.InjectAction(actionID)
 }
