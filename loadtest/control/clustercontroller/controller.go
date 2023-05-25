@@ -5,7 +5,6 @@ package clustercontroller
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"time"
 
