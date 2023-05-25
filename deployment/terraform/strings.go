@@ -61,6 +61,9 @@ scrape-configs:
     - application: mattermost
       spy-name: gospy
       targets: [%s]
+    - application: agents
+      spy-name: gospy
+      targets: [%s]
 `
 
 const metricsHosts = `
