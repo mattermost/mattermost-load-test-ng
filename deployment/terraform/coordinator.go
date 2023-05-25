@@ -226,7 +226,7 @@ func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
 
 	status, err = coord.InjectAction(actionID)
 	if err != nil {
-		return status, fmt.Errorf("failed to inject action %s: %w", actionID, err)
+		return status, fmt.Errorf("failed to inject action %q: %w", actionID, err)
 	}
 
 	return status, nil

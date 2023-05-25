@@ -170,34 +170,12 @@ func RunInjectActionCmdF(cmd *cobra.Command, args []string) error {
 
 	action := args[0]
 
-	status, errInject := t.InjectAction(action)
-	if errInject != nil {
-		fmt.Println("Failed to inject action ", action, ": ", errInject)
-		return errInject
-	}
-
-	tfOutput, err := t.Output()
+	_, err = t.InjectAction(action)
 	if err != nil {
+		fmt.Println("Failed to inject action ", action, ": ", err)
 		return err
 	}
 
-	prometheusURL := fmt.Sprintf("http://%s:9090", tfOutput.MetricsServer.PublicIP)
-	helper, err := prometheus.NewHelper(prometheusURL)
-	if err != nil {
-		return fmt.Errorf("failed to create prometheus.Helper: %w", err)
-	}
-
-	errInfo, err := getErrorsInfo(helper, status.StartTime)
-	if err != nil {
-		return err
-	}
-
-	usersCount, err := getUsersCount(helper)
-	if err != nil {
-		return err
-	}
-
-	printCoordinatorStatus(status, errInfo, usersCount)
 	fmt.Println("Action ", action, " injected successfully.")
 
 	return nil

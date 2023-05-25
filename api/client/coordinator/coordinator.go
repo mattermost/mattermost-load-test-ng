@@ -173,8 +173,8 @@ func (c *Coordinator) Destroy() (coordinator.Status, error) {
 	return status, nil
 }
 
-// Stop stops the coordinator.
-// Returns the coordinator status or an error in case of failure.
+// InjectAction injects an action that is run once, at the next possible
+// opportunity. The action is injected into all agents for this coordinator.
 func (c *Coordinator) InjectAction(actionID string) (coordinator.Status, error) {
 	var status coordinator.Status
 	resp, err := c.apiPost(c.apiURL+c.id+"/inject?action="+actionID, nil)
