@@ -225,7 +225,7 @@ func (c *GenController) sendStopStatus() {
 // CLI or Rest API.
 func (c *GenController) InjectAction(actionID string) control.UserActionResponse {
 	return control.UserActionResponse{
-		Info: fmt.Sprintf("Action %s not supported by GenController", actionID),
+		Info: "Injected actions are not supported by GenController",
 	}
 }
 

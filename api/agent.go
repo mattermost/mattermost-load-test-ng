@@ -298,7 +298,7 @@ func (a *api) agentInjectActionHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := lt.InjectAction(action); err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
-			Error: fmt.Sprintf("could not inject action '%s': %s", action, err),
+			Error: fmt.Sprintf("could not inject action %q: %s", action, err),
 		})
 		return
 	}

@@ -202,7 +202,7 @@ func (c *ClusterController) newErrorStatus(err error) control.UserStatus {
 // CLI or Rest API.
 func (c *ClusterController) InjectAction(actionID string) control.UserActionResponse {
 	return control.UserActionResponse{
-		Info: fmt.Sprintf("Action %s not supported by ClusterController", actionID),
+		Info: "Injected actions are not supported by ClusterController",
 	}
 }
 
