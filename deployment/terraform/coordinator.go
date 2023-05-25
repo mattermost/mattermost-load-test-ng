@@ -214,7 +214,7 @@ func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
 	}
 
 	if len(t.output.Agents) == 0 {
-		return status, errors.New("there are no agents to initialize load-test")
+		return status, errors.New("there are no agents to inject the action")
 	}
 	ip := t.output.Agents[0].PublicIP
 
