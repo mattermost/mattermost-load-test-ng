@@ -15,7 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/server/platform/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 	"github.com/prometheus/common/model"
 )
 

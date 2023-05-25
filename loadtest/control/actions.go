@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // UserActionResponse is a structure containing information about the result
@@ -55,6 +55,11 @@ func SignUp(u user.User) UserActionResponse {
 func Login(u user.User) UserActionResponse {
 	err := u.Login()
 	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	// Populate user config
+	if err := u.GetClientConfig(); err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 

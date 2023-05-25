@@ -3,7 +3,7 @@
 
 package userentity
 
-import "github.com/mattermost/mattermost-server/v6/model"
+import "github.com/mattermost/mattermost-server/server/v8/model"
 
 type gqlRole struct {
 	ID            string   `json:"id"`

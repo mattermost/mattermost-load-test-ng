@@ -30,7 +30,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-server/v6/server/platform/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 func writeAgentResponse(w http.ResponseWriter, status int, resp *client.AgentResponse) {

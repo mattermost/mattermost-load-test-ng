@@ -26,6 +26,15 @@ Yes, you can use an existing Mattermost deployment, or just the database portion
 
 Note: You should **not** utilize an existing production setup to loadtest against because the loadtest agent will create users, posts, teams and channels and utilize most of your server resources. Best practice is to clone your production setup and loadtest against that.
 
+### Can I export a Grafana dashboard for future reference?
+
+Yes, you can do so by using the feature to [publish a snapshot to Raintank](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#publish-a-snapshot). An example of what such a snapshot looks like: [MySQL bounded test comparing `v7.9.1` vs `v7.10.0-rc2`](https://snapshots.raintank.io/dashboard/snapshot/h356ygrRZIUFWf5u5cctLjFavu97lFR2?orgId=2).
+
+Two considerations:
+
+- Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporal instances, you can still do so for this purpose with the credentials `admin`/`admin`.
+- Note that a snapshot, although very useful for reference, is not a fully-functioning dashboard, so you will not be able to query new data using it. Take a look at the example above to understand how it works.
+
 #### Using an existing Mattermost deployment
 
 1. Set the `AppInstanceCount` and `TerraformDBSettings.InstanceCount` to `0` in the `config/deployer.json`. This will prevent the Mattermost and database cluster from being created.

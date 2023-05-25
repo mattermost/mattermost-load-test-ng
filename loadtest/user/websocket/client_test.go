@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"

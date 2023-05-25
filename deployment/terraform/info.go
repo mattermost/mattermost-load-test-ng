@@ -56,6 +56,7 @@ func displayInfo(output *Output) {
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
+		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
 	}
 	if output.HasDB() {
 		fmt.Println("DB writer endpoint: " + output.DBWriter())

@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-server/v6/server/platform/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // api keeps track of the load-test API server state.
