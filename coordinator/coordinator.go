@@ -239,7 +239,7 @@ func (c *Coordinator) Status() (Status, error) {
 }
 
 // InjectAction injects an action into all the agents that is run once,
-// at the next possible opporunity.
+// at the next possible opportunity.
 func (c *Coordinator) InjectAction(actionID string) error {
 	c.mut.Lock()
 	defer c.mut.Unlock()
