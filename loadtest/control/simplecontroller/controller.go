@@ -111,57 +111,45 @@ func (c *SimpleController) Run() {
 		return
 	}
 
-	var injectedAction *UserAction
-
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
-Loop:
 	for {
-		// run injected action (if any) first
-		if injectedAction != nil {
-			if resp := injectedAction.run(c.user); resp.Err != nil {
-				c.status <- c.newErrorStatus(resp.Err)
-			} else {
-				c.status <- c.newInfoStatus(resp.Info)
-			}
-			injectedAction = nil
-		}
-
 		// check for injected actions even if no scripted actions are present
 		select {
 		case ia := <-c.injectedActionChan:
-			injectedAction = ia
-			continue Loop
+			c.runAction(ia)
 		default:
 		}
 
-		for i := 0; i < len(c.actions); i++ {
-			// check for any injected actions each cycle
-			select {
-			case ia := <-c.injectedActionChan:
-				injectedAction = ia
-				break Loop
-			default:
-			}
+		for _, action := range c.actions {
+			// run the action if runPeriod is not set, or else it's set and it's a multiple
+			// of the cycle count.
+			if cycleCount%action.runPeriod == 0 {
+				c.runAction(action)
 
-			if cycleCount%c.actions[i].runPeriod == 0 {
-				// run the action if runPeriod is not set, or else it's set and it's a multiple
-				// of the cycle count.
-				if resp := c.actions[i].run(c.user); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
-
-				idleTime := time.Duration(math.Round(float64(c.actions[i].waitAfter) * c.rate))
+				idleTime := time.Duration(math.Round(float64(action.waitAfter) * c.rate))
 
 				select {
 				case <-c.stopChan:
 					return
 				case <-time.After(time.Millisecond * idleTime):
+				case ia := <-c.injectedActionChan:
+					c.runAction(ia)
 				}
 			}
 		}
 		cycleCount++
+	}
+}
+
+func (c *SimpleController) runAction(action *UserAction) {
+	if action == nil {
+		return
+	}
+
+	if resp := action.run(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
 	}
 }
 

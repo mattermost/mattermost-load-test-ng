@@ -286,54 +286,50 @@ func (c *SimulController) Run() {
 		c.actionMap[ua.name] = ua
 	}
 
-	var injectedAction *userAction
+	var action *userAction
+	var err error
 
 	for {
-		// run injected actions (if any) first
-		if injectedAction != nil {
-			if resp := injectedAction.run(c.user); resp.Err != nil {
-				c.status <- c.newErrorStatus(resp.Err)
-			} else {
-				c.status <- c.newInfoStatus(resp.Info)
-			}
-			injectedAction = nil
-		}
-
-		// check for injected actions
 		select {
-		case ia := <-c.injectedActionChan:
-			injectedAction = &ia
-			continue
+		case ia := <-c.injectedActionChan: // injected actions are run first
+			action = &ia
 		default:
-		}
-
-		action, err := pickAction(actions)
-		if err != nil {
-			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
-		}
-
-		if action.minServerVersion != "" {
-			supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
+			action, err = pickAction(actions)
 			if err != nil {
-				c.status <- c.newErrorStatus(err)
-			} else if !supported {
-				continue
+				panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 			}
 		}
 
-		if resp := action.run(c.user); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
-		} else {
-			c.status <- c.newInfoStatus(resp.Info)
-		}
+		c.runAction(action)
 
 		select {
 		case <-c.stopChan:
 			return
 		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
 		case ia := <-c.injectedActionChan: // run injected actions immediately
-			injectedAction = &ia
+			c.runAction(&ia)
 		}
+	}
+}
+
+func (c *SimulController) runAction(action *userAction) {
+	if action == nil {
+		return
+	}
+
+	if action.minServerVersion != "" {
+		supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
+		if err != nil {
+			c.status <- c.newErrorStatus(err)
+		} else if !supported {
+			return
+		}
+	}
+
+	if resp := action.run(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
 	}
 }
 
