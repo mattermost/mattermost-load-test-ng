@@ -14,113 +14,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
-// SimulController is a simulative implementation of a UserController.
-type SimulController struct {
-	id                 int
-	user               user.User
-	status             chan<- control.UserStatus
-	rate               float64
-	config             *Config
-	actionMap          map[string]userAction
-	injectedActionChan chan userAction
-	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
-	stoppedChan        chan struct{}   // blocks until controller cleans up everything
-	disconnectChan     chan struct{}   // notifies disconnection to the ws and periodic goroutines
-	connectedFlag      int32           // indicates that the controller is connected
-	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
-	serverVersion      string          // stores the current server version
-	featureFlags       featureFlags    // stores the server's feature flags
-}
-
-type featureFlags struct {
-	GraphQLEnabled bool
-}
-
-// New creates and initializes a new SimulController with given parameters.
-// An id is provided to identify the controller, a User is passed as the entity to be controlled and
-// a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*SimulController, error) {
-	if config == nil || user == nil {
-		return nil, errors.New("nil params passed")
-	}
-
-	if err := defaults.Validate(config); err != nil {
-		return nil, fmt.Errorf("could not validate configuration: %w", err)
-	}
-
-	return &SimulController{
-		id:                 id,
-		user:               user,
-		status:             status,
-		rate:               1.0,
-		config:             config,
-		injectedActionChan: make(chan userAction, 10),
-		actionMap:          make(map[string]userAction),
-		disconnectChan:     make(chan struct{}),
-		stopChan:           make(chan struct{}),
-		stoppedChan:        make(chan struct{}),
-		wg:                 &sync.WaitGroup{},
-	}, nil
-}
-
-// Run begins performing a set of user actions in a loop.
-// It keeps on doing it until Stop() is invoked.
-// This is also a blocking function, so it is recommended to invoke it
-// inside a goroutine.
-func (c *SimulController) Run() {
-	if c.user == nil {
-		c.sendFailStatus("controller was not initialized")
-		return
-	}
-
-	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
-
-	defer func() {
-		if err := c.disconnect(); err != nil {
-			c.status <- c.newErrorStatus(control.NewUserError(err))
-		}
-		c.user.ClearUserData()
-		c.sendStopStatus()
-		close(c.stoppedChan)
-	}()
-
-	c.serverVersion, _ = c.user.Store().ServerVersion()
-
-	initActions := []userAction{
-		{
-			run: c.loginOrSignUp,
-		},
-		{
-			run: c.initialJoinTeam,
-		},
-	}
-
-	for i := 0; i < len(initActions); i++ {
-		select {
-		case <-c.stopChan:
-			return
-		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
-		}
-
-		if resp := initActions[i].run(c.user); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
-			i--
-		} else {
-			c.status <- c.newInfoStatus(resp.Info)
-		}
-	}
-
-	// Populate the server feature flags struct
-	clientCfg := c.user.Store().ClientConfig()
-	if len(clientCfg) == 0 {
-		c.sendFailStatus("the login init action should have populated the user config, but it is empty")
-		return
-	}
-	c.featureFlags = featureFlags{
-		GraphQLEnabled: c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
-	}
-
-	actions := []userAction{
+func getActionList(c *SimulController) []userAction {
+	return []userAction{
 		{
 			name:      "SwitchChannel",
 			run:       switchChannel,
@@ -282,8 +177,125 @@ func (c *SimulController) Run() {
 			frequency: 0.011,
 		},
 	}
-	for _, ua := range actions {
-		c.actionMap[ua.name] = ua
+}
+
+func getActionMap(actionList []userAction) map[string]userAction {
+	actionMap := make(map[string]userAction)
+	for _, action := range actionList {
+		actionMap[action.name] = action
+	}
+	return actionMap
+}
+
+// SimulController is a simulative implementation of a UserController.
+type SimulController struct {
+	id                 int
+	user               user.User
+	status             chan<- control.UserStatus
+	rate               float64
+	config             *Config
+	actionList         []userAction
+	actionMap          map[string]userAction
+	injectedActionChan chan userAction
+	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan        chan struct{}   // blocks until controller cleans up everything
+	disconnectChan     chan struct{}   // notifies disconnection to the ws and periodic goroutines
+	connectedFlag      int32           // indicates that the controller is connected
+	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	serverVersion      string          // stores the current server version
+	featureFlags       featureFlags    // stores the server's feature flags
+}
+
+type featureFlags struct {
+	GraphQLEnabled bool
+}
+
+// New creates and initializes a new SimulController with given parameters.
+// An id is provided to identify the controller, a User is passed as the entity to be controlled and
+// a UserStatus channel is passed to communicate errors and information about the user's status.
+func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*SimulController, error) {
+	if config == nil || user == nil {
+		return nil, errors.New("nil params passed")
+	}
+
+	if err := defaults.Validate(config); err != nil {
+		return nil, fmt.Errorf("could not validate configuration: %w", err)
+	}
+
+	controller := &SimulController{
+		id:                 id,
+		user:               user,
+		status:             status,
+		rate:               1.0,
+		config:             config,
+		injectedActionChan: make(chan userAction, 10),
+		disconnectChan:     make(chan struct{}),
+		stopChan:           make(chan struct{}),
+		stoppedChan:        make(chan struct{}),
+		wg:                 &sync.WaitGroup{},
+	}
+
+	controller.actionList = getActionList(controller)
+	controller.actionMap = getActionMap(controller.actionList)
+
+	return controller, nil
+}
+
+// Run begins performing a set of user actions in a loop.
+// It keeps on doing it until Stop() is invoked.
+// This is also a blocking function, so it is recommended to invoke it
+// inside a goroutine.
+func (c *SimulController) Run() {
+	if c.user == nil {
+		c.sendFailStatus("controller was not initialized")
+		return
+	}
+
+	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
+
+	defer func() {
+		if err := c.disconnect(); err != nil {
+			c.status <- c.newErrorStatus(control.NewUserError(err))
+		}
+		c.user.ClearUserData()
+		c.sendStopStatus()
+		close(c.stoppedChan)
+	}()
+
+	c.serverVersion, _ = c.user.Store().ServerVersion()
+
+	initActions := []userAction{
+		{
+			run: c.loginOrSignUp,
+		},
+		{
+			run: c.initialJoinTeam,
+		},
+	}
+
+	for i := 0; i < len(initActions); i++ {
+		select {
+		case <-c.stopChan:
+			return
+		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, 1.0)):
+		}
+
+		if resp := initActions[i].run(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+			i--
+		} else {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+	}
+
+	// Populate the server feature flags struct
+	clientCfg := c.user.Store().ClientConfig()
+	if len(clientCfg) == 0 {
+		c.sendFailStatus("the login init action should have populated the user config, but it is empty")
+		return
+	}
+	c.featureFlags = featureFlags{
+		GraphQLEnabled: c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
 	}
 
 	var action *userAction
@@ -294,7 +306,7 @@ func (c *SimulController) Run() {
 		case ia := <-c.injectedActionChan: // injected actions are run first
 			action = &ia
 		default:
-			action, err = pickAction(actions)
+			action, err = pickAction(c.actionList)
 			if err != nil {
 				panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 			}
@@ -388,7 +400,7 @@ func (c *SimulController) InjectAction(actionID string) control.UserActionRespon
 		return control.UserActionResponse{
 			Info: fmt.Sprintf("Action %s queued successfully", actionID),
 		}
-	case <-time.After(time.Second * 15):
+	default:
 		return control.UserActionResponse{
 			Info: fmt.Sprintf("Action %s timed out while queuing", actionID),
 			Err:  control.ErrActionTimeout,

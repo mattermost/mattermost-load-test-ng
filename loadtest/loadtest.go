@@ -247,16 +247,21 @@ func (lt *LoadTester) Status() *Status {
 }
 
 func (lt *LoadTester) InjectAction(action string) error {
+	var activeControllers []control.UserController
+
 	lt.mut.Lock()
-	defer lt.mut.Unlock()
 
 	if lt.status.State != Running {
 		return ErrNotRunning
 	}
+	activeControllers = make([]control.UserController, len(lt.activeControllers))
+	_ = copy(activeControllers, lt.activeControllers)
+
+	lt.mut.Unlock()
 
 	merr := merror.New()
 
-	for _, ctrl := range lt.activeControllers {
+	for _, ctrl := range activeControllers {
 		if resp := ctrl.InjectAction(action); resp.Err != nil {
 			merr.Append(resp.Err)
 		}
