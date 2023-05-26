@@ -14,6 +14,35 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
+func getActionList(c *NoopController) []userAction {
+	return []userAction{
+		{
+			name: "SignUp",
+			run:  control.SignUp,
+		},
+		{
+			name: "Login",
+			run:  c.login,
+		},
+		{
+			name: "JoinTeam",
+			run:  c.joinTeam,
+		},
+		{
+			name: "JoinChannel",
+			run:  c.joinChannel,
+		},
+	}
+}
+
+func getActionMap(actionList []userAction) map[string]userAction {
+	actionMap := make(map[string]userAction)
+	for _, action := range actionList {
+		actionMap[action.name] = action
+	}
+	return actionMap
+}
+
 // NoopController is a very basic implementation of a controller.
 // NoopController, it just performs a pre-defined set of actions in a loop.
 type NoopController struct {
@@ -21,6 +50,7 @@ type NoopController struct {
 	user               user.User
 	status             chan<- control.UserStatus
 	rate               float64
+	actionList         []userAction
 	actionMap          map[string]userAction
 	injectedActionChan chan userAction
 	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
@@ -37,7 +67,7 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*NoopControl
 		return nil, errors.New("nil params passed")
 	}
 
-	return &NoopController{
+	controller := &NoopController{
 		id:                 id,
 		user:               user,
 		status:             status,
@@ -46,7 +76,12 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*NoopControl
 		stopChan:           make(chan struct{}),
 		stoppedChan:        make(chan struct{}),
 		wg:                 &sync.WaitGroup{},
-	}, nil
+	}
+
+	controller.actionList = getActionList(controller)
+	controller.actionMap = getActionMap(controller.actionList)
+
+	return controller, nil
 }
 
 // Run begins performing a set of user actions in a loop.
@@ -70,29 +105,8 @@ func (c *NoopController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	initActions := []userAction{
-		{
-			name: "SignUp",
-			run:  control.SignUp,
-		},
-		{
-			name: "Login",
-			run:  c.login,
-		},
-		{
-			name: "JoinTeam",
-			run:  c.joinTeam,
-		},
-		{
-			name: "JoinChannel",
-			run:  c.joinChannel,
-		},
-	}
-	for _, ua := range initActions {
-		c.actionMap[ua.name] = ua
-	}
-
-	for i := 0; i < len(initActions); i++ {
+	// run init actions
+	for i := 0; i < len(c.actionList); i++ {
 		idleTime := time.Duration(math.Round(float64(1000) * c.rate))
 
 		select {
@@ -101,7 +115,7 @@ func (c *NoopController) Run() {
 		case <-time.After(time.Millisecond * idleTime):
 		}
 
-		if resp := initActions[i].run(c.user); resp.Err != nil {
+		if resp := c.actionList[i].run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 			i--
 		} else {
@@ -109,19 +123,7 @@ func (c *NoopController) Run() {
 		}
 	}
 
-	var injectedAction *userAction
-
 	for {
-		// run injected actions (if any) first
-		if injectedAction != nil {
-			if resp := injectedAction.run(c.user); resp.Err != nil {
-				c.status <- c.newErrorStatus(resp.Err)
-			} else {
-				c.status <- c.newInfoStatus(resp.Info)
-			}
-			injectedAction = nil
-		}
-
 		if res, err := c.user.GetMe(); err != nil {
 			c.status <- c.newErrorStatus(err)
 		} else {
@@ -134,8 +136,16 @@ func (c *NoopController) Run() {
 			return
 		case <-time.After(time.Millisecond * idleTime):
 		case ia := <-c.injectedActionChan: // run injected actions immediately
-			injectedAction = &ia
+			c.runAction(ia)
 		}
+	}
+}
+
+func (c *NoopController) runAction(action userAction) {
+	if resp := action.run(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
 	}
 }
 
