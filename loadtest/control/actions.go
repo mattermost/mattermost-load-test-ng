@@ -26,7 +26,7 @@ type UserActionResponse struct {
 	Err error
 }
 
-var ErrActionTimeout = errors.New("action timeout")
+var ErrInjectActionQueueFull = errors.New("inject action queue full")
 
 // UserAction is a function that simulates a specific behaviour for the provided
 // user.User. It returns a UserActionResponse.

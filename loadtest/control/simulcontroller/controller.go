@@ -402,8 +402,8 @@ func (c *SimulController) InjectAction(actionID string) control.UserActionRespon
 		}
 	default:
 		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s timed out while queuing", actionID),
-			Err:  control.ErrActionTimeout,
+			Info: fmt.Sprintf("Action %s could not be queued (queue full)", actionID),
+			Err:  control.ErrInjectActionQueueFull,
 		}
 	}
 }
