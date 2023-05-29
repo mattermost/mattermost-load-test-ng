@@ -169,8 +169,6 @@ type MutableUserStore interface {
 	SetPosts(posts []*model.Post) error
 
 	// reactions
-	// SetReactions stores the given reactions for the specified post.
-	SetReactions(postId string, reactions []*model.Reaction) error
 	// SetReaction stores the given reaction.
 	SetReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
