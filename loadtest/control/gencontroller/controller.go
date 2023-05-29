@@ -223,10 +223,8 @@ func (c *GenController) sendStopStatus() {
 // InjectAction allows a named UserAction to be injected that is run once, at the next
 // available opportunity. These actions can be injected via the coordinator via
 // CLI or Rest API.
-func (c *GenController) InjectAction(actionID string) control.UserActionResponse {
-	return control.UserActionResponse{
-		Info: "Injected actions are not supported by GenController",
-	}
+func (c *GenController) InjectAction(actionID string) error {
+	return errors.New("Injected actions are not supported by GenController")
 }
 
 // ensure GenController implements UserController interface

@@ -18,5 +18,5 @@ type UserController interface {
 	// InjectAction allows a named UserAction to be injected that is run once, at the next
 	// available opportunity. These actions can be injected via the coordinator via
 	// CLI or Rest API.
-	InjectAction(actionID string) UserActionResponse
+	InjectAction(actionID string) error
 }

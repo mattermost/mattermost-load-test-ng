@@ -256,12 +256,10 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 // InjectAction allows a named UserAction to be injected that is run once, at the next
 // available opportunity. These actions can be injected via the coordinator via
 // CLI or Rest API.
-func (c *SimpleController) InjectAction(actionID string) control.UserActionResponse {
+func (c *SimpleController) InjectAction(actionID string) error {
 	action, ok := c.actionMap[actionID]
 	if !ok {
-		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s not supported by SimpleController", actionID),
-		}
+		return fmt.Errorf("action %s not supported by SimpleController", actionID)
 	}
 
 	userAction := &UserAction{
@@ -270,14 +268,9 @@ func (c *SimpleController) InjectAction(actionID string) control.UserActionRespo
 
 	select {
 	case c.injectedActionChan <- userAction:
-		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s queued successfully", actionID),
-		}
+		return nil
 	default:
-		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s could not be queued (queue full)", actionID),
-			Err:  control.ErrInjectActionQueueFull,
-		}
+		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
 	}
 }
 

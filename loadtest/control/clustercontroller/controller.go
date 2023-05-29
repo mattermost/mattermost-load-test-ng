@@ -199,10 +199,8 @@ func (c *ClusterController) newErrorStatus(err error) control.UserStatus {
 // InjectAction allows a named UserAction to be injected that is run once, at the next
 // available opportunity. These actions can be injected via the coordinator via
 // CLI or Rest API.
-func (c *ClusterController) InjectAction(actionID string) control.UserActionResponse {
-	return control.UserActionResponse{
-		Info: "Injected actions are not supported by ClusterController",
-	}
+func (c *ClusterController) InjectAction(actionID string) error {
+	return errors.New("Injected actions are not supported by ClusterController")
 }
 
 // ensure ClusterController implements UserController interface

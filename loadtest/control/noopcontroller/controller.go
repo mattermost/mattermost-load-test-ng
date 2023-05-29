@@ -179,7 +179,7 @@ func (c *NoopController) sendStopStatus() {
 // InjectAction allows a named UserAction to be injected that is run once, at the next
 // available opportunity. These actions can be injected via the coordinator via
 // CLI or Rest API.
-func (c *NoopController) InjectAction(actionID string) control.UserActionResponse {
+func (c *NoopController) InjectAction(actionID string) error {
 	var action userAction
 	var ok bool
 
@@ -193,22 +193,15 @@ func (c *NoopController) InjectAction(actionID string) control.UserActionRespons
 	default:
 		action, ok = c.actionMap[actionID]
 		if !ok {
-			return control.UserActionResponse{
-				Info: fmt.Sprintf("Action %s not supported by NoopController", actionID),
-			}
+			return fmt.Errorf("action %s not supported by NoopController", actionID)
 		}
 	}
 
 	select {
 	case c.injectedActionChan <- action:
-		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s queued successfully", actionID),
-		}
+		return nil
 	default:
-		return control.UserActionResponse{
-			Info: fmt.Sprintf("Action %s could not be qeueued (queue full)", actionID),
-			Err:  control.ErrInjectActionQueueFull,
-		}
+		return fmt.Errorf("action %s could not be qeueued: %w", actionID, control.ErrInjectActionQueueFull)
 	}
 }
 
