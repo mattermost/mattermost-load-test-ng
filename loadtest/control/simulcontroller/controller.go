@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 func getActionList(c *SimulController) []userAction {
@@ -389,7 +390,8 @@ func (c *SimulController) InjectAction(actionID string) error {
 	default:
 		action, ok = c.actionMap[actionID]
 		if !ok {
-			return fmt.Errorf("action %s not supported by SimulController", actionID)
+			mlog.Debug("Could not inject action for SimulController", mlog.String("action", actionID))
+			return nil
 		}
 	}
 

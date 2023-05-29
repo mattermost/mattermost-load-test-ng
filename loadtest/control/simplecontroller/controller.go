@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // SimpleController is a very basic implementation of a controller.
@@ -259,7 +260,8 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 func (c *SimpleController) InjectAction(actionID string) error {
 	action, ok := c.actionMap[actionID]
 	if !ok {
-		return fmt.Errorf("action %s not supported by SimpleController", actionID)
+		mlog.Debug("Could not inject action for SimpleController", mlog.String("action", actionID))
+		return nil
 	}
 
 	userAction := &UserAction{

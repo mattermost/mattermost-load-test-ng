@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 func getActionList(c *NoopController) []userAction {
@@ -193,7 +194,8 @@ func (c *NoopController) InjectAction(actionID string) error {
 	default:
 		action, ok = c.actionMap[actionID]
 		if !ok {
-			return fmt.Errorf("action %s not supported by NoopController", actionID)
+			mlog.Debug("Could not inject action for NoopController", mlog.String("action", actionID))
+			return nil
 		}
 	}
 
@@ -201,7 +203,7 @@ func (c *NoopController) InjectAction(actionID string) error {
 	case c.injectedActionChan <- action:
 		return nil
 	default:
-		return fmt.Errorf("action %s could not be qeueued: %w", actionID, control.ErrInjectActionQueueFull)
+		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
 	}
 }
 

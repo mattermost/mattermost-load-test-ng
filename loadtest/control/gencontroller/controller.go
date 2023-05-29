@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // GenController is an implementation of a UserController used to generate
@@ -224,7 +225,8 @@ func (c *GenController) sendStopStatus() {
 // available opportunity. These actions can be injected via the coordinator via
 // CLI or Rest API.
 func (c *GenController) InjectAction(actionID string) error {
-	return errors.New("Injected actions are not supported by GenController")
+	mlog.Debug("Cannot inject action for GenController", mlog.String("action", actionID))
+	return nil
 }
 
 // ensure GenController implements UserController interface
