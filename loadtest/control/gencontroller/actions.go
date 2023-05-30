@@ -70,11 +70,11 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)
-
 	if err != nil {
 		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+	st.storeChannelID(channelId)
 
 	return control.UserActionResponse{Info: fmt.Sprintf("public channel created, id %v", channelId)}
 }
@@ -97,19 +97,24 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 	}
 	channel.DisplayName = channel.Name
 	channelId, err := u.CreateChannel(channel)
-
 	if err != nil {
 		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+	st.storeChannelID(channelId)
 
 	return control.UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
 }
 
 func (c *GenController) createDirectChannel(u user.User) control.UserActionResponse {
+	if !st.inc("channels", c.config.NumChannels) {
+		return control.UserActionResponse{Info: "target number of channels reached"}
+	}
+
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
 	if _, err := u.GetUsers(0, 100); err != nil {
+		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -117,13 +122,16 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 	// we don't have a direct channel with already.
 	user, err := u.Store().RandomUser()
 	if errors.Is(err, memstore.ErrLenMismatch) {
+		st.dec("channels")
 		return control.UserActionResponse{Info: "not enough users to create direct channel"}
 	} else if err != nil {
+		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	channelId, err := u.CreateDirectChannel(user.Id)
 	if err != nil {
+		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -131,6 +139,10 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 }
 
 func (c *GenController) createGroupChannel(u user.User) control.UserActionResponse {
+	if !st.inc("channels", c.config.NumChannels) {
+		return control.UserActionResponse{Info: "target number of channels reached"}
+	}
+
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
 	if _, err := u.GetUsers(0, 100); err != nil {
@@ -140,8 +152,10 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 	numUsers := 2 + rand.Intn(6)
 	users, err := u.Store().RandomUsers(numUsers)
 	if errors.Is(err, memstore.ErrLenMismatch) {
+		st.dec("channels")
 		return control.UserActionResponse{Info: "not enough users to create group channel"}
 	} else if err != nil {
+		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -154,6 +168,7 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 
 	channelId, err := u.CreateGroupChannel(userIds)
 	if err != nil {
+		st.dec("channels")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -222,8 +237,14 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 
 	var rootId string
 	var channelId string
-	channel, err := u.Store().CurrentChannel()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channels in store"}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -238,6 +259,9 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		root, err := u.Store().RandomPost()
 		if err != nil {
 			st.dec("posts")
+			if err == memstore.ErrPostNotFound {
+				return control.UserActionResponse{Info: "not posts in store"}
+			}
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		channelId = root.ChannelId
@@ -313,9 +337,34 @@ func (c *GenController) addReaction(u user.User) control.UserActionResponse {
 func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	collapsedThreads := false
 
-	resp := control.JoinChannel(u)
-	if resp.Err != nil {
-		return resp
+	weights := make([]int, len(c.config.ChannelsDistribution))
+	for i := range c.config.ChannelsDistribution {
+		weights[i] = int(c.config.ChannelsDistribution[i].Probability * 100)
+	}
+
+	// We get the channel range depending on the weighted probability.
+	idx, err := control.SelectWeighted(weights)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// We choose a channel from that range.
+	channelID, err := chooseChannel(c.config.ChannelsDistribution[idx], u)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	cm, err := u.Store().ChannelMember(channelID, u.Store().Id())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	resp := control.UserActionResponse{Info: "no channel to join"}
+	if cm.UserId == "" {
+		err = u.AddChannelMember(channelID, u.Store().Id())
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		resp = control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channelID)}
 	}
 
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
@@ -334,27 +383,6 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	}
 
 	return resp
-}
-
-// switchChannel is a slightly different action than simulController's
-// where we just set the currentChannel to be able to reply to posts.
-func (c *GenController) switchChannel(u user.User) control.UserActionResponse {
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
-		return control.UserActionResponse{Info: "no channels in store"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if err := u.SetCurrentChannel(&channel); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
 }
 
 func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
@@ -382,4 +410,34 @@ func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
+}
+
+// chooseChannel will pick a channelID randomly from the range of indexes.
+// If the chosen channelID has exceeded the number of channelmembers, it will
+// select another one in the range until it has found one.
+func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
+	minIndex := int(dist.MinIndexRange * float64(len(st.channels)))
+	maxIndex := int(dist.MaxIndexRange * float64(len(st.channels)))
+
+	if maxIndex-minIndex <= 1 {
+		return "", errors.New("not enough channels to select from; either increase range or increase number of channels to create")
+	}
+
+	var channelID string
+	for {
+		target := rand.Intn(maxIndex-minIndex) + minIndex
+		if target >= maxIndex {
+			target = maxIndex - 1
+		}
+		channelID = st.channels[target]
+
+		members, err := u.Store().ChannelMembers(channelID)
+		if err != nil {
+			return "", err
+		}
+		if len(members) > int(dist.MemberLimit) {
+			continue
+		}
+		return channelID, nil
+	}
 }

@@ -81,8 +81,6 @@ func (c *GenController) Run() {
 		control.Login,
 		c.createTeam,
 		c.joinTeam,
-		c.switchChannel,
-		c.joinChannel,
 	}
 
 	for i := 0; i < len(initActions); i++ {
@@ -108,21 +106,6 @@ func (c *GenController) Run() {
 	}
 
 	actions := map[string]userAction{
-		"joinTeam": {
-			run:        control.JoinTeam,
-			frequency:  100,
-			idleTimeMs: 0,
-		},
-		"joinChannel": {
-			run:        c.joinChannel,
-			frequency:  1000,
-			idleTimeMs: 0,
-		},
-		"switchChannel": {
-			run:        c.switchChannel,
-			frequency:  1000,
-			idleTimeMs: 1000,
-		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
@@ -143,6 +126,21 @@ func (c *GenController) Run() {
 			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
 			idleTimeMs: 1000,
 		},
+	}
+
+	c.runActions(actions, func() bool { return st.get("channels") >= c.config.NumChannels })
+
+	actions = map[string]userAction{
+		"joinTeam": {
+			run:        control.JoinTeam,
+			frequency:  100,
+			idleTimeMs: 0,
+		},
+		"joinChannel": {
+			run:        c.joinChannel,
+			frequency:  int(math.Ceil(float64(c.config.NumChannels))) * 2, // making this proportional to number of channels.
+			idleTimeMs: 0,
+		},
 		"createPost": {
 			run:        c.createPost,
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
@@ -160,6 +158,15 @@ func (c *GenController) Run() {
 		},
 	}
 
+	c.runActions(actions, func() bool {
+		return st.get("teams") >= c.config.NumTeams &&
+			st.get("channels") >= c.config.NumChannels && // having this again just for clarity
+			st.get("posts") >= c.config.NumPosts &&
+			st.get("reactions") >= c.config.NumReactions
+	})
+}
+
+func (c *GenController) runActions(actions map[string]userAction, done func() bool) {
 	for {
 		action, err := pickAction(actions)
 		if err != nil {
