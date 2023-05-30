@@ -222,8 +222,14 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 
 	var rootId string
 	var channelId string
-	channel, err := u.Store().CurrentChannel()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channels in store"}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -334,27 +340,6 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	}
 
 	return resp
-}
-
-// switchChannel is a slightly different action than simulController's
-// where we just set the currentChannel to be able to reply to posts.
-func (c *GenController) switchChannel(u user.User) control.UserActionResponse {
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
-		return control.UserActionResponse{Info: "no channels in store"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if err := u.SetCurrentChannel(&channel); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
 }
 
 func (c *GenController) joinTeam(u user.User) control.UserActionResponse {

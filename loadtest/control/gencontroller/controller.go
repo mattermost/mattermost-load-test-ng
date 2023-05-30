@@ -81,7 +81,6 @@ func (c *GenController) Run() {
 		control.Login,
 		c.createTeam,
 		c.joinTeam,
-		c.switchChannel,
 		c.joinChannel,
 	}
 
@@ -117,11 +116,6 @@ func (c *GenController) Run() {
 			run:        c.joinChannel,
 			frequency:  1000,
 			idleTimeMs: 0,
-		},
-		"switchChannel": {
-			run:        c.switchChannel,
-			frequency:  1000,
-			idleTimeMs: 1000,
 		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
