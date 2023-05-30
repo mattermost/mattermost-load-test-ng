@@ -128,32 +128,32 @@ func (s *MemStore) setupQueues(config *Config) error {
 	var err error
 	s.postsQueue, err = NewCQueue[model.Post](config.MaxStoredPosts)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: post queue creation failed %w", err)
 	}
 
 	s.usersQueue, err = NewCQueue[model.User](config.MaxStoredUsers)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: users queue creation failed %w", err)
 	}
 
 	s.channelMembersQueue, err = NewCQueue[model.ChannelMember](config.MaxStoredChannelMembers)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: channel members queue creation failed %w", err)
 	}
 
 	s.statusesQueue, err = NewCQueue[model.Status](config.MaxStoredStatuses)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: status queue creation failed %w", err)
 	}
 
 	s.threadsQueue, err = NewCQueue[model.ThreadResponse](config.MaxStoredThreads)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: threads queue creation failed %w", err)
 	}
 
 	s.reactionsQueue, err = NewCQueue[model.Reaction](config.MaxStoredReactions)
 	if err != nil {
-		return fmt.Errorf("memstore: queue creation failed %w", err)
+		return fmt.Errorf("memstore: reactions queue creation failed %w", err)
 	}
 
 	return nil
