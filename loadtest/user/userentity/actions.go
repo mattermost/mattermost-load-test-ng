@@ -982,16 +982,6 @@ func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
-// GetReactions fetches and stores reactions to the specified post.
-func (ue *UserEntity) GetReactions(postId string) error {
-	reactions, _, err := ue.client.GetReactions(postId)
-	if err != nil {
-		return err
-	}
-
-	return ue.store.SetReactions(postId, reactions)
-}
-
 // SaveReaction stores the given reaction.
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	r, _, err := ue.client.SaveReaction(reaction)

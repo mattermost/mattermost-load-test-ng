@@ -247,8 +247,6 @@ type User interface {
 	SaveReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
 	DeleteReaction(reaction *model.Reaction) error
-	// GetReactions fetches and stores reactions to the specified post.
-	GetReactions(postId string) error
 
 	// plugins
 	// GetWebappPlugins fetches webapp plugins.
