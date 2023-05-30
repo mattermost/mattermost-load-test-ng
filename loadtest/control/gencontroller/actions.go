@@ -179,8 +179,12 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	channelMention := ""
+	// Select the post characteristics
 	shouldLongThread := shouldMakeLongRunningThread((channel.Id))
+	isUrgent := rand.Float64() < c.config.PercentUrgentPosts
+	hasFilesAttached := rand.Float64() < 0.02
+
+	channelMention := ""
 	if shouldLongThread {
 		channelMention = control.PickRandomString([]string{"@all ", "@here ", "@channel "})
 	}
@@ -195,12 +199,18 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		CreateAt:  time.Now().Unix() * 1000,
 	}
 
-	if rand.Float64() < c.config.PercentUrgentPosts {
+	if isUrgent {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
 			Priority:                model.NewString("urgent"),
 			RequestedAck:            model.NewBool(false),
 			PersistentNotifications: model.NewBool(false),
+		}
+	}
+
+	if hasFilesAttached {
+		if err := control.AttachFilesToPost(u, post); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
