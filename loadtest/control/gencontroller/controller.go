@@ -71,7 +71,8 @@ func (c *GenController) Run() {
 		return st.get("teams") >= c.config.NumTeams &&
 			st.get("channels") >= c.config.NumChannels &&
 			st.get("posts") >= c.config.NumPosts &&
-			st.get("reactions") >= c.config.NumReactions
+			st.get("reactions") >= c.config.NumReactions &&
+			st.get("postreminders") >= c.config.NumPostReminders
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -142,6 +143,11 @@ func (c *GenController) Run() {
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
 			idleTimeMs: 1000,
 		},
+		"createPostReminder": {
+			run:        c.createPostReminder,
+			frequency:  int(c.config.NumPostReminders),
+			idleTimeMs: 1000,
+		},
 		"createReply": {
 			run:        c.createReply,
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * c.config.PercentReplies)),
@@ -186,6 +192,10 @@ func (c *GenController) Run() {
 
 		if st.get("reactions") >= c.config.NumReactions {
 			delete(actions, "addReaction")
+		}
+
+		if st.get("postreminders") >= c.config.NumPostReminders {
+			delete(actions, "createPostReminder")
 		}
 
 		idleTime := time.Duration(math.Round(float64(action.idleTimeMs) * c.rate))

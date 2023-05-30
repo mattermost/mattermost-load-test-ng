@@ -23,10 +23,12 @@ type Config struct {
 	NumReactions int64 `default:"200" validate:"range:[0,]"`
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`
-	// The percentage of replies that should be in long threads
+	// The percentage of replies that should be in long threads.
 	PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
-	// The percentage of post that are marked as urgent
+	// The percentage of post that are marked as urgent.
 	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
+	// The target number of post reminders to be created.
+	NumPostReminders int64 `default:"200" validate:"range:[0,]"`
 
 	// Percentages of channels to be created, grouped by type.
 	// The total sum of these values must be equal to 1.

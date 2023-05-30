@@ -226,6 +226,40 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+func (c *GenController) createPostReminder(u user.User) control.UserActionResponse {
+	if !st.inc("postreminders", c.config.NumPostReminders) {
+		return control.UserActionResponse{Info: "target number of post reminders reached"}
+	}
+
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		st.dec("postreminders")
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	ch, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if err != nil {
+		st.dec("postreminders")
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(ch.Id)
+	if err != nil {
+		st.dec("postreminders")
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Going with a hardcoded 10 minute addition for now.
+	// Probably there's no need to randomize this yet.
+	err = u.CreatePostReminder(u.Store().Id(), post.Id, time.Now().Add(10*time.Minute).Unix())
+	if err != nil {
+		st.dec("postreminders")
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
+}
+
 func (c *GenController) createReply(u user.User) control.UserActionResponse {
 	if !st.inc("posts", c.config.NumPosts) {
 		return control.UserActionResponse{Info: "target number of posts reached"}

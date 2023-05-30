@@ -25,10 +25,11 @@ var st *state
 func init() {
 	st = &state{
 		targets: map[string]int64{
-			"teams":     0,
-			"channels":  0,
-			"posts":     0,
-			"reactions": 0,
+			"teams":         0,
+			"channels":      0,
+			"posts":         0,
+			"reactions":     0,
+			"postreminders": 0,
 		},
 		longRunningThreads: make(map[string]*ThreadInfo),
 	}
