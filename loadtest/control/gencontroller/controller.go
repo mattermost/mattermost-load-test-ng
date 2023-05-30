@@ -81,6 +81,7 @@ func (c *GenController) Run() {
 		control.Login,
 		c.createTeam,
 		c.joinTeam,
+		c.switchChannel,
 		c.joinChannel,
 	}
 
