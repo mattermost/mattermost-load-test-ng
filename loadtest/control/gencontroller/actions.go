@@ -180,7 +180,7 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	// Select the post characteristics
-	shouldLongThread := shouldMakeLongRunningThread((channel.Id))
+	shouldLongThread := shouldMakeLongRunningThread(channel.Id)
 	isUrgent := rand.Float64() < c.config.PercentUrgentPosts
 	hasFilesAttached := rand.Float64() < 0.02
 
@@ -219,6 +219,7 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 		st.dec("posts")
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
 	if shouldLongThread {
 		st.setLongRunningThread(postId, channel.Id, channel.TeamId)
 	}

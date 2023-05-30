@@ -41,7 +41,7 @@ func shouldMakeLongRunningThread(channelId string) bool {
 		return false
 	}
 	// one long running thread per channel
-	if len(st.getLongRunningThreadsInChannel(channelId)) > 0 {
+	if len(st.getLongRunningThreadsInChannel(channelId)) > 1 {
 		return false
 	}
 	return true
