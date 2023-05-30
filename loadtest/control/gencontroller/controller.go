@@ -72,7 +72,8 @@ func (c *GenController) Run() {
 			st.get(StateTargetChannels) >= c.config.NumChannels &&
 			st.get(StateTargetPosts) >= c.config.NumPosts &&
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
-			st.get(StateTargetPostReminders) >= c.config.NumPostReminders
+			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
+			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -158,6 +159,11 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumReactions),
 			idleTimeMs: 1000,
 		},
+		"createSidebarCategory": {
+			run:        c.createSidebarCategory,
+			frequency:  int(c.config.NumSidebarCategories),
+			idleTimeMs: 1000,
+		},
 	}
 
 	for {
@@ -196,6 +202,10 @@ func (c *GenController) Run() {
 
 		if st.get(StateTargetPostReminders) >= c.config.NumPostReminders {
 			delete(actions, "createPostReminder")
+		}
+
+		if st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories {
+			delete(actions, "createSidebarCategory")
 		}
 
 		idleTime := time.Duration(math.Round(float64(action.idleTimeMs) * c.rate))

@@ -413,3 +413,31 @@ func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
 
 	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
 }
+
+func (c *GenController) createSidebarCategory(u user.User) control.UserActionResponse {
+	if !st.inc(StateTargetSidebarCategories, c.config.NumSidebarCategories) {
+		return control.UserActionResponse{Info: "target number of sidebar categories reached"}
+	}
+
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		st.dec(StateTargetSidebarCategories)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	category := &model.SidebarCategoryWithChannels{
+		SidebarCategory: model.SidebarCategory{
+			UserId:      u.Store().Id(),
+			TeamId:      team.Id,
+			DisplayName: control.PickRandomWord(),
+		},
+	}
+
+	sidebarCategory, err := u.CreateSidebarCategory(u.Store().Id(), team.Id, category)
+	if err != nil {
+		st.dec(StateTargetSidebarCategories)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created sidebar category, id %s", sidebarCategory.Id)}
+}

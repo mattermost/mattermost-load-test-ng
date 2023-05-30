@@ -7,6 +7,7 @@
   "PercentRepliesInLongThreads": 0.05,
   "PercentUrgentPosts": 0.001,
   "NumPostReminders": 200,
+  "NumSidebarCategories": 200,
   "PercentPublicChannels": 0.2,
   "PercentPrivateChannels": 0.1,
   "PercentDirectChannels": 0.6,
