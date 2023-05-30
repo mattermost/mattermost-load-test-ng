@@ -117,6 +117,11 @@ func (c *GenController) Run() {
 			frequency:  1000,
 			idleTimeMs: 0,
 		},
+		"switchChannel": {
+			run:        c.switchChannel,
+			frequency:  1000,
+			idleTimeMs: 1000,
+		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
