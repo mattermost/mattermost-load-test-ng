@@ -68,11 +68,11 @@ func (c *GenController) Run() {
 	}()
 
 	done := func() bool {
-		return st.get("teams") >= c.config.NumTeams &&
-			st.get("channels") >= c.config.NumChannels &&
-			st.get("posts") >= c.config.NumPosts &&
-			st.get("reactions") >= c.config.NumReactions &&
-			st.get("postreminders") >= c.config.NumPostReminders
+		return st.get(StateTargetTeams) >= c.config.NumTeams &&
+			st.get(StateTargetChannels) >= c.config.NumChannels &&
+			st.get(StateTargetPosts) >= c.config.NumPosts &&
+			st.get(StateTargetReactions) >= c.config.NumReactions &&
+			st.get(StateTargetPostReminders) >= c.config.NumPostReminders
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -178,23 +178,23 @@ func (c *GenController) Run() {
 			return
 		}
 
-		if st.get("channels") >= c.config.NumChannels {
+		if st.get(StateTargetChannels) >= c.config.NumChannels {
 			delete(actions, "createPublicChannel")
 			delete(actions, "createPrivateChannel")
 			delete(actions, "createDirectChannel")
 			delete(actions, "createGroupChannel")
 		}
 
-		if st.get("posts") >= c.config.NumPosts {
+		if st.get(StateTargetPosts) >= c.config.NumPosts {
 			delete(actions, "createPost")
 			delete(actions, "createReply")
 		}
 
-		if st.get("reactions") >= c.config.NumReactions {
+		if st.get(StateTargetReactions) >= c.config.NumReactions {
 			delete(actions, "addReaction")
 		}
 
-		if st.get("postreminders") >= c.config.NumPostReminders {
+		if st.get(StateTargetPostReminders) >= c.config.NumPostReminders {
 			delete(actions, "createPostReminder")
 		}
 

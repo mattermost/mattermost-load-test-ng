@@ -33,7 +33,7 @@ func logout(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) createTeam(u user.User) control.UserActionResponse {
-	if !st.inc("teams", c.config.NumTeams) {
+	if !st.inc(StateTargetTeams, c.config.NumTeams) {
 		return control.UserActionResponse{Info: "target number of teams reached"}
 	}
 
@@ -45,7 +45,7 @@ func (c *GenController) createTeam(u user.User) control.UserActionResponse {
 	team.DisplayName = team.Name
 	id, err := u.CreateTeam(team)
 	if err != nil {
-		st.dec("teams")
+		st.dec(StateTargetTeams)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -53,13 +53,13 @@ func (c *GenController) createTeam(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) createPublicChannel(u user.User) control.UserActionResponse {
-	if !st.inc("channels", c.config.NumChannels) {
+	if !st.inc(StateTargetChannels, c.config.NumChannels) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -72,7 +72,7 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 	channelId, err := u.CreateChannel(channel)
 
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -80,13 +80,13 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 }
 
 func (c *GenController) createPrivateChannel(u user.User) control.UserActionResponse {
-	if !st.inc("channels", c.config.NumChannels) {
+	if !st.inc(StateTargetChannels, c.config.NumChannels) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -99,7 +99,7 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 	channelId, err := u.CreateChannel(channel)
 
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -161,21 +161,21 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 }
 
 func (c *GenController) createPost(u user.User) control.UserActionResponse {
-	if !st.inc("posts", c.config.NumPosts) {
+	if !st.inc(StateTargetPosts, c.config.NumPosts) {
 		return control.UserActionResponse{Info: "target number of posts reached"}
 	}
 
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
-		st.dec("posts")
+		st.dec(StateTargetPosts)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
-		st.dec("posts")
+		st.dec(StateTargetPosts)
 		return control.UserActionResponse{Info: "no channels in store"}
 	} else if err != nil {
-		st.dec("posts")
+		st.dec(StateTargetPosts)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -216,7 +216,7 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 
 	postId, err := u.CreatePost(post)
 	if err != nil {
-		st.dec("posts")
+		st.dec(StateTargetPosts)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -227,25 +227,25 @@ func (c *GenController) createPost(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) createPostReminder(u user.User) control.UserActionResponse {
-	if !st.inc("postreminders", c.config.NumPostReminders) {
+	if !st.inc(StateTargetPostReminders, c.config.NumPostReminders) {
 		return control.UserActionResponse{Info: "target number of post reminders reached"}
 	}
 
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
-		st.dec("postreminders")
+		st.dec(StateTargetPostReminders)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	ch, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
 	if err != nil {
-		st.dec("postreminders")
+		st.dec(StateTargetPostReminders)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	post, err := u.Store().RandomPostForChannel(ch.Id)
 	if err != nil {
-		st.dec("postreminders")
+		st.dec(StateTargetPostReminders)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -253,7 +253,7 @@ func (c *GenController) createPostReminder(u user.User) control.UserActionRespon
 	// Probably there's no need to randomize this yet.
 	err = u.CreatePostReminder(u.Store().Id(), post.Id, time.Now().Add(10*time.Minute).Unix())
 	if err != nil {
-		st.dec("postreminders")
+		st.dec(StateTargetPostReminders)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -261,7 +261,7 @@ func (c *GenController) createPostReminder(u user.User) control.UserActionRespon
 }
 
 func (c *GenController) createReply(u user.User) control.UserActionResponse {
-	if !st.inc("posts", c.config.NumPosts) {
+	if !st.inc(StateTargetPosts, c.config.NumPosts) {
 		return control.UserActionResponse{Info: "target number of posts reached"}
 	}
 
@@ -288,7 +288,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 	if rootId == "" {
 		root, err := u.Store().RandomPost()
 		if err != nil {
-			st.dec("posts")
+			st.dec(StateTargetPosts)
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		channelId = root.ChannelId
@@ -310,7 +310,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		RootId:    rootId,
 	})
 	if err != nil {
-		st.dec("posts")
+		st.dec(StateTargetPosts)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -318,17 +318,17 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) addReaction(u user.User) control.UserActionResponse {
-	if !st.inc("reactions", c.config.NumReactions) {
+	if !st.inc(StateTargetReactions, c.config.NumReactions) {
 		return control.UserActionResponse{Info: "target number of reactions reached"}
 	}
 
 	postsIds, err := u.Store().PostsIdsSince(time.Now().Add(-10*time.Second).Unix() * 1000)
 	if err != nil {
-		st.dec("reactions")
+		st.dec(StateTargetReactions)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	if len(postsIds) == 0 {
-		st.dec("reactions")
+		st.dec(StateTargetReactions)
 		return control.UserActionResponse{Info: "no posts to add reaction to"}
 	}
 
@@ -341,20 +341,20 @@ func (c *GenController) addReaction(u user.User) control.UserActionResponse {
 
 	reactions, err := u.Store().Reactions(postId)
 	if err != nil {
-		st.dec("reactions")
+		st.dec(StateTargetReactions)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	for i := 0; i < len(reactions); i++ {
 		if reaction.UserId == reactions[i].UserId &&
 			reaction.EmojiName == reactions[i].EmojiName {
-			st.dec("reactions")
+			st.dec(StateTargetReactions)
 			return control.UserActionResponse{Info: "reaction already added"}
 		}
 	}
 
 	err = u.SaveReaction(reaction)
 	if err != nil {
-		st.dec("reactions")
+		st.dec(StateTargetReactions)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

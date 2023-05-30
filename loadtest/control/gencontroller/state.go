@@ -22,14 +22,22 @@ type ThreadInfo struct {
 
 var st *state
 
+const (
+	StateTargetTeams         = "teams"
+	StateTargetChannels      = "channels"
+	StateTargetPosts         = "posts"
+	StateTargetReactions     = "reactions"
+	StateTargetPostReminders = "postreminders"
+)
+
 func init() {
 	st = &state{
 		targets: map[string]int64{
-			"teams":         0,
-			"channels":      0,
-			"posts":         0,
-			"reactions":     0,
-			"postreminders": 0,
+			StateTargetTeams:         0,
+			StateTargetChannels:      0,
+			StateTargetPosts:         0,
+			StateTargetReactions:     0,
+			StateTargetPostReminders: 0,
 		},
 		longRunningThreads: make(map[string]*ThreadInfo),
 	}
