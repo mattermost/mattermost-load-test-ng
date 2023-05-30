@@ -470,6 +470,7 @@ func (s *MemStore) SetCurrentChannel(channel *model.Channel) error {
 }
 
 // Channels returns all the channels for a team.
+// This means no DM/GM channels are returned.
 func (s *MemStore) Channels(teamId string) ([]model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
