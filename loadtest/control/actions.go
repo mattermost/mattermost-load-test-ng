@@ -84,7 +84,6 @@ func Login(u user.User) UserActionResponse {
 }
 
 func GetPreferences(u user.User) UserActionResponse {
-	// Getting preferences.
 	err := u.GetPreferences()
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
