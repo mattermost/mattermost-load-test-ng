@@ -115,7 +115,6 @@ func JoinChannel(u user.User) UserActionResponse {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
 		for _, channel := range channels {
-			// get member count of a channel.
 			cm, err := userStore.ChannelMember(channel.Id, userId)
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
