@@ -82,6 +82,7 @@ func (c *GenController) Run() {
 	initActions := []control.UserAction{
 		control.SignUp,
 		control.Login,
+		control.GetPreferences,
 		c.createTeam,
 		c.joinTeam,
 		c.joinChannel,

@@ -83,6 +83,16 @@ func Login(u user.User) UserActionResponse {
 	return UserActionResponse{Info: "logged in"}
 }
 
+func GetPreferences(u user.User) UserActionResponse {
+	// Getting preferences.
+	err := u.GetPreferences()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: "preferences set"}
+}
+
 // Logout disconnects the user from the server and logs out from the server.
 func Logout(u user.User) UserActionResponse {
 	err := u.Disconnect()
