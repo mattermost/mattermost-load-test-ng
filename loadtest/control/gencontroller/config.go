@@ -31,6 +31,8 @@ type Config struct {
 	NumPostReminders int64 `default:"200" validate:"range:[0,]"`
 	// The target number of sidebar categories to be created.
 	NumSidebarCategories int64 `default:"10" validate:"range:[0,]"`
+	// The target number of threads to follow.
+	NumFollowedThreads int64 `default:"10" validate:"range:[0,]"`
 
 	// Percentages of channels to be created, grouped by type.
 	// The total sum of these values must be equal to 1.

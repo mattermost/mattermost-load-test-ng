@@ -441,3 +441,50 @@ func (c *GenController) createSidebarCategory(u user.User) control.UserActionRes
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created sidebar category, id %s", sidebarCategory.Id)}
 }
+
+func (c *GenController) followThread(u user.User) control.UserActionResponse {
+	if !st.inc(StateTargetFollowedThreads, c.config.NumFollowedThreads) {
+		return control.UserActionResponse{Info: "target number of followed threads reached"}
+	}
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if err != nil {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(channel.Id)
+	if err != nil {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	threadId := post.RootId
+	if threadId == "" {
+		threadId = post.Id
+	}
+
+	userId := u.Store().Id()
+	if st.isThreadFollowedByUser(threadId, userId) {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Info: fmt.Sprintf("thread %s was already followed", threadId)}
+	}
+
+	err = u.UpdateThreadFollow(team.Id, threadId, true)
+	if err != nil {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	st.setThreadFollowedByUser(threadId, userId)
+
+	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", threadId)}
+}
