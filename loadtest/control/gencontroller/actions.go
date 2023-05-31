@@ -222,8 +222,14 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 
 	var rootId string
 	var channelId string
-	channel, err := u.Store().CurrentChannel()
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channels in store"}
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
