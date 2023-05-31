@@ -886,6 +886,10 @@ func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 		return false, UserActionResponse{}
 	}
 
+	if u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsAlwaysOn {
+		return true, UserActionResponse{}
+	}
+
 	collapsedThreads := u.Store().ClientConfig()["CollapsedThreads"] == model.CollapsedThreadsDefaultOn
 	prefs, err := u.Store().Preferences()
 	if err != nil {
