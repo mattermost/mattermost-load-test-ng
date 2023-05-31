@@ -15,8 +15,8 @@ type state struct {
 	// This is used to store the global list of channelIDs for the agents
 	// to choose from while trying to join a channel. This only contains Open/Private
 	// channels.
-	channels              []string
-	channelsMut           sync.Mutex
+	channels    []string
+	channelsMut sync.Mutex
 }
 
 type ThreadInfo struct {
