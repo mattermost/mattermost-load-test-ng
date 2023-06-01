@@ -361,7 +361,7 @@ func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
 	if len(m) == 0 {
 		return def, ErrEmptyMap
 	}
-	keys := make([]K, len(m))
+	keys := make([]K, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
