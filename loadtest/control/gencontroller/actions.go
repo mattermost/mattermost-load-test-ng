@@ -231,7 +231,7 @@ func (c *GenController) createPostReminder(u user.User) control.UserActionRespon
 		return control.UserActionResponse{Info: "target number of post reminders reached"}
 	}
 
-	post, err := u.Store().RandomPost()
+	post, err := u.Store().RandomPost(store.SelectAny)
 	if err != nil {
 		st.dec(StateTargetPostReminders)
 		if errors.Is(err, memstore.ErrPostNotFound) {
@@ -277,7 +277,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		}
 	}
 	if rootId == "" {
-		root, err := u.Store().RandomPost()
+		root, err := u.Store().RandomPost(store.SelectAny)
 		if err != nil {
 			st.dec(StateTargetPosts)
 			return control.UserActionResponse{Err: control.NewUserError(err)}

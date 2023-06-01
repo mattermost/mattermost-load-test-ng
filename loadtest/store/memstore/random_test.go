@@ -203,46 +203,205 @@ func TestRandomUser(t *testing.T) {
 }
 
 func TestRandomPost(t *testing.T) {
-	s := newStore(t)
-	id1 := model.NewId()
-	id2 := model.NewId()
-	err := s.SetPosts([]*model.Post{
-		{Id: id1},
-		{Id: id2},
-	})
-	require.NoError(t, err)
-	p, err := s.RandomPost()
-	require.NoError(t, err)
-	assert.Condition(t, func() bool {
-		switch p.Id {
-		case id1, id2:
-			return true
-		default:
-			return false
-		}
-	})
-
-	s = newStore(t)
-	for i := 0; i < 10; i++ {
-		err := s.SetPost(&model.Post{
-			Id:   model.NewId(),
-			Type: "some_type",
+	t.Run("select any", func(t *testing.T) {
+		s := newStore(t)
+		id1 := model.NewId()
+		id2 := model.NewId()
+		err := s.SetPosts([]*model.Post{
+			{Id: id1},
+			{Id: id2},
 		})
 		require.NoError(t, err)
-	}
+		p, err := s.RandomPost(store.SelectAny)
+		require.NoError(t, err)
+		assert.Condition(t, func() bool {
+			switch p.Id {
+			case id1, id2:
+				return true
+			default:
+				return false
+			}
+		})
 
-	p, err = s.RandomPost()
-	require.Equal(t, ErrPostNotFound, err)
-	require.Empty(t, p.Clone())
+		s = newStore(t)
+		for i := 0; i < 10; i++ {
+			err := s.SetPost(&model.Post{
+				Id:   model.NewId(),
+				Type: "some_type",
+			})
+			require.NoError(t, err)
+		}
 
-	err = s.SetPost(&model.Post{
-		Id: id1,
+		p, err = s.RandomPost(store.SelectAny)
+		require.Equal(t, ErrPostNotFound, err)
+		require.Empty(t, p.Clone())
+
+		err = s.SetPost(&model.Post{
+			Id: id1,
+		})
+		require.NoError(t, err)
+
+		p, err = s.RandomPost(store.SelectAny)
+		require.NoError(t, err)
+		require.Equal(t, id1, p.Id)
 	})
-	require.NoError(t, err)
 
-	p, err = s.RandomPost()
-	require.NoError(t, err)
-	require.Equal(t, id1, p.Id)
+	t.Run("select member of", func(t *testing.T) {
+		s := newStore(t)
+		userId := model.NewId()
+		user := model.User{Id: userId}
+		err := s.SetUser(&user)
+		require.NoError(t, err)
+
+		chanId1 := model.NewId()
+		chanId2 := model.NewId()
+		err = s.SetChannel(&model.Channel{Id: chanId1})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId2})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		err = s.SetPosts([]*model.Post{
+			{Id: postId1, ChannelId: chanId1},
+			{Id: postId2, ChannelId: chanId2},
+		})
+		require.NoError(t, err)
+
+		// The user is only member of channel 1
+		err = s.SetChannelMember(chanId1, &model.ChannelMember{UserId: userId, ChannelId: chanId1})
+		require.NoError(t, err)
+
+		p, err := s.RandomPost(store.SelectMemberOf)
+		require.NoError(t, err)
+		require.Equal(t, postId1, p.Id)
+	})
+
+	t.Run("select not DM", func(t *testing.T) {
+		s := newStore(t)
+		userId := model.NewId()
+		user := model.User{Id: userId}
+		err := s.SetUser(&user)
+		require.NoError(t, err)
+
+		chanId1 := model.NewId()
+		chanId2 := model.NewId()
+		err = s.SetChannel(&model.Channel{Id: chanId1, Type: model.ChannelTypeOpen})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId2, Type: model.ChannelTypeDirect})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		err = s.SetPosts([]*model.Post{
+			{Id: postId1, ChannelId: chanId1},
+			{Id: postId2, ChannelId: chanId2},
+		})
+		require.NoError(t, err)
+
+		p, err := s.RandomPost(store.SelectNotDirect)
+		require.NoError(t, err)
+		require.Equal(t, postId1, p.Id)
+	})
+
+	t.Run("select not GM", func(t *testing.T) {
+		s := newStore(t)
+		userId := model.NewId()
+		user := model.User{Id: userId}
+		err := s.SetUser(&user)
+		require.NoError(t, err)
+
+		chanId1 := model.NewId()
+		chanId2 := model.NewId()
+		err = s.SetChannel(&model.Channel{Id: chanId1})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId2, Type: model.ChannelTypeGroup})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		err = s.SetPosts([]*model.Post{
+			{Id: postId1, ChannelId: chanId1},
+			{Id: postId2, ChannelId: chanId2},
+		})
+		require.NoError(t, err)
+
+		p, err := s.RandomPost(store.SelectNotGroup)
+		require.NoError(t, err)
+		require.Equal(t, postId1, p.Id)
+	})
+
+	t.Run("select member of only public or private channels", func(t *testing.T) {
+		s := newStore(t)
+		userId := model.NewId()
+		user := model.User{Id: userId}
+		err := s.SetUser(&user)
+		require.NoError(t, err)
+
+		chanId1 := model.NewId()
+		chanId2 := model.NewId()
+		chanId3 := model.NewId()
+		chanId4 := model.NewId()
+		err = s.SetChannel(&model.Channel{Id: chanId1, Type: model.ChannelTypeOpen})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId2, Type: model.ChannelTypePrivate})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId3, Type: model.ChannelTypeDirect})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId4, Type: model.ChannelTypeGroup})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		postId3 := model.NewId()
+		postId4 := model.NewId()
+		err = s.SetPosts([]*model.Post{
+			{Id: postId1, ChannelId: chanId1},
+			{Id: postId2, ChannelId: chanId2},
+			{Id: postId3, ChannelId: chanId3},
+			{Id: postId4, ChannelId: chanId4},
+		})
+		require.NoError(t, err)
+
+		// The user is member of channel 1, 3 and 4
+		err = s.SetChannelMember(chanId1, &model.ChannelMember{UserId: userId, ChannelId: chanId1})
+		require.NoError(t, err)
+		err = s.SetChannelMember(chanId3, &model.ChannelMember{UserId: userId, ChannelId: chanId3})
+		require.NoError(t, err)
+		err = s.SetChannelMember(chanId4, &model.ChannelMember{UserId: userId, ChannelId: chanId4})
+		require.NoError(t, err)
+
+		// Only channel 1 satisfies all requirements
+		p, err := s.RandomPost(store.SelectMemberOf | store.SelectNotDirect | store.SelectNotGroup)
+		require.NoError(t, err)
+		require.Equal(t, postId1, p.Id)
+	})
+
+	t.Run("nothing to select", func(t *testing.T) {
+		s := newStore(t)
+		userId := model.NewId()
+		user := model.User{Id: userId}
+		err := s.SetUser(&user)
+		require.NoError(t, err)
+
+		chanId1 := model.NewId()
+		chanId2 := model.NewId()
+		err = s.SetChannel(&model.Channel{Id: chanId1, Type: model.ChannelTypeDirect})
+		require.NoError(t, err)
+		err = s.SetChannel(&model.Channel{Id: chanId2, Type: model.ChannelTypeGroup})
+		require.NoError(t, err)
+
+		postId1 := model.NewId()
+		postId2 := model.NewId()
+		err = s.SetPosts([]*model.Post{
+			{Id: postId1, ChannelId: chanId1},
+			{Id: postId2, ChannelId: chanId2},
+		})
+		require.NoError(t, err)
+
+		_, err = s.RandomPost(store.SelectNotDirect | store.SelectNotGroup)
+		require.ErrorIs(t, err, ErrPostNotFound)
+	})
 }
 
 func TestRandomPostForChannel(t *testing.T) {
