@@ -442,26 +442,23 @@ func (c *GenController) followThread(u user.User) control.UserActionResponse {
 		return resp
 	}
 
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	// Select a random post from any public or private channel the user is a member of (avoid picking DMs or GMs)
+	post, err := u.Store().RandomPost(store.SelectMemberOf | store.SelectNotDirect | store.SelectNotGroup)
 	if err != nil {
 		st.dec(StateTargetFollowedThreads)
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if err != nil {
-		st.dec(StateTargetFollowedThreads)
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if err != nil {
-		st.dec(StateTargetFollowedThreads)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: "no threads to follow"}
+		}
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	threadId := post.RootId
 	if threadId == "" {
 		threadId = post.Id
+	}
+	channel, err := u.Store().Channel(post.ChannelId)
+	if err != nil {
+		st.dec(StateTargetFollowedThreads)
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	userId := u.Store().Id()
@@ -470,7 +467,7 @@ func (c *GenController) followThread(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Info: fmt.Sprintf("thread %s was already followed", threadId)}
 	}
 
-	err = u.UpdateThreadFollow(team.Id, threadId, true)
+	err = u.UpdateThreadFollow(channel.TeamId, threadId, true)
 	if err != nil {
 		st.dec(StateTargetFollowedThreads)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
