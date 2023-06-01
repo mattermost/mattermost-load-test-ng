@@ -6,7 +6,6 @@ package memstore
 import (
 	"errors"
 	"math/rand"
-	"reflect"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/server/v8/model"
@@ -162,7 +161,7 @@ func (s *MemStore) randomUser() (model.User, error) {
 		if err != nil {
 			return model.User{}, err
 		}
-		user := s.users[key.(string)]
+		user := s.users[key]
 		if user == nil || user.Id == "" {
 			return model.User{}, ErrInvalidData
 		}
@@ -317,7 +316,7 @@ func (s *MemStore) RandomChannelMember(channelId string) (model.ChannelMember, e
 	if err != nil {
 		return model.ChannelMember{}, err
 	}
-	return *chanMemberMap[key.(string)], nil
+	return *chanMemberMap[key], nil
 }
 
 // RandomTeamMember returns a random team member for a team.
@@ -336,7 +335,7 @@ func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
 	if err != nil {
 		return model.TeamMember{}, err
 	}
-	return *teamMemberMap[key.(string)], nil
+	return *teamMemberMap[key], nil
 }
 
 func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error) {
@@ -350,24 +349,24 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 		return model.SidebarCategoryWithChannels{}, err
 	}
 
-	category := *teamCat[key.(string)]
+	category := *teamCat[key]
 	tmp := make([]string, len(category.Channels))
 	copy(tmp, category.Channels)
 	category.Channels = tmp
 	return category, nil
 }
 
-func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
-	val := reflect.ValueOf(m)
-	if val.Kind() != reflect.Map {
-		return nil, errors.New("memstore: not a map")
+func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
+	var def K
+	if len(m) == 0 {
+		return def, ErrEmptyMap
 	}
-	keys := val.MapKeys()
-	if len(keys) == 0 {
-		return nil, ErrEmptyMap
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
 	}
-	idx := rand.Intn(len(keys))
-	return keys[idx].Interface(), nil
+	idx := rand.Intn(len(m))
+	return keys[idx], nil
 }
 
 // RandomThread returns a random post.

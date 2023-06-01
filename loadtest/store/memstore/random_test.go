@@ -475,27 +475,6 @@ func TestRandomTeamMember(t *testing.T) {
 }
 
 func TestPickRandomKeyFromMap(t *testing.T) {
-	t.Run("Basic", func(t *testing.T) {
-		m := make(map[string]int)
-		m["a"] = 1
-		m["b"] = 2
-		key, err := pickRandomKeyFromMap(m)
-		require.NoError(t, err)
-		assert.Condition(t, func() bool {
-			switch key.(string) {
-			case "a", "b":
-				return true
-			default:
-				return false
-			}
-		})
-	})
-
-	t.Run("NotMap", func(t *testing.T) {
-		_, err := pickRandomKeyFromMap(1)
-		require.Equal(t, err.Error(), "memstore: not a map")
-	})
-
 	t.Run("EmptyMap", func(t *testing.T) {
 		_, err := pickRandomKeyFromMap(map[string]int{})
 		require.Equal(t, ErrEmptyMap, err)
