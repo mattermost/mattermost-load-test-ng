@@ -429,7 +429,7 @@ func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
 	}
 
 	var channelID string
-	maxTimes := maxIndex-minIndex
+	maxTimes := maxIndex - minIndex
 	cnt := 0
 	for {
 		if cnt == maxTimes {
