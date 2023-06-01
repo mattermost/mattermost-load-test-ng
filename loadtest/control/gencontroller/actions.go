@@ -64,7 +64,7 @@ func (c *GenController) createPublicChannel(u user.User) control.UserActionRespo
 	}
 
 	channel := &model.Channel{
-		Name:   "ch-" + model.NewId(),
+		Name:   control.PickRandomWord()+"_"+control.PickRandomWord(),
 		TeamId: team.Id,
 		Type:   model.ChannelTypeOpen,
 	}
@@ -91,7 +91,7 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 	}
 
 	channel := &model.Channel{
-		Name:   "ch-" + model.NewId(),
+		Name:   control.PickRandomWord()+"_"+control.PickRandomWord(),
 		TeamId: team.Id,
 		Type:   model.ChannelTypePrivate,
 	}
