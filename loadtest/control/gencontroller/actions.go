@@ -351,6 +351,9 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	// We choose a channel from that range.
 	channelID, err := chooseChannel(c.config.ChannelsDistribution[idx], u)
 	if err != nil {
+		if err == errMemberLimitExceeded {
+			return control.UserActionResponse{Info: "channel range already filled"}
+		}
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -412,6 +415,8 @@ func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
 }
 
+var errMemberLimitExceeded = errors.New("member limit exceeded")
+
 // chooseChannel will pick a channelID randomly from the range of indexes.
 // If the chosen channelID has exceeded the number of channelmembers, it will
 // select another one in the range until it has found one.
@@ -424,7 +429,12 @@ func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
 	}
 
 	var channelID string
+	maxTimes := maxIndex-minIndex
+	cnt := 0
 	for {
+		if cnt == maxTimes {
+			return "", errMemberLimitExceeded
+		}
 		target := rand.Intn(maxIndex-minIndex) + minIndex
 		if target >= maxIndex {
 			target = maxIndex - 1
@@ -436,6 +446,7 @@ func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
 			return "", err
 		}
 		if len(members) > int(dist.MemberLimit) {
+			cnt++
 			continue
 		}
 		return channelID, nil
