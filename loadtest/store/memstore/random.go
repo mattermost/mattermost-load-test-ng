@@ -213,14 +213,53 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 }
 
 // RandomPost returns a random post.
-func (s *MemStore) RandomPost() (model.Post, error) {
+func (s *MemStore) RandomPost(st store.SelectionType) (model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	var postIds []string
-	for _, p := range s.posts {
-		if p.Type == "" {
-			postIds = append(postIds, p.Id)
+
+	// Simplest case: just get a random user post from s.posts
+	if isSelectionType(st, store.SelectAny) {
+		for _, p := range s.posts {
+			if p.Type == "" {
+				postIds = append(postIds, p.Id)
+			}
+		}
+	} else {
+		// Preflight checks: make sure that both user and current channel are set
+		if s.user == nil {
+			return model.Post{}, ErrUserNotSet
+		}
+		var currChanId string
+		if s.currentChannel != nil {
+			currChanId = s.currentChannel.Id
+		}
+
+		for _, p := range s.posts {
+			if p.Type != "" {
+				continue
+			}
+
+			channel := s.channels[p.ChannelId]
+
+			if (currChanId == channel.Id) && isSelectionType(st, store.SelectNotCurrent) {
+				continue
+			}
+			if excludeChannelType(st, channel.Type) {
+				continue
+			}
+			if !isSelectionType(st, store.SelectMemberOf) && !isSelectionType(st, store.SelectNotMemberOf) {
+				postIds = append(postIds, p.Id)
+			} else {
+				_, isMember := s.channelMembers[channel.Id][s.user.Id]
+				if isMember && isSelectionType(st, store.SelectMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+				if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+			}
 		}
 	}
 

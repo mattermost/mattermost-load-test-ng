@@ -68,10 +68,13 @@ func (c *GenController) Run() {
 	}()
 
 	done := func() bool {
-		return st.get("teams") >= c.config.NumTeams &&
-			st.get("channels") >= c.config.NumChannels &&
-			st.get("posts") >= c.config.NumPosts &&
-			st.get("reactions") >= c.config.NumReactions
+		return st.get(StateTargetTeams) >= c.config.NumTeams &&
+			st.get(StateTargetChannels) >= c.config.NumChannels &&
+			st.get(StateTargetPosts) >= c.config.NumPosts &&
+			st.get(StateTargetReactions) >= c.config.NumReactions &&
+			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
+			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
+			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -79,6 +82,7 @@ func (c *GenController) Run() {
 	initActions := []control.UserAction{
 		control.SignUp,
 		control.Login,
+		control.GetPreferences,
 		c.createTeam,
 		c.joinTeam,
 		c.joinChannel,
@@ -142,6 +146,11 @@ func (c *GenController) Run() {
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * (1 - c.config.PercentReplies))),
 			idleTimeMs: 1000,
 		},
+		"createPostReminder": {
+			run:        c.createPostReminder,
+			frequency:  int(c.config.NumPostReminders),
+			idleTimeMs: 1000,
+		},
 		"createReply": {
 			run:        c.createReply,
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * c.config.PercentReplies)),
@@ -150,6 +159,16 @@ func (c *GenController) Run() {
 		"addReaction": {
 			run:        c.addReaction,
 			frequency:  int(c.config.NumReactions),
+			idleTimeMs: 1000,
+		},
+		"createSidebarCategory": {
+			run:        c.createSidebarCategory,
+			frequency:  int(c.config.NumSidebarCategories),
+			idleTimeMs: 1000,
+		},
+		"followThread": {
+			run:        c.followThread,
+			frequency:  int(c.config.NumFollowedThreads),
 			idleTimeMs: 1000,
 		},
 	}
@@ -172,20 +191,32 @@ func (c *GenController) Run() {
 			return
 		}
 
-		if st.get("channels") >= c.config.NumChannels {
+		if st.get(StateTargetChannels) >= c.config.NumChannels {
 			delete(actions, "createPublicChannel")
 			delete(actions, "createPrivateChannel")
 			delete(actions, "createDirectChannel")
 			delete(actions, "createGroupChannel")
 		}
 
-		if st.get("posts") >= c.config.NumPosts {
+		if st.get(StateTargetPosts) >= c.config.NumPosts {
 			delete(actions, "createPost")
 			delete(actions, "createReply")
 		}
 
-		if st.get("reactions") >= c.config.NumReactions {
+		if st.get(StateTargetReactions) >= c.config.NumReactions {
 			delete(actions, "addReaction")
+		}
+
+		if st.get(StateTargetPostReminders) >= c.config.NumPostReminders {
+			delete(actions, "createPostReminder")
+		}
+
+		if st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories {
+			delete(actions, "createSidebarCategory")
+		}
+
+		if st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads {
+			delete(actions, "followThread")
 		}
 
 		idleTime := time.Duration(math.Round(float64(action.idleTimeMs) * c.rate))

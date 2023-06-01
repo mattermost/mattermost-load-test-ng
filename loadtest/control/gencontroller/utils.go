@@ -32,6 +32,8 @@ func pickAction(actions map[string]userAction) (*userAction, error) {
 	return nil, errors.New("should not be able to reach this point")
 }
 
+const MaxLongRunningThreadsPerChannel = 2
+
 // shouldMakeLongRunningThreads returns if a long thread should be created
 // TODO: The rates and logic in this function should be made configurable
 func shouldMakeLongRunningThread(channelId string) bool {
@@ -40,8 +42,8 @@ func shouldMakeLongRunningThread(channelId string) bool {
 	if rand.Float64() > 0.02 {
 		return false
 	}
-	// one long running thread per channel
-	if len(st.getLongRunningThreadsInChannel(channelId)) > 0 {
+	// limit the maximum number of long running threads in any channel
+	if len(st.getLongRunningThreadsInChannel(channelId)) >= MaxLongRunningThreadsPerChannel {
 		return false
 	}
 	return true

@@ -88,8 +88,9 @@ type UserStore interface {
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.
 	RandomUsers(n int) ([]model.User, error)
-	// RandomPost returns a random post.
-	RandomPost() (model.Post, error)
+	// RandomPost returns a random post, whose channel will satisfy
+	// the constraints provided by st
+	RandomPost(st SelectionType) (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
 	// RandomReplyPostForChannel returns a random reply post for the given channel.
