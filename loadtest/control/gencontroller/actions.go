@@ -231,21 +231,12 @@ func (c *GenController) createPostReminder(u user.User) control.UserActionRespon
 		return control.UserActionResponse{Info: "target number of post reminders reached"}
 	}
 
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	post, err := u.Store().RandomPost()
 	if err != nil {
 		st.dec(StateTargetPostReminders)
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	ch, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if err != nil {
-		st.dec(StateTargetPostReminders)
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	post, err := u.Store().RandomPostForChannel(ch.Id)
-	if err != nil {
-		st.dec(StateTargetPostReminders)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: "no posts to set a reminder for"}
+		}
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
