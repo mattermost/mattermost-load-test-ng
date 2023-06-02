@@ -47,6 +47,8 @@ type UserStore interface {
 	CurrentChannel() (*model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
+	// ChannelMembers returns a list of members for the specified channel.
+	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// ChannelPosts returns all posts for the specified channel.
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for specified channel, sorted by CreateAt.
@@ -132,6 +134,9 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+	PostsWithAckRequests() ([]string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing

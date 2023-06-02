@@ -229,6 +229,129 @@ func CreatePost(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
 }
 
+// CreateAckPost creates a new post with priority label and acknowledgment in a random channel.
+func CreateAckPost(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: fmt.Sprintf("no channels in store for team: %s", team.Id)}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   "Priority Post Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().UnixMilli(),
+		Metadata: &model.PostMetadata{
+			Priority: &model.PostPriority{
+				Priority:     model.NewString(model.PostPriorityUrgent),
+				RequestedAck: model.NewBool(true),
+			},
+		},
+	})
+
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("ack post created, id %v", postId)}
+}
+
+// AckToPost acknowledges a random ackPost.
+func AckToPost(u user.User) UserActionResponse {
+	postsIds, err := u.Store().PostsWithAckRequests()
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if len(postsIds) == 0 {
+		return UserActionResponse{Info: "no posts to acknowledge"}
+	}
+
+	postId := postsIds[rand.Intn(len(postsIds))]
+
+	err = u.AckToPost(u.Store().Id(), postId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("acknowledged post %s", postId)}
+}
+
+// CreatePersistentNotificationPost creates a persistent notification post.
+func CreatePersistentNotificationPost(u user.User) UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return UserActionResponse{Info: fmt.Sprintf("no channels in store for team: %s", team.Id)}
+	} else if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	cms, err := u.Store().ChannelMembers(channel.Id)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	// If not enough members in the channel then populate it.
+	if len(cms) < 2 {
+		err = u.GetChannelMembers(channel.Id, 0, 100)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+
+		// Validate again
+		cms, err = u.Store().ChannelMembers(channel.Id)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+		if len(cms) < 2 {
+			return UserActionResponse{Info: fmt.Sprintf("not enough users in the channel: %s", channel.Id)}
+		}
+	}
+
+	postOwnerID := u.Store().Id()
+	// Find a random non-postOwner
+	idx := rand.Intn(len(cms))
+	if cms[idx].UserId == postOwnerID {
+		// If postOwner then just pick next user (use modulus to prevent index-out-of-range)
+		idx = (idx + 1) % len(cms)
+	}
+
+	mentionedUser, err := u.Store().GetUser(cms[idx].UserId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+	if mentionedUser.Username == "" {
+		return UserActionResponse{Info: fmt.Sprintf("user has empty username: %s", mentionedUser.Id)}
+	}
+
+	postId, err := u.CreatePost(&model.Post{
+		Message:   fmt.Sprintf("Persistent Notification Post mention @%s", mentionedUser.Username),
+		UserId:    postOwnerID,
+		ChannelId: channel.Id,
+		CreateAt:  time.Now().UnixMilli(),
+		Metadata: &model.PostMetadata{
+			Priority: &model.PostPriority{
+				Priority:                model.NewString(model.PostPriorityUrgent),
+				RequestedAck:            model.NewBool(false),
+				PersistentNotifications: model.NewBool(true),
+			},
+		},
+	})
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("persistent notification post created, id %s", postId)}
+}
+
 // EditPost updates a post.
 func EditPost(u user.User) UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)

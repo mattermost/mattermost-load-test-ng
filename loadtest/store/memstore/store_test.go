@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/server/v8/model"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -748,4 +749,36 @@ func TestThreads(t *testing.T) {
 		require.Equal(t, threads[2].PostId, threadId3)
 
 	})
+}
+
+func TestPostsWithAckRequests(t *testing.T) {
+	s := newStore(t)
+	n := 10
+	ackPosts := make([]string, n)
+
+	for i := 0; i < n; i++ {
+		p := &model.Post{
+			Id:      model.NewId(),
+			Message: "ack post",
+			Metadata: &model.PostMetadata{
+				Priority: &model.PostPriority{
+					Priority:     model.NewString(model.PostPriorityUrgent),
+					RequestedAck: model.NewBool(true),
+				},
+			},
+		}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		ackPosts[i] = p.Id
+
+		err = s.SetPost(&model.Post{
+			Id:      model.NewId(),
+			Message: "regular post",
+		})
+		require.NoError(t, err)
+	}
+
+	posts, err := s.PostsWithAckRequests()
+	require.NoError(t, err)
+	assert.ElementsMatch(t, ackPosts, posts)
 }

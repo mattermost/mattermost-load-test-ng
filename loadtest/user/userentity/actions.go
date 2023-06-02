@@ -1370,6 +1370,12 @@ func (ue *UserEntity) CreatePostReminder(userID, postID string, targetTime int64
 	return nil
 }
 
+// AckToPost acknowledges a post.
+func (ue *UserEntity) AckToPost(userID, postID string) error {
+	_, _, err := ue.client.AcknowledgePost(postID, userID)
+	return err
+}
+
 // GetInitialDataGQL is a method to get the initial use data via GraphQL.
 func (ue *UserEntity) GetInitialDataGQL() error {
 	var q struct {
