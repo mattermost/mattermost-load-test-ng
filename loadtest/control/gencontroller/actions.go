@@ -260,7 +260,7 @@ func (c *GenController) createReply(u user.User) control.UserActionResponse {
 		if err != nil {
 			st.dec("posts")
 			if err == memstore.ErrPostNotFound {
-				return control.UserActionResponse{Info: "not posts in store"}
+				return control.UserActionResponse{Info: "no posts in store"}
 			}
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
@@ -337,19 +337,14 @@ func (c *GenController) addReaction(u user.User) control.UserActionResponse {
 func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	collapsedThreads := false
 
-	weights := make([]int, len(c.config.ChannelsDistribution))
-	for i := range c.config.ChannelsDistribution {
-		weights[i] = int(c.config.ChannelsDistribution[i].Probability * 100)
-	}
-
 	// We get the channel range depending on the weighted probability.
-	idx, err := control.SelectWeighted(weights)
+	idx, err := control.SelectWeighted(c.channelSelectionWeights)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	// We choose a channel from that range.
-	channelID, err := chooseChannel(c.config.ChannelsDistribution[idx], u)
+	channelID, err := chooseChannel(c.config.ChannelMembersDistribution[idx], u)
 	if err != nil {
 		if err == errMemberLimitExceeded {
 			return control.UserActionResponse{Info: "channel range already filled"}
@@ -420,7 +415,7 @@ var errMemberLimitExceeded = errors.New("member limit exceeded")
 // chooseChannel will pick a channelID randomly from the range of indexes.
 // If the chosen channelID has exceeded the number of channelmembers, it will
 // select another one in the range until it has found one.
-func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
+func chooseChannel(dist ChannelMemberDistribution, u user.User) (string, error) {
 	minIndex := int(dist.MinIndexRange * float64(len(st.channels)))
 	maxIndex := int(dist.MaxIndexRange * float64(len(st.channels)))
 
@@ -436,9 +431,7 @@ func chooseChannel(dist ChannelsDistribution, u user.User) (string, error) {
 			return "", errMemberLimitExceeded
 		}
 		target := rand.Intn(maxIndex-minIndex) + minIndex
-		if target >= maxIndex {
-			target = maxIndex - 1
-		}
+		// target is guaranteed to be within bounds of st.channels
 		channelID = st.channels[target]
 
 		members, err := u.Store().ChannelMembers(channelID)

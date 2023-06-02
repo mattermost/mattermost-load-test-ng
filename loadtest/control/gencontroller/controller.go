@@ -16,12 +16,13 @@ import (
 // GenController is an implementation of a UserController used to generate
 // realistic initial data.
 type GenController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
-	config *Config
+	id                      int
+	user                    user.User
+	stop                    chan struct{}
+	status                  chan<- control.UserStatus
+	rate                    float64
+	config                  *Config
+	channelSelectionWeights []int
 }
 
 // New creates and initializes a new GenController with given parameters.
@@ -36,13 +37,19 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
+	weights := make([]int, len(config.ChannelMembersDistribution))
+	for i := range config.ChannelMembersDistribution {
+		weights[i] = int(config.ChannelMembersDistribution[i].Probability * 100)
+	}
+
 	sc := &GenController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   1.0,
-		config: config,
+		id:                      id,
+		user:                    user,
+		stop:                    make(chan struct{}),
+		status:                  status,
+		rate:                    1.0,
+		config:                  config,
+		channelSelectionWeights: weights,
 	}
 
 	return sc, nil
@@ -127,7 +134,6 @@ func (c *GenController) Run() {
 			idleTimeMs: 1000,
 		},
 	}
-
 	c.runActions(actions, func() bool { return st.get("channels") >= c.config.NumChannels })
 
 	actions = map[string]userAction{
