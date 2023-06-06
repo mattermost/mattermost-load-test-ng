@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -761,7 +760,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	if hasFilesAttached {
-		if err := c.attachFilesToPost(u, post); err != nil {
+		if err := control.AttachFilesToPost(u, post); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
@@ -781,52 +780,6 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
-}
-
-func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error {
-	type file struct {
-		data   []byte
-		upload bool
-	}
-	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
-	files := make(map[string]*file, len(filenames))
-
-	for _, filename := range filenames {
-		files[filename] = &file{
-			data:   control.MustAsset(filename),
-			upload: rand.Intn(2) == 0,
-		}
-	}
-
-	// We make sure at least one file gets uploaded.
-	files[filenames[rand.Intn(len(filenames))]].upload = true
-
-	var wg sync.WaitGroup
-	fileIds := make(chan string, len(files))
-	for filename, file := range files {
-		if !file.upload {
-			continue
-		}
-		wg.Add(1)
-		go func(filename string, data []byte) {
-			defer wg.Done()
-			resp, err := u.UploadFile(data, post.ChannelId, filename)
-			if err != nil {
-				c.status <- c.newErrorStatus(err)
-				return
-			}
-			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
-			fileIds <- resp.FileInfos[0].Id
-		}(filename, file.data)
-	}
-
-	wg.Wait()
-	numFiles := len(fileIds)
-	for i := 0; i < numFiles; i++ {
-		post.FileIds = append(post.FileIds, <-fileIds)
-	}
-
-	return nil
 }
 
 func (c *SimulController) addReaction(u user.User) control.UserActionResponse {

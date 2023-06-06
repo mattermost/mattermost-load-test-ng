@@ -982,16 +982,6 @@ func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
-// GetReactions fetches and stores reactions to the specified post.
-func (ue *UserEntity) GetReactions(postId string) error {
-	reactions, _, err := ue.client.GetReactions(postId)
-	if err != nil {
-		return err
-	}
-
-	return ue.store.SetReactions(postId, reactions)
-}
-
 // SaveReaction stores the given reaction.
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	r, _, err := ue.client.SaveReaction(reaction)
@@ -1378,6 +1368,12 @@ func (ue *UserEntity) CreatePostReminder(userID, postID string, targetTime int64
 		return err
 	}
 	return nil
+}
+
+// AckToPost acknowledges a post.
+func (ue *UserEntity) AckToPost(userID, postID string) error {
+	_, _, err := ue.client.AcknowledgePost(postID, userID)
+	return err
 }
 
 // GetInitialDataGQL is a method to get the initial use data via GraphQL.

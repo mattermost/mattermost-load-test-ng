@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/server/v8/model"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -347,23 +348,6 @@ func TestCurrentChannel(t *testing.T) {
 }
 
 func TestReactions(t *testing.T) {
-	t.Run("SetReactions", func(t *testing.T) {
-		s := newStore(t)
-		postId := model.NewId()
-		userId := model.NewId()
-		emojiName := "testemoji"
-		reaction := &model.Reaction{
-			UserId:    userId,
-			PostId:    postId,
-			EmojiName: emojiName,
-		}
-		err := s.SetReactions(postId, []*model.Reaction{reaction})
-		require.NoError(t, err)
-		reactions, err := s.Reactions(postId)
-		require.NoError(t, err)
-		require.Equal(t, *reaction, reactions[0])
-	})
-
 	t.Run("SetReaction", func(t *testing.T) {
 		s := newStore(t)
 		postId := model.NewId()
@@ -401,28 +385,23 @@ func TestReactions(t *testing.T) {
 				PostId:    postId,
 				EmojiName: emojiName,
 			}
-		}
 
-		err := s.SetReactions(postId, reactions)
-		require.NoError(t, err)
+			err := s.SetReaction(reactions[i])
+			require.NoError(t, err)
+		}
 
 		ok, err := s.DeleteReaction(r1)
 		require.NoError(t, err)
 		require.False(t, ok)
 
-		reactions[4] = r1
-
-		err = s.SetReactions(postId, reactions)
-		require.NoError(t, err)
-
-		ok, err = s.DeleteReaction(r1)
+		ok, err = s.DeleteReaction(reactions[0])
 		require.NoError(t, err)
 		require.True(t, ok)
 
 		storedReactions, err := s.Reactions(postId)
 		require.NoError(t, err)
 		require.Len(t, storedReactions, 9)
-		require.NotContains(t, storedReactions, *r1)
+		require.NotContains(t, storedReactions, *reactions[0])
 	})
 }
 
@@ -770,4 +749,36 @@ func TestThreads(t *testing.T) {
 		require.Equal(t, threads[2].PostId, threadId3)
 
 	})
+}
+
+func TestPostsWithAckRequests(t *testing.T) {
+	s := newStore(t)
+	n := 10
+	ackPosts := make([]string, n)
+
+	for i := 0; i < n; i++ {
+		p := &model.Post{
+			Id:      model.NewId(),
+			Message: "ack post",
+			Metadata: &model.PostMetadata{
+				Priority: &model.PostPriority{
+					Priority:     model.NewString(model.PostPriorityUrgent),
+					RequestedAck: model.NewBool(true),
+				},
+			},
+		}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		ackPosts[i] = p.Id
+
+		err = s.SetPost(&model.Post{
+			Id:      model.NewId(),
+			Message: "regular post",
+		})
+		require.NoError(t, err)
+	}
+
+	posts, err := s.PostsWithAckRequests()
+	require.NoError(t, err)
+	assert.ElementsMatch(t, ackPosts, posts)
 }

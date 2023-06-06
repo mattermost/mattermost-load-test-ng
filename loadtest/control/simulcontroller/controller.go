@@ -45,7 +45,7 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:      "CreatePost",
 			run:       c.createPost,
-			frequency: 1.5,
+			frequency: 1.225,
 		},
 		{
 			name:      "JoinChannel",
@@ -176,6 +176,18 @@ func getActionList(c *SimulController) []userAction {
 			name:      "GetInsights",
 			run:       c.getInsights,
 			frequency: 0.011,
+		},
+		{
+			run:       control.CreateAckPost,
+			frequency: 0.225,
+		},
+		{
+			run:       control.AckToPost,
+			frequency: 0.22,
+		},
+		{
+			run:       control.CreatePersistentNotificationPost,
+			frequency: 0.05,
 		},
 	}
 }

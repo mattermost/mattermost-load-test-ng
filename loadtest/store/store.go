@@ -47,6 +47,8 @@ type UserStore interface {
 	CurrentChannel() (*model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
+	// ChannelMembers returns a list of members for the specified channel.
+	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// ChannelPosts returns all posts for the specified channel.
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for specified channel, sorted by CreateAt.
@@ -88,8 +90,9 @@ type UserStore interface {
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.
 	RandomUsers(n int) ([]model.User, error)
-	// RandomPost returns a random post.
-	RandomPost() (model.Post, error)
+	// RandomPost returns a random post, whose channel will satisfy
+	// the constraints provided by st
+	RandomPost(st SelectionType) (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
 	// RandomReplyPostForChannel returns a random reply post for the given channel.
@@ -131,6 +134,9 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+	PostsWithAckRequests() ([]string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -169,8 +175,6 @@ type MutableUserStore interface {
 	SetPosts(posts []*model.Post) error
 
 	// reactions
-	// SetReactions stores the given reactions for the specified post.
-	SetReactions(postId string, reactions []*model.Reaction) error
 	// SetReaction stores the given reaction.
 	SetReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
