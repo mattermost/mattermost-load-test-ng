@@ -178,14 +178,17 @@ func getActionList(c *SimulController) []userAction {
 			frequency: 0.011,
 		},
 		{
+			name:      "CreateAclPost",
 			run:       control.CreateAckPost,
 			frequency: 0.225,
 		},
 		{
+			name:      "AckToPost",
 			run:       control.AckToPost,
 			frequency: 0.22,
 		},
 		{
+			name:      "CreatePersistentNotificationPost",
 			run:       control.CreatePersistentNotificationPost,
 			frequency: 0.05,
 		},
