@@ -168,7 +168,7 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 
 	channelId, err := u.CreateGroupChannel(userIds)
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
