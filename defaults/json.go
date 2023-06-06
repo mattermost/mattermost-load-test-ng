@@ -36,7 +36,9 @@ func readJSON(path string, value interface{}) error {
 	}
 	defer file.Close()
 
-	err = json.NewDecoder(file).Decode(&value)
+	dec := json.NewDecoder(file)
+	dec.DisallowUnknownFields()
+	err = dec.Decode(&value)
 	if err != nil {
 		return fmt.Errorf("could not decode file: %w", err)
 	}

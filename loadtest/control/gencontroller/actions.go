@@ -344,7 +344,7 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	}
 
 	// We choose a channel from that range.
-	channelID, err := chooseChannel(c.config.ChannelMembersDistribution[idx], u)
+	channelID, err := chooseChannel(c.config.ChannelMembersDistribution, idx, u)
 	if err != nil {
 		if err == errMemberLimitExceeded {
 			return control.UserActionResponse{Info: "channel range already filled"}
@@ -415,9 +415,14 @@ var errMemberLimitExceeded = errors.New("member limit exceeded")
 // chooseChannel will pick a channelID randomly from the range of indexes.
 // If the chosen channelID has exceeded the number of channelmembers, it will
 // select another one in the range until it has found one.
-func chooseChannel(dist ChannelMemberDistribution, u user.User) (string, error) {
-	minIndex := int(dist.MinIndexRange * float64(len(st.channels)))
-	maxIndex := int(dist.MaxIndexRange * float64(len(st.channels)))
+func chooseChannel(dist []ChannelMemberDistribution, idx int, u user.User) (string, error) {
+	minIndexRange := 0.0
+	for i := 0; i < idx; i++ {
+		minIndexRange += dist[i].PercentChannels
+	}
+	maxIndexRange := minIndexRange + dist[idx].PercentChannels
+	minIndex := int(minIndexRange * float64(len(st.channels)))
+	maxIndex := int(maxIndexRange * float64(len(st.channels)))
 
 	if maxIndex-minIndex <= 1 {
 		return "", errors.New("not enough channels to select from; either increase range or increase number of channels to create")
@@ -438,7 +443,7 @@ func chooseChannel(dist ChannelMemberDistribution, u user.User) (string, error) 
 		if err != nil {
 			return "", err
 		}
-		if len(members) > int(dist.MemberLimit) {
+		if len(members) > int(dist[idx].MemberLimit) {
 			cnt++
 			continue
 		}

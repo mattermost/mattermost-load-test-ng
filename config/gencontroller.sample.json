@@ -13,14 +13,12 @@
   "ChannelMembersDistribution":[
       {
         "MemberLimit": 50,
-        "MinIndexRange": 0.0,
-        "MaxIndexRange": 0.5,
+        "PercentChannels": 0.5,
         "Probability": 0.7
       },
       {
         "MemberLimit": 5,
-        "MinIndexRange": 0.5,
-        "MaxIndexRange": 1.0,
+        "PercentChannels": 0.5,
         "Probability": 0.3
       }
     ]

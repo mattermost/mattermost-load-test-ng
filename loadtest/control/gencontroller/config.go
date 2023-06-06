@@ -45,17 +45,16 @@ type Config struct {
 }
 
 // ChannelMemberDistribution holds the member limit and what percentage of channels will have the limit.
-// Probability indicates how frequently to choose a range. Max and Min percentage indicates the
-// range bounds of the channel list.
+// Probability indicates how frequently to choose a range. PercentChannels indicates the
+// what percent of channels will contain the change.
 //
-// For example, a probability of 0.8 and min/max of 0.0-0.3 for a channel array
-// of length 10 would mean that indices [0,3] would be chosen at a 80% probability chance.
+// For example, a probability of 0.8 and 0.5 of percentChannels with an array of
+// length 10 would mean that indices [0,5) would be chosen at a 80% probability chance.
 // And then the Memberlimit indicates the max member count for that range.
 type ChannelMemberDistribution struct {
-	MemberLimit   int64
-	MinIndexRange float64 `validate:"range:[0,1]"`
-	MaxIndexRange float64 `validate:"range:[0,1]"`
-	Probability   float64 `validate:"range:[0,1]"`
+	MemberLimit     int64
+	PercentChannels float64 `validate:"range:[0,1]"`
+	Probability     float64 `validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -85,6 +84,15 @@ func (c *Config) IsValid() error {
 
 	if totalPercent != 1.0 {
 		return errors.New("sum of probabilities for channel distribution should be equal to 1")
+	}
+
+	totalPercent = 0.0
+	for _, item := range c.ChannelMembersDistribution {
+		totalPercent += item.PercentChannels
+	}
+
+	if totalPercent != 1.0 {
+		return errors.New("sum of percentages for channel member distribution should be equal to 1")
 	}
 
 	return nil
