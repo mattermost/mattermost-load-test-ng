@@ -393,7 +393,25 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
-			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
+			adminStore, err := memstore.New(nil)
+			if err != nil {
+				return nil, err
+			}
+			adminUeSetup := userentity.Setup{
+				Store: adminStore,
+			}
+			adminUeConfig := userentity.Config{
+				ServerURL:    config.ConnectionConfiguration.ServerURL,
+				WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+				Username:     "",
+				Email:        config.ConnectionConfiguration.AdminEmail,
+				Password:     config.ConnectionConfiguration.AdminPassword,
+			}
+			sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+			if err := sysadmin.Login(); err != nil {
+				return nil, err
+			}
+			return gencontroller.New(id, ue, sysadmin, controllerConfig.(*gencontroller.Config), status)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		case loadtest.UserControllerCluster:

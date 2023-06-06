@@ -15,8 +15,8 @@ type state struct {
 	// This is used to store the global list of channelIDs for the agents
 	// to choose from while trying to join a channel. This only contains Open/Private
 	// channels.
-	channels    []string
-	channelsMut sync.Mutex
+	channels              []string
+	channelsMut           sync.Mutex
 	followedThreadsByUser map[string]map[string]bool
 	followedThreadsMut    sync.RWMutex
 }
@@ -50,8 +50,8 @@ func init() {
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
 		},
-		longRunningThreads: make(map[string]*ThreadInfo),
-		channels:           []string{},
+		longRunningThreads:    make(map[string]*ThreadInfo),
+		channels:              []string{},
 		followedThreadsByUser: make(map[string]map[string]bool),
 	}
 }

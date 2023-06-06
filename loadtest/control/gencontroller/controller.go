@@ -18,6 +18,7 @@ import (
 type GenController struct {
 	id                      int
 	user                    user.User
+	sysadmin                user.User
 	stop                    chan struct{}
 	status                  chan<- control.UserStatus
 	rate                    float64
@@ -28,7 +29,7 @@ type GenController struct {
 // New creates and initializes a new GenController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
+func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -45,6 +46,7 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	sc := &GenController{
 		id:                      id,
 		user:                    user,
+		sysadmin:                sysadmin,
 		stop:                    make(chan struct{}),
 		status:                  status,
 		rate:                    1.0,

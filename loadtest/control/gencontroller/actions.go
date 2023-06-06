@@ -107,14 +107,14 @@ func (c *GenController) createPrivateChannel(u user.User) control.UserActionResp
 }
 
 func (c *GenController) createDirectChannel(u user.User) control.UserActionResponse {
-	if !st.inc("channels", c.config.NumChannels) {
+	if !st.inc(StateTargetChannels, c.config.NumChannels) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
 	if _, err := u.GetUsers(0, 100); err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -122,16 +122,16 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 	// we don't have a direct channel with already.
 	user, err := u.Store().RandomUser()
 	if errors.Is(err, memstore.ErrLenMismatch) {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Info: "not enough users to create direct channel"}
 	} else if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	channelId, err := u.CreateDirectChannel(user.Id)
 	if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -139,7 +139,7 @@ func (c *GenController) createDirectChannel(u user.User) control.UserActionRespo
 }
 
 func (c *GenController) createGroupChannel(u user.User) control.UserActionResponse {
-	if !st.inc("channels", c.config.NumChannels) {
+	if !st.inc(StateTargetChannels, c.config.NumChannels) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 
@@ -152,10 +152,10 @@ func (c *GenController) createGroupChannel(u user.User) control.UserActionRespon
 	numUsers := 2 + rand.Intn(6)
 	users, err := u.Store().RandomUsers(numUsers)
 	if errors.Is(err, memstore.ErrLenMismatch) {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Info: "not enough users to create group channel"}
 	} else if err != nil {
-		st.dec("channels")
+		st.dec(StateTargetChannels)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -394,7 +394,9 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	}
 	resp := control.UserActionResponse{Info: "no channel to join"}
 	if cm.UserId == "" {
-		err = u.AddChannelMember(channelID, u.Store().Id())
+		// We use sysadmin to add channel in case it's a private channel.
+		// Otherwise normal users don't have permissions to join a private channel.
+		err = c.sysadmin.AddChannelMember(channelID, u.Store().Id())
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
