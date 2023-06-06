@@ -90,8 +90,9 @@ type UserStore interface {
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.
 	RandomUsers(n int) ([]model.User, error)
-	// RandomPost returns a random post.
-	RandomPost() (model.Post, error)
+	// RandomPost returns a random post, whose channel will satisfy
+	// the constraints provided by st
+	RandomPost(st SelectionType) (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
 	// RandomReplyPostForChannel returns a random reply post for the given channel.
@@ -133,6 +134,9 @@ type UserStore interface {
 	Thread(threadId string) (*model.ThreadResponse, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
 	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+	PostsWithAckRequests() ([]string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing

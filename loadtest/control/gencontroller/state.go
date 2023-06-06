@@ -17,6 +17,8 @@ type state struct {
 	// channels.
 	channels    []string
 	channelsMut sync.Mutex
+	followedThreadsByUser map[string]map[string]bool
+	followedThreadsMut    sync.RWMutex
 }
 
 type ThreadInfo struct {
@@ -27,16 +29,30 @@ type ThreadInfo struct {
 
 var st *state
 
+const (
+	StateTargetTeams             = "teams"
+	StateTargetChannels          = "channels"
+	StateTargetPosts             = "posts"
+	StateTargetReactions         = "reactions"
+	StateTargetPostReminders     = "postreminders"
+	StateTargetSidebarCategories = "sidebarcategories"
+	StateTargetFollowedThreads   = "followedthreads"
+)
+
 func init() {
 	st = &state{
 		targets: map[string]int64{
-			"teams":     0,
-			"channels":  0,
-			"posts":     0,
-			"reactions": 0,
+			StateTargetTeams:             0,
+			StateTargetChannels:          0,
+			StateTargetPosts:             0,
+			StateTargetReactions:         0,
+			StateTargetPostReminders:     0,
+			StateTargetSidebarCategories: 0,
+			StateTargetFollowedThreads:   0,
 		},
 		longRunningThreads: make(map[string]*ThreadInfo),
 		channels:           []string{},
+		followedThreadsByUser: make(map[string]map[string]bool),
 	}
 }
 
@@ -88,6 +104,21 @@ func (st *state) storeChannelID(channelID string) {
 	st.channelsMut.Lock()
 	defer st.channelsMut.Unlock()
 	st.channels = append(st.channels, channelID)
+}
+
+func (st *state) isThreadFollowedByUser(threadId, userId string) bool {
+	st.followedThreadsMut.RLock()
+	defer st.followedThreadsMut.RUnlock()
+	return st.followedThreadsByUser[userId] != nil && st.followedThreadsByUser[userId][threadId]
+}
+
+func (st *state) setThreadFollowedByUser(threadId, userId string) {
+	st.followedThreadsMut.Lock()
+	defer st.followedThreadsMut.Unlock()
+	if _, ok := st.followedThreadsByUser[userId]; !ok {
+		st.followedThreadsByUser[userId] = make(map[string]bool)
+	}
+	st.followedThreadsByUser[userId][threadId] = true
 }
 
 func copyThreadInfo(src *ThreadInfo) *ThreadInfo {
