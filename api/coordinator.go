@@ -213,3 +213,38 @@ func (a *api) getCoordinatorStatusHandler(w http.ResponseWriter, r *http.Request
 		Status: &status,
 	})
 }
+
+func (a *api) coordinatorInjectActionHandler(w http.ResponseWriter, r *http.Request) {
+	c, err := a.getCoordinatorById(w, r)
+	if err != nil {
+		return
+	}
+
+	action := r.FormValue("action")
+	if action == "" {
+		writeCoordinatorResponse(w, http.StatusBadRequest, &client.CoordinatorResponse{
+			Error: "missing 'action' parameter",
+		})
+		return
+	}
+
+	err = c.InjectAction(action)
+	if err != nil {
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+			Error: fmt.Sprintf("could not inject action %s for coordinator: %s", action, err),
+		})
+		return
+	}
+
+	status, err := c.Status()
+	if err != nil {
+		writeCoordinatorResponse(w, http.StatusInternalServerError, &client.CoordinatorResponse{
+			Error: fmt.Sprintf("could not get status for coordinator: %s", err),
+		})
+		return
+	}
+	writeCoordinatorResponse(w, http.StatusOK, &client.CoordinatorResponse{
+		Message: fmt.Sprintf("action %s injected", action),
+		Status:  &status,
+	})
+}

@@ -238,6 +238,15 @@ func (c *Coordinator) Status() (Status, error) {
 	}, nil
 }
 
+// InjectAction injects an action into all the agents that is run once,
+// at the next possible opportunity.
+func (c *Coordinator) InjectAction(actionID string) error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.cluster.InjectAction(actionID)
+}
+
 // New creates and initializes a new Coordinator for the given config.
 // The ltConfig parameter is used to create and configure load-test agents.
 // An error is returned if the initialization fails.

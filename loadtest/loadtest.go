@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/wiggin77/merror"
 
 	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
@@ -243,6 +244,24 @@ func (lt *LoadTester) Status() *Status {
 		NumErrors:       numErrors,
 		StartTime:       lt.status.StartTime,
 	}
+}
+
+func (lt *LoadTester) InjectAction(action string) error {
+	lt.mut.RLock()
+	defer lt.mut.RUnlock()
+
+	if lt.status.State != Running {
+		return ErrNotRunning
+	}
+
+	merr := merror.New()
+
+	for _, ctrl := range lt.activeControllers {
+		if err := ctrl.InjectAction(action); err != nil {
+			merr.Append(err)
+		}
+	}
+	return merr.ErrorOrNil()
 }
 
 // MaxHTTPConns returns the maximum number of HTTP connections to be used for the given number of users.

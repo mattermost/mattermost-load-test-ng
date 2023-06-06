@@ -21,6 +21,7 @@ import (
 )
 
 type userAction struct {
+	name      string
 	run       control.UserAction
 	frequency float64
 	// Minimum supported server version

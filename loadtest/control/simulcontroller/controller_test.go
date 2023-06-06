@@ -12,6 +12,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNew(t *testing.T) {
+	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	c, err := New(1, &userentity.UserEntity{}, config, make(chan control.UserStatus))
+	require.Nil(t, err)
+
+	require.Equal(t, len(c.actionList), len(c.actionMap))
+}
+
 func TestSetRate(t *testing.T) {
 	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
 	require.NoError(t, err)

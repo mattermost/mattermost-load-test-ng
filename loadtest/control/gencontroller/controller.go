@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // GenController is an implementation of a UserController used to generate
@@ -271,3 +272,14 @@ func (c *GenController) sendFailStatus(reason string) {
 func (c *GenController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *GenController) InjectAction(actionID string) error {
+	mlog.Debug("Cannot inject action for GenController", mlog.String("action", actionID))
+	return nil
+}
+
+// ensure GenController implements UserController interface
+var _ control.UserController = (*GenController)(nil)
