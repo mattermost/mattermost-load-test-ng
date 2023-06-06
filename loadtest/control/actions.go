@@ -116,13 +116,15 @@ func JoinChannel(u user.User) UserActionResponse {
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
+
 	for _, team := range teams {
+		// This means no DM/GM channels are returned.
 		channels, err := userStore.Channels(team.Id)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 		for _, channel := range channels {
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
-			cm, err := userStore.ChannelMember(team.Id, userId)
+			cm, err := userStore.ChannelMember(channel.Id, userId)
 			if err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}

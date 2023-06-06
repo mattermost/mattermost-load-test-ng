@@ -12,5 +12,17 @@
   "PercentPublicChannels": 0.2,
   "PercentPrivateChannels": 0.1,
   "PercentDirectChannels": 0.6,
-  "PercentGroupChannels": 0.1
+  "PercentGroupChannels": 0.1,
+  "ChannelMembersDistribution":[
+      {
+        "MemberLimit": 50,
+        "PercentChannels": 0.5,
+        "Probability": 0.7
+      },
+      {
+        "MemberLimit": 5,
+        "PercentChannels": 0.5,
+        "Probability": 0.3
+      }
+    ]
 }

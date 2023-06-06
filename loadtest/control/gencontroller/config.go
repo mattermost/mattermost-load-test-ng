@@ -45,6 +45,22 @@ type Config struct {
 	PercentDirectChannels float64 `default:"0.6" validate:"range:[0,1]"`
 	// The percentage of group channels to be created.
 	PercentGroupChannels float64 `default:"0.1" validate:"range:[0,1]"`
+
+	// Indicates the distribution of chanel members within channels.
+	ChannelMembersDistribution []ChannelMemberDistribution
+}
+
+// ChannelMemberDistribution holds the member limit and what percentage of channels will have the limit.
+// Probability indicates how frequently to choose a range. PercentChannels indicates the
+// what percent of channels will contain the change.
+//
+// For example, a probability of 0.8 and 0.5 of percentChannels with an array of
+// length 10 would mean that indices [0,5) would be chosen at a 80% probability chance.
+// And then the Memberlimit indicates the max member count for that range.
+type ChannelMemberDistribution struct {
+	MemberLimit     int64
+	PercentChannels float64 `validate:"range:[0,1]"`
+	Probability     float64 `validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -65,6 +81,24 @@ func (c *Config) IsValid() error {
 	percentChannels := c.PercentPublicChannels + c.PercentPrivateChannels + c.PercentDirectChannels + c.PercentGroupChannels
 	if (math.Round(percentChannels*100) / 100) != 1 {
 		return errors.New("sum of percentages for channels should be equal to 1")
+	}
+
+	totalPercent := 0.0
+	for _, item := range c.ChannelMembersDistribution {
+		totalPercent += item.Probability
+	}
+
+	if totalPercent != 1.0 {
+		return errors.New("sum of probabilities for channel distribution should be equal to 1")
+	}
+
+	totalPercent = 0.0
+	for _, item := range c.ChannelMembersDistribution {
+		totalPercent += item.PercentChannels
+	}
+
+	if totalPercent != 1.0 {
+		return errors.New("sum of percentages for channel member distribution should be equal to 1")
 	}
 
 	return nil

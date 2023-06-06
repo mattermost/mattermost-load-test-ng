@@ -196,8 +196,6 @@ type MutableUserStore interface {
 	SetChannelView(channelId string) error
 	// SetChannelMembers stores the given channel members in the store.
 	SetChannelMembers(channelMembers model.ChannelMembers) error
-	// ChannelMembers returns a list of members for the specified channel.
-	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// SetChannelMember stores the given channel member.
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	// RemoveChannelMember removes the channel member for the specified channel and user.

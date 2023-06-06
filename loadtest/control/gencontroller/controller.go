@@ -16,18 +16,20 @@ import (
 // GenController is an implementation of a UserController used to generate
 // realistic initial data.
 type GenController struct {
-	id     int
-	user   user.User
-	stop   chan struct{}
-	status chan<- control.UserStatus
-	rate   float64
-	config *Config
+	id                      int
+	user                    user.User
+	sysadmin                user.User
+	stop                    chan struct{}
+	status                  chan<- control.UserStatus
+	rate                    float64
+	config                  *Config
+	channelSelectionWeights []int
 }
 
 // New creates and initializes a new GenController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
+func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -36,13 +38,20 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
+	weights := make([]int, len(config.ChannelMembersDistribution))
+	for i := range config.ChannelMembersDistribution {
+		weights[i] = int(config.ChannelMembersDistribution[i].Probability * 100)
+	}
+
 	sc := &GenController{
-		id:     id,
-		user:   user,
-		stop:   make(chan struct{}),
-		status: status,
-		rate:   1.0,
-		config: config,
+		id:                      id,
+		user:                    user,
+		sysadmin:                sysadmin,
+		stop:                    make(chan struct{}),
+		status:                  status,
+		rate:                    1.0,
+		config:                  config,
+		channelSelectionWeights: weights,
 	}
 
 	return sc, nil
@@ -85,7 +94,6 @@ func (c *GenController) Run() {
 		control.GetPreferences,
 		c.createTeam,
 		c.joinTeam,
-		c.joinChannel,
 	}
 
 	for i := 0; i < len(initActions); i++ {
@@ -111,16 +119,6 @@ func (c *GenController) Run() {
 	}
 
 	actions := map[string]userAction{
-		"joinTeam": {
-			run:        control.JoinTeam,
-			frequency:  100,
-			idleTimeMs: 0,
-		},
-		"joinChannel": {
-			run:        c.joinChannel,
-			frequency:  1000,
-			idleTimeMs: 0,
-		},
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
@@ -140,6 +138,20 @@ func (c *GenController) Run() {
 			run:        c.createGroupChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
 			idleTimeMs: 1000,
+		},
+	}
+	c.runActions(actions, func() bool { return st.get("channels") >= c.config.NumChannels })
+
+	actions = map[string]userAction{
+		"joinTeam": {
+			run:        control.JoinTeam,
+			frequency:  100,
+			idleTimeMs: 0,
+		},
+		"joinChannel": {
+			run:        c.joinChannel,
+			frequency:  int(math.Ceil(float64(c.config.NumChannels))) * 2, // making this proportional to number of channels.
+			idleTimeMs: 0,
 		},
 		"createPost": {
 			run:        c.createPost,
@@ -173,6 +185,15 @@ func (c *GenController) Run() {
 		},
 	}
 
+	c.runActions(actions, func() bool {
+		return st.get("teams") >= c.config.NumTeams &&
+			st.get("channels") >= c.config.NumChannels && // having this again just for clarity
+			st.get("posts") >= c.config.NumPosts &&
+			st.get("reactions") >= c.config.NumReactions
+	})
+}
+
+func (c *GenController) runActions(actions map[string]userAction, done func() bool) {
 	for {
 		action, err := pickAction(actions)
 		if err != nil {
