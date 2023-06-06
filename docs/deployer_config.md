@@ -224,6 +224,12 @@ The location of the Mattermost Enterprise Edition license file.
 
 An optional path to a partial Mattermost config file to be applied as patch during app server deployment.
 
+## MattermostPingTimeoutSeconds
+
+*int*
+
+The timmeout (in seconds) to wait for an stable Mattermost installation after provisioning.
+
 ## AdminEmail
 
 *string*

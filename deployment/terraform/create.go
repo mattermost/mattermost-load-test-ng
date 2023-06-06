@@ -172,7 +172,7 @@ func (t *Terraform) Create(initData bool) error {
 			url = t.output.Proxy.PublicDNS
 		}
 
-		if err := pingServer("http://" + url); err != nil {
+		if err := pingServer("http://"+url, time.Duration(t.config.MattermostPingTimeoutSeconds)*time.Second); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
 
@@ -593,16 +593,15 @@ func (t *Terraform) validate() error {
 	return t.runCommand(nil, "validate")
 }
 
-func pingServer(addr string) error {
+func pingServer(addr string, timeout time.Duration) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
 	client.HTTPClient.Timeout = 10 * time.Second
-	timeout := time.After(30 * time.Second)
 
 	for {
 		select {
-		case <-timeout:
-			return errors.New("timeout after 30 seconds, server is not responding")
+		case <-time.After(timeout):
+			return fmt.Errorf("timeout after %v, server is not responding", timeout)
 		case <-time.After(3 * time.Second):
 			status, _, err := client.GetPingWithServerStatus()
 			if err != nil {

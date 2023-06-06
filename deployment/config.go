@@ -60,6 +60,8 @@ type Config struct {
 	// Optional path to a partial Mattermost config file to be applied as patch during
 	// app server deployment.
 	MattermostConfigPatchFile string `default:""`
+	// Timeout for the ping command to check if the Mattermost instance is ready (in seconds)
+	MattermostPingTimeoutSeconds int `default:"30"`
 	// Mattermost instance sysadmin e-mail.
 	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
 	// Mattermost instance sysadmin user name.
