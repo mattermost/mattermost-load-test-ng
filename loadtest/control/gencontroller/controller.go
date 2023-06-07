@@ -161,16 +161,16 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumReactions),
 			idleTimeMs: 1000,
 		},
-		"createSidebarCategory": {
-			run:        c.createSidebarCategory,
-			frequency:  int(c.config.NumSidebarCategories),
-			idleTimeMs: 1000,
-		},
-		"followThread": {
-			run:        c.followThread,
-			frequency:  int(c.config.NumFollowedThreads),
-			idleTimeMs: 1000,
-		},
+		// "createSidebarCategory": {
+		// 	run:        c.createSidebarCategory,
+		// 	frequency:  int(c.config.NumSidebarCategories),
+		// 	idleTimeMs: 1000,
+		// },
+		// "followThread": {
+		// 	run:        c.followThread,
+		// 	frequency:  int(c.config.NumFollowedThreads),
+		// 	idleTimeMs: 1000,
+		// },
 	}
 
 	for {
