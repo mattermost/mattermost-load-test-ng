@@ -18,11 +18,11 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 data "http" "my_public_ip" {
-  url = "https://ifconfig.me/ip"
+  url = "https://checkip.amazonaws.com"
 }
 
 locals {
-  ifconfig_result = data.http.my_public_ip.response_body
+  ifconfig_result = chomp(data.http.my_public_ip.response_body)
 }
 
 data "aws_subnet_ids" "selected" {
