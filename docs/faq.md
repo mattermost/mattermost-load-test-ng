@@ -9,16 +9,21 @@ The load-test agent currently supports only the email/password authentication me
 We define a load-test to be bounded when the number of simulated users is fixed.
 This is particularly useful when running performance comparisons between two clusters/builds.
 
-#### Note
-
-To manually run a bounded load-test using the [`coordinator`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md) the [feedback loop](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md#the-feedback-loop) should be disabled. This can be done by either removing `MonitorConfig.Queries` or by disabling each query (by setting `Alert` to `false`).
-
-### What is an unbounded load-test?
+### What is an unbounded load-test
 
 We define a load-test to be unbounded when the number of simulated users can vary up to a pre-configured limit.
 This type of load-test is used to determine the capacity of a system and will output an estimated number of users.
 The rule of thumb is that when starting an unbounded load-test we should always shoot for more users than what we think an installation can support.
-`ClusterConfig.MaxActiveUsers` should be set to `AgentInstanceCount * UsersConfiguration.MaxActiveUsers`.
+
+### How do I configure a test to be bounded or unbounded?
+
+The nature of the test is controlled by how the [`coordinator`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md) controls the [feedback loop](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md#the-feedback-loop). If the coordinator is configured to decrease the users when some metrics surpass a threshold (e.g. the P99 latency in the server is over 2 seconds), then the test will be unbounded. If the coordinator does not monitor these metrics and just let all users connect freely, then the test will be bounded.
+
+To configure this, you need to take a look at the `MonitorConfig.Queries` configuration in the deployer:
+- If the array of queries is empty, or all of them are disabled (by setting `Alert` to `false`), the test is **bounded**.
+- If there is at least one query that is enabled, the test is **unbounded**.
+
+Note that in both cases, `ClusterConfig.MaxActiveUsers` should be set to `AgentInstanceCount * UsersConfiguration.MaxActiveUsers`.
 
 ### Can I use a pre-existing Mattermost or database deployment?
 
