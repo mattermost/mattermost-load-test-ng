@@ -141,7 +141,7 @@ func (c *GenController) Run() {
 			idleTimeMs: 1000,
 		},
 	}
-	c.runActions(actions, func() bool { return st.get("channels") >= c.config.NumChannels })
+	c.runActions(actions, func() bool { return st.get(StateTargetChannels) >= c.config.NumChannels })
 
 	actions = map[string]userAction{
 		"joinTeam": {
@@ -187,10 +187,13 @@ func (c *GenController) Run() {
 	}
 
 	c.runActions(actions, func() bool {
-		return st.get("teams") >= c.config.NumTeams &&
-			st.get("channels") >= c.config.NumChannels && // having this again just for clarity
-			st.get("posts") >= c.config.NumPosts &&
-			st.get("reactions") >= c.config.NumReactions
+		return st.get(StateTargetTeams) >= c.config.NumTeams &&
+			st.get(StateTargetChannels) >= c.config.NumChannels && // having this again just for clarity
+			st.get(StateTargetPosts) >= c.config.NumPosts &&
+			st.get(StateTargetReactions) >= c.config.NumReactions &&
+			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
+			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
+			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
 	})
 }
 
