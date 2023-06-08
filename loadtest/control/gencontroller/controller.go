@@ -152,7 +152,7 @@ func (c *GenController) Run() {
 		"joinChannel": {
 			run:        c.joinChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumChannels))) * 2, // making this proportional to number of channels.
-			idleTimeMs: 0,
+			idleTimeMs: 1000,
 		},
 		"createPost": {
 			run:        c.createPost,
