@@ -401,21 +401,10 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		resp = control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channelID)}
-	}
 
-	team, err := u.Store().RandomTeam(store.SelectMemberOf)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
-	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
-		return control.UserActionResponse{Info: "no channels in store"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if err := c.user.GetPostsForChannel(channel.Id, 0, 60, collapsedThreads); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		if err := c.user.GetPostsForChannel(channelID, 0, 60, collapsedThreads); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	return resp
