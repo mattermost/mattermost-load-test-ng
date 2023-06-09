@@ -204,6 +204,8 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 
 		if resp := action.run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
+		} else if resp.Warn != "" {
+			c.status <- c.newWarnStatus(resp.Warn)
 		} else {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
