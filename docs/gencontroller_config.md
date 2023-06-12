@@ -24,11 +24,11 @@ The number of GM channels to be created.
 
 The number of private channels to be created.
 
-## NumChannelsPrivate
+## NumChannelsPublic
 
 *int64*
 
-The number of private channels to be created.
+The number of public channels to be created.
 
 ## NumPosts
 
