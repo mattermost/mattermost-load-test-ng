@@ -79,7 +79,10 @@ func (c *GenController) Run() {
 
 	done := func() bool {
 		return st.get(StateTargetTeams) >= c.config.NumTeams &&
-			st.get(StateTargetChannels) >= c.config.NumChannels &&
+			st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM &&
+			st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM &&
+			st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate &&
+			st.get(StateTargetChannelsPublic) >= c.config.NumChannelsPublic &&
 			st.get(StateTargetPosts) >= c.config.NumPosts &&
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
@@ -122,26 +125,31 @@ func (c *GenController) Run() {
 	actions := map[string]userAction{
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
-			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPublicChannels)),
+			frequency:  int(c.config.NumChannelsPublic),
 			idleTimeMs: 1000,
 		},
 		"createPrivateChannel": {
 			run:        c.createPrivateChannel,
-			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentPrivateChannels)),
+			frequency:  int(c.config.NumChannelsPrivate),
 			idleTimeMs: 1000,
 		},
 		"createDirectChannel": {
 			run:        c.createDirectChannel,
-			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentDirectChannels)),
+			frequency:  int(c.config.NumChannelsDM),
 			idleTimeMs: 1000,
 		},
 		"createGroupChannel": {
 			run:        c.createGroupChannel,
-			frequency:  int(math.Ceil(float64(c.config.NumChannels) * c.config.PercentGroupChannels)),
+			frequency:  int(c.config.NumChannelsGM),
 			idleTimeMs: 1000,
 		},
 	}
-	c.runActions(actions, func() bool { return st.get(StateTargetChannels) >= c.config.NumChannels })
+	c.runActions(actions, func() bool {
+		return st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM &&
+			st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM &&
+			st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate &&
+			st.get(StateTargetChannelsPublic) >= c.config.NumChannelsPublic
+	})
 
 	actions = map[string]userAction{
 		"joinTeam": {
@@ -151,7 +159,7 @@ func (c *GenController) Run() {
 		},
 		"joinChannel": {
 			run:        c.joinChannel,
-			frequency:  int(math.Ceil(float64(c.config.NumChannels))) * 2, // making this proportional to number of channels.
+			frequency:  int(math.Ceil(float64(c.config.NumTotalChannels()))) * 2, // making this proportional to number of channels.
 			idleTimeMs: 1000,
 		},
 		"createPost": {
@@ -188,7 +196,10 @@ func (c *GenController) Run() {
 
 	c.runActions(actions, func() bool {
 		return st.get(StateTargetTeams) >= c.config.NumTeams &&
-			st.get(StateTargetChannels) >= c.config.NumChannels && // having this again just for clarity
+			st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM &&
+			st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM &&
+			st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate &&
+			st.get(StateTargetChannelsPublic) >= c.config.NumChannelsPublic &&
 			st.get(StateTargetPosts) >= c.config.NumPosts &&
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
@@ -218,10 +229,19 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 			return
 		}
 
-		if st.get(StateTargetChannels) >= c.config.NumChannels {
+		if st.get(StateTargetChannelsPublic) >= c.config.NumChannelsPublic {
 			delete(actions, "createPublicChannel")
+		}
+
+		if st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate {
 			delete(actions, "createPrivateChannel")
+		}
+
+		if st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM {
 			delete(actions, "createDirectChannel")
+		}
+
+		if st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM {
 			delete(actions, "createGroupChannel")
 		}
 

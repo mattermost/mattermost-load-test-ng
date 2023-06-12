@@ -31,7 +31,10 @@ var st *state
 
 const (
 	StateTargetTeams             = "teams"
-	StateTargetChannels          = "channels"
+	StateTargetChannelsDM        = "channelsDM"
+	StateTargetChannelsGM        = "channelsGM"
+	StateTargetChannelsPublic    = "channelsPublic"
+	StateTargetChannelsPrivate   = "channelsPrivate"
 	StateTargetPosts             = "posts"
 	StateTargetReactions         = "reactions"
 	StateTargetPostReminders     = "postreminders"
@@ -43,7 +46,10 @@ func init() {
 	st = &state{
 		targets: map[string]int64{
 			StateTargetTeams:             0,
-			StateTargetChannels:          0,
+			StateTargetChannelsDM:        0,
+			StateTargetChannelsGM:        0,
+			StateTargetChannelsPublic:    0,
+			StateTargetChannelsPrivate:   0,
 			StateTargetPosts:             0,
 			StateTargetReactions:         0,
 			StateTargetPostReminders:     0,

@@ -57,12 +57,12 @@ func (c *GenController) createTeam(u user.User) (res control.UserActionResponse)
 }
 
 func (c *GenController) createPublicChannel(u user.User) (res control.UserActionResponse) {
-	if !st.inc(StateTargetChannels, c.config.NumChannels) {
+	if !st.inc(StateTargetChannelsPublic, c.config.NumChannelsPublic) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
-			st.dec(StateTargetChannels)
+			st.dec(StateTargetChannelsPublic)
 		}
 	}()
 
@@ -87,12 +87,12 @@ func (c *GenController) createPublicChannel(u user.User) (res control.UserAction
 }
 
 func (c *GenController) createPrivateChannel(u user.User) (res control.UserActionResponse) {
-	if !st.inc(StateTargetChannels, c.config.NumChannels) {
+	if !st.inc(StateTargetChannelsPrivate, c.config.NumChannelsPrivate) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
-			st.dec(StateTargetChannels)
+			st.dec(StateTargetChannelsPrivate)
 		}
 	}()
 
@@ -117,12 +117,12 @@ func (c *GenController) createPrivateChannel(u user.User) (res control.UserActio
 }
 
 func (c *GenController) createDirectChannel(u user.User) (res control.UserActionResponse) {
-	if !st.inc(StateTargetChannels, c.config.NumChannels) {
+	if !st.inc(StateTargetChannelsDM, c.config.NumChannelsDM) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
-			st.dec(StateTargetChannels)
+			st.dec(StateTargetChannelsDM)
 		}
 	}()
 
@@ -150,12 +150,12 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 }
 
 func (c *GenController) createGroupChannel(u user.User) (res control.UserActionResponse) {
-	if !st.inc(StateTargetChannels, c.config.NumChannels) {
+	if !st.inc(StateTargetChannelsGM, c.config.NumChannelsGM) {
 		return control.UserActionResponse{Info: "target number of channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
-			st.dec(StateTargetChannels)
+			st.dec(StateTargetChannelsGM)
 		}
 	}()
 

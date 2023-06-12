@@ -1,6 +1,9 @@
 {
   "NumTeams": 2,
-  "NumChannels": 20,
+  "NumChannelsDM": 20,
+  "NumChannelsGM": 20,
+  "NumChannelsPrivate": 20,
+  "NumChannelsPublic": 20,
   "NumPosts": 1000,
   "NumReactions": 200,
   "NumPostReminders": 1,
@@ -9,10 +12,6 @@
   "PercentReplies": 0.5,
   "PercentRepliesInLongThreads": 0.05,
   "PercentUrgentPosts": 0.001,
-  "PercentPublicChannels": 0.2,
-  "PercentPrivateChannels": 0.1,
-  "PercentDirectChannels": 0.6,
-  "PercentGroupChannels": 0.1,
   "ChannelMembersDistribution":[
       {
         "MemberLimit": 50,

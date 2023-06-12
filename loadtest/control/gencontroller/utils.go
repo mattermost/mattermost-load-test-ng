@@ -84,10 +84,14 @@ func chooseChannel(dist []ChannelMemberDistribution, idx int, u user.User) (stri
 		if err != nil {
 			return "", err
 		}
-		if len(members) > int(dist[idx].MemberLimit) {
+
+		// A MemberLimit of 0 means there is no limit
+		limit := int(dist[idx].MemberLimit)
+		if limit > 0 && len(members) > limit {
 			cnt++
 			continue
 		}
+
 		return channelID, nil
 	}
 }
