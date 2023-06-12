@@ -132,11 +132,11 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: make the selection a bit smarter and pick someone
-	// we don't have a direct channel with already.
-	user, err := u.Store().RandomUser()
+	user, err := u.Store().RandomUserExcept(c.userDMs)
 	if errors.Is(err, memstore.ErrLenMismatch) {
 		return control.UserActionResponse{Warn: "not enough users to create direct channel"}
+	} else if errors.Is(err, memstore.ErrMaxAttempts) {
+		return control.UserActionResponse{Warn: "too many attemps when choosing a random user for direct channel"}
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

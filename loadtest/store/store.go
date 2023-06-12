@@ -88,6 +88,8 @@ type UserStore interface {
 	RandomTeam(st SelectionType) (model.Team, error)
 	// RandomUser returns a random user from the set of users.
 	RandomUser() (model.User, error)
+	// RandomUserExcept returns a random user from the set of users, avoiding any in the passed map
+	RandomUserExcept(invalidUsers map[string]bool) (model.User, error)
 	// RandomUsers returns N random users from the set of users.
 	RandomUsers(n int) ([]model.User, error)
 	// RandomPost returns a random post, whose channel will satisfy

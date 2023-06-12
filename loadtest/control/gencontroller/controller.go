@@ -25,6 +25,7 @@ type GenController struct {
 	rate                    float64
 	config                  *Config
 	channelSelectionWeights []int
+	userDMs                 map[string]bool
 }
 
 // New creates and initializes a new GenController with given parameters.

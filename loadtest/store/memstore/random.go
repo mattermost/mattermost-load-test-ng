@@ -5,6 +5,7 @@ package memstore
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -23,6 +24,7 @@ var (
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
 	ErrThreadNotFound    = errors.New("memstore: thread not found")
+	ErrMaxAttempts       = errors.New("memstore: maximum number of attempts tried")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -171,6 +173,57 @@ func (s *MemStore) randomUser() (model.User, error) {
 		}
 		return *user, nil
 	}
+}
+
+func (s *MemStore) RandomUserExcept(invalidUsers map[string]bool) (model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.randomUserExcept(invalidUsers)
+}
+
+func (s *MemStore) randomUserExcept(invalidUsers map[string]bool) (model.User, error) {
+	// We check if the current user is present in the stored map of users.
+	// If so we increment by one minLen since we purposely skip the current user on selection.
+	// This is done to avoid spinning indefinitely in case the store holds only one
+	// user and that being the current one.
+	minLen := 1
+	if _, ok := s.users[s.user.Id]; ok {
+		minLen++
+	}
+	if len(s.users) < minLen {
+		return model.User{}, ErrLenMismatch
+	}
+
+	if len(invalidUsers) >= len(s.users) {
+		return model.User{}, fmt.Errorf("number of invalid users, %q, must be less than number of current users, %q", len(invalidUsers), len(s.users))
+	}
+
+	// Make as many attempts as invalid users there are in the map
+	for attempts := 0; attempts < len(invalidUsers); attempts++ {
+		key, err := pickRandomKeyFromMap(s.users)
+		if err != nil {
+			return model.User{}, err
+		}
+		user := s.users[key]
+		if user == nil || user.Id == "" {
+			return model.User{}, ErrInvalidData
+		}
+
+		// We don't want to pick ourselves
+		if user.Id == s.user.Id {
+			continue
+		}
+
+		// We don't want to pick any of the users passed
+		if _, ok := invalidUsers[user.Id]; ok {
+			continue
+		}
+
+		return *user, nil
+	}
+
+	return model.User{}, fmt.Errorf("attempted a maximum of %d times: %w", len(invalidUsers), ErrMaxAttempts)
 }
 
 // RandomUsers returns N random users from the set of users.
