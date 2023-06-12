@@ -99,16 +99,22 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
 
 	genConfig := gencontroller.Config{
-		NumTeams:               config.InstanceConfiguration.NumTeams,
-		NumChannels:            config.InstanceConfiguration.NumChannels,
-		NumPosts:               config.InstanceConfiguration.NumPosts,
-		NumReactions:           config.InstanceConfiguration.NumReactions,
-		PercentReplies:         config.InstanceConfiguration.PercentReplies,
-		PercentUrgentPosts:     config.InstanceConfiguration.PercentUrgentPosts,
-		PercentPublicChannels:  config.InstanceConfiguration.PercentPublicChannels,
-		PercentPrivateChannels: config.InstanceConfiguration.PercentPrivateChannels,
-		PercentDirectChannels:  config.InstanceConfiguration.PercentDirectChannels,
-		PercentGroupChannels:   config.InstanceConfiguration.PercentGroupChannels,
+		NumTeams:           config.InstanceConfiguration.NumTeams,
+		NumChannelsDM:      int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentDirectChannels),
+		NumChannelsGM:      int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentGroupChannels),
+		NumChannelsPrivate: int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentPrivateChannels),
+		NumChannelsPublic:  int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentPublicChannels),
+		NumPosts:           config.InstanceConfiguration.NumPosts,
+		NumReactions:       config.InstanceConfiguration.NumReactions,
+		PercentReplies:     config.InstanceConfiguration.PercentReplies,
+		PercentUrgentPosts: config.InstanceConfiguration.PercentUrgentPosts,
+		ChannelMembersDistribution: []gencontroller.ChannelMemberDistribution{
+			{
+				MemberLimit:     0,
+				PercentChannels: 1.0,
+				Probability:     1.0,
+			},
+		},
 	}
 
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
