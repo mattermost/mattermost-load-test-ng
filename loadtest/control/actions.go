@@ -22,6 +22,8 @@ type UserActionResponse struct {
 	// Info contains a string with information about the action
 	// execution.
 	Info string
+	// Warn contains any warning about the executed action that should be logged.
+	Warn string
 	// Err contains an error when the action failed.
 	Err error
 }

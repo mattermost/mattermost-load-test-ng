@@ -54,15 +54,18 @@ func (lt *LoadTester) handleStatus(startedChan chan struct{}) {
 			atomic.AddInt64(&lt.status.NumUsersStopped, 1)
 			lt.wg.Done()
 		}
-		if st.Code == control.USER_STATUS_ERROR {
+
+		switch st.Code {
+		case control.USER_STATUS_ERROR:
 			lt.log.Error(st.Err.Error(), mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 			atomic.AddInt64(&lt.status.NumErrors, 1)
-			continue
-		} else if st.Code == control.USER_STATUS_FAILED {
+		case control.USER_STATUS_FAILED:
 			lt.log.Error(st.Err.Error())
-			continue
+		case control.USER_STATUS_WARN:
+			lt.log.Warn(st.Warn)
+		default:
+			lt.log.Info(st.Info, mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 		}
-		lt.log.Info(st.Info, mlog.Int("controller_id", st.ControllerId), mlog.String("user_id", st.User.Store().Id()))
 	}
 }
 
