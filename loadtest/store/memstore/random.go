@@ -23,6 +23,7 @@ var (
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
 	ErrThreadNotFound    = errors.New("memstore: thread not found")
+	ErrMaxAttempts       = errors.New("memstore: maximum number of attempts tried")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {

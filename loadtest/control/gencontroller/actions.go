@@ -133,21 +133,32 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: make the selection a bit smarter and pick someone
-	// we don't have a direct channel with already.
-	user, err := u.Store().RandomUser()
-	if errors.Is(err, memstore.ErrLenMismatch) {
-		return control.UserActionResponse{Warn: "not enough users to create direct channel"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	userID := u.Store().Id()
+	maxAttempts := 2 * (c.numUsers - st.numDMs(u.Store().Id()))
+	for i := 0; i < maxAttempts; i++ {
+		otherUser, err := u.Store().RandomUser()
+		if errors.Is(err, memstore.ErrLenMismatch) {
+			return control.UserActionResponse{Warn: "not enough users to create direct channel"}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// If it exists, pick another random user
+		if st.dmExists(userID, otherUser.Id) {
+			continue
+		}
+
+		// If it doesn't, create it
+		channelId, err := u.CreateDirectChannel(otherUser.Id)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		st.setDM(u.Store().Id(), otherUser.Id)
+
+		return control.UserActionResponse{Info: fmt.Sprintf("direct channel created between %q and %q, with id %q", userID, otherUser.Id, channelId)}
 	}
 
-	channelId, err := u.CreateDirectChannel(user.Id)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
+	return control.UserActionResponse{Err: control.NewUserError(errors.New("maximum attempts reached when randomly picking a user to create a DM"))}
 }
 
 func (c *GenController) createGroupChannel(u user.User) (res control.UserActionResponse) {
