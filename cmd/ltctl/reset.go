@@ -99,11 +99,11 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 				mmctlPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
 			clients: []*ssh.Client{appClients[0]},
 		},
-		{
-			msg:     "Initializing data...",
-			value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name),
-			clients: []*ssh.Client{agentClient},
-		},
+		// {
+		// 	msg:     "Initializing data...",
+		// 	value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name),
+		// 	clients: []*ssh.Client{agentClient},
+		// },
 	}
 
 	for _, c := range cmds {
