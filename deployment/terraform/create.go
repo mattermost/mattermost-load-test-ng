@@ -142,12 +142,12 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
-	if t.output.HasMetrics() {
-		// Setting up metrics server.
-		if err := t.setupMetrics(extAgent); err != nil {
-			return fmt.Errorf("error setting up metrics server: %w", err)
-		}
-	}
+	// if t.output.HasMetrics() {
+	// 	// Setting up metrics server.
+	// 	if err := t.setupMetrics(extAgent); err != nil {
+	// 		return fmt.Errorf("error setting up metrics server: %w", err)
+	// 	}
+	// }
 
 	if t.output.HasDB() {
 		// Aurora sets the default_text_search_config parameter to 'simple';
