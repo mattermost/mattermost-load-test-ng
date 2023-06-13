@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -430,31 +431,38 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	return resp
 }
 
-func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
+func (c *GenController) joinAllTeams(u user.User) control.UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
 	if _, err := u.GetAllTeams(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	team, err := u.Store().RandomTeam(store.SelectNotMemberOf)
-	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
-		return control.UserActionResponse{Info: "no team to join"}
-	} else if err != nil {
+	teams, err := u.Store().Teams()
+	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.AddTeamMember(team.Id, userId); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelsForTeam(team.Id, true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelMembersForUser(userId, team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	joinedTeamIds := []string{}
+	for _, team := range teams {
+		if u.Store().IsTeamMember(team.Id, userId) {
+			continue
+		}
+
+		if err := u.AddTeamMember(team.Id, userId); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if err := u.GetChannelsForTeam(team.Id, true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if err := u.GetChannelMembersForUser(userId, team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		joinedTeamIds = append(joinedTeamIds, team.Id)
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("joined %d teams [%s]", len(joinedTeamIds), strings.Join(joinedTeamIds, ","))}
 }
 
 func (c *GenController) createSidebarCategory(u user.User) (res control.UserActionResponse) {
