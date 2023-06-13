@@ -437,7 +437,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			if err := sysadmin.Login(); err != nil {
 				return nil, err
 			}
-			return gencontroller.New(id, ue, sysadmin, controllerConfig.(*gencontroller.Config), status)
+			return gencontroller.New(id, ue, sysadmin, controllerConfig.(*gencontroller.Config), status, config.UsersConfiguration.InitialActiveUsers)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		case loadtest.UserControllerCluster:
