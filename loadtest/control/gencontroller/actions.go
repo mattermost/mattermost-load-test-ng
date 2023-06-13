@@ -533,3 +533,23 @@ func (c *GenController) followThread(u user.User) (res control.UserActionRespons
 
 	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", threadId)}
 }
+
+func (c *GenController) getPosts(u user.User) (res control.UserActionResponse) {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Warn: "no channels in store"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	collapsedThreads := false
+	if err := c.user.GetPostsForChannel(channel.Id, 0, 200, collapsedThreads); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("got posts for channel %q", channel.Id)}
+}

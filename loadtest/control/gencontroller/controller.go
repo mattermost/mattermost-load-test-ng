@@ -192,6 +192,13 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumFollowedThreads),
 			idleTimeMs: 1000,
 		},
+		// This action does not generate data, but is needed for all other actions
+		// to have data to work with
+		"getPosts": {
+			run:        c.getPosts,
+			frequency:  100,
+			idleTimeMs: 1000,
+		},
 	}
 
 	c.runActions(actions, func() bool {
