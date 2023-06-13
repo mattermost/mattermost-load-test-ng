@@ -152,9 +152,12 @@ type User interface {
 	// CreateGroupChannel creates and stores a new group channel with the given
 	// members. It returns the channel's id.
 	CreateGroupChannel(memberIds []string) (string, error)
-	// CreateGroupChannel creates and stores a new direct channel with the given
+	// CreateDirectChannel creates and stores a new direct channel with the given
 	// user. It returns the channel's id.
 	CreateDirectChannel(otherUserId string) (string, error)
+	// CreateDirectChannelWithUser takes both the userIDs as an input to create
+	// a new direct channel with those users. It returns the channel's id
+	CreateDirectChannelWithUser(userID, otherUserID string) (string, error)
 	// GetChannel fetches and stores the specified channel.
 	GetChannel(channelId string) error
 	// GetChannelsForTeam fetches and stores channels in the specified team.

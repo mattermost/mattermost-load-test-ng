@@ -358,7 +358,7 @@ func (ue *UserEntity) CreateGroupChannel(memberIds []string) (string, error) {
 	return channel.Id, nil
 }
 
-// CreateGroupChannel creates and stores a new direct channel with the given
+// CreateDirectChannel creates and stores a new direct channel with the given
 // user. It returns the channel's id.
 func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	user, err := ue.getUserFromStore()
@@ -367,6 +367,22 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 	}
 
 	channel, _, err := ue.client.CreateDirectChannel(user.Id, otherUserId)
+	if err != nil {
+		return "", err
+	}
+
+	err = ue.store.SetChannel(channel)
+	if err != nil {
+		return "", err
+	}
+
+	return channel.Id, nil
+}
+
+// CreateDirectChannelWithUser takes both the userIDs as an input to create
+// a new direct channel with those users. It returns the channel's id
+func (ue *UserEntity) CreateDirectChannelWithUser(userID, otherUserID string) (string, error) {
+	channel, _, err := ue.client.CreateDirectChannel(userID, otherUserID)
 	if err != nil {
 		return "", err
 	}

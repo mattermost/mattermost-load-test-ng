@@ -25,12 +25,13 @@ type GenController struct {
 	rate                    float64
 	config                  *Config
 	channelSelectionWeights []int
+	numUsers                int
 }
 
 // New creates and initializes a new GenController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
+func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus, numUsers int) (*GenController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -53,6 +54,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		rate:                    1.0,
 		config:                  config,
 		channelSelectionWeights: weights,
+		numUsers:                numUsers,
 	}
 
 	return sc, nil
@@ -121,6 +123,17 @@ func (c *GenController) Run() {
 		case <-time.After(idleTime * time.Millisecond):
 		}
 	}
+
+	st.storeUserID(c.user.Store().Id())
+
+	// Wait for all users to log in. Otherwise, some agents
+	// won't have access to the full user list while more
+	// users are still being appended.
+	for st.numUsers() != c.numUsers {
+		time.Sleep(time.Second)
+	}
+
+	st.genCombinations()
 
 	actions := map[string]userAction{
 		"createPublicChannel": {

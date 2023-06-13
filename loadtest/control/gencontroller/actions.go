@@ -132,16 +132,9 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: make the selection a bit smarter and pick someone
-	// we don't have a direct channel with already.
-	user, err := u.Store().RandomUser()
-	if errors.Is(err, memstore.ErrLenMismatch) {
-		return control.UserActionResponse{Warn: "not enough users to create direct channel"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
+	pair := st.getUserPair()
 
-	channelId, err := u.CreateDirectChannel(user.Id)
+	channelId, err := c.sysadmin.CreateDirectChannelWithUser(pair[0], pair[1])
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -422,7 +415,7 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 		}
 		resp = control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channelID)}
 
-		if err := c.user.GetPostsForChannel(channelID, 0, 60, collapsedThreads); err != nil {
+		if err := c.sysadmin.GetPostsForChannel(channelID, 0, 60, collapsedThreads); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}

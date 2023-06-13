@@ -5,6 +5,8 @@ package gencontroller
 
 import (
 	"sync"
+
+	combinations "github.com/mxschmitt/golang-combinations"
 )
 
 type state struct {
@@ -15,8 +17,15 @@ type state struct {
 	// This is used to store the global list of channelIDs for the agents
 	// to choose from while trying to join a channel. This only contains Open/Private
 	// channels.
-	channels              []string
-	channelsMut           sync.Mutex
+	channels    []string
+	channelsMut sync.Mutex
+	// This is used to store the global list of userIDs.
+	// Used to generate DM channels.
+	users                 []string
+	usersMut              sync.RWMutex
+	userCombinations      [][]string
+	userCombinationsOnce  sync.Once
+	userCombinationsIndex int
 	followedThreadsByUser map[string]map[string]bool
 	followedThreadsMut    sync.RWMutex
 }
@@ -59,6 +68,7 @@ func init() {
 		longRunningThreads:    make(map[string]*ThreadInfo),
 		channels:              []string{},
 		followedThreadsByUser: make(map[string]map[string]bool),
+		users:                 []string{},
 	}
 }
 
@@ -110,6 +120,35 @@ func (st *state) storeChannelID(channelID string) {
 	st.channelsMut.Lock()
 	defer st.channelsMut.Unlock()
 	st.channels = append(st.channels, channelID)
+}
+
+func (st *state) storeUserID(userID string) {
+	st.usersMut.Lock()
+	defer st.usersMut.Unlock()
+	st.users = append(st.users, userID)
+}
+
+func (st *state) numUsers() int {
+	st.usersMut.RLock()
+	defer st.usersMut.RUnlock()
+	return len(st.users)
+}
+
+func (st *state) genCombinations() {
+	st.userCombinationsOnce.Do(func() {
+		st.userCombinations = combinations.Combinations(st.users, 2)
+	})
+}
+
+// getUserPair returns the pair at the current index
+// and increments the index
+func (st *state) getUserPair() []string {
+	st.usersMut.Lock()
+	defer st.usersMut.Unlock()
+
+	pair := st.userCombinations[st.userCombinationsIndex]
+	st.userCombinationsIndex++
+	return pair
 }
 
 func (st *state) isThreadFollowedByUser(threadId, userId string) bool {
