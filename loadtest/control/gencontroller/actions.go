@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -134,7 +135,7 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 
 	pair := st.getUserPair()
 
-	channelId, err := c.sysadmin.CreateDirectChannelWithUser(pair[0], pair[1])
+	channelId, err := c.user.CreateDirectChannelWithUser(pair[0], pair[1], c.sysadmin.Client())
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -409,13 +410,28 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	if cm.UserId == "" {
 		// We use sysadmin to add channel in case it's a private channel.
 		// Otherwise normal users don't have permissions to join a private channel.
-		err = c.sysadmin.AddChannelMember(channelID, u.Store().Id())
+		err = c.user.AddChannelMember(channelID, u.Store().Id(), c.sysadmin.Client())
 		if err != nil {
+			// Since we are selecting channels from global state, sometimes
+			// we can pick a channel whose team the user has not joined. In that case,
+			// we join the team first.
+			if appErr := err.(*model.AppError); appErr != nil && appErr.Id == "app.team.get_member.missing.app_error" {
+				teamID, err := extractTeamIdFromError(appErr.DetailedError)
+				if err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+
+				err = c.joinTeamWithId(teamID, u)
+				if err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+				return control.UserActionResponse{Info: fmt.Sprintf("user wasn't a team member. Added to team %s", teamID)}
+			}
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		resp = control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channelID)}
 
-		if err := c.sysadmin.GetPostsForChannel(channelID, 0, 60, collapsedThreads); err != nil {
+		if err := c.user.GetPostsForChannel(channelID, 0, 60, collapsedThreads, c.sysadmin.Client()); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
@@ -424,8 +440,6 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 }
 
 func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
-	userStore := u.Store()
-	userId := userStore.Id()
 	if _, err := u.GetAllTeams(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -437,17 +451,27 @@ func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.AddTeamMember(team.Id, userId); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelsForTeam(team.Id, true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelMembersForUser(userId, team.Id); err != nil {
+	err = c.joinTeamWithId(team.Id, u)
+	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
+}
+
+func (c *GenController) joinTeamWithId(teamID string, u user.User) error {
+	userID := u.Store().Id()
+	if err := u.AddTeamMember(teamID, userID); err != nil {
+		return err
+	}
+	if err := u.GetChannelsForTeam(teamID, true); err != nil {
+		return err
+	}
+	if err := u.GetChannelMembersForUser(userID, teamID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *GenController) createSidebarCategory(u user.User) (res control.UserActionResponse) {
@@ -525,4 +549,20 @@ func (c *GenController) followThread(u user.User) (res control.UserActionRespons
 	st.setThreadFollowedByUser(threadId, userId)
 
 	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", threadId)}
+}
+
+// Very hacky solution to extract the teamID from the error message.
+// There's no easy way to get the teamID before this without making API call to the server. Therefore
+// to save performance, we extract the teamID from the error and join the team in case the user is not a member.
+// An example input is "resource: TeamMember id: teamId=embn3iqj4igpxqyz4e6fgfr8ur, userId=fy9npsp5zi85dd1jefaxoindko"
+func extractTeamIdFromError(errString string) (string, error) {
+	parts := strings.Split(errString, "teamId=")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("could not find teamId= in %s", errString)
+	}
+	parts = strings.Split(parts[1], ",")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("could not find , in %s", parts[1])
+	}
+	return parts[0], nil
 }

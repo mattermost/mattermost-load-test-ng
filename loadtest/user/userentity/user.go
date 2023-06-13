@@ -87,6 +87,10 @@ func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
 }
 
+func (ue *UserEntity) Client() *model.Client4 {
+	return ue.client
+}
+
 // New returns a new instance of a UserEntity.
 func New(setup Setup, config Config) *UserEntity {
 	var ue UserEntity

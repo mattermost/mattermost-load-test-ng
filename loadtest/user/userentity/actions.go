@@ -241,8 +241,12 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 }
 
 // GetPostsForChannel fetches and stores posts in a given channelId.
-func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
+func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool, client *model.Client4) error {
+	c := ue.client
+	if client != nil {
+		c = client
+	}
+	postList, _, err := c.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}
@@ -381,8 +385,12 @@ func (ue *UserEntity) CreateDirectChannel(otherUserId string) (string, error) {
 
 // CreateDirectChannelWithUser takes both the userIDs as an input to create
 // a new direct channel with those users. It returns the channel's id
-func (ue *UserEntity) CreateDirectChannelWithUser(userID, otherUserID string) (string, error) {
-	channel, _, err := ue.client.CreateDirectChannel(userID, otherUserID)
+func (ue *UserEntity) CreateDirectChannelWithUser(userID, otherUserID string, client *model.Client4) (string, error) {
+	c := ue.client
+	if client != nil {
+		c = client
+	}
+	channel, _, err := c.CreateDirectChannel(userID, otherUserID)
 	if err != nil {
 		return "", err
 	}
@@ -406,10 +414,14 @@ func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) error {
 }
 
 // AddChannelMember adds the specified user to the specified channel.
-func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
-	member, _, err := ue.client.AddChannelMember(channelId, userId)
+func (ue *UserEntity) AddChannelMember(channelId, userId string, client *model.Client4) error {
+	c := ue.client
+	if client != nil {
+		c = client
+	}
+	member, _, err := c.AddChannelMember(channelId, userId)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return ue.store.SetChannelMember(channelId, member)
