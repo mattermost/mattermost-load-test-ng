@@ -241,8 +241,12 @@ func (ue *UserEntity) SearchPosts(teamId, terms string, isOrSearch bool) (*model
 }
 
 // GetPostsForChannel fetches and stores posts in a given channelId.
-func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error {
-	postList, _, err := ue.client.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
+func (ue *UserEntity) GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool, client *model.Client4) error {
+	c := ue.client
+	if client != nil {
+		c = client
+	}
+	postList, _, err := c.GetPostsForChannel(channelId, page, perPage, "", collapsedThreads, false)
 	if err != nil {
 		return err
 	}
@@ -390,10 +394,14 @@ func (ue *UserEntity) RemoveUserFromChannel(channelId, userId string) error {
 }
 
 // AddChannelMember adds the specified user to the specified channel.
-func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
-	member, _, err := ue.client.AddChannelMember(channelId, userId)
+func (ue *UserEntity) AddChannelMember(channelId, userId string, client *model.Client4) error {
+	c := ue.client
+	if client != nil {
+		c = client
+	}
+	member, _, err := c.AddChannelMember(channelId, userId)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return ue.store.SetChannelMember(channelId, member)
