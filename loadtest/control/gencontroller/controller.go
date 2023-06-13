@@ -36,7 +36,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := config.IsValid(numUsers); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
