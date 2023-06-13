@@ -148,6 +148,10 @@ func (st *state) getUserPair() []string {
 
 	pair := st.userCombinations[st.userCombinationsIndex]
 	st.userCombinationsIndex++
+	// In case if the index exceeds the length, then we take
+	// a modulo to bring it to zero. This can happen if there
+	// are far more DMs to create than available.
+	st.userCombinationsIndex %= len(st.userCombinations)
 	return pair
 }
 
