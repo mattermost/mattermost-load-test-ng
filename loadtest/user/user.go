@@ -29,6 +29,9 @@ type User interface {
 	Store() store.UserStore
 	// ClearUserData calls the Clear method on the underlying UserStore.
 	ClearUserData()
+	// Client returns the raw client. This can be used
+	// for making API calls without interacting with the store.
+	Client() *model.Client4
 
 	// websocket
 	// Connect creates a WebSocket connection to the server and starts listening for messages.
@@ -119,7 +122,7 @@ type User interface {
 	// SearchPosts performs a search for posts in the given teamId with the given terms.
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	// GetPostsForChannel fetches and stores posts in a given channelId.
-	GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool) error
+	GetPostsForChannel(channelId string, page, perPage int, collapsedThreads bool, client *model.Client4) error
 	// GetPostsBefore fetches and stores posts in a given channelId that were made
 	// before a given postId. It returns a list of posts ids.
 	GetPostsBefore(channelId, postId string, page, perPage int, collapsedThreads bool) ([]string, error)
@@ -188,7 +191,7 @@ type User interface {
 	// GetChannelStats fetches statistics for the specified channel.
 	GetChannelStats(channelId string, excludeFileCount bool) error
 	// AddChannelMember adds the specified user to the specified channel.
-	AddChannelMember(channelId, userId string) error
+	AddChannelMember(channelId, userId string, client *model.Client4) error
 	// GetChannelsForTeamForUser fetches and stores chanels for the specified user in
 	// the specified team. It returns a list of those channels.
 	GetChannelsForTeamForUser(teamId, userId string, includeDeleted bool) ([]*model.Channel, error)
