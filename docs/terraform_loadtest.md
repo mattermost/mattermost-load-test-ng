@@ -90,13 +90,15 @@ Its documentation can be found [here](config/coordinator.md).
 
 #### Copy default config
 
-To configure the load-test `config/config.json`, should be created and/or edited.
+To configure the load-test, `config/config.json` should be created and/or edited.
 
 ```sh
 cp config/config.sample.json config/config.json
 ```
 
 Its documentation can be found [here](config/config.md).
+
+## Run the test
 
 ### Start a load-test
 
@@ -123,14 +125,14 @@ go run ./cmd/ltctl loadtest stop
 This will stop the currently running load-test.
 
 ### Re-initialize a load-test
-
+    
 ```sh
 go run ./cmd/ltctl loadtest reset
 ```
 
 This will completely erase data on the target instance's database and will run again the init process.
 
-### Destroy the current deployment
+## Destroy the current deployment
 
 When done with a deployment, it's suggested to run:
 
