@@ -243,7 +243,9 @@ func (s *MemStore) RandomPost(st store.SelectionType) (model.Post, error) {
 			}
 
 			channel := s.channels[p.ChannelId]
-
+			if channel == nil {
+				continue
+			}
 			if (currChanId == channel.Id) && isSelectionType(st, store.SelectNotCurrent) {
 				continue
 			}
