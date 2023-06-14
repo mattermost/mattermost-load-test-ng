@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -128,25 +129,38 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
-	if _, err := u.GetUsers(0, 100); err != nil {
+	if _, err := u.GetUsers(0, c.numUsers); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// TODO: make the selection a bit smarter and pick someone
-	// we don't have a direct channel with already.
-	user, err := u.Store().RandomUser()
-	if errors.Is(err, memstore.ErrLenMismatch) {
-		return control.UserActionResponse{Warn: "not enough users to create direct channel"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	userID := u.Store().Id()
+	// Make at most twice as many attempts as there are valid users
+	// (i.e., those with which we don't have a DM open yet)
+	maxAttempts := 2 * (c.numUsers - st.numDMs(userID))
+	for i := 0; i < maxAttempts; i++ {
+		otherUser, err := u.Store().RandomUser()
+		if errors.Is(err, memstore.ErrLenMismatch) {
+			return control.UserActionResponse{Warn: "not enough users to create direct channel"}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// If it exists, pick another random user
+		if st.dmExists(userID, otherUser.Id) {
+			continue
+		}
+
+		// If it doesn't, create it
+		channelId, err := u.CreateDirectChannel(otherUser.Id)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		st.setDM(userID, otherUser.Id)
+
+		return control.UserActionResponse{Info: fmt.Sprintf("direct channel created between %q and %q, with id %q", userID, otherUser.Id, channelId)}
 	}
 
-	channelId, err := u.CreateDirectChannel(user.Id)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("direct channel created, id %s", channelId)}
+	return control.UserActionResponse{Err: control.NewUserError(errors.New("maximum attempts reached when randomly picking a user to create a DM"))}
 }
 
 func (c *GenController) createGroupChannel(u user.User) (res control.UserActionResponse) {
@@ -430,31 +444,38 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	return resp
 }
 
-func (c *GenController) joinTeam(u user.User) control.UserActionResponse {
+func (c *GenController) joinAllTeams(u user.User) control.UserActionResponse {
 	userStore := u.Store()
 	userId := userStore.Id()
 	if _, err := u.GetAllTeams(0, 100); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	team, err := u.Store().RandomTeam(store.SelectNotMemberOf)
-	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
-		return control.UserActionResponse{Info: "no team to join"}
-	} else if err != nil {
+	teams, err := u.Store().Teams()
+	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.AddTeamMember(team.Id, userId); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelsForTeam(team.Id, true); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if err := u.GetChannelMembersForUser(userId, team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	joinedTeamIds := []string{}
+	for _, team := range teams {
+		if u.Store().IsTeamMember(team.Id, userId) {
+			continue
+		}
+
+		if err := u.AddTeamMember(team.Id, userId); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if err := u.GetChannelsForTeam(team.Id, true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if err := u.GetChannelMembersForUser(userId, team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		joinedTeamIds = append(joinedTeamIds, team.Id)
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("joined team %s", team.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("joined %d teams [%s]", len(joinedTeamIds), strings.Join(joinedTeamIds, ","))}
 }
 
 func (c *GenController) createSidebarCategory(u user.User) (res control.UserActionResponse) {

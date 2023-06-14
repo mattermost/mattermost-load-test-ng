@@ -70,7 +70,7 @@ func ReadConfig(configFilePath string) (*Config, error) {
 
 // IsValid reports whether a given gencontroller.Config is valid or not.
 // Returns an error if the validation fails.
-func (c *Config) IsValid() error {
+func (c *Config) IsValid(numUsers int) error {
 	totalPercent := 0.0
 	for _, item := range c.ChannelMembersDistribution {
 		totalPercent += item.Probability
@@ -89,7 +89,19 @@ func (c *Config) IsValid() error {
 		return errors.New("sum of percentages for channel member distribution should be equal to 1")
 	}
 
+	if c.NumChannelsDM > numPairs(int64(numUsers)) {
+		return errors.New("the number of DMs must be at most the number of possible pairs between users; i.e., n * (n-1) / 2, where n is the number of users")
+	}
+
+	if c.NumTeams > int64(numUsers) {
+		return errors.New("the number of teams must be at most the number of users")
+	}
+
 	return nil
+}
+
+func numPairs(n int64) int64 {
+	return n * (n - 1) / 2
 }
 
 func (c *Config) NumTotalChannels() int64 {

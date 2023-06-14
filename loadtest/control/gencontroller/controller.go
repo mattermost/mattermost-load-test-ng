@@ -25,17 +25,18 @@ type GenController struct {
 	rate                    float64
 	config                  *Config
 	channelSelectionWeights []int
+	numUsers                int
 }
 
 // New creates and initializes a new GenController with given parameters.
 // An id is provided to identify the controller, a User is passed as the entity to be controlled and
 // a UserStatus channel is passed to communicate errors and information about the user's status.
-func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus) (*GenController, error) {
+func New(id int, user user.User, sysadmin user.User, config *Config, status chan<- control.UserStatus, numUsers int) (*GenController, error) {
 	if config == nil || user == nil {
 		return nil, errors.New("nil params passed")
 	}
 
-	if err := config.IsValid(); err != nil {
+	if err := config.IsValid(numUsers); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
@@ -53,6 +54,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		rate:                    1.0,
 		config:                  config,
 		channelSelectionWeights: weights,
+		numUsers:                numUsers,
 	}
 
 	return sc, nil
@@ -97,7 +99,6 @@ func (c *GenController) Run() {
 		control.Login,
 		control.GetPreferences,
 		c.createTeam,
-		c.joinTeam,
 	}
 
 	for i := 0; i < len(initActions); i++ {
@@ -122,6 +123,21 @@ func (c *GenController) Run() {
 		}
 	}
 
+	// Wait for all teams to be created, so all users can join them all.
+	for st.get(StateTargetTeams) != c.config.NumTeams {
+		time.Sleep(time.Second)
+	}
+
+	// Join all teams
+	if resp := c.joinAllTeams(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else if resp.Warn != "" {
+		c.status <- c.newWarnStatus(resp.Warn)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+
+	// Create all channels
 	actions := map[string]userAction{
 		"createPublicChannel": {
 			run:        c.createPublicChannel,
@@ -151,12 +167,8 @@ func (c *GenController) Run() {
 			st.get(StateTargetChannelsPublic) >= c.config.NumChannelsPublic
 	})
 
+	// Run the rest of the actions
 	actions = map[string]userAction{
-		"joinTeam": {
-			run:        control.JoinTeam,
-			frequency:  100,
-			idleTimeMs: 0,
-		},
 		"joinChannel": {
 			run:        c.joinChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumTotalChannels()))) * 2, // making this proportional to number of channels.
