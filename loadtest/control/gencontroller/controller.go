@@ -196,7 +196,7 @@ func (c *GenController) Run() {
 		// to have data to work with
 		"getPosts": {
 			run:        c.getPosts,
-			frequency:  100,
+			frequency:  int(max(100, c.config.NumPosts/1000)),
 			idleTimeMs: 1000,
 		},
 	}
