@@ -568,7 +568,7 @@ func (c *GenController) getPosts(u user.User) (res control.UserActionResponse) {
 	}
 
 	collapsedThreads := false
-	if err := c.user.GetPostsForChannel(channel.Id, 0, 200, collapsedThreads, nil); err != nil {
+	if err := c.user.GetPostsForChannel(channel.Id, 0, 200, collapsedThreads); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
