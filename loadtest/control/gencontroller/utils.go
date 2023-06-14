@@ -8,6 +8,7 @@ import (
 	"math/rand"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"golang.org/x/exp/constraints"
 )
 
 // pickAction randomly selects an action from a map of userAction with
@@ -94,4 +95,11 @@ func chooseChannel(dist []ChannelMemberDistribution, idx int, u user.User) (stri
 
 		return channelID, nil
 	}
+}
+
+func max[T constraints.Ordered](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
 }
