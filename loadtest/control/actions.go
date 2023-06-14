@@ -133,7 +133,7 @@ func JoinChannel(u user.User) UserActionResponse {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 			if cm.UserId == "" {
-				err := u.AddChannelMember(channel.Id, userId, nil)
+				err := u.AddChannelMember(channel.Id, userId)
 				if err != nil {
 					return UserActionResponse{Err: NewUserError(err)}
 				}

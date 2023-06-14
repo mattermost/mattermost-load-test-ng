@@ -61,7 +61,7 @@ func (c *SimpleController) scrollChannel(u user.User) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	err = c.user.GetPostsForChannel(channel.Id, 0, 1, collapsedThreads, nil)
+	err = c.user.GetPostsForChannel(channel.Id, 0, 1, collapsedThreads)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

@@ -120,7 +120,7 @@ func (c *NoopController) joinChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.AddChannelMember(channel.Id, u.Store().Id(), nil); err != nil {
+	if err := u.AddChannelMember(channel.Id, u.Store().Id()); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

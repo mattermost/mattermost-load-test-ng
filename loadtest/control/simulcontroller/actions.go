@@ -307,7 +307,7 @@ func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.AddChannelMember(channel.Id, u.Store().Id(), nil); err != nil {
+	if err := u.AddChannelMember(channel.Id, u.Store().Id()); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -1258,7 +1258,7 @@ func createPrivateChannel(u user.User) control.UserActionResponse {
 
 	// we pick up to 4 users to add to the channel.
 	for _, id := range pickIds(ids, 1+rand.Intn(4)) {
-		if err := u.AddChannelMember(channelId, id, nil); err != nil {
+		if err := u.AddChannelMember(channelId, id); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}

@@ -430,13 +430,13 @@ func (c *GenController) joinChannel(u user.User) control.UserActionResponse {
 	if cm.UserId == "" {
 		// We use sysadmin to add channel in case it's a private channel.
 		// Otherwise normal users don't have permissions to join a private channel.
-		err = c.user.AddChannelMember(channelID, u.Store().Id(), c.sysadmin.Client())
+		err = c.sysadmin.AddChannelMember(channelID, u.Store().Id())
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 		resp = control.UserActionResponse{Info: fmt.Sprintf("joined channel %s", channelID)}
 
-		if err := c.user.GetPostsForChannel(channelID, 0, 60, collapsedThreads, c.sysadmin.Client()); err != nil {
+		if err := c.user.GetPostsForChannel(channelID, 0, 60, collapsedThreads); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
