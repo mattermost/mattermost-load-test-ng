@@ -93,6 +93,10 @@ func (c *Config) IsValid(numUsers int) error {
 		return errors.New("the number of DMs must be at most the number of possible pairs between users; i.e., n * (n-1) / 2, where n is the number of users")
 	}
 
+	if c.NumTeams > int64(numUsers) {
+		return errors.New("the number of teams must be at most the number of users")
+	}
+
 	return nil
 }
 
