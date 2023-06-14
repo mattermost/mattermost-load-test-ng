@@ -129,7 +129,7 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct channel.
-	if _, err := u.GetUsers(0, 100); err != nil {
+	if _, err := u.GetUsers(0, c.numUsers); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
