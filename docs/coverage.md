@@ -98,7 +98,7 @@ make check-style && make test
 
 ## Code Review
 
-When submitting your pull-request please make sure to include at least one reviewer among the code owners ([@agnivade](https://github.com/agnivade), [@isacikgoz](https://github.com/isacikgoz), [@streamer45](https://github.com/streamer45)).
+When submitting your pull-request please make sure to include at least one reviewer among the code owners ([@agnivade](https://github.com/agnivade), [@isacikgoz](https://github.com/isacikgoz), [@streamer45](https://github.com/streamer45), [@agarciamontoro](https://github.com/agarciamontoro)).
 
 ## Help
 

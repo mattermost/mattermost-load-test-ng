@@ -25,6 +25,10 @@ To configure this, you need to take a look at the `MonitorConfig.Queries` config
 
 Note that in both cases, `ClusterConfig.MaxActiveUsers` should be set to `AgentInstanceCount * UsersConfiguration.MaxActiveUsers`.
 
+### How many users does an agent support?
+
+For an agent running in a `c5.xlarge` instance in AWS (X CPU, Y RAM), 2000 users is the sweet spot.
+
 ### Can I use a pre-existing Mattermost or database deployment?
 
 Yes, you can use an existing Mattermost deployment, or just the database portion.
@@ -119,7 +123,7 @@ ulimit -n VALUE
 ```
 
 #### Note
-For terraform deployments, this value is hard coded in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value.
+For Terraform deployments, this value is hard coded in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value.
 
 1. ssh into your loadtest agents. You can see the agents available by running `go run ./cmd/ltctl ssh`.
 2. Modify the `/lib/systemd/system/ltapi.service` file with the new value.
