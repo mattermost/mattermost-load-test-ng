@@ -30,7 +30,7 @@ The steps to load test a feature include:
  - Some additional information on the above document
     - Updates to `config.json`
         - Make sure to change `ConnectionConfiguration` section in `config.json` according to the local deployment of mattermost-server.
-        - For `InstanceConfiguration`, see [this doc](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration). This configuration setting is used by the `init` command to initially populate the mattermost database.
+        - For `InstanceConfiguration`, see [this doc](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/config.md#instanceconfiguration). This configuration setting is used by the `init` command to initially populate the mattermost database.
     - Increase the frequency of the new action, so it's easier to debug while running locally. [sample](https://github.com/mattermost/mattermost-load-test-ng/blob/8faa4dfb485dace3bd65908c0d3d98979b7dfd17/loadtest/control/simulcontroller/controller.go#L227)
     - If you see errors, there's a [troubleshooting guide](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/faq.md#troubleshooting) you can reference to resolve the issues.
     - Check `ltagent.log` located in the `mattermost-load-test-ng` directory, and the server logs for details on errors, if any.
@@ -100,9 +100,9 @@ After all the code changes:
 #### Note:
 
  - **For populating the database manually** :
-    - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
+    - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
     - Post a message in the [Developers:Performance](https://community.mattermost.com/core/channels/developers-performance) channel to request a migration file.
-    - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison_config.md#dbdumpurl). If not,
+    - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/comparison.md#dbdumpurl). If not,
         - `ssh` into the app machine, and `psql` into the connected database. (Link to the database can be obtained with `ltctl deployment info`)
         - Drop and recreate the target database. Restore backup data with `zcat <backupfile> | psql <dsn>`.
         - Now, the app service needs to be restarted so the server can run the necessary migrations.

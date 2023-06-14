@@ -37,8 +37,8 @@ cp config/config.sample.json config/config.json
 cp config/simplecontroller.sample.json config/simplecontroller.json
 ```
 
-The load-test config file is documented [here](loadtest_config.md).
-The default [`UserController`](controllers.md) is the `SimpleController`. Its config file is documented [here](simplecontroller_config.md).
+The load-test config file is documented [here](config/config.md).
+The default [`UserController`](controllers.md) is the `SimpleController`. Its config file is documented [here](config/simplecontroller.md).
 
 ### Run the initialization
 
@@ -161,7 +161,7 @@ Before starting the [`coordinator`](coordinator.md), the default configuration f
 cp config/coordinator.sample.json config/coordinator.json
 ```
 
-Its documentation can be found [here](coordinator_config.md).
+Its documentation can be found [here](config/coordinator.md).
 
 ### Run the coordinator
 

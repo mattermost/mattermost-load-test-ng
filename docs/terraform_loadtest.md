@@ -30,7 +30,7 @@ In order to start the deployment process, it is required to configure the deploy
 cp config/deployer.sample.json config/deployer.json
 ```
 
-Detailed documentation for the deployer's config can be found [here](deployer_config.md). At least, make sure to set the `SSHPublicKey` to the path of your public key, `MattermostLicenseFile` to the path of an enterprise license, and the `ClusterName` to a unique value within your AWS account. 
+Detailed documentation for the deployer's config can be found [here](config/deployer.md). At least, make sure to set the `SSHPublicKey` to the path of your public key, `MattermostLicenseFile` to the path of an enterprise license, and the `ClusterName` to a unique value within your AWS account. 
 
 ## Deployment
 
@@ -43,7 +43,7 @@ eval $(ssh-agent -s)
 ssh-add PATH_TO_PRIVATE_KEY
 ```
 
-`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
+`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](config/deployer.md).
 
 ### Create a new deployment
 
@@ -86,7 +86,7 @@ To configure the [coordinator](coordinator.md), `config/coordinator.json` should
 cp config/coordinator.sample.json config/coordinator.json
 ```
 
-Its documentation can be found [here](coordinator_config.md).
+Its documentation can be found [here](config/coordinator.md).
 
 #### Copy default config
 
@@ -96,7 +96,7 @@ To configure the load-test `config/config.json`, should be created and/or edited
 cp config/config.sample.json config/config.json
 ```
 
-Its documentation can be found [here](loadtest_config.md).
+Its documentation can be found [here](config/config.md).
 
 ### Start a load-test
 

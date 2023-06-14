@@ -12,7 +12,7 @@ using [`GenController`](controllers.md#gencontroller).
 ## Configuration
 
 First of all, the type of `UserController` to be used should be set to
-`generative` as explained [here](loadtest_config.md#usercontrollerconfiguration).
+`generative` as explained [here](config/config.md#usercontrollerconfiguration).
 
 ### Copy and modify needed configuration file
 
@@ -20,7 +20,7 @@ First of all, the type of `UserController` to be used should be set to
 cp config/gencontroller.sample.json config/gencontroller.json
 ```
 
-The `GenController` config file is documented [here](gencontroller_config.md).  
+The `GenController` config file is documented [here](config/gencontroller.md).
 
 ### Run the load-test agent
 

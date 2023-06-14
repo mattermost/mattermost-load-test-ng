@@ -23,14 +23,14 @@ Users of the tool can configure pretty much everything: the behaviour of the sim
 
 This is great for accommodating all of the use-cases we need to cover, but it also makes the configuration quite complex. To try to alleviate this pain, there's extensive documentation on each and every configuration knob you can tweak (if you see something's missing, please feel free to open an issue or a PR). Here's a list of documents explaining each of the files in the `config/` directory:
 
-- [Generic configuration](loadtest_config.md): Settings to configure what controller to use (see below for more info), how the controllers will connect to your Mattermost server, how many users each controller has and how active they are, as well as the initial data you want to create.
-- [Controllers configuration]:
-    - [simulative controller](simulcontroller_config.md): the perfect controller for simulating a real user, with coverage of the most frequent actions and the probabilities fine-tuned to mimic an actual server.
-    - [generative controller](gencontroller_config.md): the controller you'll use whenever you need to generate lots of data for later use. the behaviour of the users is not realistic (hopefully real users don't write 10 posts per second), but it's optimized for generating data with speed and performance in mind.
-    - [simple controller](simplecontroller_config.md): if you need to run a specific set of actions in a loop, and you want to easily configure them, then this is your controller.
-- [Deployer configuration](deployer_config.md): Settings to control the cluster deployed to AWS through Terraform, as well as AWS-specific configurations you may need to tweak.
-- [Coordinator configuration](coordinator_config.md): Settings to tweak how the controller behaves, such as the maximum number of users overall or the configuration for the type of test to run (whether bounded or unbounded, and in case of unbounded, how it is controlled).
-- [Comparison configuration](comparison_config.md): Settings to control the comparison process. See the [Advanced workflows](#advanced-workflows) for more information.
+- [Generic configuration](config/config.md): Settings to configure what controller to use (see below for more info), how the controllers will connect to your Mattermost server, how many users each controller has and how active they are, as well as the initial data you want to create.
+- Controllers configuration: settings for each different controller implemented in the tool:
+    - [simulative controller](config/simulcontroller.md): the perfect controller for simulating a real user, with coverage of the most frequent actions and fine-tuned probabilities to mimic an actual server.
+    - [generative controller](config/gencontroller.md): the controller you'll use whenever you need to generate lots of data for later use. The behaviour of the users in this controller is not realistic (hopefully real users don't write 10+ posts per second), but it's optimized for generating data with speed and performance in mind.
+    - [simple controller](config/simplecontroller.md): if you need to run a specific set of actions in a loop, and you want to easily configure which ones and with which frequency, then this is your controller.
+- [Deployer configuration](config/deployer.md): Settings to control the cluster deployed to AWS through Terraform, as well as AWS-specific configurations you may need to tweak to match you usual AWS workflow.
+- [Coordinator configuration](config/coordinator.md): Settings to tweak how the coordinator behaves, such as the maximum number of users simulated or the configuration for the type of test to run (whether bounded or unbounded, and in case of unbounded, how it is controlled).
+- [Comparison configuration](config/comparison.md): Settings to control the comparison process. See the [Advanced workflows](#advanced-workflows) for more information.
 
 ### Components
 
@@ -42,9 +42,7 @@ There's specific documentation defining the main components and how the interact
 ## Advanced Workflows
 
 Once you have familiarized yourself with the tool, and after you have successfully run at least a couple of tests, there are a few advanced guides that may be useful for you:
+
 - [Running an automated load-test comparison](comparison.md): a workflow specifically designed for when you need to compare two different versions of Mattermost while maintaining the rest of the variables fixed. This is what the Server team at Mattermost uses for the monthly release performance comparisons.
 - [Generating data](generating-data.md): for larger load-tests, you'll need larger datasets. This guide describes how you can use the gencontroller to create an arbitrary number of teams, channels, posts, reactions... to use as the starting point for future tests.
-
-
-
 
