@@ -134,7 +134,9 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 	}
 
 	userID := u.Store().Id()
-	maxAttempts := 2 * (c.numUsers - st.numDMs(u.Store().Id()))
+	// Make at most twice as many attempts as there are valid users
+	// (i.e., those with which we don't have a DM open yet)
+	maxAttempts := 2 * (c.numUsers - st.numDMs(userID))
 	for i := 0; i < maxAttempts; i++ {
 		otherUser, err := u.Store().RandomUser()
 		if errors.Is(err, memstore.ErrLenMismatch) {
@@ -153,7 +155,7 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		st.setDM(u.Store().Id(), otherUser.Id)
+		st.setDM(userID, otherUser.Id)
 
 		return control.UserActionResponse{Info: fmt.Sprintf("direct channel created between %q and %q, with id %q", userID, otherUser.Id, channelId)}
 	}
