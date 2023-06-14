@@ -79,6 +79,13 @@ type Config struct {
 	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
 	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
+	DBDumpURI       string `default:""`
+	// An optional list of IPs present in the posts from the DB dump
+	// that contain permalinks to other posts. These IPs are replaced,
+	// when ingesting the dump into the database, in every post that
+	// uses them with the public IP of the first app instance, so that
+	// the permalinks are valid in the new deployment.
+	PermalinkIPsToReplace []string `validate:"each:ip"`
 }
 
 // TerraformDBSettings contains the necessary data
