@@ -117,7 +117,7 @@ func (c *GenController) createPrivateChannel(u user.User) (res control.UserActio
 	return control.UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
 }
 
-func (c *GenController) getUsers(u user.User) (control.UserActionResponse) {
+func (c *GenController) getUsers(u user.User) control.UserActionResponse {
 	// Here we make a call to GetUsers to simulate the user opening the users
 	// list when creating a direct/group channel.
 	if _, err := u.GetUsers(0, c.numUsers); err != nil {
