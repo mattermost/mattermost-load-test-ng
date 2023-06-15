@@ -783,18 +783,44 @@ func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) err
 }
 
 // GetUsers fetches and stores all users. It returns a list of those users' ids.
+// If perPage is more than the maxPageSize at the server, it will paginate
+// through the list. In that case, it might fetch more than users asked since
+// it will always get maxPageSize sized chunks.
 func (ue *UserEntity) GetUsers(page, perPage int) ([]string, error) {
-	users, _, err := ue.client.GetUsers(page, perPage, "")
-	if err != nil {
-		return nil, err
+	userIds := make([]string, 0, perPage)
+
+	// 200 is the hardcoded limit of the server.
+	// It's exposed via the web package, but it's outside the contract
+	// of the public module, so we hardcode here for simplicity.
+	const maxPageSize = 200
+	var remaining int
+	if perPage > maxPageSize {
+		remaining = perPage
+		perPage = maxPageSize
 	}
 
-	userIds := make([]string, len(users))
-	for i := range users {
-		userIds[i] = users[i].Id
+	for {
+		users, _, err := ue.client.GetUsers(page, perPage, "")
+		if err != nil {
+			return nil, err
+		}
+		err = ue.store.SetUsers(users)
+		if err != nil {
+			return nil, err
+		}
+		for i := range users {
+			userIds = append(userIds, users[i].Id)
+		}
+
+		if len(users) < remaining {
+			page++
+			remaining -= perPage
+			continue
+		}
+		break
 	}
 
-	return userIds, ue.store.SetUsers(users)
+	return userIds, nil
 }
 
 // GetUsersNotInChannel returns a list of user ids not in a given channel.

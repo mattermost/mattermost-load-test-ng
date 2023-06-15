@@ -45,6 +45,7 @@ const (
 	StateTargetPostReminders     = "postreminders"
 	StateTargetSidebarCategories = "sidebarcategories"
 	StateTargetFollowedThreads   = "followedthreads"
+	StateTargetUsers             = "users"
 )
 
 func init() {
@@ -60,6 +61,7 @@ func init() {
 			StateTargetPostReminders:     0,
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
+			StateTargetUsers:             0,
 		},
 		longRunningThreads:    make(map[string]*ThreadInfo),
 		channels:              []string{},

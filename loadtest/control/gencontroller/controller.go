@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
@@ -89,21 +90,22 @@ func (c *GenController) Run() {
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
 			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
-			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
+			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads &&
+			st.get(StateTargetUsers) == int64(c.numUsers)
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
 	initActions := []control.UserAction{
 		control.SignUp,
-		control.Login,
+		c.login,
 		control.GetPreferences,
 		c.createTeam,
 	}
 
 	for i := 0; i < len(initActions); i++ {
 		if done() {
-			c.status <- c.newInfoStatus("user done")
+			c.status <- c.newInfoStatus("user init done")
 			return
 		}
 
@@ -123,19 +125,20 @@ func (c *GenController) Run() {
 		}
 	}
 
-	// Wait for all teams to be created, so all users can join them all.
-	for st.get(StateTargetTeams) != c.config.NumTeams {
+	// Wait for all users to be logged in.
+	// This also means now users can join all teams.
+	for st.get(StateTargetUsers) != int64(c.numUsers) {
 		time.Sleep(time.Second)
 	}
 
 	// Join all teams
-	if resp := c.joinAllTeams(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else if resp.Warn != "" {
-		c.status <- c.newWarnStatus(resp.Warn)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-	}
+	c.runAction(c.joinAllTeams)
+
+	// Add jitter to spread out getUser calls
+	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+
+	// Initial call to get all users
+	c.runAction(c.getUsers)
 
 	// Create all channels
 	actions := map[string]userAction{
@@ -225,6 +228,16 @@ func (c *GenController) Run() {
 			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
 			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
 	})
+}
+
+func (c *GenController) runAction(action control.UserAction) {
+	if resp := action(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else if resp.Warn != "" {
+		c.status <- c.newWarnStatus(resp.Warn)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
 }
 
 func (c *GenController) runActions(actions map[string]userAction, done func() bool) {
