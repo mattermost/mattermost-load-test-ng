@@ -59,7 +59,7 @@ func (c *GenController) createTeam(u user.User) (res control.UserActionResponse)
 
 func (c *GenController) createPublicChannel(u user.User) (res control.UserActionResponse) {
 	if !st.inc(StateTargetChannelsPublic, c.config.NumChannelsPublic) {
-		return control.UserActionResponse{Info: "target number of channels reached"}
+		return control.UserActionResponse{Info: "target number of public channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
@@ -89,7 +89,7 @@ func (c *GenController) createPublicChannel(u user.User) (res control.UserAction
 
 func (c *GenController) createPrivateChannel(u user.User) (res control.UserActionResponse) {
 	if !st.inc(StateTargetChannelsPrivate, c.config.NumChannelsPrivate) {
-		return control.UserActionResponse{Info: "target number of channels reached"}
+		return control.UserActionResponse{Info: "target number of private channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
@@ -117,21 +117,25 @@ func (c *GenController) createPrivateChannel(u user.User) (res control.UserActio
 	return control.UserActionResponse{Info: fmt.Sprintf("private channel created, id %v", channelId)}
 }
 
+func (c *GenController) getUsers(u user.User) (control.UserActionResponse) {
+	// Here we make a call to GetUsers to simulate the user opening the users
+	// list when creating a direct/group channel.
+	if _, err := u.GetUsers(0, c.numUsers); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("loaded users")}
+}
+
 func (c *GenController) createDirectChannel(u user.User) (res control.UserActionResponse) {
 	if !st.inc(StateTargetChannelsDM, c.config.NumChannelsDM) {
-		return control.UserActionResponse{Info: "target number of channels reached"}
+		return control.UserActionResponse{Info: "target number of DM channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
 			st.dec(StateTargetChannelsDM)
 		}
 	}()
-
-	// Here we make a call to GetUsers to simulate the user opening the users
-	// list when creating a direct channel.
-	if _, err := u.GetUsers(0, c.numUsers); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
 
 	userID := u.Store().Id()
 	// Make at most twice as many attempts as there are valid users
@@ -160,24 +164,18 @@ func (c *GenController) createDirectChannel(u user.User) (res control.UserAction
 		return control.UserActionResponse{Info: fmt.Sprintf("direct channel created between %q and %q, with id %q", userID, otherUser.Id, channelId)}
 	}
 
-	return control.UserActionResponse{Err: control.NewUserError(errors.New("maximum attempts reached when randomly picking a user to create a DM"))}
+	return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("maximum attempts (%d) reached when randomly picking a user to create a DM with user: %s", maxAttempts, userID))}
 }
 
 func (c *GenController) createGroupChannel(u user.User) (res control.UserActionResponse) {
 	if !st.inc(StateTargetChannelsGM, c.config.NumChannelsGM) {
-		return control.UserActionResponse{Info: "target number of channels reached"}
+		return control.UserActionResponse{Info: "target number of GM channels reached"}
 	}
 	defer func() {
 		if res.Err != nil || res.Warn != "" {
 			st.dec(StateTargetChannelsGM)
 		}
 	}()
-
-	// Here we make a call to GetUsers to simulate the user opening the users
-	// list when creating a direct channel.
-	if _, err := u.GetUsers(0, 100); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
 
 	numUsers := 2 + rand.Intn(6)
 	users, err := u.Store().RandomUsers(numUsers)

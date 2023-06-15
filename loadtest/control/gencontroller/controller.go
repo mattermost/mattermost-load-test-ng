@@ -154,6 +154,11 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumChannelsDM),
 			idleTimeMs: 1000,
 		},
+		"getUsers": {
+			run:        c.getUsers,
+			frequency:  max(int((c.config.NumChannelsDM+c.config.NumChannelsGM)/10), 10),
+			idleTimeMs: 1000,
+		},
 		"createGroupChannel": {
 			run:        c.createGroupChannel,
 			frequency:  int(c.config.NumChannelsGM),
