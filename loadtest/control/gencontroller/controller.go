@@ -90,7 +90,8 @@ func (c *GenController) Run() {
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
 			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
-			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
+			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads &&
+			st.get(StateTargetUsers) == int64(c.numUsers)
 	}
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
@@ -104,7 +105,7 @@ func (c *GenController) Run() {
 
 	for i := 0; i < len(initActions); i++ {
 		if done() {
-			c.status <- c.newInfoStatus("user done")
+			c.status <- c.newInfoStatus("user init done")
 			return
 		}
 
@@ -126,7 +127,7 @@ func (c *GenController) Run() {
 
 	// Wait for all users to be logged in.
 	// This also means now users can join all teams.
-	for st.numUsers() != c.numUsers {
+	for st.get(StateTargetUsers) != int64(c.numUsers) {
 		time.Sleep(time.Second)
 	}
 

@@ -22,10 +22,8 @@ type state struct {
 	// Set of all the DMs created. The first key is the user whose ID
 	// is lexicographically lower. So if there is DM between users "A"
 	// and "B", there will be an entry userDMs["A"]["B"] == true.
-	userDMs          map[string]map[string]bool
-	userDMsMut       sync.RWMutex
-	loggedInUsers    int
-	loggedInUsersMut sync.RWMutex
+	userDMs    map[string]map[string]bool
+	userDMsMut sync.RWMutex
 }
 
 type ThreadInfo struct {
@@ -47,6 +45,7 @@ const (
 	StateTargetPostReminders     = "postreminders"
 	StateTargetSidebarCategories = "sidebarcategories"
 	StateTargetFollowedThreads   = "followedthreads"
+	StateTargetUsers             = "users"
 )
 
 func init() {
@@ -62,6 +61,7 @@ func init() {
 			StateTargetPostReminders:     0,
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
+			StateTargetUsers:             0,
 		},
 		longRunningThreads:    make(map[string]*ThreadInfo),
 		channels:              []string{},
@@ -78,18 +78,6 @@ func (st *state) inc(targetId string, targetVal int64) bool {
 	}
 	st.targets[targetId]++
 	return true
-}
-
-func (st *state) incUsers() {
-	st.loggedInUsersMut.Lock()
-	defer st.loggedInUsersMut.Unlock()
-	st.loggedInUsers++
-}
-
-func (st *state) numUsers() int {
-	st.loggedInUsersMut.RLock()
-	defer st.loggedInUsersMut.RUnlock()
-	return st.loggedInUsers
 }
 
 func (st *state) dec(targetId string) {
