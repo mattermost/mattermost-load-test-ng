@@ -124,7 +124,7 @@ func (c *GenController) getUsers(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("loaded users")}
+	return control.UserActionResponse{Info: "loaded users"}
 }
 
 func (c *GenController) createDirectChannel(u user.User) (res control.UserActionResponse) {
