@@ -33,6 +33,14 @@ func logout(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: "logged out"}
 }
 
+func (c *GenController) login(u user.User) control.UserActionResponse {
+	res := control.Login(u)
+	if res.Err == nil && res.Warn == "" {
+		st.incUsers()
+	}
+	return res
+}
+
 func (c *GenController) createTeam(u user.User) (res control.UserActionResponse) {
 	if !st.inc(StateTargetTeams, c.config.NumTeams) {
 		return control.UserActionResponse{Info: "target number of teams reached"}
