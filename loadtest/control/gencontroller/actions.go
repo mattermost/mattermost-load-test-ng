@@ -465,6 +465,7 @@ func (c *GenController) joinAllTeams(u user.User) control.UserActionResponse {
 		if err := u.AddTeamMember(team.Id, userId); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		time.Sleep(200*time.Millisecond + time.Duration(rand.Intn(300))*time.Millisecond)
 		if err := u.GetChannelsForTeam(team.Id, true); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
