@@ -465,7 +465,20 @@ func (c *GenController) joinAllTeams(u user.User) control.UserActionResponse {
 		if err := u.AddTeamMember(team.Id, userId); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+
+		// The following sleep avoids a read-after-write issue that happens as follows:
+		//     1. The AddTeamMember call right before this comment adds the user to the team.
+		//     2. The teamMember and its roles are saved in the sessions cache, so the previous
+		//        request invalidates the cache in the node that processed the request.
+		//     3. This cache invalidation is sent to all other nodes in the cluster.
+		//     4. The GetChannelsForTeam call right after the sleep reads the cache to get the
+		//        teamMember and its roles.
+		// If 4 happens before 3 finishes, and the GetChannelsForTeam is processed by a different
+		// node than the one that processed AddTeamMember, then the node reads its cache thinking
+		// it's valid and sees that the user is not part of the team, denying it access to its
+		// channels.
 		time.Sleep(200*time.Millisecond + time.Duration(rand.Intn(300))*time.Millisecond)
+
 		if err := u.GetChannelsForTeam(team.Id, true); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
