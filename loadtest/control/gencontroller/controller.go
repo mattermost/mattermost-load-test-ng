@@ -99,6 +99,7 @@ func (c *GenController) Run() {
 		control.Login,
 		control.GetPreferences,
 		c.createTeam,
+		c.joinTeam,
 	}
 
 	for i := 0; i < len(initActions); i++ {
@@ -129,13 +130,13 @@ func (c *GenController) Run() {
 	}
 
 	// Join all teams
-	if resp := c.joinAllTeams(c.user); resp.Err != nil {
-		c.status <- c.newErrorStatus(resp.Err)
-	} else if resp.Warn != "" {
-		c.status <- c.newWarnStatus(resp.Warn)
-	} else {
-		c.status <- c.newInfoStatus(resp.Info)
-	}
+	// if resp := c.joinAllTeams(c.user); resp.Err != nil {
+	// 	c.status <- c.newErrorStatus(resp.Err)
+	// } else if resp.Warn != "" {
+	// 	c.status <- c.newWarnStatus(resp.Warn)
+	// } else {
+	// 	c.status <- c.newInfoStatus(resp.Info)
+	// }
 
 	// Create all channels
 	actions := map[string]userAction{
@@ -169,6 +170,11 @@ func (c *GenController) Run() {
 
 	// Run the rest of the actions
 	actions = map[string]userAction{
+		"joinTeam": {
+			run:        control.JoinTeam,
+			frequency:  100,
+			idleTimeMs: 0,
+		},
 		"joinChannel": {
 			run:        c.joinChannel,
 			frequency:  int(math.Ceil(float64(c.config.NumTotalChannels()))) * 2, // making this proportional to number of channels.
