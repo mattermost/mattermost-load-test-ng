@@ -239,6 +239,11 @@ func (c *GenController) Run() {
 	})
 }
 
+// runAction runs the given action and returns whether this was fully executed
+// or not. This is used by the caller to figure out whether to retry the action.
+// NOTE: this logic relies on a pattern of using resp.Info when the action
+// has been completed successfully, otherwise returning early and setting either
+// resp.Err or resp.Warn.
 func (c *GenController) runAction(action control.UserAction) bool {
 	if resp := action(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
