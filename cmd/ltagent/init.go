@@ -41,7 +41,7 @@ func isInitDone(serverURL, userPrefix string) (bool, error) {
 	return userentity.New(ueSetup, ueConfig).Login() == nil, nil
 }
 
-func genData(lt *loadtest.LoadTester, numUsers int64) error {
+func genData(lt *loadtest.LoadTester, numUsers int) error {
 	if err := lt.Run(); err != nil {
 		return err
 	}
@@ -50,14 +50,7 @@ func genData(lt *loadtest.LoadTester, numUsers int64) error {
 		mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
 	}(time.Now())
 
-	for lt.Status().NumUsersAdded != numUsers {
-		if _, err := lt.AddUsers(10); err != nil {
-			return fmt.Errorf("failed to add users %w", err)
-		}
-		time.Sleep(5 * time.Second)
-	}
-
-	for lt.Status().NumUsersStopped != numUsers {
+	for lt.Status().NumUsersStopped != int64(numUsers) {
 		time.Sleep(1 * time.Second)
 	}
 
@@ -82,6 +75,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	log := logger.New(&config.LogSettings)
+	defer log.Flush()
 
 	userPrefix, err := cmd.Flags().GetString("user-prefix")
 	if err != nil {
@@ -91,12 +85,12 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
 		return err
 	} else if ok {
-		mlog.Warn("init already done")
+		log.Warn("init already done")
 		return nil
 	}
 
 	seed := memstore.SetRandomSeed()
-	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
+	log.Info(fmt.Sprintf("random seed value is: %d", seed))
 
 	genConfig := gencontroller.Config{
 		NumTeams:           config.InstanceConfiguration.NumTeams,
@@ -117,8 +111,9 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
+	numUsers := 50
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
-	config.UsersConfiguration.InitialActiveUsers = 0
+	config.UsersConfiguration.InitialActiveUsers = numUsers
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
@@ -139,9 +134,9 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error while generating admin users: %w", err)
 	}
-	mlog.Info("admin generation completed")
+	log.Info("admin generation completed")
 
-	return genData(lt, 50)
+	return genData(lt, numUsers)
 }
 
 func genAdmins(config *loadtest.Config, userPrefix string) error {
