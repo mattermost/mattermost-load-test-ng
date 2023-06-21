@@ -19,7 +19,7 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 
 The nature of the test is controlled by how the [`coordinator`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md) controls the [feedback loop](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md#the-feedback-loop). If the coordinator is configured to decrease the users when some metrics surpass a threshold (e.g. the P99 latency in the server is over 2 seconds), then the test will be unbounded. If the coordinator does not monitor these metrics and just let all users connect freely, then the test will be bounded.
 
-To configure this, you need to take a look at the `MonitorConfig.Queries` configuration in the deployer:
+To configure this, you need to take a look at the [`MonitorConfig.Queries` configuration in the `coordinator.json` file](coordinator_config.md#queries):
 - If the array of queries is empty, or all of them are disabled (by setting `Alert` to `false`), the test is **bounded**.
 - If there is at least one query that is enabled, the test is **unbounded**.
 
