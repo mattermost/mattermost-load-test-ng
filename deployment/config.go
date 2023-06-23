@@ -79,6 +79,11 @@ type Config struct {
 	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
 	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
+	// An optional URI to a MM server database dump file
+	// to be loaded before running the load-test.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURI       string `default:""`
 	// An optional list of IPs present in the posts from the DB dump
 	// that contain permalinks to other posts. These IPs are replaced,

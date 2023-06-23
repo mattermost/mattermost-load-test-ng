@@ -26,6 +26,8 @@ type DBSettings struct {
 }
 
 // ProvisionURL takes a URL pointing to a file to be provisioned.
+// It works on both local files prefixed with file:// or remote files.
+// In case of local files, they are uploaded to the server.
 func ProvisionURL(client *ssh.Client, url, filename string) error {
 	filePrefix := "file://"
 	if strings.HasPrefix(url, filePrefix) {

@@ -13,6 +13,9 @@ import (
 	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
+// IngestDump works on an already deployed terraform setup and restores
+// the DB dump file to the Mattermost server. It uses the deployment config
+// for the dump URI.
 func (t *Terraform) IngestDump() error {
 	output, err := t.Output()
 	if err != nil {
