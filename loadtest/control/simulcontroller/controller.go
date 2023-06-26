@@ -39,7 +39,7 @@ func getActionList(c *SimulController) []userAction {
 		},
 		{
 			name:      "UnreadCheck",
-			run:       unreadCheck,
+			run:       c.unreadCheck,
 			frequency: 1.5,
 		},
 		{
@@ -223,7 +223,8 @@ type SimulController struct {
 }
 
 type featureFlags struct {
-	GraphQLEnabled bool
+	GraphQLEnabled                  bool
+	DisableRefetchingOnBrowserFocus bool
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -311,7 +312,8 @@ func (c *SimulController) Run() {
 		return
 	}
 	c.featureFlags = featureFlags{
-		GraphQLEnabled: c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
+		GraphQLEnabled:                  c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
+		DisableRefetchingOnBrowserFocus: c.user.Store().ClientConfig()["DisableRefetchingOnBrowserFocus"] == "true",
 	}
 
 	var action *userAction
