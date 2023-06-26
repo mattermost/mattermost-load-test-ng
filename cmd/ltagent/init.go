@@ -41,7 +41,7 @@ func isInitDone(serverURL, userPrefix string) (bool, error) {
 	return userentity.New(ueSetup, ueConfig).Login() == nil, nil
 }
 
-func genData(lt *loadtest.LoadTester, numUsers int64) error {
+func genData(lt *loadtest.LoadTester, numUsers int) error {
 	if err := lt.Run(); err != nil {
 		return err
 	}
@@ -50,14 +50,7 @@ func genData(lt *loadtest.LoadTester, numUsers int64) error {
 		mlog.Info("loadtest done", mlog.String("elapsed", time.Since(start).String()))
 	}(time.Now())
 
-	for lt.Status().NumUsersAdded != numUsers {
-		if _, err := lt.AddUsers(10); err != nil {
-			return fmt.Errorf("failed to add users %w", err)
-		}
-		time.Sleep(5 * time.Second)
-	}
-
-	for lt.Status().NumUsersStopped != numUsers {
+	for lt.Status().NumUsersStopped != int64(numUsers) {
 		time.Sleep(1 * time.Second)
 	}
 
@@ -82,6 +75,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	log := logger.New(&config.LogSettings)
+	defer log.Flush()
 
 	userPrefix, err := cmd.Flags().GetString("user-prefix")
 	if err != nil {
@@ -91,28 +85,35 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
 		return err
 	} else if ok {
-		mlog.Warn("init already done")
+		log.Warn("init already done")
 		return nil
 	}
 
 	seed := memstore.SetRandomSeed()
-	mlog.Info(fmt.Sprintf("random seed value is: %d", seed))
+	log.Info(fmt.Sprintf("random seed value is: %d", seed))
 
 	genConfig := gencontroller.Config{
-		NumTeams:               config.InstanceConfiguration.NumTeams,
-		NumChannels:            config.InstanceConfiguration.NumChannels,
-		NumPosts:               config.InstanceConfiguration.NumPosts,
-		NumReactions:           config.InstanceConfiguration.NumReactions,
-		PercentReplies:         config.InstanceConfiguration.PercentReplies,
-		PercentUrgentPosts:     config.InstanceConfiguration.PercentUrgentPosts,
-		PercentPublicChannels:  config.InstanceConfiguration.PercentPublicChannels,
-		PercentPrivateChannels: config.InstanceConfiguration.PercentPrivateChannels,
-		PercentDirectChannels:  config.InstanceConfiguration.PercentDirectChannels,
-		PercentGroupChannels:   config.InstanceConfiguration.PercentGroupChannels,
+		NumTeams:           config.InstanceConfiguration.NumTeams,
+		NumChannelsDM:      int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentDirectChannels),
+		NumChannelsGM:      int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentGroupChannels),
+		NumChannelsPrivate: int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentPrivateChannels),
+		NumChannelsPublic:  int64(float64(config.InstanceConfiguration.NumChannels) * config.InstanceConfiguration.PercentPublicChannels),
+		NumPosts:           config.InstanceConfiguration.NumPosts,
+		NumReactions:       config.InstanceConfiguration.NumReactions,
+		PercentReplies:     config.InstanceConfiguration.PercentReplies,
+		PercentUrgentPosts: config.InstanceConfiguration.PercentUrgentPosts,
+		ChannelMembersDistribution: []gencontroller.ChannelMemberDistribution{
+			{
+				MemberLimit:     0,
+				PercentChannels: 1.0,
+				Probability:     1.0,
+			},
+		},
 	}
 
+	numUsers := 50
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
-	config.UsersConfiguration.InitialActiveUsers = 0
+	config.UsersConfiguration.InitialActiveUsers = numUsers
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
@@ -133,9 +134,9 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error while generating admin users: %w", err)
 	}
-	mlog.Info("admin generation completed")
+	log.Info("admin generation completed")
 
-	return genData(lt, 50)
+	return genData(lt, numUsers)
 }
 
 func genAdmins(config *loadtest.Config, userPrefix string) error {

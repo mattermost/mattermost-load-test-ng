@@ -229,3 +229,15 @@ func (a *Agent) Destroy() (loadtest.Status, error) {
 	status = *resp.Status
 	return status, nil
 }
+
+// InjectAction injects an action that is run once, at the next possible
+// opportunity.
+func (a *Agent) InjectAction(actionID string) (loadtest.Status, error) {
+	var status loadtest.Status
+	resp, err := a.apiPost(a.apiURL+a.id+"/inject?action="+actionID, nil)
+	if err != nil {
+		return status, err
+	}
+	status = *resp.Status
+	return status, nil
+}

@@ -17,6 +17,16 @@ func (c *GenController) newInfoStatus(info string) control.UserStatus {
 	}
 }
 
+func (c *GenController) newWarnStatus(warn string) control.UserStatus {
+	return control.UserStatus{
+		ControllerId: c.id,
+		User:         c.user,
+		Code:         control.USER_STATUS_WARN,
+		Warn:         warn,
+		Err:          nil,
+	}
+}
+
 func (c *GenController) newErrorStatus(err error) control.UserStatus {
 	return control.UserStatus{
 		ControllerId: c.id,

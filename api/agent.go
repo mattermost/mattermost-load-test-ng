@@ -282,6 +282,32 @@ func (a *api) removeUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeAgentResponse(w, http.StatusOK, &resp)
 }
 
+func (a *api) agentInjectActionHandler(w http.ResponseWriter, r *http.Request) {
+	lt, err := a.getLoadAgentById(w, r)
+	if err != nil {
+		return
+	}
+
+	action := r.FormValue("action")
+	if action == "" {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Error: "missing 'action' parameter",
+		})
+		return
+	}
+
+	if err := lt.InjectAction(action); err != nil {
+		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+			Error: fmt.Sprintf("could not inject action %q: %s", action, err),
+		})
+		return
+	}
+	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
+		Message: fmt.Sprintf("action %s injected", action),
+		Status:  lt.Status(),
+	})
+}
+
 func getServerVersion(serverURL string) (string, error) {
 	var version string
 	resp, err := http.Get(serverURL)
@@ -363,11 +389,12 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			Password:     password,
 		}
 		store, err := memstore.New(&memstore.Config{
-			MaxStoredPosts:          500,
-			MaxStoredUsers:          1000,
-			MaxStoredChannelMembers: 1000,
-			MaxStoredStatuses:       1000,
-			MaxStoredThreads:        500,
+			MaxStoredPosts:          250,
+			MaxStoredUsers:          500,
+			MaxStoredChannelMembers: 500,
+			MaxStoredStatuses:       500,
+			MaxStoredThreads:        250,
+			MaxStoredReactions:      10,
 		})
 		if err != nil {
 			return nil, err
@@ -392,7 +419,25 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerSimulative:
 			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
 		case loadtest.UserControllerGenerative:
-			return gencontroller.New(id, ue, controllerConfig.(*gencontroller.Config), status)
+			adminStore, err := memstore.New(nil)
+			if err != nil {
+				return nil, err
+			}
+			adminUeSetup := userentity.Setup{
+				Store: adminStore,
+			}
+			adminUeConfig := userentity.Config{
+				ServerURL:    config.ConnectionConfiguration.ServerURL,
+				WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+				Username:     "",
+				Email:        config.ConnectionConfiguration.AdminEmail,
+				Password:     config.ConnectionConfiguration.AdminPassword,
+			}
+			sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+			if err := sysadmin.Login(); err != nil {
+				return nil, err
+			}
+			return gencontroller.New(id, ue, sysadmin, controllerConfig.(*gencontroller.Config), status, config.UsersConfiguration.InitialActiveUsers)
 		case loadtest.UserControllerNoop:
 			return noopcontroller.New(id, ue, status)
 		case loadtest.UserControllerCluster:

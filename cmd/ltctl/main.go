@@ -182,6 +182,12 @@ func main() {
 			Short: "Shows the status of the current load-test",
 			RunE:  RunLoadTestStatusCmdF,
 		},
+		{
+			Use:   "inject actionId",
+			Short: "Injects the action into the current load-test",
+			RunE:  RunInjectActionCmdF,
+			Args:  cobra.ExactArgs(1),
+		},
 		resetCmd,
 	}
 

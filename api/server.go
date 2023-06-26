@@ -86,6 +86,7 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	r.HandleFunc("/{id}/status", a.getLoadAgentStatusHandler).Methods("GET")
 	r.HandleFunc("/{id}/addusers", a.addUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
 	r.HandleFunc("/{id}/removeusers", a.removeUsersHandler).Methods("POST").Queries("amount", "{[0-9]*?}")
+	r.HandleFunc("/{id}/inject", a.agentInjectActionHandler).Methods("POST").Queries("action", "{[a-zA-Z]+}")
 
 	// load-test coordinator API.
 	c := router.PathPrefix("/coordinator").Subrouter()
@@ -95,6 +96,7 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	c.HandleFunc("/{id}/status", a.getCoordinatorStatusHandler).Methods("GET")
 	c.HandleFunc("/{id}/run", a.runCoordinatorHandler).Methods("POST")
 	c.HandleFunc("/{id}/stop", a.stopCoordinatorHandler).Methods("POST")
+	c.HandleFunc("/{id}/inject", a.coordinatorInjectActionHandler).Methods("POST").Queries("action", "{[a-zA-Z]+}")
 
 	// Debug endpoint.
 	p := router.PathPrefix("/debug/pprof").Subrouter()

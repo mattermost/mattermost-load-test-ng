@@ -204,3 +204,30 @@ func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 
 	return status, nil
 }
+
+// InjectAction injects a named action for all agents that is run once.
+func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
+	var status coordinator.Status
+
+	if err := t.setOutput(); err != nil {
+		return status, err
+	}
+
+	if len(t.output.Agents) == 0 {
+		return status, errors.New("there are no agents to inject the action")
+	}
+	ip := t.output.Agents[0].PublicIP
+
+	id := t.config.ClusterName + "-coordinator-0"
+	coord, err := client.New(id, "http://"+ip+":4000", nil)
+	if err != nil {
+		return status, fmt.Errorf("failed to create coordinator client: %w", err)
+	}
+
+	status, err = coord.InjectAction(actionID)
+	if err != nil {
+		return status, fmt.Errorf("failed to inject action %q: %w", actionID, err)
+	}
+
+	return status, nil
+}

@@ -212,3 +212,34 @@ func TestCoordinatorDestroy(t *testing.T) {
 		require.Equal(t, coordinator.Stopped, status.State)
 	})
 }
+
+func TestCoordinatorInjectAction(t *testing.T) {
+	// create http.Handler
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+
+	// run server using httptest
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	id := "coord0"
+	coord := createCoordinator(t, id, server.URL)
+
+	status, err := coord.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, status)
+	require.Equal(t, coordinator.Running, status.State)
+
+	t.Run("Inject reload", func(t *testing.T) {
+		status, err := coord.InjectAction("Reload")
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
+	})
+
+	t.Run("Inject invalid action", func(t *testing.T) {
+		status, err := coord.InjectAction("Bogus")
+		// not all actions are supported by all controllers, therefore an unsupported
+		// action is not an error.
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
+	})
+}

@@ -156,3 +156,27 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+
+func RunInjectActionCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	action := args[0]
+
+	_, err = t.InjectAction(action)
+	if err != nil {
+		fmt.Println("Failed to inject action ", action, ": ", err)
+		return err
+	}
+
+	fmt.Println("Action ", action, " injected successfully.")
+
+	return nil
+}

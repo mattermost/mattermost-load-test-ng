@@ -6,7 +6,6 @@ package memstore
 import (
 	"errors"
 	"math/rand"
-	"reflect"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-server/server/v8/model"
@@ -24,6 +23,7 @@ var (
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
 	ErrThreadNotFound    = errors.New("memstore: thread not found")
+	ErrMaxAttempts       = errors.New("memstore: maximum number of attempts tried")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -162,7 +162,7 @@ func (s *MemStore) randomUser() (model.User, error) {
 		if err != nil {
 			return model.User{}, err
 		}
-		user := s.users[key.(string)]
+		user := s.users[key]
 		if user == nil || user.Id == "" {
 			return model.User{}, ErrInvalidData
 		}
@@ -214,14 +214,55 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 }
 
 // RandomPost returns a random post.
-func (s *MemStore) RandomPost() (model.Post, error) {
+func (s *MemStore) RandomPost(st store.SelectionType) (model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	var postIds []string
-	for _, p := range s.posts {
-		if p.Type == "" {
-			postIds = append(postIds, p.Id)
+
+	// Simplest case: just get a random user post from s.posts
+	if isSelectionType(st, store.SelectAny) {
+		for _, p := range s.posts {
+			if p.Type == "" {
+				postIds = append(postIds, p.Id)
+			}
+		}
+	} else {
+		// Preflight checks: make sure that both user and current channel are set
+		if s.user == nil {
+			return model.Post{}, ErrUserNotSet
+		}
+		var currChanId string
+		if s.currentChannel != nil {
+			currChanId = s.currentChannel.Id
+		}
+
+		for _, p := range s.posts {
+			if p.Type != "" {
+				continue
+			}
+
+			channel := s.channels[p.ChannelId]
+			if channel == nil {
+				continue
+			}
+			if (currChanId == channel.Id) && isSelectionType(st, store.SelectNotCurrent) {
+				continue
+			}
+			if excludeChannelType(st, channel.Type) {
+				continue
+			}
+			if !isSelectionType(st, store.SelectMemberOf) && !isSelectionType(st, store.SelectNotMemberOf) {
+				postIds = append(postIds, p.Id)
+			} else {
+				_, isMember := s.channelMembers[channel.Id][s.user.Id]
+				if isMember && isSelectionType(st, store.SelectMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+				if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+			}
 		}
 	}
 
@@ -317,7 +358,7 @@ func (s *MemStore) RandomChannelMember(channelId string) (model.ChannelMember, e
 	if err != nil {
 		return model.ChannelMember{}, err
 	}
-	return *chanMemberMap[key.(string)], nil
+	return *chanMemberMap[key], nil
 }
 
 // RandomTeamMember returns a random team member for a team.
@@ -336,7 +377,7 @@ func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
 	if err != nil {
 		return model.TeamMember{}, err
 	}
-	return *teamMemberMap[key.(string)], nil
+	return *teamMemberMap[key], nil
 }
 
 func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error) {
@@ -350,24 +391,24 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 		return model.SidebarCategoryWithChannels{}, err
 	}
 
-	category := *teamCat[key.(string)]
+	category := *teamCat[key]
 	tmp := make([]string, len(category.Channels))
 	copy(tmp, category.Channels)
 	category.Channels = tmp
 	return category, nil
 }
 
-func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
-	val := reflect.ValueOf(m)
-	if val.Kind() != reflect.Map {
-		return nil, errors.New("memstore: not a map")
+func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
+	var def K
+	if len(m) == 0 {
+		return def, ErrEmptyMap
 	}
-	keys := val.MapKeys()
-	if len(keys) == 0 {
-		return nil, ErrEmptyMap
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
 	}
-	idx := rand.Intn(len(keys))
-	return keys[idx].Interface(), nil
+	idx := rand.Intn(len(m))
+	return keys[idx], nil
 }
 
 // RandomThread returns a random post.
