@@ -65,7 +65,7 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:      "FullReload",
 			run:       c.fullReload,
-			frequency: 0.0011,
+			frequency: 0.248,
 		},
 		{
 			name:      "CreateDirectChannel",
