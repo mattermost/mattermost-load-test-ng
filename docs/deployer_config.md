@@ -338,3 +338,23 @@ URI pointing to an S3 bucket: something of the form `s3://bucket-name/optional-s
 The contents of this bucket will be copied to the bucket created in the deployment, using `aws s3 cp`. This command is ran locally, so having the AWS CLI installed is required.
 If no bucket is created in the deployment (see [`AppInstanceCount`](#AppInstanceCount) for more information), this value is ignored.
 If a bucket is created in the deployment but this value is empty, the created bucket will not be pre-populated with any data.
+
+## S3BucketDumpURI
+
+*string*
+
+An optional URI to a MM server database dump file
+to be loaded before running the load-test.
+The file is expected to be gzip compressed.
+This can also point to a local file if prefixed with "file://".
+In such case, the dump file will be uploaded to the app servers.
+
+## PermalinkIPsToReplace
+
+*string*
+
+An optional list of IPs present in the posts from the DB dump
+that contain permalinks to other posts. These IPs are replaced,
+when ingesting the dump into the database, in every post that
+uses them with the public IP of the first app instance, so that
+the permalinks are valid in the new deployment.
