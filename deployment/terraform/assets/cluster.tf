@@ -78,8 +78,7 @@ resource "aws_instance" "app_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
+      "sudo apt-get install -y prometheus-node-exporter"
     ]
   }
 }
@@ -324,7 +323,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 
 resource "aws_db_parameter_group" "db_params_group" {
   name   = "${var.cluster_name}-db-pg"
-  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql11"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql12"
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
@@ -376,8 +375,7 @@ resource "aws_instance" "loadtest_agent" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
+      "sudo apt-get install -y prometheus-node-exporter"
     ]
   }
 }
