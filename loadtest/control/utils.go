@@ -18,7 +18,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/wiggin77/merror"
 )
 
@@ -48,7 +48,7 @@ var (
 	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:", ":innocent:", ":hugging_face:"}
 	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
 	links             = []string{
-		"https://github.com/mattermost/mattermost-server",
+		"https://github.com/mattermost/mattermost",
 		"https://www.youtube.com/watch?v=-5jompL6G-k",
 		"https://www.youtube.com/watch?v=GKLyAVHgNzY",
 		"https://mattermost.com",

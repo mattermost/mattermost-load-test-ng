@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // UserEntity is an implementation of the User interface
