@@ -78,7 +78,8 @@ resource "aws_instance" "app_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
-      "sudo apt-get install -y prometheus-node-exporter"
+      "sudo apt-get install -y prometheus-node-exporter",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
     ]
   }
 }
@@ -375,7 +376,8 @@ resource "aws_instance" "loadtest_agent" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter"
+      "sudo apt-get install -y prometheus-node-exporter",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
     ]
   }
 }
