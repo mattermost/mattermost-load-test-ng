@@ -36,7 +36,7 @@ type Config struct {
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
-	AgentInstanceCount int `default:"2" validate:"range:[1,)"`
+	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
 	AgentInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
