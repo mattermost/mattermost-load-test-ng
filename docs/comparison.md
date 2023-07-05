@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This document explains how to run an automated load-test comparison.
+This document explains how to run an automated load-test comparison. **This configuration is aimed to experienced users** running recurring automatic comparisons; if you want to run a manual comparison once or twice, you should run two individual load-tests and generate a comparison report. See [Comparing load test reports](compare.md) for more information.
 
 ## Prerequisites
 
-- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 0.14 is required.
+- [Terraform](https://learn.hashicorp.com/terraform/getting-started/install). Version 1.3.3 or greater (as long as it's in the v1.x series) is required.
 - AWS credentials to be used as described [here](https://www.terraform.io/docs/providers/aws/index.html#authentication).
 - A valid Mattermost E20 license, required to run the load-test through the [`coordinator`](coordinator.md).
 
@@ -46,14 +46,14 @@ When starting a comparison, required configuration files are automatically read 
 
 ### Setup ssh-agent
 
-For the automated deployment to work, a [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
+For the automated deployment to work, an [ssh-agent](https://linux.die.net/man/1/ssh-agent) needs to be running and loaded with a private key.
 
 ```sh
 eval $(ssh-agent -s)
-ssh-add PATH_TO_KEY
+ssh-add PATH_TO_PRIVATE_KEY
 ```
 
-`PATH_TO_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
+`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
 
 ### Run the comparison 
 

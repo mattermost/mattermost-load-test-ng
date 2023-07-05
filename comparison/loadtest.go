@@ -4,16 +4,20 @@
 package comparison
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 func (c *Comparison) getLoadTestsCount() int {
@@ -105,7 +109,12 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, cancelCh <-chan struct{}) error {
+type localCmd struct {
+	msg   string
+	value []string
+}
+
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -138,76 +147,93 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		appClients[i] = client
 	}
 
-	type cmd struct {
-		msg     string
-		value   string
-		clients []*ssh.Client
-	}
-
-	stopCmd := cmd{
-		msg:     "Stopping app servers",
-		value:   "sudo systemctl stop mattermost",
-		clients: appClients,
+	stopCmd := deployment.Cmd{
+		Msg:     "Stopping app servers",
+		Value:   "sudo systemctl stop mattermost",
+		Clients: appClients,
 	}
 
 	buildFileName := filepath.Base(buildCfg.URL)
-	installCmd := cmd{
-		msg:     "Installing app",
-		value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
-		clients: appClients,
+	installCmd := deployment.Cmd{
+		Msg:     "Installing app",
+		Value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
+		Clients: appClients,
 	}
 
 	dbName := dpConfig.DBName()
-	resetCmd := cmd{
-		msg:     "Resetting database",
-		clients: []*ssh.Client{appClients[0]},
+	resetCmd := deployment.Cmd{
+		Msg:     "Resetting database",
+		Clients: []*ssh.Client{appClients[0]},
 	}
 	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
-		subCmd := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBWriter(), dbName)
-		resetCmd.value = fmt.Sprintf("export PGPASSWORD='%s' && dropdb %s && createdb %s", dpConfig.TerraformDBSettings.Password, subCmd, subCmd)
+		sqlConnParams := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBWriter(), dbName)
+		resetCmd.Value = strings.Join([]string{
+			fmt.Sprintf("export PGPASSWORD='%s'", dpConfig.TerraformDBSettings.Password),
+			fmt.Sprintf("dropdb %s", sqlConnParams),
+			fmt.Sprintf("createdb %s", sqlConnParams),
+			fmt.Sprintf("psql %s -c 'ALTER DATABASE %s SET default_text_search_config TO \"pg_catalog.english\"'", sqlConnParams, dbName),
+		}, " && ")
 	case "aurora-mysql":
 		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
-		resetCmd.value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
+		resetCmd.Value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
 	default:
 		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
-	startCmd := cmd{
-		msg:     "Restarting app server",
-		value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
-		clients: appClients,
+	startCmd := deployment.Cmd{
+		Msg:     "Restarting app server",
+		Value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
+		Clients: appClients,
 	}
 
 	// do init process
-	binaryPath := "/opt/mattermost/bin/mattermost"
-	createAdminCmd := cmd{
-		msg: "Creating sysadmin",
-		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin || true",
-			binaryPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
-		clients: []*ssh.Client{appClients[0]},
+	mmctlPath := "/opt/mattermost/bin/mmctl"
+	createAdminCmd := deployment.Cmd{
+		Msg: "Creating sysadmin",
+		Value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local || true",
+			mmctlPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
+		Clients: []*ssh.Client{appClients[0]},
 	}
-	initDataCmd := cmd{
-		msg:     "Initializing data",
-		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
-		clients: []*ssh.Client{agentClient},
+	initDataCmd := deployment.Cmd{
+		Msg:     "Initializing data",
+		Value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
+		Clients: []*ssh.Client{agentClient},
 	}
 
-	cmds := []cmd{stopCmd, installCmd, resetCmd}
+	cmds := []deployment.Cmd{stopCmd, installCmd, resetCmd}
 
-	loadDBDumpCmd := cmd{
-		msg:     "Loading DB dump",
-		clients: []*ssh.Client{appClients[0]},
+	loadDBDumpCmd := deployment.Cmd{
+		Msg:     "Loading DB dump",
+		Clients: []*ssh.Client{appClients[0]},
 	}
-	switch dpConfig.TerraformDBSettings.InstanceEngine {
-	case "aurora-postgresql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | psql 'postgres://%s:%s@%s/%s?sslmode=disable'", dumpFilename,
-			dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, tfOutput.DBWriter(), dbName)
-	case "aurora-mysql":
-		loadDBDumpCmd.value = fmt.Sprintf("zcat %s | mysql -h %s -u %s -p%s %s", dumpFilename,
-			tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password, dbName)
-	default:
-		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
+
+	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, deployment.DBSettings{
+		UserName: dpConfig.TerraformDBSettings.UserName,
+		Password: dpConfig.TerraformDBSettings.Password,
+		DBName:   dbName,
+		Host:     tfOutput.DBWriter(),
+		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
+	})
+	if err != nil {
+		return fmt.Errorf("error building commands for loading DB dump: %w", err)
+	}
+
+	loadDBDumpCmd.Value = strings.Join(dbCmds, " | ")
+
+	resetBucketCmds := []localCmd{}
+	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
+		deleteBucketCmd := localCmd{
+			msg:   "Emptying S3 bucket",
+			value: []string{"--profile", t.Config().AWSProfile, "s3", "rm", "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
+		}
+
+		prepopulateBucketCmd := localCmd{
+			msg:   "Pre-populating S3 bucket",
+			value: []string{"--profile", t.Config().AWSProfile, "s3", "cp", s3BucketURI, "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
+		}
+
+		resetBucketCmds = []localCmd{deleteBucketCmd, prepopulateBucketCmd}
 	}
 
 	if dumpFilename == "" {
@@ -216,22 +242,39 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		cmds = append(cmds, loadDBDumpCmd, startCmd)
 	}
 
+	// Resetting the buckets can happen concurrently with the rest of the remote commands,
+	// but we need to cancel them on return in case we return early (as when we receive from cancelCh)
+	resetBucketCtx, resetBucketCancel := context.WithCancel(context.Background())
+	defer resetBucketCancel()
+	resetBucketErrCh := make(chan error, 1)
+	go func() {
+		for _, c := range resetBucketCmds {
+			mlog.Info(c.msg)
+			if err := exec.CommandContext(resetBucketCtx, "aws", c.value...).Run(); err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to run local cmd %q: %w", c.value, err)
+				return
+			}
+		}
+		resetBucketErrCh <- nil
+	}()
+
 	for _, c := range cmds {
-		mlog.Info(c.msg)
-		for _, client := range c.clients {
+		mlog.Info(c.Msg)
+		for _, client := range c.Clients {
 			select {
 			case <-cancelCh:
 				mlog.Info("cancelling load-test init")
 				return errors.New("canceled")
 			default:
 			}
-			if out, err := client.RunCommand(c.value); err != nil {
-				return fmt.Errorf("failed to run cmd %q: %w %s", c.value, err, out)
+			if out, err := client.RunCommand(c.Value); err != nil {
+				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
 			}
 		}
 	}
 
-	return nil
+	// Make sure that the S3 bucket reset routine is finished and return its error, if any
+	return <-resetBucketErrCh
 }
 
 func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan struct{}) (coordinator.Status, error) {

@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 )
 
 func createArchive(inPath, outPath string) error {
-	files, err := ioutil.ReadDir(inPath)
+	files, err := os.ReadDir(inPath)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func writeReports(results []comparison.Result, outPath string) error {
 			continue
 		}
 		filePath := filepath.Join(outPath, getReportFilename(i, res))
-		if err := ioutil.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
+		if err := os.WriteFile(filePath, []byte(res.Report), 0660); err != nil {
 			return err
 		}
 	}
@@ -113,6 +113,12 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
+	if cfg.Output.GenerateGraphs {
+		if _, err := exec.LookPath("gnuplot"); err != nil {
+			return fmt.Errorf("gnuplot is not installed. The comparison command with generate graph option requires it to be installed: %w", err)
+		}
+	}
+
 	outputPath, _ := cmd.Flags().GetString("output-dir")
 	if outputPath != "" {
 		cfg.Output.GraphsPath = outputPath
@@ -121,7 +127,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 	archivePath := outputPath
 	archive, _ := cmd.Flags().GetBool("archive")
 	if archive {
-		dir, err := ioutil.TempDir("", "comparison")
+		dir, err := os.MkdirTemp("", "comparison")
 		if err != nil {
 			return fmt.Errorf("failed to create temp dir: %w", err)
 		}
@@ -130,7 +136,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		outputPath = dir
 	}
 
-	cmp, err := comparison.New(cfg, deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
@@ -147,7 +153,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		}
 		defer f.Close()
 
-		if err := json.NewEncoder(f).Encode(output.Results); err != nil {
+		if err := json.NewEncoder(f).Encode(output); err != nil {
 			return fmt.Errorf("failed to encode results: %w", err)
 		}
 	} else {
@@ -178,7 +184,7 @@ func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	cmp, err := comparison.New(cfg, deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}

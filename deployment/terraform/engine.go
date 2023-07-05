@@ -6,18 +6,18 @@ package terraform
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"sync"
+
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // Config returns the deployment config associated with the Terraform instance.
@@ -25,15 +25,8 @@ func (t *Terraform) Config() *deployment.Config {
 	return t.config
 }
 
-// Cleanup is called at the end of each command to clean temporary files
-func (t *Terraform) Cleanup() {
-	if t.dir != "" {
-		os.RemoveAll(t.dir)
-	}
-}
-
-// runCommand runs terraform with the args supplied. If dst is not nil, it writes the output there.
-// Otherwise, it logs the output to console.
+// runCommand runs terraform with the args supplied.
+// If dst is not nil, it writes the output there. Otherwise, it logs the output to console.
 func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	terraformBin := "terraform"
 	if _, err := exec.LookPath(terraformBin); err != nil {
@@ -43,6 +36,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
 	defer cancel()
 
+	args = append([]string{"-chdir=" + t.config.TerraformStateDir}, args...)
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
@@ -96,23 +90,42 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 }
 
 func checkTerraformVersion() error {
-	out, err := exec.Command("terraform", "version").Output()
+	versionInfoJSON, err := exec.Command("terraform", "version", "-json").Output()
 	if err != nil {
 		return fmt.Errorf("could not run %q command: %w", "terraform version", err)
 	}
 
-	re := regexp.MustCompile(`v\d+.?\d+`)
-	if !re.Match(out) {
-		return fmt.Errorf("could not parse terraform command output: %s", out)
+	var versionInfo struct {
+		Version string `json:"terraform_version"`
 	}
 
-	version, err := strconv.ParseFloat(string(re.Find(out)[1:]), 64)
-	if err != nil {
+	if err := json.Unmarshal(versionInfoJSON, &versionInfo); err != nil {
 		return fmt.Errorf("could not parse terraform command output: %w", err)
 	}
-	if version != supportedVersion {
-		return fmt.Errorf("Terraform version %.2f is required, you have %.2f", supportedVersion, version)
+
+	installedVersion, err := semver.Parse(versionInfo.Version)
+	if err != nil {
+		return fmt.Errorf("could not parse installed version: %w", err)
 	}
 
+	if installedVersion.Major > requiredVersion.Major {
+		return fmt.Errorf("installed major version %q is greater than supported major version %q", installedVersion.Major, requiredVersion.Major)
+	}
+
+	if installedVersion.LT(requiredVersion) {
+		return fmt.Errorf("installed version %q is lower than supported version %q", installedVersion.String(), requiredVersion.String())
+	}
+
+	return nil
+}
+
+// checkAWSCLI checks that the aws command is available in the system, and that
+// the profile that will be used is correctly configured
+func checkAWSCLI(profile string) error {
+	cmd := exec.Command("aws", "configure", "list", "--profile", profile)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("the AWS CLI is either not installed or the configured profile %q is not stored in the credentials; error: %w", profile, err)
+	}
 	return nil
 }

@@ -12,7 +12,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 const (
@@ -22,9 +23,11 @@ const (
 	maxWebsocketFails             = 7
 )
 
+var errSeqMismatch = errors.New("mismatch in server sequence number")
+
 func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	var data string
-	if el, ok := ev.Data["reaction"]; !ok {
+	if el, ok := ev.GetData()["reaction"]; !ok {
 		return errors.New("reaction data is missing")
 	} else if data, ok = el.(string); !ok {
 		return fmt.Errorf("type of the reaction data should be a string, but it is %T", el)
@@ -51,9 +54,9 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 	}
 
 	switch ev.EventType() {
-	case model.WEBSOCKET_EVENT_REACTION_ADDED:
+	case model.WebsocketEventReactionAdded:
 		return ue.store.SetReaction(reaction)
-	case model.WEBSOCKET_EVENT_REACTION_REMOVED:
+	case model.WebsocketEventReactionRemoved:
 		if ok, err := ue.store.DeleteReaction(reaction); err != nil {
 			return err
 		} else if !ok {
@@ -66,7 +69,7 @@ func (ue *UserEntity) handleReactionEvent(ev *model.WebSocketEvent) error {
 
 func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	var data string
-	if el, ok := ev.Data["post"]; !ok {
+	if el, ok := ev.GetData()["post"]; !ok {
 		return errors.New("post data is missing")
 	} else if data, ok = el.(string); !ok {
 		return fmt.Errorf("type of the post data should be a string, but it is %T", el)
@@ -78,14 +81,14 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	}
 
 	switch ev.EventType() {
-	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED:
+	case model.WebsocketEventPosted, model.WebsocketEventPostEdited:
 		currentChannel, err := ue.store.CurrentChannel()
 		if err == nil && currentChannel.Id == post.ChannelId {
 			return ue.store.SetPost(post)
 		} else if err != nil && !errors.Is(err, memstore.ErrChannelNotFound) {
 			return fmt.Errorf("failed to get current channel from store: %w", err)
 		}
-	case model.WEBSOCKET_EVENT_POST_DELETED:
+	case model.WebsocketEventPostDeleted:
 		return ue.store.DeletePost(post.Id)
 	}
 
@@ -98,10 +101,33 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 // sync with the server. Any response to the event should be made by handling
 // the same event at the upper layer (controller).
 func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
+	if ev.EventType() == model.WebsocketEventHello {
+		if connID, ok := ev.GetData()["connection_id"].(string); ok {
+			// If we already have a connectionId present, and server sends a different one,
+			// that means it's either a long timeout, or server restart, or sequence number is not found.
+			// Then we reset sequence number to 0.
+			if ue.wsConnID != "" && ue.wsConnID != connID {
+				mlog.Debug("Long timeout, or server restart, or sequence number not found")
+				// In future, we can add the missed event callback here.
+				ue.wsServerSeq = 0
+			}
+			ue.wsConnID = connID
+		}
+	}
+
+	// Now we check for sequence number, and if it does not match,
+	// we just disconnect and reconnect.
+	if ev.GetSequence() != ue.wsServerSeq {
+		mlog.Warn("Missed websocket event", mlog.Int64("got", ev.GetSequence()), mlog.Int64("expected", ue.wsServerSeq))
+		return errSeqMismatch
+	}
+
+	ue.wsServerSeq = ev.GetSequence() + 1
+
 	switch ev.EventType() {
-	case model.WEBSOCKET_EVENT_REACTION_ADDED, model.WEBSOCKET_EVENT_REACTION_REMOVED:
+	case model.WebsocketEventReactionAdded, model.WebsocketEventReactionRemoved:
 		return ue.handleReactionEvent(ev)
-	case model.WEBSOCKET_EVENT_POSTED, model.WEBSOCKET_EVENT_POST_EDITED, model.WEBSOCKET_EVENT_POST_DELETED:
+	case model.WebsocketEventPosted, model.WebsocketEventPostEdited, model.WebsocketEventPostDeleted:
 		return ue.handlePostEvent(ev)
 	}
 
@@ -113,8 +139,14 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 // Only on calling Disconnect explicitly, it will return.
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
+start:
 	for {
-		client, err := websocket.NewClient4(ue.config.WebSocketURL, ue.client.AuthToken)
+		client, err := websocket.NewClient4(&websocket.ClientParams{
+			WsURL:          ue.config.WebSocketURL,
+			AuthToken:      ue.client.AuthToken,
+			ConnID:         ue.wsConnID,
+			ServerSequence: ue.wsServerSeq,
+		})
 		if err != nil {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)
 			connectionFailCount++
@@ -142,6 +174,12 @@ func (ue *UserEntity) listen(errChan chan error) {
 					break
 				}
 				if err := ue.wsEventHandler(ev); err != nil {
+					if err == errSeqMismatch {
+						// Disconnect and reconnect.
+						client.Close()
+						ue.decWebSocketConnections()
+						continue start
+					}
 					errChan <- fmt.Errorf("userentity: error in wsEventHandler: %w", err)
 				}
 				ue.wsEventChan <- ev

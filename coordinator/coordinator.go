@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // Coordinator is the object used to coordinate a cluster of
@@ -238,6 +238,15 @@ func (c *Coordinator) Status() (Status, error) {
 	}, nil
 }
 
+// InjectAction injects an action into all the agents that is run once,
+// at the next possible opportunity.
+func (c *Coordinator) InjectAction(actionID string) error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.cluster.InjectAction(actionID)
+}
+
 // New creates and initializes a new Coordinator for the given config.
 // The ltConfig parameter is used to create and configure load-test agents.
 // An error is returned if the initialization fails.
@@ -252,7 +261,13 @@ func New(config *Config, ltConfig loadtest.Config, log *mlog.Logger) (*Coordinat
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	cluster, err := cluster.New(config.ClusterConfig, ltConfig, log)
+	clusterConfig := config.ClusterConfig
+
+	if err := clusterConfig.IsValid(ltConfig); err != nil {
+		return nil, fmt.Errorf("could not validate ltConfig against clusterConfig: %w", err)
+	}
+
+	cluster, err := cluster.New(clusterConfig, ltConfig, log)
 	if err != nil {
 		return nil, fmt.Errorf("coordinator: failed to create cluster: %w", err)
 	}

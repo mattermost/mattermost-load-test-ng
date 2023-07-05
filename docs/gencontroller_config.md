@@ -6,11 +6,29 @@
 
 The number of teams to be created.
 
-## NumChannels
+## NumChannelsDM
 
 *int64*
 
-The number of channels to be created.
+The number of DM channels to be created.
+
+## NumChannelsGM
+
+*int64*
+
+The number of GM channels to be created.
+
+## NumChannelsPrivate
+
+*int64*
+
+The number of private channels to be created.
+
+## NumChannelsPublic
+
+*int64*
+
+The number of public channels to be created.
 
 ## NumPosts
 
@@ -24,35 +42,59 @@ The number of posts to be created.
 
 The number of reactions to be created.
 
+## NumPostReminders
+
+*int64*
+
+The number of post reminders to be created.
+
+## NumSidebarCategories
+
+*int64*
+
+The number of sidebar categories to be created.
+
+## NumFollowedThreads
+
+*int64*
+
+The number of threads to follow.
+
 ## PercentReplies
 
 *float64*
 
 The percentage of replies (over the total number of posts) to be created.
 
-## PercentPublicChannels
+## PercentRepliesInLongThreads
 
 *float64*
 
-The percentage of public channels to be created.
+The percentage of replies (over the total number of reply posts) to be created in long running threads.
 
-## PercentPrivateChannels
-
-*float64*
-
-The percentage of private channels to be created.
-
-## PercentDirectChannels
+## PercentUrgentPosts
 
 *float64*
 
-The percentage of direct channels to be created.
+The percentage of posts (over the total number of posts) to be marked with urgent priority.
 
-## PercentGroupChannels
+## ChannelMembersDistribution
 
-*float64*
+*[]gencontroller.ChannelMemberDistribution*
 
-The percentage of group channels to be created.
+The distribution of memberships in channels by maximum number of users in them.
+
+### MemberLimit
+
+The maximum number of users a channel in this group can have. A value of 0 means there is no limit.
+
+### PercentChannels
+
+The percentage of channels that will have the limit configured above.
+
+### Probability
+
+The frequency with which this group of channels will be chosen.
 
 #### Note
 

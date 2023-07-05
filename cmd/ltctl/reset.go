@@ -25,7 +25,12 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := terraform.New("", config).Output()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
 	}
@@ -57,7 +62,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 
 	confirmFlag, _ := cmd.Flags().GetBool("confirm")
 	if !confirmFlag {
-		fmt.Println("Are you sure you want to delete everything? All data will be permanently deleted? [y/N]")
+		fmt.Print("Are you sure you want to delete everything? All data will be permanently deleted? [y/N] ")
 		var confirm string
 		fmt.Scanln(&confirm)
 		if !regexp.MustCompile(`(?i)^(y|yes){1}?$`).MatchString(confirm) {
@@ -66,6 +71,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	binaryPath := "/opt/mattermost/bin/mattermost"
+	mmctlPath := "/opt/mattermost/bin/mmctl"
 
 	cmds := []struct {
 		msg     string
@@ -73,23 +79,28 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		clients []*ssh.Client
 	}{
 		{
-			msg:     "Resetting database",
-			value:   fmt.Sprintf("%s reset --confirm", binaryPath),
+			msg:     "Shutting down MM server on primary...",
+			value:   "sudo systemctl stop mattermost",
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Restarting app server",
+			msg:     "Resetting database...",
+			value:   fmt.Sprintf("%s db reset --confirm", binaryPath),
+			clients: []*ssh.Client{appClients[0]},
+		},
+		{
+			msg:     "Restarting app server...",
 			value:   "sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 			clients: appClients,
 		},
 		{
-			msg: "Creating sysadmin",
-			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system_admin",
-				binaryPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
+			msg: "Creating sysadmin...",
+			value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local",
+				mmctlPath, config.AdminEmail, config.AdminUsername, config.AdminPassword),
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Initializing data",
+			msg:     "Initializing data...",
 			value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name),
 			clients: []*ssh.Client{agentClient},
 		},

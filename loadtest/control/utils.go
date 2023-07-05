@@ -13,9 +13,13 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/wiggin77/merror"
 )
 
 type PostsSearchOpts struct {
@@ -41,8 +45,17 @@ var (
 	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
 	words             = []string{}
-	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:"}
+	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:", ":innocent:", ":hugging_face:"}
 	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
+	links             = []string{
+		"https://github.com/mattermost/mattermost-server",
+		"https://www.youtube.com/watch?v=-5jompL6G-k",
+		"https://www.youtube.com/watch?v=GKLyAVHgNzY",
+		"https://mattermost.com",
+		"https://developers.mattermost.com",
+		"https://golang.org",
+		"https://reactjs.org",
+	}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -138,6 +151,19 @@ func GenerateRandomSentences(count int) string {
 	return random[:len(random)-1] + "."
 }
 
+// RandomEmoji returns a random emoji from a list.
+func RandomEmoji() string {
+	return emojis[rand.Intn(len(emojis))]
+}
+
+// AddLink appends a link to a string to test the LinkPreview feature.
+func AddLink(input string) string {
+	n := rand.Int() % len(links)
+	link := links[n]
+
+	return input + " " + link + " "
+}
+
 // SelectWeighted does a random weighted selection on a given slice of weights.
 func SelectWeighted(weights []int) (int, error) {
 	var sum int
@@ -162,7 +188,12 @@ func SelectWeighted(weights []int) (int, error) {
 
 // PickRandomWord returns a random  word.
 func PickRandomWord() string {
-	return words[rand.Intn(len(words))]
+	return PickRandomString(words)
+}
+
+// PickRandomString returns a random string from the given slice of strings
+func PickRandomString(strings []string) string {
+	return strings[rand.Intn(len(strings))]
 }
 
 // GeneratePostsSearchTerm generates a posts search term from the given
@@ -233,4 +264,61 @@ func IsVersionSupported(version, serverVersionString string) (bool, error) {
 	}
 
 	return v.LTE(sv), nil
+}
+
+// AttachFilesToPost uploads at least one file on behalf of the user, attaching
+// all uploaded files to the post.
+func AttachFilesToPost(u user.User, post *model.Post) error {
+	type file struct {
+		data   []byte
+		upload bool
+	}
+	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
+	files := make(map[string]*file, len(filenames))
+
+	for _, filename := range filenames {
+		files[filename] = &file{
+			data:   MustAsset(filename),
+			upload: rand.Intn(2) == 0,
+		}
+	}
+
+	// We make sure at least one file gets uploaded.
+	files[filenames[rand.Intn(len(filenames))]].upload = true
+
+	var wg sync.WaitGroup
+	fileIdsChan := make(chan string, len(files))
+	errChan := make(chan error, len(files))
+	for filename, file := range files {
+		if !file.upload {
+			continue
+		}
+		wg.Add(1)
+		go func(filename string, data []byte) {
+			defer wg.Done()
+			resp, err := u.UploadFile(data, post.ChannelId, filename)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			fileIdsChan <- resp.FileInfos[0].Id
+		}(filename, file.data)
+	}
+
+	wg.Wait()
+	close(fileIdsChan)
+	close(errChan)
+
+	// Attach all successfully uploaded files
+	for fileId := range fileIdsChan {
+		post.FileIds = append(post.FileIds, fileId)
+	}
+
+	// Collect all errors
+	merr := merror.New()
+	for err := range errChan {
+		merr.Append(err)
+	}
+
+	return merr.ErrorOrNil()
 }

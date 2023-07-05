@@ -4,7 +4,7 @@
 package store
 
 import (
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // SelectionType is the selection parameter for a store entity.
@@ -47,6 +47,8 @@ type UserStore interface {
 	CurrentChannel() (*model.Channel, error)
 	// ChannelMember returns the ChannelMember for the given channelId and userId.
 	ChannelMember(channelId, userId string) (model.ChannelMember, error)
+	// ChannelMembers returns a list of members for the specified channel.
+	ChannelMembers(channelId string) (model.ChannelMembers, error)
 	// ChannelPosts returns all posts for the specified channel.
 	ChannelPosts(channelId string) ([]*model.Post, error)
 	// ChannelPostsSorted returns all posts for specified channel, sorted by CreateAt.
@@ -69,6 +71,8 @@ type UserStore interface {
 	CurrentTeam() (*model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
 	TeamMember(teamdId, userId string) (model.TeamMember, error)
+	// IsTeamMember returns if the user is part of the team.
+	IsTeamMember(teamdId, userId string) bool
 
 	// Preferences returns the preferences for the stored user.
 	Preferences() (model.Preferences, error)
@@ -88,10 +92,13 @@ type UserStore interface {
 	RandomUser() (model.User, error)
 	// RandomUsers returns N random users from the set of users.
 	RandomUsers(n int) ([]model.User, error)
-	// RandomPost returns a random post.
-	RandomPost() (model.Post, error)
+	// RandomPost returns a random post, whose channel will satisfy
+	// the constraints provided by st
+	RandomPost(st SelectionType) (model.Post, error)
 	// RandomPostForChannel returns a random post for the given channel.
 	RandomPostForChannel(channelId string) (model.Post, error)
+	// RandomReplyPostForChannel returns a random reply post for the given channel.
+	RandomReplyPostForChannel(channelId string) (model.Post, error)
 	// RandomPostForChanneByUser returns a random post for the given channel made
 	// by the given user.
 	RandomPostForChannelByUser(channelId, userId string) (model.Post, error)
@@ -101,6 +108,10 @@ type UserStore interface {
 	RandomChannelMember(channelId string) (model.ChannelMember, error)
 	// RandomTeamMember returns a random team member for a team.
 	RandomTeamMember(teamId string) (model.TeamMember, error)
+	// RandomThread returns a random thread.
+	RandomThread() (model.ThreadResponse, error)
+	// RandomCategory returns a random category from a team
+	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 
 	// profile
 	// ProfileImage returns whether the profile image for the given user has been
@@ -120,6 +131,14 @@ type UserStore interface {
 
 	// ServerVersion returns the server version string.
 	ServerVersion() (string, error)
+
+	// Threads
+	Thread(threadId string) (*model.ThreadResponse, error)
+	// ThreadsSorted returns all threads, sorted by LastReplyAt
+	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+
+	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
+	PostsWithAckRequests() ([]string, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -158,8 +177,6 @@ type MutableUserStore interface {
 	SetPosts(posts []*model.Post) error
 
 	// reactions
-	// SetReactions stores the given reactions for the specified post.
-	SetReactions(postId string, reactions []*model.Reaction) error
 	// SetReaction stores the given reaction.
 	SetReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
@@ -168,7 +185,7 @@ type MutableUserStore interface {
 
 	// preferences
 	// Preferences stores the preferences for the stored user.
-	SetPreferences(preferences *model.Preferences) error
+	SetPreferences(preferences model.Preferences) error
 
 	// channels
 	SetChannel(channel *model.Channel) error
@@ -180,9 +197,7 @@ type MutableUserStore interface {
 	// current timestamp.
 	SetChannelView(channelId string) error
 	// SetChannelMembers stores the given channel members in the store.
-	SetChannelMembers(channelMembers *model.ChannelMembers) error
-	// ChannelMembers returns a list of members for the specified channel.
-	ChannelMembers(channelId string) (*model.ChannelMembers, error)
+	SetChannelMembers(channelMembers model.ChannelMembers) error
 	// SetChannelMember stores the given channel member.
 	SetChannelMember(channelId string, channelMember *model.ChannelMember) error
 	// RemoveChannelMember removes the channel member for the specified channel and user.
@@ -223,4 +238,13 @@ type MutableUserStore interface {
 
 	// SetServerVersion sets the server version string.
 	SetServerVersion(version string) error
+
+	// Threads
+	// SetThreads stores the given posts.
+	SetThreads(threads []*model.ThreadResponse) error
+	// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
+	MarkAllThreadsInTeamAsRead(teamId string) error
+
+	// SidebarCategories
+	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error
 }

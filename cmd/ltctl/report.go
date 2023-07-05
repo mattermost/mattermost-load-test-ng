@@ -76,7 +76,15 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	if promURL == "" {
-		t := terraform.New("", nil)
+		config, err := getConfig(cmd)
+		if err != nil {
+			return err
+		}
+
+		t, err := terraform.New("", config)
+		if err != nil {
+			return fmt.Errorf("failed to create terraform engine: %w", err)
+		}
 		output, err := t.Output()
 		if err != nil {
 			return fmt.Errorf("could not parse output: %w", err)

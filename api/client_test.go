@@ -50,7 +50,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 				if _, err := agent.Create(&ltConfig, &ucConfig); err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -72,7 +72,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -199,8 +199,6 @@ func TestCoordClientConcurrency(t *testing.T) {
 		defaults.Set(&ltConfig)
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
 		return coord
@@ -214,8 +212,6 @@ func TestCoordClientConcurrency(t *testing.T) {
 		defaults.Set(&ltConfig)
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		var success int
 		wg.Add(n)
 		for i := 0; i < n; i++ {
@@ -224,7 +220,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()
@@ -244,7 +240,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 				if err == nil {
 					// Purposely not using atomics here. The race condition would only
 					// trigger if the test were to fail.
-					success += 1
+					success++
 				}
 				wg.Done()
 			}()

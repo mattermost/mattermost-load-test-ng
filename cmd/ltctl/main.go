@@ -22,9 +22,26 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
-	return t.Create(true)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	// If DBDumpURI is not set, we seed data. Otherwise,
+	// we just load the dump.
+	initData := config.DBDumpURI == ""
+	err = t.Create(initData)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform env: %w", err)
+	}
+
+	if !initData {
+		err = t.IngestDump()
+		if err != nil {
+			return fmt.Errorf("failed to create ingest dump: %w", err)
+		}
+	}
+	return nil
 }
 
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
@@ -33,8 +50,10 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	return t.Destroy()
 }
 
@@ -44,7 +63,12 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return terraform.New("", config).Info()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.Info()
 }
 
 func RunSyncCmdF(cmd *cobra.Command, args []string) error {
@@ -53,11 +77,25 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return terraform.New("", config).Sync()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.Sync()
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
-	t := terraform.New("", nil)
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
 	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("could not parse output: %w", err)
@@ -77,19 +115,19 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getConfig(cmd *cobra.Command) (*deployment.Config, error) {
+func getConfig(cmd *cobra.Command) (deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		return deployment.Config{}, fmt.Errorf("failed to read config: %w", err)
 	}
 
 	if err := defaults.Validate(cfg); err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+		return deployment.Config{}, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	logger.Init(&cfg.LogSettings)
-	return cfg, nil
+	return *cfg, nil
 }
 
 func main() {
@@ -159,6 +197,12 @@ func main() {
 			Short: "Shows the status of the current load-test",
 			RunE:  RunLoadTestStatusCmdF,
 		},
+		{
+			Use:   "inject actionId",
+			Short: "Injects the action into the current load-test",
+			RunE:  RunInjectActionCmdF,
+			Args:  cobra.ExactArgs(1),
+		},
 		resetCmd,
 	}
 
@@ -175,11 +219,21 @@ func main() {
 				return RunSSHListCmdF(cmd, args)
 			}
 
+			config, err := getConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			t, err := terraform.New("", config)
+			if err != nil {
+				return fmt.Errorf("failed to create terraform engine: %w", err)
+			}
+
 			runCmd, _ := cmd.Flags().GetString("run")
 			if runCmd != "" {
-				return terraform.New("", nil).RunSSHCommand(args[0], strings.Split(runCmd, " "))
+				return t.RunSSHCommand(args[0], strings.Split(runCmd, " "))
 			}
-			return terraform.New("", nil).OpenSSHFor(args[0])
+			return t.OpenSSHFor(args[0])
 		},
 	}
 
@@ -206,7 +260,17 @@ func main() {
 				}
 				return nil
 			}
-			return terraform.New("", nil).OpenBrowserFor(args[0])
+
+			config, err := getConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			t, err := terraform.New("", config)
+			if err != nil {
+				return fmt.Errorf("failed to create terraform engine: %w", err)
+			}
+			return t.OpenBrowserFor(args[0])
 		},
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"grafana", "mattermost", "prometheus"},

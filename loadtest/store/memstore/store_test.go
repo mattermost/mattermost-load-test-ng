@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,7 +95,7 @@ func TestUser(t *testing.T) {
 			{UserId: "user-id-1", Category: "category-1", Name: "name-1", Value: "value-1"},
 			{UserId: "user-id-2", Category: "category-2", Name: "name-2", Value: "value-2"},
 		}
-		err := s.SetPreferences(&p)
+		err := s.SetPreferences(p)
 		require.NoError(t, err)
 		pp, err := s.Preferences()
 		require.NoError(t, err)
@@ -347,23 +348,6 @@ func TestCurrentChannel(t *testing.T) {
 }
 
 func TestReactions(t *testing.T) {
-	t.Run("SetReactions", func(t *testing.T) {
-		s := newStore(t)
-		postId := model.NewId()
-		userId := model.NewId()
-		emojiName := "testemoji"
-		reaction := &model.Reaction{
-			UserId:    userId,
-			PostId:    postId,
-			EmojiName: emojiName,
-		}
-		err := s.SetReactions(postId, []*model.Reaction{reaction})
-		require.NoError(t, err)
-		reactions, err := s.Reactions(postId)
-		require.NoError(t, err)
-		require.Equal(t, *reaction, reactions[0])
-	})
-
 	t.Run("SetReaction", func(t *testing.T) {
 		s := newStore(t)
 		postId := model.NewId()
@@ -401,28 +385,23 @@ func TestReactions(t *testing.T) {
 				PostId:    postId,
 				EmojiName: emojiName,
 			}
-		}
 
-		err := s.SetReactions(postId, reactions)
-		require.NoError(t, err)
+			err := s.SetReaction(reactions[i])
+			require.NoError(t, err)
+		}
 
 		ok, err := s.DeleteReaction(r1)
 		require.NoError(t, err)
 		require.False(t, ok)
 
-		reactions[4] = r1
-
-		err = s.SetReactions(postId, reactions)
-		require.NoError(t, err)
-
-		ok, err = s.DeleteReaction(r1)
+		ok, err = s.DeleteReaction(reactions[0])
 		require.NoError(t, err)
 		require.True(t, ok)
 
 		storedReactions, err := s.Reactions(postId)
 		require.NoError(t, err)
 		require.Len(t, storedReactions, 9)
-		require.NotContains(t, storedReactions, *r1)
+		require.NotContains(t, storedReactions, *reactions[0])
 	})
 }
 
@@ -458,11 +437,11 @@ func TestChannelMembers(t *testing.T) {
 				UserId:    userId,
 			},
 		}
-		err = s.SetChannelMembers(&expected)
+		err = s.SetChannelMembers(expected)
 		require.NoError(t, err)
 		members, err := s.ChannelMembers(channelId)
 		require.NoError(t, err)
-		require.Equal(t, &expected, members)
+		require.Equal(t, expected, members)
 	})
 
 	t.Run("SetChannelMember", func(t *testing.T) {
@@ -498,7 +477,7 @@ func TestChannelMembers(t *testing.T) {
 			UserId:    model.NewId(),
 		}
 		channelMembers := append(model.ChannelMembers{}, channelMember1, channelMember2)
-		err = s.SetChannelMembers(&channelMembers)
+		err = s.SetChannelMembers(channelMembers)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(s.channelMembers[channel.Id]))
 		err = s.RemoveChannelMember(channel.Id, channelMember1.UserId)
@@ -506,7 +485,7 @@ func TestChannelMembers(t *testing.T) {
 		members, err := s.ChannelMembers(channel.Id)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(s.channelMembers[channel.Id]))
-		require.Equal(t, channelMember2, (*members)[0])
+		require.Equal(t, channelMember2, members[0])
 	})
 }
 
@@ -668,4 +647,138 @@ func TestChannelStats(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, &stats, storedStats)
 	})
+}
+
+func TestThreads(t *testing.T) {
+	t.Run("SetThreads", func(t *testing.T) {
+		s := newStore(t)
+		id := model.NewId()
+		thread := &model.ThreadResponse{
+			PostId: id,
+		}
+		err := s.SetThreads([]*model.ThreadResponse{thread})
+		require.NoError(t, err)
+		th, err := s.Thread(id)
+		require.NoError(t, err)
+		require.Equal(t, *thread, *th)
+	})
+
+	t.Run("MarkAllThreadsInTeamAsRead", func(t *testing.T) {
+		s := newStore(t)
+		now := model.GetMillis()
+		teamId1 := model.NewId()
+		teamId2 := model.NewId()
+		channelId1 := model.NewId()
+		channelId2 := model.NewId()
+		channel1 := &model.Channel{Id: channelId1, TeamId: teamId1}
+		channel2 := &model.Channel{Id: channelId2, TeamId: teamId2}
+		err := s.SetChannels([]*model.Channel{channel1, channel2})
+		require.NoError(t, err)
+
+		threadId1 := model.NewId()
+		threadId2 := model.NewId()
+		threadId3 := model.NewId()
+
+		thread1 := &model.ThreadResponse{PostId: threadId1, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 1, UnreadMentions: 1}
+		thread2 := &model.ThreadResponse{PostId: threadId2, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 2, UnreadMentions: 2}
+		thread3 := &model.ThreadResponse{PostId: threadId3, Post: &model.Post{ChannelId: channelId2}, UnreadReplies: 3, UnreadMentions: 3}
+
+		err = s.SetThreads([]*model.ThreadResponse{thread1, thread2, thread3})
+		require.NoError(t, err)
+
+		err = s.MarkAllThreadsInTeamAsRead(teamId1)
+		require.NoError(t, err)
+
+		th1, err := s.Thread(threadId1)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), th1.UnreadMentions)
+		require.Equal(t, int64(0), th1.UnreadReplies)
+		require.GreaterOrEqual(t, th1.LastViewedAt, now)
+
+		th2, err := s.Thread(threadId2)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), th2.UnreadMentions)
+		require.Equal(t, int64(0), th2.UnreadReplies)
+		require.GreaterOrEqual(t, th2.LastViewedAt, now)
+
+		th3, err := s.Thread(threadId3)
+		require.NoError(t, err)
+		require.Equal(t, int64(3), th3.UnreadMentions)
+		require.Equal(t, int64(3), th3.UnreadReplies)
+		require.Equal(t, int64(0), th3.LastViewedAt)
+	})
+
+	t.Run("ThreadsSorted", func(t *testing.T) {
+		s := newStore(t)
+		threadId1 := model.NewId()
+		threadId2 := model.NewId()
+		threadId3 := model.NewId()
+		epoch := model.GetMillis()
+		thread1 := &model.ThreadResponse{
+			PostId:         threadId1,
+			UnreadReplies:  1,
+			UnreadMentions: 1,
+			LastReplyAt:    epoch,
+		}
+		thread2 := &model.ThreadResponse{
+			PostId:         threadId2,
+			UnreadReplies:  0,
+			UnreadMentions: 0,
+			LastReplyAt:    epoch + 1000,
+		}
+		thread3 := &model.ThreadResponse{
+			PostId:         threadId3,
+			UnreadReplies:  3,
+			UnreadMentions: 3,
+			LastReplyAt:    epoch + 2000,
+		}
+		err := s.SetThreads([]*model.ThreadResponse{thread1, thread2, thread3})
+		require.NoError(t, err)
+
+		threads, err := s.ThreadsSorted(true, false)
+		require.NoError(t, err)
+		require.Len(t, threads, 2)
+		require.Equal(t, threads[0].PostId, threadId3)
+		require.Equal(t, threads[1].PostId, threadId1)
+
+		threads, err = s.ThreadsSorted(false, true)
+		require.NoError(t, err)
+		require.Len(t, threads, 3)
+		require.Equal(t, threads[0].PostId, threadId1)
+		require.Equal(t, threads[1].PostId, threadId2)
+		require.Equal(t, threads[2].PostId, threadId3)
+
+	})
+}
+
+func TestPostsWithAckRequests(t *testing.T) {
+	s := newStore(t)
+	n := 10
+	ackPosts := make([]string, n)
+
+	for i := 0; i < n; i++ {
+		p := &model.Post{
+			Id:      model.NewId(),
+			Message: "ack post",
+			Metadata: &model.PostMetadata{
+				Priority: &model.PostPriority{
+					Priority:     model.NewString(model.PostPriorityUrgent),
+					RequestedAck: model.NewBool(true),
+				},
+			},
+		}
+		err := s.SetPost(p)
+		require.NoError(t, err)
+		ackPosts[i] = p.Id
+
+		err = s.SetPost(&model.Post{
+			Id:      model.NewId(),
+			Message: "regular post",
+		})
+		require.NoError(t, err)
+	}
+
+	posts, err := s.PostsWithAckRequests()
+	require.NoError(t, err)
+	assert.ElementsMatch(t, ackPosts, posts)
 }

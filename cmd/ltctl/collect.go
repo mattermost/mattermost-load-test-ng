@@ -144,7 +144,10 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 
 	output, err := t.Output()
 	if err != nil {

@@ -19,6 +19,12 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
+	// AWSProfile is the name of the AWS profile to use for all AWS commands
+	AWSProfile string `default:"mm-loadtest"`
+	// AWSRegion is the region used to deploy all resources.
+	AWSRegion string `default:"us-east-1"`
+	// AWSAMI is the AMI to use for all EC2 instances.
+	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
@@ -63,11 +69,28 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.3.0/mattermost-load-test-ng-v1.3.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.9.1/mattermost-load-test-ng-v1.9.1-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
+	// Directory under which the .terraform directory and state files are managed.
+	// It will be created if it does not exist
+	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
+	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
+	S3BucketDumpURI string `default:"" validate:"s3uri"`
+	// An optional URI to a MM server database dump file
+	// to be loaded before running the load-test.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	// In such case, the dump file will be uploaded to the app servers.
+	DBDumpURI string `default:""`
+	// An optional list of IPs present in the posts from the DB dump
+	// that contain permalinks to other posts. These IPs are replaced,
+	// when ingesting the dump into the database, in every post that
+	// uses them with the public IP of the first app instance, so that
+	// the permalinks are valid in the new deployment.
+	PermalinkIPsToReplace []string `validate:"each:ip"`
 }
 
 // TerraformDBSettings contains the necessary data

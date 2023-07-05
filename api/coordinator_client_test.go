@@ -24,8 +24,6 @@ func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
-	coordConfig.MonitorConfig.Queries[0].Description = "Query"
-	coordConfig.MonitorConfig.Queries[0].Query = "query"
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)
 	require.NotNil(t, coord)
@@ -66,8 +64,6 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
@@ -78,8 +74,6 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
-		coordConfig.MonitorConfig.Queries[0].Description = "Query"
-		coordConfig.MonitorConfig.Queries[0].Query = "query"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		status, err := coord.Create(&coordConfig, &ltConfig)
 		require.Error(t, err)
@@ -216,5 +210,36 @@ func TestCoordinatorDestroy(t *testing.T) {
 		status, err = coord.Destroy()
 		require.NoError(t, err)
 		require.Equal(t, coordinator.Stopped, status.State)
+	})
+}
+
+func TestCoordinatorInjectAction(t *testing.T) {
+	// create http.Handler
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+
+	// run server using httptest
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	id := "coord0"
+	coord := createCoordinator(t, id, server.URL)
+
+	status, err := coord.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, status)
+	require.Equal(t, coordinator.Running, status.State)
+
+	t.Run("Inject reload", func(t *testing.T) {
+		status, err := coord.InjectAction("Reload")
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
+	})
+
+	t.Run("Inject invalid action", func(t *testing.T) {
+		status, err := coord.InjectAction("Bogus")
+		// not all actions are supported by all controllers, therefore an unsupported
+		// action is not an error.
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
 	})
 }

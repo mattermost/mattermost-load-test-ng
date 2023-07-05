@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 type ClusterController struct {
@@ -195,3 +196,14 @@ func (c *ClusterController) newErrorStatus(err error) control.UserStatus {
 		Err:          err,
 	}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *ClusterController) InjectAction(actionID string) error {
+	mlog.Debug("Cannot inject action for ClusterController", mlog.String("action", actionID))
+	return nil
+}
+
+// ensure ClusterController implements UserController interface
+var _ control.UserController = (*ClusterController)(nil)

@@ -1,5 +1,25 @@
 # Deployer Configuration
 
+## AWSProfile
+
+*string*
+
+AWS profile to use for the deployment. Also used for all AWS CLI commands run locally. See the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) for more information.
+
+## AWSRegion
+
+*string*
+
+AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
+
+## AWSAMI
+
+*string*
+
+AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
+
+
+
 ## ClusterName
 
 *string*
@@ -14,7 +34,7 @@ The ID of the VPC associated to the resources.
 
 **Note**
 
-This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+This setting only affects load-test agent instances. It is meant for pre-deployed environments.
 
 ## ClusterSubnetID
 
@@ -24,7 +44,7 @@ The ID of the subnet associated to the resources.
 
 **Note**
 
-This setting does only affect load-test agent instances. It is meant for pre-deployed environments.
+This setting only affects load-test agent instances. It is meant for pre-deployed environments.
 
 ## AppInstanceCount
 
@@ -32,6 +52,7 @@ This setting does only affect load-test agent instances. It is meant for pre-dep
 
 The number of Mattermost application instances.
 This value can be set to zero to enable a load-test agents only deployment.
+When this value is greater than one, an S3 bucket is automatically created in the deployment and the server is configured to use it as a file store.
 
 ## AppInstanceType
 
@@ -57,13 +78,13 @@ The type of the EC2 instance of the loadtest agent. See type [here](https://aws.
 
 *int*
 
-Number of the instances to be created. Right now only support 1 o 0 values.
+Number of ElasticSearch instances to be created. Right now, this config only supports the values `1` or `0`.
 
 ### InstanceType
 
 *string*
 
-The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ### Version
 
@@ -99,7 +120,7 @@ Number of instances to be created. Supported values are `1` or `0`. Once a job s
 
 *string*
 
-The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/)).
+The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ## EnableAgentFullLogs
 
@@ -290,6 +311,12 @@ When true, logged events are written in a machine-readable JSON format. Otherwis
 
 The location of the log file.
 
+### EnableColor
+
+*bool*
+
+When true enables colored output.
+
 ## Report
 
 ### Label
@@ -315,3 +342,38 @@ A friendly name for the graph.
 *string*
 
 The Prometheus query to run.
+
+## TerraformStateDir
+
+*string*
+
+The directory under which Terraform-related files are stored. If the directory does not exist, it will be created when running the first command that needs it, defaulting to `/var/lib/mattermost-load-test-ng`. You'll need root permissions to create that specific directory, so you may want to change this setting to something like `/home/youruser/.loadtest`.
+
+## S3BucketDumpURI
+
+*string*
+
+URI pointing to an S3 bucket: something of the form `s3://bucket-name/optional-subdir`.
+The contents of this bucket will be copied to the bucket created in the deployment, using `aws s3 cp`. This command is ran locally, so having the AWS CLI installed is required.
+If no bucket is created in the deployment (see [`AppInstanceCount`](#AppInstanceCount) for more information), this value is ignored.
+If a bucket is created in the deployment but this value is empty, the created bucket will not be pre-populated with any data.
+
+## S3BucketDumpURI
+
+*string*
+
+An optional URI to a MM server database dump file
+to be loaded before running the load-test.
+The file is expected to be gzip compressed.
+This can also point to a local file if prefixed with "file://".
+In such case, the dump file will be uploaded to the app servers.
+
+## PermalinkIPsToReplace
+
+*string*
+
+An optional list of IPs present in the posts from the DB dump
+that contain permalinks to other posts. These IPs are replaced,
+when ingesting the dump into the database, in every post that
+uses them with the public IP of the first app instance, so that
+the permalinks are valid in the new deployment.

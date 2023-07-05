@@ -16,9 +16,10 @@ import (
 )
 
 func getUsersCount(helper *prometheus.Helper) (int, error) {
-	value, err := helper.VectorFirst("sum(mattermost_http_websockets_total)")
+	query := "sum(mattermost_http_websockets_total)"
+	value, err := helper.VectorFirst(query)
 	if err != nil {
-		return 0, fmt.Errorf("failed to query Prometheus: %w", err)
+		return 0, fmt.Errorf("failed to query Prometheus with %q: %w", query, err)
 	}
 	return int(value), nil
 }
@@ -47,7 +48,7 @@ func getErrorsInfo(helper *prometheus.Helper, startTime time.Time) (map[string]i
 	for _, q := range queries {
 		value, err := helper.VectorFirst(q.query)
 		if err != nil {
-			fmt.Printf("failed to query Prometheus: %s\n", err.Error())
+			fmt.Printf("failed to query Prometheus with %q: %s\n", q.query, err.Error())
 			continue
 		}
 		info[q.description] = int64(math.Round(value))
@@ -63,8 +64,10 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	return t.StartCoordinator(nil)
 }
 
@@ -74,8 +77,10 @@ func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 	_, err = t.StopCoordinator()
 	return err
 }
@@ -116,8 +121,10 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t := terraform.New("", config)
-	defer t.Cleanup()
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
 
 	status, err := t.GetCoordinatorStatus()
 	if err != nil {
@@ -146,6 +153,30 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	printCoordinatorStatus(status, errInfo, usersCount)
+
+	return nil
+}
+
+func RunInjectActionCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	action := args[0]
+
+	_, err = t.InjectAction(action)
+	if err != nil {
+		fmt.Println("Failed to inject action ", action, ": ", err)
+		return err
+	}
+
+	fmt.Println("Action ", action, " injected successfully.")
 
 	return nil
 }

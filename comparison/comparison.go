@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 type deploymentConfig struct {
@@ -88,16 +88,20 @@ func (c *Comparison) Run() (Output, error) {
 	for dpID, dp := range c.deployments {
 		go func(dpID string, dp *deploymentConfig) {
 			defer wg.Done()
-			t := terraform.New(dpID, &dp.config)
-			defer t.Cleanup()
+			t, err := terraform.New(dpID, dp.config)
+			if err != nil {
+				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				return
+			}
 
 			for ltID, lt := range dp.loadTests {
 				res := Result{deploymentID: dpID}
 				dumpFilename := lt.getDumpFilename(ltID)
+				s3BucketURI := lt.S3BucketDumpURI
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, buildCfg, dumpFilename, c.cancelCh); err != nil {
+					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI, lt.PermalinkIPsToReplace, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}
@@ -143,6 +147,9 @@ func (c *Comparison) Run() (Output, error) {
 // current automated load-test comparisons.
 func (c *Comparison) Destroy() error {
 	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+		if err := t.Sync(); err != nil {
+			return err
+		}
 		return t.Destroy()
 	})
 }

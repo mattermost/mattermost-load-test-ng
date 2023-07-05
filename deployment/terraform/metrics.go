@@ -10,15 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"path"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 const (
@@ -43,7 +42,7 @@ func doAPIRequest(url, method string, payload io.Reader) (string, error) {
 	defer resp.Body.Close()
 
 	// Dump body.
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -140,6 +139,15 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
+	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
+	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig,
+		strings.Join(mmTargets, ","),
+		strings.Join(ltTargets, ","),
+	)
+	rdr = strings.NewReader(pyroscopeConfigFile)
+	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
+		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
+	}
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
 	rdr = strings.NewReader(metricsHostsFile)
 	if out, err := sshc.Upload(rdr, "/etc/hosts", true); err != nil {
@@ -148,6 +156,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PublicIP))
 	cmd := "sudo service prometheus restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
+	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PublicIP))
+	cmd = "sudo service pyroscope-server restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -161,7 +175,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload datasource file
-	buf, err := ioutil.ReadFile(path.Join(t.dir, "datasource.yaml"))
+	buf, err := os.ReadFile(t.getAsset("datasource.yaml"))
 	if err != nil {
 		return err
 	}
@@ -171,7 +185,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard file
-	buf, err = ioutil.ReadFile(path.Join(t.dir, "dashboard.yaml"))
+	buf, err = os.ReadFile(t.getAsset("dashboard.yaml"))
 	if err != nil {
 		return err
 	}
@@ -180,7 +194,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard json
-	buf, err = ioutil.ReadFile(path.Join(t.dir, "dashboard_data.json"))
+	buf, err = os.ReadFile(t.getAsset("dashboard_data.json"))
 	if err != nil {
 		return err
 	}
@@ -193,7 +207,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	if t.output.HasElasticSearch() {
-		buf, err = ioutil.ReadFile(path.Join(t.dir, "es_dashboard_data.json"))
+		buf, err = os.ReadFile(t.getAsset("es_dashboard_data.json"))
 		if err != nil {
 			return err
 		}

@@ -7,14 +7,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
 	"github.com/spf13/cobra"
 )
 
@@ -88,26 +86,7 @@ func initConfig(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	initLogger(cfg)
+	logger.Init(&cfg.LogSettings)
 
 	return nil
-}
-
-func initLogger(cfg *coordinator.Config) {
-	// Initalize logging
-	log := mlog.NewLogger(&mlog.LoggerConfiguration{
-		EnableConsole: cfg.LogSettings.EnableConsole,
-		ConsoleJson:   cfg.LogSettings.ConsoleJson,
-		ConsoleLevel:  strings.ToLower(cfg.LogSettings.ConsoleLevel),
-		EnableFile:    cfg.LogSettings.EnableFile,
-		FileJson:      cfg.LogSettings.FileJson,
-		FileLevel:     strings.ToLower(cfg.LogSettings.FileLevel),
-		FileLocation:  cfg.LogSettings.FileLocation,
-	})
-
-	// Redirect default golang logger to this logger
-	mlog.RedirectStdLog(log)
-
-	// Use this app logger as the global logger
-	mlog.InitGlobalLogger(log)
 }

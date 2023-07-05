@@ -13,6 +13,8 @@ type Config struct {
 	MaxStoredUsers          int // The maximum number of users to be stored.
 	MaxStoredChannelMembers int // The maximum number of channel members to be stored.
 	MaxStoredStatuses       int // The maximum number of statuses to be stored.
+	MaxStoredThreads        int // The maximum number of statuses to be stored.
+	MaxStoredReactions      int // The maximum number of reactions to be stored.
 }
 
 // IsValid checks whether a Config is valid or not.
@@ -34,6 +36,10 @@ func (c *Config) IsValid() error {
 		return errors.New("MaxStoredStatuses should be > 0")
 	}
 
+	if c.MaxStoredThreads <= 0 {
+		return errors.New("MaxStoredThreads should be > 0")
+	}
+
 	return nil
 }
 
@@ -43,4 +49,6 @@ func (c *Config) SetDefaults() {
 	c.MaxStoredUsers = 100
 	c.MaxStoredChannelMembers = 100
 	c.MaxStoredStatuses = 100
+	c.MaxStoredThreads = 100
+	c.MaxStoredReactions = 10
 }

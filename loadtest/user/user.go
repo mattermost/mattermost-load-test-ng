@@ -8,12 +8,18 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // TestUserSuffixRegexp matches the numerical suffix of test usernames,
 // which are assumed to be in this format.
 var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
+
+type GraphQLInput struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName"`
+	Variables     map[string]interface{} `json:"variables"`
+}
 
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.
@@ -53,13 +59,13 @@ type User interface {
 	// Login logs the user in. It authenticates a user and starts a new session.
 	Login() error
 	// Logout logs the user out. It terminates the current user's session.
-	Logout() (bool, error)
+	Logout() error
 	// GetMe loads user's information into the store and returns its id.
 	GetMe() (string, error)
 	// GetPreferences fetches and store the user's preferences.
 	GetPreferences() error
 	// UpdatePreferences updates the user's preferences.
-	UpdatePreferences(pref *model.Preferences) error
+	UpdatePreferences(pref model.Preferences) error
 	// CreateUser creates a new user with the given information.
 	CreateUser(user *model.User) (string, error)
 	// UpdateUser updates the given user with the given information.
@@ -108,6 +114,8 @@ type User interface {
 	CreatePost(post *model.Post) (string, error)
 	// PatchPost modifies a post for the given postId and stores the updated result.
 	PatchPost(postId string, patch *model.PostPatch) (string, error)
+	// DeletePost deletes a post for the given postId.
+	DeletePost(postId string) error
 	// SearchPosts performs a search for posts in the given teamId with the given terms.
 	SearchPosts(teamId, terms string, isOrSearch bool) (*model.PostList, error)
 	// GetPostsForChannel fetches and stores posts in a given channelId.
@@ -154,15 +162,16 @@ type User interface {
 	// GetPublicChannelsForTeam fetches and stores public channels in the
 	// specified team.
 	GetPublicChannelsForTeam(teamId string, page, perPage int) error
-	// SearchChannels performs a search for channels in the specified team.
+	// SearchChannelsForTeam performs a search for channels in the specified team.
 	// It returns channels that matches the search.
-	SearchChannels(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	SearchChannelsForTeam(teamId string, search *model.ChannelSearch) ([]*model.Channel, error)
+	// SearchChannels performs a search for channels in all teams for a user.
+	SearchChannels(search *model.ChannelSearch) (model.ChannelListWithTeamData, error)
 	// SearchGroupChannels performs a search for group channels.
 	// It returns channels whose members' usernames match the search term.
 	SearchGroupChannels(search *model.ChannelSearch) ([]*model.Channel, error)
 	// RemoveUserFromChannel removes the specified user from the specified channel.
-	// It returns whether the user was successfully removed or not.
-	RemoveUserFromChannel(channelId, userId string) (bool, error)
+	RemoveUserFromChannel(channelId, userId string) error
 	// ViewChannels performs a channel view for the user.
 	ViewChannel(view *model.ChannelView) (*model.ChannelViewResponse, error)
 	// GetChannelUnread fetches and returns information about the specified channel's unread
@@ -177,7 +186,7 @@ type User interface {
 	// the specified channel.
 	GetChannelMember(channelId string, userId string) error
 	// GetChannelStats fetches statistics for the specified channel.
-	GetChannelStats(channelId string) error
+	GetChannelStats(channelId string, excludeFileCount bool) error
 	// AddChannelMember adds the specified user to the specified channel.
 	AddChannelMember(channelId, userId string) error
 	// GetChannelsForTeamForUser fetches and stores chanels for the specified user in
@@ -189,6 +198,8 @@ type User interface {
 	// AutocompleteChannelsForTeamForSearch fetches and stores an ordered list of the
 	// user's channels autocomplete suggestions. It returns a map of found channel names.
 	AutocompleteChannelsForTeamForSearch(teamId, name string) (map[string]bool, error)
+	// GetChannelsForUser returns all channels from all teams for a given user.
+	GetChannelsForUser(userID string) ([]*model.Channel, error)
 
 	// teams
 	// GetAllTeams returns all teams based on permissions.
@@ -213,7 +224,7 @@ type User interface {
 	GetTeamStats(teamId string) error
 	// GetTeamsUnread fetches and returns information about unreads messages for
 	// the user in the teams it belongs to.
-	GetTeamsUnread(teamIdToExclude string) ([]*model.TeamUnread, error)
+	GetTeamsUnread(teamIdToExclude string, includeCollapsedThreads bool) ([]*model.TeamUnread, error)
 	// AddTeamMemberFromInvite adds a user to a team using the given token and
 	// inviteId.
 	AddTeamMemberFromInvite(token, inviteId string) error
@@ -236,8 +247,6 @@ type User interface {
 	SaveReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
 	DeleteReaction(reaction *model.Reaction) error
-	// GetReactions fetches and stores reactions to the specified post.
-	GetReactions(postId string) error
 
 	// plugins
 	// GetWebappPlugins fetches webapp plugins.
@@ -266,4 +275,46 @@ type User interface {
 	UpdateConfig(cfg *model.Config) error
 	// MessageExport triggers a message export
 	MessageExport() error
+
+	// Threads
+	// GetUserThreads fetches and stores threads. It returns a list of thread ids.
+	GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error)
+	// UpdateThreadFollow updates the follow state of the thread
+	UpdateThreadFollow(teamId, threadId string, state bool) error
+	// GetPostThread gets a post with all the other posts in the same thread.
+	GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error)
+	// MarkAllThreadsInTeamAsRead marks all threads in a team as read
+	MarkAllThreadsInTeamAsRead(teamId string) error
+	// UpdateThreadRead updates the read timestamp of the thread
+	UpdateThreadRead(teamId, threadId string, timestamp int64) error
+
+	// SidebarCategories
+	GetSidebarCategories(userID, teamID string) error
+	CreateSidebarCategory(userID, teamID string, category *model.SidebarCategoryWithChannels) (*model.SidebarCategoryWithChannels, error)
+	UpdateSidebarCategory(userID, teamID string, categories []*model.SidebarCategoryWithChannels) error
+
+	// Insights
+	GetTopThreadsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopThreadList, error)
+	GetTopThreadsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopThreadList, error)
+	GetTopChannelsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopChannelList, error)
+	GetTopChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopChannelList, error)
+	GetTopReactionsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error)
+	GetTopReactionsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopReactionList, error)
+	GetTopInactiveChannelsForTeamSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error)
+	GetTopInactiveChannelsForUserSince(userID, teamID string, duration string, offset int, limit int) (*model.TopInactiveChannelList, error)
+	GetTopDMsForUserSince(duration string, offset int, limit int) (*model.TopDMList, error)
+	GetNewTeamMembersSince(teamID string, duration string, offset int, limit int) (*model.NewTeamMembersList, error)
+	// Custom Status
+	UpdateCustomStatus(userID string, status *model.CustomStatus) error
+	RemoveCustomStatus(userID string) error
+
+	// CreatePostReminder creates a post reminder at a given target time.
+	CreatePostReminder(userID, postID string, targetTime int64) error
+
+	// AckToPost acknowledges a post.
+	AckToPost(userID, postID string) error
+
+	// GraphQL
+	GetInitialDataGQL() error
+	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
 }

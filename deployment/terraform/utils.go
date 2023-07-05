@@ -5,20 +5,21 @@ package terraform
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
-	"github.com/mattermost/mattermost-server/v5/utils"
+	"github.com/mattermost/mattermost-server/server/v8/channels/utils"
+	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 type uploadInfo struct {
@@ -160,19 +161,20 @@ func openBrowser(url string) (err error) {
 }
 
 func validateLicense(filename string) error {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read license file: %w", err)
 	}
 
-	ok, licenseStr := utils.ValidateLicense(data)
+	validator := &utils.LicenseValidatorImpl{}
+	ok, licenseStr := validator.ValidateLicense(data)
 	if !ok {
 		return errors.New("failed to validate license")
 	}
 
-	license := model.LicenseFromJson(strings.NewReader(licenseStr))
-	if license == nil {
-		return errors.New("failed to parse license")
+	var license model.License
+	if err := json.Unmarshal([]byte(licenseStr), &license); err != nil {
+		return fmt.Errorf("failed to parse license: %w", err)
 	}
 
 	if !license.IsStarted() {
@@ -187,10 +189,12 @@ func validateLicense(filename string) error {
 }
 
 func (t *Terraform) getStatePath() string {
+	// Get the name of the file
 	statePath := "terraform.tfstate"
 	if t.id != "" {
 		statePath = t.id + ".tfstate"
 	}
+
 	return statePath
 }
 
@@ -209,6 +213,9 @@ func fillConfigTemplate(configTmpl string, data map[string]string) (string, erro
 
 func (t *Terraform) getParams() []string {
 	return []string{
+		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
+		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
+		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
@@ -233,5 +240,22 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
+		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
 	}
+}
+
+func (t *Terraform) getClusterDSN() (string, error) {
+	switch t.config.TerraformDBSettings.InstanceEngine {
+	case "aurora-postgresql":
+		return "postgres://" + t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@" + t.output.DBWriter() + "/" + t.config.DBName() + "?sslmode=disable", nil
+
+	case "aurora-mysql":
+		return t.config.TerraformDBSettings.UserName + ":" + t.config.TerraformDBSettings.Password + "@tcp(" + t.output.DBWriter() + ")/" + t.config.DBName() + "?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s", nil
+	default:
+		return "", errors.New("unsupported database engine")
+	}
+}
+
+func (t *Terraform) getAsset(filename string) string {
+	return filepath.Join(t.config.TerraformStateDir, filename)
 }

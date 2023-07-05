@@ -10,7 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/prometheushealthcheck"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 func healthcheck(errChan chan error, configuration *config.MetricsWatcherConfiguration) {

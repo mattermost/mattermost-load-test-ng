@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // wsEventHandler listens for WebSocket events to be handled.
@@ -29,7 +29,7 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
-		case model.WEBSOCKET_EVENT_TYPING:
+		case model.WebsocketEventTyping:
 			userId, ok := ev.GetData()["user_id"].(string)
 			if !ok || userId == "" {
 				c.status <- c.newErrorStatus(errors.New("simulcontroller: invalid data found in event data"))

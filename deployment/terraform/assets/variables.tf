@@ -60,8 +60,8 @@ variable "db_instance_class" {
 variable "db_engine_version" {
   type = map(any)
   default = {
-    "aurora-mysql"      = "5.7.mysql_aurora.2.10.0"
-    "aurora-postgresql" = "11.7"
+    "aurora-mysql"      = "5.7.mysql_aurora.2.11.1"
+    "aurora-postgresql" = "12.11"
   }
 }
 
@@ -97,4 +97,16 @@ variable "job_server_instance_count" {
 }
 
 variable "job_server_instance_type" {
+}
+
+variable "s3_bucket_dump_uri" {
+}
+
+variable "aws_profile" {
+}
+
+variable "aws_region" {
+}
+
+variable "aws_ami" {
 }

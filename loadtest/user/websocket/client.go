@@ -7,18 +7,21 @@ package websocket
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
 	"sync"
 
+	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+
 	"github.com/gorilla/websocket"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 const avgReadMsgSizeBytes = 1024
 
 // Client is the websocket client to perform all actions.
 type Client struct {
-	Url          string
 	EventChannel chan *model.WebSocketEvent
 
 	conn      *websocket.Conn
@@ -28,28 +31,35 @@ type Client struct {
 	writeMut  sync.RWMutex
 }
 
+type ClientParams struct {
+	WsURL          string
+	AuthToken      string
+	ConnID         string
+	ServerSequence int64
+}
+
 // NewClient4 constructs a new WebSocket client.
-func NewClient4(url, authToken string) (*Client, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url+model.API_URL_SUFFIX+"/websocket", nil)
+func NewClient4(param *ClientParams) (*Client, error) {
+	header := http.Header{
+		"Authorization": []string{"Bearer " + param.AuthToken},
+	}
+
+	url := param.WsURL + model.APIURLSuffix + "/websocket" + fmt.Sprintf("?connection_id=%s&sequence_number=%d", param.ConnID, param.ServerSequence)
+	conn, _, err := websocket.DefaultDialer.Dial(url, header)
 	if err != nil {
 		return nil, err
 	}
 
 	client := &Client{
-		Url:          url,
 		EventChannel: make(chan *model.WebSocketEvent, 100),
 
 		conn:      conn,
-		authToken: authToken,
+		authToken: param.AuthToken,
 		sequence:  1,
 	}
 
 	client.readWg.Add(1)
 	go client.reader()
-
-	client.SendMessage(
-		model.WEBSOCKET_AUTHENTICATION_CHALLENGE,
-		map[string]interface{}{"token": authToken})
 
 	return client, nil
 }
@@ -95,8 +105,8 @@ func (c *Client) reader() {
 			return
 		}
 
-		event := model.WebSocketEventFromJson(&buf)
-		if event == nil {
+		event, err := model.WebSocketEventFromJSON(&buf)
+		if event == nil || err != nil {
 			continue
 		}
 		if event.IsValid() {
@@ -125,6 +135,27 @@ func (c *Client) SendMessage(action string, data map[string]interface{}) error {
 
 	c.sequence++
 	return c.conn.WriteJSON(req)
+}
+
+// SendBinaryMessage is the method to write to the websocket using binary data type
+// (MessagePack encoded).
+func (c *Client) SendBinaryMessage(action string, data map[string]interface{}) error {
+	req := &model.WebSocketRequest{
+		Seq:    c.sequence,
+		Action: action,
+		Data:   data,
+	}
+
+	binaryData, err := msgpack.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request to msgpack: %w", err)
+	}
+
+	c.writeMut.Lock()
+	defer c.writeMut.Unlock()
+
+	c.sequence++
+	return c.conn.WriteMessage(websocket.BinaryMessage, binaryData)
 }
 
 // Helper utilities that call SendMessage.

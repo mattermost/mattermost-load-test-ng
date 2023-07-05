@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // UserEntity is an implementation of the User interface
@@ -29,6 +29,8 @@ type UserEntity struct {
 	connected   bool
 	config      Config
 	metrics     *performance.UserEntityMetrics
+	wsConnID    string
+	wsServerSeq int64
 }
 
 // Config holds necessary information required by a UserEntity.
@@ -102,7 +104,7 @@ func New(setup Setup, config Config) *UserEntity {
 			ue:        &ue,
 		}
 	}
-	ue.client.HttpClient = &http.Client{Transport: setup.Transport}
+	ue.client.HTTPClient = &http.Client{Transport: setup.Transport}
 
 	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
@@ -151,12 +153,12 @@ func (ue *UserEntity) FetchStaticAssets() error {
 		link := e.Attr("src")
 		c.Visit(e.Request.AbsoluteURL(link))
 	})
-	return c.Visit(ue.client.Url)
+	return c.Visit(ue.client.URL)
 }
 
 // Disconnect closes the WebSocket connection.
 func (ue *UserEntity) Disconnect() error {
-	ue.client.HttpClient.CloseIdleConnections()
+	ue.client.HTTPClient.CloseIdleConnections()
 	if !ue.connected {
 		return errors.New("user is not connected")
 	}
@@ -187,7 +189,7 @@ func (ue *UserEntity) IsSysAdmin() (bool, error) {
 		return false, err
 	}
 
-	return user.IsInRole(model.SYSTEM_ADMIN_ROLE_ID), nil
+	return user.IsInRole(model.SystemAdminRoleId), nil
 }
 
 // IsTeamAdmin returns whether the user is a team admin or not.
@@ -197,7 +199,7 @@ func (ue *UserEntity) IsTeamAdmin() (bool, error) {
 		return false, err
 	}
 
-	return user.IsInRole(model.TEAM_ADMIN_ROLE_ID), nil
+	return user.IsInRole(model.TeamAdminRoleId), nil
 }
 
 func (ue *UserEntity) getUserFromStore() (*model.User, error) {

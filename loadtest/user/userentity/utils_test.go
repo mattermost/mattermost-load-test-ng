@@ -6,7 +6,7 @@ package userentity
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 
 	"github.com/stretchr/testify/assert"
 )

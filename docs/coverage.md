@@ -52,7 +52,7 @@ This is a list of common steps needed when adding new or missing load-test cover
 If the added feature has new client (as in [`model/client4.go`](https://github.com/mattermost/mattermost-server/blob/master/model/client4.go)) additions, you should update the `mattermost-server` dependency so that the new methods can be used from within the load-test packages.
 
 ```sh
-go get -u github.com/mattermost/mattermost-server/v5/@COMMIT_HASH
+go get -u github.com/mattermost/mattermost-server/server/v8/@COMMIT_HASH
 go mod tidy
 ```
 
@@ -79,6 +79,8 @@ Add/extend required `SimulController` actions.
 Most of the existing actions that can serve as good examples can be found in [`loadtest/control/simulcontroller/actions.go`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/loadtest/control/simulcontroller/actions.go).
 
 If a new action is implemented make sure to add it to the [list of executed actions](https://github.com/mattermost/mattermost-load-test-ng/blob/c76063def0b36d61c0467e18357cf4cca969fe8a/loadtest/control/simulcontroller/controller.go#L106).
+
+The value chosen for the `frequency` field should be the result of an informed decision based on data from the Mattermost Community server. Check [this tutorial](coverage-frequency.md) to understand how to do it.
 
 #### Note
 

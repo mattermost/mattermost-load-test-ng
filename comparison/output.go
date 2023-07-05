@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // DeploymentInfo holds information regarding a deployment.
@@ -90,8 +90,11 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 			defer wg.Done()
 
 			dp := c.deployments[res.deploymentID]
-			t := terraform.New(res.deploymentID, &dp.config)
-			defer t.Cleanup()
+			t, err := terraform.New(res.deploymentID, dp.config)
+			if err != nil {
+				mlog.Error("Failed to create terraform engine", mlog.Err(err))
+				return
+			}
 			output, err := t.Output()
 			if err != nil {
 				mlog.Error("Failed to get terraform output", mlog.Err(err))

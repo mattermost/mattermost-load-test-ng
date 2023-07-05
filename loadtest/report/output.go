@@ -7,7 +7,6 @@ package report
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -16,7 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 	"github.com/prometheus/common/model"
 )
 
@@ -178,7 +177,7 @@ func printHeader(target io.Writer, cols int) {
 
 // generateGraph creates an input file for GNUplot to create a plot from.
 func generateGraph(name, prefix, baseLabel string, base graph, others []labelValues) error {
-	f, err := ioutil.TempFile("", "tmp.out")
+	f, err := os.CreateTemp("", "tmp.out")
 	if err != nil {
 		return err
 	}
@@ -215,7 +214,7 @@ func generateGraph(name, prefix, baseLabel string, base graph, others []labelVal
 
 // plot creates a gnu plot file and then creates a png output file from it.
 func plot(metric, prefix, fileName string, others []labelValues, baseLabel string) error {
-	f, err := ioutil.TempFile("", "tmp.plt")
+	f, err := os.CreateTemp("", "tmp.plt")
 	if err != nil {
 		return err
 	}

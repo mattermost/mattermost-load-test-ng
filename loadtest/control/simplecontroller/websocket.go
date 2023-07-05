@@ -6,7 +6,7 @@ package simplecontroller
 import (
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 // wsEventHandler listens for WebSocket events to be handled.
@@ -17,9 +17,9 @@ func (c *SimpleController) wsEventHandler(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
-		case model.WEBSOCKET_EVENT_USER_UPDATED:
+		case model.WebsocketEventUserUpdated:
 			// probably do something interesting ?
-		case model.WEBSOCKET_EVENT_STATUS_CHANGE:
+		case model.WebsocketEventStatusChange:
 			// Send a message if the user has come online.
 			data := ev.GetData()
 			status, ok := data["status"].(string)

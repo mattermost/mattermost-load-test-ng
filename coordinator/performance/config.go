@@ -16,7 +16,7 @@ type MonitorConfig struct {
 	// The time interval in milliseconds to wait before querying again.
 	UpdateIntervalMs int `default:"2000" validate:"range:[1000,]"`
 	// The slice of queries to run.
-	Queries []prometheus.Query `default_size:"1"`
+	Queries []prometheus.Query `default_size:"0"`
 }
 
 // IsValid checks whether a MonitorConfig is valid or not.

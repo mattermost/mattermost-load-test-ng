@@ -6,10 +6,9 @@ package memstore
 import (
 	"errors"
 	"math/rand"
-	"reflect"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 var (
@@ -23,6 +22,8 @@ var (
 	ErrChannelNotFound   = errors.New("memstore: channel not found")
 	ErrPostNotFound      = errors.New("memstore: post not found")
 	ErrInvalidData       = errors.New("memstore: invalid data found")
+	ErrThreadNotFound    = errors.New("memstore: thread not found")
+	ErrMaxAttempts       = errors.New("memstore: maximum number of attempts tried")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -68,12 +69,12 @@ func (s *MemStore) RandomTeam(st store.SelectionType) (model.Team, error) {
 	return *teams[idx], nil
 }
 
-func excludeChannelType(st store.SelectionType, channelType string) bool {
-	m := map[store.SelectionType]string{
-		store.SelectNotPublic:  model.CHANNEL_OPEN,
-		store.SelectNotPrivate: model.CHANNEL_PRIVATE,
-		store.SelectNotDirect:  model.CHANNEL_DIRECT,
-		store.SelectNotGroup:   model.CHANNEL_GROUP,
+func excludeChannelType(st store.SelectionType, channelType model.ChannelType) bool {
+	m := map[store.SelectionType]model.ChannelType{
+		store.SelectNotPublic:  model.ChannelTypeOpen,
+		store.SelectNotPrivate: model.ChannelTypePrivate,
+		store.SelectNotDirect:  model.ChannelTypeDirect,
+		store.SelectNotGroup:   model.ChannelTypeGroup,
 	}
 
 	for s, t := range m {
@@ -115,7 +116,7 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 			continue
 		}
 		_, isMember := s.channelMembers[channelId][userId]
-		if (channel.Type == model.CHANNEL_OPEN || channel.Type == model.CHANNEL_PRIVATE) && channel.TeamId != teamId {
+		if (channel.Type == model.ChannelTypeOpen || channel.Type == model.ChannelTypePrivate) && channel.TeamId != teamId {
 			continue
 		}
 		if isMember && isSelectionType(st, store.SelectMemberOf) {
@@ -161,7 +162,7 @@ func (s *MemStore) randomUser() (model.User, error) {
 		if err != nil {
 			return model.User{}, err
 		}
-		user := s.users[key.(string)]
+		user := s.users[key]
 		if user == nil || user.Id == "" {
 			return model.User{}, ErrInvalidData
 		}
@@ -213,14 +214,55 @@ func (s *MemStore) RandomUsers(n int) ([]model.User, error) {
 }
 
 // RandomPost returns a random post.
-func (s *MemStore) RandomPost() (model.Post, error) {
+func (s *MemStore) RandomPost(st store.SelectionType) (model.Post, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	var postIds []string
-	for _, p := range s.posts {
-		if p.Type == "" {
-			postIds = append(postIds, p.Id)
+
+	// Simplest case: just get a random user post from s.posts
+	if isSelectionType(st, store.SelectAny) {
+		for _, p := range s.posts {
+			if p.Type == "" {
+				postIds = append(postIds, p.Id)
+			}
+		}
+	} else {
+		// Preflight checks: make sure that both user and current channel are set
+		if s.user == nil {
+			return model.Post{}, ErrUserNotSet
+		}
+		var currChanId string
+		if s.currentChannel != nil {
+			currChanId = s.currentChannel.Id
+		}
+
+		for _, p := range s.posts {
+			if p.Type != "" {
+				continue
+			}
+
+			channel := s.channels[p.ChannelId]
+			if channel == nil {
+				continue
+			}
+			if (currChanId == channel.Id) && isSelectionType(st, store.SelectNotCurrent) {
+				continue
+			}
+			if excludeChannelType(st, channel.Type) {
+				continue
+			}
+			if !isSelectionType(st, store.SelectMemberOf) && !isSelectionType(st, store.SelectNotMemberOf) {
+				postIds = append(postIds, p.Id)
+			} else {
+				_, isMember := s.channelMembers[channel.Id][s.user.Id]
+				if isMember && isSelectionType(st, store.SelectMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+				if !isMember && isSelectionType(st, store.SelectNotMemberOf) {
+					postIds = append(postIds, p.Id)
+				}
+			}
 		}
 	}
 
@@ -239,6 +281,25 @@ func (s *MemStore) RandomPostForChannel(channelId string) (model.Post, error) {
 	var postIds []string
 	for _, p := range s.posts {
 		if p.ChannelId == channelId && p.Type == "" {
+			postIds = append(postIds, p.Id)
+		}
+	}
+
+	if len(postIds) == 0 {
+		return model.Post{}, ErrPostNotFound
+	}
+
+	return *s.posts[postIds[rand.Intn(len(postIds))]].Clone(), nil
+}
+
+// RandomReplyPostForChannel returns a random reply post for the given channel.
+func (s *MemStore) RandomReplyPostForChannel(channelId string) (model.Post, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var postIds []string
+	for _, p := range s.posts {
+		if p.ChannelId == channelId && p.Type == "" && p.RootId != "" {
 			postIds = append(postIds, p.Id)
 		}
 	}
@@ -297,7 +358,7 @@ func (s *MemStore) RandomChannelMember(channelId string) (model.ChannelMember, e
 	if err != nil {
 		return model.ChannelMember{}, err
 	}
-	return *chanMemberMap[key.(string)], nil
+	return *chanMemberMap[key], nil
 }
 
 // RandomTeamMember returns a random team member for a team.
@@ -316,18 +377,50 @@ func (s *MemStore) RandomTeamMember(teamId string) (model.TeamMember, error) {
 	if err != nil {
 		return model.TeamMember{}, err
 	}
-	return *teamMemberMap[key.(string)], nil
+	return *teamMemberMap[key], nil
 }
 
-func pickRandomKeyFromMap(m interface{}) (interface{}, error) {
-	val := reflect.ValueOf(m)
-	if val.Kind() != reflect.Map {
-		return nil, errors.New("memstore: not a map")
+func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	teamCat := s.sidebarCategories[teamID]
+
+	key, err := pickRandomKeyFromMap(teamCat)
+	if err != nil {
+		return model.SidebarCategoryWithChannels{}, err
 	}
-	keys := val.MapKeys()
-	if len(keys) == 0 {
-		return nil, ErrEmptyMap
+
+	category := *teamCat[key]
+	tmp := make([]string, len(category.Channels))
+	copy(tmp, category.Channels)
+	category.Channels = tmp
+	return category, nil
+}
+
+func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
+	var def K
+	if len(m) == 0 {
+		return def, ErrEmptyMap
 	}
-	idx := rand.Intn(len(keys))
-	return keys[idx].Interface(), nil
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	idx := rand.Intn(len(m))
+	return keys[idx], nil
+}
+
+// RandomThread returns a random post.
+func (s *MemStore) RandomThread() (model.ThreadResponse, error) {
+	s.lock.RLock()
+	threads, err := s.getThreads(false)
+	s.lock.RUnlock()
+	if err != nil {
+		return model.ThreadResponse{}, err
+	}
+	if len(threads) == 0 {
+		return model.ThreadResponse{}, ErrThreadNotFound
+	}
+	return *threads[rand.Intn(len(threads))], nil
 }

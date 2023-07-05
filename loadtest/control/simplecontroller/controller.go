@@ -12,20 +12,23 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // SimpleController is a very basic implementation of a controller.
 // Currently, it just performs a pre-defined set of actions in a loop.
 type SimpleController struct {
-	id            int
-	user          user.User
-	status        chan<- control.UserStatus
-	rate          float64
-	actions       []*UserAction
-	stopChan      chan struct{}   // this channel coordinates the stop sequence of the controller
-	stoppedChan   chan struct{}   // blocks until controller cleans up everything
-	connectedFlag int32           // indicates that the controller is connected
-	wg            *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	id                 int
+	user               user.User
+	status             chan<- control.UserStatus
+	rate               float64
+	actions            []*UserAction
+	actionMap          map[string]control.UserAction
+	injectedActionChan chan *UserAction
+	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan        chan struct{}   // blocks until controller cleans up everything
+	connectedFlag      int32           // indicates that the controller is connected
+	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 }
 
 // New creates and initializes a new SimpleController with given parameters.
@@ -37,13 +40,14 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 	}
 
 	sc := &SimpleController{
-		id:          id,
-		user:        user,
-		status:      status,
-		stopChan:    make(chan struct{}),
-		stoppedChan: make(chan struct{}),
-		rate:        1.0,
-		wg:          &sync.WaitGroup{},
+		id:                 id,
+		user:               user,
+		status:             status,
+		injectedActionChan: make(chan *UserAction, 10),
+		stopChan:           make(chan struct{}),
+		stoppedChan:        make(chan struct{}),
+		rate:               1.0,
+		wg:                 &sync.WaitGroup{},
 	}
 	if err := sc.createActions(config.Actions); err != nil {
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
@@ -69,6 +73,7 @@ func (c *SimpleController) Run() {
 		}
 		c.user.ClearUserData()
 		c.sendStopStatus()
+		close(c.injectedActionChan)
 		close(c.stoppedChan)
 	}()
 
@@ -109,26 +114,43 @@ func (c *SimpleController) Run() {
 
 	cycleCount := 1 // keeps a track of how many times the entire cycle of actions have been completed.
 	for {
-		for i := 0; i < len(c.actions); i++ {
-			if cycleCount%c.actions[i].runPeriod == 0 {
-				// run the action if runPeriod is not set, or else it's set and it's a multiple
-				// of the cycle count.
-				if resp := c.actions[i].run(c.user); resp.Err != nil {
-					c.status <- c.newErrorStatus(resp.Err)
-				} else {
-					c.status <- c.newInfoStatus(resp.Info)
-				}
+		// check for injected actions even if no scripted actions are present
+		select {
+		case ia := <-c.injectedActionChan:
+			c.runAction(ia)
+		default:
+		}
 
-				idleTime := time.Duration(math.Round(float64(c.actions[i].waitAfter) * c.rate))
+		for _, action := range c.actions {
+			// run the action if runPeriod is not set, or else it's set and it's a multiple
+			// of the cycle count.
+			if cycleCount%action.runPeriod == 0 {
+				c.runAction(action)
+
+				idleTime := time.Duration(math.Round(float64(action.waitAfter) * c.rate))
 
 				select {
 				case <-c.stopChan:
 					return
 				case <-time.After(time.Millisecond * idleTime):
+				case ia := <-c.injectedActionChan:
+					c.runAction(ia)
 				}
 			}
 		}
 		cycleCount++
+	}
+}
+
+func (c *SimpleController) runAction(action *UserAction) {
+	if action == nil {
+		return
+	}
+
+	if resp := action.run(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
 	}
 }
 
@@ -146,9 +168,9 @@ func (c *SimpleController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
 	// re-initialize for the next use
+	c.injectedActionChan = make(chan *UserAction, 10)
 	c.stopChan = make(chan struct{})
 	c.stoppedChan = make(chan struct{})
-
 }
 
 func (c *SimpleController) sendFailStatus(reason string) {
@@ -161,7 +183,7 @@ func (c *SimpleController) sendStopStatus() {
 
 func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	var actions []*UserAction
-	actionMap := map[string]control.UserAction{
+	c.actionMap = map[string]control.UserAction{
 		"AddReaction":          control.AddReaction,
 		"CreateDirectChannel":  control.CreateDirectChannel,
 		"CreateGroupChannel":   control.CreateGroupChannel,
@@ -182,13 +204,9 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 			return resp
 		},
 		"Logout": func(u user.User) control.UserActionResponse {
-			ok, err := u.Logout()
+			err := u.Logout()
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-
-			if !ok {
-				return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 			}
 
 			c.disconnect()
@@ -215,7 +233,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	}
 
 	for _, def := range definitions {
-		run, ok := actionMap[def.ActionId]
+		run, ok := c.actionMap[def.ActionId]
 		if !ok {
 			return fmt.Errorf("could not find action %q", def.ActionId)
 		}
@@ -235,3 +253,28 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 	c.actions = actions
 	return nil
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *SimpleController) InjectAction(actionID string) error {
+	action, ok := c.actionMap[actionID]
+	if !ok {
+		mlog.Debug("Could not inject action for SimpleController", mlog.String("action", actionID))
+		return nil
+	}
+
+	userAction := &UserAction{
+		run: action,
+	}
+
+	select {
+	case c.injectedActionChan <- userAction:
+		return nil
+	default:
+		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
+	}
+}
+
+// ensure SimpleController implements UserController interface
+var _ control.UserController = (*SimpleController)(nil)

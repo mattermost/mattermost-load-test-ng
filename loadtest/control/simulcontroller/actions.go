@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,10 +17,11 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/server/v8/model"
 )
 
 type userAction struct {
+	name      string
 	run       control.UserAction
 	frequency float64
 	// Minimum supported server version
@@ -76,7 +76,12 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		}
 	}
 
-	resp := control.Reload(c.user)
+	var resp control.UserActionResponse
+	if c.featureFlags.GraphQLEnabled {
+		resp = control.ReloadGQL(c.user)
+	} else {
+		resp = control.Reload(c.user)
+	}
 	if resp.Err != nil {
 		return resp
 	}
@@ -91,7 +96,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -133,8 +138,8 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 			c.status <- c.newErrorStatus(err)
 		}
 
-		errId := resp.Err.(*control.UserError).Err.(*model.AppError).Id
-		if strings.Contains(errId, "invalid_credentials") {
+		appErr, ok := resp.Err.(*control.UserError).Err.(*model.AppError)
+		if !ok || strings.Contains(appErr.Id, "invalid_credentials") {
 			return resp
 		}
 
@@ -153,12 +158,9 @@ func (c *SimulController) logout() control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	ok, err := c.user.Logout()
+	err = c.user.Logout()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if !ok {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("user did not logout"))}
 	}
 	return control.UserActionResponse{Info: "logged out"}
 }
@@ -208,16 +210,47 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 	return c.switchTeam(u)
 }
 
-func loadTeam(u user.User, team *model.Team) control.UserActionResponse {
-	if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserActionResponse {
+	if gqlEnabled {
+		chCursor := ""
+		cmCursor := ""
+		var err error
+		for {
+			chCursor, cmCursor, err = u.GetChannelsAndChannelMembersGQL(team.Id, true, chCursor, cmCursor)
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if chCursor == "" || cmCursor == "" {
+				break
+			}
+		}
+	} else {
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	if _, err := u.GetTeamsUnread("", collapsedThreads); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+	if _, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+		TotalsOnly:  true,
+		ThreadsOnly: false,
+	}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.GetTeamsUnread(""); err != nil {
+	if err := u.GetSidebarCategories(u.Store().Id(), team.Id); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -241,7 +274,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
 		return resp
 	}
 
@@ -389,7 +422,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	if current, err := u.Store().CurrentChannel(); err == nil {
 		currentChanId = current.Id
 		// Somehow the webapp does a view to the current channel before switching.
-		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id}); err != nil {
+		if _, err := u.ViewChannel(&model.ChannelView{ChannelId: current.Id, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	} else if !errors.Is(err, memstore.ErrChannelNotFound) {
@@ -415,19 +448,30 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetChannelStats(channel.Id); err != nil {
+	excludeFileCount := true
+	// 1% of the time, users will open RHS, which will include the file count as well.
+	// This is not an entirely accurate representation of events as we are mixing
+	// a normal viewChannel with a viewRHS event
+	// But we cannot distinguish between the two at an API level, so our action
+	// frequencies are also calculated that way.
+	// This is a good enough approximation.
+	if rand.Float64() < 0.01 {
+		excludeFileCount = false
+	}
+
+	if err := u.GetChannelStats(channel.Id, excludeFileCount); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if channel.Type == model.CHANNEL_DIRECT || channel.Type == model.CHANNEL_GROUP {
-		category := map[string]string{
-			model.CHANNEL_DIRECT: model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW,
-			model.CHANNEL_GROUP:  "group_channel_show",
+	if channel.Type == model.ChannelTypeDirect || channel.Type == model.ChannelTypeGroup {
+		category := map[model.ChannelType]string{
+			model.ChannelTypeDirect: model.PreferenceCategoryDirectChannelShow,
+			model.ChannelTypeGroup:  "group_channel_show",
 		}
 
 		// We need to update the user's preferences so that
 		// on next reload we can properly fetch opened DMs.
-		pref := &model.Preferences{
+		pref := model.Preferences{
 			model.Preference{
 				UserId:   u.Store().Id(),
 				Category: category[channel.Type],
@@ -447,7 +491,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 		}
 	}
 
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId}); err != nil {
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, PrevChannelId: currentChanId, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -514,7 +558,7 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 
 	for _, p := range prefs {
 		switch {
-		case p.Category == model.PREFERENCE_CATEGORY_DIRECT_CHANNEL_SHOW:
+		case p.Category == model.PreferenceCategoryDirectChannelShow:
 			userIds = append(userIds, p.Name)
 		}
 	}
@@ -524,6 +568,120 @@ func (c *SimulController) getUsersStatuses() control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: "got statuses"}
+}
+
+func deletePost(u user.User) control.UserActionResponse {
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannelByUser(channel.Id, u.Store().Id())
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: "no posts to delete"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.DeletePost(post.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("post deleted, id %v", post.Id)}
+}
+
+func (c *SimulController) updateCustomStatus(u user.User) control.UserActionResponse {
+	status := &model.CustomStatus{
+		Emoji:     control.RandomEmoji(),
+		Text:      control.GenerateRandomSentences(1),
+		Duration:  "thirty_minutes",
+		ExpiresAt: time.Now().UTC().Add(30 * time.Minute),
+	}
+	err := u.UpdateCustomStatus(u.Store().Id(), status)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("updated custom status: %s", status.Emoji)}
+}
+
+func (c *SimulController) removeCustomStatus(u user.User) control.UserActionResponse {
+	err := u.RemoveCustomStatus(u.Store().Id())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: "removed custom status"}
+}
+
+func (c *SimulController) createSidebarCategory(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	category := &model.SidebarCategoryWithChannels{
+		SidebarCategory: model.SidebarCategory{
+			UserId:      u.Store().Id(),
+			TeamId:      team.Id,
+			DisplayName: "category" + control.PickRandomWord(),
+		},
+	}
+
+	sidebarCategory, err := u.CreateSidebarCategory(u.Store().Id(), team.Id, category)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created sidebar category, id %s", sidebarCategory.Id)}
+}
+
+func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	cat1, err := u.Store().RandomCategory(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	cat2, err := u.Store().RandomCategory(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Not repeatedly looping until we get a different category because there have been edge-cases before
+	// ending in infinite loop.s
+	if cat1.Id == cat2.Id {
+		return control.UserActionResponse{Info: "same categories returned. Skipping."}
+	}
+	if len(cat1.Channels) <= 1 {
+		return control.UserActionResponse{Info: "Not enough categories to remove. Skipping."}
+	}
+
+	// We pick a random channel from first category and move to second category.
+	channelToMove := control.PickRandomString(cat1.Channels)
+
+	// Find index
+	i := findIndex(cat1.Channels, channelToMove)
+	// Defense in depth
+	if i == -1 {
+		return control.UserActionResponse{Info: fmt.Sprintf("Channel %s not found in the category", channelToMove)}
+	}
+
+	// Move from the first, and add to second.
+	cat1.Channels = append(cat1.Channels[:i], cat1.Channels[i+1:]...)
+	cat2.Channels = append(cat2.Channels, channelToMove)
+
+	if err := u.UpdateSidebarCategory(u.Store().Id(), team.Id, []*model.SidebarCategoryWithChannels{&cat1, &cat2}); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated sidebar categories, ids [%s, %s]", cat1.Id, cat2.Id)}
 }
 
 func editPost(u user.User) control.UserActionResponse {
@@ -555,57 +713,6 @@ func editPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
 }
 
-func (c *SimulController) createPostReply(u user.User) control.UserActionResponse {
-	channel, err := u.Store().CurrentChannel()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	post, err := u.Store().RandomPostForChannel(channel.Id)
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	var rootId string
-	if post.RootId != "" {
-		rootId = post.RootId
-	} else {
-		rootId = post.Id
-	}
-
-	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	message, err := createMessage(u, channel, true)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	reply := &model.Post{
-		Message:   message,
-		ChannelId: channel.Id,
-		CreateAt:  time.Now().Unix() * 1000,
-		RootId:    rootId,
-	}
-
-	// 2% of the times post will have files attached.
-	if rand.Float64() < 0.02 {
-		if err := c.attachFilesToPost(u, reply); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	}
-
-	replyId, err := u.CreatePost(reply)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("post reply created, id %v", replyId)}
-}
-
 func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
@@ -616,7 +723,12 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := createMessage(u, channel, false)
+	// Select the post characteristics
+	isReply := rand.Float64() < c.config.PercentReplies
+	isUrgent := !isReply && (rand.Float64() < c.config.PercentUrgentPosts)
+	hasFilesAttached := rand.Float64() < 0.02
+
+	message, err := createMessage(u, channel, isReply)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -627,10 +739,38 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		CreateAt:  time.Now().Unix() * 1000,
 	}
 
-	// 2% of the times post will have files attached.
-	if rand.Float64() < 0.02 {
-		if err := c.attachFilesToPost(u, post); err != nil {
+	if isReply {
+		var rootId string
+		randomPost, err := u.Store().RandomPostForChannel(channel.Id)
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+		} else if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// Get the ID of the post to which the randomPost replies to,
+		// or the ID of the randomPost itself if it's a root post
+		if randomPost.RootId != "" {
+			rootId = randomPost.RootId
+		} else {
+			rootId = randomPost.Id
+		}
+
+		post.RootId = rootId
+	}
+
+	if hasFilesAttached {
+		if err := control.AttachFilesToPost(u, post); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	if isUrgent {
+		post.Metadata = &model.PostMetadata{}
+		post.Metadata.Priority = &model.PostPriority{
+			Priority:                model.NewString("urgent"),
+			RequestedAck:            model.NewBool(false),
+			PersistentNotifications: model.NewBool(false),
 		}
 	}
 
@@ -640,52 +780,6 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
-}
-
-func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error {
-	type file struct {
-		data   []byte
-		upload bool
-	}
-	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
-	files := make(map[string]*file, len(filenames))
-
-	for _, filename := range filenames {
-		files[filename] = &file{
-			data:   control.MustAsset(filename),
-			upload: rand.Intn(2) == 0,
-		}
-	}
-
-	// We make sure at least one file gets uploaded.
-	files[filenames[rand.Intn(len(filenames))]].upload = true
-
-	var wg sync.WaitGroup
-	fileIds := make(chan string, len(files))
-	for filename, file := range files {
-		if !file.upload {
-			continue
-		}
-		wg.Add(1)
-		go func(filename string, data []byte) {
-			defer wg.Done()
-			resp, err := u.UploadFile(data, post.ChannelId, filename)
-			if err != nil {
-				c.status <- c.newErrorStatus(err)
-				return
-			}
-			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
-			fileIds <- resp.FileInfos[0].Id
-		}(filename, file.data)
-	}
-
-	wg.Wait()
-	numFiles := len(fileIds)
-	for i := 0; i < numFiles; i++ {
-		post.FileIds = append(post.FileIds, <-fileIds)
-	}
-
-	return nil
 }
 
 func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
@@ -871,8 +965,33 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil && !errors.Is(err, errNoMatch) {
 			return "", err
 		}
-		message = "@" + user.Username + " "
+		message += "@" + user.Username + " "
 	}
+
+	// 10% of messages will contain a link.
+	if rand.Float64() < 0.10 {
+		message = control.AddLink(message)
+	}
+
+	// 1% of messages will contain a permalink
+	if rand.Float64() < 0.01 {
+		post, err := u.Store().RandomPostForChannel(channel.Id)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+			return "", err
+		}
+		// We ignore in case a post is not found.
+		if err == nil {
+			siteURL := u.Store().ClientConfig()["SiteURL"]
+			team, err := u.Store().CurrentTeam()
+			if err != nil {
+				return "", err
+			}
+			pl := siteURL + "/" + team.Name + "/pl/" + post.Id
+
+			message += " " + pl + " "
+		}
+	}
+
 	message += genMessage(isReply)
 	return message, nil
 }
@@ -900,19 +1019,40 @@ func unreadCheck(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id}); err != nil {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channel.Id, CollapsedThreadsSupported: collapsedThreads}); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: "unread check done"}
 }
 
-func searchChannels(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
+func (c *SimulController) searchChannels(u user.User) control.UserActionResponse {
+	ok, err := control.IsVersionSupported("6.4.0", c.serverVersion)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	var team model.Team
+	if ok {
+		// Selecting any random team if >=6.4 version.
+		team, err = u.Store().RandomTeam(store.SelectMemberOf)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		// Selecting only current team otherwise.
+		teamPtr, err2 := u.Store().CurrentTeam()
+		if err2 != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err2)}
+		} else if teamPtr == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+		}
+		team = *teamPtr
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
@@ -933,9 +1073,21 @@ func searchChannels(u user.User) control.UserActionResponse {
 	}
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
-		channels, err := u.SearchChannels(team.Id, &model.ChannelSearch{
+		// Searching channels from all teams if >= 6.4 version.
+		if ok {
+			channels, err := u.SearchChannels(&model.ChannelSearch{
+				Term: term,
+			})
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
+		}
+		channels, err := u.SearchChannelsForTeam(team.Id, &model.ChannelSearch{
 			Term: term,
 		})
+		// Duplicating the else part because the channels types are different.
+		// One is []*model.Channel, other is model.ChannelListWithTeamData
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
@@ -1055,7 +1207,13 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 	// We simulate the user typing up to 4 characters when searching for
 	// a group channel. This is an arbitrary value which fits well with the current
 	// frequency value for this action.
-	return control.EmulateUserTyping(user.Username[:1+rand.Intn(4)], func(term string) control.UserActionResponse {
+	numChars := 4
+	if numChars > len(user.Username) {
+		// rand.Intn returns a number exclusive of the max limit.
+		// So there's no need to subtract 1.
+		numChars = len(user.Username)
+	}
+	return control.EmulateUserTyping(user.Username[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchGroupChannels(&model.ChannelSearch{
 			Term: user.Username,
 		})
@@ -1206,4 +1364,470 @@ func sendTypingEventIfEnabled(u user.User, channelId string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("viewGlobalThreads: current team should be set"))}
+	}
+
+	// View "All your threads" in the Global Threads Screen
+	threads, err := u.Store().ThreadsSorted(false, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if len(threads) == 0 {
+		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no threads"}
+		}
+	}
+
+	oldestThreadId := threads[len(threads)-1].PostId
+	// scrolling between 1 and 3 times
+	numScrolls := rand.Intn(3) + 1
+	for i := 0; i < numScrolls; i++ {
+		threads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+			Before:      oldestThreadId,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			break
+		}
+		oldestThreadId = threads[len(threads)-1].PostId
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+
+	// Switch to "Unread" tabs
+	unreadThreads, err := u.Store().ThreadsSorted(true, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if len(unreadThreads) == 0 {
+		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      true,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(unreadThreads) == 0 {
+			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no unread threads"}
+		}
+	}
+
+	oldestUnreadThreadId := unreadThreads[len(unreadThreads)-1].PostId
+	// scrolling between 1 and 3 times
+	numScrolls = rand.Intn(3) + 1
+	for i := 0; i < numScrolls; i++ {
+		unreadThreads, err = u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      true,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+			Before:      oldestUnreadThreadId,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(unreadThreads) == 0 {
+			break
+		}
+		oldestUnreadThreadId = unreadThreads[len(unreadThreads)-1].PostId
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+
+	return control.UserActionResponse{Info: "Visited Global Threads Screen"}
+}
+
+func (c *SimulController) followThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		if errors.Is(err, memstore.ErrChannelNotFound) {
+			return control.UserActionResponse{Info: "followThread: current channel not set"}
+		}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomReplyPostForChannel(channel.Id)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		post, err = u.Store().RandomPostForChannel(channel.Id)
+		if err != nil {
+			if errors.Is(err, memstore.ErrPostNotFound) {
+				return control.UserActionResponse{Info: "followThread: no posts in store to follow"}
+			}
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+	id := post.RootId
+	if id == "" {
+		id = post.Id
+	}
+	err = u.UpdateThreadFollow(channel.TeamId, id, true)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("followed thread %s", id)}
+}
+
+func (c *SimulController) unfollowThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	thread, err := u.Store().RandomThread()
+	if err != nil {
+		if errors.Is(err, memstore.ErrThreadNotFound) {
+			return control.UserActionResponse{Info: "unfollow thread: no thread to unfollow"}
+		}
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channel, err := u.Store().Channel(thread.Post.ChannelId)
+	if err != nil || channel == nil {
+		err = u.GetChannel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		channel, err = u.Store().Channel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if channel == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("unfollow thread: can't get channel for thread"))}
+		}
+	}
+	err = u.UpdateThreadFollow(channel.TeamId, thread.PostId, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("unfollowed thread %s", thread.PostId)}
+}
+
+func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	// get a random thread
+	thread, err := u.Store().RandomThread()
+	if err != nil && !errors.Is(err, memstore.ErrThreadNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// we don't have threads in store lets get some
+	if errors.Is(err, memstore.ErrThreadNotFound) {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("viewthread: current team should be set"))}
+		}
+		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: true,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "viewthread: no threads available to view"}
+		}
+		thread = *threads[0]
+	}
+
+	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+		CollapsedThreads: true,
+		Direction:        "down",
+		PerPage:          25,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if len(postIds) == 0 {
+		return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
+	}
+	newestPostId := postIds[len(postIds)-1]
+	newestPost, err := u.Store().Post(newestPostId)
+	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	var newestCreateAt int64
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		newestCreateAt = thread.Post.CreateAt
+	} else {
+		newestCreateAt = newestPost.CreateAt
+	}
+
+	// scrolling between 1 and 3 times
+	numScrolls := rand.Intn(3) + 1
+	for i := 0; i < numScrolls && hasNext; i++ {
+		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+			CollapsedThreads: true,
+			Direction:        "down",
+			PerPage:          25,
+			FromPost:         newestPostId,
+			FromCreateAt:     newestCreateAt,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if !hasNext {
+			break
+		}
+		newestPostId = postIds[len(postIds)-1]
+		newestPost, err = u.Store().Post(newestPostId)
+		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			newestCreateAt = thread.Post.CreateAt
+		} else {
+			newestCreateAt = newestPost.CreateAt
+		}
+
+		// idle time between scrolls, between 1 and 10 seconds.
+		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		select {
+		case <-c.stopChan:
+			return control.UserActionResponse{Info: "action canceled"}
+		case <-time.After(idleTime):
+		}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
+}
+
+func (c *SimulController) markAllThreadsInTeamAsRead(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("markAllThreadsInTeamAsRead: current team should be set"))}
+	}
+	err = u.MarkAllThreadsInTeamAsRead(team.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	return control.UserActionResponse{Info: fmt.Sprintf("marked all threads in team %s as read", team.Id)}
+}
+
+func (c *SimulController) updateThreadRead(u user.User) control.UserActionResponse {
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil || !collapsedThreads {
+		return resp
+	}
+	// get a random thread
+	thread, err := u.Store().RandomThread()
+	if err != nil && !errors.Is(err, memstore.ErrThreadNotFound) {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// we don't have threads in store lets get some
+	if errors.Is(err, memstore.ErrThreadNotFound) {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: current team should be set"))}
+		}
+		threads, err := u.GetUserThreads(team.Id, &model.GetUserThreadsOpts{
+			PageSize:    25,
+			Extended:    false,
+			Deleted:     false,
+			Unread:      false,
+			Since:       0,
+			TotalsOnly:  false,
+			ThreadsOnly: false,
+		})
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(threads) == 0 {
+			return control.UserActionResponse{Info: "updateThreadRead: no threads available"}
+		}
+		thread, err = u.Store().RandomThread()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+	channel, err := u.Store().Channel(thread.Post.ChannelId)
+	if err != nil || channel == nil {
+		err = u.GetChannel(thread.Post.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		channel, err = u.Store().Channel(thread.Post.ChannelId)
+		if err != nil || channel == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("updateThreadRead: can't get channel for thread"))}
+		}
+	}
+
+	// We set thread read time to the createat of the root post.
+	// This is an easy, valid timestamp and causes the server to
+	// recalculate all mentions in the thread.
+	err = u.UpdateThreadRead(channel.TeamId, thread.PostId, thread.Post.CreateAt)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
+}
+
+func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		return control.UserActionResponse{Info: "no team set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	userID := u.Store().Id()
+
+	// select time range
+	timeRange := ""
+	if rand.Float64() < 0.75 {
+		timeRange = "7_day"
+	} else {
+		if rand.Float64() < 0.50 {
+			// choose today
+			timeRange = "today"
+		} else {
+			// choose 28 day
+			timeRange = "28_day"
+		}
+	}
+
+	// generally limit would be 5, if the user chooses to open full modal occasionally it'd be 10
+	var limit int
+	if rand.Float64() < 0.05 {
+		limit = 10
+	} else {
+		limit = 5
+	}
+	// my insights is the default option, so team insights will be viewed less.
+	if rand.Float64() < 0.30 {
+		// view team insights
+		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopInactiveChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetNewTeamMembersSince(team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	} else {
+		// view user insights
+		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopInactiveChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if _, err := u.GetTopDMsForUserSince(timeRange, 0, limit); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed insights for user id %s", userID)}
+}
+
+func (c *SimulController) createPostReminder(u user.User) control.UserActionResponse {
+	ch, err := u.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "current channel is not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(ch.Id)
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no post in channel: %s", ch.Id)}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Going with a hardcoded 10 minute addition for now.
+	// Probably there's no need to randomize this yet.
+	err = u.CreatePostReminder(u.Store().Id(), post.Id, time.Now().Add(10*time.Minute).Unix())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
 }

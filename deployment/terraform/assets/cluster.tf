@@ -9,13 +9,21 @@ terraform {
 }
 
 provider "aws" {
-  region  = "us-east-1"
-  profile = "mm-loadtest"
+  region  = var.aws_region
+  profile = var.aws_profile
 }
 
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
+
+data "http" "my_public_ip" {
+  url = "https://checkip.amazonaws.com"
+}
+
+locals {
+  ifconfig_result = chomp(data.http.my_public_ip.response_body)
+}
 
 data "aws_subnet_ids" "selected" {
   vpc_id = var.es_vpc
@@ -38,7 +46,7 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
@@ -65,9 +73,8 @@ resource "aws_instance" "app_server" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
-      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
-      "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
-      "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
+      "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
+      "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
@@ -89,7 +96,7 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = "t3.xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
@@ -109,13 +116,12 @@ resource "aws_instance" "metrics_server" {
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
       "sudo apt-get install -y adduser libfontconfig1",
-      "wget https://dl.grafana.com/oss/release/grafana_7.3.7_amd64.deb",
-      "sudo dpkg -i grafana_7.3.7_amd64.deb",
+      "wget https://dl.grafana.com/oss/release/grafana_9.5.1_amd64.deb",
+      "sudo dpkg -i grafana_9.5.1_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
@@ -125,7 +131,10 @@ resource "aws_instance" "metrics_server" {
       "sudo systemctl enable grafana-server",
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
-      "sudo service inbucket start"
+      "sudo service inbucket start",
+      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
+      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
+      "sudo systemctl enable pyroscope-server"
     ]
   }
 }
@@ -134,7 +143,7 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy"
   }
-  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
@@ -242,7 +251,6 @@ resource "aws_iam_access_key" "s3key" {
 
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
-  acl    = "private"
   count  = var.app_instance_count > 1 ? 1 : 0
   tags = {
     Name = "${var.cluster_name}-s3bucket"
@@ -347,7 +355,7 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
@@ -383,7 +391,7 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.ifconfig_result}/32"]
   }
   ingress {
     from_port   = 8065
@@ -481,7 +489,7 @@ resource "aws_security_group_rule" "agent-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.ifconfig_result}/32"]
   security_group_id = aws_security_group.agent.id
 }
 
@@ -534,7 +542,7 @@ resource "aws_security_group_rule" "metrics-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.ifconfig_result}/32"]
   security_group_id = aws_security_group.metrics[0].id
 }
 
@@ -553,6 +561,16 @@ resource "aws_security_group_rule" "metrics-grafana" {
   type              = "ingress"
   from_port         = 3000
   to_port           = 3000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-pyroscope" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 4040
+  to_port           = 4040
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
@@ -610,7 +628,7 @@ resource "aws_security_group" "proxy" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.ifconfig_result}/32"]
   }
 
   ingress {
@@ -640,7 +658,7 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.job_server_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.job_server_instance_count
@@ -664,13 +682,20 @@ resource "aws_instance" "job_server" {
   provisioner "remote-exec" {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "wget --no-check-certificate -qO - https://s3-eu-west-1.amazonaws.com/deb.robustperception.io/41EFC99D.gpg | sudo apt-key add -",
-      "wget --no-check-certificate -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -",
-      "sudo sh -c 'echo \"deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
+      "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
+      "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter"
     ]
+  }
+}
+
+resource "null_resource" "s3_dump" {
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "") ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
@@ -200,6 +200,33 @@ func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 	status, err = coord.Status()
 	if err != nil {
 		return status, fmt.Errorf("failed to get coordinator status: %w", err)
+	}
+
+	return status, nil
+}
+
+// InjectAction injects a named action for all agents that is run once.
+func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
+	var status coordinator.Status
+
+	if err := t.setOutput(); err != nil {
+		return status, err
+	}
+
+	if len(t.output.Agents) == 0 {
+		return status, errors.New("there are no agents to inject the action")
+	}
+	ip := t.output.Agents[0].PublicIP
+
+	id := t.config.ClusterName + "-coordinator-0"
+	coord, err := client.New(id, "http://"+ip+":4000", nil)
+	if err != nil {
+		return status, fmt.Errorf("failed to create coordinator client: %w", err)
+	}
+
+	status, err = coord.InjectAction(actionID)
+	if err != nil {
+		return status, fmt.Errorf("failed to inject action %q: %w", actionID, err)
 	}
 
 	return status, nil

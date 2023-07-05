@@ -22,8 +22,6 @@ func newConfig(t *testing.T) *Config {
 	t.Helper()
 	var cfg Config
 	defaults.Set(&cfg)
-	cfg.MonitorConfig.Queries[0].Description = "Query"
-	cfg.MonitorConfig.Queries[0].Query = "query"
 	return &cfg
 }
 
