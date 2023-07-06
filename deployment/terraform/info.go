@@ -47,9 +47,9 @@ func displayInfo(output *Output) {
 		for _, agent := range output.Agents {
 			fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
 		}
-	}
 
-	fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
+		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
+	}
 
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
