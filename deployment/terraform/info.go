@@ -20,11 +20,6 @@ func (t *Terraform) Info() error {
 }
 
 func displayInfo(output *Output) {
-	if len(output.Agents) == 0 {
-		fmt.Println("No active deployment found.")
-		return
-	}
-
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
@@ -47,10 +42,13 @@ func displayInfo(output *Output) {
 		}
 	}
 
-	fmt.Println("Load Agent(s):")
-	for _, agent := range output.Agents {
-		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+	if output.HasAgents() {
+		fmt.Println("Load Agent(s):")
+		for _, agent := range output.Agents {
+			fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+		}
 	}
+
 	fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 
 	if output.HasMetrics() {
