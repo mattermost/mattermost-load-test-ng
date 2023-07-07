@@ -105,15 +105,11 @@ func (c *GenController) Run() {
 
 	for i := 0; i < len(initActions); i++ {
 		if done() {
-			c.status <- c.newInfoStatus("user init done")
 			return
 		}
 
-		if resp := initActions[i](c.user); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
+		if !c.runAction(initActions[i]) {
 			i--
-		} else {
-			c.status <- c.newInfoStatus(resp.Info)
 		}
 
 		idleTime := time.Duration(math.Round(100 * c.rate))
@@ -125,20 +121,33 @@ func (c *GenController) Run() {
 		}
 	}
 
+	c.status <- c.newInfoStatus("user init done")
+
 	// Wait for all users to be logged in.
 	// This also means now users can join all teams.
 	for st.get(StateTargetUsers) != int64(c.numUsers) {
 		time.Sleep(time.Second)
 	}
 
-	// Join all teams
-	c.runAction(c.joinAllTeams)
+	requiredActions := []control.UserAction{
+		c.joinAllTeams,
+		c.getUsers,
+	}
+	for i := 0; i < len(requiredActions); i++ {
+		if !c.runAction(requiredActions[i]) {
+			i--
+		}
 
-	// Add jitter to spread out getUser calls
-	time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+		// Add jitter to spread out potentially heavy calls.
+		idleTime := time.Duration(rand.Intn(5)) * time.Second
+		select {
+		case <-c.stop:
+			return
+		case <-time.After(idleTime):
+		}
+	}
 
-	// Initial call to get all users
-	c.runAction(c.getUsers)
+	c.status <- c.newInfoStatus("done with required actions")
 
 	// Create all channels
 	actions := map[string]userAction{
@@ -230,13 +239,21 @@ func (c *GenController) Run() {
 	})
 }
 
-func (c *GenController) runAction(action control.UserAction) {
+// runAction runs the given action and returns whether this was fully executed
+// or not. This is used by the caller to figure out whether to retry the action.
+// NOTE: this logic relies on a pattern of using resp.Info when the action
+// has been completed successfully, otherwise returning early and setting either
+// resp.Err or resp.Warn.
+func (c *GenController) runAction(action control.UserAction) bool {
 	if resp := action(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
+		return false
 	} else if resp.Warn != "" {
 		c.status <- c.newWarnStatus(resp.Warn)
+		return false
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
+		return true
 	}
 }
 

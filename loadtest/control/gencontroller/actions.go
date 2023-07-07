@@ -469,13 +469,16 @@ func (c *GenController) joinAllTeams(u user.User) control.UserActionResponse {
 
 	joinedTeamIds := []string{}
 	for _, team := range teams {
-		if u.Store().IsTeamMember(team.Id, userId) {
-			continue
+		// If user is already added to the team we skip the AddTeamMember call but
+		// otherwise proceed with fetching the rest of the required entities
+		// (e.g. channels, channel members) to guarantee they get loaded in case
+		// of retry.
+		if !u.Store().IsTeamMember(team.Id, userId) {
+			if err := u.AddTeamMember(team.Id, userId); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
 		}
 
-		if err := u.AddTeamMember(team.Id, userId); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
 		if err := u.GetChannelsForTeam(team.Id, true); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
