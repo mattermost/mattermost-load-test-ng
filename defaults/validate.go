@@ -57,7 +57,7 @@ func Validate(value interface{}) error {
 			if err := Validate(dv); err != nil {
 				return err
 			}
-		case reflect.Slice:
+		case reflect.Slice, reflect.Map:
 			dv := reflect.ValueOf(field.Interface())
 			if tag, ok := t.Field(i).Tag.Lookup("validate"); ok {
 				if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
@@ -66,12 +66,6 @@ func Validate(value interface{}) error {
 			}
 			for j := 0; j < dv.Len(); j++ {
 				if err := Validate(dv.Index(j).Interface()); err != nil {
-					return err
-				}
-			}
-		case reflect.Map:
-			if tag, ok := t.Field(i).Tag.Lookup("validate"); ok {
-				if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
 					return err
 				}
 			}

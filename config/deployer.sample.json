@@ -33,8 +33,7 @@
     "InstanceType": "db.r6g.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
-    "EnablePerformanceInsights": false,
-    "DBParameters": []
+    "EnablePerformanceInsights": false
   },
   "ExternalDBSettings": {
     "DriverName": "cockroach",
