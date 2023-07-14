@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/mattermost/mattermost-load-test-ng/cmd/metricswatcher/config"
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/spf13/cobra"
 )
 

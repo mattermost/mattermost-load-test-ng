@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // MemStore is a simple implementation of MutableUserStore

@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack/v5"

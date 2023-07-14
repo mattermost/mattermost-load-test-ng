@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/wiggin77/merror"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // LoadAgentCluster is the object holding information about all the load-test
