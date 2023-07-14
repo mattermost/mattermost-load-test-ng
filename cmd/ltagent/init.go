@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -19,7 +19,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/spf13/cobra"
 )
 

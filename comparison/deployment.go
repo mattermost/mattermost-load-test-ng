@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConfig *deploymentConfig) error) error {
