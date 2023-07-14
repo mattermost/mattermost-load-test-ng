@@ -22,12 +22,12 @@ data "http" "my_public_ip" {
 }
 
 data "external" "private_ip" {
-  program = ["sh", "-c", "echo {\\\"ip\\\":\\\"$(hostname -i)\\\"}" ]
+  program = ["sh", "-c", "echo {\\\"ip\\\":\\\"$(hostname -i)\\\"}"]
 }
 
 locals {
-  public_ip = chomp(data.http.my_public_ip.response_body)
-  private_ip = "${data.external.private_ip.result.ip}"
+  public_ip  = chomp(data.http.my_public_ip.response_body)
+  private_ip = data.external.private_ip.result.ip
 }
 
 data "aws_subnet_ids" "selected" {
@@ -333,8 +333,8 @@ resource "aws_db_parameter_group" "db_params_group" {
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
-      name  = parameter.value["name"]
-      value = parameter.value["value"]
+      name         = parameter.value["name"]
+      value        = parameter.value["value"]
       apply_method = parameter.value["apply_method"]
     }
   }
@@ -494,7 +494,7 @@ resource "aws_security_group_rule" "agent-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.agent.id
 }
 
@@ -547,7 +547,7 @@ resource "aws_security_group_rule" "metrics-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.metrics[0].id
 }
 
