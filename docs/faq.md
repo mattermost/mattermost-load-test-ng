@@ -27,7 +27,7 @@ Note that in both cases, `ClusterConfig.MaxActiveUsers` should be set to `AgentI
 
 ### How many users does an agent support?
 
-For an agent running in a `c5.xlarge` instance in AWS (X CPU, Y RAM), 2000 users is the sweet spot.
+For an agent running in a `c5.xlarge` instance in AWS (4 vCPU, 8 GB RAM), the maximum number of users recommended is 2000.
 
 ### Can I use a pre-existing Mattermost or database deployment?
 
