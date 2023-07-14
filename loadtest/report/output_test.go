@@ -16,8 +16,7 @@ func TestSortKeys(t *testing.T) {
 	require.NotPanics(t, func() {
 		sortKeys(map[model.LabelValue]avgp99{
 			"store_metric": [2][]diff{
-				{
-				},
+				{},
 				{
 					{
 						base:         time.Second,
@@ -59,8 +58,7 @@ func TestSortKeys(t *testing.T) {
 						deltaPercent: 100,
 					},
 				},
-				{
-				},
+				{},
 			},
 			"another_metric": [2][]diff{
 				{
