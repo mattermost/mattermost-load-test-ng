@@ -12,6 +12,78 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestSortKeys(t *testing.T) {
+	require.NotPanics(t, func() {
+		sortKeys(map[model.LabelValue]avgp99{
+			"store_metric": [2][]diff{
+				{
+				},
+				{
+					{
+						base:         time.Second,
+						actual:       2 * time.Second,
+						delta:        1 * time.Second,
+						deltaPercent: 100,
+					},
+				},
+			},
+			"another_metric": [2][]diff{
+				{
+					{
+						base:         time.Millisecond,
+						actual:       2 * time.Millisecond,
+						delta:        1 * time.Millisecond,
+						deltaPercent: 100,
+					},
+				},
+				{
+					{
+						base:         time.Second,
+						actual:       2 * time.Second,
+						delta:        1 * time.Second,
+						deltaPercent: 100,
+					},
+				},
+			},
+		}, sortByAvg, true)
+	})
+
+	require.NotPanics(t, func() {
+		sortKeys(map[model.LabelValue]avgp99{
+			"store_metric": [2][]diff{
+				{
+					{
+						base:         time.Millisecond,
+						actual:       2 * time.Millisecond,
+						delta:        1 * time.Millisecond,
+						deltaPercent: 100,
+					},
+				},
+				{
+				},
+			},
+			"another_metric": [2][]diff{
+				{
+					{
+						base:         time.Millisecond,
+						actual:       2 * time.Millisecond,
+						delta:        1 * time.Millisecond,
+						deltaPercent: 100,
+					},
+				},
+				{
+					{
+						base:         time.Second,
+						actual:       2 * time.Second,
+						delta:        1 * time.Second,
+						deltaPercent: 100,
+					},
+				},
+			},
+		}, sortByP99, true)
+	})
+}
+
 func TestPrintSummary(t *testing.T) {
 	f, err := os.CreateTemp("", "output")
 	require.Nil(t, err)
