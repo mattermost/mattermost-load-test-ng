@@ -44,7 +44,7 @@ Now that you have a working Mattermost server ready to react to the agent's requ
 cp config/gencontroller.sample.json config/gencontroller.json
 ```
 4. Now tweak everything you need in the controller configuration. All the settings are [documented](config/gencontroller.md), but here are some recommendations:
-  - Make sure that the number of DMs is possible with the number of users you will run (more on simulated users later). If you run 10 users, the maximum number of different DMs is 45 so don't use a number larger than that. The formula for the maximum number of DMs is $n(n-1)2$, with $n$ the number of users.
+  - Make sure that the number of DMs is possible with the number of users you will run (more on simulated users later). If you run 10 users, the maximum number of different DMs is 45 so don't use a number larger than that. The formula for the maximum number of DMs is $n(n-1)/2$, with $n$ the number of users.
   - All the settings follow specific distributions in real servers, so make sure to run some numbers in the server you want to mimic to make an educated decision here. As an example, the vast majority of channels in a normal server are DMs and GMs, accounting for 75% and 15% respectively, while private channels represent a 7% and public ones only a 3%.
   
 You don't need to modify any of the other configuration files, since they are not considered when using a gencontroller.
