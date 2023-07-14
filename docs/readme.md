@@ -6,8 +6,8 @@ The documentation here is comprehensive, so it may be hard for someone new to kn
 
 - If you are interested in using the tool to run some tests, there are a few documents you need to read, roughly in the following order:
     - [How-to guide](load-test-how-to-use.md): this guide is a great overview of how things work, as well as tips and tricks that will make your life easier. It also links to multiple other documents, which you can follow to broaden your understanding. Read it completely first before running any tests!
-    - [How to run a load-test locally](local_loadtest.md): a specific guide to start running load-tests locally in your computer, no AWS needed.
-    - [How to run a load-test in Terraform](terraform_loadtest.md): a more advanced guide to deploy a cluster to AWS to run a more powerful load-test.
+    - [How to run a load-test locally](local_loadtest.md): a specific guide to start running load-tests locally in your computer, no AWS needed. Running some local tests will teach you how everything fits together.
+    - [How to run a load-test in Terraform](terraform_loadtest.md): a more advanced guide to deploy a cluster to AWS to run a more powerful load-test. This is the recommended way to run production-ready tests.
     - [Generate and compare reports](compare.md): once the test is executed, here's how you can generate a report you can use for analyzing the results, as well as for comparing it against a second test to generate a diff view and some useful graphs.
     - [FAQ](faq.md): whenever you find yourself wondering something about the tool, check here first in case other people have already asked.
 - If you are more interested in learning how the tool is architected, or how to improve it, then you should start here:
