@@ -71,6 +71,8 @@ type UserStore interface {
 	CurrentTeam() (*model.Team, error)
 	// TeamMember returns the TeamMember for the given teamId and userId.
 	TeamMember(teamdId, userId string) (model.TeamMember, error)
+	// IsTeamMember returns if the user is part of the team.
+	IsTeamMember(teamdId, userId string) bool
 
 	// Preferences returns the preferences for the stored user.
 	Preferences() (model.Preferences, error)

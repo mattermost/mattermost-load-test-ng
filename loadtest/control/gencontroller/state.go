@@ -19,6 +19,11 @@ type state struct {
 	channelsMut           sync.Mutex
 	followedThreadsByUser map[string]map[string]bool
 	followedThreadsMut    sync.RWMutex
+	// Set of all the DMs created. The first key is the user whose ID
+	// is lexicographically lower. So if there is DM between users "A"
+	// and "B", there will be an entry userDMs["A"]["B"] == true.
+	userDMs    map[string]map[string]bool
+	userDMsMut sync.RWMutex
 }
 
 type ThreadInfo struct {
@@ -40,6 +45,7 @@ const (
 	StateTargetPostReminders     = "postreminders"
 	StateTargetSidebarCategories = "sidebarcategories"
 	StateTargetFollowedThreads   = "followedthreads"
+	StateTargetUsers             = "users"
 )
 
 func init() {
@@ -55,10 +61,12 @@ func init() {
 			StateTargetPostReminders:     0,
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
+			StateTargetUsers:             0,
 		},
 		longRunningThreads:    make(map[string]*ThreadInfo),
 		channels:              []string{},
 		followedThreadsByUser: make(map[string]map[string]bool),
+		userDMs:               make(map[string]map[string]bool),
 	}
 }
 
@@ -133,4 +141,42 @@ func copyThreadInfo(src *ThreadInfo) *ThreadInfo {
 	dst.ChannelId = src.ChannelId
 	dst.TeamId = src.TeamId
 	return dst
+}
+
+func orderUsers(user1, user2 string) (string, string) {
+	if user1 < user2 {
+		return user1, user2
+	}
+
+	return user2, user1
+}
+
+func (st *state) setDM(user1, user2 string) {
+	st.userDMsMut.Lock()
+	defer st.userDMsMut.Unlock()
+
+	user1, user2 = orderUsers(user1, user2)
+
+	if _, ok := st.userDMs[user1]; !ok {
+		st.userDMs[user1] = make(map[string]bool)
+	}
+
+	st.userDMs[user1][user2] = true
+}
+
+func (st *state) numDMs(user string) int {
+	st.userDMsMut.RLock()
+	defer st.userDMsMut.RUnlock()
+
+	return len(st.userDMs[user])
+}
+
+func (st *state) dmExists(user1, user2 string) bool {
+	st.userDMsMut.RLock()
+	defer st.userDMsMut.RUnlock()
+
+	user1, user2 = orderUsers(user1, user2)
+
+	dms, ok := st.userDMs[user1]
+	return ok && dms[user2]
 }

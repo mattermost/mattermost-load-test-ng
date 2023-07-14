@@ -756,6 +756,15 @@ func (s *MemStore) SetTeamMembers(teamId string, teamMembers []*model.TeamMember
 	return nil
 }
 
+// IsTeamMember returns whether the user is part of the team.
+func (s *MemStore) IsTeamMember(teamId, userId string) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	_, isMember := s.teamMembers[teamId][userId]
+	return isMember
+}
+
 // TeamMember returns the team member for the given teamId and userId.
 func (s *MemStore) TeamMember(teamId, userId string) (model.TeamMember, error) {
 	s.lock.RLock()
