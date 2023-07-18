@@ -17,7 +17,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Config returns the deployment config associated with the Terraform instance.

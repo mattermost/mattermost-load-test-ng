@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,9 +19,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/server/v8/config"
-	"github.com/mattermost/mattermost-server/server/v8/model"
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
+	"github.com/mattermost/mattermost/server/v8/config"
 )
 
 const cmdExecTimeoutMinutes = 30
@@ -605,7 +606,7 @@ func pingServer(addr string) error {
 		case <-timeout:
 			return fmt.Errorf("timeout after %s, server is not responding", dur)
 		case <-time.After(3 * time.Second):
-			status, _, err := client.GetPingWithServerStatus()
+			status, _, err := client.GetPingWithServerStatus(context.Background())
 			if err != nil {
 				mlog.Debug("got error", mlog.Err(err), mlog.String("status", status))
 				mlog.Info("Waiting for the server...")

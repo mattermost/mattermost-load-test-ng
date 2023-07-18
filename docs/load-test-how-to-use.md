@@ -2,7 +2,7 @@
 
 ## Prerequisites for load-testing a new feature
 
- - Build and test a feature in a mattermost-server branch.
+ - Build and test a feature in a `mattermost` branch.
  - Scan through markdown docs in [mattermost-load-test-ng](https://github.com/mattermost/mattermost-load-test-ng/tree/master/docs). Make sure you get an idea of what a coordinator, agent, and controller are, what bounded and unbounded load-tests are, and why metrics collection (a deployment of prometheus) is needed in this setup.
 
 ## Steps to load test the feature
@@ -29,8 +29,8 @@ The steps to load test a feature include:
  - Go through [local_loadtest.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/local_loadtest.md).
  - Some additional information on the above document
     - Updates to `config.json`
-        - Make sure to change `ConnectionConfiguration` section in `config.json` according to the local deployment of mattermost-server.
-        - For `InstanceConfiguration`, see [this doc](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration). This configuration setting is used by the `init` command to initially populate the mattermost database.
+        - Make sure to change `ConnectionConfiguration` section in `config.json` according to the local deployment of `mattermost`.
+        - For `InstanceConfiguration`, see [this doc](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/config.md#instanceconfiguration). This configuration setting is used by the `init` command to initially populate the mattermost database.
     - Increase the frequency of the new action, so it's easier to debug while running locally. [sample](https://github.com/mattermost/mattermost-load-test-ng/blob/8faa4dfb485dace3bd65908c0d3d98979b7dfd17/loadtest/control/simulcontroller/controller.go#L227)
     - If you see errors, there's a [troubleshooting guide](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/faq.md#troubleshooting) you can reference to resolve the issues.
     - Check `ltagent.log` located in the `mattermost-load-test-ng` directory, and the server logs for details on errors, if any.
@@ -44,9 +44,9 @@ The steps to load-test a new feature in production, after testing new actions lo
  - Review the [terraform_loadtest.md](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md) documentation.
  - Some additional information on the above document
     - When performing [this](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/terraform_loadtest.md#copy-and-modify-the-required-configuration) step, edit `MattermostLicenseFile` value to the path containing the license.
-        - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost-server`, and `load-test package`, to be used in the load-test. These are the default options.
-        - When there's unmerged changes to `mattermost-server`, or `mattermost-load-test-ng`, you need to update these values:
-            - Run `make build-linux` in the `mattermost-server` directory, change the `MattermostDownloadURL` value to the path containing the Mattermost executable. For example `file:///somepath/mattermost-server/bin/linux_amd64/mattermost`.
+        - The fields `MattermostDownloadURL` and `LoadTestDownloadURL` point to the latest `mattermost`, and `load-test package`, to be used in the load-test. These are the default options.
+        - When there's unmerged changes to `mattermost`, or `mattermost-load-test-ng`, you need to update these values:
+            - Run `make build-linux` in the `mattermost/server` directory, change the `MattermostDownloadURL` value to the path containing the Mattermost executable. For example `file:///somepath/mattermost/server/bin/linux_amd64/mattermost`.
             - Run `make package` in the `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing the gzip of the load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`.
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
     - `go run ./cmd/ltctl deployment create`
@@ -73,7 +73,7 @@ The steps to load-test a new feature in production, after testing new actions lo
 #### Analysing load-test results
 
 "My load tests ran successfully, what to make of it?"
-    - In case of unbounded load-tests, when they finish, `go run ./cmd/ltctl loadtest status` would give you a count of maximum concurrent users which is a metric to compare the performance of that version of mattermost-server.
+    - In case of unbounded load-tests, when they finish, `go run ./cmd/ltctl loadtest status` would give you a count of maximum concurrent users which is a metric to compare the performance of that version of `mattermost`.
     - In case of two bounded loadtests with same `MaxConcurrentUsers` count, one can [generate a report](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/compare.md) comparing performance of various server metrics. 
     - In case of both bounded and unbounded loadtests, one can create Grafana dashboards to analyze the performance of the new features by filtering API metrics to only what's relevant to the new handler. Here's an example.
         ![sample-dashboard-creation](https://i.imgur.com/zzRfh8b.png)
@@ -94,15 +94,15 @@ Even without the framework, a general load-test workflow in the cloud will be si
 After all the code changes:
  - [Add tests](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coverage.md#testing) if required. 
  - Run `make check-style`.
- - `go get -u github.com/mattermost/mattermost-server/server/v8@<commit-hash-in-master>` && `go mod tidy`
+ - `go get -u github.com/mattermost/mattermost/server/v8@<commit-hash-in-master>` && `go mod tidy`
  - Create the PR.
 
 #### Note:
 
  - **For populating the database manually** :
-    - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/loadtest_config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
+    - [InstanceConfiguration](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/config.md#instanceconfiguration) section would be as minimal as possible to reduce `db init` time.
     - Post a message in the [Developers:Performance](https://community.mattermost.com/core/channels/developers-performance) channel to request a migration file.
-    - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison_config.md#dbdumpurl). If not,
+    - If you're using [comparison](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/comparison.md), there is [an option to load db from a backup](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/config/comparison.md#dbdumpurl). If not,
         - `ssh` into the app machine, and `psql` into the connected database. (Link to the database can be obtained with `ltctl deployment info`)
         - Drop and recreate the target database. Restore backup data with `zcat <backupfile> | psql <dsn>`.
         - Now, the app service needs to be restarted so the server can run the necessary migrations.
