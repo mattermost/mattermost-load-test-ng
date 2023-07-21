@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -932,23 +933,23 @@ func (ue *UserEntity) SetProfileImage(data []byte) error {
 	return nil
 }
 
-// GetProfileImage fetches the profile image for the user.
-func (ue *UserEntity) GetProfileImage() error {
-	user, err := ue.getUserFromStore()
+// GetProfileImageForUser fetches and stores the profile image for the user.
+func (ue *UserEntity) GetProfileImageForUser(userId string, lastPictureUpdate int) error {
+	_, resp, err := ue.client.GetProfileImage(context.Background(), userId, strconv.Itoa(lastPictureUpdate))
 	if err != nil {
 		return err
 	}
-	return ue.GetProfileImageForUser(user.Id)
-}
 
-// GetProfileImageForUser fetches and stores the profile imagine for the
-// specified user.
-func (ue *UserEntity) GetProfileImageForUser(userId string) error {
-	if _, _, err := ue.client.GetProfileImage(context.Background(), userId, ""); err != nil {
-		return err
+	if resp.Etag == "" {
+		lastPictureUpdate = 0
+	} else {
+		lastPictureUpdate, err = strconv.Atoi(resp.Etag)
+		if err != nil {
+			return fmt.Errorf("failed to parse response ETag as an integer: %q", resp.Etag)
+		}
 	}
 
-	return ue.store.SetProfileImage(userId)
+	return ue.store.SetProfileImage(userId, lastPictureUpdate)
 }
 
 // SearchUsers performs a user search. It returns a list of users that matched.
