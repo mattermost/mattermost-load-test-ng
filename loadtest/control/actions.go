@@ -1072,3 +1072,10 @@ func MessageExport(u user.User) UserActionResponse {
 
 	return UserActionResponse{Info: "message export triggered"}
 }
+
+func GetSystemPing(u user.User) UserActionResponse {
+	if err := u.GetSystemPing(); err != nil {
+		return UserActionResponse{Err: err}
+	}
+	return UserActionResponse{Info: "successfully pinged system"}
+}
