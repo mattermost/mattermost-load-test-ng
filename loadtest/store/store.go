@@ -114,9 +114,9 @@ type UserStore interface {
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 
 	// profile
-	// ProfileImage returns whether the profile image for the given user has been
-	// stored.
-	ProfileImage(userId string) (bool, error)
+	// ProfileImage returns the etag returned by the server when first
+	// fetched, which is the last time the picture was updated.
+	ProfileImageLastUpdated(userId string) (int, error)
 
 	// posts
 	// Post returns the post for the given postId.
@@ -234,7 +234,7 @@ type MutableUserStore interface {
 
 	// profile
 	// SetProfileImage sets as stored the profile image for the given user.
-	SetProfileImage(userId string) error
+	SetProfileImage(userId string, lastPictureUpdate int) error
 
 	// SetServerVersion sets the server version string.
 	SetServerVersion(version string) error
