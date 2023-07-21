@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 func restorePrivateData(old, new *model.User) {
@@ -66,4 +66,12 @@ func SetRandomSeed() int64 {
 	}
 	rand.Seed(seed)
 	return seed
+}
+
+// clearMap wipes off the map entries.
+// This code pattern is specially optimized by the compiler to be fast.
+func clearMap[K comparable, V any](m map[K]V) {
+	for k := range m {
+		delete(m, k)
+	}
 }

@@ -25,13 +25,16 @@
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
+  "DBDumpURI": "",
+  "PermalinkIPsToReplace": [],
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
     "InstanceType": "db.r6g.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
-    "EnablePerformanceInsights": false
+    "EnablePerformanceInsights": false,
+    "DBParameters": []
   },
   "ExternalDBSettings": {
     "DriverName": "cockroach",

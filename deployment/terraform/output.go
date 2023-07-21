@@ -177,6 +177,11 @@ func (o *Output) HasAppServers() bool {
 	return len(o.Instances) > 0
 }
 
+// HasAgents returns whether a deployment includes agent instances.
+func (o *Output) HasAgents() bool {
+	return len(o.Agents) > 0
+}
+
 // HasMetrics returns whether a deployment includes the metrics instance.
 func (o *Output) HasMetrics() bool {
 	return o.MetricsServer.PrivateIP != ""

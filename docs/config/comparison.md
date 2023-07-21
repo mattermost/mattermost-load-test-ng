@@ -68,7 +68,7 @@ The file is expected to be gzip compressed. This can also point to a local file 
 *string*
 
 An optional URI to an S3 bucket (something like `s3://bucket-name/optional-subdir`) whose contents will be copied to the deployed bucket before running the load-test.
-See [the corresponding setting in the deployer configuration](deployer_config.md#S3BucketDumpURI) to learn more about this value.
+See [the corresponding setting in the deployer configuration](deployer.md#S3BucketDumpURI) to learn more about this value.
 
 ### NumUsers
 

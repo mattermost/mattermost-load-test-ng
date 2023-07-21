@@ -17,6 +17,19 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
+data "http" "my_public_ip" {
+  url = "https://checkip.amazonaws.com"
+}
+
+data "external" "private_ip" {
+  program = ["sh", "-c", "echo {\\\"ip\\\":\\\"$(hostname -i)\\\"}"]
+}
+
+locals {
+  public_ip  = chomp(data.http.my_public_ip.response_body)
+  private_ip = data.external.private_ip.result.ip
+}
+
 data "aws_subnet_ids" "selected" {
   vpc_id = var.es_vpc
 }
@@ -311,6 +324,20 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   apply_immediately            = true
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
+  db_parameter_group_name      = "${var.cluster_name}-db-pg"
+}
+
+resource "aws_db_parameter_group" "db_params_group" {
+  name   = "${var.cluster_name}-db-pg"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql12"
+  dynamic "parameter" {
+    for_each = var.db_parameters
+    content {
+      name         = parameter.value["name"]
+      value        = parameter.value["value"]
+      apply_method = parameter.value["apply_method"]
+    }
+  }
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
@@ -369,7 +396,7 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
   }
   ingress {
     from_port   = 8065
@@ -467,7 +494,7 @@ resource "aws_security_group_rule" "agent-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.agent.id
 }
 
@@ -520,7 +547,7 @@ resource "aws_security_group_rule" "metrics-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.metrics[0].id
 }
 
@@ -606,7 +633,7 @@ resource "aws_security_group" "proxy" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
   }
 
   ingress {

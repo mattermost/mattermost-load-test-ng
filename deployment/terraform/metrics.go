@@ -17,7 +17,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 const (
@@ -142,6 +142,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
 	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig,
 		strings.Join(mmTargets, ","),
+		strings.Join(ltTargets, ","),
 	)
 	rdr = strings.NewReader(pyroscopeConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // TestUserSuffixRegexp matches the numerical suffix of test usernames,
@@ -247,8 +247,6 @@ type User interface {
 	SaveReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
 	DeleteReaction(reaction *model.Reaction) error
-	// GetReactions fetches and stores reactions to the specified post.
-	GetReactions(postId string) error
 
 	// plugins
 	// GetWebappPlugins fetches webapp plugins.
@@ -312,6 +310,9 @@ type User interface {
 
 	// CreatePostReminder creates a post reminder at a given target time.
 	CreatePostReminder(userID, postID string, targetTime int64) error
+
+	// AckToPost acknowledges a post.
+	AckToPost(userID, postID string) error
 
 	// GraphQL
 	GetInitialDataGQL() error

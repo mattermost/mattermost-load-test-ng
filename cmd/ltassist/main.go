@@ -20,11 +20,11 @@ import (
 )
 
 var docs = map[string]string{
-	"agent":            "./docs/loadtest_config.md",
-	"coordinator":      "./docs/coordinator_config.md",
-	"deployer":         "./docs/deployer_config.md",
-	"simplecontroller": "./docs/simplecontroller_config.md",
-	"simulcontroller":  "./docs/simulcontroller_config.md",
+	"agent":            "./docs/config/config.md",
+	"coordinator":      "./docs/config/coordinator.md",
+	"deployer":         "./docs/config/deployer.md",
+	"simplecontroller": "./docs/config/simplecontroller.md",
+	"simulcontroller":  "./docs/config/simulcontroller.md",
 }
 
 func main() {

@@ -12,22 +12,199 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
+
+func getActionList(c *SimulController) []userAction {
+	return []userAction{
+		{
+			name:      "SwitchChannel",
+			run:       switchChannel,
+			frequency: 6.9800,
+		},
+		{
+			name:      "SwitchTeam",
+			run:       c.switchTeam,
+			frequency: 0.3901,
+		},
+		{
+			name:      "ScrollChannel",
+			run:       c.scrollChannel,
+			frequency: 3.3800,
+		},
+		{
+			name:      "OpenDirectOrGroupChannel",
+			run:       openDirectOrGroupChannel,
+			frequency: 0.7784,
+		},
+		{
+			name:      "UnreadCheck",
+			run:       unreadCheck,
+			frequency: 1.0000,
+		},
+		{
+			name:      "CreatePost",
+			run:       c.createPost,
+			frequency: 1.0000,
+		},
+		{
+			name:      "JoinChannel",
+			run:       c.joinChannel,
+			frequency: 0.0034,
+		},
+		{
+			name:      "SearchChannels",
+			run:       c.searchChannels,
+			frequency: 0.0935,
+		},
+		{
+			name:      "AddReaction",
+			run:       c.addReaction,
+			frequency: 0.1380,
+		},
+		{
+			name:      "FullReload",
+			run:       c.fullReload,
+			frequency: 0.0011,
+		},
+		{
+			name:      "CreateDirectChannel",
+			run:       c.createDirectChannel,
+			frequency: 0.0048,
+		},
+		{
+			name:      "LogoutLogin",
+			run:       c.logoutLogin,
+			frequency: 0.0074,
+		},
+		{
+			name:      "SearchUsers",
+			run:       searchUsers,
+			frequency: 0.0139,
+		},
+		{
+			name:      "SearchPosts",
+			run:       searchPosts,
+			frequency: 0.0108,
+		},
+		{
+			name:      "CreatePostReminder",
+			run:       c.createPostReminder,
+			frequency: 0.0001,
+		},
+		{
+			name:      "EditPost",
+			run:       editPost,
+			frequency: 0.0289,
+		},
+		{
+			name:      "DeletePost",
+			run:       deletePost,
+			frequency: 0.0028,
+		},
+		{
+			name:      "UpdateCustomStatus",
+			run:       c.updateCustomStatus,
+			frequency: 0.0006,
+		},
+		{
+			name:      "RemoveCustomStatus",
+			run:       c.removeCustomStatus,
+			frequency: 0.0001,
+		},
+		{
+			name:      "CreateSidebarCategory",
+			run:       c.createSidebarCategory,
+			frequency: 0.0001,
+		},
+		{
+			name:      "UpdateSidebarCategory",
+			run:       c.updateSidebarCategory,
+			frequency: 0.0096,
+		},
+		{
+			name:      "SearchGroupChannels",
+			run:       searchGroupChannels,
+			frequency: 0.0082,
+		},
+		{
+			name:      "CreateGroupChannel",
+			run:       c.createGroupChannel,
+			frequency: 0.0002,
+		},
+		{
+			name:      "CreatePrivateChannel",
+			run:       createPrivateChannel,
+			frequency: 0.0009,
+		},
+		{
+			name:      "CreatePublicChannel",
+			run:       control.CreatePublicChannel,
+			frequency: 0.0004,
+		},
+		{
+			name:      "ViewGlobalThreads",
+			run:       c.viewGlobalThreads,
+			frequency: 0.7367,
+		},
+		{
+			name:      "FollowThread",
+			run:       c.followThread,
+			frequency: 0.0227,
+		},
+		{
+			name:      "UnfollowThread",
+			run:       c.unfollowThread,
+			frequency: 0.0034,
+		},
+		{
+			name:      "ViewThread",
+			run:       c.viewThread,
+			frequency: 0.5433,
+		},
+		{
+			name:      "MarkAllThreadsInTeamAsRead",
+			run:       c.markAllThreadsInTeamAsRead,
+			frequency: 0.0001,
+		},
+		{
+			name:      "UpdateThreadRead",
+			run:       c.updateThreadRead,
+			frequency: 0.6640,
+		},
+		{
+			name:      "GetInsights",
+			run:       c.getInsights,
+			frequency: 0.0017,
+		},
+	}
+}
+
+func getActionMap(actionList []userAction) map[string]userAction {
+	actionMap := make(map[string]userAction)
+	for _, action := range actionList {
+		actionMap[action.name] = action
+	}
+	return actionMap
+}
 
 // SimulController is a simulative implementation of a UserController.
 type SimulController struct {
-	id             int
-	user           user.User
-	status         chan<- control.UserStatus
-	rate           float64
-	config         *Config
-	stopChan       chan struct{}   // this channel coordinates the stop sequence of the controller
-	stoppedChan    chan struct{}   // blocks until controller cleans up everything
-	disconnectChan chan struct{}   // notifies disconnection to the ws and periodic goroutines
-	connectedFlag  int32           // indicates that the controller is connected
-	wg             *sync.WaitGroup // to keep the track of every goroutine created by the controller
-	serverVersion  string          // stores the current server version
-	featureFlags   featureFlags    // stores the server's feature flags
+	id                 int
+	user               user.User
+	status             chan<- control.UserStatus
+	rate               float64
+	config             *Config
+	actionList         []userAction
+	actionMap          map[string]userAction
+	injectedActionChan chan userAction
+	stopChan           chan struct{}   // this channel coordinates the stop sequence of the controller
+	stoppedChan        chan struct{}   // blocks until controller cleans up everything
+	disconnectChan     chan struct{}   // notifies disconnection to the ws and periodic goroutines
+	connectedFlag      int32           // indicates that the controller is connected
+	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
+	serverVersion      string          // stores the current server version
+	featureFlags       featureFlags    // stores the server's feature flags
 }
 
 type featureFlags struct {
@@ -46,17 +223,23 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		return nil, fmt.Errorf("could not validate configuration: %w", err)
 	}
 
-	return &SimulController{
-		id:             id,
-		user:           user,
-		status:         status,
-		rate:           1.0,
-		config:         config,
-		disconnectChan: make(chan struct{}),
-		stopChan:       make(chan struct{}),
-		stoppedChan:    make(chan struct{}),
-		wg:             &sync.WaitGroup{},
-	}, nil
+	controller := &SimulController{
+		id:                 id,
+		user:               user,
+		status:             status,
+		rate:               1.0,
+		config:             config,
+		injectedActionChan: make(chan userAction, 10),
+		disconnectChan:     make(chan struct{}),
+		stopChan:           make(chan struct{}),
+		stoppedChan:        make(chan struct{}),
+		wg:                 &sync.WaitGroup{},
+	}
+
+	controller.actionList = getActionList(controller)
+	controller.actionMap = getActionMap(controller.actionList)
+
+	return controller, nil
 }
 
 // Run begins performing a set of user actions in a loop.
@@ -116,165 +299,51 @@ func (c *SimulController) Run() {
 		GraphQLEnabled: c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
 	}
 
-	actions := []userAction{
-		{
-			run:       switchChannel,
-			frequency: 6.9800,
-		},
-		{
-			run:       c.switchTeam,
-			frequency: 0.3901,
-		},
-		{
-			run:       c.scrollChannel,
-			frequency: 3.3800,
-		},
-		{
-			run:       openDirectOrGroupChannel,
-			frequency: 0.7784,
-		},
-		{
-			run:       unreadCheck,
-			frequency: 1.0000,
-		},
-		{
-			run:       c.createPost,
-			frequency: 1.0000,
-		},
-		{
-			run:       c.joinChannel,
-			frequency: 0.0034,
-		},
-		{
-			run:       c.searchChannels,
-			frequency: 0.0935,
-		},
-		{
-			run:       c.addReaction,
-			frequency: 0.1380,
-		},
-		{
-			run:       c.fullReload,
-			frequency: 0.0011,
-		},
-		{
-			run:       c.createDirectChannel,
-			frequency: 0.0048,
-		},
-		{
-			run:       c.logoutLogin,
-			frequency: 0.0074,
-		},
-		{
-			run:       searchUsers,
-			frequency: 0.0139,
-		},
-		{
-			run:       searchPosts,
-			frequency: 0.0108,
-		},
-		{
-			run:       c.createPostReminder,
-			frequency: 0.0001,
-		},
-		{
-			run:       editPost,
-			frequency: 0.0289,
-		},
-		{
-			run:       deletePost,
-			frequency: 0.0028,
-		},
-		{
-			run:       c.updateCustomStatus,
-			frequency: 0.0006,
-		},
-		{
-			run:       c.removeCustomStatus,
-			frequency: 0.0001,
-		},
-		{
-			run:       c.createSidebarCategory,
-			frequency: 0.0001,
-		},
-		{
-			run:       c.updateSidebarCategory,
-			frequency: 0.0096,
-		},
-		{
-			run:       searchGroupChannels,
-			frequency: 0.0082,
-		},
-		{
-			run:       c.createGroupChannel,
-			frequency: 0.0002,
-		},
-		{
-			run:       createPrivateChannel,
-			frequency: 0.0009,
-		},
-		{
-			run:       control.CreatePublicChannel,
-			frequency: 0.0004,
-		},
-		{
-			run:       c.viewGlobalThreads,
-			frequency: 0.7367,
-		},
-		{
-			run:       c.followThread,
-			frequency: 0.0227,
-		},
-		{
-			run:       c.unfollowThread,
-			frequency: 0.0034,
-		},
-		{
-			run:       c.viewThread,
-			frequency: 0.5433,
-		},
-		{
-			run:       c.markAllThreadsInTeamAsRead,
-			frequency: 0.0001,
-		},
-		{
-			run:       c.updateThreadRead,
-			frequency: 0.6640,
-		},
-		{
-			run:       c.getInsights,
-			frequency: 0.0017,
-		},
-	}
+	var action *userAction
+	var err error
 
 	for {
-		action, err := pickAction(actions)
-		if err != nil {
-			panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
-		}
-
-		if action.minServerVersion != "" {
-			supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
+		select {
+		case ia := <-c.injectedActionChan: // injected actions are run first
+			action = &ia
+		default:
+			action, err = pickAction(c.actionList)
 			if err != nil {
-				c.status <- c.newErrorStatus(err)
-			} else if !supported {
-				continue
+				panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 			}
 		}
 
-		if resp := action.run(c.user); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
-		} else {
-			c.status <- c.newInfoStatus(resp.Info)
-		}
+		c.runAction(action)
 
 		select {
 		case <-c.stopChan:
 			return
 		case <-time.After(control.PickIdleTimeMs(c.config.MinIdleTimeMs, c.config.AvgIdleTimeMs, c.rate)):
+		case ia := <-c.injectedActionChan: // run injected actions immediately
+			c.runAction(&ia)
+		}
+	}
+}
+
+func (c *SimulController) runAction(action *userAction) {
+	if action == nil {
+		return
+	}
+
+	if action.minServerVersion != "" {
+		supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
+		if err != nil {
+			c.status <- c.newErrorStatus(err)
+		} else if !supported {
+			return
 		}
 	}
 
+	if resp := action.run(c.user); resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
 }
 
 // SetRate sets the relative speed of execution of actions by the user.
@@ -291,6 +360,7 @@ func (c *SimulController) Stop() {
 	close(c.stopChan)
 	<-c.stoppedChan
 	// re-initialize for the next use
+	c.injectedActionChan = make(chan userAction, 10)
 	c.stopChan = make(chan struct{})
 	c.stoppedChan = make(chan struct{})
 }
@@ -302,3 +372,36 @@ func (c *SimulController) sendFailStatus(reason string) {
 func (c *SimulController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
 }
+
+// InjectAction allows a named UserAction to be injected that is run once, at the next
+// available opportunity. These actions can be injected via the coordinator via
+// CLI or Rest API.
+func (c *SimulController) InjectAction(actionID string) error {
+	var action userAction
+	var ok bool
+
+	// include some actions that are not normally supported by SimulController
+	switch actionID {
+	case "Reload":
+		action = userAction{
+			name: "Reload",
+			run:  func(_ user.User) control.UserActionResponse { return c.reload(false) },
+		}
+	default:
+		action, ok = c.actionMap[actionID]
+		if !ok {
+			mlog.Debug("Could not inject action for SimulController", mlog.String("action", actionID))
+			return nil
+		}
+	}
+
+	select {
+	case c.injectedActionChan <- action:
+		return nil
+	default:
+		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
+	}
+}
+
+// ensure SimulController implements UserController interface
+var _ control.UserController = (*SimulController)(nil)
