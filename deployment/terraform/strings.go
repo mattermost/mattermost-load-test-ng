@@ -18,7 +18,7 @@ User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
-Environment=MM_FEATUREFLAGS_GRAPHQL=true
+Environment=MM_FEATUREFLAGS_GRAPHQL=false
 
 [Install]
 WantedBy=multi-user.target
