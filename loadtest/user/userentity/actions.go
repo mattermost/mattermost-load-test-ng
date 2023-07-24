@@ -676,6 +676,16 @@ func (ue *UserEntity) GetTeamMembers(teamId string, page, perPage int) error {
 	return ue.store.SetTeamMembers(teamId, members)
 }
 
+// GetTeamMember returns a team member based on the provided team and user id strings.
+func (ue *UserEntity) GetTeamMember(teamId, userId string) error {
+	member, _, err := ue.client.GetTeamMember(context.Background(), teamId, userId, "")
+	if err != nil {
+		return err
+	}
+
+	return ue.store.SetTeamMember(teamId, member)
+}
+
 // GetTeamMembersForUser fetches and stores team members for the specified user.
 func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
 	members, _, err := ue.client.GetTeamMembersForUser(context.Background(), userId, "")
