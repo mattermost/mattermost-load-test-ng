@@ -1840,7 +1840,7 @@ func (c *SimulController) createPostReminder(u user.User) control.UserActionResp
 	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
 }
 
-func (c *SimulController) clickUserProfile(u user.User) control.UserActionResponse {
+func (c *SimulController) openUserProfile(u user.User) control.UserActionResponse {
 	ch, err := u.Store().CurrentChannel()
 	if errors.Is(err, memstore.ErrChannelNotFound) {
 		return control.UserActionResponse{Info: "current channel is not set"}
@@ -1867,10 +1867,11 @@ func (c *SimulController) clickUserProfile(u user.User) control.UserActionRespon
 		team, err := u.Store().CurrentTeam()
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 		}
-		if team != nil {
-			ch.TeamId = team.Id
-		}
+
+		ch.TeamId = team.Id
 	}
 	if err := u.GetTeamMember(ch.TeamId, post.UserId); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1879,10 +1880,10 @@ func (c *SimulController) clickUserProfile(u user.User) control.UserActionRespon
 	return control.UserActionResponse{Info: fmt.Sprintf("clicked user profile %s", post.UserId)}
 }
 
-// clickPermalink emulates a user clicking a permalink,
+// openPermalink emulates a user clicking a permalink,
 // rather than finding a post with a permalink in the current channel.
 // That would require some parsing to find out a permalink.
-func (c *SimulController) clickPermalink(u user.User) control.UserActionResponse {
+func (c *SimulController) openPermalink(u user.User) control.UserActionResponse {
 	currentCh, err := u.Store().CurrentChannel()
 	if errors.Is(err, memstore.ErrChannelNotFound) {
 		return control.UserActionResponse{Info: "current channel is not set"}
@@ -1896,23 +1897,23 @@ func (c *SimulController) clickPermalink(u user.User) control.UserActionResponse
 	}
 	var postID string
 	for _, p := range posts {
-		// Found a permalink.
-		if index := strings.Index(p.Message, "/pl/"); index != -1 {
-			// If there are multiple permalinks found, we will click on the last one
-			// in the channel. This naturally leads to an effect of having clicked all
-			// permalinks which emulates organic behavior.
-			start := index + len("/pl/")
-			idLen := 26 // All IDs are always 26-char long
-			postID = p.Message[start : start+idLen]
-		}
+		// If there are multiple permalinks found, we will click on the last one
+		// in the channel. This naturally leads to an effect of having clicked all
+		// permalinks which emulates organic behavior.
+		postID = getPermalinkPostIDFromMessage(p.Message)
 	}
 	if postID == "" {
 		return control.UserActionResponse{Info: "no permalink found"}
 	}
 
+	crtEnabled, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
 	// We fetch the post thread.
 	postIds, _, err := u.GetPostThreadWithOpts(postID, "", model.GetPostsOptions{
-		CollapsedThreads: true,
+		CollapsedThreads: crtEnabled,
 		Direction:        "down",
 		PerPage:          25,
 	})
@@ -1973,7 +1974,7 @@ func (c *SimulController) clickPermalink(u user.User) control.UserActionResponse
 		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
-	if _, err := u.GetChannelsForTeamForUser(currentTeam.Id, u.Store().Id(), true); err != nil {
+	if _, err := u.GetChannelsForTeamForUser(currentTeam.Id, u.Store().Id(), false); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 

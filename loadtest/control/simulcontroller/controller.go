@@ -194,12 +194,12 @@ func getActionList(c *SimulController) []userAction {
 		},
 		{
 			name:      "ClickUserProfile",
-			run:       c.clickUserProfile,
+			run:       c.openUserProfile,
 			frequency: 0.03,
 		},
 		{
 			name:      "ClickPermalink",
-			run:       c.clickPermalink,
+			run:       c.openPermalink,
 			frequency: 0.3,
 		},
 	}
