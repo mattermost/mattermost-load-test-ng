@@ -237,15 +237,14 @@ func (s *MemStore) SetClientConfig(config map[string]string) {
 	s.clientConfig = config
 
 	// Populate FF
-	ffPrefix := "FeatureFlag"
 	s.featureFlags = map[string]bool{}
 	for k, v := range s.clientConfig {
-		if strings.HasPrefix(k, ffPrefix) {
+		if ffKey := strings.TrimPrefix(k, "FeatureFlag"); len(ffKey) < len(k) {
 			v, err := strconv.ParseBool(v)
 			if err != nil {
 				continue
 			}
-			s.featureFlags[strings.TrimPrefix(k, ffPrefix)] = v
+			s.featureFlags[ffKey] = v
 		}
 	}
 }
