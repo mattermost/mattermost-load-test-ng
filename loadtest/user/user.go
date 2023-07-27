@@ -218,6 +218,8 @@ type User interface {
 	RemoveTeamMember(teamId, userId string) error
 	// GetTeamMembers fetches and stores team members for the specified team.
 	GetTeamMembers(teamId string, page, perPage int) error
+	// GetTeamMember returns a team member based on the provided team and user id strings.
+	GetTeamMember(teamId, userId string) error
 	// GetTeamMembersForUser fetches and stores team members for the specified user.
 	GetTeamMembersForUser(userId string) error
 	// GetTeamStats fetches statistics for the specified team.
