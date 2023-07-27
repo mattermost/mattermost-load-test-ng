@@ -236,7 +236,7 @@ func (s *MemStore) SetClientConfig(config map[string]string) {
 	defer s.lock.Unlock()
 	s.clientConfig = config
 
-	// Popule FF
+	// Populate FF
 	ffPrefix := "FeatureFlag"
 	s.featureFlags = map[string]bool{}
 	for k, v := range s.clientConfig {
