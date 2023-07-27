@@ -164,3 +164,17 @@ func findIndex(haystack []string, needle string) int {
 	}
 	return -1
 }
+
+func getPermalinkPostIDFromMessage(m string) string {
+	index := strings.Index(m, "/pl/")
+	if index == -1 {
+		return ""
+	}
+	// If there are multiple permalinks found, we will click on the last one
+	// in the channel. This naturally leads to an effect of having clicked all
+	// permalinks which emulates organic behavior.
+	start := index + len("/pl/")
+	idLen := 26 // All IDs are always 26-char long
+	postID := m[start : start+idLen]
+	return postID
+}

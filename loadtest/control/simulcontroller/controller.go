@@ -187,6 +187,16 @@ func getActionList(c *SimulController) []userAction {
 			run:       control.CreatePersistentNotificationPost,
 			frequency: 0.0001,
 		},
+		{
+			name:      "ClickUserProfile",
+			run:       c.openUserProfile,
+			frequency: 0.03,
+		},
+		{
+			name:      "ClickPermalink",
+			run:       c.openPermalink,
+			frequency: 0.3,
+		},
 	}
 }
 
