@@ -694,8 +694,11 @@ func (ue *UserEntity) GetTeamMembersForUser(userId string) error {
 
 // GetUsersByIds fetches and stores the specified users.
 // It returns a list of those users' ids.
-func (ue *UserEntity) GetUsersByIds(userIds []string) ([]string, error) {
-	users, _, err := ue.client.GetUsersByIds(context.Background(), userIds)
+func (ue *UserEntity) GetUsersByIds(userIds []string, since int64) ([]string, error) {
+	opts := &model.UserGetByIdsOptions{
+		Since: since,
+	}
+	users, _, err := ue.client.GetUsersByIdsWithOptions(context.Background(), userIds, opts)
 	if err != nil {
 		return nil, err
 	}

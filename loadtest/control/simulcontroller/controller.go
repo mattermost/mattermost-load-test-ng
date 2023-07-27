@@ -192,6 +192,11 @@ func getActionList(c *SimulController) []userAction {
 			run:       control.CreatePersistentNotificationPost,
 			frequency: 0.05,
 		},
+		{
+			name:      "WSReconnect",
+			run:       c.reconnectWebSocket,
+			frequency: 0.144,
+		},
 	}
 }
 
