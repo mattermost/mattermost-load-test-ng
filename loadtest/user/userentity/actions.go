@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -73,18 +72,6 @@ func (ue *UserEntity) GetClientConfig() error {
 		return err
 	}
 	ue.store.SetClientConfig(config)
-	return nil
-}
-
-// GetSystemPing pings the server and checks that its status is ok
-func (ue *UserEntity) GetSystemPing() error {
-	status, _, err := ue.client.GetPing(context.Background())
-	if err != nil {
-		return err
-	}
-	if status != "OK" {
-		return fmt.Errorf("server status is %q", status)
-	}
 	return nil
 }
 

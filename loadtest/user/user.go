@@ -43,9 +43,7 @@ type User interface {
 	SendTypingEvent(channelId, parentId string) error
 
 	//server
-	// GetSystemPing pings the server and checks that its status is ok
-	GetSystemPing() error
-	// Getconfig fetches and stores the server's configuration.
+	// GetConfig fetches and stores the server's configuration.
 	GetConfig() error
 	// GetClientConfig fetches and stores the limited server's configuration for logged in user.
 	GetClientConfig() error
