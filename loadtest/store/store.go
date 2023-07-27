@@ -39,6 +39,8 @@ type UserStore interface {
 	Config() model.Config
 	// ClientConfig returns the partial server configuration settings for logged in user.
 	ClientConfig() map[string]string
+	// FeatureFlags returns a map of the features flags stored in the client config.
+	FeatureFlags() map[string]bool
 	// Channel returns the channel for the given channelId.
 	Channel(channelId string) (*model.Channel, error)
 	// Channels returns the channels for a team.
