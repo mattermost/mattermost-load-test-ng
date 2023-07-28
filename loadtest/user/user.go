@@ -93,11 +93,9 @@ type User interface {
 
 	// SetProfileImage sets the profile image for the user.
 	SetProfileImage(data []byte) error
-	// GetProfileImage fetches the profile image for the user.
-	GetProfileImage() error
 	// GetProfileImageForUser fetches and stores the profile imagine for the
 	// specified user.
-	GetProfileImageForUser(userId string) error
+	GetProfileImageForUser(userId string, lastPictureUpdate int) error
 	// SearchUsers performs a user search. It returns a list of users that matched.
 	SearchUsers(search *model.UserSearch) ([]*model.User, error)
 	// AutocompleteUsersInChannel performs autocomplete of a username

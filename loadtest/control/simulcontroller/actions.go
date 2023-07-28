@@ -947,14 +947,11 @@ func openDirectOrGroupChannel(u user.User) control.UserActionResponse {
 
 func getProfileImageForUsers(u user.User, userIds []string) error {
 	for _, userId := range userIds {
-		ok, err := u.Store().ProfileImage(userId)
+		lastPictureUpdate, err := u.Store().ProfileImageLastUpdated(userId)
 		if err != nil {
 			return err
 		}
-		if ok {
-			continue
-		}
-		if err := u.GetProfileImageForUser(userId); err != nil {
+		if err := u.GetProfileImageForUser(userId, lastPictureUpdate); err != nil {
 			return err
 		}
 	}
