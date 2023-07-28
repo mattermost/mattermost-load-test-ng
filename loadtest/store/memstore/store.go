@@ -43,7 +43,7 @@ type MemStore struct {
 	currentChannel      *model.Channel
 	currentTeam         *model.Team
 	channelViews        map[string]int64
-	profileImages       map[string]bool
+	profileImages       map[string]int
 	serverVersion       string
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue[model.ThreadResponse]
@@ -69,7 +69,7 @@ func New(config *Config) (*MemStore, error) {
 	}
 
 	s.Clear()
-	s.profileImages = map[string]bool{}
+	s.profileImages = map[string]int{}
 
 	return s, nil
 }
@@ -984,21 +984,22 @@ func (s *MemStore) SetLicense(license map[string]string) error {
 	return nil
 }
 
-// ProfileImage returns whether the profile image for the given user has been
-// stored.
-func (s *MemStore) ProfileImage(userId string) (bool, error) {
+// ProfileImageLastUpdated returns the etag returned by the server when first
+// fetched, which is the last time the picture was updated, or zero if the
+// image is not stored.
+func (s *MemStore) ProfileImageLastUpdated(userId string) (int, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	if userId == "" {
-		return false, errors.New("memstore: userId should not be empty")
+		return 0, errors.New("memstore: userId should not be empty")
 	}
 
 	return s.profileImages[userId], nil
 }
 
 // SetProfileImage sets as stored the profile image for the given user.
-func (s *MemStore) SetProfileImage(userId string) error {
+func (s *MemStore) SetProfileImage(userId string, lastPictureUpdate int) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -1006,7 +1007,7 @@ func (s *MemStore) SetProfileImage(userId string) error {
 		return errors.New("memstore: userId should not be empty")
 	}
 
-	s.profileImages[userId] = true
+	s.profileImages[userId] = lastPictureUpdate
 	return nil
 }
 
