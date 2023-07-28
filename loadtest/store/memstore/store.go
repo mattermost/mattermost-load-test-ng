@@ -960,8 +960,9 @@ func (s *MemStore) SetLicense(license map[string]string) error {
 	return nil
 }
 
-// ProfileImage returns whether the profile image for the given user has been
-// stored.
+// ProfileImageLastUpdated returns the etag returned by the server when first
+// fetched, which is the last time the picture was updated, or zero if the
+// image is not stored.
 func (s *MemStore) ProfileImageLastUpdated(userId string) (int, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()

@@ -114,8 +114,9 @@ type UserStore interface {
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 
 	// profile
-	// ProfileImage returns the etag returned by the server when first
-	// fetched, which is the last time the picture was updated.
+	// ProfileImageLastUpdated returns the etag returned by the server when first
+	// fetched, which is the last time the picture was updated, or zero if the
+	// image is not stored.
 	ProfileImageLastUpdated(userId string) (int, error)
 
 	// posts
