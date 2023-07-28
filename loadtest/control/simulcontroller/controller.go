@@ -219,11 +219,6 @@ type SimulController struct {
 	connectedFlag      int32           // indicates that the controller is connected
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      string          // stores the current server version
-	featureFlags       featureFlags    // stores the server's feature flags
-}
-
-type featureFlags struct {
-	GraphQLEnabled bool
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -304,14 +299,10 @@ func (c *SimulController) Run() {
 		}
 	}
 
-	// Populate the server feature flags struct
-	clientCfg := c.user.Store().ClientConfig()
-	if len(clientCfg) == 0 {
+	// Make sure client config has been set.
+	if len(c.user.Store().ClientConfig()) == 0 {
 		c.sendFailStatus("the login init action should have populated the user config, but it is empty")
 		return
-	}
-	c.featureFlags = featureFlags{
-		GraphQLEnabled: c.user.Store().ClientConfig()["FeatureFlagGraphQL"] == "true",
 	}
 
 	var action *userAction
