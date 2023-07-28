@@ -1844,7 +1844,8 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 	team, err := c.user.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team != nil {
+	}
+	if team != nil {
 		// The webapp makes these requests only if the team
 		// is set in the state.
 

@@ -203,7 +203,7 @@ func getActionList(c *SimulController) []userAction {
 			frequency: 0.3,
 		},
 		{
-			name:      "WSReconnect",
+			name:      "ReconnectWebSocket",
 			run:       c.reconnectWebSocket,
 			frequency: 0.144,
 		},

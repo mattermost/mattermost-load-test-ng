@@ -863,7 +863,7 @@ func (s *MemStore) Users() ([]model.User, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	users := make([]model.User, len(s.users))
+	users := make([]model.User, 0, len(s.users))
 	for _, u := range s.users {
 		users = append(users, *u)
 	}
