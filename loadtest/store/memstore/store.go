@@ -239,6 +239,8 @@ func (s *MemStore) SetClientConfig(config map[string]string) {
 	// Populate FF
 	s.featureFlags = map[string]bool{}
 	for k, v := range s.clientConfig {
+		// We avoid an extra call to strings.HasPrefix by checking the returned length.
+		// If the prefix matches then the returned string must be shorter.
 		if ffKey := strings.TrimPrefix(k, "FeatureFlag"); len(ffKey) < len(k) {
 			v, err := strconv.ParseBool(v)
 			if err != nil {
