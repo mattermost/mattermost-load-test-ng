@@ -982,7 +982,8 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 
 	// 1% of messages will contain a permalink
 	if rand.Float64() < 0.01 {
-		post, err := u.Store().RandomPostForChannel(channel.Id)
+		// We want this to be any post from any channel.
+		post, err := u.Store().RandomPost(store.SelectAny)
 		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
 			return "", err
 		}
@@ -1921,4 +1922,158 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("reconnected ws for user %s", u.Store().Id())}
+}
+
+func (c *SimulController) openUserProfile(u user.User) control.UserActionResponse {
+	ch, err := u.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "current channel is not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	post, err := u.Store().RandomPostForChannel(ch.Id)
+	if errors.Is(err, memstore.ErrPostNotFound) {
+		return control.UserActionResponse{Info: fmt.Sprintf("no post in channel: %s", ch.Id)}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// We simulate a click on the user profile who wrote the post.
+	// The webapp will also do an additional viewChannel request once per-channel.
+	// But we avoid that for now because viewChannel is already handled separately.
+	if err := u.GetChannelMember(ch.Id, post.UserId); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// If it's a DM/GM channel, the webapp still sends the current team
+	// the user is part of
+	if ch.TeamId == "" {
+		team, err := u.Store().CurrentTeam()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		} else if team == nil {
+			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+		}
+
+		ch.TeamId = team.Id
+	}
+	if err := u.GetTeamMember(ch.TeamId, post.UserId); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("clicked user profile %s", post.UserId)}
+}
+
+// openPermalink emulates a user clicking a permalink,
+// rather than finding a post with a permalink in the current channel.
+// That would require some parsing to find out a permalink.
+func (c *SimulController) openPermalink(u user.User) control.UserActionResponse {
+	currentCh, err := u.Store().CurrentChannel()
+	if errors.Is(err, memstore.ErrChannelNotFound) {
+		return control.UserActionResponse{Info: "current channel is not set"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	posts, err := u.Store().ChannelPosts(currentCh.Id)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	var postID string
+	for _, p := range posts {
+		// If there are multiple permalinks found, we will click on the last one
+		// in the channel. This naturally leads to an effect of having clicked all
+		// permalinks which emulates organic behavior.
+		postID = getPermalinkPostIDFromMessage(p.Message)
+	}
+	if postID == "" {
+		return control.UserActionResponse{Info: "no permalink found"}
+	}
+
+	crtEnabled, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+
+	// We fetch the post thread.
+	postIds, _, err := u.GetPostThreadWithOpts(postID, "", model.GetPostsOptions{
+		CollapsedThreads: crtEnabled,
+		Direction:        "down",
+		PerPage:          25,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	oldestPost, err := u.Store().Post(postIds[0])
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	ch, err := u.Store().Channel(oldestPost.ChannelId)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	// We fetch the channel if it's not present in state.
+	// This is similar to what the webapp does.
+	if ch == nil {
+		if err := u.GetChannel(oldestPost.ChannelId); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		// We fetch the channel data from store again.
+		ch, err = u.Store().Channel(oldestPost.ChannelId)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	// We check if membership data is already there. If not,
+	// we call getChannelMember, and add the user to the channel
+	// if it's not a private channel.
+	cm, err := u.Store().ChannelMember(ch.Id, u.Store().Id())
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if cm.UserId == "" {
+		err := u.GetChannelMember(ch.Id, u.Store().Id())
+		if err != nil {
+			// Resorting to string matching, because the API doesn't return the
+			// actual Response object.
+			if !strings.Contains(err.Error(), "You do not have the appropriate permissions") {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+
+			if ch.Type != model.ChannelTypePrivate {
+				if err := u.AddChannelMember(ch.Id, u.Store().Id()); err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+			}
+		}
+	}
+
+	currentTeam, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if currentTeam == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	if _, err := u.GetChannelsForTeamForUser(currentTeam.Id, u.Store().Id(), false); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetChannelMembersForUser(u.Store().Id(), currentTeam.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// Switch to channel.
+	if resp := viewChannel(u, ch); resp.Err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
+	}
+
+	if err := u.SetCurrentChannel(ch); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("clicked permalink on post %s", postID)}
 }
