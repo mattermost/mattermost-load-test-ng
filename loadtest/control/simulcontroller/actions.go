@@ -399,7 +399,7 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 	}
 
 	if len(missingUsers) > 0 {
-		if _, err := u.GetUsersByIds(missingUsers); err != nil {
+		if _, err := u.GetUsersByIds(missingUsers, 0); err != nil {
 			return err
 		}
 	}
@@ -1762,6 +1762,88 @@ func (c *SimulController) createPostReminder(u user.User) control.UserActionResp
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
+}
+
+func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResponse {
+	team, err := c.user.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if team != nil {
+		// The webapp makes these requests only if the team
+		// is set in the state.
+
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), false); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// getPostsForChannel(?since=mostRecentPost.CreateAt in CurrentChannel)
+		crtEnabled, resp := control.CollapsedThreadsEnabled(u)
+		if resp.Err != nil {
+			return resp
+		}
+		currentCh, err := u.Store().CurrentChannel()
+		if errors.Is(err, memstore.ErrChannelNotFound) {
+			return control.UserActionResponse{Info: "current channel is not set"}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		posts, err := u.Store().ChannelPostsSorted(currentCh.Id, true)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		latestCreateAt := posts[len(posts)-1].CreateAt
+		if _, err := u.GetPostsSince(currentCh.Id, latestCreateAt, crtEnabled); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// unique user ids from all posts in current Channel + users from DM prefs
+		userIds := usersForPosts(posts)
+		prefs, err := u.Store().Preferences()
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		for _, p := range prefs {
+			switch {
+			case p.Category == model.PreferenceCategoryDirectChannelShow:
+				userIds[p.Name] = true
+			}
+		}
+
+		if err := u.GetUsersStatusesByIds(keys(userIds)); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if _, err := u.GetTeamsUnread("", crtEnabled); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
+	if err := u.GetWebappPlugins(); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// All users in state.
+	users, err := u.Store().Users()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	userIds := make([]string, len(users))
+	for i, u := range users {
+		userIds[i] = u.Id
+	}
+	// Assuming reconnect happened just now.
+	if _, err := u.GetUsersByIds(userIds, time.Now().UnixMilli()); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: "reconnected ws"}
 }
 
 func (c *SimulController) openUserProfile(u user.User) control.UserActionResponse {
