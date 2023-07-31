@@ -858,6 +858,19 @@ func (s *MemStore) GetUser(userId string) (model.User, error) {
 	return user, nil
 }
 
+// Users returns all users in the store.
+func (s *MemStore) Users() ([]model.User, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	users := make([]model.User, 0, len(s.users))
+	for _, u := range s.users {
+		users = append(users, *u)
+	}
+
+	return users, nil
+}
+
 // SetUsers stores the given users.
 func (s *MemStore) SetUsers(users []*model.User) error {
 	s.lock.Lock()

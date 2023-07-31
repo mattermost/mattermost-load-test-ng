@@ -84,7 +84,7 @@ func fetchStatus(c *SimulController, sem chan struct{}, id string) {
 func fetchUserAndStatus(c *SimulController, sem chan struct{}, id string) {
 	defer func() { <-sem }()
 
-	if _, err := c.user.GetUsersByIds([]string{id}); err != nil {
+	if _, err := c.user.GetUsersByIds([]string{id}, 0); err != nil {
 		c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: GetUsersByIds failed %w", err))
 		return
 	}

@@ -706,7 +706,7 @@ func ViewUser(u user.User) UserActionResponse {
 	}
 
 	// GetUsersByIds for that userid
-	_, err = u.GetUsersByIds([]string{member.UserId})
+	_, err = u.GetUsersByIds([]string{member.UserId}, 0)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -854,7 +854,7 @@ func Reload(u user.User) UserActionResponse {
 
 	if len(userIds) > 0 {
 		// Get users by Ids.
-		_, err := u.GetUsersByIds(userIds)
+		_, err := u.GetUsersByIds(userIds, 0)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}
@@ -985,7 +985,7 @@ func ReloadGQL(u user.User) UserActionResponse {
 
 	if len(userIds) > 0 {
 		// Get users by Ids.
-		_, err := u.GetUsersByIds(userIds)
+		_, err := u.GetUsersByIds(userIds, 0)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
 		}

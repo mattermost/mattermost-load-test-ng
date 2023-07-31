@@ -60,6 +60,8 @@ type UserStore interface {
 
 	// GetUser returns the user for the given userId.
 	GetUser(userId string) (model.User, error)
+	// Users returns all users in the store.
+	Users() ([]model.User, error)
 
 	// Status returns the status for the given userId.
 	Status(userId string) (model.Status, error)

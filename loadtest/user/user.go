@@ -74,9 +74,10 @@ type User interface {
 	UpdateUserRoles(userId, roles string) error
 	// PatchUser patches a given user with the given information.
 	PatchUser(userId string, patch *model.UserPatch) error
-	// GetUsersByIds fetches and stores the specified users.
+	// GetUsersByIds fetches and stores the specified users, modified since
+	// the given timestamp.
 	// It returns a list of those users' ids.
-	GetUsersByIds(userIds []string) ([]string, error)
+	GetUsersByIds(userIds []string, since int64) ([]string, error)
 	// GetUsersByUsername fetches and stores users for the given usernames.
 	// It returns a list of those users' ids.
 	GetUsersByUsernames(usernames []string) ([]string, error)
