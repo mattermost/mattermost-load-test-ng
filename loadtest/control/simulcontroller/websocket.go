@@ -29,6 +29,35 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
+		case model.WebsocketEventPosted:
+			post, err := getPostFromEvent(ev)
+			if err != nil {
+				c.status <- c.newErrorStatus(fmt.Errorf("failed to get post from event: %w", err))
+				break
+			}
+
+			ch, _ := c.user.Store().Channel(post.ChannelId)
+			if ch != nil {
+				break
+			}
+
+			c.status <- c.newInfoStatus(fmt.Sprintf("channel for post missing from store, fetching: %q", post.ChannelId))
+
+			if err := c.user.GetChannel(post.ChannelId); err != nil {
+				c.status <- c.newErrorStatus(fmt.Errorf("GetChannel failed: %w", err))
+				break
+			}
+
+			if err := c.user.GetChannelMember(post.ChannelId, c.user.Store().Id()); err != nil {
+				c.status <- c.newErrorStatus(fmt.Errorf("GetChannelMember failed: %w", err))
+				break
+			}
+
+			// If we were to follow webapp literally we'd have to check against user's
+			// preferences and possibly reload direct/group channels (and users) if
+			// necessary. However this only happens if the preferences for these
+			// channels are set not to show them, something we don't support yet as we default to
+			// showing them.
 		case model.WebsocketEventTyping:
 			userId, ok := ev.GetData()["user_id"].(string)
 			if !ok || userId == "" {
