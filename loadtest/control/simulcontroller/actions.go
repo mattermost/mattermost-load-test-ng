@@ -1878,10 +1878,7 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 		}
 
 		// unique user ids from all posts in current Channel + users from DM prefs
-		userIds := make(map[string]bool)
-		for _, p := range posts {
-			userIds[p.UserId] = true
-		}
+		userIds := usersForPosts(posts)
 		prefs, err := u.Store().Preferences()
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -1922,7 +1919,7 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("reconnected ws for user %s", u.Store().Id())}
+	return control.UserActionResponse{Info: fmt.Sprint("reconnected ws")}
 }
 
 func (c *SimulController) openUserProfile(u user.User) control.UserActionResponse {
