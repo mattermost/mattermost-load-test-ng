@@ -12,6 +12,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 var errNoMatch = errors.New("could not match username")
@@ -165,6 +166,14 @@ func findIndex(haystack []string, needle string) int {
 	return -1
 }
 
+func keys[K comparable, V any](in map[K]V) []K {
+	keys := make([]K, 0, len(in))
+	for k := range in {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func getPermalinkPostIDFromMessage(m string) string {
 	index := strings.Index(m, "/pl/")
 	if index == -1 {
@@ -177,4 +186,15 @@ func getPermalinkPostIDFromMessage(m string) string {
 	idLen := 26 // All IDs are always 26-char long
 	postID := m[start : start+idLen]
 	return postID
+}
+
+// usersForPosts returns a map of ids containing
+// the unique set of user ids who are the creators
+// for the list of posts passed.
+func usersForPosts(posts []*model.Post) map[string]bool {
+	userIds := make(map[string]bool)
+	for _, p := range posts {
+		userIds[p.UserId] = true
+	}
+	return userIds
 }

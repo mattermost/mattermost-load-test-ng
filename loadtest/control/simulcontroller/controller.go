@@ -197,6 +197,11 @@ func getActionList(c *SimulController) []userAction {
 			run:       c.openPermalink,
 			frequency: 0.3,
 		},
+		{
+			name:      "ReconnectWebSocket",
+			run:       c.reconnectWebSocket,
+			frequency: 0.144,
+		},
 	}
 }
 
