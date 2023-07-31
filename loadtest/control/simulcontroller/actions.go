@@ -1919,7 +1919,7 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprint("reconnected ws")}
+	return control.UserActionResponse{Info: "reconnected ws"}
 }
 
 func (c *SimulController) openUserProfile(u user.User) control.UserActionResponse {
