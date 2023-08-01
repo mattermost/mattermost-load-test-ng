@@ -974,10 +974,10 @@ func (ue *UserEntity) AutocompleteUsersInChannel(teamId, channelId, username str
 	}
 	usersMap := make(map[string]bool, len(users.Users)+len(users.OutOfChannel))
 	for _, u := range users.Users {
-		usersMap[u.Username] = true
+		usersMap[u.Id] = true
 	}
 	for _, u := range users.OutOfChannel {
-		usersMap[u.Username] = false
+		usersMap[u.Id] = false
 	}
 
 	return usersMap, nil
@@ -996,10 +996,10 @@ func (ue *UserEntity) AutocompleteUsersInTeam(teamId, username string, limit int
 	}
 	usersMap := make(map[string]bool, len(users.Users)+len(users.OutOfChannel))
 	for _, u := range users.Users {
-		usersMap[u.Username] = true
+		usersMap[u.Id] = true
 	}
 	for _, u := range users.OutOfChannel {
-		usersMap[u.Username] = false
+		usersMap[u.Id] = false
 	}
 
 	return usersMap, nil
