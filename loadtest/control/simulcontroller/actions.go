@@ -966,7 +966,7 @@ func createMessage(u user.User, channel *model.Channel, isReply bool) (string, e
 		if err != nil {
 			return "", err
 		}
-		if err := emulateMention(channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil && !errors.Is(err, errNoMatch) {
+		if err := emulateMention(u, channel.TeamId, channel.Id, user.Username, u.AutocompleteUsersInChannel); err != nil && !errors.Is(err, errNoMatch) {
 			return "", err
 		}
 		message += "@" + user.Username + " "
@@ -1124,6 +1124,9 @@ func searchPosts(u user.User) control.UserActionResponse {
 		control.EmulateUserTyping(opts.From, func(term string) control.UserActionResponse {
 			users, err := u.AutocompleteUsersInTeam(team.Id, term, 25)
 			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+			if err := getProfileImageForUsers(u, keys(users)); err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
 			if len(users) == 1 {

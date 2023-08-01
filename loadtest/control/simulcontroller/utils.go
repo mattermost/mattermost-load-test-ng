@@ -95,7 +95,7 @@ func getCutoff(prefix, typed string, altRand *rand.Rand) int {
 	}
 }
 
-func emulateMention(teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
+func emulateMention(u user.User, teamId, channelId, name string, auto func(teamId, channelId, username string, limit int) (map[string]bool, error)) error {
 	found := errors.New("found") // will be used to halt emulate typing function
 
 	prefix, typed := splitName(name)
@@ -104,6 +104,10 @@ func emulateMention(teamId, channelId, name string, auto func(teamId, channelId,
 		term = prefix + term
 		users, err := auto(teamId, channelId, term, 100)
 		if err != nil {
+			return control.UserActionResponse{Err: err}
+		}
+
+		if err := getProfileImageForUsers(u, keys(users)); err != nil {
 			return control.UserActionResponse{Err: err}
 		}
 
