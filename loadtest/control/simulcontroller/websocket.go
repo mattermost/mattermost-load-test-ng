@@ -36,17 +36,12 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 				break
 			}
 
-			ch, _ := c.user.Store().Channel(post.ChannelId)
-			if ch != nil {
+			cm, _ := c.user.Store().ChannelMember(post.ChannelId, c.user.Store().Id())
+			if cm.UserId != "" {
 				break
 			}
 
-			c.status <- c.newInfoStatus(fmt.Sprintf("channel for post missing from store, fetching: %q", post.ChannelId))
-
-			if err := c.user.GetChannel(post.ChannelId); err != nil {
-				c.status <- c.newErrorStatus(fmt.Errorf("GetChannel failed: %w", err))
-				break
-			}
+			c.status <- c.newInfoStatus(fmt.Sprintf("channel member for post's channel missing from store, fetching: %q", post.ChannelId))
 
 			if err := c.user.GetChannelMember(post.ChannelId, c.user.Store().Id()); err != nil {
 				c.status <- c.newErrorStatus(fmt.Errorf("GetChannelMember failed: %w", err))

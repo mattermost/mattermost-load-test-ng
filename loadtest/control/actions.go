@@ -533,7 +533,7 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 	channelId, err := u.CreateChannel(&model.Channel{
 		Name:   model.NewId(),
 		TeamId: team.Id,
-		Type:   "P",
+		Type:   model.ChannelTypePrivate,
 	})
 
 	if err != nil {
