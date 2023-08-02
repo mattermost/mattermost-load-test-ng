@@ -324,7 +324,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   apply_immediately            = true
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
-  db_parameter_group_name      = "${var.cluster_name}-db-pg"
+  db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
