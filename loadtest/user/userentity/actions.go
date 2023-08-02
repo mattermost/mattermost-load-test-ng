@@ -776,18 +776,24 @@ func (ue *UserEntity) GetUsersStatusesByIds(userIds []string) error {
 	return nil
 }
 
-// GetUsersInChannel fetches and stores users in the specified channel.
-func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) error {
+// GetUsersInChannel fetches and stores users in the specified channel. Returns
+// a list of ids of the users.
+func (ue *UserEntity) GetUsersInChannel(channelId string, page, perPage int) ([]string, error) {
 	if len(channelId) == 0 {
-		return errors.New("userentity: channelId should not be empty")
+		return nil, errors.New("userentity: channelId should not be empty")
 	}
 
 	users, _, err := ue.client.GetUsersInChannel(context.Background(), channelId, page, perPage, "")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return ue.store.SetUsers(users)
+	userIds := make([]string, len(users))
+	for i := range users {
+		userIds[i] = users[i].Id
+	}
+
+	return userIds, ue.store.SetUsers(users)
 }
 
 // GetUsers fetches and stores all users. It returns a list of those users' ids.

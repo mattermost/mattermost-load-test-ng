@@ -1237,18 +1237,39 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 }
 
 func openAddMembersDialog(u user.User, teamId, channelId string) ([]string, control.UserActionResponse) {
-	// This is a series of calls made by the webapp client
-	// when opening the `Add Members` dialog.
-	if err := u.GetUsersInChannel(channelId, 0, 50); err != nil {
+	if err := u.GetTeamStats(teamId); err != nil {
 		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	ids, err := u.GetUsersNotInChannel(teamId, channelId, 0, 100)
+	inChannelIds, err := u.GetUsersInChannel(channelId, 0, 50)
 	if err != nil {
 		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return ids, control.UserActionResponse{}
+	notInChannelIds, err := u.GetUsersNotInChannel(teamId, channelId, 0, 100)
+	if err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetUsersStatusesByIds(inChannelIds); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetUsersStatusesByIds(notInChannelIds); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// NOTE: the call to ViewChannel is really a side effect and not properly part of this action.
+	// Its trigger is the handleBlur() function in the team controller.
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return nil, resp
+	}
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channelId, CollapsedThreadsSupported: collapsedThreads}); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return notInChannelIds, control.UserActionResponse{}
 }
 
 func createPublicChannel(u user.User) control.UserActionResponse {
@@ -1272,7 +1293,7 @@ func createPublicChannel(u user.User) control.UserActionResponse {
 		return resp
 	}
 
-	// TODO: figure out if it makes sense to add users the the newly created
+	// TODO: figure out if it makes sense to add users to the newly created
 	// channel following some heuristics.
 
 	return control.UserActionResponse{Info: fmt.Sprintf("public channel created, id %v", channelId)}
