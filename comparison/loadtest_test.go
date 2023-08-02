@@ -14,7 +14,7 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 		newIP := "192.168.1.1"
 		oldIPs := []string{}
 
-		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", newIP, oldIPs, deployment.DBSettings{
+		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", deployment.GenCmdForPermalinksIPsSubstitution(newIP, oldIPs, false), deployment.DBSettings{
 			UserName: "mmuser",
 			Password: "mostest",
 			DBName:   "mattermost",
@@ -33,7 +33,7 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 		newIP := "192.168.1.1"
 		oldIPs := []string{"54.78.456.5", "56.78.98.1"}
 
-		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", newIP, oldIPs, deployment.DBSettings{
+		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", deployment.GenCmdForPermalinksIPsSubstitution(newIP, oldIPs, false), deployment.DBSettings{
 			UserName: "mmuser",
 			Password: "mostest",
 			DBName:   "mattermost",

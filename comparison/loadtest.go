@@ -208,7 +208,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, deployment.DBSettings{
+	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, tfOutput.PermalinksIPsSubstCommand(permalinkIPsToReplace), deployment.DBSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,
