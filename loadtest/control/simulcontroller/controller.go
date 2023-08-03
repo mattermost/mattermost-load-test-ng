@@ -139,7 +139,7 @@ func getActionList(c *SimulController) []userAction {
 		},
 		{
 			name:      "CreatePublicChannel",
-			run:       control.CreatePublicChannel,
+			run:       createPublicChannel,
 			frequency: 0.0001,
 		},
 		{
@@ -314,7 +314,7 @@ func (c *SimulController) Run() {
 		if resp := initActions[i].run(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
 			i--
-		} else {
+		} else if resp.Info != "" {
 			c.status <- c.newInfoStatus(resp.Info)
 		}
 	}
@@ -371,7 +371,7 @@ func (c *SimulController) runAction(action *userAction) {
 
 	if resp := action.run(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
-	} else {
+	} else if resp.Info != "" {
 		c.status <- c.newInfoStatus(resp.Info)
 	}
 }
