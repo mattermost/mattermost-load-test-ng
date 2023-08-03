@@ -40,6 +40,38 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
+	return _runCommand(cmd, dst)
+}
+
+func (t *Terraform) attachSG() error {
+	awsBin := "aws"
+	if _, err := exec.LookPath(awsBin); err != nil {
+		return fmt.Errorf("aws not installed. Please install aws. (https://aws.amazon.com/cli): %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
+	defer cancel()
+
+	sgID := t.output.DBSecurityGroup[0].Id
+	args := []string{
+		"--profile=" + t.config.AWSProfile,
+		"rds",
+		"modify-db-cluster",
+		"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+		"--vpc-security-group-ids=" + sgID,
+		"--region=" + t.config.AWSRegion,
+	}
+	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
+	cmd := exec.CommandContext(ctx, awsBin, args...)
+
+	if err := _runCommand(cmd, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 	// If dst is set, that means we want to capture the output.
 	// We write a simple case to handle that using CombinedOutput.
 	if dst != nil {

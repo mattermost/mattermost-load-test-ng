@@ -43,6 +43,9 @@ type output struct {
 	S3Key struct {
 		Value []IAMAccess `json:"value"`
 	} `json:"s3Key"`
+	DBSecurityGroup struct {
+		Value []SecurityGroup `json:"value"`
+	} `json:"dbSecurityGroup"`
 }
 
 // Output contains the output variables which are
@@ -58,6 +61,7 @@ type Output struct {
 	JobServers          []Instance          `json:"jobServers"`
 	S3Bucket            S3Bucket            `json:"s3Bucket"`
 	S3Key               IAMAccess           `json:"s3Key"`
+	DBSecurityGroup     []SecurityGroup     `json:"dbSecurityGroup"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -89,6 +93,12 @@ type DBCluster struct {
 type IAMAccess struct {
 	Id     string `json:"id"`
 	Secret string `json:"secret"`
+}
+
+// SecurityGroup is an AWS security group resource.
+type SecurityGroup struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // S3Bucket defines a specific S3 bucket.
@@ -138,6 +148,12 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.S3Key.Value) > 0 {
 		outputv2.S3Key = o.S3Key.Value[0]
+	}
+
+	if len(o.DBSecurityGroup.Value) > 0 {
+		for _, sg := range o.DBSecurityGroup.Value {
+			outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, sg)
+		}
 	}
 
 	t.output = outputv2
