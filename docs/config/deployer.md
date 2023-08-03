@@ -223,6 +223,62 @@ The list of dsn for external database read replicas
 
 The list of dsn for external database search replicas
 
+## ExternalBucketSettings
+
+### AmazonS3AccessKeyId
+
+*string*
+
+The access key id of the external bucket.
+
+### AmazonS3SecretAccessKey
+
+*string*
+
+The secret access key of the external bucket.
+
+### AmazonS3Bucket
+
+*string*
+
+The bucket name.
+
+### AmazonS3PathPrefix
+
+*string*
+
+The path prefix.
+
+### AmazonS3Region
+
+*string*
+
+The AWS region.
+
+### AmazonS3Endpoint
+
+*string*
+
+The S3 endpoint.
+
+### AmazonS3SSL
+
+*bool*
+
+Whether to use SSL or not.
+
+### AmazonS3SignV2
+
+*bool*
+
+Whether to use the v2 protocol while signing or not.
+
+### AmazonS3SSE
+
+*bool*
+
+Whether to use SSE or not.
+
 ## MattermostDownloadURL
 
 *string*

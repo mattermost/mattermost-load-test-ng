@@ -102,6 +102,9 @@ variable "job_server_instance_type" {
 variable "s3_bucket_dump_uri" {
 }
 
+variable "s3_external_bucket_name" {
+}
+
 variable "aws_profile" {
 }
 
