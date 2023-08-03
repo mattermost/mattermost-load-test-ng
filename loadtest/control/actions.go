@@ -533,7 +533,7 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 	channelId, err := u.CreateChannel(&model.Channel{
 		Name:   model.NewId(),
 		TeamId: team.Id,
-		Type:   "P",
+		Type:   model.ChannelTypePrivate,
 	})
 
 	if err != nil {
@@ -733,8 +733,8 @@ func Reload(u user.User) UserActionResponse {
 		switch {
 		case p.Category == model.PreferenceCategoryDirectChannelShow:
 			userIds = append(userIds, p.Name)
-		case p.Category == "group_channel_show":
-			if err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
+		case p.Category == model.PreferenceCategoryGroupChannelShow:
+			if _, err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
@@ -906,7 +906,7 @@ func ReloadGQL(u user.User) UserActionResponse {
 		case p.Category == model.PreferenceCategoryDirectChannelShow:
 			userIds = append(userIds, p.Name)
 		case p.Category == "group_channel_show":
-			if err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
+			if _, err := u.GetUsersInChannel(p.Name, 0, 8); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
