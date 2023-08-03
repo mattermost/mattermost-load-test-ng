@@ -4,7 +4,9 @@
 package simulcontroller
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"regexp"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -201,4 +204,26 @@ func usersForPosts(posts []*model.Post) map[string]bool {
 		userIds[p.UserId] = true
 	}
 	return userIds
+}
+
+// getPostFromEvent attempts to extract the post object
+// from a related websocket event.
+func getPostFromEvent(ev *model.WebSocketEvent) (*model.Post, error) {
+	if ev == nil {
+		return nil, fmt.Errorf("invalid nil event")
+	}
+
+	var data string
+	if el, ok := ev.GetData()["post"]; !ok {
+		return nil, errors.New("post data is missing")
+	} else if data, ok = el.(string); !ok {
+		return nil, fmt.Errorf("type of the post data should be a string, but it is %T", el)
+	}
+
+	var post *model.Post
+	if err := json.Unmarshal([]byte(data), &post); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+	}
+
+	return post, nil
 }

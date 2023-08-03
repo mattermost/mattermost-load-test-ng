@@ -201,6 +201,10 @@ func (c *SimulController) joinTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if _, err := c.user.GetUsers(0, 100); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	team, err := u.Store().RandomTeam(store.SelectNotMemberOf)
 	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
 		c.status <- c.newInfoStatus("no team to join")
@@ -473,7 +477,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	if channel.Type == model.ChannelTypeDirect || channel.Type == model.ChannelTypeGroup {
 		category := map[model.ChannelType]string{
 			model.ChannelTypeDirect: model.PreferenceCategoryDirectChannelShow,
-			model.ChannelTypeGroup:  "group_channel_show",
+			model.ChannelTypeGroup:  model.PreferenceCategoryGroupChannelShow,
 		}
 
 		// We need to update the user's preferences so that
@@ -1132,7 +1136,7 @@ func searchPosts(u user.User) control.UserActionResponse {
 			if len(users) == 1 {
 				return control.UserActionResponse{Err: errors.New("found")}
 			}
-			return control.UserActionResponse{}
+			return control.UserActionResponse{Info: "emulated user typing users"}
 		})
 	}
 
@@ -1150,7 +1154,7 @@ func searchPosts(u user.User) control.UserActionResponse {
 			if len(channels) == 1 {
 				return control.UserActionResponse{Err: errors.New("found")}
 			}
-			return control.UserActionResponse{}
+			return control.UserActionResponse{Info: "emulated user typing channels"}
 		})
 	}
 
@@ -1232,6 +1236,69 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 	})
 }
 
+func openAddMembersDialog(u user.User, teamId, channelId string) ([]string, control.UserActionResponse) {
+	if err := u.GetTeamStats(teamId); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	inChannelIds, err := u.GetUsersInChannel(channelId, 0, 50)
+	if err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	notInChannelIds, err := u.GetUsersNotInChannel(teamId, channelId, 0, 100)
+	if err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetUsersStatusesByIds(inChannelIds); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.GetUsersStatusesByIds(notInChannelIds); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	// NOTE: the call to ViewChannel is really a side effect and not properly part of this action.
+	// Its trigger is the handleBlur() function in the team controller.
+	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
+	if resp.Err != nil {
+		return nil, resp
+	}
+	if _, err := u.ViewChannel(&model.ChannelView{ChannelId: channelId, CollapsedThreadsSupported: collapsedThreads}); err != nil {
+		return nil, control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return notInChannelIds, control.UserActionResponse{}
+}
+
+func createPublicChannel(u user.User) control.UserActionResponse {
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	channelName := model.NewId()
+	channelId, err := u.CreateChannel(&model.Channel{
+		Name:        channelName,
+		DisplayName: "Channel " + channelName,
+		TeamId:      team.Id,
+		Type:        model.ChannelTypeOpen,
+	})
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if _, resp := openAddMembersDialog(u, team.Id, channelId); resp.Err != nil {
+		return resp
+	}
+
+	// TODO: figure out if it makes sense to add users to the newly created
+	// channel following some heuristics.
+
+	return control.UserActionResponse{Info: fmt.Sprintf("public channel created, id %v", channelId)}
+}
+
 func createPrivateChannel(u user.User) control.UserActionResponse {
 	team, err := u.Store().RandomTeam(store.SelectMemberOf)
 	if err != nil {
@@ -1243,25 +1310,15 @@ func createPrivateChannel(u user.User) control.UserActionResponse {
 		Name:        channelName,
 		DisplayName: "Channel " + channelName,
 		TeamId:      team.Id,
-		Type:        "P",
+		Type:        model.ChannelTypePrivate,
 	})
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// This is a series of calls made by the webapp client
-	// when opening the `Add Members` dialog.
-	if err := u.GetUsersInChannel(channelId, 0, 100); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	if err := u.GetChannelMembers(channelId, 0, 50); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
-	ids, err := u.GetUsersNotInChannel(team.Id, channelId, 0, 100)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	ids, resp := openAddMembersDialog(u, team.Id, channelId)
+	if resp.Err != nil {
+		return resp
 	}
 
 	// we pick up to 4 users to add to the channel.

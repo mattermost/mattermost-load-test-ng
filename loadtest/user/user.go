@@ -86,7 +86,8 @@ type User interface {
 	// GetUsersStatusesByIds fetches and stores statuses for the specified users.
 	GetUsersStatusesByIds(userIds []string) error
 	// GetUsersInChannel fetches and stores users in the specified channel.
-	GetUsersInChannel(channelId string, page, perPage int) error
+	// Returns a list of ids of the users.
+	GetUsersInChannel(channelId string, page, perPage int) ([]string, error)
 	// GetUsers fetches and stores all users. It returns a list of those users' ids.
 	GetUsers(page, perPage int) ([]string, error)
 	// GetUsersNotInChannel returns a list of user ids not in a given channel.
