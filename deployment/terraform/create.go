@@ -105,6 +105,19 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		var params []string
+		params = append(params, "import")
+		params = append(params, t.getParams()...)
+		params = append(params, "-state="+t.getStatePath())
+		params = append(params, "aws_rds_cluster.db_cluster", t.config.TerraformDBSettings.ClusterIdentifier)
+
+		err = t.runCommand(nil, params...)
+		if err != nil {
+			return err
+		}
+	}
+
 	var uploadBinary bool
 	var binaryPath string
 	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
@@ -143,6 +156,18 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
+	// If we are restoring from a DB backup, then we need to hook up
+	// the security group to it.
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		if len(t.output.DBSecurityGroup) == 0 {
+			return errors.New("No DB security group created")
+		}
+
+		if err := t.attachSG(); err != nil {
+			return err
+		}
+	}
+
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
@@ -179,7 +204,7 @@ func (t *Terraform) Create(initData bool) error {
 
 	}
 
-	if t.output.HasDB() && initData {
+	if t.output.HasDB() && initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		if err := t.createAdminUser(extAgent); err != nil {
 			return fmt.Errorf("could not create admin user: %w", err)
 		}

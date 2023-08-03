@@ -233,6 +233,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.TerraformDBSettings.InstanceEngine),
 		"-var", fmt.Sprintf("db_instance_class=%s", t.config.TerraformDBSettings.InstanceType),
+		"-var", fmt.Sprintf("db_cluster_identifier=%s", t.config.TerraformDBSettings.ClusterIdentifier),
 		"-var", fmt.Sprintf("db_username=%s", t.config.TerraformDBSettings.UserName),
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("db_enable_performance_insights=%t", t.config.TerraformDBSettings.EnablePerformanceInsights),

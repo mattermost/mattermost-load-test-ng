@@ -57,6 +57,9 @@ variable "db_instance_engine" {
 variable "db_instance_class" {
 }
 
+variable "db_cluster_identifier" {
+}
+
 variable "db_engine_version" {
   type = map(any)
   default = {

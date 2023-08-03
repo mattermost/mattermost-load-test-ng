@@ -102,7 +102,7 @@ type TerraformDBSettings struct {
 	// Number of DB instances.
 	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
-	InstanceType string `default:"db.r4.large" validate:"notempty"`
+	InstanceType string `default:"db.r6g.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
@@ -113,6 +113,8 @@ type TerraformDBSettings struct {
 	EnablePerformanceInsights bool `default:"false"`
 	// A list of DB specific parameters to use for the created instance.
 	DBParameters DBParameters
+	// ClusterIdentifier indicates to point to an existing cluster
+	ClusterIdentifier string `default:""`
 }
 
 // ExternalDBSettings contains the necessary data
