@@ -241,6 +241,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
+		"-var", fmt.Sprintf("s3_external_bucket_name=%s", t.config.ExternalBucketSettings.AmazonS3Bucket),
 	}
 }
 
