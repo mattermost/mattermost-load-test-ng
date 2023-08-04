@@ -105,6 +105,8 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
+	// If we are using a restored cluster, first we need to import
+	// it into Terraform state.
 	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
 		var params []string
 		params = append(params, "import")
