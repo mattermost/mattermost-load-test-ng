@@ -151,9 +151,7 @@ func (t *Terraform) loadOutput() error {
 	}
 
 	if len(o.DBSecurityGroup.Value) > 0 {
-		for _, sg := range o.DBSecurityGroup.Value {
-			outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, sg)
-		}
+		outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, o.DBSecurityGroup.Value...)
 	}
 
 	t.output = outputv2
