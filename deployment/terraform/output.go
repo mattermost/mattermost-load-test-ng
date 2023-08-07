@@ -7,6 +7,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
+
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type output struct {
@@ -225,4 +229,22 @@ func (o *Output) DBWriter() string {
 		}
 	}
 	return wr
+}
+
+// PermalinksIPsSubstCommand returns the substitution command to replace
+// permalinks in the DB dump for the current deployment.
+func (o *Output) PermalinksIPsSubstCommand(permalinkIPsToReplace []string) string {
+	if len(permalinkIPsToReplace) == 0 {
+		return ""
+	}
+
+	if o.HasProxy() {
+		return deployment.GenCmdForPermalinksIPsSubstitution(o.Proxy.PublicIP, permalinkIPsToReplace, true)
+	}
+
+	if len(o.Instances) > 0 {
+		mlog.Warn("detected multiple app instances with no proxy, using only first instance's IP for permalink substitution")
+	}
+
+	return deployment.GenCmdForPermalinksIPsSubstitution(o.Instances[0].PublicIP, permalinkIPsToReplace, false)
 }

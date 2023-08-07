@@ -471,6 +471,17 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.output.S3Key.Secret)
 		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.output.S3Bucket.Id)
 		cfg.FileSettings.AmazonS3Region = model.NewString(t.output.S3Bucket.Region)
+	} else if t.config.ExternalBucketSettings.AmazonS3Bucket != "" {
+		cfg.FileSettings.DriverName = model.NewString("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
+		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.config.ExternalBucketSettings.AmazonS3Bucket)
+		cfg.FileSettings.AmazonS3PathPrefix = model.NewString(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
+		cfg.FileSettings.AmazonS3Region = model.NewString(t.config.ExternalBucketSettings.AmazonS3Region)
+		cfg.FileSettings.AmazonS3Endpoint = model.NewString(t.config.ExternalBucketSettings.AmazonS3Endpoint)
+		cfg.FileSettings.AmazonS3SSL = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSL)
+		cfg.FileSettings.AmazonS3SignV2 = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SignV2)
+		cfg.FileSettings.AmazonS3SSE = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSE)
 	}
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)

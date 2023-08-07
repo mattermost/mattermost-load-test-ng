@@ -76,8 +76,15 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		}
 	}
 
+	// A full reload always calls GET /api/v4/users?page=0&per_page=100,
+	// regardless of GraphQL enabled or not
+	_, err := c.user.GetUsers(0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	var resp control.UserActionResponse
-	if c.featureFlags.GraphQLEnabled {
+	if c.user.Store().FeatureFlags()["GraphQL"] {
 		resp = control.ReloadGQL(c.user)
 	} else {
 		resp = control.Reload(c.user)
@@ -96,7 +103,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.user.Store().FeatureFlags()["GraphQL"]); resp.Err != nil {
 		return resp
 	}
 
@@ -274,7 +281,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.user.Store().FeatureFlags()["GraphQL"]); resp.Err != nil {
 		return resp
 	}
 

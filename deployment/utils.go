@@ -54,17 +54,19 @@ func ProvisionURL(client *ssh.Client, url, filename string) error {
 	return nil
 }
 
-// BuildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
-// provided DB dump file into the database, replacing first the old IPs found
-// in the posts that contain a permalink with the new IP. Something like:
+// GenCmdForPermalinksIPsSubstitution returns a sed command to replace any
+// permalinks that matches the given list of IPs with newIP.
 //
-//	zcat dbdump.sql
-//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
-//	mysql/psql connection_details
-func BuildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo DBSettings) ([]string, error) {
-	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
-
+// replacePort can be used to force replacing the whole host, including the
+// port. This is useful when newIP is the IP of a load balancer,
+func GenCmdForPermalinksIPsSubstitution(newIP string, permalinkIPsToReplace []string, replacePort bool) string {
+	var cmd string
 	var replacements []string
+
+	if newIP == "" {
+		return cmd
+	}
+
 	for _, oldIP := range permalinkIPsToReplace {
 		// Let's build the match and replace parts of a sed command: 's/match/replace/g'
 		// First, the match. We want to match anything of the form
@@ -77,14 +79,37 @@ func BuildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		// Now, the replace. We need to replace this with the same thing, only changing the
 		// IP with the new one and hard-coding the port to 8065, but maintaining the team
 		// name (hence the second group match, \2)
-		replace := newIP + `:8065\/\2\/pl\/`
+		port := ":8065"
+		if replacePort {
+			port = ""
+		}
+		replace := fmt.Sprintf(`%s%s\/\2\/pl\/`, newIP, port)
 		// We can build the whole command now and add it to the list of replacements
 		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
 		replacements = append(replacements, sedRegex)
 	}
-	var sedCmd string
+
 	if len(replacements) > 0 {
-		sedCmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+		cmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
+	}
+
+	return cmd
+}
+
+// BuildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
+// provided DB dump file into the database, using the given permalinksSubstCmd
+// to make permalinks' IPs substitutions. Example:
+//
+//	zcat dbdump.sql
+//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
+//	mysql/psql connection_details
+func BuildLoadDBDumpCmds(dumpFilename, permalinksSubstCmd string, dbInfo DBSettings) ([]string, error) {
+	cmds := []string{
+		fmt.Sprintf("zcat %s", dumpFilename),
+	}
+
+	if permalinksSubstCmd != "" {
+		cmds = append(cmds, permalinksSubstCmd)
 	}
 
 	var dbCmd string
@@ -97,9 +122,5 @@ func BuildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplac
 		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	if sedCmd != "" {
-		return []string{zcatCmd, sedCmd, dbCmd}, nil
-	}
-
-	return []string{zcatCmd, dbCmd}, nil
+	return append(cmds, dbCmd), nil
 }

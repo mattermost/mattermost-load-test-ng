@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +48,7 @@ type MemStore struct {
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue[model.ThreadResponse]
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
+	featureFlags        map[string]bool
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -199,11 +202,18 @@ func (s *MemStore) Password() string {
 	return s.user.Password
 }
 
-// ClientConfig  returns the limited server configuration settings for user.
+// ClientConfig returns the limited server configuration settings for user.
 func (s *MemStore) ClientConfig() map[string]string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.clientConfig
+}
+
+// FeatureFlags returns a map of the features flags stored in the client config.
+func (s *MemStore) FeatureFlags() map[string]bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.featureFlags
 }
 
 // Config returns the server configuration settings.
@@ -225,6 +235,20 @@ func (s *MemStore) SetClientConfig(config map[string]string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.clientConfig = config
+
+	// Populate FF
+	s.featureFlags = map[string]bool{}
+	for k, v := range s.clientConfig {
+		// We avoid an extra call to strings.HasPrefix by checking the returned length.
+		// If the prefix matches then the returned string must be shorter.
+		if ffKey := strings.TrimPrefix(k, "FeatureFlag"); len(ffKey) < len(k) {
+			v, err := strconv.ParseBool(v)
+			if err != nil {
+				continue
+			}
+			s.featureFlags[ffKey] = v
+		}
+	}
 }
 
 // User returns the stored user.

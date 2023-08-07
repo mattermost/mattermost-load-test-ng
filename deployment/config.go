@@ -49,6 +49,8 @@ type Config struct {
 	TerraformDBSettings TerraformDBSettings
 	// External database connection settings
 	ExternalDBSettings ExternalDBSettings
+	// External bucket connection settings.
+	ExternalBucketSettings ExternalBucketSettings
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -125,6 +127,20 @@ type ExternalDBSettings struct {
 	DataSourceReplicas []string `default:""`
 	// DSN to connect to the database search replicas
 	DataSourceSearchReplicas []string `default:""`
+}
+
+// ExternalBucketSettings contains the necessary data
+// to connect to an existing S3 bucket.
+type ExternalBucketSettings struct {
+	AmazonS3AccessKeyId     string `default:""`
+	AmazonS3SecretAccessKey string `default:""`
+	AmazonS3Bucket          string `default:""`
+	AmazonS3PathPrefix      string `default:""`
+	AmazonS3Region          string `default:"us-east-1"`
+	AmazonS3Endpoint        string `default:"s3.amazonaws.com"`
+	AmazonS3SSL             bool   `default:"true"`
+	AmazonS3SignV2          bool   `default:"false"`
+	AmazonS3SSE             bool   `default:"false"`
 }
 
 // ElasticSearchSettings contains the necessary data
