@@ -165,7 +165,16 @@ func (t *Terraform) Create(initData bool) error {
 			return errors.New("No DB security group created")
 		}
 
-		if err := t.attachSG(); err != nil {
+		sgID := t.output.DBSecurityGroup[0].Id
+		args := []string{
+			"--profile=" + t.config.AWSProfile,
+			"rds",
+			"modify-db-cluster",
+			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+			"--vpc-security-group-ids=" + sgID,
+			"--region=" + t.config.AWSRegion,
+		}
+		if err := t.runAWSCommand(nil, args); err != nil {
 			return err
 		}
 	}

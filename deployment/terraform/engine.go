@@ -43,32 +43,22 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	return _runCommand(cmd, dst)
 }
 
-func (t *Terraform) attachSG() error {
+func (t *Terraform) runAWSCommand(ctx context.Context, args []string) error {
 	awsBin := "aws"
 	if _, err := exec.LookPath(awsBin); err != nil {
 		return fmt.Errorf("aws not installed. Please install aws. (https://aws.amazon.com/cli): %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
-	defer cancel()
-
-	sgID := t.output.DBSecurityGroup[0].Id
-	args := []string{
-		"--profile=" + t.config.AWSProfile,
-		"rds",
-		"modify-db-cluster",
-		"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
-		"--vpc-security-group-ids=" + sgID,
-		"--region=" + t.config.AWSRegion,
+	var cancel context.CancelFunc
+	if ctx == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
+		defer cancel()
 	}
+
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
-	if err := _runCommand(cmd, nil); err != nil {
-		return err
-	}
-
-	return nil
+	return _runCommand(cmd, nil)
 }
 
 func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
