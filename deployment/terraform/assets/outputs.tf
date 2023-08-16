@@ -31,6 +31,10 @@ output "s3Key" {
   sensitive = true
 }
 
+output "dbSecurityGroup" {
+  value = aws_security_group.db
+}
+
 output "jobServers" {
   value = aws_instance.job_server[*]
 }
