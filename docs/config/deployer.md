@@ -178,6 +178,12 @@ The password to connect to the database.
 
 If set to true enables performance insights for the created DB instances.
 
+### ClusterIdentifier
+
+*string*
+
+The name of the existing cluster to attach to. If this is set, then the `DBDumpURI` does not have any effect. This string should be a restored AWS Aurora backup cluster.
+
 ### DBParameters
 
 *[]DBParameter*
