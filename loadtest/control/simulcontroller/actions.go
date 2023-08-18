@@ -1929,27 +1929,30 @@ func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResp
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		latestCreateAt := posts[len(posts)-1].CreateAt
-		if _, err := u.GetPostsSince(currentCh.Id, latestCreateAt, crtEnabled); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		// unique user ids from all posts in current Channel + users from DM prefs
-		userIds := usersForPosts(posts)
-		prefs, err := u.Store().Preferences()
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		for _, p := range prefs {
-			switch {
-			case p.Category == model.PreferenceCategoryDirectChannelShow:
-				userIds[p.Name] = true
+		// If there are posts in the channel, retrieve the statuses of their authors
+		if len(posts) > 0 {
+			latestCreateAt := posts[len(posts)-1].CreateAt
+			if _, err := u.GetPostsSince(currentCh.Id, latestCreateAt, crtEnabled); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
-		}
 
-		if err := u.GetUsersStatusesByIds(keys(userIds)); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
+			// unique user ids from all posts in current Channel + users from DM prefs
+			userIds := usersForPosts(posts)
+			prefs, err := u.Store().Preferences()
+			if err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+
+			for _, p := range prefs {
+				switch {
+				case p.Category == model.PreferenceCategoryDirectChannelShow:
+					userIds[p.Name] = true
+				}
+			}
+
+			if err := u.GetUsersStatusesByIds(keys(userIds)); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
 		}
 
 		if _, err := u.GetTeamsUnread("", crtEnabled); err != nil {
