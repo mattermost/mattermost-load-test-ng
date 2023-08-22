@@ -26,7 +26,22 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
-	return t.Create(true)
+
+	// If DBDumpURI is not set, we seed data. Otherwise,
+	// we just load the dump.
+	initData := config.DBDumpURI == ""
+	err = t.Create(initData)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform env: %w", err)
+	}
+
+	if !initData {
+		err = t.IngestDump()
+		if err != nil {
+			return fmt.Errorf("failed to create ingest dump: %w", err)
+		}
+	}
+	return nil
 }
 
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
@@ -181,6 +196,12 @@ func main() {
 			Use:   "status",
 			Short: "Shows the status of the current load-test",
 			RunE:  RunLoadTestStatusCmdF,
+		},
+		{
+			Use:   "inject actionId",
+			Short: "Injects the action into the current load-test",
+			RunE:  RunInjectActionCmdF,
+			Args:  cobra.ExactArgs(1),
 		},
 		resetCmd,
 	}

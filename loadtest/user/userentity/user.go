@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // UserEntity is an implementation of the User interface
@@ -72,7 +72,7 @@ type ueTransport struct {
 func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	resp, err := t.transport.RoundTrip(req)
-	t.ue.observeHTTPRequestTimes(req.URL.Path, req.Method, resp.StatusCode, time.Since(startTime).Seconds())
+	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
 	if os.IsTimeout(err) {
 		t.ue.incHTTPTimeouts(req.URL.Path, req.Method)
 	}

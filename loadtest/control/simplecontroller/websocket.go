@@ -6,7 +6,7 @@ package simplecontroller
 import (
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // wsEventHandler listens for WebSocket events to be handled.

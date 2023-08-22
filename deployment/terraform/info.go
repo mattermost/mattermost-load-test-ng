@@ -20,11 +20,6 @@ func (t *Terraform) Info() error {
 }
 
 func displayInfo(output *Output) {
-	if len(output.Agents) == 0 {
-		fmt.Println("No active deployment found.")
-		return
-	}
-
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
@@ -47,15 +42,19 @@ func displayInfo(output *Output) {
 		}
 	}
 
-	fmt.Println("Load Agent(s):")
-	for _, agent := range output.Agents {
-		fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+	if output.HasAgents() {
+		fmt.Println("Load Agent(s):")
+		for _, agent := range output.Agents {
+			fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+		}
+
+		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 	}
-	fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
+		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
 	}
 	if output.HasDB() {
 		fmt.Println("DB writer endpoint: " + output.DBWriter())

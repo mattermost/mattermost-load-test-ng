@@ -13,6 +13,10 @@ DIST_PATH=$(DIST_ROOT)/$(DIST_VER)
 STATUS=$(shell git diff-index --quiet HEAD --; echo $$?)
 
 GOBIN=$(PWD)/bin
+# We need to export GOBIN to allow it to be set
+# for processes spawned from the Makefile
+export GOBIN ?= $(PWD)/bin
+
 PATH=$(shell printenv PATH):$(GOBIN)
 
 AGENT=$(GOBIN)/ltagent
@@ -40,7 +44,7 @@ assets: ## Generate the assets. Install go-bindata if needed.
 	go generate ./...
 	go fmt ./...
 
-build: assets build-linux build-windows build-osx ## Generate the assets and build the binary for all platforms.
+build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
 
 
 install: ## Build and install for the current platform.
@@ -78,10 +82,10 @@ verify-gomod: ## Run go mod verify.
 check-style: golangci-lint ## Check the style of the code.
 
 golangci-lint:
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 
 	@echo Running golangci-lint
-	golangci-lint run ./...
+	$(GOBIN)/golangci-lint run ./...
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -failfast -race ./...
@@ -103,6 +107,7 @@ else
 ifeq ($(BRANCH_EXISTS), 0)
 	@echo "Error: branch ${BRANCH_NAME} already exists"
 else
+	@echo $(NEXT_VER) | grep -Eq ^v[0-9]+\.[0-9]+\.[0-9]+$ || (echo "The next version, '$(NEXT_VER)' is not of the form vMAJOR.MINOR.PATCH" && exit 1)
 	git checkout -b $(BRANCH_NAME) origin/master
 	@echo "Applying changes"
 	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
@@ -127,9 +132,14 @@ else
 	git checkout master
 	git pull
 	git tag $(NEXT_VER)
-	goreleaser --rm-dist
+	goreleaser --clean
 endif
 endif
+
+update-dependencies: ## Uses go get -u to update all dependencies and go mod tidy to clean up after itself.
+	@echo Updating dependencies
+	$(GO) get -u ./... # Update all dependencies (does not update across major versions)
+	$(GO) mod tidy # Tidy up
 
 clean: ## Remove all generated files to start from scratch.
 	rm -f errors.log cache.db stats.log status.log
@@ -139,5 +149,5 @@ clean: ## Remove all generated files to start from scratch.
 
 ## Help documentation à la https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help: ## Print this help text.
-	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' ./Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' ./Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-19s\033[0m %s\n", $$1, $$2}'
 	@echo

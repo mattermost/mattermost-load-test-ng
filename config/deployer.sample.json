@@ -1,5 +1,7 @@
 {
   "AWSProfile": "mm-loadtest",
+  "AWSRegion": "us-east-1",
+  "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
@@ -23,13 +25,17 @@
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
+  "DBDumpURI": "",
+  "PermalinkIPsToReplace": [],
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r5.large",
+    "InstanceType": "db.r6g.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
-    "EnablePerformanceInsights": false
+    "EnablePerformanceInsights": false,
+    "DBParameters": [],
+    "ClusterIdentifier": ""
   },
   "ExternalDBSettings": {
     "DriverName": "cockroach",
@@ -37,13 +43,24 @@
     "DataSourceReplicas": [],
     "DataSourceSearchReplicas": []
   },
+  "ExternalBucketSettings": {
+    "AmazonS3AccessKeyId": "",
+    "AmazonS3SecretAccessKey": "",
+    "AmazonS3Bucket": "",
+    "AmazonS3PathPrefix": "",
+    "AmazonS3Region": "us-east-1",
+    "AmazonS3Endpoint": "s3.amazonaws.com",
+    "AmazonS3SSL": true,
+    "AmazonS3SignV2": false,
+    "AmazonS3SSE": false
+  },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
   "MattermostLicenseFile": "",
   "MattermostConfigPatchFile": "",
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.7.1/mattermost-load-test-ng-v1.7.1-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.9.1/mattermost-load-test-ng-v1.9.1-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",

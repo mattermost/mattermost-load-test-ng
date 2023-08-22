@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
-	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
@@ -136,7 +136,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 		return fmt.Errorf("error uploading file, output: %q: %w", out, err)
 	}
 
-	if initData {
+	if initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
 		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", t.output.Agents[0].Tags.Name)
 		if out, err := sshc.RunCommand(cmd); err != nil {

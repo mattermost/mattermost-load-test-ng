@@ -21,7 +21,7 @@ This will serve as a template to create all the required deployments to run the 
 cp config/deployer.sample.json config/deployer.json
 ```
 
-Detailed documentation for this config file can be found [here](deployer_config.md).
+Detailed documentation for this config file can be found [here](config/deployer.md).
 
 ### comparison.json
 
@@ -31,7 +31,7 @@ Next step is to configure the comparison itself:
 cp config/comparison.sample.json config/comparison.json
 ```
 
-Detailed documentation for this config file can be found [here](comparison_config.md).
+Detailed documentation for this config file can be found [here](config/comparison.md).
 
 ### config.json and coordinator.json
 
@@ -53,7 +53,7 @@ eval $(ssh-agent -s)
 ssh-add PATH_TO_PRIVATE_KEY
 ```
 
-`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](deployer_config.md).
+`PATH_TO_PRIVATE_KEY` should be replaced with the path to the matching private key for `SSHPublicKey`, as previously [configured](config/deployer.md).
 
 ### Run the comparison 
 

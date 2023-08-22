@@ -11,7 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 
-	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type deploymentConfig struct {
@@ -101,7 +101,7 @@ func (c *Comparison) Run() (Output, error) {
 				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
-					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI, c.cancelCh); err != nil {
+					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI, lt.PermalinkIPsToReplace, c.cancelCh); err != nil {
 						errsCh <- err
 						return
 					}

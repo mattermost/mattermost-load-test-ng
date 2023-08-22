@@ -7,6 +7,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
+
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type output struct {
@@ -39,6 +43,9 @@ type output struct {
 	S3Key struct {
 		Value []IAMAccess `json:"value"`
 	} `json:"s3Key"`
+	DBSecurityGroup struct {
+		Value []SecurityGroup `json:"value"`
+	} `json:"dbSecurityGroup"`
 }
 
 // Output contains the output variables which are
@@ -54,6 +61,7 @@ type Output struct {
 	JobServers          []Instance          `json:"jobServers"`
 	S3Bucket            S3Bucket            `json:"s3Bucket"`
 	S3Key               IAMAccess           `json:"s3Key"`
+	DBSecurityGroup     []SecurityGroup     `json:"dbSecurityGroup"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -85,6 +93,12 @@ type DBCluster struct {
 type IAMAccess struct {
 	Id     string `json:"id"`
 	Secret string `json:"secret"`
+}
+
+// SecurityGroup is an AWS security group resource.
+type SecurityGroup struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // S3Bucket defines a specific S3 bucket.
@@ -136,6 +150,10 @@ func (t *Terraform) loadOutput() error {
 		outputv2.S3Key = o.S3Key.Value[0]
 	}
 
+	if len(o.DBSecurityGroup.Value) > 0 {
+		outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, o.DBSecurityGroup.Value...)
+	}
+
 	t.output = outputv2
 
 	return nil
@@ -167,7 +185,7 @@ func (o *Output) HasDB() bool {
 	return len(o.DBCluster.Endpoints) > 0
 }
 
-//HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
+// HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
 func (o *Output) HasElasticSearch() bool {
 	return o.ElasticSearchServer.Endpoint != ""
 }
@@ -175,6 +193,11 @@ func (o *Output) HasElasticSearch() bool {
 // HasAppServers returns whether a deployment includes app server instances.
 func (o *Output) HasAppServers() bool {
 	return len(o.Instances) > 0
+}
+
+// HasAgents returns whether a deployment includes agent instances.
+func (o *Output) HasAgents() bool {
+	return len(o.Agents) > 0
 }
 
 // HasMetrics returns whether a deployment includes the metrics instance.
@@ -220,4 +243,22 @@ func (o *Output) DBWriter() string {
 		}
 	}
 	return wr
+}
+
+// PermalinksIPsSubstCommand returns the substitution command to replace
+// permalinks in the DB dump for the current deployment.
+func (o *Output) PermalinksIPsSubstCommand(permalinkIPsToReplace []string) string {
+	if len(permalinkIPsToReplace) == 0 {
+		return ""
+	}
+
+	if o.HasProxy() {
+		return deployment.GenCmdForPermalinksIPsSubstitution(o.Proxy.PublicIP, permalinkIPsToReplace, true)
+	}
+
+	if len(o.Instances) > 0 {
+		mlog.Warn("detected multiple app instances with no proxy, using only first instance's IP for permalink substitution")
+	}
+
+	return deployment.GenCmdForPermalinksIPsSubstitution(o.Instances[0].PublicIP, permalinkIPsToReplace, false)
 }

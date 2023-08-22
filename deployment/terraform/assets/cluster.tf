@@ -9,13 +9,26 @@ terraform {
 }
 
 provider "aws" {
-  region  = "us-east-1"
+  region  = var.aws_region
   profile = var.aws_profile
 }
 
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
+
+data "http" "my_public_ip" {
+  url = "https://checkip.amazonaws.com"
+}
+
+data "external" "private_ip" {
+  program = ["sh", "-c", "echo {\\\"ip\\\":\\\"$(hostname -i)\\\"}"]
+}
+
+locals {
+  public_ip  = chomp(data.http.my_public_ip.response_body)
+  private_ip = data.external.private_ip.result.ip
+}
 
 data "aws_subnet_ids" "selected" {
   vpc_id = var.es_vpc
@@ -38,7 +51,7 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
@@ -71,7 +84,7 @@ resource "aws_instance" "app_server" {
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-11",
       "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
     ]
   }
 }
@@ -88,7 +101,7 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = "t3.xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
@@ -112,8 +125,8 @@ resource "aws_instance" "metrics_server" {
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
       "sudo apt-get install -y adduser libfontconfig1",
-      "wget https://dl.grafana.com/oss/release/grafana_7.3.7_amd64.deb",
-      "sudo dpkg -i grafana_7.3.7_amd64.deb",
+      "wget https://dl.grafana.com/oss/release/grafana_9.5.1_amd64.deb",
+      "sudo dpkg -i grafana_9.5.1_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
@@ -123,7 +136,10 @@ resource "aws_instance" "metrics_server" {
       "sudo systemctl enable grafana-server",
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
-      "sudo service inbucket start"
+      "sudo service inbucket start",
+      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
+      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
+      "sudo systemctl enable pyroscope-server"
     ]
   }
 }
@@ -132,7 +148,7 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy"
   }
-  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
   count                       = var.app_instance_count > 1 ? 1 : 0
   associate_public_ip_address = true
@@ -164,7 +180,7 @@ resource "aws_instance" "proxy_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws",
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
       "sudo rm -f /etc/nginx/sites-enabled/default",
@@ -230,18 +246,17 @@ resource "aws_elasticsearch_domain" "es_server" {
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"
-  count = var.app_instance_count > 1 ? 1 : 0
+  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
 }
 
 resource "aws_iam_access_key" "s3key" {
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 ? 1 : 0
+  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
 }
 
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
-  acl    = "private"
-  count  = var.app_instance_count > 1 ? 1 : 0
+  count  = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }
@@ -252,7 +267,7 @@ resource "aws_s3_bucket" "s3bucket" {
 resource "aws_iam_user_policy" "s3userpolicy" {
   name  = "${var.cluster_name}-s3userpolicy"
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 ? 1 : 0
+  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
 
   policy = <<EOF
 {
@@ -287,8 +302,8 @@ EOF
 }
 
 resource "aws_rds_cluster" "db_cluster" {
-  count               = var.app_instance_count > 0 && var.db_instance_count > 0 ? 1 : 0
-  cluster_identifier  = "${var.cluster_name}-db"
+  count               = var.app_instance_count > 0 && var.db_instance_count > 0 && var.db_cluster_identifier == "" ? 1 : 0
+  cluster_identifier  = var.db_cluster_identifier != "" ? "" : "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username
   master_password     = var.db_password
@@ -303,17 +318,31 @@ resource "aws_rds_cluster" "db_cluster" {
 resource "aws_rds_cluster_instance" "cluster_instances" {
   count                        = var.app_instance_count > 0 ? var.db_instance_count : 0
   identifier                   = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier           = aws_rds_cluster.db_cluster[0].id
+  cluster_identifier           = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster[0].id
   instance_class               = var.db_instance_class
   engine                       = var.db_instance_engine
   apply_immediately            = true
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
+  db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
+}
+
+resource "aws_db_parameter_group" "db_params_group" {
+  name   = "${var.cluster_name}-db-pg"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql12"
+  dynamic "parameter" {
+    for_each = var.db_parameters
+    content {
+      name         = parameter.value["name"]
+      value        = parameter.value["value"]
+      apply_method = parameter.value["apply_method"]
+    }
+  }
 }
 
 resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
   count                       = var.db_instance_count > 0 ? var.db_instance_count : 0
-  cluster_identifier          = aws_rds_cluster.db_cluster[0].id
+  cluster_identifier          = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster[0].id
   cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}"
   custom_endpoint_type        = "ANY"
 
@@ -331,7 +360,7 @@ resource "aws_instance" "loadtest_agent" {
     host = self.public_ip
   }
 
-  ami                         = "ami-0fa37863afb290840" # 20.04 LTS
+  ami                         = var.aws_ami
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
@@ -353,7 +382,7 @@ resource "aws_instance" "loadtest_agent" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-5.4.0-1039-aws"
+      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
     ]
   }
 }
@@ -367,7 +396,7 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
   }
   ingress {
     from_port   = 8065
@@ -465,7 +494,7 @@ resource "aws_security_group_rule" "agent-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.agent.id
 }
 
@@ -518,7 +547,7 @@ resource "aws_security_group_rule" "metrics-ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["${local.public_ip}/32", "${local.private_ip}/32"]
   security_group_id = aws_security_group.metrics[0].id
 }
 
@@ -537,6 +566,16 @@ resource "aws_security_group_rule" "metrics-grafana" {
   type              = "ingress"
   from_port         = 3000
   to_port           = 3000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-pyroscope" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 4040
+  to_port           = 4040
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
@@ -594,7 +633,7 @@ resource "aws_security_group" "proxy" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${local.public_ip}/32", "${local.private_ip}/32"]
   }
 
   ingress {
@@ -624,7 +663,7 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami           = "ami-0fa37863afb290840" # 20.04 LTS
+  ami           = var.aws_ami
   instance_type = var.job_server_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.job_server_instance_count
@@ -659,7 +698,7 @@ resource "aws_instance" "job_server" {
 }
 
 resource "null_resource" "s3_dump" {
-  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "") ? 1 : 0
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "" && var.s3_external_bucket_name == "") ? 1 : 0
 
   provisioner "local-exec" {
     command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"

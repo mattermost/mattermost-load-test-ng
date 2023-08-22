@@ -20,11 +20,11 @@ type testAPI struct {
 	err      error
 }
 
-func (t testAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, apiv1.Warnings, error) {
+func (t testAPI) Query(ctx context.Context, query string, ts time.Time, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error) {
 	return t.value, t.warnings, t.err
 }
 
-func (t testAPI) QueryRange(ctx context.Context, query string, r apiv1.Range) (model.Value, apiv1.Warnings, error) {
+func (t testAPI) QueryRange(ctx context.Context, query string, r apiv1.Range, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error) {
 	return t.value, t.warnings, nil
 }
 

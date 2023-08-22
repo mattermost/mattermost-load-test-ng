@@ -5,7 +5,6 @@ package gencontroller
 
 import (
 	"errors"
-	"math"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 )
@@ -15,28 +14,46 @@ import (
 type Config struct {
 	// The target number of teams to be created.
 	NumTeams int64 `default:"2" validate:"range:[0,]"`
-	// The target number of channels to be created.
-	NumChannels int64 `default:"20" validate:"range:[0,]"`
+	// The target number of direct messages to be created.
+	NumChannelsDM int64 `default:"20" validate:"range:[0,]"`
+	// The target number of group messages to be created.
+	NumChannelsGM int64 `default:"20" validate:"range:[0,]"`
+	// The target number of private channels to be created.
+	NumChannelsPrivate int64 `default:"20" validate:"range:[0,]"`
+	// The target number of public channels to be created.
+	NumChannelsPublic int64 `default:"20" validate:"range:[0,]"`
 	// The target number of posts to be created.
 	NumPosts int64 `default:"1000" validate:"range:[0,]"`
 	// The target number of reactions to be created.
 	NumReactions int64 `default:"200" validate:"range:[0,]"`
+	// The target number of post reminders to be created.
+	NumPostReminders int64 `default:"200" validate:"range:[0,]"`
+	// The target number of sidebar categories to be created.
+	NumSidebarCategories int64 `default:"10" validate:"range:[0,]"`
+	// The target number of threads to follow.
+	NumFollowedThreads int64 `default:"10" validate:"range:[0,]"`
 	// The percentage of replies to be created.
 	PercentReplies float64 `default:"0.5" validate:"range:[0,1]"`
-	// The percentage of replies that should be in long threads
+	// The percentage of replies that should be in long threads.
 	PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
+	// The percentage of post that are marked as urgent.
+	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
 
-	// Percentages of channels to be created, grouped by type.
-	// The total sum of these values must be equal to 1.
+	// Indicates the distribution of chanel members within channels.
+	ChannelMembersDistribution []ChannelMemberDistribution
+}
 
-	// The percentage of public channels to be created.
-	PercentPublicChannels float64 `default:"0.2" validate:"range:[0,1]"`
-	// The percentage of private channels to be created.
-	PercentPrivateChannels float64 `default:"0.1" validate:"range:[0,1]"`
-	// The percentage of direct channels to be created.
-	PercentDirectChannels float64 `default:"0.6" validate:"range:[0,1]"`
-	// The percentage of group channels to be created.
-	PercentGroupChannels float64 `default:"0.1" validate:"range:[0,1]"`
+// ChannelMemberDistribution holds the member limit and what percentage of channels will have the limit.
+// Probability indicates how frequently to choose a range. PercentChannels indicates the
+// what percent of channels will contain the change.
+//
+// For example, a probability of 0.8 and 0.5 of percentChannels with an array of
+// length 10 would mean that indices [0,5) would be chosen at a 80% probability chance.
+// And then the Memberlimit indicates the max member count for that range.
+type ChannelMemberDistribution struct {
+	MemberLimit     int64
+	PercentChannels float64 `validate:"range:[0,1]"`
+	Probability     float64 `validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string
@@ -53,11 +70,40 @@ func ReadConfig(configFilePath string) (*Config, error) {
 
 // IsValid reports whether a given gencontroller.Config is valid or not.
 // Returns an error if the validation fails.
-func (c *Config) IsValid() error {
-	percentChannels := c.PercentPublicChannels + c.PercentPrivateChannels + c.PercentDirectChannels + c.PercentGroupChannels
-	if (math.Round(percentChannels*100) / 100) != 1 {
-		return errors.New("sum of percentages for channels should be equal to 1")
+func (c *Config) IsValid(numUsers int) error {
+	totalPercent := 0.0
+	for _, item := range c.ChannelMembersDistribution {
+		totalPercent += item.Probability
+	}
+
+	if totalPercent != 1.0 {
+		return errors.New("sum of probabilities for channel distribution should be equal to 1")
+	}
+
+	totalPercent = 0.0
+	for _, item := range c.ChannelMembersDistribution {
+		totalPercent += item.PercentChannels
+	}
+
+	if totalPercent != 1.0 {
+		return errors.New("sum of percentages for channel member distribution should be equal to 1")
+	}
+
+	if c.NumChannelsDM > numPairs(int64(numUsers)) {
+		return errors.New("the number of DMs must be at most the number of possible pairs between users; i.e., n * (n-1) / 2, where n is the number of users")
+	}
+
+	if c.NumTeams > int64(numUsers) {
+		return errors.New("the number of teams must be at most the number of users")
 	}
 
 	return nil
+}
+
+func numPairs(n int64) int64 {
+	return n * (n - 1) / 2
+}
+
+func (c *Config) NumTotalChannels() int64 {
+	return c.NumChannelsDM + c.NumChannelsGM + c.NumChannelsPrivate + c.NumChannelsPublic
 }

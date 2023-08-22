@@ -49,10 +49,10 @@ This is a list of common steps needed when adding new or missing load-test cover
 
 ### Update server dependency
 
-If the added feature has new client (as in [`model/client4.go`](https://github.com/mattermost/mattermost-server/blob/master/model/client4.go)) additions, you should update the `mattermost-server` dependency so that the new methods can be used from within the load-test packages.
+If the added feature has new client (as in [`model/client4.go`](https://github.com/mattermost/mattermost/blob/master/server/public/model/client4.go)) additions, you should update the `mattermost/server` dependency so that the new methods can be used from within the load-test packages.
 
 ```sh
-go get -u github.com/mattermost/mattermost-server/v6/@COMMIT_HASH
+go get -u github.com/mattermost/mattermost/server/v8/@COMMIT_HASH
 go mod tidy
 ```
 
@@ -98,7 +98,7 @@ make check-style && make test
 
 ## Code Review
 
-When submitting your pull-request please make sure to include at least one reviewer among the code owners ([@agnivade](https://github.com/agnivade), [@isacikgoz](https://github.com/isacikgoz), [@streamer45](https://github.com/streamer45)).
+When submitting your pull-request please make sure to include at least one reviewer among the code owners ([@agnivade](https://github.com/agnivade), [@isacikgoz](https://github.com/isacikgoz), [@streamer45](https://github.com/streamer45), [@agarciamontoro](https://github.com/agarciamontoro)).
 
 ## Help
 

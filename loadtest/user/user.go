@@ -8,12 +8,18 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // TestUserSuffixRegexp matches the numerical suffix of test usernames,
 // which are assumed to be in this format.
 var TestUserSuffixRegexp = regexp.MustCompile(`\d+$`)
+
+type GraphQLInput struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName"`
+	Variables     map[string]interface{} `json:"variables"`
+}
 
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.
@@ -182,7 +188,7 @@ type User interface {
 	// the specified channel.
 	GetChannelMember(channelId string, userId string) error
 	// GetChannelStats fetches statistics for the specified channel.
-	GetChannelStats(channelId string) error
+	GetChannelStats(channelId string, excludeFileCount bool) error
 	// AddChannelMember adds the specified user to the specified channel.
 	AddChannelMember(channelId, userId string) error
 	// GetChannelsForTeamForUser fetches and stores chanels for the specified user in
@@ -243,8 +249,6 @@ type User interface {
 	SaveReaction(reaction *model.Reaction) error
 	// DeleteReaction deletes the given reaction.
 	DeleteReaction(reaction *model.Reaction) error
-	// GetReactions fetches and stores reactions to the specified post.
-	GetReactions(postId string) error
 
 	// plugins
 	// GetWebappPlugins fetches webapp plugins.
@@ -308,4 +312,11 @@ type User interface {
 
 	// CreatePostReminder creates a post reminder at a given target time.
 	CreatePostReminder(userID, postID string, targetTime int64) error
+
+	// AckToPost acknowledges a post.
+	AckToPost(userID, postID string) error
+
+	// GraphQL
+	GetInitialDataGQL() error
+	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
 }
