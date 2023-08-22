@@ -17,21 +17,24 @@ As such, we base the timeline of our own release process on the following goal:
 
 > We aim to have a new release ready on T-15.
 
+There may be times when there are no changes in the load-test tool, and that's fine. In those cases, we can skip the release altogether.
+
 ## Process
 
 The goal of this release process is to have a well-tested version where bugs can be surfaced before we use it for the monthly performance comparisons and other analysis. Then, the main part of it will be the testing process, and we will skip any release whose tests did not pass before the testing period ends.
 
-- T-30 (owned by Dev): Cut release branch.
+- T-30 (owned by Dev): Judge whether we need a new release: there are significant changes since last version. If there are, cut the release branch and continue with next steps. If there are not, skip the release.
 - From T-29 to T-16 (owned by QA, assisted by Dev): Testing period.
-    - Run a performance comparison with bounded and unbounded tests, Postgres and MySQL, using the latest stable release of Mattermost as both the base and new builds. The test will pass if and only if:
+    - Run a performance comparison test with bounded and unbounded tests, Postgres and MySQL, using the latest stable release of Mattermost as both the base and new builds. This test will pass if and only if:
         - All four tests finish successfully.
         - There is no significant difference between the base and new builds (they're the same build, and thus should ideally output the same exact results).
-    - If bugs are found:
+    - If bugs are found in the load-test tool:
         - Fix them in master.
         - Cherry-pick them to the release branch.
         - Run the test again.
 - T-16 end of day (owned by Dev): judge whether the tests successfully passed and decide if the release will happen the next day.
 - T-15 (owned by Dev): If the tests passed, release a new version. If not, skip the release for this month.
+- From T-14 (owned by Dev): Run the actual performance comparison with the latest stable version of the load-test tool.
 
 ### Owners
 
