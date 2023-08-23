@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,10 +17,11 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
-	"github.com/mattermost/mattermost-server/server/v8/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 type userAction struct {
+	name      string
 	run       control.UserAction
 	frequency float64
 	// Minimum supported server version
@@ -76,8 +76,15 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		}
 	}
 
+	// A full reload always calls GET /api/v4/users?page=0&per_page=100,
+	// regardless of GraphQL enabled or not
+	_, err := c.user.GetUsers(0, 100)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	var resp control.UserActionResponse
-	if c.featureFlags.GraphQLEnabled {
+	if c.user.Store().FeatureFlags()["GraphQL"] {
 		resp = control.ReloadGQL(c.user)
 	} else {
 		resp = control.Reload(c.user)
@@ -96,7 +103,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return c.switchTeam(c.user)
 	}
 
-	if resp := loadTeam(c.user, team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
+	if resp := loadTeam(c.user, team, c.user.Store().FeatureFlags()["GraphQL"]); resp.Err != nil {
 		return resp
 	}
 
@@ -274,7 +281,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
-	if resp := loadTeam(u, &team, c.featureFlags.GraphQLEnabled); resp.Err != nil {
+	if resp := loadTeam(u, &team, c.user.Store().FeatureFlags()["GraphQL"]); resp.Err != nil {
 		return resp
 	}
 
@@ -760,7 +767,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	if hasFilesAttached {
-		if err := c.attachFilesToPost(u, post); err != nil {
+		if err := control.AttachFilesToPost(u, post); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
@@ -780,52 +787,6 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("post created, id %v", postId)}
-}
-
-func (c *SimulController) attachFilesToPost(u user.User, post *model.Post) error {
-	type file struct {
-		data   []byte
-		upload bool
-	}
-	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
-	files := make(map[string]*file, len(filenames))
-
-	for _, filename := range filenames {
-		files[filename] = &file{
-			data:   control.MustAsset(filename),
-			upload: rand.Intn(2) == 0,
-		}
-	}
-
-	// We make sure at least one file gets uploaded.
-	files[filenames[rand.Intn(len(filenames))]].upload = true
-
-	var wg sync.WaitGroup
-	fileIds := make(chan string, len(files))
-	for filename, file := range files {
-		if !file.upload {
-			continue
-		}
-		wg.Add(1)
-		go func(filename string, data []byte) {
-			defer wg.Done()
-			resp, err := u.UploadFile(data, post.ChannelId, filename)
-			if err != nil {
-				c.status <- c.newErrorStatus(err)
-				return
-			}
-			c.status <- c.newInfoStatus(fmt.Sprintf("file uploaded, id %v", resp.FileInfos[0].Id))
-			fileIds <- resp.FileInfos[0].Id
-		}(filename, file.data)
-	}
-
-	wg.Wait()
-	numFiles := len(fileIds)
-	for i := 0; i < numFiles; i++ {
-		post.FileIds = append(post.FileIds, <-fileIds)
-	}
-
-	return nil
 }
 
 func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
@@ -1778,79 +1739,6 @@ func (c *SimulController) updateThreadRead(u user.User) control.UserActionRespon
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated read state of thread %s", thread.PostId)}
-}
-
-func (c *SimulController) getInsights(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
-	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
-		return control.UserActionResponse{Info: "no team set"}
-	} else if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
-	}
-
-	userID := u.Store().Id()
-
-	// select time range
-	timeRange := ""
-	if rand.Float64() < 0.75 {
-		timeRange = "7_day"
-	} else {
-		if rand.Float64() < 0.50 {
-			// choose today
-			timeRange = "today"
-		} else {
-			// choose 28 day
-			timeRange = "28_day"
-		}
-	}
-
-	// generally limit would be 5, if the user chooses to open full modal occasionally it'd be 10
-	var limit int
-	if rand.Float64() < 0.05 {
-		limit = 10
-	} else {
-		limit = 5
-	}
-	// my insights is the default option, so team insights will be viewed less.
-	if rand.Float64() < 0.30 {
-		// view team insights
-		if _, err := u.GetTopThreadsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopReactionsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopInactiveChannelsForTeamSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetNewTeamMembersSince(team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	} else {
-		// view user insights
-		if _, err := u.GetTopThreadsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopReactionsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopInactiveChannelsForUserSince(userID, team.Id, timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if _, err := u.GetTopDMsForUserSince(timeRange, 0, limit); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	}
-
-	return control.UserActionResponse{Info: fmt.Sprintf("viewed insights for user id %s", userID)}
 }
 
 func (c *SimulController) createPostReminder(u user.User) control.UserActionResponse {

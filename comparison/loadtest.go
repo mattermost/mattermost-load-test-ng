@@ -13,10 +13,11 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 func (c *Comparison) getLoadTestsCount() int {
@@ -108,73 +109,9 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-type cmd struct {
-	msg     string
-	value   string
-	clients []*ssh.Client
-}
-
 type localCmd struct {
 	msg   string
 	value []string
-}
-
-type dbSettings struct {
-	UserName string
-	Password string
-	DBName   string
-	Host     string
-	Engine   string
-}
-
-// buildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
-// provided DB dump file into the database, replacing first the old IPs found
-// in the posts that contain a permalink with the new IP. Something like:
-//
-//	zcat dbdump.sql
-//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
-//	mysql/psql connection_details
-func buildLoadDBDumpCmds(dumpFilename string, newIP string, permalinkIPsToReplace []string, dbInfo dbSettings) ([]string, error) {
-	zcatCmd := fmt.Sprintf("zcat %s", dumpFilename)
-
-	var replacements []string
-	for _, oldIP := range permalinkIPsToReplace {
-		// Let's build the match and replace parts of a sed command: 's/match/replace/g'
-		// First, the match. We want to match anything of the form
-		//    54.126.54.26:8065/debitis-1/pl/
-		// where the IP is exactly the old one, the port is optional and arbitrary and the
-		// team name is the pattern defined by the server's function model.IsValidTeamname
-		validTeamName := `[a-z0-9]+([a-z0-9-]+|(__)?)[a-z0-9]+`
-		escapedOldIP := strings.ReplaceAll(oldIP, ".", "\\.")
-		match := escapedOldIP + `(:[0-9]+)?\/(` + validTeamName + `)\/pl\/`
-		// Now, the replace. We need to replace this with the same thing, only changing the
-		// IP with the new one and hard-coding the port to 8065, but maintaining the team
-		// name (hence the second group match, \2)
-		replace := newIP + `:8065\/\2\/pl\/`
-		// We can build the whole command now and add it to the list of replacements
-		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
-		replacements = append(replacements, sedRegex)
-	}
-	var sedCmd string
-	if len(replacements) > 0 {
-		sedCmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
-	}
-
-	var dbCmd string
-	switch dbInfo.Engine {
-	case "aurora-postgresql":
-		dbCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
-	case "aurora-mysql":
-		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
-	default:
-		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
-	}
-
-	if sedCmd != "" {
-		return []string{zcatCmd, sedCmd, dbCmd}, nil
-	}
-
-	return []string{zcatCmd, dbCmd}, nil
 }
 
 func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
@@ -210,28 +147,28 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		appClients[i] = client
 	}
 
-	stopCmd := cmd{
-		msg:     "Stopping app servers",
-		value:   "sudo systemctl stop mattermost",
-		clients: appClients,
+	stopCmd := deployment.Cmd{
+		Msg:     "Stopping app servers",
+		Value:   "sudo systemctl stop mattermost",
+		Clients: appClients,
 	}
 
 	buildFileName := filepath.Base(buildCfg.URL)
-	installCmd := cmd{
-		msg:     "Installing app",
-		value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
-		clients: appClients,
+	installCmd := deployment.Cmd{
+		Msg:     "Installing app",
+		Value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
+		Clients: appClients,
 	}
 
 	dbName := dpConfig.DBName()
-	resetCmd := cmd{
-		msg:     "Resetting database",
-		clients: []*ssh.Client{appClients[0]},
+	resetCmd := deployment.Cmd{
+		Msg:     "Resetting database",
+		Clients: []*ssh.Client{appClients[0]},
 	}
 	switch dpConfig.TerraformDBSettings.InstanceEngine {
 	case "aurora-postgresql":
 		sqlConnParams := fmt.Sprintf("-U %s -h %s %s", dpConfig.TerraformDBSettings.UserName, tfOutput.DBWriter(), dbName)
-		resetCmd.value = strings.Join([]string{
+		resetCmd.Value = strings.Join([]string{
 			fmt.Sprintf("export PGPASSWORD='%s'", dpConfig.TerraformDBSettings.Password),
 			fmt.Sprintf("dropdb %s", sqlConnParams),
 			fmt.Sprintf("createdb %s", sqlConnParams),
@@ -239,39 +176,39 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		}, " && ")
 	case "aurora-mysql":
 		subCmd := fmt.Sprintf("mysqladmin -h %s -u %s -p%s -f", tfOutput.DBWriter(), dpConfig.TerraformDBSettings.UserName, dpConfig.TerraformDBSettings.Password)
-		resetCmd.value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
+		resetCmd.Value = fmt.Sprintf("%s drop %s && %s create %s", subCmd, dbName, subCmd, dbName)
 	default:
 		return fmt.Errorf("invalid db engine %s", dpConfig.TerraformDBSettings.InstanceEngine)
 	}
 
-	startCmd := cmd{
-		msg:     "Restarting app server",
-		value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
-		clients: appClients,
+	startCmd := deployment.Cmd{
+		Msg:     "Restarting app server",
+		Value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
+		Clients: appClients,
 	}
 
 	// do init process
 	mmctlPath := "/opt/mattermost/bin/mmctl"
-	createAdminCmd := cmd{
-		msg: "Creating sysadmin",
-		value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local || true",
+	createAdminCmd := deployment.Cmd{
+		Msg: "Creating sysadmin",
+		Value: fmt.Sprintf("%s user create --email %s --username %s --password '%s' --system-admin --local || true",
 			mmctlPath, dpConfig.AdminEmail, dpConfig.AdminUsername, dpConfig.AdminPassword),
-		clients: []*ssh.Client{appClients[0]},
+		Clients: []*ssh.Client{appClients[0]},
 	}
-	initDataCmd := cmd{
-		msg:     "Initializing data",
-		value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
-		clients: []*ssh.Client{agentClient},
-	}
-
-	cmds := []cmd{stopCmd, installCmd, resetCmd}
-
-	loadDBDumpCmd := cmd{
-		msg:     "Loading DB dump",
-		clients: []*ssh.Client{appClients[0]},
+	initDataCmd := deployment.Cmd{
+		Msg:     "Initializing data",
+		Value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
+		Clients: []*ssh.Client{agentClient},
 	}
 
-	dbCmds, err := buildLoadDBDumpCmds(dumpFilename, tfOutput.Instances[0].PublicIP, permalinkIPsToReplace, dbSettings{
+	cmds := []deployment.Cmd{stopCmd, installCmd, resetCmd}
+
+	loadDBDumpCmd := deployment.Cmd{
+		Msg:     "Loading DB dump",
+		Clients: []*ssh.Client{appClients[0]},
+	}
+
+	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, tfOutput.PermalinksIPsSubstCommand(permalinkIPsToReplace), deployment.DBSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,
@@ -282,7 +219,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		return fmt.Errorf("error building commands for loading DB dump: %w", err)
 	}
 
-	loadDBDumpCmd.value = strings.Join(dbCmds, " | ")
+	loadDBDumpCmd.Value = strings.Join(dbCmds, " | ")
 
 	resetBucketCmds := []localCmd{}
 	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
@@ -322,16 +259,16 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}()
 
 	for _, c := range cmds {
-		mlog.Info(c.msg)
-		for _, client := range c.clients {
+		mlog.Info(c.Msg)
+		for _, client := range c.Clients {
 			select {
 			case <-cancelCh:
 				mlog.Info("cancelling load-test init")
 				return errors.New("canceled")
 			default:
 			}
-			if out, err := client.RunCommand(c.value); err != nil {
-				return fmt.Errorf("failed to run cmd %q: %w %s", c.value, err, out)
+			if out, err := client.RunCommand(c.Value); err != nil {
+				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
 			}
 		}
 	}

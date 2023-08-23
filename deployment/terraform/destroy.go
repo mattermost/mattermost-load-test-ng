@@ -6,10 +6,9 @@ package terraform
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Destroy destroys the created load-test environment.
@@ -33,8 +32,13 @@ func (t *Terraform) Destroy() error {
 	go func() {
 		if t.output.HasS3Bucket() {
 			mlog.Info("emptying S3 bucket s3://" + t.output.S3Bucket.Id)
-			emptyS3BucketArgs := []string{"--profile", t.Config().AWSProfile, "s3", "rm", "s3://" + t.output.S3Bucket.Id, "--recursive"}
-			if err := exec.CommandContext(emptyBucketCtx, "aws", emptyS3BucketArgs...).Run(); err != nil {
+			emptyS3BucketArgs := []string{"--profile", t.Config().AWSProfile,
+				"s3",
+				"rm",
+				"s3://" + t.output.S3Bucket.Id,
+				"--recursive",
+			}
+			if err := t.runAWSCommand(emptyBucketCtx, emptyS3BucketArgs); err != nil {
 				emptyBucketErrCh <- fmt.Errorf("failed to run local cmd \"aws %s\": %w", strings.Join(emptyS3BucketArgs, " "), err)
 				return
 			}
@@ -52,6 +56,22 @@ func (t *Terraform) Destroy() error {
 
 	if err := t.runCommand(nil, params...); err != nil {
 		return err
+	}
+
+	// If we have restored from a DB backup, we need to manually delete the cluster.
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		args := []string{
+			"--profile=" + t.config.AWSProfile,
+			"rds",
+			"delete-db-cluster",
+			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+			"--region=" + t.config.AWSRegion,
+			"--skip-final-snapshot",
+		}
+		// We have to ignore if the cluster was already deleted to make the command idempotent.
+		if err := t.runAWSCommand(nil, args); err != nil && !strings.Contains(err.Error(), "DBClusterNotFoundFault") {
+			return err
+		}
 	}
 
 	// Make sure that the empty bucket command has finished and check for any

@@ -178,6 +178,31 @@ The password to connect to the database.
 
 If set to true enables performance insights for the created DB instances.
 
+### ClusterIdentifier
+
+*string*
+
+The name of the existing cluster to attach to. If this is set, then the `DBDumpURI` does not have any effect. This string should be a restored AWS Aurora backup cluster.
+
+### DBParameters
+
+*[]DBParameter*
+
+A list of DB specific parameters to use for the created instance.
+Detailed information on these values can be found [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithParamGroups.html).
+
+Example:
+
+```
+    "DBParameters": [
+      {
+        "Name": "innodb_buffer_pool_size",
+        "Value": "2147483648",
+        "ApplyMethod": "pending-reboot"
+      }
+    ]
+```
+
 ## ExternalDBSettings
 
 ### DriverName
@@ -204,12 +229,68 @@ The list of dsn for external database read replicas
 
 The list of dsn for external database search replicas
 
+## ExternalBucketSettings
+
+### AmazonS3AccessKeyId
+
+*string*
+
+The access key id of the external bucket.
+
+### AmazonS3SecretAccessKey
+
+*string*
+
+The secret access key of the external bucket.
+
+### AmazonS3Bucket
+
+*string*
+
+The bucket name.
+
+### AmazonS3PathPrefix
+
+*string*
+
+The path prefix.
+
+### AmazonS3Region
+
+*string*
+
+The AWS region.
+
+### AmazonS3Endpoint
+
+*string*
+
+The S3 endpoint.
+
+### AmazonS3SSL
+
+*bool*
+
+Whether to use SSL or not.
+
+### AmazonS3SignV2
+
+*bool*
+
+Whether to use the v2 protocol while signing or not.
+
+### AmazonS3SSE
+
+*bool*
+
+Whether to use SSE or not.
+
 ## MattermostDownloadURL
 
 *string*
 
 The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.  
-The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost-server/bin/mattermost`).  
+The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).  
 Only the binary gets replaced, and the rest of the build comes from the latest stable release.
 
 ## MattermostLicenseFile
@@ -338,3 +419,23 @@ URI pointing to an S3 bucket: something of the form `s3://bucket-name/optional-s
 The contents of this bucket will be copied to the bucket created in the deployment, using `aws s3 cp`. This command is ran locally, so having the AWS CLI installed is required.
 If no bucket is created in the deployment (see [`AppInstanceCount`](#AppInstanceCount) for more information), this value is ignored.
 If a bucket is created in the deployment but this value is empty, the created bucket will not be pre-populated with any data.
+
+## S3BucketDumpURI
+
+*string*
+
+An optional URI to a MM server database dump file
+to be loaded before running the load-test.
+The file is expected to be gzip compressed.
+This can also point to a local file if prefixed with "file://".
+In such case, the dump file will be uploaded to the app servers.
+
+## PermalinkIPsToReplace
+
+*string*
+
+An optional list of IPs present in the posts from the DB dump
+that contain permalinks to other posts. These IPs are replaced,
+when ingesting the dump into the database, in every post that
+uses them with the public IP of the first app instance, so that
+the permalinks are valid in the new deployment.

@@ -294,3 +294,35 @@ func TestAgentDestroy(t *testing.T) {
 		require.Equal(t, loadtest.Stopped, status.State)
 	})
 }
+
+func TestAgentInjectAction(t *testing.T) {
+	// create http.Handler
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+
+	// run server using httptest
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	id := "agent0"
+	agent := createAgent(t, id, server.URL)
+
+	status, err := agent.Run()
+	require.NoError(t, err)
+	require.NotEmpty(t, status)
+	require.Equal(t, loadtest.Running, status.State)
+	defer agent.Stop()
+
+	t.Run("inject reload", func(t *testing.T) {
+		status, err := agent.InjectAction("Reload")
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
+	})
+
+	t.Run("invalid action", func(t *testing.T) {
+		status, err := agent.InjectAction("Bogus")
+		// not all actions are supported by all controllers, therefore an unsupported
+		// action is not an error.
+		require.NoError(t, err)
+		require.NotEmpty(t, status)
+	})
+}

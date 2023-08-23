@@ -15,7 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/prometheus/common/model"
 )
 
@@ -250,8 +250,22 @@ func plot(metric, prefix, fileName string, others []labelValues, baseLabel strin
 func sortKeys(m map[model.LabelValue]avgp99, t sortByType, desc bool) []model.LabelValue {
 	var labels []model.LabelValue
 	for key := range m {
+		// We ignore if either the avg or p99 value is missing.
+		// This can happen sometimes if avg has a metric but there is no p99 metric
+		// because other metrics are too prominent.
+		switch t {
+		case sortByAvg:
+			if len(m[key][0]) == 0 {
+				continue
+			}
+		case sortByP99:
+			if len(m[key][1]) == 0 {
+				continue
+			}
+		}
 		labels = append(labels, key)
 	}
+
 	sort.Slice(labels, func(i, j int) bool {
 		if desc {
 			i, j = j, i

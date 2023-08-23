@@ -17,7 +17,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Config returns the deployment config associated with the Terraform instance.
@@ -40,6 +40,28 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
+	return _runCommand(cmd, dst)
+}
+
+func (t *Terraform) runAWSCommand(ctx context.Context, args []string) error {
+	awsBin := "aws"
+	if _, err := exec.LookPath(awsBin); err != nil {
+		return fmt.Errorf("aws not installed. Please install aws. (https://aws.amazon.com/cli): %w", err)
+	}
+
+	var cancel context.CancelFunc
+	if ctx == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
+		defer cancel()
+	}
+
+	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
+	cmd := exec.CommandContext(ctx, awsBin, args...)
+
+	return _runCommand(cmd, nil)
+}
+
+func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 	// If dst is set, that means we want to capture the output.
 	// We write a simple case to handle that using CombinedOutput.
 	if dst != nil {

@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,9 +19,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	"github.com/mattermost/mattermost-server/server/v8/config"
-	"github.com/mattermost/mattermost-server/server/v8/model"
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
+	"github.com/mattermost/mattermost/server/v8/config"
 )
 
 const cmdExecTimeoutMinutes = 30
@@ -104,6 +105,21 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
+	// If we are using a restored cluster, first we need to import
+	// it into Terraform state.
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		var params []string
+		params = append(params, "import")
+		params = append(params, t.getParams()...)
+		params = append(params, "-state="+t.getStatePath())
+		params = append(params, "aws_rds_cluster.db_cluster", t.config.TerraformDBSettings.ClusterIdentifier)
+
+		err = t.runCommand(nil, params...)
+		if err != nil {
+			return err
+		}
+	}
+
 	var uploadBinary bool
 	var binaryPath string
 	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
@@ -142,6 +158,27 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
+	// If we are restoring from a DB backup, then we need to hook up
+	// the security group to it.
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		if len(t.output.DBSecurityGroup) == 0 {
+			return errors.New("No DB security group created")
+		}
+
+		sgID := t.output.DBSecurityGroup[0].Id
+		args := []string{
+			"--profile=" + t.config.AWSProfile,
+			"rds",
+			"modify-db-cluster",
+			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+			"--vpc-security-group-ids=" + sgID,
+			"--region=" + t.config.AWSRegion,
+		}
+		if err := t.runAWSCommand(nil, args); err != nil {
+			return err
+		}
+	}
+
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
@@ -178,7 +215,7 @@ func (t *Terraform) Create(initData bool) error {
 
 	}
 
-	if t.output.HasDB() && initData {
+	if t.output.HasDB() && initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		if err := t.createAdminUser(extAgent); err != nil {
 			return fmt.Errorf("could not create admin user: %w", err)
 		}
@@ -470,6 +507,17 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.output.S3Key.Secret)
 		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.output.S3Bucket.Id)
 		cfg.FileSettings.AmazonS3Region = model.NewString(t.output.S3Bucket.Region)
+	} else if t.config.ExternalBucketSettings.AmazonS3Bucket != "" {
+		cfg.FileSettings.DriverName = model.NewString("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
+		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.config.ExternalBucketSettings.AmazonS3Bucket)
+		cfg.FileSettings.AmazonS3PathPrefix = model.NewString(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
+		cfg.FileSettings.AmazonS3Region = model.NewString(t.config.ExternalBucketSettings.AmazonS3Region)
+		cfg.FileSettings.AmazonS3Endpoint = model.NewString(t.config.ExternalBucketSettings.AmazonS3Endpoint)
+		cfg.FileSettings.AmazonS3SSL = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSL)
+		cfg.FileSettings.AmazonS3SignV2 = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SignV2)
+		cfg.FileSettings.AmazonS3SSE = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSE)
 	}
 
 	cfg.LogSettings.EnableConsole = model.NewBool(true)
@@ -597,14 +645,15 @@ func pingServer(addr string) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
 	client.HTTPClient.Timeout = 10 * time.Second
-	timeout := time.After(30 * time.Second)
+	dur := 60 * time.Second
+	timeout := time.After(dur)
 
 	for {
 		select {
 		case <-timeout:
-			return errors.New("timeout after 30 seconds, server is not responding")
+			return fmt.Errorf("timeout after %s, server is not responding", dur)
 		case <-time.After(3 * time.Second):
-			status, _, err := client.GetPingWithServerStatus()
+			status, _, err := client.GetPingWithServerStatus(context.Background())
 			if err != nil {
 				mlog.Debug("got error", mlog.Err(err), mlog.String("status", status))
 				mlog.Info("Waiting for the server...")

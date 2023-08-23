@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +14,7 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 		newIP := "192.168.1.1"
 		oldIPs := []string{}
 
-		cmds, err := buildLoadDBDumpCmds("dbfilename", newIP, oldIPs, dbSettings{
+		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", deployment.GenCmdForPermalinksIPsSubstitution(newIP, oldIPs, false), deployment.DBSettings{
 			UserName: "mmuser",
 			Password: "mostest",
 			DBName:   "mattermost",
@@ -32,7 +33,7 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 		newIP := "192.168.1.1"
 		oldIPs := []string{"54.78.456.5", "56.78.98.1"}
 
-		cmds, err := buildLoadDBDumpCmds("dbfilename", newIP, oldIPs, dbSettings{
+		cmds, err := deployment.BuildLoadDBDumpCmds("dbfilename", deployment.GenCmdForPermalinksIPsSubstitution(newIP, oldIPs, false), deployment.DBSettings{
 			UserName: "mmuser",
 			Password: "mostest",
 			DBName:   "mattermost",

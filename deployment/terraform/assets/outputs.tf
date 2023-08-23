@@ -1,13 +1,13 @@
 output "instances" {
-  value = aws_instance.app_server.*
+  value = aws_instance.app_server[*]
 }
 
 output "dbCluster" {
-  value = aws_rds_cluster_endpoint.cluster_endpoints.*
+  value = aws_rds_cluster_endpoint.cluster_endpoints[*]
 }
 
 output "agents" {
-  value = aws_instance.loadtest_agent.*
+  value = aws_instance.loadtest_agent[*]
 }
 
 output "metricsServer" {
@@ -31,6 +31,10 @@ output "s3Key" {
   sensitive = true
 }
 
+output "dbSecurityGroup" {
+  value = aws_security_group.db
+}
+
 output "jobServers" {
-  value = aws_instance.job_server.*
+  value = aws_instance.job_server[*]
 }

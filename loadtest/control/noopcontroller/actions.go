@@ -16,7 +16,8 @@ import (
 )
 
 type userAction struct {
-	run control.UserAction
+	name string
+	run  control.UserAction
 }
 
 func (c *NoopController) connect() error {

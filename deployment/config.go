@@ -36,7 +36,7 @@ type Config struct {
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
-	AgentInstanceCount int `default:"2" validate:"range:[1,)"`
+	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
 	AgentInstanceType string `default:"c5.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
@@ -49,6 +49,8 @@ type Config struct {
 	TerraformDBSettings TerraformDBSettings
 	// External database connection settings
 	ExternalDBSettings ExternalDBSettings
+	// External bucket connection settings.
+	ExternalBucketSettings ExternalBucketSettings
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -79,6 +81,18 @@ type Config struct {
 	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
 	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
+	// An optional URI to a MM server database dump file
+	// to be loaded before running the load-test.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	// In such case, the dump file will be uploaded to the app servers.
+	DBDumpURI string `default:""`
+	// An optional list of IPs present in the posts from the DB dump
+	// that contain permalinks to other posts. These IPs are replaced,
+	// when ingesting the dump into the database, in every post that
+	// uses them with the public IP of the first app instance, so that
+	// the permalinks are valid in the new deployment.
+	PermalinkIPsToReplace []string `validate:"each:ip"`
 }
 
 // TerraformDBSettings contains the necessary data
@@ -88,7 +102,7 @@ type TerraformDBSettings struct {
 	// Number of DB instances.
 	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
-	InstanceType string `default:"db.r4.large" validate:"notempty"`
+	InstanceType string `default:"db.r6g.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
@@ -97,6 +111,10 @@ type TerraformDBSettings struct {
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
 	EnablePerformanceInsights bool `default:"false"`
+	// A list of DB specific parameters to use for the created instance.
+	DBParameters DBParameters
+	// ClusterIdentifier indicates to point to an existing cluster
+	ClusterIdentifier string `default:""`
 }
 
 // ExternalDBSettings contains the necessary data
@@ -111,6 +129,20 @@ type ExternalDBSettings struct {
 	DataSourceReplicas []string `default:""`
 	// DSN to connect to the database search replicas
 	DataSourceSearchReplicas []string `default:""`
+}
+
+// ExternalBucketSettings contains the necessary data
+// to connect to an existing S3 bucket.
+type ExternalBucketSettings struct {
+	AmazonS3AccessKeyId     string `default:""`
+	AmazonS3SecretAccessKey string `default:""`
+	AmazonS3Bucket          string `default:""`
+	AmazonS3PathPrefix      string `default:""`
+	AmazonS3Region          string `default:"us-east-1"`
+	AmazonS3Endpoint        string `default:"s3.amazonaws.com"`
+	AmazonS3SSL             bool   `default:"true"`
+	AmazonS3SignV2          bool   `default:"false"`
+	AmazonS3SSE             bool   `default:"false"`
 }
 
 // ElasticSearchSettings contains the necessary data
@@ -136,6 +168,32 @@ type JobServerSettings struct {
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
 	InstanceType string `default:"c5.xlarge"`
+}
+
+// DBParameter contains info regarding a single RDS DB specific parameter.
+type DBParameter struct {
+	// The unique name for the parameter.
+	Name string `validate:"notempty"`
+	// The value for the parameter.
+	Value string `validate:"notempty"`
+	// The apply method for the parameter. Can be either "immediate" or
+	// "pending-reboot". It depends on the db engine used and parameter type.
+	ApplyMethod string `validate:"oneof:{immediate, pending-reboot}"`
+}
+
+type DBParameters []DBParameter
+
+func (p DBParameters) String() string {
+	var b strings.Builder
+	b.WriteString("[")
+	for i, param := range p {
+		fmt.Fprintf(&b, `{name = %q, value = %q, apply_method = %q}`, param.Name, param.Value, param.ApplyMethod)
+		if i != len(p)-1 {
+			b.WriteString(",")
+		}
+	}
+	b.WriteString("]")
+	return b.String()
 }
 
 // IsValid reports whether a given deployment config is valid or not.

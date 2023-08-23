@@ -15,7 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Coordinator is the object used to coordinate a cluster of
@@ -236,6 +236,15 @@ func (c *Coordinator) Status() (Status, error) {
 		NumErrors:      clusterStatus.NumErrors,
 		SupportedUsers: c.status.SupportedUsers,
 	}, nil
+}
+
+// InjectAction injects an action into all the agents that is run once,
+// at the next possible opportunity.
+func (c *Coordinator) InjectAction(actionID string) error {
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.cluster.InjectAction(actionID)
 }
 
 // New creates and initializes a new Coordinator for the given config.

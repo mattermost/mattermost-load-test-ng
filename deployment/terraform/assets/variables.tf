@@ -57,6 +57,9 @@ variable "db_instance_engine" {
 variable "db_instance_class" {
 }
 
+variable "db_cluster_identifier" {
+}
+
 variable "db_engine_version" {
   type = map(any)
   default = {
@@ -72,6 +75,10 @@ variable "db_password" {
 }
 
 variable "db_enable_performance_insights" {
+}
+
+variable "db_parameters" {
+  type = list(map(string))
 }
 
 variable "ssh_public_key" {
@@ -96,6 +103,9 @@ variable "job_server_instance_type" {
 }
 
 variable "s3_bucket_dump_uri" {
+}
+
+variable "s3_external_bucket_name" {
 }
 
 variable "aws_profile" {

@@ -14,8 +14,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/wiggin77/merror"
 
-	"github.com/mattermost/mattermost-server/server/v8/platform/shared/mlog"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // LoadAgentCluster is the object holding information about all the load-test
@@ -218,4 +219,16 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 		status.NumErrors += currentError + totalErrors
 	}
 	return status, nil
+}
+
+// InjectAction injects an action into all the agents. The action is run once,
+// at the next possible opportunity.
+func (c *LoadAgentCluster) InjectAction(actionID string) error {
+	merr := merror.New()
+	for _, agent := range c.agents {
+		if _, err := agent.InjectAction(actionID); err != nil {
+			merr.Append(fmt.Errorf("cluster: failed to inject action %s for agent %s: %w", actionID, agent.Id(), err))
+		}
+	}
+	return merr.ErrorOrNil()
 }

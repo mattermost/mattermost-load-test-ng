@@ -16,6 +16,7 @@ const (
 	USER_STATUS_ERROR
 	USER_STATUS_FAILED
 	USER_STATUS_INFO
+	USER_STATUS_WARN
 )
 
 // UserStatus contains the status of an action performed by a user.
@@ -28,6 +29,8 @@ type UserStatus struct {
 	Code int
 	// Info contains any extra information attached with the status.
 	Info string
+	// Warn contains any warnings that should be logged.
+	Warn string
 	// Custom error containing the error encountered and location information.
 	Err error
 }
