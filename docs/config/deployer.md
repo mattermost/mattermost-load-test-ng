@@ -184,6 +184,14 @@ If set to true enables performance insights for the created DB instances.
 
 The name of the existing cluster to attach to. If this is set, then the `DBDumpURI` does not have any effect. This string should be a restored AWS Aurora backup cluster.
 
+### DBName
+
+*string*
+
+The name of the database. This is meant to be used in conjunction with `ClusterIdentifier`, and its value should be the name of the database in such cluster.
+
+However, it can be used by itself to hardcode the name of the database that will otherwise be created. If `DBName` is not specified, and a brand new database is created for the deployment, its name will equal `${ClusterName}db`.
+
 ### DBParameters
 
 *[]DBParameter*

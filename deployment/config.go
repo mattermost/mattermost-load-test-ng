@@ -115,6 +115,10 @@ type TerraformDBSettings struct {
 	DBParameters DBParameters
 	// ClusterIdentifier indicates to point to an existing cluster
 	ClusterIdentifier string `default:""`
+	// DBName specifies the name of the database.
+	// If ClusterIdentifier is not empty, DBName should be set to the name of the database in such cluster.
+	// If ClusterIdentifier is empty, the database created will use DBName as its name.
+	DBName string `default:""`
 }
 
 // ExternalDBSettings contains the necessary data
@@ -214,6 +218,9 @@ func (c *Config) IsValid() error {
 
 // DBName returns the database name for the deployment.
 func (c *Config) DBName() string {
+	if c.TerraformDBSettings.DBName != "" {
+		return c.TerraformDBSettings.DBName
+	}
 	return c.ClusterName + "db"
 }
 
