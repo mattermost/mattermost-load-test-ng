@@ -213,6 +213,11 @@ func (c *Config) IsValid() error {
 	if err := c.validateElasticSearchConfig(); err != nil {
 		return err
 	}
+
+	if err := c.validateDBName(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -247,6 +252,18 @@ func (c *Config) validateElasticSearchConfig() error {
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
 
+	}
+
+	return nil
+}
+
+func (c *Config) validateDBName() error {
+	if c.TerraformDBSettings.ClusterIdentifier == "" {
+		return nil
+	}
+
+	if c.TerraformDBSettings.DBName == "" {
+		return fmt.Errorf("TerraformDBSettings.ClusterIdentifier is specified but TerraformDBSettings.DBName is empty: TerraformDBSettings.DBName should be set to the name of the database contained in the cluster specified by TerraformDBSettings.ClusterIdentifier")
 	}
 
 	return nil
