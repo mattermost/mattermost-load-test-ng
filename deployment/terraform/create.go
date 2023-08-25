@@ -279,6 +279,26 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
+
+	// Specify a hosts file when the ServerHostname is set, so that it points to
+	// either the proxy IP or, if there's no proxy, to localhost.
+	if t.config.ServerHostname != "" {
+		output, err := t.Output()
+		if err != nil {
+			return err
+		}
+
+		ip := "127.0.0.1"
+		if output.HasProxy() {
+			ip = output.Proxy.PrivateIP
+		}
+
+		proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.ServerHostname)
+		appHostsFile := fmt.Sprintf(appHosts, proxyHost)
+		batch = append(batch,
+			uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts"},
+		)
+	}
 	if err := uploadBatch(sshc, batch); err != nil {
 		return fmt.Errorf("batch upload failed: %w", err)
 	}

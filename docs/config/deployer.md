@@ -420,7 +420,7 @@ The contents of this bucket will be copied to the bucket created in the deployme
 If no bucket is created in the deployment (see [`AppInstanceCount`](#AppInstanceCount) for more information), this value is ignored.
 If a bucket is created in the deployment but this value is empty, the created bucket will not be pre-populated with any data.
 
-## S3BucketDumpURI
+## DBDumpURI
 
 *string*
 
@@ -429,3 +429,10 @@ to be loaded before running the load-test.
 The file is expected to be gzip compressed.
 This can also point to a local file if prefixed with "file://".
 In such case, the dump file will be uploaded to the app servers.
+
+## ServerHostname
+
+*string*
+
+The name of a host that will be used as a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
+This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment, so those permalinks cannot be resolved.

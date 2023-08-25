@@ -26,6 +26,7 @@
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
+  "ServerHostname": "",
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
