@@ -114,7 +114,7 @@ type localCmd struct {
 	value []string
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, permalinkIPsToReplace []string, cancelCh <-chan struct{}) error {
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -208,7 +208,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, tfOutput.PermalinksIPsSubstCommand(permalinkIPsToReplace), deployment.DBSettings{
+	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, deployment.DBSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,

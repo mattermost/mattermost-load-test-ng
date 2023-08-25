@@ -54,62 +54,14 @@ func ProvisionURL(client *ssh.Client, url, filename string) error {
 	return nil
 }
 
-// GenCmdForPermalinksIPsSubstitution returns a sed command to replace any
-// permalinks that matches the given list of IPs with newIP.
-//
-// replacePort can be used to force replacing the whole host, including the
-// port. This is useful when newIP is the IP of a load balancer,
-func GenCmdForPermalinksIPsSubstitution(newIP string, permalinkIPsToReplace []string, replacePort bool) string {
-	var cmd string
-	var replacements []string
-
-	if newIP == "" {
-		return cmd
-	}
-
-	for _, oldIP := range permalinkIPsToReplace {
-		// Let's build the match and replace parts of a sed command: 's/match/replace/g'
-		// First, the match. We want to match anything of the form
-		//    54.126.54.26:8065/debitis-1/pl/
-		// where the IP is exactly the old one, the port is optional and arbitrary and the
-		// team name is the pattern defined by the server's function model.IsValidTeamname
-		validTeamName := `[a-z0-9]+([a-z0-9-]+|(__)?)[a-z0-9]+`
-		escapedOldIP := strings.ReplaceAll(oldIP, ".", "\\.")
-		match := escapedOldIP + `(:[0-9]+)?\/(` + validTeamName + `)\/pl\/`
-		// Now, the replace. We need to replace this with the same thing, only changing the
-		// IP with the new one and hard-coding the port to 8065, but maintaining the team
-		// name (hence the second group match, \2)
-		port := ":8065"
-		if replacePort {
-			port = ""
-		}
-		replace := fmt.Sprintf(`%s%s\/\2\/pl\/`, newIP, port)
-		// We can build the whole command now and add it to the list of replacements
-		sedRegex := fmt.Sprintf(`'s/%s/%s/g'`, match, replace)
-		replacements = append(replacements, sedRegex)
-	}
-
-	if len(replacements) > 0 {
-		cmd = strings.Join(append([]string{"sed -r"}, replacements...), " -e ")
-	}
-
-	return cmd
-}
-
 // BuildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
-// provided DB dump file into the database, using the given permalinksSubstCmd
-// to make permalinks' IPs substitutions. Example:
+// provided DB dump file into the database. Example:
 //
 //	zcat dbdump.sql
-//	sed -r -e 's/old_ip_1/new_ip' -e 's/old_ip_2/new_ip'
 //	mysql/psql connection_details
-func BuildLoadDBDumpCmds(dumpFilename, permalinksSubstCmd string, dbInfo DBSettings) ([]string, error) {
+func BuildLoadDBDumpCmds(dumpFilename string, dbInfo DBSettings) ([]string, error) {
 	cmds := []string{
 		fmt.Sprintf("zcat %s", dumpFilename),
-	}
-
-	if permalinksSubstCmd != "" {
-		cmds = append(cmds, permalinksSubstCmd)
 	}
 
 	var dbCmd string

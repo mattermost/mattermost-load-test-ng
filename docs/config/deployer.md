@@ -429,13 +429,3 @@ to be loaded before running the load-test.
 The file is expected to be gzip compressed.
 This can also point to a local file if prefixed with "file://".
 In such case, the dump file will be uploaded to the app servers.
-
-## PermalinkIPsToReplace
-
-*string*
-
-An optional list of IPs present in the posts from the DB dump
-that contain permalinks to other posts. These IPs are replaced,
-when ingesting the dump into the database, in every post that
-uses them with the public IP of the first app instance, so that
-the permalinks are valid in the new deployment.
