@@ -115,6 +115,10 @@ type TerraformDBSettings struct {
 	DBParameters DBParameters
 	// ClusterIdentifier indicates to point to an existing cluster
 	ClusterIdentifier string `default:""`
+	// DBName specifies the name of the database.
+	// If ClusterIdentifier is not empty, DBName should be set to the name of the database in such cluster.
+	// If ClusterIdentifier is empty, the database created will use DBName as its name.
+	DBName string `default:""`
 }
 
 // ExternalDBSettings contains the necessary data
@@ -209,11 +213,19 @@ func (c *Config) IsValid() error {
 	if err := c.validateElasticSearchConfig(); err != nil {
 		return err
 	}
+
+	if err := c.validateDBName(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // DBName returns the database name for the deployment.
 func (c *Config) DBName() string {
+	if c.TerraformDBSettings.DBName != "" {
+		return c.TerraformDBSettings.DBName
+	}
 	return c.ClusterName + "db"
 }
 
@@ -240,6 +252,18 @@ func (c *Config) validateElasticSearchConfig() error {
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
 
+	}
+
+	return nil
+}
+
+func (c *Config) validateDBName() error {
+	if c.TerraformDBSettings.ClusterIdentifier == "" {
+		return nil
+	}
+
+	if c.TerraformDBSettings.DBName == "" {
+		return fmt.Errorf("TerraformDBSettings.ClusterIdentifier is specified but TerraformDBSettings.DBName is empty: TerraformDBSettings.DBName should be set to the name of the database contained in the cluster specified by TerraformDBSettings.ClusterIdentifier")
 	}
 
 	return nil
