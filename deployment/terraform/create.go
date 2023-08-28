@@ -199,12 +199,18 @@ func (t *Terraform) Create(initData bool) error {
 	if t.output.HasAppServers() {
 		var siteURL string
 		switch {
-		case t.config.SiteURL != "":
+		// SiteURL defined, multiple app nodes: we use SiteURL, since that points to the proxy itself
+		case t.config.SiteURL != "" && t.output.HasProxy():
 			siteURL = "http://" + t.config.SiteURL
+		// SiteURL defined, single app node: we use SiteURL plus the port, since SiteURL points to the app node (which is listening in 8065)
+		case t.config.SiteURL != "":
+			siteURL = "http://" + t.config.SiteURL + ":8065"
+		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
 			siteURL = "http://" + t.output.Proxy.PublicDNS
+		// SiteURL not defined, single app node: we use the app node's public DNS plus port
 		default:
-			siteURL = "http://" + t.output.Instances[0].PublicIP + ":8065"
+			siteURL = "http://" + t.output.Instances[0].PublicDNS + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
