@@ -197,19 +197,31 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	if t.output.HasAppServers() {
-		url := t.output.Instances[0].PublicDNS + ":8065"
+		var siteUrl string
+		switch {
+		case t.config.ServerHostname != "":
+			siteUrl = "http://" + t.config.ServerHostname
+		case t.output.HasProxy():
+			siteUrl = "http://" + t.output.Proxy.PublicDNS
+		default:
+			siteUrl = "http://" + t.output.Instances[0].PublicIP + ":8065"
+		}
 
 		// Updating the config.json for each instance of app server
-		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath); err != nil {
+		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath, siteUrl); err != nil {
 			return fmt.Errorf("error setting up app servers: %w", err)
 		}
+
+		// The URL to ping cannot be the same as the site URL, since that one could contain a
+		// hostname that only instances know how to resolve
+		pingUrl := t.output.Instances[0].PublicDNS + ":8065"
 		if t.output.HasProxy() {
 			// Updating the nginx config on proxy server
 			t.setupProxyServer(extAgent)
-			url = t.output.Proxy.PublicDNS
+			pingUrl = t.output.Proxy.PublicDNS
 		}
 
-		if err := pingServer("http://" + url); err != nil {
+		if err := pingServer("http://" + pingUrl); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
 
@@ -235,16 +247,16 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string) error {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string, siteUrl string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
+		err := t.setupMMServer(extAgent, val.PublicIP, siteUrl, uploadBinary, binaryPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, uploadBinary, binaryPath)
+		err := t.setupJobServer(extAgent, val.PublicIP, siteUrl, uploadBinary, binaryPath)
 		if err != nil {
 			return err
 		}
@@ -253,15 +265,15 @@ func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, b
 	return nil
 }
 
-func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteUrl string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, siteUrl, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
 }
 
-func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, jobServerServiceFile, uploadBinary, binaryPath, true)
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteUrl string, uploadBinary bool, binaryPath string) error {
+	return t.setupAppServer(extAgent, ip, siteUrl, jobServerServiceFile, uploadBinary, binaryPath, true)
 }
 
-func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteUrl, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
@@ -322,7 +334,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, serviceFile strin
 	}
 
 	mlog.Info("Updating config", mlog.String("host", ip))
-	if err := t.updateAppConfig(ip, sshc, jobServerEnabled); err != nil {
+	if err := t.updateAppConfig(siteUrl, sshc, jobServerEnabled); err != nil {
 		return fmt.Errorf("error updating config: %w", err)
 	}
 
@@ -475,7 +487,7 @@ func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config st
 	return nil
 }
 
-func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnabled bool) error {
+func (t *Terraform) updateAppConfig(siteUrl string, sshc *ssh.Client, jobServerEnabled bool) error {
 	var clusterDSN, driverName string
 	var readerDSN []string
 
@@ -508,7 +520,7 @@ func (t *Terraform) updateAppConfig(ip string, sshc *ssh.Client, jobServerEnable
 	cfg.SetDefaults()
 	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
 	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
-	cfg.ServiceSettings.SiteURL = model.NewString("http://" + ip + ":8065")
+	cfg.ServiceSettings.SiteURL = model.NewString(siteUrl)
 	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
 	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
