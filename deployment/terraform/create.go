@@ -199,8 +199,8 @@ func (t *Terraform) Create(initData bool) error {
 	if t.output.HasAppServers() {
 		var siteUrl string
 		switch {
-		case t.config.ServerHostname != "":
-			siteUrl = "http://" + t.config.ServerHostname
+		case t.config.SiteURL != "":
+			siteUrl = "http://" + t.config.SiteURL
 		case t.output.HasProxy():
 			siteUrl = "http://" + t.output.Proxy.PublicDNS
 		default:
@@ -292,9 +292,9 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteUrl, serviceF
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
 
-	// Specify a hosts file when the ServerHostname is set, so that it points to
+	// Specify a hosts file when the SiteURL is set, so that it points to
 	// either the proxy IP or, if there's no proxy, to localhost.
-	if t.config.ServerHostname != "" {
+	if t.config.SiteURL != "" {
 		output, err := t.Output()
 		if err != nil {
 			return err
@@ -305,7 +305,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteUrl, serviceF
 			ip = output.Proxy.PrivateIP
 		}
 
-		proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.ServerHostname)
+		proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
 		appHostsFile := fmt.Sprintf(appHosts, proxyHost)
 		batch = append(batch,
 			uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts"},

@@ -430,9 +430,11 @@ The file is expected to be gzip compressed.
 This can also point to a local file if prefixed with "file://".
 In such case, the dump file will be uploaded to the app servers.
 
-## ServerHostname
+## SiteURL
 
 *string*
 
-The name of a host that will be used as a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
-This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment, so those permalinks cannot be resolved.
+The name of a host that will be used for two purposes:
+- It will override the server's site URL.
+- It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
+This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.

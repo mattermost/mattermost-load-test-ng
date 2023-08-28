@@ -87,8 +87,10 @@ type Config struct {
 	// This can also point to a local file if prefixed with "file://".
 	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURI string `default:""`
-	// An optional name that will be set in the server's /etc/hosts file to point to the proxy IP
-	ServerHostname string `default:"mmserver"`
+	// An optional host name that will:
+	//   - Override the SiteUrl
+	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
+	SiteURL string `default:"ltserver"`
 }
 
 // TerraformDBSettings contains the necessary data
