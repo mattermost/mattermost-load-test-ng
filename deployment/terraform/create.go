@@ -300,7 +300,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 			return err
 		}
 
-		ip := "127.0.0.1"
+		// The new entry in /etc/hosts will make SiteURL point to:
+		// - The first instance's IP if there's a single node
+		// - The proxy's IP if there's more than one node
+		ip := output.Instances[0].PrivateIP
 		if output.HasProxy() {
 			ip = output.Proxy.PrivateIP
 		}
