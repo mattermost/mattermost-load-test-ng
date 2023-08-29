@@ -31,6 +31,7 @@ var ltConfig = Config{
 		MaxActiveUsers:     8,
 		InitialActiveUsers: 0,
 		AvgSessionsPerUser: 1,
+		UserPrefix:         UserPrefixDefault,
 	},
 	InstanceConfiguration: InstanceConfiguration{
 		NumTeams:                    1,

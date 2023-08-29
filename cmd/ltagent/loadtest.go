@@ -47,6 +47,15 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	userPrefix, err := cmd.Flags().GetString("user-prefix")
+	if err != nil {
+		return err
+	}
+
+	if config.UsersConfiguration.UserPrefix == "" || userPrefix != loadtest.UserPrefixDefault {
+		config.UsersConfiguration.UserPrefix = userPrefix
+	}
+
 	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
@@ -77,11 +86,6 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read controller configuration: %w", err)
 	}
 
-	userPrefix, err := cmd.Flags().GetString("user-prefix")
-	if err != nil {
-		return err
-	}
-
 	userOffset, err := cmd.Flags().GetInt("user-offset")
 	if err != nil {
 		return err
@@ -108,7 +112,7 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	newC, err := api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil)
+	newC, err := api.NewControllerWrapper(config, ucConfig, userOffset, nil)
 	if err != nil {
 		return fmt.Errorf("error while creating new controller: %w", err)
 	}

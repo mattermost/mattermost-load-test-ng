@@ -29,6 +29,7 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
+	cfg.UsersConfiguration.UserPrefix = t.config.UserPrefix
 
 	return cfg, nil
 }

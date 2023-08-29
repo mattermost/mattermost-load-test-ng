@@ -122,6 +122,12 @@ The path to the file which contains a list of user email and passwords that will
 
 The maximum amount of concurrently active users the load-test agent will run.
 
+### UserPrefix
+
+*string*
+
+The user prefix to use to register and authenticate users.
+
 ## LogSettings
 
 ### EnableConsole

@@ -57,7 +57,12 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	agentId := r.FormValue("id")
 	ltConfig := data.LoadTestConfig
+	if ltConfig.UsersConfiguration.UserPrefix == "" {
+		ltConfig.UsersConfiguration.UserPrefix = agentId
+	}
 	if err := defaults.Validate(ltConfig); err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Error: fmt.Sprintf("could not validate config: %s", err),
@@ -98,7 +103,6 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	agentId := r.FormValue("id")
 	if val, ok := a.getResource(agentId); ok && val != nil {
 		if _, ok := val.(*loadtest.LoadTester); ok {
 			writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
@@ -112,7 +116,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics)
+	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, a.metrics)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -331,7 +335,7 @@ func getServerVersion(serverURL string) (string, error) {
 
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
-func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) (loadtest.NewController, error) {
+func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, metrics *performance.Metrics) (loadtest.NewController, error) {
 	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
 
 	// http.Transport to be shared amongst all clients.
@@ -376,8 +380,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			email = creds[id].email
 			password = creds[id].password
 		} else {
-			username = fmt.Sprintf("%s-%d", namePrefix, id)
-			email = fmt.Sprintf("%s-%d@example.com", namePrefix, id)
+			username = fmt.Sprintf("%s-%d", config.UsersConfiguration.UserPrefix, id)
+			email = fmt.Sprintf("%s-%d@example.com", config.UsersConfiguration.UserPrefix, id)
 			password = "testPass123$"
 		}
 

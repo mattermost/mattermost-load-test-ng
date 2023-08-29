@@ -70,6 +70,15 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	userPrefix, err := cmd.Flags().GetString("user-prefix")
+	if err != nil {
+		return err
+	}
+
+	if config.UsersConfiguration.UserPrefix == "" || userPrefix != loadtest.UserPrefixDefault {
+		config.UsersConfiguration.UserPrefix = userPrefix
+	}
+
 	if err := defaults.Validate(*config); err != nil {
 		return fmt.Errorf("could not validate configuration: %w", err)
 	}
@@ -77,12 +86,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	log := logger.New(&config.LogSettings)
 	defer log.Flush()
 
-	userPrefix, err := cmd.Flags().GetString("user-prefix")
-	if err != nil {
-		return err
-	}
-
-	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, userPrefix); err != nil {
+	if ok, err := isInitDone(config.ConnectionConfiguration.ServerURL, config.UsersConfiguration.UserPrefix); err != nil {
 		return err
 	} else if ok {
 		log.Warn("init already done")
@@ -121,7 +125,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil)
+	newC, err := api.NewControllerWrapper(config, &genConfig, 0, nil)
 	if err != nil {
 		return fmt.Errorf("error while creating new controller: %w", err)
 	}
@@ -130,7 +134,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}
 
-	err = genAdmins(config, userPrefix)
+	err = genAdmins(config)
 	if err != nil {
 		return fmt.Errorf("error while generating admin users: %w", err)
 	}
@@ -139,7 +143,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	return genData(lt, numUsers)
 }
 
-func genAdmins(config *loadtest.Config, userPrefix string) error {
+func genAdmins(config *loadtest.Config) error {
 	mlog.Info(fmt.Sprintf("generating %d admins", config.InstanceConfiguration.NumAdmins))
 
 	adminStore, err := memstore.New(nil)
@@ -168,8 +172,8 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 		}
 		user := &model.User{
 			Password: "testPass123$",
-			Email:    fmt.Sprintf("%s-%d@example.com", userPrefix, i),
-			Username: fmt.Sprintf("%s-%d", userPrefix, i),
+			Email:    fmt.Sprintf("%s-%d@example.com", config.UsersConfiguration.UserPrefix, i),
+			Username: fmt.Sprintf("%s-%d", config.UsersConfiguration.UserPrefix, i),
 		}
 		ueConfig := userentity.Config{
 			ServerURL:    config.ConnectionConfiguration.ServerURL,

@@ -27,6 +27,7 @@
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
+  "UserPrefix": "",
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",

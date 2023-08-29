@@ -91,6 +91,9 @@ type Config struct {
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
 	SiteURL string `default:"ltserver"`
+	// An optional prefix that overrides the generated username prefix used to
+	// register and authenticate users.
+	UserPrefix string `default:""`
 }
 
 // TerraformDBSettings contains the necessary data

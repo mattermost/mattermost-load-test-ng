@@ -135,7 +135,11 @@ type UsersConfiguration struct {
 	MaxActiveUsers int `default:"2000" validate:"range:(0,]"`
 	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
+	// The user prefix to use to register and authenticate users.
+	UserPrefix string `default:"testuser" validate:"notempty"`
 }
+
+const UserPrefixDefault = "testuser"
 
 // Config holds information needed to create and initialize a new load-test
 // agent.
