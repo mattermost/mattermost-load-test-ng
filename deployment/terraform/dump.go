@@ -69,7 +69,7 @@ func (t *Terraform) IngestDump() error {
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmds, err := deployment.BuildLoadDBDumpCmds(fileName, output.PermalinksIPsSubstCommand(t.config.PermalinkIPsToReplace), deployment.DBSettings{
+	dbCmds, err := deployment.BuildLoadDBDumpCmds(fileName, deployment.DBSettings{
 		UserName: t.config.TerraformDBSettings.UserName,
 		Password: t.config.TerraformDBSettings.Password,
 		DBName:   t.config.DBName(),
