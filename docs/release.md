@@ -51,10 +51,28 @@ In the case that the primary Dev and QA are not available, we define Dev and QA 
 - Dev backups: @streamer45, @agnivade, @isacikgoz
 - QA backups: @agarciamontoro, @streamer45, @agnivade, @isacikgoz
 
+### Output
+
+The output of the release process is twofold:
+- A commit tagged with the version number.
+- A Github release, consisting of a bundle that contains:
+    - The main asset: a tarball named `mattermost-load-test-ng-vx.y.z-linux-amd64.tar.gz`, that contains:
+        - Binaries: `ltagent` and `ltapi`.
+        - Sample configuration files.
+        - License file.
+    - Other assets bundled by Github itself:
+        - Checksums file
+        - A copy of the source code in both `zip` and `tar.gz` formats.
+
+
+An example of this output for version v1.9.1 is:
+- Commit: https://github.com/mattermost/mattermost-load-test-ng/commit/b50140c25d495c4b12fa07d421ad584271b624ed
+- Github release: https://github.com/mattermost/mattermost-load-test-ng/releases/tag/v1.9.1
+    - Main asset: https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.9.1/mattermost-load-test-ng-v1.9.1-linux-amd64.tar.gz
 
 ## Release
 
-This section outlines the technicalities of the release itself, once the new version is tested and approved.
+This section outlines the technicalities of the release itself, once the new version is tested and approved. These steps will create both the tagged commit and the Github release.
 
 We use a combination of `Makefile` and [Goreleser](https://goreleaser.com/) to automate this process, which consists of two steps:
 1. Prepare the release and get the automatically created PR merged.
