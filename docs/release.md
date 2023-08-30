@@ -1,6 +1,6 @@
 # Release Process
 
-This document outlines the release process of the load-test tool. It is codified in [a Playbook](https://community.mattermost.com/playbooks/playbooks/95pa6a8fcp8p8xsn4frqejcide) that the team follows monthly in the Community server. If you don't have access to the playbook, please ping the team.
+This document outlines the release process of the load-test tool. It is codified in [a Playbook](https://community.mattermost.com/playbooks/playbooks/95pa6a8fcp8p8xsn4frqejcide) that the team follows monthly in the Community server. If you don't have access to the playbook, please ping `@xyzteam` in the [Developers: Server channel](https://community.mattermost.com/core/channels/developers-server).
 
 ## Requirements
 
