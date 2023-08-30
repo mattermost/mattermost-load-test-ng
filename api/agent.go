@@ -368,17 +368,17 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
-		var username, password, email string
+		username := fmt.Sprintf("%s-%d", namePrefix, id)
+		email := fmt.Sprintf("%s-%d@example.com", namePrefix, id)
+		password := "testPass123$"
 
-		if len(creds) > 0 {
-			// The bounds check is already done during creation of the creds slice.
+		// If UsersFilePath was set, and we haven't yet consumed all of the credentials
+		// provided there, ovewrite this user's credentials with the next available
+		// user in that file
+		if len(creds) > 0 && id < len(creds) {
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
-		} else {
-			username = fmt.Sprintf("%s-%d", namePrefix, id)
-			email = fmt.Sprintf("%s-%d@example.com", namePrefix, id)
-			password = "testPass123$"
 		}
 
 		ueConfig := userentity.Config{
@@ -494,12 +494,6 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from %s: %w", f.Name(), err)
-	}
-	// We do not allow to mix user-defined and auto signup modes.
-	// If the user specifies a custom login file, then it should contain
-	// all the users that is expected to login during a load-test.
-	if len(users) < config.UsersConfiguration.MaxActiveUsers+1 {
-		return nil, fmt.Errorf("number of lines in %q is %d, which is less than MaxActiveUsers+1(%d)", usersFilePath, len(users), config.UsersConfiguration.MaxActiveUsers+1)
 	}
 
 	return users, nil
