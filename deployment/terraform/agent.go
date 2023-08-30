@@ -15,6 +15,8 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const dstUsersFilePath = "/home/ubuntu/users.txt"
+
 func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
 	if err != nil {
@@ -29,6 +31,10 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
+
+	if t.config.UsersFilePath != "" {
+		cfg.UsersConfiguration.UsersFilePath = dstUsersFilePath
+	}
 
 	return cfg, nil
 }
@@ -69,6 +75,15 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			mlog.Info("Uploading binary", mlog.String("file", packagePath))
 			if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
+			}
+		}
+
+		if t.config.UsersFilePath != "" {
+			srcFilePath := t.config.UsersFilePath
+			dstFilePath := dstUsersFilePath
+			mlog.Info("Uploading list of users credentials", mlog.String("file", srcFilePath))
+			if out, err := sshc.UploadFile(srcFilePath, dstFilePath, false); err != nil {
+				return fmt.Errorf("error uploading file %q, output: %q: %w", srcFilePath, out, err)
 			}
 		}
 

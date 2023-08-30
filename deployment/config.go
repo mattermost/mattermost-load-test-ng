@@ -91,6 +91,10 @@ type Config struct {
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
 	SiteURL string `default:"ltserver"`
+	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
+	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
+	// own UsersFilePath.
+	UsersFilePath string `default:""`
 }
 
 // TerraformDBSettings contains the necessary data
