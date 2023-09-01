@@ -8,9 +8,16 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/require"
 )
+
+type ratesDistribution struct {
+	Rate       float64 `default:"1.0" validate:"range:[0,)"`
+	Percentage float64 `default:"1.0" validate:"range:[0,1]"`
+}
+type userControllerType string
 
 type config struct {
 	ConnectionConfiguration struct {
@@ -19,6 +26,32 @@ type config struct {
 		AdminEmail    string `default:"sysadmin@sample.mattermost.com" validate:"email"`
 		AdminPassword string `default:"Sys@dmin-sample1" validate:"notempty"`
 	}
+	UserControllerConfiguration struct {
+		Type              userControllerType  `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
+		RatesDistribution []ratesDistribution `default_len:"1"`
+		ServerVersion     string
+	}
+	InstanceConfiguration struct {
+		NumTeams                    int64   `default:"2" validate:"range:[0,]"`
+		NumChannels                 int64   `default:"10" validate:"range:[0,]"`
+		NumPosts                    int64   `default:"0" validate:"range:[0,]"`
+		NumReactions                int64   `default:"0" validate:"range:[0,]"`
+		NumAdmins                   int64   `default:"0" validate:"range:[0,]"`
+		PercentReplies              float64 `default:"0.5" validate:"range:[0,1]"`
+		PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
+		PercentUrgentPosts          float64 `default:"0.001" validate:"range:[0,1]"`
+		PercentPublicChannels       float64 `default:"0.2" validate:"range:[0,1]"`
+		PercentPrivateChannels      float64 `default:"0.1" validate:"range:[0,1]"`
+		PercentDirectChannels       float64 `default:"0.6" validate:"range:[0,1]"`
+		PercentGroupChannels        float64 `default:"0.1" validate:"range:[0,1]"`
+	}
+	UsersConfiguration struct {
+		UsersFilePath      string
+		InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
+		MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
+		AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
+	}
+	LogSettings logger.Settings
 }
 
 type TestHelper struct {
