@@ -17,12 +17,12 @@ func ReadFromJSON(path, fallbackPath string, value interface{}) error {
 		return nil
 	}
 
-	if err := readJSON(fallbackPath, value); err != nil {
-		return fmt.Errorf("failed to read from path %s: %w", fallbackPath, err)
-	}
-
 	if err := Set(value); err != nil {
 		return err
+	}
+
+	if err := readJSON(fallbackPath, value); err != nil {
+		return fmt.Errorf("failed to read from path %s: %w", fallbackPath, err)
 	}
 
 	return nil
