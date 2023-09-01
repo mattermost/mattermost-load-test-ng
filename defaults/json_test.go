@@ -10,7 +10,7 @@ import (
 
 type testCFG struct {
 	Setting string `default:"hi"`
-	Another int `default:"1"`
+	Another int    `default:"1"`
 }
 
 func TestReadFromJSON(t *testing.T) {
