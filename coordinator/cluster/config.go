@@ -7,6 +7,8 @@ import (
 	"errors"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 )
 
 // LoadAgentConfig holds information about the load-test agent instance.
@@ -33,5 +35,46 @@ func (c *LoadAgentClusterConfig) IsValid(ltConfig loadtest.Config) error {
 	if ltConfig.UsersConfiguration.MaxActiveUsers*len(c.Agents) < c.MaxActiveUsers {
 		return errors.New("coordinator: total MaxActiveUsers in loadTest should not be less than clusterConfig.MaxActiveUsers")
 	}
+
+	ok, err := checkMaxUsersPerTeam(ltConfig, *c)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("coordinator: TeamSettings.MaxUsersPerTeam should not be less than clusterConfig.MaxActiveUsers")
+	}
+
 	return nil
+}
+
+func checkMaxUsersPerTeam(config loadtest.Config, cConfig LoadAgentClusterConfig) (bool, error) {
+	adminStore, err := memstore.New(nil)
+	if err != nil {
+		return false, err
+	}
+	adminUeSetup := userentity.Setup{
+		Store: adminStore,
+	}
+	adminUeConfig := userentity.Config{
+		ServerURL:    config.ConnectionConfiguration.ServerURL,
+		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+		Username:     "",
+		Email:        config.ConnectionConfiguration.AdminEmail,
+		Password:     config.ConnectionConfiguration.AdminPassword,
+	}
+	sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+	if err := sysadmin.Login(); err != nil {
+		return false, err
+	}
+
+	// Load the config
+	if err := sysadmin.GetConfig(); err != nil {
+		return false, err
+	}
+
+	if cConfig.MaxActiveUsers > *sysadmin.Store().Config().TeamSettings.MaxUsersPerTeam {
+		return false, nil
+	}
+
+	return true, nil
 }
