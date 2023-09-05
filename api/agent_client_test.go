@@ -4,6 +4,8 @@
 package api
 
 import (
+	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -19,9 +21,13 @@ import (
 
 func createAgent(t *testing.T, id, serverURL string) *client.Agent {
 	t.Helper()
+	mmServer := createFakeMMServer()
+	t.Cleanup(mmServer.Close)
+
 	var ltConfig loadtest.Config
 	var ucConfig simulcontroller.Config
 	defaults.Set(&ltConfig)
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	defaults.Set(&ucConfig)
 	agent, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)
@@ -38,6 +44,9 @@ func TestCreateAgent(t *testing.T) {
 	// run server using httptest
 	server := httptest.NewServer(handler)
 	defer server.Close()
+
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
 
 	id := "agent0"
 	agent, err := client.New(id, server.URL, nil)
@@ -102,6 +111,7 @@ func TestCreateAgent(t *testing.T) {
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		defaults.Set(&ucConfig)
 		_, err := agent.Create(&ltConfig, &ucConfig)
 		require.NoError(t, err)

@@ -4,6 +4,9 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -13,16 +16,41 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/stretchr/testify/require"
 )
 
+func createFakeMMServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Version-Id", "dev")
+		switch r.URL.Path {
+		case "/api/v4/users/login":
+			u := model.User{}
+			u.Username = "sysadmin"
+			json.NewEncoder(w).Encode(u)
+		case "/api/v4/config":
+			mmCfg := model.Config{}
+			mmCfg.SetDefaults()
+			mmCfg.TeamSettings.MaxUsersPerTeam = model.NewInt(10000)
+			json.NewEncoder(w).Encode(mmCfg)
+		default:
+			fmt.Fprintln(w, "Hello, client")
+		}
+	}))
+}
+
 func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	t.Helper()
+
+	mmServer := createFakeMMServer()
+	t.Cleanup(mmServer.Close)
+
 	var coordConfig coordinator.Config
 	var ltConfig loadtest.Config
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)

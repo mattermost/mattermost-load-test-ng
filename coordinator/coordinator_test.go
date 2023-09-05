@@ -5,6 +5,7 @@ package coordinator
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/stretchr/testify/require"
 )
@@ -29,6 +31,27 @@ func newLoadTestConfig(t *testing.T) loadtest.Config {
 	t.Helper()
 	var cfg loadtest.Config
 	defaults.Set(&cfg)
+
+	mmServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Version-Id", "dev")
+		switch r.URL.Path {
+		case "/api/v4/users/login":
+			u := model.User{}
+			u.Username = "sysadmin"
+			json.NewEncoder(w).Encode(u)
+		case "/api/v4/config":
+			mmCfg := model.Config{}
+			mmCfg.SetDefaults()
+			mmCfg.TeamSettings.MaxUsersPerTeam = model.NewInt(10000)
+			json.NewEncoder(w).Encode(mmCfg)
+		default:
+			fmt.Fprintln(w, "Hello, client")
+		}
+	}))
+
+	t.Cleanup(mmServer.Close)
+
+	cfg.ConnectionConfiguration.ServerURL = mmServer.URL
 	return cfg
 }
 
