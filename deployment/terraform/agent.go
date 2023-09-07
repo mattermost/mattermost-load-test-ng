@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
+
+const dstUsersFilePath = "/home/ubuntu/users.txt"
 
 func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
@@ -29,6 +32,10 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
+
+	if t.config.UsersFilePath != "" {
+		cfg.UsersConfiguration.UsersFilePath = dstUsersFilePath
+	}
 
 	return cfg, nil
 }
@@ -58,7 +65,29 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		commands = append([]string{"wget -O tmp.tar.gz " + t.config.LoadTestDownloadURL}, commands...)
 	}
 
-	for _, val := range t.output.Agents {
+	// If UsersFilePath is present, split the user credentials among all the agents,
+	// so that the logged in users don't clash
+	splitFiles := make([][]string, 0, len(t.output.Agents))
+	if t.config.UsersFilePath != "" {
+		f, err := os.Open(t.config.UsersFilePath)
+		if err != nil {
+			return fmt.Errorf("error opening UsersFilePath %q", t.config.UsersFilePath)
+		}
+		scanner := bufio.NewScanner(f)
+		for range t.output.Agents {
+			splitFiles = append(splitFiles, []string{})
+		}
+		i := 0
+		for scanner.Scan() {
+			splitFiles[i] = append(splitFiles[i], scanner.Text())
+			i = (i + 1) % len(splitFiles)
+		}
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("error reading UsersFilePath %q: %w", t.config.UsersFilePath, err)
+		}
+	}
+
+	for i, val := range t.output.Agents {
 		sshc, err := extAgent.NewClient(val.PublicIP)
 		if err != nil {
 			return err
@@ -94,6 +123,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
 			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+		}
+
+		if t.config.UsersFilePath != "" {
+			batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[i], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
 		}
 
 		if err := uploadBatch(sshc, batch); err != nil {
