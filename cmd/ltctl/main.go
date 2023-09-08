@@ -328,6 +328,7 @@ func main() {
 	runComparisonCmd.Flags().Bool("archive", false, "create zip archive")
 	runComparisonCmd.Flags().StringP("output-dir", "d", "", "path to output directory")
 	runComparisonCmd.Flags().StringP("format", "f", "plain", "output format [plain, json]")
+	runComparisonCmd.Flags().Bool("deploy-only", false, "whether to run only the deployment step")
 
 	destroyComparisonCmd := &cobra.Command{
 		Use:   "destroy",

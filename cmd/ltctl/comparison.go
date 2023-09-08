@@ -15,6 +15,8 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/comparison"
 
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
+
 	"github.com/spf13/cobra"
 )
 
@@ -141,9 +143,19 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
-	output, err := cmp.Run()
+	deployOnly, _ := cmd.Flags().GetBool("deploy-only")
+	if deployOnly {
+		mlog.Info("running deployment only for comparison")
+	}
+
+	output, err := cmp.Run(deployOnly)
 	if err != nil {
 		return fmt.Errorf("failed to run comparisons: %w", err)
+	}
+
+	if deployOnly {
+		mlog.Info("deployment completed, deploy-only flag set, exiting")
+		return nil
 	}
 
 	if format, _ := cmd.Flags().GetString("format"); format == "json" {

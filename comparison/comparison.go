@@ -66,10 +66,14 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 
 // Run performs fully automated load-test comparisons.
 // It returns a list of results or an error in case of failure.
-func (c *Comparison) Run() (Output, error) {
+func (c *Comparison) Run(deployOnly bool) (Output, error) {
 	var output Output
 	// create deployments
 	err := c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
+		if err := t.Sync(); err != nil {
+			return err
+		}
+
 		if err := t.Create(false); err != nil {
 			return err
 		}
@@ -77,6 +81,10 @@ func (c *Comparison) Run() (Output, error) {
 	})
 	if err != nil {
 		return output, err
+	}
+
+	if deployOnly {
+		return output, nil
 	}
 
 	// run load-tests
