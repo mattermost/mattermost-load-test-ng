@@ -222,9 +222,9 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	loadDBDumpCmd.Value = strings.Join(dbCmds, " | ")
 
 	if dpConfig.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-		loadDBDumpCmd.Value += fmt.Sprintf(" && %s -c 'DELETE FROM Licenses;'", dbCmds[1])
+		loadDBDumpCmd.Value += fmt.Sprintf(" && %s -c \"DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;\"", dbCmds[1])
 	} else {
-		loadDBDumpCmd.Value += fmt.Sprintf(" && %s -e 'DELETE FROM Licenses;'", dbCmds[1])
+		loadDBDumpCmd.Value += fmt.Sprintf(" && %s -e \"DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;\"", dbCmds[1])
 	}
 
 	resetBucketCmds := []localCmd{}
