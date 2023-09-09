@@ -137,6 +137,23 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	defer agentClient.Close()
 
+	agentClients := make([]*ssh.Client, len(tfOutput.Agents))
+	for i, instance := range tfOutput.Agents {
+		client, err := extAgent.NewClient(instance.PublicIP)
+		if err != nil {
+			return fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		defer client.Close()
+		agentClients[i] = client
+	}
+
+	restartAgentCmd := deployment.Cmd{
+		Msg:     "Restarting load-test agents",
+		Value:   "sudo systemctl restart ltapi",
+		Clients: agentClients,
+	}
+	cmds := []deployment.Cmd{restartAgentCmd}
+
 	appClients := make([]*ssh.Client, len(tfOutput.Instances))
 	for i, instance := range tfOutput.Instances {
 		client, err := extAgent.NewClient(instance.PublicIP)
@@ -201,7 +218,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{agentClient},
 	}
 
-	cmds := []deployment.Cmd{stopCmd, installCmd, resetCmd}
+	cmds = append(cmds, stopCmd, installCmd, resetCmd)
 
 	loadDBDumpCmd := deployment.Cmd{
 		Msg:     "Loading DB dump",
