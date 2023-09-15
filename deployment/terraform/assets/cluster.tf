@@ -312,7 +312,8 @@ resource "aws_rds_cluster" "db_cluster" {
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
 
-  vpc_security_group_ids = [aws_security_group.db[0].id]
+  vpc_security_group_ids      = [aws_security_group.db[0].id]
+  allow_major_version_upgrade = true
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
@@ -325,7 +326,6 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
   db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
-  allow_major_version_upgrade  = true
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
