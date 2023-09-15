@@ -273,7 +273,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 		data   []byte
 		upload bool
 	}
-	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4"}
+	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4", "test_upload.txt"}
 	files := make(map[string]*file, len(filenames))
 
 	for _, filename := range filenames {
