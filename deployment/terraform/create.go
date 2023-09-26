@@ -24,7 +24,7 @@ import (
 	"github.com/mattermost/mattermost/server/v8/config"
 )
 
-const cmdExecTimeoutMinutes = 30
+const cmdExecTimeoutMinutes = 120
 
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
