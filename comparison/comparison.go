@@ -5,6 +5,7 @@ package comparison
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -152,4 +153,13 @@ func (c *Comparison) Destroy() error {
 		}
 		return t.Destroy()
 	})
+}
+
+func (c *Comparison) GetDeploymentIds() []string {
+	ids := []string{}
+	for k := range c.deployments {
+		ids = append(ids, k)
+	}
+	sort.Strings(ids)
+	return ids
 }

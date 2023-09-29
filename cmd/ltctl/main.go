@@ -329,12 +329,19 @@ func main() {
 	runComparisonCmd.Flags().StringP("output-dir", "d", "", "path to output directory")
 	runComparisonCmd.Flags().StringP("format", "f", "plain", "output format [plain, json]")
 
+	collectComparisonCmd := &cobra.Command{
+		Use:   "collect",
+		Short: "Collect logs and configurations from all deployments",
+		RunE:  CollectComparisonCmdF,
+	}
+
 	destroyComparisonCmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy the current load-test comparison environment",
 		RunE:  DestroyComparisonCmdF,
 	}
-	comparisonCmd.AddCommand(runComparisonCmd, destroyComparisonCmd)
+
+	comparisonCmd.AddCommand(runComparisonCmd, destroyComparisonCmd, collectComparisonCmd)
 	rootCmd.AddCommand(comparisonCmd)
 
 	if err := rootCmd.Execute(); err != nil {
