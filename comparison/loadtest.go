@@ -208,7 +208,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmds, err := deployment.BuildLoadDBDumpCmds(dumpFilename, deployment.DBSettings{
+	dbCmd, err := deployment.BuildLoadDBDumpCmd(dumpFilename, deployment.DBSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,
@@ -216,10 +216,9 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
 	})
 	if err != nil {
-		return fmt.Errorf("error building commands for loading DB dump: %w", err)
+		return fmt.Errorf("error building command for loading DB dump: %w", err)
 	}
-
-	loadDBDumpCmd.Value = strings.Join(dbCmds, " | ")
+	loadDBDumpCmd.Value = dbCmd
 
 	resetBucketCmds := []localCmd{}
 	if s3BucketURI != "" && tfOutput.HasS3Bucket() {

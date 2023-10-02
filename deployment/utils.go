@@ -54,25 +54,37 @@ func ProvisionURL(client *ssh.Client, url, filename string) error {
 	return nil
 }
 
-// BuildLoadDBDumpCmds returns a slice of commands that, when piped, feed the
+// BuildLoadDBDumpCmd returns a command string to feed the
 // provided DB dump file into the database. Example:
 //
-//	zcat dbdump.sql
-//	mysql/psql connection_details
-func BuildLoadDBDumpCmds(dumpFilename string, dbInfo DBSettings) ([]string, error) {
-	cmds := []string{
+//	zcat dbdump.sql | mysql/psql connection_details && custom queries
+func BuildLoadDBDumpCmd(dumpFilename string, dbInfo DBSettings) (string, error) {
+	loadCmds := []string{
 		fmt.Sprintf("zcat %s", dumpFilename),
 	}
 
-	var dbCmd string
+	var dbConnCmd string
+	var licenseClearCmd string
+	licenseClearQuery := "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"
+
 	switch dbInfo.Engine {
 	case "aurora-postgresql":
-		dbCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
+		dbConnCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
+		licenseClearCmd = fmt.Sprintf("%s -c %q", dbConnCmd, licenseClearQuery)
 	case "aurora-mysql":
-		dbCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
+		dbConnCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
+		licenseClearCmd = fmt.Sprintf("%s -e %q", dbConnCmd, licenseClearQuery)
 	default:
-		return []string{}, fmt.Errorf("invalid db engine %s", dbInfo.Engine)
+		return "", fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	return append(cmds, dbCmd), nil
+	loadCmds = append(loadCmds, dbConnCmd)
+	loadCmd := strings.Join(loadCmds, " | ")
+
+	cmds := []string{
+		loadCmd,
+		licenseClearCmd,
+	}
+
+	return strings.Join(cmds, " && "), nil
 }
