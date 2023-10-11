@@ -69,7 +69,7 @@ func (t *Terraform) IngestDump() error {
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmds, err := deployment.BuildLoadDBDumpCmds(fileName, deployment.DBSettings{
+	dbCmd, err := deployment.BuildLoadDBDumpCmd(fileName, deployment.DBSettings{
 		UserName: t.config.TerraformDBSettings.UserName,
 		Password: t.config.TerraformDBSettings.Password,
 		DBName:   t.config.DBName(),
@@ -77,9 +77,9 @@ func (t *Terraform) IngestDump() error {
 		Engine:   t.config.TerraformDBSettings.InstanceEngine,
 	})
 	if err != nil {
-		return fmt.Errorf("error building commands for loading DB dump: %w", err)
+		return fmt.Errorf("error building command for loading DB dump: %w", err)
 	}
-	loadDBDumpCmd.Value = strings.Join(dbCmds, " | ")
+	loadDBDumpCmd.Value = dbCmd
 
 	startCmd := deployment.Cmd{
 		Msg:     "Restarting app server",
