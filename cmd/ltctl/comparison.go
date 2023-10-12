@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/comparison"
+	"github.com/wiggin77/merror"
 
 	"github.com/spf13/cobra"
 )
@@ -170,6 +171,33 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
+	deployerConfig, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	configFilePath, _ := cmd.Flags().GetString("comparison-config")
+	cfg, err := comparison.ReadConfig(configFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read comparison config: %w", err)
+	}
+
+	cmp, err := comparison.New(cfg, &deployerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to initialize comparison object: %w", err)
+	}
+
+	merr := merror.New()
+	for _, id := range cmp.GetDeploymentIds() {
+		if err := collect(deployerConfig, id, id+"_"); err != nil {
+			merr.Append(err)
+		}
+	}
+
+	return merr.ErrorOrNil()
 }
 
 func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {

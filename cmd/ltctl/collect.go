@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -33,7 +34,7 @@ type file struct {
 	data []byte
 }
 
-func saveCollection(files []file) error {
+func saveCollection(namePrefix string, files []file) error {
 	u, err := user.Current()
 	if err != nil {
 		return err
@@ -49,7 +50,7 @@ func saveCollection(files []file) error {
 		return err
 	}
 
-	name := fmt.Sprintf("collection_%d", time.Now().Unix())
+	name := fmt.Sprintf("%scollection_%d", namePrefix, time.Now().Unix())
 	filename := fmt.Sprintf("./%s.tar", name)
 	f, err := os.Create(filename)
 	if err != nil {
@@ -144,7 +145,11 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	t, err := terraform.New("", config)
+	return collect(config, "", "")
+}
+
+func collect(config deployment.Config, deploymentId string, outputName string) error {
+	t, err := terraform.New(deploymentId, config)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
@@ -256,7 +261,7 @@ func RunCollectCmdF(cmd *cobra.Command, args []string) error {
 		files[i] = <-filesChan
 	}
 
-	if err := saveCollection(files); err != nil {
+	if err := saveCollection(outputName, files); err != nil {
 		return fmt.Errorf("failed to save collection: %w", err)
 	}
 
