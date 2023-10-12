@@ -113,7 +113,7 @@ resource "aws_instance" "metrics_server" {
   dynamic "root_block_device" {
     for_each = var.root_block_device
     content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
+      volume_size = 500
       volume_type = lookup(root_block_device.value, "volume_type", null)
     }
   }
