@@ -10,6 +10,10 @@ import (
 // This function will try to read from given path, if it is empty will try
 // fallback path. If it fails on fallback, it will set value to it's defaults
 func ReadFromJSON(path, fallbackPath string, value interface{}) error {
+	if err := Set(value); err != nil {
+		return err
+	}
+
 	if path != "" {
 		if err := readJSON(path, &value); err != nil {
 			return fmt.Errorf("failed to read from path %s: %w", path, err)
@@ -17,9 +21,6 @@ func ReadFromJSON(path, fallbackPath string, value interface{}) error {
 		return nil
 	}
 
-	if err := Set(value); err != nil {
-		return err
-	}
 
 	// If the fallback path doesn't exist, return.
 	if _, err := os.Stat(fallbackPath); err != nil && os.IsNotExist(err) {
