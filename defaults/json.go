@@ -21,7 +21,6 @@ func ReadFromJSON(path, fallbackPath string, value interface{}) error {
 		return nil
 	}
 
-
 	// If the fallback path doesn't exist, return.
 	if _, err := os.Stat(fallbackPath); err != nil && os.IsNotExist(err) {
 		return nil
