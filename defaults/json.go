@@ -27,7 +27,7 @@ func ReadFromJSON(path, fallbackPath string, value interface{}) error {
 	}
 
 	if err := readJSON(fallbackPath, value); err != nil {
-		return fmt.Errorf("failed to read from path %s: %w", fallbackPath, err)
+		return fmt.Errorf("failed to read from fallback path %s: %w", fallbackPath, err)
 	}
 
 	return nil
