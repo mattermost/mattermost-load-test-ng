@@ -212,7 +212,7 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 			if !filepath.IsAbs(info.src) {
 				cmd := info.src
 				info.src = fmt.Sprintf("/tmp/%s.log", info.src)
-				cmd = fmt.Sprintf("%s > %s", cmd, info.src)
+				cmd = fmt.Sprintf("sudo %s > %s", cmd, info.src)
 				if _, err := sshc.RunCommand(cmd); err != nil {
 					fmt.Printf("failed to run cmd %q: %s\n", cmd, err)
 					return
