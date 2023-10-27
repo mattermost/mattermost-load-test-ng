@@ -95,6 +95,23 @@ type Config struct {
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
 	UsersFilePath string `default:""`
+	// StorageSize specifies the sizes of the disks for each instance type
+	StorageSize StorageSize
+}
+
+type StorageSize struct {
+	// Size, in GiB, for the storage of the agents instances
+	Agent int `default:"10"`
+	// Size, in GiB, for the storage of the proxy instance
+	Proxy int `default:"10"`
+	// Size, in GiB, for the storage of the app instances
+	App int `default:"10"`
+	// Size, in GiB, for the storage of the metrics instance
+	Metrics int `default:"50"`
+	// Size, in GiB, for the storage of the job server instances
+	Job int `default:"50"`
+	// Size, in GiB, for the storage of the elasticsearch instances
+	ElasticSearch int `default:"20"`
 }
 
 // TerraformDBSettings contains the necessary data

@@ -36,15 +36,6 @@ variable "es_vpc" {
 variable "es_create_role" {
 }
 
-variable "es_ebs_options" {
-  default = [
-    {
-      volume_type = "gp2"
-      volume_size = 20
-    },
-  ]
-}
-
 variable "proxy_instance_type" {
 }
 
@@ -87,13 +78,39 @@ variable "ssh_public_key" {
 variable "mattermost_license_file" {
 }
 
-variable "root_block_device" {
-  default = [
-    {
-      volume_type = "gp2"
-      volume_size = 50
-    },
-  ]
+variable "block_device_type" {
+  type    = string
+  default = "gp3"
+}
+
+variable "block_device_sizes_agent" {
+  type    = number
+  default = 10
+}
+
+variable "block_device_sizes_proxy" {
+  type    = number
+  default = 10
+}
+
+variable "block_device_sizes_app" {
+  type    = number
+  default = 10
+}
+
+variable "block_device_sizes_metrics" {
+  type    = number
+  default = 50
+}
+
+variable "block_device_sizes_job" {
+  type    = number
+  default = 50
+}
+
+variable "block_device_sizes_elasticsearch" {
+  type    = number
+  default = 20
 }
 
 variable "job_server_instance_count" {

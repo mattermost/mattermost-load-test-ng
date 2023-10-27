@@ -111,5 +111,13 @@
         "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
       }
     ]
-  }
+  },
+  "StorageSize": {
+    "Agent": 10,
+    "Proxy": 10,
+    "App": 10,
+    "Metrics": 50,
+    "Job": 50,
+    "ElasticSearch": 20
+  },
 }
