@@ -95,6 +95,17 @@ type Config struct {
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
 	UsersFilePath string `default:""`
+	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
+	PyroscopeSettings PyroscopeSettings
+}
+
+// PyroscopeSettings contains flags to enable/disable the profiling
+// of the different parts of the deployment.
+type PyroscopeSettings struct {
+	// Enable profiling of all the app instances
+	EnableAppProfiling bool `default:"true"`
+	// Enable profiling of all the agent instances
+	EnableAgentProfiling bool `default:"true"`
 }
 
 // TerraformDBSettings contains the necessary data
