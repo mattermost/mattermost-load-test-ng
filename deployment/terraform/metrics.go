@@ -140,16 +140,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
 
-	pyroscopeAppConfig := ""
-	if t.config.PyroscopeSettings.EnableAppProfiling {
-		pyroscopeAppConfig = strings.Join(mmTargets, ",")
-	}
-	pyroscopeAgentsConfig := ""
-	if t.config.PyroscopeSettings.EnableAppProfiling {
-		pyroscopeAgentsConfig = strings.Join(ltTargets, ",")
-	}
 	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
-	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig, pyroscopeAppConfig, pyroscopeAgentsConfig)
+	pyroscopeConfigFile := t.config.PyroscopeSettings.GenString(pyroscopeConfig, mmTargets, ltTargets)
 
 	rdr = strings.NewReader(pyroscopeConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
