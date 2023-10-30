@@ -452,3 +452,17 @@ This config is used for tests that require an existing database dump that contai
 *string*
 
 The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
+
+## PyroscopeSettings
+
+### EnableAppProfiling
+
+*bool*
+
+Enable continuous profiling of all the app instances.
+
+### EnableAgentProfiling
+
+*bool*
+
+Enable continuous profiling of all the agent instances.

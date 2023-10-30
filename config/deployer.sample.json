@@ -111,5 +111,9 @@
         "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
       }
     ]
+  },
+  "PyroscopeSettings": {
+    "EnableAppProfiling": true,
+    "EnableAgentProfiling": true
   }
 }
