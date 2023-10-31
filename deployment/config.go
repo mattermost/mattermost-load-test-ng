@@ -112,7 +112,7 @@ type TerraformDBSettings struct {
 	// Password to connect to the DB.
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
-	EnablePerformanceInsights bool `default:"false"`
+	EnablePerformanceInsights bool `default:"true"`
 	// A list of DB specific parameters to use for the created instance.
 	DBParameters DBParameters
 	// ClusterIdentifier indicates to point to an existing cluster
