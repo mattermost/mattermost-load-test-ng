@@ -108,20 +108,6 @@ type PyroscopeSettings struct {
 	EnableAgentProfiling bool `default:"true"`
 }
 
-func (ps PyroscopeSettings) GenString(template string, mmTargets, ltTargets []string) string {
-	pyroscopeAppConfig := ""
-	if ps.EnableAppProfiling {
-		pyroscopeAppConfig = strings.Join(mmTargets, ",")
-	}
-	pyroscopeAgentsConfig := ""
-	if ps.EnableAgentProfiling {
-		pyroscopeAgentsConfig = strings.Join(ltTargets, ",")
-	}
-	pyroscopeConfigFile := fmt.Sprintf(template, pyroscopeAppConfig, pyroscopeAgentsConfig)
-
-	return pyroscopeConfigFile
-}
-
 // TerraformDBSettings contains the necessary data
 // to configure an instance to be deployed
 // and provisioned.
