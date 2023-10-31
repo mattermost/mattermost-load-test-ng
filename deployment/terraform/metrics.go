@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"gopkg.in/yaml.v3"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -141,10 +142,21 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
-	pyroscopeConfigFile := t.config.PyroscopeSettings.GenString(pyroscopeConfig, mmTargets, ltTargets)
+	pyroscopeMMTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAppProfiling {
+		pyroscopeMMTargets = mmTargets
+	}
+	pyroscopeLTTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAgentProfiling {
+		pyroscopeLTTargets = ltTargets
+	}
+	pyroscopeConfig, err := yaml.Marshal(NewPyroscopeConfig(pyroscopeMMTargets, pyroscopeLTTargets))
+	if err != nil {
+		return fmt.Errorf("error marshaling Pyroscope config yaml: %w", err)
+	}
 
-	rdr = strings.NewReader(pyroscopeConfigFile)
-	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
+	pyroscopeReader := bytes.NewReader(pyroscopeConfig)
+	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/server.yml", true); err != nil {
 		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
 	}
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
