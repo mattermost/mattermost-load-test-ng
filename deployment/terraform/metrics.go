@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"gopkg.in/yaml.v3"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -90,25 +91,25 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	var mmTargets, nodeTargets, esTargets, ltTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
-		mmTargets = append(mmTargets, fmt.Sprintf("'%s:8067'", host))
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	for i, val := range t.output.Agents {
 		host := fmt.Sprintf("agent-%d", i)
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
-		ltTargets = append(ltTargets, fmt.Sprintf("'%s:4000'", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+		ltTargets = append(ltTargets, fmt.Sprintf("%s:4000", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if t.output.HasProxy() {
 		host := "proxy"
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", t.output.Proxy.PrivateIP, host)
 	}
 
 	if t.output.HasElasticSearch() {
 		esEndpoint := fmt.Sprintf("https://%s", t.output.ElasticSearchServer.Endpoint)
-		esTargets = append(esTargets, "'metrics:9114'")
+		esTargets = append(esTargets, "metrics:9114")
 
 		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
 		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
@@ -128,24 +129,42 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	quoteAll := func(elems []string) []string {
+		quoted := make([]string, 0, len(elems))
+		for _, elem := range elems {
+			quoted = append(quoted, "'"+elem+"'")
+		}
+		return quoted
+	}
+
 	mlog.Info("Updating Prometheus config", mlog.String("host", t.output.MetricsServer.PublicIP))
 	prometheusConfigFile := fmt.Sprintf(prometheusConfig,
-		strings.Join(nodeTargets, ","),
-		strings.Join(mmTargets, ","),
-		strings.Join(esTargets, ","),
-		strings.Join(ltTargets, ","),
+		strings.Join(quoteAll(nodeTargets), ","),
+		strings.Join(quoteAll(mmTargets), ","),
+		strings.Join(quoteAll(esTargets), ","),
+		strings.Join(quoteAll(ltTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
+
 	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
-	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig,
-		strings.Join(mmTargets, ","),
-		strings.Join(ltTargets, ","),
-	)
-	rdr = strings.NewReader(pyroscopeConfigFile)
-	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
+	pyroscopeMMTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAppProfiling {
+		pyroscopeMMTargets = mmTargets
+	}
+	pyroscopeLTTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAgentProfiling {
+		pyroscopeLTTargets = ltTargets
+	}
+	pyroscopeConfig, err := yaml.Marshal(NewPyroscopeConfig(pyroscopeMMTargets, pyroscopeLTTargets))
+	if err != nil {
+		return fmt.Errorf("error marshaling Pyroscope config yaml: %w", err)
+	}
+
+	pyroscopeReader := bytes.NewReader(pyroscopeConfig)
+	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/server.yml", true); err != nil {
 		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
 	}
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)

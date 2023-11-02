@@ -33,7 +33,7 @@
     "InstanceType": "db.r6g.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
-    "EnablePerformanceInsights": false,
+    "EnablePerformanceInsights": true,
     "DBParameters": [],
     "ClusterIdentifier": ""
   },
@@ -120,4 +120,8 @@
     "Job": 50,
     "ElasticSearch": 20
   },
+  "PyroscopeSettings": {
+    "EnableAppProfiling": true,
+    "EnableAgentProfiling": true
+  }
 }

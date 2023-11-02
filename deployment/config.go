@@ -95,6 +95,8 @@ type Config struct {
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
 	UsersFilePath string `default:""`
+	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
+	PyroscopeSettings PyroscopeSettings
 	// StorageSize specifies the sizes of the disks for each instance type
 	StorageSize StorageSize
 }
@@ -114,6 +116,15 @@ type StorageSize struct {
 	ElasticSearch int `default:"20"`
 }
 
+// PyroscopeSettings contains flags to enable/disable the profiling
+// of the different parts of the deployment.
+type PyroscopeSettings struct {
+	// Enable profiling of all the app instances
+	EnableAppProfiling bool `default:"true"`
+	// Enable profiling of all the agent instances
+	EnableAgentProfiling bool `default:"true"`
+}
+
 // TerraformDBSettings contains the necessary data
 // to configure an instance to be deployed
 // and provisioned.
@@ -129,7 +140,7 @@ type TerraformDBSettings struct {
 	// Password to connect to the DB.
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
-	EnablePerformanceInsights bool `default:"false"`
+	EnablePerformanceInsights bool `default:"true"`
 	// A list of DB specific parameters to use for the created instance.
 	DBParameters DBParameters
 	// ClusterIdentifier indicates to point to an existing cluster
