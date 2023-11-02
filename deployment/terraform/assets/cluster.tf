@@ -60,12 +60,9 @@ resource "aws_instance" "app_server" {
     aws_security_group.app_gossip[0].id
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_app
+    volume_type = var.block_device_type
   }
 
   provisioner "file" {
@@ -110,12 +107,9 @@ resource "aws_instance" "metrics_server" {
     aws_security_group.metrics[0].id,
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_metrics
+    volume_type = var.block_device_type
   }
 
   provisioner "remote-exec" {
@@ -157,12 +151,9 @@ resource "aws_instance" "proxy_server" {
   ]
   key_name = aws_key_pair.key.id
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_proxy
+    volume_type = var.block_device_type
   }
 
   connection {
@@ -209,13 +200,11 @@ resource "aws_elasticsearch_domain" "es_server" {
     security_group_ids = [aws_security_group.elastic[0].id]
   }
 
-  dynamic "ebs_options" {
-    for_each = var.es_ebs_options
-    content {
-      ebs_enabled = true
-      volume_type = lookup(ebs_options.value, "volume_type", "gp2")
-      volume_size = lookup(ebs_options.value, "volume_size", 20)
-    }
+
+  ebs_options {
+    ebs_enabled = true
+    volume_type = var.block_device_type
+    volume_size = var.block_device_sizes_elasticsearch
   }
 
   cluster_config {
@@ -369,12 +358,9 @@ resource "aws_instance" "loadtest_agent" {
 
   vpc_security_group_ids = [aws_security_group.agent.id]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_agent
+    volume_type = var.block_device_type
   }
 
   provisioner "remote-exec" {
@@ -671,12 +657,9 @@ resource "aws_instance" "job_server" {
     aws_security_group.app[0].id,
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_job
+    volume_type = var.block_device_type
   }
 
   provisioner "file" {

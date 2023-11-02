@@ -11,7 +11,7 @@
   "AgentInstanceType": "c5.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
-    "InstanceType": "r4.large.elasticsearch",
+    "InstanceType": "r5.large.elasticsearch",
     "VpcID": "",
     "Version": 6.5,
     "CreateRole": false
@@ -111,6 +111,14 @@
         "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
       }
     ]
+  },
+  "StorageSizes": {
+    "Agent": 10,
+    "Proxy": 10,
+    "App": 10,
+    "Metrics": 50,
+    "Job": 50,
+    "ElasticSearch": 20
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,

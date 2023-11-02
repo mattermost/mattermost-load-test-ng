@@ -97,6 +97,23 @@ type Config struct {
 	UsersFilePath string `default:""`
 	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
 	PyroscopeSettings PyroscopeSettings
+	// StorageSizes specifies the sizes of the disks for each instance type
+	StorageSizes StorageSizes
+}
+
+type StorageSizes struct {
+	// Size, in GiB, for the storage of the agents instances
+	Agent int `default:"10"`
+	// Size, in GiB, for the storage of the proxy instance
+	Proxy int `default:"10"`
+	// Size, in GiB, for the storage of the app instances
+	App int `default:"10"`
+	// Size, in GiB, for the storage of the metrics instance
+	Metrics int `default:"50"`
+	// Size, in GiB, for the storage of the job server instances
+	Job int `default:"50"`
+	// Size, in GiB, for the storage of the elasticsearch instances
+	ElasticSearch int `default:"20"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
