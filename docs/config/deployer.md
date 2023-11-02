@@ -446,3 +446,23 @@ The name of a host that will be used for two purposes:
 - It will override the server's site URL.
 - It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
 This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.
+
+## UsersFilePath
+
+*string*
+
+The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
+
+## PyroscopeSettings
+
+### EnableAppProfiling
+
+*bool*
+
+Enable continuous profiling of all the app instances.
+
+### EnableAgentProfiling
+
+*bool*
+
+Enable continuous profiling of all the agent instances.

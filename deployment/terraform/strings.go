@@ -49,23 +49,59 @@ scrape_configs:
         - targets: [%s]
 `
 
-const pyroscopeConfig = `
-log-level: debug
-no-self-profiling: true
+type PyroscopeConfig struct {
+	LogLevel        string         `yaml:"log-level"`
+	NoSelfProfiling bool           `yaml:"no-self-profiling"`
+	ScrapeConfigs   []ScrapeConfig `yaml:"scrape-configs"`
+}
 
-scrape-configs:
-  - job-name: pyroscope
-    scheme: http
-    scrape-interval: 60s
-    enabled-profiles: [cpu, mem, goroutines]
-    static-configs:
-    - application: mattermost
-      spy-name: gospy
-      targets: [%s]
-    - application: agents
-      spy-name: gospy
-      targets: [%s]
-`
+type ScrapeConfig struct {
+	JobName         string         `yaml:"job-name"`
+	Scheme          string         `yaml:"scheme"`
+	ScrapeInterval  string         `yaml:"scrape-interval"`
+	EnabledProfiles []string       `yaml:"enabled-profiles,flow"`
+	StaticConfigs   []StaticConfig `yaml:"static-configs,omitempty"`
+}
+
+type StaticConfig struct {
+	Application string   `yaml:"application"`
+	SpyName     string   `yaml:"spy-name"`
+	Targets     []string `yaml:"targets,flow"`
+}
+
+func NewPyroscopeConfig(mmTargets, ltTargets []string) *PyroscopeConfig {
+	var staticConfigs []StaticConfig
+
+	if len(mmTargets) > 0 {
+		staticConfigs = append(staticConfigs, StaticConfig{
+			Application: "mattermost",
+			SpyName:     "gospy",
+			Targets:     mmTargets,
+		})
+	}
+
+	if len(ltTargets) > 0 {
+		staticConfigs = append(staticConfigs, StaticConfig{
+			Application: "agents",
+			SpyName:     "gospy",
+			Targets:     ltTargets,
+		})
+	}
+
+	return &PyroscopeConfig{
+		LogLevel:        "debug",
+		NoSelfProfiling: true,
+		ScrapeConfigs: []ScrapeConfig{
+			{
+				JobName:         "pryoscope",
+				Scheme:          "http",
+				ScrapeInterval:  "60s",
+				EnabledProfiles: []string{"cpu", "mem", "goroutines"},
+				StaticConfigs:   staticConfigs,
+			},
+		},
+	}
+}
 
 const metricsHosts = `
 127.0.0.1 localhost
