@@ -112,7 +112,7 @@
       }
     ]
   },
-  "StorageSize": {
+  "StorageSizes": {
     "Agent": 10,
     "Proxy": 10,
     "App": 10,

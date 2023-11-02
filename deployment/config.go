@@ -97,11 +97,11 @@ type Config struct {
 	UsersFilePath string `default:""`
 	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
 	PyroscopeSettings PyroscopeSettings
-	// StorageSize specifies the sizes of the disks for each instance type
-	StorageSize StorageSize
+	// StorageSizes specifies the sizes of the disks for each instance type
+	StorageSizes StorageSizes
 }
 
-type StorageSize struct {
+type StorageSizes struct {
 	// Size, in GiB, for the storage of the agents instances
 	Agent int `default:"10"`
 	// Size, in GiB, for the storage of the proxy instance
