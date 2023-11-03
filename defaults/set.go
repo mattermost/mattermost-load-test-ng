@@ -149,7 +149,7 @@ func setValue(t reflect.Type, data string) (reflect.Value, error) {
 func createSlice(defaultValue interface{}, size int, sampleMode bool) (reflect.Value, error) {
 	t := reflect.ValueOf(defaultValue).Type().Elem()
 	if t.Kind() == reflect.Struct {
-		values := reflect.MakeSlice(reflect.SliceOf(t), size, size)
+		values := reflect.MakeSlice(reflect.SliceOf(t), 0, size)
 		for i := 0; i < size; i++ {
 			dv := reflect.New(t).Interface()
 			err := structDefaults(dv, sampleMode)
@@ -160,7 +160,7 @@ func createSlice(defaultValue interface{}, size int, sampleMode bool) (reflect.V
 		}
 		return values, nil
 	}
-	return reflect.MakeSlice(t, size, size), nil
+	return reflect.MakeSlice(reflect.SliceOf(t), 0, size), nil
 }
 
 // createMap creates a map for the given map type
