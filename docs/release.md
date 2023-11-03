@@ -9,13 +9,13 @@ This release process follows [the release process of the self-hosted version of 
 The requirements for this release process are the following:
 - The monthly performance comparisons, where we compare the Mattermost version about to be released with the latest stable one, are based on the RC-1 version of the new release.
 - We need a stable tested version of the load-test tool to run the performance comparisons.
-- The final release build of Mattermost is cut at around T-10[^1].
+- The final release build of Mattermost is cut at T-19[^1].
 
 [^1]: Mattermost release process specifies all the release events (feature complete, code freeze, release approval...) by using the T-n notation, where n is the number of business days before the release day. The specific dates for each event are made concrete at the beginning of each process release, and can be found in [the Mattermost Release Dates calendar](https://calendar.google.com/calendar/embed?src=mattermost.com_uu1k3ma6uvrjp6t7541cnte11c%40group.calendar.google.com).
 
 As such, we base the timeline of our own release process on the following goal:
 
-> We aim to have a new release ready on T-11.
+> We aim to have a new release ready on T-18.
 
 There may be times when there are no changes in the load-test tool, and that's fine. In those cases, we can skip the release altogether.
 
@@ -24,7 +24,7 @@ There may be times when there are no changes in the load-test tool, and that's f
 The goal of this release process is to have a well-tested version where bugs can be surfaced before we use it for the monthly performance comparisons and other analysis. Then, the main part of it will be the testing process, and we will skip any release whose tests did not pass before the testing period ends.
 
 - T-24 (owned by Dev): Judge whether we need a new release: are there significant changes since last version? If there are, cut the release branch and continue with next steps. If there are not, skip the release.
-- From T-23 to T-12 (owned by QA, assisted by Dev): Testing period.
+- From T-23 to T-19 (owned by QA, assisted by Dev): Testing period.
     - Run a performance comparison test with bounded and unbounded tests, Postgres and MySQL, using the latest stable release of Mattermost as both the base and new builds. This test will pass if and only if:
         - All four tests finish successfully.
         - There is no significant difference between the base and new builds (they're the same build, and thus should ideally output the same exact results).
@@ -32,9 +32,9 @@ The goal of this release process is to have a well-tested version where bugs can
         - Fix them in master.
         - Cherry-pick them to the release branch.
         - Run the test again.
-- T-12 end of day (owned by Dev): judge whether the tests successfully passed and decide if the release will happen the next day.
-- T-11 (owned by Dev): If the tests passed, release a new version. If not, skip the release for this month.
-- From T-10 (owned by Dev): Run the actual performance comparison with the latest stable version of the load-test tool.
+- T-19 end of day (owned by Dev): judge whether the tests successfully passed and decide if the release will happen the next day.
+- T-18 (owned by Dev): If the tests passed, release a new version. If not, skip the release for this month.
+- From T-17 to T-10 (owned by Dev): Run the actual performance comparison with the latest stable version of the load-test tool.
 
 ### Owners
 
