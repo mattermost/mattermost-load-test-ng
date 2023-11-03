@@ -9,10 +9,12 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/mattermost/mattermost-load-test-ng/comparison"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 
@@ -20,11 +22,13 @@ import (
 )
 
 var docs = map[string]string{
-	"agent":            "./docs/config/config.md",
+	"config":           "./docs/config/config.md",
 	"coordinator":      "./docs/config/coordinator.md",
 	"deployer":         "./docs/config/deployer.md",
+	"comparison":       "./docs/config/comparison.md",
 	"simplecontroller": "./docs/config/simplecontroller.md",
 	"simulcontroller":  "./docs/config/simulcontroller.md",
+	"gencontroller":    "./docs/config/gencontroller.md",
 }
 
 func main() {
@@ -35,13 +39,28 @@ func main() {
 	}
 
 	configCmd := &cobra.Command{
-		Use:     "config",
-		RunE:    runConfigAssistCmdF,
-		Short:   "Create a config interactively",
-		Long:    "Interactively create selected config type and save the file.\n" + validTypes(),
-		Example: "ltassist config",
+		Use:   "config",
+		Short: "Utilities to generate configuration files",
 	}
 	rootCmd.AddCommand(configCmd)
+
+	configGenCmd := &cobra.Command{
+		Use:     "gen",
+		RunE:    runConfigGenCmdF,
+		Short:   "Generate a config interactively",
+		Long:    "Interactively create selected config type and save the file.\n" + validTypes(),
+		Example: "ltassist config gen",
+	}
+	configCmd.AddCommand(configGenCmd)
+
+	configSampleCmd := &cobra.Command{
+		Use:     "sample",
+		RunE:    runConfigSampleCmdF,
+		Short:   "Generate sample files",
+		Long:    "Automatically generate all config/*.sample.json files with their default values",
+		Example: "ltassist config sample",
+	}
+	configCmd.AddCommand(configSampleCmd)
 
 	checkCmd := &cobra.Command{
 		Use:     "check",
@@ -57,7 +76,7 @@ func main() {
 	}
 }
 
-func runConfigAssistCmdF(_ *cobra.Command, args []string) error {
+func runConfigGenCmdF(_ *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		if _, ok := docs[args[0]]; ok {
 			return createConfig(args[0])
@@ -125,6 +144,40 @@ func createConfig(name string) error {
 	return nil
 }
 
+func runConfigSampleCmdF(_ *cobra.Command, args []string) error {
+	for name := range docs {
+		if err := genConfigSample(name); err != nil {
+			return fmt.Errorf("could not generate config %q: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func genConfigSample(name string) error {
+	cfg, err := getDefaultConfig(name)
+	if err != nil {
+		return fmt.Errorf("could not get default config: %w", err)
+	}
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
+
+	filePath := fmt.Sprintf("./config/%s.sample.json", name)
+	f, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("could not open file %q: %w", filePath, err)
+	}
+
+	_, err = f.WriteString(string(data) + "\n")
+	if err != nil {
+		return fmt.Errorf("could not write data to file %q: %w", filePath, err)
+	}
+
+	return nil
+}
+
 func runCheckConfigsCmdF(_ *cobra.Command, args []string) error {
 	for name, doc := range docs {
 		cfg, err := getDefaultConfig(name)
@@ -151,7 +204,7 @@ func validTypes() string {
 func getDefaultConfig(configType string) (interface{}, error) {
 	var cfg interface{}
 	switch configType {
-	case "agent":
+	case "config":
 		cfg = &loadtest.Config{}
 	case "coordinator":
 		cfg = &coordinator.Config{}
@@ -161,10 +214,14 @@ func getDefaultConfig(configType string) (interface{}, error) {
 		cfg = &simplecontroller.Config{}
 	case "simulcontroller":
 		cfg = &simulcontroller.Config{}
+	case "gencontroller":
+		cfg = &gencontroller.Config{}
+	case "comparison":
+		cfg = &comparison.Config{}
 	default:
 		return nil, fmt.Errorf("could not find: %q", configType)
 	}
-	if err := defaults.Set(cfg); err != nil {
+	if err := defaults.SetSample(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil

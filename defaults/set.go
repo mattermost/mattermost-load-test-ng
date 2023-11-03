@@ -14,11 +14,23 @@ func Set(value interface{}) error {
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("value should be a pointer")
 	}
-	return structDefaults(value)
+	return structDefaults(value, false)
+}
+
+// SetSample sets the default values to fields, making sure all slices have at least
+// one element to showcase the structure of its elements
+func SetSample(value interface{}) error {
+	rv := reflect.ValueOf(value)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("value should be a pointer")
+	}
+	return structDefaults(value, true)
 }
 
 // structDefaults assigns default values of a struct
-func structDefaults(value interface{}) error {
+// If sampleMode is true, slices will have at least one element, even if their
+// default size is 0
+func structDefaults(value interface{}, sampleMode bool) error {
 	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
 
@@ -35,7 +47,7 @@ func structDefaults(value interface{}) error {
 		switch field.Type().Kind() {
 		case reflect.Struct:
 			dv := field.Addr().Interface()
-			err := structDefaults(dv)
+			err := structDefaults(dv, sampleMode)
 			if err != nil {
 				return err
 			}
@@ -49,8 +61,11 @@ func structDefaults(value interface{}) error {
 			if err != nil {
 				return fmt.Errorf("invalid size definition: %q", tag)
 			}
+			if sampleMode && size == 0 {
+				size = 1
+			}
 			dv := field.Interface()
-			newSlice, err := createSlice(dv, size)
+			newSlice, err := createSlice(dv, size, sampleMode)
 			if err != nil {
 				return err
 			}
@@ -76,7 +91,7 @@ func structDefaults(value interface{}) error {
 				return fmt.Errorf("invalid size definition: %q", tag)
 			}
 			dv := field.Interface()
-			m, err := createMap(dv, size)
+			m, err := createMap(dv, size, sampleMode)
 			if err != nil {
 				return fmt.Errorf("could not create map: %w", err)
 			}
@@ -128,14 +143,16 @@ func setValue(t reflect.Type, data string) (reflect.Value, error) {
 	return v, nil
 }
 
-// this function creates a slice for the given slice type
-func createSlice(defaultValue interface{}, size int) (reflect.Value, error) {
+// createSlice creates a slice for the given slice type
+// If sampleMode is true, inner slices will have at least one element, even if
+// their default size is 0
+func createSlice(defaultValue interface{}, size int, sampleMode bool) (reflect.Value, error) {
 	t := reflect.ValueOf(defaultValue).Type().Elem()
 	if t.Kind() == reflect.Struct {
-		values := reflect.Zero(reflect.SliceOf(t))
+		values := reflect.MakeSlice(reflect.SliceOf(t), size, size)
 		for i := 0; i < size; i++ {
 			dv := reflect.New(t).Interface()
-			err := structDefaults(dv)
+			err := structDefaults(dv, sampleMode)
 			if err != nil {
 				return reflect.ValueOf(nil), err
 			}
@@ -146,14 +163,16 @@ func createSlice(defaultValue interface{}, size int) (reflect.Value, error) {
 	return reflect.MakeSlice(t, size, size), nil
 }
 
-// this function creates a map for the given map type
-func createMap(defaultValue interface{}, size int) (reflect.Value, error) {
+// createMap creates a map for the given map type
+// If sampleMode is true, inner slices will have at least one element, even if
+// their default size is 0
+func createMap(defaultValue interface{}, size int, includeAll bool) (reflect.Value, error) {
 	t := reflect.ValueOf(defaultValue).Type()
 	if t.Elem().Kind() == reflect.Struct {
 		values := reflect.Zero(reflect.MapOf(t.Key(), t.Elem()))
 		for i := 0; i < size; i++ {
 			dv := reflect.New(t).Interface()
-			err := structDefaults(dv)
+			err := structDefaults(dv, includeAll)
 			if err != nil {
 				return reflect.ValueOf(nil), err
 			}
