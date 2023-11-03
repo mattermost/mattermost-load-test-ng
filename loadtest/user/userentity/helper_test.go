@@ -28,7 +28,7 @@ type config struct {
 	}
 	UserControllerConfiguration struct {
 		Type              userControllerType  `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
-		RatesDistribution []ratesDistribution `default_len:"1"`
+		RatesDistribution []ratesDistribution `default_size:"1"`
 		ServerVersion     string
 	}
 	InstanceConfiguration struct {
