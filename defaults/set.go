@@ -55,7 +55,7 @@ func structDefaults(value interface{}, sampleMode bool) error {
 		case reflect.Slice:
 			tag, ok := t.Field(i).Tag.Lookup("default_size")
 			if !ok {
-				continue
+				tag = "0"
 			}
 			size, err := strconv.Atoi(tag)
 			if err != nil {
