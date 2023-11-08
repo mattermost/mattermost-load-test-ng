@@ -539,6 +539,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.PostPriority = model.NewBool(true)
+	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
+	// node or the proxy and set that.
+	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
