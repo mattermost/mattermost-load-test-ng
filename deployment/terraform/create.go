@@ -539,6 +539,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.PostPriority = model.NewBool(true)
+	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
