@@ -46,6 +46,34 @@
         "Threshold": 0.025,
         "MinIntervalSec": 60,
         "Alert": true
+      },
+      {
+        "Description": "CPU utilization",
+        "Query": "100 - 100 * (avg(irate(node_cpu_seconds_total{instance=~\"app.*\",mode=\"idle\"}[5m])))",
+        "Threshold": 85,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "Memory utilization",
+        "Query": "100 - 100 * avg(node_memory_MemAvailable_bytes{instance=~\"app.*\"} / node_memory_MemTotal_bytes{instance=~\"app.*\"})",
+        "Threshold": 85,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "Percentage of TCP segments retransmitted",
+        "Query": "100 * avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"app.*\"}[1m]) / rate(node_netstat_Tcp_OutSegs{instance=~\"app.*\"}[1m]))",
+        "Threshold": 0.1,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "Total TCP listen drops",
+        "Query": "avg(rate(node_netstat_TcpExt_ListenDrops{instance=~\"app.*\"}[1m]))",
+        "Threshold": 20,
+        "MinIntervalSec": 60,
+        "Alert": true
       }
     ]
   },
