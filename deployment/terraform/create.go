@@ -568,6 +568,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
 	cfg.LogSettings.EnableFile = model.NewBool(true)
 	cfg.LogSettings.FileLevel = model.NewString("WARN")
+	cfg.LogSettings.EnableSentry = model.NewBool(false)
 
 	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
 	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
