@@ -1,38 +1,26 @@
 {
   "BaseBuild": {
-    "Label": "master",
-    "URL": "file://master.tar.gz"
+    "Label": "",
+    "URL": ""
   },
   "NewBuild": {
-    "Label": "release",
-    "URL": "file://release.tar.gz"
+    "Label": "",
+    "URL": ""
   },
   "LoadTests": [
     {
-      "Type": "unbounded",
-      "DBEngine": "mysql"
-    },
-    {
-      "Type": "bounded",
-      "DBEngine": "mysql",
-      "NumUsers": 1000,
-      "Duration": "1h"
-    },
-    {
-      "Type": "unbounded",
-      "DBEngine": "postgresql"
-    },
-    {
-      "Type": "bounded",
-      "DBEngine": "postgresql",
-      "NumUsers": 1000,
-      "Duration": "1h"
+      "Type": "",
+      "DBEngine": "",
+      "DBDumpURL": "",
+      "S3BucketDumpURI": "",
+      "NumUsers": 0,
+      "Duration": ""
     }
   ],
   "Output": {
     "UploadDashboard": true,
+    "GenerateReport": true,
     "GenerateGraphs": false,
-    "GenerateReport": true
+    "GraphsPath": ""
   }
 }
-

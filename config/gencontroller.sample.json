@@ -6,22 +6,17 @@
   "NumChannelsPublic": 20,
   "NumPosts": 1000,
   "NumReactions": 200,
-  "NumPostReminders": 1,
+  "NumPostReminders": 200,
   "NumSidebarCategories": 10,
-  "NumFollowedThreads": 50,
+  "NumFollowedThreads": 10,
   "PercentReplies": 0.5,
   "PercentRepliesInLongThreads": 0.05,
   "PercentUrgentPosts": 0.001,
-  "ChannelMembersDistribution":[
-      {
-        "MemberLimit": 50,
-        "PercentChannels": 0.5,
-        "Probability": 0.7
-      },
-      {
-        "MemberLimit": 5,
-        "PercentChannels": 0.5,
-        "Probability": 0.3
-      }
-    ]
+  "ChannelMembersDistribution": [
+    {
+      "MemberLimit": 0,
+      "PercentChannels": 0,
+      "Probability": 0
+    }
+  ]
 }

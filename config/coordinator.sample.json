@@ -6,46 +6,18 @@
         "ApiURL": "http://localhost:4000"
       }
     ],
-    "MaxActiveUsers": 2000
+    "MaxActiveUsers": 1000
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
     "UpdateIntervalMs": 2000,
     "Queries": [
       {
-        "Description": "Percentage of HTTP 5xx server errors",
-        "Query": "(sum(rate(mattermost_api_time_count{status_code=~\"5..\"}[1m]))/sum(rate(mattermost_api_time_count[1m])))*100",
-        "Threshold": 0.025,
-        "MinIntervalSec": 60,
-        "Alert": true
-      },
-      {
-        "Description": "Average client request duration",
-        "Query": "sum(rate(loadtest_http_request_time_sum[1m]))/sum(rate(loadtest_http_request_time_count[1m]))",
-        "Threshold": 0.1,
-        "MinIntervalSec": 60,
-        "Alert": true
-      },
-      {
-        "Description": "99th percentile of client request duration",
-        "Query": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (le))",
-        "Threshold": 2.0,
-        "MinIntervalSec": 60,
-        "Alert": true
-      },
-      {
-        "Description": "Percentage of HTTP 5xx client errors",
-        "Query": "(sum(rate(loadtest_http_errors_total{status_code=~\"5..\"}[1m]))/sum(rate(loadtest_http_request_time_count[1m])))*100",
-        "Threshold": 0.025,
-        "MinIntervalSec": 60,
-        "Alert": true
-      },
-      {
-        "Description": "Percentage of client timeouts",
-        "Query": "(sum(rate(loadtest_http_timeouts_total[1m]))/sum(rate(loadtest_http_request_time_count[1m]))) * 100",
-        "Threshold": 0.025,
-        "MinIntervalSec": 60,
-        "Alert": true
+        "Description": "",
+        "Query": "",
+        "Threshold": 0,
+        "MinIntervalSec": 0,
+        "Alert": false
       }
     ]
   },
@@ -54,12 +26,12 @@
   "RestTimeSec": 2,
   "LogSettings": {
     "EnableConsole": true,
-    "ConsoleLevel": "INFO",
     "ConsoleJson": false,
+    "ConsoleLevel": "ERROR",
     "EnableFile": true,
-    "FileLevel": "INFO",
-    "FileJson": true,
-    "FileLocation": "ltcoordinator.log",
+    "FileJson": false,
+    "FileLevel": "ERROR",
+    "FileLocation": "loadtest.log",
     "EnableColor": false
   }
 }
