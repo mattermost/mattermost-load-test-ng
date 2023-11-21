@@ -62,16 +62,17 @@
         "Alert": true
       },
       {
-        "Description": "Percentage of TCP segments retransmitted",
-        "Query": "100 * avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"app.*\"}[1m]) / rate(node_netstat_Tcp_OutSegs{instance=~\"app.*\"}[1m]))",
-        "Threshold": 0.1,
+        "Description": "Percentage of TCP timeouts in the proxy node",
+        "Query": "100 * rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) / (rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) + node_netstat_Tcp_CurrEstab{instance=~\"proxy:9100\"})",
+        "Threshold": 0.2,
         "MinIntervalSec": 60,
         "Alert": true
       },
+
       {
-        "Description": "Total TCP listen drops",
-        "Query": "avg(rate(node_netstat_TcpExt_ListenDrops{instance=~\"app.*\"}[1m]))",
-        "Threshold": 20,
+        "Description": "Percentage of TCP timeouts in the app nodes",
+        "Query": "100 * avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) / (avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) + avg(node_netstat_Tcp_CurrEstab{instance=~\"app.*\"}))",
+        "Threshold": 3.0,
         "MinIntervalSec": 60,
         "Alert": true
       }
