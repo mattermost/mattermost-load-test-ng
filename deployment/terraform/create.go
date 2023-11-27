@@ -583,7 +583,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
-	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(100000)
 
 	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
