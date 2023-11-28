@@ -46,6 +46,35 @@
         "Threshold": 0.025,
         "MinIntervalSec": 60,
         "Alert": true
+      },
+      {
+        "Description": "CPU utilization",
+        "Query": "100 - 100 * (avg(irate(node_cpu_seconds_total{instance=~\"app.*\",mode=\"idle\"}[5m])))",
+        "Threshold": 85,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "Memory utilization",
+        "Query": "100 - 100 * avg(node_memory_MemAvailable_bytes{instance=~\"app.*\"} / node_memory_MemTotal_bytes{instance=~\"app.*\"})",
+        "Threshold": 85,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "Percentage of TCP timeouts in the proxy node",
+        "Query": "100 * rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) / (rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) + node_netstat_Tcp_CurrEstab{instance=~\"proxy:9100\"})",
+        "Threshold": 0.2,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+
+      {
+        "Description": "Percentage of TCP timeouts in the app nodes",
+        "Query": "100 * avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) / (avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) + avg(node_netstat_Tcp_CurrEstab{instance=~\"app.*\"}))",
+        "Threshold": 3.0,
+        "MinIntervalSec": 60,
+        "Alert": true
       }
     ]
   },
