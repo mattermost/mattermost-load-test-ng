@@ -104,7 +104,10 @@ func New(setup Setup, config Config) *UserEntity {
 			ue:        &ue,
 		}
 	}
-	ue.client.HTTPClient = &http.Client{Transport: setup.Transport}
+	ue.client.HTTPClient = &http.Client{
+		Transport: setup.Transport,
+		Timeout:   5 * time.Second,
+	}
 
 	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
