@@ -405,8 +405,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 
 		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
+			Store:         store,
+			Transport:     transport,
+			ClientTimeout: transport.ResponseHeaderTimeout,
 		}
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()

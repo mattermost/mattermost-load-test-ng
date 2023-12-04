@@ -55,6 +55,8 @@ type Setup struct {
 	Transport http.RoundTripper
 	// An optional object used to collect metrics.
 	Metrics *performance.UserEntityMetrics
+	// The HTTP client timeout to use.
+	ClientTimeout time.Duration
 }
 
 type userTypingMsg struct {
@@ -104,7 +106,10 @@ func New(setup Setup, config Config) *UserEntity {
 			ue:        &ue,
 		}
 	}
-	ue.client.HTTPClient = &http.Client{Transport: setup.Transport}
+	ue.client.HTTPClient = &http.Client{
+		Transport: setup.Transport,
+		Timeout:   setup.ClientTimeout,
+	}
 
 	err := ue.store.SetUser(&model.User{
 		Username: config.Username,
