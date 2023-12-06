@@ -136,6 +136,7 @@ else
 	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	git pull
 	git tag $(NEXT_VER)
+	git push origin $(NEXT_VER)
 	goreleaser --clean
 endif
 endif
