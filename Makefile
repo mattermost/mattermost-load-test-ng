@@ -96,6 +96,7 @@ TAG_EXISTS=$(shell git rev-parse $(NEXT_VER) >/dev/null 2>&1; echo $$?)
 BRANCH_NAME=bump-$(NEXT_VER)
 BRANCH_EXISTS=$(shell git rev-parse $(BRANCH_NAME) >/dev/null 2>&1; echo $$?)
 PR_URL=https://github.com/mattermost/mattermost-load-test-ng/compare/master...$(BRANCH_NAME)?quick_pull=1&labels=2:+Dev+Review
+CURR_BRANCH=$(shell git branch --show-current)
 
 prepare-release: ## Release step 1: Prepare the PR needed before releasing a new version, identified by the envvar NEXT_VER.
 ifndef NEXT_VER
@@ -108,15 +109,17 @@ ifeq ($(BRANCH_EXISTS), 0)
 	@echo "Error: branch ${BRANCH_NAME} already exists"
 else
 	@echo $(NEXT_VER) | grep -Eq ^v[0-9]+\.[0-9]+\.[0-9]+$ || (echo "The next version, '$(NEXT_VER)' is not of the form vMAJOR.MINOR.PATCH" && exit 1)
-	git checkout -b $(BRANCH_NAME) origin/master
+	@echo -n "Release will be prepared from branch $(CURR_BRANCH). "
+	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	git checkout -b $(BRANCH_NAME) $(CURR_BRANCH)
 	@echo "Applying changes"
 	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
 		sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
 	done
 	git commit -a -m "Bump version to $(NEXT_VER)"
 	git push --set-upstream origin $(BRANCH_NAME)
-	git checkout master
-	@echo "Visit the following URL to create a PR: ${PR_URL}\nWhen merged, run make release."
+	git checkout $(CURR_BRANCH)
+	@echo "Visit the following URL to create a PR: ${PR_URL}\nWhen merged, run make release NEXT_VER=$(NEXT_VER)."
 endif
 endif
 endif
@@ -129,7 +132,8 @@ ifeq ($(TAG_EXISTS), 0)
 	@echo "Error: tag ${NEXT_VER} already exists"
 else
 	go install github.com/goreleaser/goreleaser@latest
-	git checkout master
+	@echo -n "Release will be created from branch $(CURR_BRANCH). "
+	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	git pull
 	git tag $(NEXT_VER)
 	goreleaser --clean
