@@ -202,6 +202,11 @@ func getActionList(c *SimulController) []userAction {
 			run:       c.reconnectWebSocket,
 			frequency: 0.144,
 		},
+		{
+			name:      "GenerateUserReport",
+			run:       c.generateUserReport,
+			frequency: 0.0001,
+		},
 	}
 }
 

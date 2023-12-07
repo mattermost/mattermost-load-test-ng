@@ -2062,3 +2062,37 @@ func (c *SimulController) openPermalink(u user.User) control.UserActionResponse 
 
 	return control.UserActionResponse{Info: fmt.Sprintf("clicked permalink on post %s", postID)}
 }
+
+func (c *SimulController) generateUserReport(u user.User) control.UserActionResponse {
+	// Simulate scrolling through the entire list of users
+	// (should be similar to generating the complete report and exporting it)
+
+	lastColumnValue := ""
+	lastId := ""
+	totalUsers := 0
+
+	for {
+		report, err := u.GetUsersForReporting(&model.UserReportOptionsAPI{
+			UserReportOptionsWithoutDateRange: model.UserReportOptionsWithoutDateRange{
+				SortColumn:          "Username",
+				PageSize:            50,
+				LastSortColumnValue: lastColumnValue,
+				LastUserId:          lastId,
+			},
+		})
+
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		totalUsers += len(report)
+		if len(report) < 50 {
+			break
+		}
+
+		lastColumnValue = report[len(report)].Username
+		lastId = report[len(report)].Id
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("generated user report for %d users", totalUsers)}
+}
