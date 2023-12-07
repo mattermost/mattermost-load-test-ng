@@ -1522,7 +1522,6 @@ func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDele
 }
 
 func (ue *UserEntity) GetUsersForReporting(options *model.UserReportOptionsAPI) ([]*model.UserReport, error) {
-	// Need to do it manually until MM-25405 is resolved.
 	report, _, err := ue.client.GetUsersForReporting(context.Background(), options)
 	if err != nil {
 		return nil, err
