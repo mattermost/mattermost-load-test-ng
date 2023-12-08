@@ -22,7 +22,7 @@ require (
 
 require (
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.0.10-0.20231116111926-0bc542620ce2
+	github.com/mattermost/mattermost/server/public v0.0.12-0.20231208153008-109f4643c667
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20231208153008-109f4643c667
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/wiggin77/merror v1.0.5
