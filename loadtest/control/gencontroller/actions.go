@@ -407,6 +407,17 @@ func (c *GenController) addReaction(u user.User) (res control.UserActionResponse
 		}
 	}
 
+	if reactionLimit := u.Store().Config().ServiceSettings.UniqueEmojiReactionLimitPerPost; reactionLimit != nil {
+		uniqueEmojiNames := map[string]bool{reaction.EmojiName: true}
+		for i := 0; i < len(reactions); i++ {
+			uniqueEmojiNames[reactions[i].EmojiName] = true
+		}
+
+		if len(uniqueEmojiNames) >= *reactionLimit {
+			return control.UserActionResponse{Info: "reaction limit reached"}
+		}
+	}
+
 	err = u.SaveReaction(reaction)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
