@@ -124,7 +124,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 				c.log.Error("coordinator: cluster status error:", mlog.Err(err))
 				continue
 			}
-			c.log.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int64("errors", status.NumErrors))
+			c.log.Info("coordinator: cluster status:", mlog.Int("active_users", status.ActiveUsers), mlog.Int("errors", status.NumErrors))
 
 			if !lastAlertTime.IsZero() {
 				samples = append(samples, point{
