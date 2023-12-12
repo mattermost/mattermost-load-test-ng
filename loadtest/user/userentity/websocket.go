@@ -118,7 +118,7 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 	// Now we check for sequence number, and if it does not match,
 	// we just disconnect and reconnect.
 	if ev.GetSequence() != ue.wsServerSeq {
-		mlog.Warn("Missed websocket event", mlog.Int64("got", ev.GetSequence()), mlog.Int64("expected", ue.wsServerSeq))
+		mlog.Warn("Missed websocket event", mlog.Int("got", ev.GetSequence()), mlog.Int("expected", ue.wsServerSeq))
 		return errSeqMismatch
 	}
 
