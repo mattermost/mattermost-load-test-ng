@@ -2079,7 +2079,7 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 	// (should be similar to generating the complete report and exporting it)
 
 	if isAdmin, err := u.IsSysAdmin(); err != nil || !isAdmin {
-		return control.UserActionResponse{Info: fmt.Sprintf("not a system admin")}
+		return control.UserActionResponse{Info: "not a system admin"}
 	}
 
 	pageSize := 50
