@@ -2078,6 +2078,11 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 	// Simulate scrolling through the entire list of users
 	// (should be similar to generating the complete report and exporting it)
 
+	if isAdmin, err := u.IsSysAdmin(); err != nil || !isAdmin {
+		return control.UserActionResponse{Info: fmt.Sprintf("not a system admin")}
+	}
+
+	pageSize := 50
 	lastColumnValue := ""
 	lastId := ""
 	totalUsers := 0
@@ -2086,7 +2091,7 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 		report, err := u.GetUsersForReporting(&model.UserReportOptionsAPI{
 			UserReportOptionsWithoutDateRange: model.UserReportOptionsWithoutDateRange{
 				SortColumn:          "Username",
-				PageSize:            50,
+				PageSize:            pageSize,
 				LastSortColumnValue: lastColumnValue,
 				LastUserId:          lastId,
 			},
@@ -2097,12 +2102,12 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 		}
 
 		totalUsers += len(report)
-		if len(report) < 50 {
+		if len(report) < pageSize {
 			break
 		}
 
-		lastColumnValue = report[len(report) - 1].Username
-		lastId = report[len(report) - 1].Id
+		lastColumnValue = report[len(report)-1].Username
+		lastId = report[len(report)-1].Id
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("generated user report for %d users", totalUsers)}
