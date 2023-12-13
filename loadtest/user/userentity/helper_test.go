@@ -46,10 +46,11 @@ type config struct {
 		PercentGroupChannels        float64 `default:"0.1" validate:"range:[0,1]"`
 	}
 	UsersConfiguration struct {
-		UsersFilePath      string
-		InitialActiveUsers int `default:"0" validate:"range:[0,$MaxActiveUsers]"`
-		MaxActiveUsers     int `default:"2000" validate:"range:(0,]"`
-		AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
+		UsersFilePath          string
+		InitialActiveUsers     int     `default:"0" validate:"range:[0,$MaxActiveUsers]"`
+		MaxActiveUsers         int     `default:"2000" validate:"range:(0,]"`
+		AvgSessionsPerUser     int     `default:"1" validate:"range:[1,]"`
+		PercentOfUsersAreAdmin float64 `default:"0.02" validate:"range:[0,1]"`
 	}
 	LogSettings logger.Settings
 }
