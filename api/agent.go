@@ -365,6 +365,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		return nil, err
 	}
 
+	modAdmins := 0
+	if config.UsersConfiguration.PercentOfUsersAreAdmin > 0 {
+		modAdmins = int(1 / config.UsersConfiguration.PercentOfUsersAreAdmin)
+	}
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
@@ -372,10 +377,14 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		email := fmt.Sprintf("%s-%d@example.com", namePrefix, id)
 		password := "testPass123$"
 
-		// If UsersFilePath was set, and we haven't yet consumed all of the credentials
-		// provided there, ovewrite this user's credentials with the next available
-		// user in that file
-		if len(creds) > 0 && id < len(creds) {
+		if modAdmins > 0 && id%modAdmins == 0 {
+			username = ""
+			email = config.ConnectionConfiguration.AdminEmail
+			password = config.ConnectionConfiguration.AdminPassword
+		} else if len(creds) > 0 && id < len(creds) {
+			// If UsersFilePath was set, and we haven't yet consumed all of the credentials
+			// provided there, ovewrite this user's credentials with the next available
+			// user in that file
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
