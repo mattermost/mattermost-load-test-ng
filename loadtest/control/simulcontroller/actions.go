@@ -2090,8 +2090,8 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 			break
 		}
 
-		lastColumnValue = report[len(report)].Username
-		lastId = report[len(report)].Id
+		lastColumnValue = report[len(report) - 1].Username
+		lastId = report[len(report) - 1].Id
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("generated user report for %d users", totalUsers)}
