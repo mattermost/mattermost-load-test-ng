@@ -139,9 +139,10 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 // Only on calling Disconnect explicitly, it will return.
 func (ue *UserEntity) listen(errChan chan error) {
 	connectionFailCount := 0
+	var err error
 start:
 	for {
-		client, err := websocket.NewClient4(&websocket.ClientParams{
+		ue.wsClient, err = websocket.NewClient4(&websocket.ClientParams{
 			WsURL:          ue.config.WebSocketURL,
 			AuthToken:      ue.client.AuthToken,
 			ConnID:         ue.wsConnID,
@@ -168,7 +169,7 @@ start:
 		var chanClosed bool
 		for {
 			select {
-			case ev, ok := <-client.EventChannel:
+			case ev, ok := <-ue.wsClient.EventChannel:
 				if !ok {
 					chanClosed = true
 					break
@@ -176,7 +177,7 @@ start:
 				if err := ue.wsEventHandler(ev); err != nil {
 					if err == errSeqMismatch {
 						// Disconnect and reconnect.
-						client.Close()
+						ue.wsClient.Close()
 						ue.decWebSocketConnections()
 						continue start
 					}
@@ -184,7 +185,7 @@ start:
 				}
 				ue.wsEventChan <- ev
 			case <-ue.wsClosing:
-				client.Close()
+				ue.wsClient.Close()
 				ue.decWebSocketConnections()
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
@@ -194,12 +195,12 @@ start:
 					chanClosed = true
 					break
 				}
-				if err := client.UserTyping(msg.channelId, msg.parentId); err != nil {
+				if err := ue.wsClient.UserTyping(msg.channelId, msg.parentId); err != nil {
 					errChan <- fmt.Errorf("userentity: error in client.UserTyping: %w", err)
 				}
 			}
 			if chanClosed {
-				client.Close()
+				ue.wsClient.Close()
 				break
 			}
 		}
@@ -242,6 +243,27 @@ func (ue *UserEntity) SendTypingEvent(channelId, parentId string) error {
 	ue.wsTyping <- userTypingMsg{
 		channelId,
 		parentId,
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveChannel(channelId string) error {
+	if ue.wsClient != nil {
+		return ue.wsClient.UpdateActiveChannel(channelId)
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveThread(channelId string) error {
+	if ue.wsClient != nil {
+		return ue.wsClient.UpdateActiveThread(channelId)
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveTeam(teamId string) error {
+	if ue.wsClient != nil {
+		return ue.wsClient.UpdateActiveTeam(teamId)
 	}
 	return nil
 }

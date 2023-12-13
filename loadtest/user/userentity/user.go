@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
@@ -21,6 +22,7 @@ import (
 type UserEntity struct {
 	store       store.MutableUserStore
 	client      *model.Client4
+	wsClient    *websocket.Client
 	wsClosing   chan struct{}
 	wsClosed    chan struct{}
 	wsErrorChan chan error

@@ -160,6 +160,30 @@ func (c *Client) SendBinaryMessage(action string, data map[string]interface{}) e
 
 // Helper utilities that call SendMessage.
 
+func (c *Client) UpdateActiveChannel(channelId string) error {
+	data := map[string]interface{}{
+		"channel_id": channelId,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
+func (c *Client) UpdateActiveThread(channelId string) error {
+	data := map[string]interface{}{
+		"thread_channel_id": channelId,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
+func (c *Client) UpdateActiveTeam(teamId string) error {
+	data := map[string]interface{}{
+		"team_id": teamId,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
 func (c *Client) UserTyping(channelId, parentId string) error {
 	data := map[string]interface{}{
 		"channel_id": channelId,

@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type userAction struct {
@@ -293,6 +294,10 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if err := u.UpdateActiveTeam(team.Id); err != nil {
+		mlog.Warn("Failed to update active team", mlog.String("team_id", team.Id))
+	}
+
 	// We should probably keep track of the last channel viewed in the team but
 	// for now we can simplify and randomly pick one each time.
 
@@ -528,6 +533,10 @@ func switchChannel(u user.User) control.UserActionResponse {
 
 	if err := u.SetCurrentChannel(&channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.UpdateActiveChannel(channel.Id); err != nil {
+		mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
@@ -1728,6 +1737,11 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		case <-time.After(idleTime):
 		}
 	}
+
+	if err := u.UpdateActiveThread(thread.Post.ChannelId); err != nil {
+		mlog.Warn("Failed to update active thread", mlog.String("channel_id", thread.Post.ChannelId))
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
 }
 
