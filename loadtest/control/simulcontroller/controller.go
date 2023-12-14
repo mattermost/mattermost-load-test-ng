@@ -202,14 +202,11 @@ func getActionList(c *SimulController) []userAction {
 			run:       c.reconnectWebSocket,
 			frequency: 0.144,
 		},
-	}
-
-	if isAdmin, err := c.user.IsSysAdmin(); err != nil && isAdmin {
-		actions = append(actions, userAction{
+		{
 			name:      "GenerateUserReport",
 			run:       c.generateUserReport,
 			frequency: 0.0001,
-		})
+		},
 	}
 
 	return actions
