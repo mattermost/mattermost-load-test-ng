@@ -2075,8 +2075,9 @@ func (c *SimulController) openPermalink(u user.User) control.UserActionResponse 
 }
 
 func (c *SimulController) generateUserReport(u user.User) control.UserActionResponse {
-	// Simulate scrolling through the entire list of users
-	// (should be similar to generating the complete report and exporting it)
+	// We are detecting the sysadmin here, and not in the actions slice initialization,
+	// because the roles of a user aren't initialized until the user logs in.
+	// See https://github.com/mattermost/mattermost-load-test-ng/pull/675 for more context.
 	isAdmin, err := u.IsSysAdmin()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -2085,6 +2086,8 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 		return control.UserActionResponse{Info: "User is not an admin. Skipping from generating user report."}
 	}
 
+	// Simulate scrolling through the entire list of users
+	// (should be similar to generating the complete report and exporting it)
 	pageSize := 50
 	lastColumnValue := ""
 	lastId := ""
