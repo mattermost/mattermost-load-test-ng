@@ -144,6 +144,8 @@ endif
 update-dependencies: ## Uses go get -u to update all dependencies and go mod tidy to clean up after itself.
 	@echo Updating dependencies
 	$(GO) get -u ./... # Update all dependencies (does not update across major versions)
+	$(GO) get -u github.com/mattermost/mattermost/server/v8@master
+	$(GO) get -u github.com/mattermost/mattermost/server/public@master
 	$(GO) mod tidy # Tidy up
 
 clean: ## Remove all generated files to start from scratch.
