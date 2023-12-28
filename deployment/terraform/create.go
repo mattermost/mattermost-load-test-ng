@@ -691,7 +691,7 @@ func pingServer(addr string) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
 	client.HTTPClient.Timeout = 10 * time.Second
-	dur := 60 * time.Second
+	dur := 240 * time.Second
 	timeout := time.After(dur)
 
 	for {
