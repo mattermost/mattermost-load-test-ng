@@ -17,7 +17,16 @@ func TestNew(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	c, err := New(1, &userentity.UserEntity{}, config, make(chan control.UserStatus))
+	store, err := memstore.New(nil)
+	require.NotNil(t, store)
+	require.NoError(t, err)
+
+	user := userentity.New(userentity.Setup{Store: store}, userentity.Config{
+		ServerURL:    "http://localhost:8065",
+		WebSocketURL: "ws://localhost:8065",
+	})
+
+	c, err := New(1, user, config, make(chan control.UserStatus))
 	require.Nil(t, err)
 
 	require.Equal(t, len(c.actionList), len(c.actionMap))
@@ -28,7 +37,16 @@ func TestSetRate(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	c, err := New(1, &userentity.UserEntity{}, config, make(chan control.UserStatus))
+	store, err := memstore.New(nil)
+	require.NotNil(t, store)
+	require.NoError(t, err)
+
+	user := userentity.New(userentity.Setup{Store: store}, userentity.Config{
+		ServerURL:    "http://localhost:8065",
+		WebSocketURL: "ws://localhost:8065",
+	})
+
+	c, err := New(1, user, config, make(chan control.UserStatus))
 	require.Nil(t, err)
 	require.Equal(t, 1.0, c.rate)
 

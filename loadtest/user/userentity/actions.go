@@ -1521,6 +1521,15 @@ func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDele
 	return chCursor, cmCursor, nil
 }
 
+func (ue *UserEntity) GetUsersForReporting(options *model.UserReportOptionsAPI) ([]*model.UserReport, error) {
+	report, _, err := ue.client.GetUsersForReporting(context.Background(), options)
+	if err != nil {
+		return nil, err
+	}
+
+	return report, nil
+}
+
 func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers map[string]string) (*http.Request, error) {
 	rq, err := http.NewRequest(method, url, data)
 	if err != nil {
