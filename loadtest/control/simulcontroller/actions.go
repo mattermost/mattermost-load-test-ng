@@ -2094,12 +2094,12 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 	totalUsers := 0
 
 	for {
-		report, err := u.GetUsersForReporting(&model.UserReportOptionsAPI{
-			UserReportOptionsWithoutDateRange: model.UserReportOptionsWithoutDateRange{
-				SortColumn:          "Username",
-				PageSize:            pageSize,
-				LastSortColumnValue: lastColumnValue,
-				LastUserId:          lastId,
+		report, err := u.GetUsersForReporting(&model.UserReportOptions{
+			ReportingBaseOptions: model.ReportingBaseOptions{
+				SortColumn:      "Username",
+				PageSize:        pageSize,
+				FromColumnValue: lastColumnValue,
+				FromId:          lastId,
 			},
 		})
 

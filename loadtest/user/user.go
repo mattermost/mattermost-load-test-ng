@@ -93,7 +93,7 @@ type User interface {
 	// GetUsersNotInChannel returns a list of user ids not in a given channel.
 	GetUsersNotInChannel(teamId, channelId string, page, perPage int) ([]string, error)
 	// GetUsersForReporting returns a list of users in a report format
-	GetUsersForReporting(options *model.UserReportOptionsAPI) ([]*model.UserReport, error)
+	GetUsersForReporting(options *model.UserReportOptions) ([]*model.UserReport, error)
 
 	// SetProfileImage sets the profile image for the user.
 	SetProfileImage(data []byte) error

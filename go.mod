@@ -22,8 +22,8 @@ require (
 
 require (
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.0.12-0.20231219152113-f118b4f0ed7d
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20231219152113-f118b4f0ed7d
+	github.com/mattermost/mattermost/server/public v0.0.13-0.20240112022858-f857af64f2e5
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20240112022858-f857af64f2e5
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wiggin77/merror v1.0.5
 	golang.org/x/exp v0.0.0-20231219160207-73b9e39aefca
