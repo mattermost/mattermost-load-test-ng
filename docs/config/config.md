@@ -122,6 +122,12 @@ The path to the file which contains a list of user email and passwords that will
 
 The maximum amount of concurrently active users the load-test agent will run.
 
+### PercentOfUsersAreAdmin
+
+*float*
+
+The percentage of users generated that will be system admins.
+
 ## LogSettings
 
 ### EnableConsole
