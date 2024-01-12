@@ -72,6 +72,7 @@ resource "aws_instance" "app_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
@@ -114,6 +115,7 @@ resource "aws_instance" "metrics_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus",
@@ -165,6 +167,7 @@ resource "aws_instance" "proxy_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
@@ -365,6 +368,7 @@ resource "aws_instance" "loadtest_agent" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
@@ -669,6 +673,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
       "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
