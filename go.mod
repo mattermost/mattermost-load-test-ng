@@ -22,8 +22,8 @@ require (
 
 require (
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.0.12-0.20231219152113-f118b4f0ed7d
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20231219152113-f118b4f0ed7d
+	github.com/mattermost/mattermost/server/public v0.0.13-0.20240112022858-f857af64f2e5
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20240112022858-f857af64f2e5
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wiggin77/merror v1.0.5
 	golang.org/x/exp v0.0.0-20231219160207-73b9e39aefca
@@ -40,7 +40,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dyatlov/go-opengraph/opengraph v0.0.0-20220524092352-606d7b1e5f8a // indirect
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
