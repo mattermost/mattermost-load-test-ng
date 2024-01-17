@@ -168,9 +168,10 @@ func (c *Client) UpdateActiveChannel(channelId string) error {
 	return c.SendMessage("presence", data)
 }
 
-func (c *Client) UpdateActiveThread(channelId string) error {
+func (c *Client) UpdateActiveThread(channelId string, threadView bool) error {
 	data := map[string]interface{}{
 		"thread_channel_id": channelId,
+		"is_thread_view":    threadView,
 	}
 
 	return c.SendMessage("presence", data)

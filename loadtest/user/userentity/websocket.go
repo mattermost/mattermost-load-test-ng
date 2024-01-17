@@ -256,7 +256,15 @@ func (ue *UserEntity) UpdateActiveChannel(channelId string) error {
 
 func (ue *UserEntity) UpdateActiveThread(channelId string) error {
 	if ue.wsClient != nil {
-		return ue.wsClient.UpdateActiveThread(channelId)
+		// We don't really have a notion of RHS thread vs global thread in the load test.
+		// We either load a channel or load a thread. For now, we just set `is_thread_view`
+		// as both true and false to set the scope.
+		if err := ue.wsClient.UpdateActiveThread(channelId, true); err != nil {
+			return err
+		}
+		if err := ue.wsClient.UpdateActiveThread(channelId, false); err != nil {
+			return err
+		}
 	}
 	return nil
 }
