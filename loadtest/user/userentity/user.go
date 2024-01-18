@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gocolly/colly/v2"
@@ -22,12 +21,11 @@ import (
 type UserEntity struct {
 	store       store.MutableUserStore
 	client      *model.Client4
-	wsClient    *websocket.Client
 	wsClosing   chan struct{}
 	wsClosed    chan struct{}
 	wsErrorChan chan error
 	wsEventChan chan *model.WebSocketEvent
-	wsTyping    chan userTypingMsg
+	dataChan    chan any
 	connected   bool
 	config      Config
 	metrics     *performance.UserEntityMetrics
@@ -64,6 +62,19 @@ type Setup struct {
 type userTypingMsg struct {
 	channelId string
 	parentId  string
+}
+
+type channelPresenceMsg struct {
+	channelId string
+}
+
+type threadPresenceMsg struct {
+	channelId  string
+	threadView bool
+}
+
+type teamPresenceMsg struct {
+	teamId string
 }
 
 type ueTransport struct {
@@ -142,7 +153,7 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 	}
 
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.wsTyping = make(chan userTypingMsg)
+	ue.dataChan = make(chan any)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil
@@ -177,7 +188,7 @@ func (ue *UserEntity) Disconnect() error {
 	<-ue.wsClosed
 
 	close(ue.wsEventChan)
-	close(ue.wsTyping)
+	close(ue.dataChan)
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil
