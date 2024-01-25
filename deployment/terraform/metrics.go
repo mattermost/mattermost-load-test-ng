@@ -180,7 +180,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd = "sudo service pyroscope-server restart"
+	cmd = "sudo service pyroscope restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
