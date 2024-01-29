@@ -85,6 +85,55 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 	return t.Sync()
 }
 
+func RunStopDBCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.StopDB()
+}
+
+func RunStartDBCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.StartDB()
+}
+
+func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	status, err := t.DBStatus()
+	if err != nil {
+		return fmt.Errorf("failed to get DB status: %w", err)
+	}
+
+	fmt.Println("Status: ", status)
+
+	return nil
+}
+
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
@@ -166,6 +215,21 @@ func main() {
 			Short: "Syncs the local .tfstate file with any changes made remotely",
 			RunE:  RunSyncCmdF,
 		},
+		{
+			Use:   "stop-db",
+			Short: "Stops the DB cluster and syncs the changes.",
+			RunE:  RunStopDBCmdF,
+		},
+		{
+			Use:   "start-db",
+			Short: "Starts the DB cluster and syncs the changes.",
+			RunE:  RunStartDBCmdF,
+		},
+		{
+			Use:   "db-info",
+			Short: "Display info about the DB cluster.",
+			RunE:  RunDBStatusCmdF,
+		},
 	}
 
 	deploymentCmd.AddCommand(deploymentCommands...)
@@ -185,12 +249,15 @@ func main() {
 	}
 	resetCmd.Flags().Bool("confirm", false, "Confirm you really want to reset the database and re-initialize it.")
 
+	ltStartCmd := &cobra.Command{
+		Use:   "start",
+		Short: "Start the coordinator in the current load-test deployment",
+		RunE:  RunLoadTestStartCmdF,
+	}
+	ltStartCmd.Flags().Bool("sync", false, "Changes the command to not return until the test has finished, and then stops the DB after that")
+
 	loadtestComands := []*cobra.Command{
-		{
-			Use:   "start",
-			Short: "Start the coordinator in the current load-test deployment",
-			RunE:  RunLoadTestStartCmdF,
-		},
+		ltStartCmd,
 		{
 			Use:   "stop",
 			Short: "Stop the coordinator in the current load-test deployment",

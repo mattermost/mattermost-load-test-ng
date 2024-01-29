@@ -38,7 +38,7 @@ func (t *Terraform) Destroy() error {
 				"s3://" + t.output.S3Bucket.Id,
 				"--recursive",
 			}
-			if err := t.runAWSCommand(emptyBucketCtx, emptyS3BucketArgs); err != nil {
+			if err := t.runAWSCommand(emptyBucketCtx, emptyS3BucketArgs, nil); err != nil {
 				emptyBucketErrCh <- fmt.Errorf("failed to run local cmd \"aws %s\": %w", strings.Join(emptyS3BucketArgs, " "), err)
 				return
 			}
@@ -69,7 +69,7 @@ func (t *Terraform) Destroy() error {
 			"--skip-final-snapshot",
 		}
 		// We have to ignore if the cluster was already deleted to make the command idempotent.
-		if err := t.runAWSCommand(nil, args); err != nil && !strings.Contains(err.Error(), "DBClusterNotFoundFault") {
+		if err := t.runAWSCommand(nil, args, nil); err != nil && !strings.Contains(err.Error(), "DBClusterNotFoundFault") {
 			return err
 		}
 	}

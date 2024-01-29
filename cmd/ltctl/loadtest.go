@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	dbAvailable = "available"
+	dbStopped   = "stopped"
+)
+
 func getUsersCount(helper *prometheus.Helper) (int, error) {
 	query := "sum(mattermost_http_websockets_total)"
 	value, err := helper.VectorFirst(query)
@@ -68,7 +73,75 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
-	return t.StartCoordinator(nil)
+
+	status, err := t.DBStatus()
+	if err != nil {
+		return fmt.Errorf("failed to get DB status: %w", err)
+	}
+
+	if status == dbStopped {
+		if err := t.StartDB(); err != nil {
+			return err
+		}
+
+		fmt.Println("=====================")
+		fmt.Println("Looping until the DB is fully available. You can cancel the command and start the test after some time, or don't do anything and it will automatically start the test after the DB is ready")
+		fmt.Println("=====================")
+		// Now we loop until the DB is available.
+
+		for {
+			status, err := t.DBStatus()
+			if err != nil {
+				return fmt.Errorf("failed to get DB status: %w", err)
+			}
+			if status == dbAvailable {
+				break
+			}
+			fmt.Println("Sleeping... ")
+			time.Sleep(30 * time.Second)
+		}
+	} else if status != dbAvailable {
+		fmt.Println("The database isn't available at the moment. It might be either stopping or starting. Please wait until it has fully stopped or started, and then try again.")
+		return nil
+	}
+
+	isSync, err := cmd.Flags().GetBool("sync")
+	if err != nil {
+		return fmt.Errorf("unable to check flag: %w", err)
+	}
+
+	// We simply return in async mode, which is the default.
+	if !isSync {
+		return t.StartCoordinator(nil)
+	}
+
+	err = t.StartCoordinator(nil)
+	if err != nil {
+		return fmt.Errorf("error in starting coordinator: %w", err)
+	}
+
+	// Now we keep checking the status of the coordinator until it's done.
+	var coordStatus coordinator.Status
+	for {
+		coordStatus, err = t.GetCoordinatorStatus()
+		if err != nil {
+			return err
+		}
+
+		if coordStatus.State == coordinator.Done {
+			fmt.Println("unbounded load-test has completed")
+			break
+		}
+
+		fmt.Println("Sleeping ...")
+		// Sleeping for 5 minutes gives 12 lines an hour.
+		// For an avg unbounded test of 4-5 hours, it gives around 50 lines,
+		// which should be acceptable.
+		time.Sleep(5 * time.Minute)
+	}
+
+	// Now we stop the DB.
+	return t.StopDB()
 }
 
 func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {

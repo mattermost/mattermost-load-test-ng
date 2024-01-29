@@ -57,6 +57,7 @@ func displayInfo(output *Output) {
 		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
 	}
 	if output.HasDB() {
+		fmt.Println("DB Cluster Identifier: ", output.DBCluster.ClusterIdentifier)
 		fmt.Println("DB writer endpoint: " + output.DBWriter())
 		for _, rd := range output.DBReaders() {
 			fmt.Println("DB reader endpoint: " + rd)

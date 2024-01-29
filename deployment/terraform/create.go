@@ -174,7 +174,7 @@ func (t *Terraform) Create(initData bool) error {
 			"--vpc-security-group-ids=" + sgID,
 			"--region=" + t.config.AWSRegion,
 		}
-		if err := t.runAWSCommand(nil, args); err != nil {
+		if err := t.runAWSCommand(nil, args, nil); err != nil {
 			return err
 		}
 	}
