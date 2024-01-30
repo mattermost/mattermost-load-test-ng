@@ -120,9 +120,9 @@ resource "aws_instance" "metrics_server" {
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
-      "sudo apt-get install -y adduser libfontconfig1",
-      "wget https://dl.grafana.com/oss/release/grafana_9.5.1_amd64.deb",
-      "sudo dpkg -i grafana_9.5.1_amd64.deb",
+      "sudo apt-get install -y adduser libfontconfig1 musl",
+      "wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb",
+      "sudo dpkg -i grafana_10.2.3_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
@@ -133,9 +133,9 @@ resource "aws_instance" "metrics_server" {
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
       "sudo service inbucket start",
-      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
-      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
-      "sudo systemctl enable pyroscope-server"
+      "wget https://github.com/grafana/pyroscope/releases/download/v1.3.0/pyroscope_1.3.0_linux_amd64.deb",
+      "sudo apt-get install ./pyroscope_1.3.0_linux_amd64.deb",
+      "sudo systemctl enable pyroscope"
     ]
   }
 }
