@@ -101,13 +101,13 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 			time.Sleep(30 * time.Second)
 		}
 	} else if status != dbAvailable {
-		fmt.Println("The database isn't available at the moment. It might be either stopping or starting. Please wait until it has fully stopped or started, and then try again.")
+		fmt.Printf("The database isn't available at the moment. It's status is %q. Please wait until it has finished, and then try again. \n", status)
 		return nil
 	}
 
 	isSync, err := cmd.Flags().GetBool("sync")
 	if err != nil {
-		return fmt.Errorf("unable to check flag: %w", err)
+		return fmt.Errorf("unable to check -sync flag: %w", err)
 	}
 
 	// We simply return in async mode, which is the default.
