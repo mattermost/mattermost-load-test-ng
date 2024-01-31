@@ -43,6 +43,9 @@ func TestCreateCoordinator(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	id := "coord0"
 	coord, err := client.New(id, server.URL, nil)
 	require.NoError(t, err)
@@ -67,6 +70,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
@@ -77,6 +81,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		status, err := coord.Create(&coordConfig, &ltConfig)
 		require.Error(t, err)

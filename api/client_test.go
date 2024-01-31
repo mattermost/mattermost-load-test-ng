@@ -32,6 +32,9 @@ func TestAgentClientConcurrency(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	var wg sync.WaitGroup
 
 	t.Run("create", func(t *testing.T) {
@@ -40,6 +43,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		defaults.Set(&ucConfig)
 		agent, err := agentClient.New(id, server.URL, nil)
 		require.NoError(t, err)
