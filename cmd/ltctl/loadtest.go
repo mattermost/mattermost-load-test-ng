@@ -101,7 +101,7 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 			time.Sleep(30 * time.Second)
 		}
 	} else if status != dbAvailable {
-		fmt.Printf("The database isn't available at the moment. It's status is %q. Please wait until it has finished, and then try again. \n", status)
+		fmt.Printf("The database isn't available at the moment. Its status is %q. Please wait until it has finished, and then try again. \n", status)
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 		}
 
 		if coordStatus.State == coordinator.Done {
-			fmt.Println("unbounded load-test has completed")
+			fmt.Println("load-test has completed")
 			break
 		}
 
