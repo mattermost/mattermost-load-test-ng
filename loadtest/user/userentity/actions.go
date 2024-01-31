@@ -1030,6 +1030,16 @@ func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
+// UploadEmoji uploads the given emoji to the server.
+func (ue *UserEntity) UploadEmoji(emoji *model.Emoji, image []byte, filename string) error {
+	_, _, err := ue.client.CreateEmoji(context.Background(), emoji, image, filename)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveReaction stores the given reaction.
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	r, _, err := ue.client.SaveReaction(context.Background(), reaction)

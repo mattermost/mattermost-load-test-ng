@@ -811,8 +811,7 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		PostId: post.Id,
 	}
 
-	emojis := []string{"+1", "tada", "point_up", "raised_hands"}
-	reaction.EmojiName = emojis[rand.Intn(len(emojis))]
+	reaction.EmojiName = control.RandomEmoji()
 
 	reactions, err := u.Store().Reactions(post.Id)
 	if err != nil {
