@@ -374,9 +374,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	err = createCustomEmoji(config)
 	if err != nil {
 		return nil, err
-	} else {
-		mlog.Info("Custom emoji created")
 	}
+	mlog.Info("Custom emoji created")
 
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
