@@ -192,11 +192,16 @@ func TestCoordClientConcurrency(t *testing.T) {
 
 	create := func(t *testing.T, i int) *coordClient.Coordinator {
 		t.Helper()
+
+		mmServer := createFakeMMServer()
+		t.Cleanup(mmServer.Close)
+
 		coord := createClient(t, i)
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
@@ -206,10 +211,13 @@ func TestCoordClientConcurrency(t *testing.T) {
 
 	t.Run("create/destroy", func(t *testing.T) {
 		coord := createClient(t, 0)
+		mmServer := createFakeMMServer()
+		defer mmServer.Close()
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		var success int

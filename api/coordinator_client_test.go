@@ -19,10 +19,13 @@ import (
 
 func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	t.Helper()
+	mmServer := createFakeMMServer()
+	t.Cleanup(mmServer.Close)
 	var coordConfig coordinator.Config
 	var ltConfig loadtest.Config
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)

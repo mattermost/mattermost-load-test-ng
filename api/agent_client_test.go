@@ -4,6 +4,9 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -14,14 +17,41 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/stretchr/testify/require"
 )
 
+func createFakeMMServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Version-Id", "dev")
+		switch r.URL.Path {
+		case "/api/v4/users/login":
+			u := model.User{}
+			u.Username = "sysadmin"
+			json.NewEncoder(w).Encode(u)
+		case "/api/v4/config":
+			mmCfg := model.Config{}
+			mmCfg.SetDefaults()
+			mmCfg.TeamSettings.MaxUsersPerTeam = model.NewInt(10000)
+			json.NewEncoder(w).Encode(mmCfg)
+		case "/api/v4/emoji":
+			json.NewEncoder(w).Encode(&model.Emoji{})
+		default:
+			fmt.Fprintln(w, "Hello, client")
+		}
+	}))
+}
+
 func createAgent(t *testing.T, id, serverURL string) *client.Agent {
 	t.Helper()
+
+	mmServer := createFakeMMServer()
+	t.Cleanup(mmServer.Close)
+
 	var ltConfig loadtest.Config
 	var ucConfig simulcontroller.Config
 	defaults.Set(&ltConfig)
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	defaults.Set(&ucConfig)
 	agent, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)
@@ -38,6 +68,9 @@ func TestCreateAgent(t *testing.T) {
 	// run server using httptest
 	server := httptest.NewServer(handler)
 	defer server.Close()
+
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
 
 	id := "agent0"
 	agent, err := client.New(id, server.URL, nil)
@@ -102,6 +135,7 @@ func TestCreateAgent(t *testing.T) {
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		defaults.Set(&ucConfig)
 		_, err := agent.Create(&ltConfig, &ucConfig)
 		require.NoError(t, err)
