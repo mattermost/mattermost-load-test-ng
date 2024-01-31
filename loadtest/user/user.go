@@ -245,6 +245,7 @@ type User interface {
 	GetEmojiList(page, perPage int) error
 	// GetEmojiImage fetches the image for a given emoji.
 	GetEmojiImage(emojiId string) error
+	UploadEmoji(emoji *model.Emoji, image []byte, filename string) error
 
 	// reactions
 	// SaveReaction stores the given reaction.

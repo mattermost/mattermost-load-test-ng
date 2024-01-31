@@ -34,6 +34,9 @@ func TestAgentAPI(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	// create httpexpect instance
 	e := httpexpect.New(t, server.URL+"/loadagent")
 
@@ -46,7 +49,7 @@ func TestAgentAPI(t *testing.T) {
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
-	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
 	ucConfig1, err := simplecontroller.ReadConfig("../config/simplecontroller.sample.json")
@@ -178,6 +181,9 @@ func TestAgentAPIConcurrency(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	// create httpexpect instance
 	e := httpexpect.New(t, server.URL+"/loadagent")
 
@@ -185,7 +191,7 @@ func TestAgentAPIConcurrency(t *testing.T) {
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
-	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
 	ucConfig, err := simulcontroller.ReadConfig("../config/simulcontroller.sample.json")

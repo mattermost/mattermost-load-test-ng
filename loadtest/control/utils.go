@@ -45,9 +45,10 @@ var (
 	userNameRe        = regexp.MustCompile(`-[[:alpha:]]+`)
 	teamDisplayNameRe = regexp.MustCompile(`team[0-9]+(.*)`)
 	words             = []string{}
-	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:", ":innocent:", ":hugging_face:"}
-	serverVersionRE   = regexp.MustCompile(`\d+.\d+\.\d+`)
-	links             = []string{
+	emojis            = []string{":grinning:", ":slightly_smiling_face:", ":smile:", ":sunglasses:", ":innocent:", ":hugging_face:", ":shushing_face:", ":face_with_finger_covering_closed_lips:", ":thinking_face:", ":thinking:", ":zipper_mouth_face:", ":face_with_raised_eyebrow:", ":face_with_one_eyebrow_raised:", ":neutral_face:", ":expressionless:", ":no_mouth:", ":smirk:", ":unamused:", ":face_with_rolling_eyes:", ":roll_eyes:", ":grimacing:", ":lying_face:", ":relieved:", ":pensive:", ":sleepy:", ":drooling_face:", ":sleeping:", ":mask:", ":give_back_money:"} // The last one is a custom emoji
+
+	serverVersionRE = regexp.MustCompile(`\d+.\d+\.\d+`)
+	links           = []string{
 		"https://github.com/mattermost/mattermost",
 		"https://www.youtube.com/watch?v=-5jompL6G-k",
 		"https://www.youtube.com/watch?v=GKLyAVHgNzY",

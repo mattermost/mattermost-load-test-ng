@@ -19,10 +19,13 @@ import (
 
 func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	t.Helper()
+	mmServer := createFakeMMServer()
+	t.Cleanup(mmServer.Close)
 	var coordConfig coordinator.Config
 	var ltConfig loadtest.Config
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
 	coord, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)
@@ -39,6 +42,9 @@ func TestCreateCoordinator(t *testing.T) {
 	// run server using httptest
 	server := httptest.NewServer(handler)
 	defer server.Close()
+
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
 
 	id := "coord0"
 	coord, err := client.New(id, server.URL, nil)
@@ -64,6 +70,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
 		require.NoError(t, err)
@@ -74,6 +81,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		status, err := coord.Create(&coordConfig, &ltConfig)
 		require.Error(t, err)
