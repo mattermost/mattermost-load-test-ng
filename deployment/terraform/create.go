@@ -226,9 +226,9 @@ func (t *Terraform) Create(initData bool) error {
 	// Otherwise, the vacuuming command will fail because no tables would
 	// have been created by then.
 	if t.output.HasDB() {
-		// Aurora sets the default_text_search_config parameter to 'simple';
-		// a more sane default for a generic deployment is 'english'
 		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+			// updatePostgresSettings does some housekeeping stuff like setting
+			// default_search_config and vacuuming tables.
 			if err := t.updatePostgresSettings(extAgent); err != nil {
 				return fmt.Errorf("could not modify default_search_text_config: %w", err)
 			}
@@ -474,6 +474,10 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		t.output.DBWriter(),
 		t.config.DBName(),
 	)
+
+	if len(t.output.Instances) == 0 {
+		return errors.New("no instances found in Terraform output")
+	}
 
 	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
 	if err != nil {
