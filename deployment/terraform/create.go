@@ -186,16 +186,6 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	if t.output.HasDB() {
-		// Aurora sets the default_text_search_config parameter to 'simple';
-		// a more sane default for a generic deployment is 'english'
-		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
-				return fmt.Errorf("could not modify default_search_text_config: %w", err)
-			}
-		}
-	}
-
 	if t.output.HasAppServers() {
 		var siteURL string
 		switch {
@@ -230,7 +220,19 @@ func (t *Terraform) Create(initData bool) error {
 		if err := pingServer("http://" + pingURL); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
+	}
 
+	// Note: This MUST be done after app servers have been set up.
+	// Otherwise, the vacuuming command will fail because no tables would
+	// have been created by then.
+	if t.output.HasDB() {
+		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+			// updatePostgresSettings does some housekeeping stuff like setting
+			// default_search_config and vacuuming tables.
+			if err := t.updatePostgresSettings(extAgent); err != nil {
+				return fmt.Errorf("could not modify default_search_text_config: %w", err)
+			}
+		}
 	}
 
 	if t.output.HasDB() && initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
@@ -465,11 +467,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
-func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config string) error {
-	if t.config.TerraformDBSettings.InstanceEngine != "aurora-postgresql" {
-		return fmt.Errorf("default_text_search_config can only be set in postgres")
-	}
-
+func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 	dns := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		t.config.TerraformDBSettings.UserName,
 		t.config.TerraformDBSettings.Password,
@@ -477,18 +475,31 @@ func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config st
 		t.config.DBName(),
 	)
 
-	sqlCmd := fmt.Sprintf("ALTER DATABASE %s SET default_text_search_config TO \"%s\"",
-		t.config.DBName(),
-		config,
-	)
+	if len(t.output.Instances) == 0 {
+		return errors.New("no instances found in Terraform output")
+	}
 
-	cmd := fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
-
-	mlog.Info(fmt.Sprintf("Setting default_text_search_config to %q:", config), mlog.String("cmd", cmd))
 	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
 	if err != nil {
 		return err
 	}
+
+	const searchConfig = "pg_catalog.english"
+	sqlCmd := fmt.Sprintf("ALTER DATABASE %s SET default_text_search_config TO %q",
+		t.config.DBName(),
+		searchConfig,
+	)
+	cmd := fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+
+	mlog.Info(fmt.Sprintf("Setting default_text_search_config to %q:", searchConfig), mlog.String("cmd", cmd))
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
+	}
+
+	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers;"
+	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+
+	mlog.Info("Vacuuming the tables", mlog.String("cmd", cmd))
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
