@@ -18,7 +18,8 @@ type output struct {
 	} `json:"instances"`
 	DBCluster struct {
 		Value []struct {
-			Endpoint string `json:"endpoint"`
+			Endpoint          string `json:"endpoint"`
+			ClusterIdentifier string `json:"cluster_identifier"`
 		} `json:"value"`
 	} `json:"dbCluster"`
 	Agents struct {
@@ -82,7 +83,8 @@ type Tags struct {
 
 // DBCluster defines a RDS cluster instance resource.
 type DBCluster struct {
-	Endpoints []string `json:"endpoint"`
+	Endpoints         []string `json:"endpoint"`
+	ClusterIdentifier string   `json:"cluster_identifier"`
 }
 
 // IAMAccess is a set of credentials that allow API requests to be made as an IAM user.
@@ -132,6 +134,7 @@ func (t *Terraform) loadOutput() error {
 		for _, ep := range o.DBCluster.Value {
 			outputv2.DBCluster.Endpoints = append(outputv2.DBCluster.Endpoints, ep.Endpoint)
 		}
+		outputv2.DBCluster.ClusterIdentifier = o.DBCluster.Value[0].ClusterIdentifier
 	}
 	if len(o.MetricsServer.Value) > 0 {
 		outputv2.MetricsServer = o.MetricsServer.Value[0]
