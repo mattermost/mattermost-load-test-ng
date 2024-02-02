@@ -140,7 +140,7 @@ pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-  worker_connections 20000;
+  worker_connections 100000;
   use epoll;
 }
 
