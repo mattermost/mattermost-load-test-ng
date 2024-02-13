@@ -14,6 +14,7 @@
     "Queries": [
       {
         "Description": "Percentage of HTTP 5xx server errors",
+        "Legend": "Percentage of requests responded from the server with a 5xx status code",
         "Query": "(sum(rate(mattermost_api_time_count{status_code=~\"5..\"}[1m]))/sum(rate(mattermost_api_time_count[1m])))*100",
         "Threshold": 0.025,
         "MinIntervalSec": 60,
@@ -21,6 +22,7 @@
       },
       {
         "Description": "Average client request duration",
+        "Legend": "Average duration of all requests as measured from the client side",
         "Query": "sum(rate(loadtest_http_request_time_sum[1m]))/sum(rate(loadtest_http_request_time_count[1m]))",
         "Threshold": 0.1,
         "MinIntervalSec": 60,
@@ -28,6 +30,7 @@
       },
       {
         "Description": "99th percentile of client request duration",
+        "Legend": "99th percentile duration of all requests as measured from the client side",
         "Query": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (le))",
         "Threshold": 2.0,
         "MinIntervalSec": 60,
@@ -35,6 +38,7 @@
       },
       {
         "Description": "Percentage of HTTP 5xx client errors",
+        "Legend": "Percentage of requests responded with a 5xx status code, as seen from the client",
         "Query": "(sum(rate(loadtest_http_errors_total{status_code=~\"5..\"}[1m]))/sum(rate(loadtest_http_request_time_count[1m])))*100",
         "Threshold": 0.025,
         "MinIntervalSec": 60,
@@ -42,6 +46,7 @@
       },
       {
         "Description": "Percentage of client timeouts",
+        "Legend": "Percentage of timeouts over all requests done",
         "Query": "(sum(rate(loadtest_http_timeouts_total[1m]))/sum(rate(loadtest_http_request_time_count[1m]))) * 100",
         "Threshold": 0.025,
         "MinIntervalSec": 60,
@@ -49,6 +54,7 @@
       },
       {
         "Description": "CPU utilization",
+        "Legend": "Percentage of CPU used, as an average over all app nodes",
         "Query": "100 - 100 * (avg(irate(node_cpu_seconds_total{instance=~\"app.*\",mode=\"idle\"}[5m])))",
         "Threshold": 85,
         "MinIntervalSec": 60,
@@ -56,6 +62,7 @@
       },
       {
         "Description": "Memory utilization",
+        "Legend": "Percentage of memory used, as an average over all app nodes",
         "Query": "100 - 100 * avg(node_memory_MemAvailable_bytes{instance=~\"app.*\"} / node_memory_MemTotal_bytes{instance=~\"app.*\"})",
         "Threshold": 85,
         "MinIntervalSec": 60,
@@ -63,6 +70,7 @@
       },
       {
         "Description": "Percentage of TCP timeouts in the proxy node",
+        "Legend": "Percentage of timeouts over all TCP connections established in the proxy",
         "Query": "100 * rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) / (rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) + node_netstat_Tcp_CurrEstab{instance=~\"proxy:9100\"})",
         "Threshold": 0.2,
         "MinIntervalSec": 60,
@@ -71,6 +79,7 @@
 
       {
         "Description": "Percentage of TCP timeouts in the app nodes",
+        "Legend": "Percentage of timeouts over all TCP connections established by the app nodes, as an average over all app nodes",
         "Query": "100 * avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) / (avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) + avg(node_netstat_Tcp_CurrEstab{instance=~\"app.*\"}))",
         "Threshold": 3.0,
         "MinIntervalSec": 60,
