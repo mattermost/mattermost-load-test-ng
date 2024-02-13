@@ -250,10 +250,13 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	// Upload coordinator metrics dashboard
 	coordConfig, err := coordinator.ReadConfig("")
+	if err != nil {
+		return fmt.Errorf("error while reading coordinator's config: %w", err)
+	}
 	panels := []PanelData{}
 	i := 0
 	for _, query := range coordConfig.MonitorConfig.Queries {
-		if query.Alert == true {
+		if query.Alert {
 			panels = append(panels, PanelData{
 				Id:        i,
 				Title:     query.Description,
