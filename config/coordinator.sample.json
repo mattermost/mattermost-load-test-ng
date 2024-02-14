@@ -22,7 +22,7 @@
       },
       {
         "Description": "Average client request duration",
-        "Legend": "Duration in ms (avg)",
+        "Legend": "Avg duration (s)",
         "Query": "sum(rate(loadtest_http_request_time_sum[1m]))/sum(rate(loadtest_http_request_time_count[1m]))",
         "Threshold": 0.1,
         "MinIntervalSec": 60,
@@ -30,7 +30,7 @@
       },
       {
         "Description": "99th percentile of client request duration",
-        "Legend": "Duration in ms (p99)",
+        "Legend": "P99 duration (s)",
         "Query": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (le))",
         "Threshold": 2.0,
         "MinIntervalSec": 60,
