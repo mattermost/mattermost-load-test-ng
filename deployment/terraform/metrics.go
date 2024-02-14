@@ -94,8 +94,13 @@ type PanelData struct {
 	Threshold float64
 }
 
+// Panel dimensions for the Grafana dashboard containing the coordinator metrics.
 const (
-	panelWidth  = 12
+	// According to the Grafana docs, "the width of the dashboard is divided into
+	// 24 columns", so we set it to half that to fit two panels in each row.
+	panelWidth = 12
+	// According to the Grafana docs, each height unit "represents 30 pixels".
+	// Setting the height to 9 (270px) is a good default.
 	panelHeight = 9
 )
 
