@@ -226,6 +226,14 @@ func (t *Terraform) Create(initData bool) error {
 	// Otherwise, the vacuuming command will fail because no tables would
 	// have been created by then.
 	if t.output.HasDB() {
+		// Load the dump if specified
+		if !initData && t.config.DBDumpURI != "" {
+			err = t.IngestDump()
+			if err != nil {
+				return fmt.Errorf("failed to create ingest dump: %w", err)
+			}
+		}
+
 		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
 			// updatePostgresSettings does some housekeeping stuff like setting
 			// default_search_config and vacuuming tables.
