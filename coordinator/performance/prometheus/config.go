@@ -13,6 +13,9 @@ type Configuration struct {
 type Query struct {
 	// The description for the query.
 	Description string `validate:"notempty"`
+	// An optional string for populating the legend of this query's panel
+	// in the Grafana dashboard containing all coordinator metrics
+	Legend string
 	// The PromQL query to be run.
 	Query string `validate:"notempty"`
 	// The value over which the performance monitor will fire an alert

@@ -13,8 +13,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"gopkg.in/yaml.v3"
 
@@ -78,6 +80,32 @@ func (t *Terraform) UploadDashboard(dashboard string) (string, error) {
 	}
 
 	return url, nil
+}
+
+type PanelData struct {
+	Id        int
+	Title     string
+	Legend    string
+	Height    int
+	Width     int
+	PosX      int
+	PosY      int
+	Query     string
+	Threshold float64
+}
+
+// Panel dimensions for the Grafana dashboard containing the coordinator metrics.
+const (
+	// According to the Grafana docs, "the width of the dashboard is divided into
+	// 24 columns", so we set it to half that to fit two panels in each row.
+	panelWidth = 12
+	// According to the Grafana docs, each height unit "represents 30 pixels".
+	// Setting the height to 9 (270px) is a good default.
+	panelHeight = 9
+)
+
+type DashboardData struct {
+	Panels []PanelData
 }
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
@@ -223,6 +251,43 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
+	// Upload coordinator metrics dashboard
+	coordConfig, err := coordinator.ReadConfig("")
+	if err != nil {
+		return fmt.Errorf("error while reading coordinator's config: %w", err)
+	}
+	panels := []PanelData{}
+	i := 0
+	for _, query := range coordConfig.MonitorConfig.Queries {
+		if query.Alert {
+			panels = append(panels, PanelData{
+				Id:        i,
+				Title:     query.Description,
+				Legend:    query.Legend,
+				Height:    panelHeight,
+				Width:     panelWidth,
+				PosX:      panelWidth * (i % 2),
+				PosY:      panelHeight * (i / 2),
+				Query:     strings.ReplaceAll(query.Query, "\"", "\\\""),
+				Threshold: query.Threshold,
+			})
+			i++
+		}
+	}
+	// Create the coordinator dashboard only if there is at least one panel
+	if len(panels) > 0 {
+		dashboard := DashboardData{panels}
+		var b bytes.Buffer
+		tmpl, err := template.ParseFiles(t.getAsset("coordinator_dashboard_tmpl.json"))
+		if err != nil {
+			return err
+		}
+		tmpl.Execute(&b, dashboard)
+		if out, err := sshc.Upload(&b, "/var/lib/grafana/dashboards/coordinator_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading coordinator_dashboard.json: output: %s, error: %w", out, err)
+		}
 	}
 
 	if t.output.HasElasticSearch() {

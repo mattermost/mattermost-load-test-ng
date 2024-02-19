@@ -52,6 +52,12 @@ The amount of time (in milliseconds) to wait before each query update.
 
 The description for the query.
 
+#### Legend
+
+*string*
+
+The legend shown in this query's panel in the Grafana dashboard that is generated with all enabled queries. If this string is empty, Grafana creates an automatic legend for the panel.
+
 #### Query
 
 *string*
