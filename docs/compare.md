@@ -8,6 +8,8 @@ After a load test is complete, a report can be generated and saved to a file whi
 go run ./cmd/ltctl report generate --output=base.out --label=base "2020-06-23 07:23:35" "2020-06-23 07:33:35"
 ```
 
+Note that in the case of a local deployment, you'll need to set the `--prometheus-url ` flag to the URL of the Prometheus server from where the tool will scrape the results.
+
 The timestamps _must_ be in UTC, and they indicate the range within which the data is to be collected for the test. It is recommended to keep the timestamps within a range during which the loadtest is running a stable number of users, and not in a ramp-up phase or an unstable state of adding/removing users. This is to get consistent results between different runs.
 
 The timestamp ranges for different load tests can be different. They will be compared with the base report. If a report has more data points than the base report, the extra ones will be ignored.
