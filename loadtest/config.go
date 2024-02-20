@@ -136,7 +136,7 @@ type UsersConfiguration struct {
 	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 	// The percentage of users generated that will be system admins
-	PercentOfUsersAreAdmin float64 `default:"0.02" validate:"range:[0,1]"`
+	PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 }
 
 // Config holds information needed to create and initialize a new load-test
