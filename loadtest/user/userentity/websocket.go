@@ -152,7 +152,7 @@ start:
 			connectionFailCount++
 			select {
 			// Draining the channel to avoid blocking the sender.
-			case <-ue.wsTyping:
+			case <-ue.dataChan:
 			case <-ue.wsClosing:
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
@@ -189,13 +189,28 @@ start:
 				// Explicit disconnect. Return.
 				close(ue.wsClosed)
 				return
-			case msg, ok := <-ue.wsTyping:
+			case msg, ok := <-ue.dataChan:
 				if !ok {
 					chanClosed = true
 					break
 				}
-				if err := client.UserTyping(msg.channelId, msg.parentId); err != nil {
-					errChan <- fmt.Errorf("userentity: error in client.UserTyping: %w", err)
+				switch v := msg.(type) {
+				case userTypingMsg:
+					if err := client.UserTyping(v.channelId, v.parentId); err != nil {
+						errChan <- fmt.Errorf("userentity: error in client.UserTyping: %w", err)
+					}
+				case threadPresenceMsg:
+					if err := client.UpdateActiveThread(v.channelId, v.threadView); err != nil {
+						errChan <- fmt.Errorf("userentity: error in client.UpdateActiveThread: %w", err)
+					}
+				case channelPresenceMsg:
+					if err := client.UpdateActiveChannel(v.channelId); err != nil {
+						errChan <- fmt.Errorf("userentity: error in client.UpdateActiveChannel: %w", err)
+					}
+				case teamPresenceMsg:
+					if err := client.UpdateActiveTeam(v.teamId); err != nil {
+						errChan <- fmt.Errorf("userentity: error in client.UpdateActiveTeam: %w", err)
+					}
 				}
 			}
 			if chanClosed {
@@ -209,7 +224,7 @@ start:
 		connectionFailCount++
 		select {
 		// Draining the channel to avoid blocking the sender.
-		case <-ue.wsTyping:
+		case <-ue.dataChan:
 		case <-ue.wsClosing:
 			// Explicit disconnect. Return.
 			close(ue.wsClosed)
@@ -239,9 +254,47 @@ func (ue *UserEntity) SendTypingEvent(channelId, parentId string) error {
 	if !ue.connected {
 		return errors.New("user is not connected")
 	}
-	ue.wsTyping <- userTypingMsg{
-		channelId,
-		parentId,
+	ue.dataChan <- userTypingMsg{
+		channelId: channelId,
+		parentId:  parentId,
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveChannel(channelId string) error {
+	if !ue.connected {
+		return errors.New("user is not connected")
+	}
+	ue.dataChan <- channelPresenceMsg{
+		channelId: channelId,
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveThread(channelId string) error {
+	if !ue.connected {
+		return errors.New("user is not connected")
+	}
+	// We don't really have a notion of RHS thread vs global thread in the load test.
+	// We either load a channel or load a thread. For now, we just set `is_thread_view`
+	// as both true and false to set the scope.
+	ue.dataChan <- threadPresenceMsg{
+		channelId:  channelId,
+		threadView: true,
+	}
+	ue.dataChan <- threadPresenceMsg{
+		channelId:  channelId,
+		threadView: false,
+	}
+	return nil
+}
+
+func (ue *UserEntity) UpdateActiveTeam(teamId string) error {
+	if !ue.connected {
+		return errors.New("user is not connected")
+	}
+	ue.dataChan <- teamPresenceMsg{
+		teamId: teamId,
 	}
 	return nil
 }

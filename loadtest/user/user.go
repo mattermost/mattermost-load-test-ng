@@ -41,6 +41,11 @@ type User interface {
 	// SendTypingEvent will push a user_typing event out to all connected users
 	// who are in the specified channel.
 	SendTypingEvent(channelId, parentId string) error
+	// These methods are to send info to the server on
+	// the state of the client.
+	UpdateActiveChannel(channelId string) error
+	UpdateActiveThread(channelId string) error
+	UpdateActiveTeam(teamId string) error
 
 	//server
 	// GetConfig fetches and stores the server's configuration.

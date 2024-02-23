@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type userAction struct {
@@ -293,6 +294,12 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveTeam(team.Id); err != nil {
+			mlog.Warn("Failed to update active team", mlog.String("team_id", team.Id))
+		}
+	}
+
 	// We should probably keep track of the last channel viewed in the team but
 	// for now we can simplify and randomly pick one each time.
 
@@ -528,6 +535,12 @@ func switchChannel(u user.User) control.UserActionResponse {
 
 	if err := u.SetCurrentChannel(&channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if u.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveChannel(channel.Id); err != nil {
+			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
+		}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
@@ -1414,6 +1427,15 @@ func (c *SimulController) initialJoinTeam(u user.User) control.UserActionRespons
 		return c.joinTeam(c.user)
 	}
 
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		// Setting the active thread to empty to allow the optimization to kick in early.
+		// We don't do this in the webapp to keep the code simple, but it's okay to do this in load-test
+		// to magnify the boost.
+		if err := u.UpdateActiveThread(""); err != nil {
+			mlog.Warn("Failed to update active thread", mlog.String("channel_id", ""))
+		}
+	}
+
 	return resp
 }
 
@@ -1732,6 +1754,13 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		case <-time.After(idleTime):
 		}
 	}
+
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveThread(thread.Post.ChannelId); err != nil {
+			mlog.Warn("Failed to update active thread", mlog.String("channel_id", thread.Post.ChannelId))
+		}
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
 }
 

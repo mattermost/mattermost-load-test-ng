@@ -25,7 +25,7 @@ type UserEntity struct {
 	wsClosed    chan struct{}
 	wsErrorChan chan error
 	wsEventChan chan *model.WebSocketEvent
-	wsTyping    chan userTypingMsg
+	dataChan    chan any
 	connected   bool
 	config      Config
 	metrics     *performance.UserEntityMetrics
@@ -62,6 +62,19 @@ type Setup struct {
 type userTypingMsg struct {
 	channelId string
 	parentId  string
+}
+
+type channelPresenceMsg struct {
+	channelId string
+}
+
+type threadPresenceMsg struct {
+	channelId  string
+	threadView bool
+}
+
+type teamPresenceMsg struct {
+	teamId string
 }
 
 type ueTransport struct {
@@ -140,7 +153,7 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 	}
 
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.wsTyping = make(chan userTypingMsg)
+	ue.dataChan = make(chan any)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil
@@ -175,7 +188,7 @@ func (ue *UserEntity) Disconnect() error {
 	<-ue.wsClosed
 
 	close(ue.wsEventChan)
-	close(ue.wsTyping)
+	close(ue.dataChan)
 	close(ue.wsErrorChan)
 	ue.connected = false
 	return nil
