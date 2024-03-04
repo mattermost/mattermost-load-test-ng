@@ -6,6 +6,7 @@ package main
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/spf13/cobra"
 )
@@ -27,6 +29,9 @@ type collectInfo struct {
 	instance string
 	src      string
 	compress bool
+	// modifier, if not nil, is a function that lets the caller modify the downloaded
+	// content before adding it to the tarball
+	modifier func([]byte) ([]byte, error)
 }
 
 type file struct {
@@ -169,33 +174,43 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 	}
 
 	var collection []collectInfo
-	addInfo := func(instance, src string, compress bool) {
+	addInfo := func(instance, src string, compress bool, modifier func([]byte) ([]byte, error)) {
 		collection = append(collection, collectInfo{
 			instance,
 			src,
 			compress,
+			modifier,
 		})
 	}
 	for name := range clients {
 		switch {
 		case name == "proxy":
-			addInfo(name, "/var/log/nginx/error.log", true)
-			addInfo(name, "/etc/nginx/nginx.conf", false)
-			addInfo(name, "/etc/nginx/sites-enabled/mattermost", false)
+			addInfo(name, "/var/log/nginx/error.log", true, nil)
+			addInfo(name, "/etc/nginx/nginx.conf", false, nil)
+			addInfo(name, "/etc/nginx/sites-enabled/mattermost", false, nil)
 		case strings.HasPrefix(name, "app"):
-			addInfo(name, "/opt/mattermost/logs/mattermost.log", true)
-			addInfo(name, "/opt/mattermost/config/config.json", false)
+			addInfo(name, "/opt/mattermost/logs/mattermost.log", true, nil)
+			addInfo(name, "/opt/mattermost/config/config.json", false, func(input []byte) ([]byte, error) {
+				var cfg model.Config
+				json.Unmarshal(input, &cfg)
+				cfg.Sanitize()
+				sanitizedCfg, err := json.MarshalIndent(cfg, "", "  ")
+				if err != nil {
+					return nil, fmt.Errorf("failed to sanitize MM configuration: %w", err)
+				}
+				return sanitizedCfg, nil
+			})
 		case strings.HasPrefix(name, "agent"):
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true, nil)
 		case name == "coordinator":
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true, nil)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false, nil)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false, nil)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false, nil)
+			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false, nil)
 			continue
 		}
-		addInfo(name, "dmesg", false)
+		addInfo(name, "dmesg", false, nil)
 	}
 
 	var wg sync.WaitGroup
@@ -238,11 +253,23 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				return
 			}
 
+			// Apply modifiers to the data if any
+			var output []byte
+			if info.modifier != nil {
+				output, err = info.modifier(b.Bytes())
+				if err != nil {
+					fmt.Printf("failed to modify file %q: %s\n", downloadPath, err)
+					return
+				}
+			} else {
+				output = b.Bytes()
+			}
+
 			fmt.Printf("collected %s from %s instance\n", filepath.Base(downloadPath), info.instance)
 
 			file := file{
 				name: fmt.Sprintf("%s_%s", info.instance, filepath.Base(downloadPath)),
-				data: b.Bytes(),
+				data: output,
 			}
 
 			filesChan <- file
