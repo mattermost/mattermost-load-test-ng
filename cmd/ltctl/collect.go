@@ -192,7 +192,9 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 			addInfo(name, "/opt/mattermost/logs/mattermost.log", true, nil)
 			addInfo(name, "/opt/mattermost/config/config.json", false, func(input []byte) ([]byte, error) {
 				var cfg model.Config
-				json.Unmarshal(input, &cfg)
+				if err := json.Unmarshal(input, &cfg); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal MM configuration: %w", err)
+				}
 				cfg.Sanitize()
 				sanitizedCfg, err := json.MarshalIndent(cfg, "", "  ")
 				if err != nil {
