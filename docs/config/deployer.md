@@ -84,13 +84,13 @@ Number of ElasticSearch instances to be created. Right now, this config only sup
 
 *string*
 
-The type of instance for the Elasticsearch service. Note that instances that do not support EBS storage volumes are not allowed. Check [AWS documentation](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html) for the full list of instance types.
+The type of instance for the Elasticsearch service. Only AWS OpenSearch instances are allowed. Instances that do not support EBS storage volumes are not allowed. Check [AWS documentation](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html) for the full list of instance types.
 
 ### Version
 
 *string*
 
-Version of Elasticsearch to be deployed. The deployment only supports AWS OpenSearch versions. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions.
+Version of Elasticsearch to be deployed. Deployments only support AWS OpenSearch versions compatible with ElasticSearch, up to and including ElasticSearch v7.10.0; i.e., the ones prefixed by `Elasticsearch_.`. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions and the [`aws` Terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_domain#engine_version) to learn more about the specific string used.
 
 ## VpcID
 
