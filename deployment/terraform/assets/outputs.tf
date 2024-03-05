@@ -19,7 +19,7 @@ output "proxy" {
 }
 
 output "elasticServer" {
-  value = aws_elasticsearch_domain.es_server
+  value = aws_opensearch_domain.es_server
 }
 
 output "s3bucket" {

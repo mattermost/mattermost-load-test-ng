@@ -191,13 +191,13 @@ resource "aws_iam_service_linked_role" "es" {
   aws_service_name = "es.amazonaws.com"
 }
 
-resource "aws_elasticsearch_domain" "es_server" {
+resource "aws_opensearch_domain" "es_server" {
   tags = {
     Name = "${var.cluster_name}-es_server"
   }
 
-  domain_name           = "${var.cluster_name}-es"
-  elasticsearch_version = var.es_version
+  domain_name    = "${var.cluster_name}-es"
+  engine_version = var.es_version
 
   vpc_options {
     subnet_ids = [
