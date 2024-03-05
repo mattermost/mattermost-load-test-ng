@@ -319,6 +319,58 @@ func TestValidate(t *testing.T) {
 		})
 
 	})
+
+	t.Run("prefix validation", func(t *testing.T) {
+		type cfg struct {
+			PrefixedValue string `validate:"prefix:start"`
+		}
+
+		cases := []struct {
+			name        string
+			prefix      string
+			expectedErr bool
+		}{
+			{
+				"just the prefix",
+				"start",
+				false,
+			},
+			{
+				"prefix and more stuff",
+				"starting",
+				false,
+			},
+			{
+				"different casing",
+				"StarT",
+				true,
+			},
+			{
+				"different prefix",
+				"nostart",
+				true,
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				err := Validate(cfg{tc.prefix})
+				if tc.expectedErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	})
+
+	t.Run("wrong prefix tag", func(t *testing.T) {
+		type cfg struct {
+			PrefixedValue string `validate:"prefixasdf:start"`
+		}
+		err := Validate(cfg{"start"})
+		require.Error(t, err)
+	})
 }
 
 type testConfig struct {

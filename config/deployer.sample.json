@@ -11,9 +11,9 @@
   "AgentInstanceType": "c5.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
-    "InstanceType": "r5.large.elasticsearch",
+    "InstanceType": "r6g.large.search",
     "VpcID": "",
-    "Version": 6.5,
+    "Version": "Elasticsearch_7.10",
     "CreateRole": false
   },
   "JobServerSettings":{

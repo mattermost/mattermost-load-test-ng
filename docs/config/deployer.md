@@ -84,13 +84,13 @@ Number of ElasticSearch instances to be created. Right now, this config only sup
 
 *string*
 
-The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/).
+The type of instance for the Elasticsearch service. Note that instances that do not support EBS storage volumes are not allowed. Check [AWS documentation](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html) for the full list of instance types.
 
 ### Version
 
-*float64*
+*string*
 
-Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
+Version of Elasticsearch to be deployed. The deployment only supports AWS OpenSearch versions. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions.
 
 ## VpcID
 
@@ -98,7 +98,7 @@ Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elast
 
 Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
 
-This ID is mandatory is you're going to instanciate an ES service in your cluster.
+This ID is mandatory is you're going to instantiate an ES service in your cluster.
 
 ### CreateRole
 
