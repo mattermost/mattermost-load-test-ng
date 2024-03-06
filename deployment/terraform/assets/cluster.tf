@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 5.39"
     }
   }
 }
@@ -30,8 +30,11 @@ locals {
   private_ip = data.external.private_ip.result.ip
 }
 
-data "aws_subnet_ids" "selected" {
-  vpc_id = var.es_vpc
+data "aws_subnets" "selected" {
+  filter {
+    name   = "vpc-id"
+    values = [var.es_vpc]
+  }
 }
 
 resource "aws_key_pair" "key" {
@@ -188,17 +191,17 @@ resource "aws_iam_service_linked_role" "es" {
   aws_service_name = "es.amazonaws.com"
 }
 
-resource "aws_elasticsearch_domain" "es_server" {
+resource "aws_opensearch_domain" "es_server" {
   tags = {
     Name = "${var.cluster_name}-es_server"
   }
 
-  domain_name           = "${var.cluster_name}-es"
-  elasticsearch_version = var.es_version
+  domain_name    = "${var.cluster_name}-es"
+  engine_version = var.es_version
 
   vpc_options {
     subnet_ids = [
-      element(tolist(data.aws_subnet_ids.selected.ids), 0)
+      element(tolist(data.aws_subnets.selected.ids), 0)
     ]
     security_group_ids = [aws_security_group.elastic[0].id]
   }
