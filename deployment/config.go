@@ -99,6 +99,11 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+
+	// URL from where to download MSTeams Mattermost plugin release.
+	// This can also point to a local binary path if the user wants to run loadtest
+	// on a custom build. The path should be prefixed with "file://".
+	MSTeamsPluginDownloadURL string `default:"" validate:"url"`
 }
 
 type StorageSizes struct {

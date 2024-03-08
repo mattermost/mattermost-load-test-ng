@@ -222,6 +222,12 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	// Install the MS Teams plugin
+	// The plugin only works with Postgres
+	if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+		t.installMSTeams(extAgent)
+	}
+
 	// Note: This MUST be done after app servers have been set up.
 	// Otherwise, the vacuuming command will fail because no tables would
 	// have been created by then.
@@ -349,7 +355,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	mlog.Info("Provisioning MM build", mlog.String("host", ip))
 	cmd = strings.Join(commands, " && ")
 	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
 
 	mlog.Info("Updating config", mlog.String("host", ip))
@@ -564,6 +570,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
+	cfg.FileSettings.MaxFileSize = model.NewInt64(250 * 1024 * 1024)
 	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
 		cfg.FileSettings.DriverName = model.NewString("amazons3")
 		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.output.S3Key.Id)
@@ -627,6 +634,37 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+	}
+
+	if t.config.MSTeamsPluginDownloadURL != "" && t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+		msteamsCfg := make(map[string]interface{})
+		msteamsCfg["appmanifestdownload"] = ""
+		msteamsCfg["automaticallypromotesyntheticusers"] = false
+		msteamsCfg["buffersizeforfilestreaming"] = 20
+		msteamsCfg["certificatekey"] = nil
+		msteamsCfg["certificatepublic"] = nil
+		msteamsCfg["connectedusersallowed"] = 1000
+		msteamsCfg["connectedusersreportdownload"] = ""
+		msteamsCfg["disablesyncmsg"] = false
+		msteamsCfg["enabledteams"] = ""
+		msteamsCfg["evaluationapi"] = false
+		msteamsCfg["maxsizeforcompletedownload"] = 20
+		msteamsCfg["promptintervalfordmsandgms"] = 1
+		msteamsCfg["selectivesync"] = false
+		msteamsCfg["syncdirectmessages"] = true
+		msteamsCfg["syncfileattachments"] = false
+		msteamsCfg["syncguestusers"] = false
+		msteamsCfg["synclinkedchannels"] = true
+		msteamsCfg["syncreactions"] = true
+		msteamsCfg["syncusers"] = 30
+		msteamsCfg["syntheticuserauthdata"] = "ID"
+		msteamsCfg["syntheticuserauthservice"] = "saml"
+		msteamsCfg["encryptionkey"] = "MCng-plxp5FLTg1smK4Ed-gVDZPclVrV"
+		msteamsCfg["webhooksecret"] = "1NaHuxRmZfcePHShxBoyQhhCZlf9klpm"
+		msteamsCfg["tenantid"] = "fakeTenantID"
+		msteamsCfg["clientid"] = "fakeClientID"
+		msteamsCfg["clientsecret"] = "fakeClientSecret"
+		cfg.PluginSettings.Plugins["com.mattermost.msteams-sync"] = msteamsCfg
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
@@ -729,4 +767,75 @@ func pingServer(addr string) error {
 			return nil
 		}
 	}
+}
+
+func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
+	if t.config.MSTeamsPluginDownloadURL == "" {
+		mlog.Info("MS Teams plugin not configured")
+		return nil
+	}
+
+	if len(t.output.Instances) == 0 {
+		return errors.New("no instances found in Terraform output")
+	}
+
+	ip := t.output.Instances[0].PublicIP
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
+	}
+	defer func() {
+		err := sshc.Close()
+		if err != nil {
+			mlog.Error("error closing ssh connection", mlog.Err(err))
+		}
+	}()
+
+	var uploadPlugin bool
+	var pluginPath string
+	if strings.HasPrefix(t.config.MSTeamsPluginDownloadURL, filePrefix) {
+		pluginPath = strings.TrimPrefix(t.config.MSTeamsPluginDownloadURL, filePrefix)
+		info, err := os.Stat(pluginPath)
+		if err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("binary path %s has to be a regular file", pluginPath)
+		}
+
+		uploadPlugin = true
+	}
+
+	pluginTarPath := "/home/ubuntu/msteams-sync.tar.gz"
+	// Upload plugin if needed.
+	if uploadPlugin {
+		mlog.Info("Uploading plugin", mlog.String("host", ip))
+
+		if out, err := sshc.UploadFile(pluginPath, pluginTarPath, false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", pluginPath, string(out), err)
+		}
+	} else {
+		mlog.Info("Downloading MS Teams plugin", mlog.String("host", ip))
+		cmd := "wget -O " + pluginTarPath + " " + t.config.MSTeamsPluginDownloadURL
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("Error Downloading MS Teams", mlog.String("err", err.Error()))
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+		}
+	}
+
+	// provision the plugin
+	mlog.Info("Installing MS Teams plugin", mlog.String("host", ip))
+	cmd := "/opt/mattermost/bin/mmctl plugin add " + pluginTarPath + " --local"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
+	mlog.Info("Enabling MS Teams plugin", mlog.String("host", ip))
+	cmd = "/opt/mattermost/bin/mmctl plugin enable com.mattermost.msteams-sync --local"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
+	return nil
 }
