@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -953,6 +954,13 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewInt(numReplicas)
 		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
 		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewInt(numReplicas)
+	}
+
+	if t.output.HasRedis() {
+		cfg.CacheSettings.CacheType = model.NewString(model.CacheTypeRedis)
+		redisEndpoint := net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port))
+		cfg.CacheSettings.RedisAddress = model.NewString(redisEndpoint)
+		cfg.CacheSettings.RedisDB = model.NewInt(0)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {

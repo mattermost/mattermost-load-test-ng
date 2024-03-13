@@ -31,6 +31,10 @@ output "elasticRoleARN" {
   value = aws_iam_role.es_role.arn
 }
 
+output "redisServer" {
+  value = aws_elasticache_cluster.redis_server
+}
+
 output "s3bucket" {
   value = aws_s3_bucket.s3bucket
 }
