@@ -324,7 +324,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 
 resource "aws_db_parameter_group" "db_params_group" {
   name   = "${var.cluster_name}-db-pg"
-  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql12"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
