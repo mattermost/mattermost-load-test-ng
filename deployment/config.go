@@ -75,6 +75,7 @@ type Config struct {
 	// the deployment process.
 	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -243,6 +244,17 @@ type ElasticSearchSettings struct {
 	SnapshotRepository string
 	// SnapshotName is the name of the snapshot to restore.
 	SnapshotName string
+}
+
+type RedisSettings struct {
+	// Enabled indicates whether to add Redis or not.
+	Enabled bool
+	// NodeType indicates the instance type.
+	NodeType string `default:"cache.m7g.2xlarge"`
+	// ParameterGroupName indicates the parameter group to attach.
+	ParameterGroupName string `default:"default.redis7"`
+	// EngineVersion indicates the engine version.
+	EngineVersion string `default:"7.1"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
