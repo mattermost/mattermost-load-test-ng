@@ -16,6 +16,12 @@
     "Version": "Elasticsearch_7.10",
     "CreateRole": false
   },
+  "RedisSettings": {
+    "Enabled": false,
+    "NodeType": "cache.m7g.2xlarge",
+    "ParameterGroupName": "default.redis7",
+    "EngineVersion": "7.1"
+  },
   "JobServerSettings":{
     "InstanceCount": 0,
     "InstanceType": "c5.xlarge"

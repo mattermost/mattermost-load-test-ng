@@ -47,6 +47,9 @@ scrape_configs:
   - job_name: loadtest
     static_configs:
         - targets: [%s]
+  - job_name: redis
+    static_configs:
+        - targets: [%s]
 `
 
 type PyroscopeConfig struct {
@@ -323,6 +326,24 @@ ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const redisExporterServiceFile = `
+[Unit]
+Description=Redis prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/redis_exporter
 User=ubuntu
 Group=ubuntu
 

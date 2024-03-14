@@ -36,6 +36,20 @@ variable "es_vpc" {
 variable "es_create_role" {
 }
 
+# Redis variables
+
+variable "redis_enabled" {
+}
+
+variable "redis_node_type" {
+}
+
+variable "redis_param_group_name" {
+}
+
+variable "redis_engine_version" {
+}
+
 variable "proxy_instance_type" {
 }
 
