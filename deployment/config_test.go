@@ -10,7 +10,7 @@ func TestConfigIsValid(t *testing.T) {
 	baseConfig := func() Config {
 		return Config{
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0-rc1/mattermost-load-test-ng-v1.15.0-rc1-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0-rc2/mattermost-load-test-ng-v1.15.0-rc2-linux-amd64.tar.gz",
 		}
 	}
 
