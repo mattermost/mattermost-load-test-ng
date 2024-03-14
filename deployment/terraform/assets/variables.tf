@@ -54,7 +54,7 @@ variable "db_cluster_identifier" {
 variable "db_engine_version" {
   type = map(any)
   default = {
-    "aurora-mysql"      = "8.0.mysql_aurora.3.05.0"
+    "aurora-mysql"      = "8.0.mysql_aurora.3.06.0"
     "aurora-postgresql" = "14.7"
   }
 }
