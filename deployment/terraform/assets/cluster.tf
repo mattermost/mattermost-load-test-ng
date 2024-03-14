@@ -136,9 +136,9 @@ resource "aws_instance" "metrics_server" {
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
       "sudo service inbucket start",
-      "wget https://github.com/grafana/pyroscope/releases/download/v1.3.0/pyroscope_1.3.0_linux_amd64.deb",
-      "sudo apt-get install ./pyroscope_1.3.0_linux_amd64.deb",
-      "sudo systemctl enable pyroscope"
+      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
+      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
+      "sudo systemctl enable pyroscope-server"
     ]
   }
 }
