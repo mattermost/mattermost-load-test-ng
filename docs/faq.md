@@ -100,7 +100,31 @@ Two considerations:
 - Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporal instances, you can still do so for this purpose with the credentials `admin`/`admin`.
 - Note that a snapshot, although very useful for reference, is not a fully-functioning dashboard, so you will not be able to query new data using it. Take a look at the example above to understand how it works.
 
+### Can I stress test the ElasticSearch jobs?
+ElasticSearch schedules a daily job for aggregating posts. For configuring this, one needs to modify the Mattermost server's setting `ElasticsearchSettings.PostsAggregatorJobStartTime`, which accepts a hard-coded time (local to the machine running the server) formatted as a string like `"15:04"`.
+If you want to stress test this specific job during a load-test, you can use the [config patch](config/deployer.md#mattermost-config-patch-file) setting in the deployer config to change it to a time where the test will be running, using a partial Mattermost config like the following one:
+
+```json
+{
+    "ElasticSearchSettings": {
+        "PostsAggregatorJobStartTime": "19:34"
+    }
+}
+```
 ## Troubleshooting
+
+### Increase debugging level
+
+For troubleshooting purposes, the first step should be increasing the debugging level of both the Mattermost server and the agents:
+- For the Mattermost server, a [config patch](config/deployer.md#mattermost-config-patch-file) can be used, with a partial config that can contain the following:
+```json
+{
+    "LogSettings": {
+        "FileLevel": "DEBUG"
+    }
+}
+```
+- For the agents, the [`LogSettings.FileLevel` setting of the config.json file](config/config.md#file-level) should be set to `"DEBUG"` as well.
 
 ### Users are not connecting
 
