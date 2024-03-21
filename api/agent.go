@@ -383,6 +383,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		username := fmt.Sprintf("%s-%d", namePrefix, id)
 		email := fmt.Sprintf("%s-%d@example.com", namePrefix, id)
 		password := "testPass123$"
+		authenticationType := userentity.AuthenticationTypeMattermost
 
 		if modAdmins > 0 && id%modAdmins == 0 {
 			username = ""
@@ -398,12 +399,14 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 
 		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     username,
-			Email:        email,
-			Password:     password,
+			ServerURL:          config.ConnectionConfiguration.ServerURL,
+			WebSocketURL:       config.ConnectionConfiguration.WebSocketURL,
+			AuthenticationType: authenticationType,
+			Username:           username,
+			Email:              email,
+			Password:           password,
 		}
+
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          250,
 			MaxStoredUsers:          500,
