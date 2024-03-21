@@ -567,6 +567,10 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
 	// node or the proxy and set that.
 	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
+	cfg.ServiceSettings.EnableOpenTracing = model.NewBool(false)    // Large overhead, better to disable
+	cfg.ServiceSettings.EnableTutorial = model.NewBool(false)       // Makes manual testing easier
+	cfg.ServiceSettings.EnableOnboardingFlow = model.NewBool(false) // Makes manual testing easier
+
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
@@ -606,8 +610,10 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
 	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
 	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
+	cfg.SqlSettings.Trace = model.NewBool(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
 
-	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
+	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(200000)      // We don't want to be capped by this limit
+	cfg.TeamSettings.MaxChannelsPerTeam = model.NewInt64(200000) // We don't want to be capped by this limit
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
 	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(1000)
 

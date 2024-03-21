@@ -18,7 +18,7 @@ User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
-Environment=MM_FEATUREFLAGS_GRAPHQL=false
+Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
 
 [Install]
 WantedBy=multi-user.target

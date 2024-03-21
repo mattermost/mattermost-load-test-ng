@@ -136,9 +136,9 @@ resource "aws_instance" "metrics_server" {
       "sudo service grafana-server start",
       "sudo systemctl enable inbucket",
       "sudo service inbucket start",
-      "wget https://github.com/grafana/pyroscope/releases/download/v1.3.0/pyroscope_1.3.0_linux_amd64.deb",
-      "sudo apt-get install ./pyroscope_1.3.0_linux_amd64.deb",
-      "sudo systemctl enable pyroscope"
+      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
+      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
+      "sudo systemctl enable pyroscope-server"
     ]
   }
 }
@@ -324,7 +324,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 
 resource "aws_db_parameter_group" "db_params_group" {
   name   = "${var.cluster_name}-db-pg"
-  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql12"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
