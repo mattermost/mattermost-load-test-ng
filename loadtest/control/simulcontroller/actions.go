@@ -75,6 +75,9 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		if err := c.connect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+		if resp := control.FetchStaticAssets(c.user); resp.Err != nil {
+			return resp
+		}
 	}
 
 	// A full reload always calls GET /api/v4/users?page=0&per_page=100,
@@ -132,7 +135,7 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 		c.status <- c.newInfoStatus(resp.Info)
 		return c.login(u)
 	}
-	return resp
+	return control.FetchStaticAssets(u)
 }
 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
