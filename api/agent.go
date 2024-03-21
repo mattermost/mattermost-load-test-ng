@@ -396,6 +396,19 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
+
+			// Check if the user has a custom authentication type. Custom authentication types are
+			// specified by prepending the username with the authentication type followed by a colon.
+			// Example: "openid:user1@test.mattermost.com user1password"
+			if strings.Contains(username, ":") {
+				usernameParts := strings.Split(username, ":")
+				authenticationType = usernameParts[0]
+				username = usernameParts[1]
+
+				// Fix the email as well
+				emailParts := strings.Split(email, ":")
+				email = emailParts[1]
+			}
 		}
 
 		ueConfig := userentity.Config{

@@ -11,6 +11,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"regexp"
 	"strconv"
 
 	"github.com/graph-gophers/graphql-go"
@@ -18,21 +21,96 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
+// Possible actions for the openID authentication
+type authOpenIDAction string
+
+const (
+	authOpenIDLogin  authOpenIDAction = "login"
+	authOpenIDSignup authOpenIDAction = "signup"
+)
+
 // SignUp signs up the user with the given credentials.
 func (ue *UserEntity) SignUp(email, username, password string) error {
-	user := model.User{
-		Email:    email,
-		Username: username,
-		Password: password,
-	}
+	var newUser *model.User
+	var err error
 
-	newUser, _, err := ue.client.CreateUser(context.Background(), &user)
-	if err != nil {
-		return err
-	}
+	switch ue.config.AuthenticationType {
+	case AuthenticationTypeOpenID:
+		if err := ue.authOpenID(authOpenIDSignup); err != nil {
+			return fmt.Errorf("error while signing up using OpenID: %w", err)
+		}
 
-	newUser.Password = password
+		newUser, _, err = ue.client.GetUserByUsername(context.Background(), username, "")
+		if err != nil {
+			return fmt.Errorf("error while getting user by username: %w", err)
+		}
+	default:
+		user := model.User{
+			Email:    email,
+			Username: username,
+			Password: password,
+		}
+
+		newUser, _, err = ue.client.CreateUser(context.Background(), &user)
+		if err != nil {
+			return err
+		}
+
+		newUser.Password = password
+	}
 	return ue.store.SetUser(newUser)
+}
+
+// authOpenID logs the user in using OpenID.
+func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
+	if action != authOpenIDLogin && action != authOpenIDSignup {
+		return errors.New("invalid openid auth action")
+	}
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return fmt.Errorf("error while creating cookie jar: %w", err)
+	}
+
+	client := &http.Client{
+		Jar: jar,
+	}
+
+	// make a request to the openid login page of mattermost
+	resp, err := client.Get(ue.client.URL + "/oauth/openid/" + string(action))
+	if err != nil {
+		return fmt.Errorf("error while making request to openid login page: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error while reading response body: %w", err)
+	}
+
+	re := regexp.MustCompile(`action=["'](.*?)["']`)
+
+	loginURL := string(re.FindSubmatch(body)[1])
+
+	loginResponse, err := client.PostForm(loginURL, url.Values{
+		"username": {ue.config.Username},
+		"password": {ue.config.Password},
+	})
+	if err != nil {
+		return fmt.Errorf("error while logging in: %w", err)
+	}
+
+	if loginResponse.StatusCode != http.StatusOK {
+		return fmt.Errorf("login failed with status code %d", loginResponse.StatusCode)
+	}
+
+	cookies := jar.Cookies(loginResponse.Request.URL)
+	for _, cookie := range cookies {
+		if cookie.Name == "MMAUTHTOKEN" {
+			ue.client.SetToken(cookie.Value)
+		}
+	}
+
+	return nil
 }
 
 // Login logs the user in. It authenticates a user and starts a new session.
@@ -42,17 +120,23 @@ func (ue *UserEntity) Login() error {
 		return err
 	}
 
-	loggedUser, _, err := ue.client.Login(context.Background(), user.Email, user.Password)
-	if err != nil {
-		return err
-	}
+	switch ue.config.AuthenticationType {
+	case AuthenticationTypeOpenID:
+		if err := ue.authOpenID(authOpenIDLogin); err != nil {
+			return fmt.Errorf("error while logging in using OpenID: %w", err)
+		}
+	default:
+		loggedUser, _, err := ue.client.Login(context.Background(), user.Email, user.Password)
+		if err != nil {
+			return fmt.Errorf("error while logging in: %w", err)
+		}
 
-	// We need to set user again because the user ID does not get set
-	// if a user is already signed up.
-	if err := ue.store.SetUser(loggedUser); err != nil {
-		return err
+		// We need to set user again because the user ID does not get set
+		// if a user is already signed up.
+		if err := ue.store.SetUser(loggedUser); err != nil {
+			return fmt.Errorf("error while setting user: %w", err)
+		}
 	}
-
 	return nil
 }
 
