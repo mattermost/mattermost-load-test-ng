@@ -363,7 +363,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 	creds, err := getUserCredentials(config.UsersConfiguration.UsersFilePath, config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting user credentials from file: %w", err)
 	}
 
 	modAdmins := 0
@@ -373,7 +373,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 	err = createCustomEmoji(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating custom emoji from config: %w", err)
 	}
 	mlog.Info("Custom emoji created")
 
@@ -416,11 +416,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			MaxStoredReactions:      10,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating memory store: %w", err)
 		}
 
 		if err := store.SetServerVersion(serverVersion); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error setting server version: %w", err)
 		}
 
 		ueSetup := userentity.Setup{
@@ -530,7 +530,7 @@ func createCustomEmoji(config *loadtest.Config) error {
 	}
 	sysadmin := createSysAdmin(adminStore, config)
 	if err := sysadmin.Login(); err != nil {
-		return err
+		return fmt.Errorf("error login as sysadmin: %w", err)
 	}
 
 	emoji := &model.Emoji{
