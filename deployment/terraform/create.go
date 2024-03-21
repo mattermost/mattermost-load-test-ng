@@ -222,12 +222,6 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	// Install the MS Teams plugin
-	// The plugin only works with Postgres
-	if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-		t.installMSTeams(extAgent)
-	}
-
 	// Note: This MUST be done after app servers have been set up.
 	// Otherwise, the vacuuming command will fail because no tables would
 	// have been created by then.
@@ -257,6 +251,12 @@ func (t *Terraform) Create(initData bool) error {
 
 	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
+	}
+
+	// Install the MS Teams plugin
+	// The plugin only works with Postgres
+	if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+		t.installMSTeams(extAgent)
 	}
 
 	mlog.Info("Deployment complete.")
@@ -643,7 +643,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		msteamsCfg["buffersizeforfilestreaming"] = 20
 		msteamsCfg["certificatekey"] = nil
 		msteamsCfg["certificatepublic"] = nil
-		msteamsCfg["connectedusersallowed"] = 1000
+		msteamsCfg["connectedusersallowed"] = 2000
 		msteamsCfg["connectedusersreportdownload"] = ""
 		msteamsCfg["disablesyncmsg"] = false
 		msteamsCfg["enabledteams"] = ""
@@ -654,7 +654,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		msteamsCfg["syncdirectmessages"] = true
 		msteamsCfg["syncfileattachments"] = false
 		msteamsCfg["syncguestusers"] = false
-		msteamsCfg["synclinkedchannels"] = true
+		msteamsCfg["synclinkedchannels"] = false
 		msteamsCfg["syncreactions"] = true
 		msteamsCfg["syncusers"] = 30
 		msteamsCfg["syntheticuserauthdata"] = "ID"
@@ -664,6 +664,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		msteamsCfg["tenantid"] = "fakeTenantID"
 		msteamsCfg["clientid"] = "fakeClientID"
 		msteamsCfg["clientsecret"] = "fakeClientSecret"
+		msteamsCfg["runAsLoadTest"] = true
 		cfg.PluginSettings.Plugins["com.mattermost.msteams-sync"] = msteamsCfg
 	}
 
@@ -810,7 +811,7 @@ func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
 	pluginTarPath := "/home/ubuntu/msteams-sync.tar.gz"
 	// Upload plugin if needed.
 	if uploadPlugin {
-		mlog.Info("Uploading plugin", mlog.String("host", ip))
+		mlog.Info("Uploading plugin", mlog.String("file", pluginPath))
 
 		if out, err := sshc.UploadFile(pluginPath, pluginTarPath, false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", pluginPath, string(out), err)

@@ -103,7 +103,7 @@ type Config struct {
 	// URL from where to download MSTeams Mattermost plugin release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://".
-	MSTeamsPluginDownloadURL string `default:"" validate:"url"`
+	MSTeamsPluginDownloadURL string `default:""`
 }
 
 type StorageSizes struct {
