@@ -47,6 +47,9 @@ scrape_configs:
   - job_name: loadtest
     static_configs:
         - targets: [%s]
+  - job_name: msteams
+    static_configs:
+        - targets: [%s]
 `
 
 type PyroscopeConfig struct {

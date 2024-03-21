@@ -116,10 +116,11 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets []string
+	var mmTargets, msTeamsTargets, nodeTargets, esTargets, ltTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
+		msTeamsTargets = append(msTeamsTargets, fmt.Sprintf("%s:8067/plugins/com.mattermost.msteams-sync/metrics", host))
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
@@ -171,6 +172,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(mmTargets), ","),
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
+		strings.Join(quoteAll(msTeamsTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
