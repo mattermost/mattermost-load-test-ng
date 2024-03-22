@@ -203,7 +203,7 @@ upstream backend {
 proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
 
 server {
-  listen 80;
+  listen 80 reuseport;
   server_name _;
 
   location ~ /api/v[0-9]+/(users/)?websocket$ {
