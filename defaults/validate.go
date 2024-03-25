@@ -101,6 +101,14 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		if err != nil {
 			return err
 		}
+	case "urlorempty":
+		s := v.String()
+		if s != "" {
+			_, err := url.ParseRequestURI(s)
+			if err != nil {
+				return err
+			}
+		}
 	case "email":
 		s := v.String()
 		if !emailRegex.MatchString(s) {

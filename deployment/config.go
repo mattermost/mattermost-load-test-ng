@@ -103,7 +103,8 @@ type Config struct {
 	// URL from where to download MSTeams Mattermost plugin release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://".
-	MSTeamsPluginDownloadURL string `default:""`
+	MSTeamsPluginDownloadURL string `default:"" validate:"urlorempty"`
+	MSTeamsPluginSettings    MSTeamsPluginSettings
 }
 
 type StorageSizes struct {
@@ -207,6 +208,37 @@ type JobServerSettings struct {
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
 	InstanceType string `default:"c5.xlarge"`
+}
+
+// MSTeamsPluginSettings contains the necessary data
+// for the MS Teams Plugin.
+type MSTeamsPluginSettings struct {
+	Enabled                            bool   `default:"true"`
+	TenantID                           string `default:"faketenantId"`
+	ClientID                           string `default:"fakeclientId"`
+	ClientSecret                       string `default:"fakeclientsecret"`
+	EncryptionKey                      string `default:""`
+	EvaluationAPI                      bool   `default:"false"`
+	WebhookSecret                      string `default:""`
+	EnabledTeams                       string `default:""`
+	SyncDirectMessages                 bool   `default:"true"`
+	SelectiveSync                      bool   `default:"false"`
+	SyncLinkedChannels                 bool   `default:"false"`
+	SyncReactions                      bool   `default:"false"`
+	SyncFileAttachments                bool   `default:"false"`
+	SyncUsers                          int    `default:"30"`
+	SyncGuestUsers                     bool   `default:"false"`
+	CertificatePublic                  string `default:""`
+	CertificateKey                     string `default:""`
+	MaxSizeForCompleteDownload         int    `default:"20"`
+	BufferSizeForFileStreaming         int    `default:"20"`
+	AutomaticallyPromoteSyntheticUsers bool   `default:"false"`
+	ConnectedUsersAllowed              int    `default:"10000"`
+	ConnectedUsersInvitePoolSize       int    `default:"0"`
+	SyntheticUserAuthService           string `default:"saml"`
+	SyntheticUserAuthData              string `default:"ID"`
+	DisableSyncMsg                     bool   `default:"true"`
+	RunAsLoadTest                      bool   `default:"true"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.

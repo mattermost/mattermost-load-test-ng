@@ -647,11 +647,11 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		msteamsCfg["appmanifestdownload"] = ""
 		msteamsCfg["automaticallypromotesyntheticusers"] = false
 		msteamsCfg["buffersizeforfilestreaming"] = 20
-		msteamsCfg["certificatekey"] = nil
-		msteamsCfg["certificatepublic"] = nil
-		msteamsCfg["connectedusersallowed"] = 2000
+		msteamsCfg["certificatekey"] = ""
+		msteamsCfg["certificatepublic"] = ""
+		msteamsCfg["connectedusersallowed"] = 10000
 		msteamsCfg["connectedusersreportdownload"] = ""
-		msteamsCfg["disablesyncmsg"] = false
+		msteamsCfg["disablesyncmsg"] = true
 		msteamsCfg["enabledteams"] = ""
 		msteamsCfg["evaluationapi"] = false
 		msteamsCfg["maxsizeforcompletedownload"] = 20
@@ -739,6 +739,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "msteams_dashboard.json")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
@@ -838,10 +839,18 @@ func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
 
-	mlog.Info("Enabling MS Teams plugin", mlog.String("host", ip))
-	cmd = "/opt/mattermost/bin/mmctl plugin enable com.mattermost.msteams-sync --local"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	if t.config.MSTeamsPluginSettings.Enabled {
+		mlog.Info("Enabling MS Teams plugin", mlog.String("host", ip))
+		cmd = "/opt/mattermost/bin/mmctl plugin enable com.mattermost.msteams-sync --local"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+		}
+	} else {
+		mlog.Info("Disabling MS Teams plugin", mlog.String("host", ip))
+		cmd = "/opt/mattermost/bin/mmctl plugin disable com.mattermost.msteams-sync --local"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+		}
 	}
 
 	return nil

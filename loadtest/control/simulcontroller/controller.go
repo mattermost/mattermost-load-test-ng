@@ -38,6 +38,11 @@ func getActionList(c *SimulController) []userAction {
 			frequency: 0.9843,
 		},
 		{
+			name:      "OpenDirectOrGroupChannelAndPost",
+			run:       c.openDirectOrGroupChannelAndPost,
+			frequency: 1.4821,
+		},
+		{
 			name:      "UnreadCheck",
 			run:       unreadCheck,
 			frequency: 1,

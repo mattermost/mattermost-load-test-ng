@@ -50,6 +50,7 @@ scrape_configs:
   - job_name: msteams
     static_configs:
         - targets: [%s]
+    metrics_path: /plugins/com.mattermost.msteams-sync/metrics
 `
 
 type PyroscopeConfig struct {

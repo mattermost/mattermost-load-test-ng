@@ -120,7 +120,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
-		msTeamsTargets = append(msTeamsTargets, fmt.Sprintf("%s:8067/plugins/com.mattermost.msteams-sync/metrics", host))
+		msTeamsTargets = append(msTeamsTargets, fmt.Sprintf("%s:8067", host))
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
@@ -242,7 +242,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error while uploading dashboard: output: %s, error: %w", out, err)
 	}
 
-	// Upload dashboard json
+	// Upload dashboards json
 	buf, err = os.ReadFile(t.getAsset("dashboard_data.json"))
 	if err != nil {
 		return err
@@ -253,6 +253,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
+	buf, err = os.ReadFile(t.getAsset("msteams_dashboard.json"))
+	if err != nil {
+		return err
+	}
+	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/msteams_dashboard.json", true); err != nil {
+		return fmt.Errorf("error while uploading msteams_dashboard_json: output: %s, error: %w", out, err)
 	}
 
 	// Upload coordinator metrics dashboard

@@ -980,6 +980,38 @@ func openDirectOrGroupChannel(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("opened direct/group channel %s", channel.Id)}
 }
 
+func (c *SimulController) openDirectOrGroupChannelAndPost(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotPublic|store.SelectNotPrivate)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Info: "no channels to open"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if resp := viewChannel(u, &channel); resp.Err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
+	}
+
+	if err := u.SetCurrentChannel(&channel); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if u.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveChannel(channel.Id); err != nil {
+			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
+		}
+	}
+
+	return c.createPost(u)
+}
+
 func getProfileImageForUsers(u user.User, userIds []string) error {
 	for _, userId := range userIds {
 		lastPictureUpdate, err := u.Store().ProfileImageLastUpdated(userId)
