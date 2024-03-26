@@ -225,7 +225,7 @@ data "aws_iam_policy_document" "es_policy_document" {
 
 resource "aws_iam_policy" "es_policy" {
   name   = "${var.cluster_name}-es-policy"
-  policy = data.aws_iam_policy_document.policy.json
+  policy = data.aws_iam_policy_document.es_policy_document.json
 }
 
 resource "aws_iam_role_policy_attachment" "test-attach" {
