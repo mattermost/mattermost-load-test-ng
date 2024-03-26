@@ -528,6 +528,9 @@ func registerRepository(es *elasticsearch.Client, region, repo, arn string) erro
 	req := esapi.SnapshotCreateRepositoryRequest{
 		Body:       &buf,
 		Repository: repo,
+		Pretty:     true,
+		Human:      true,
+		ErrorTrace: true,
 	}
 	fmt.Printf("%+v\n", req)
 	res, err := req.Do(context.Background(), es)
@@ -543,7 +546,6 @@ func registerRepository(es *elasticsearch.Client, region, repo, arn string) erro
 		defer res.Body.Close()
 		resStr = string(b)
 	}
-	fmt.Println(elasticsearch.Version)
 	fmt.Println("Got response: ", resStr)
 
 	return nil
