@@ -494,7 +494,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create SignerRoundTripper: %w", err)
 	}
 	es, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{esEndpoint},
+		Addresses: []string{"https://" + esEndpoint},
 		Transport: elasticsearchTransport,
 	})
 	if err != nil {
