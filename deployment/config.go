@@ -192,7 +192,8 @@ type ElasticSearchSettings struct {
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
-	CreateRole bool
+	CreateRole         bool
+	SnapshotRepository string
 }
 
 // JobServerSettings contains the necessary data to deploy a job

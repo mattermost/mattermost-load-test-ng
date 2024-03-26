@@ -191,6 +191,48 @@ resource "aws_iam_service_linked_role" "es" {
   aws_service_name = "es.amazonaws.com"
 }
 
+data "aws_iam_policy_document" "es_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["es.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "es_role" {
+  name               = "${var.cluster_name}-es-role"
+  assume_role_policy = data.aws_iam_policy_document.es_assume_role.json
+}
+
+data "aws_iam_policy_document" "es_policy_document" {
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.es_snapshot_repository}"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::${var.es_snapshot_repository}/*"]
+  }
+}
+
+resource "aws_iam_policy" "es_policy" {
+  name   = "${var.cluster_name}-es-policy"
+  policy = data.aws_iam_policy_document.policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "test-attach" {
+  role       = aws_iam_role.es_role.name
+  policy_arn = aws_iam_policy.es_policy.arn
+}
+
 resource "aws_opensearch_domain" "es_server" {
   tags = {
     Name = "${var.cluster_name}-es_server"

@@ -502,7 +502,35 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create ElasticSearch client: %w", err)
 	}
 
-	req := esapi.SnapshotGetRepositoryRequest{}
+	type settings struct {
+		Bucket  string `json:"bucket"`
+		Region  string `json:"region"`
+		RoleARN string `json:"role_arn"`
+	}
+
+	type payload struct {
+		Type     string   `json:"type"`
+		Settings settings `json:"settings"`
+	}
+
+	p := payload{
+		Type: "s3",
+		Settings: settings{
+			Bucket:  "bucket",
+			Region:  t.config.AWSRegion,
+			RoleARN: "role_arn",
+		},
+	}
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(p); err != nil {
+		return fmt.Errorf("unable to encode payload: %w", err)
+	}
+
+	// Register repository
+	req := esapi.SnapshotCreateRepositoryRequest{
+		Body:       &buf,
+		Repository: "name",
+	}
 	res, err := req.Do(context.Background(), es)
 	if err != nil {
 		return fmt.Errorf("unable to perform request: %w", err)
@@ -518,26 +546,6 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 	fmt.Println(elasticsearch.Version)
 	fmt.Println("Got response: ", resStr)
-
-	// Register repository
-	// esapi.SnapshotCreateRepositoryRequest{
-	// 	Body: {
-	// 		type: "s3",
-	// 		settings: {
-	// 			bucket: "",
-	// 			region: "",
-	// 			role_arn: "",
-	// 		}
-	// 	},
-	// 	Repository: "name",
-	// }
-
-	// fmt.Println(es.Info())
-	// es.Info()
-	// es.Snapshot.Clone.WithHuman()
-	// req := esapi.IndexRequest{}
-	// req.Do(context.Background(), es)
-	// es.Cat.Repositories.
 
 	return nil
 }
