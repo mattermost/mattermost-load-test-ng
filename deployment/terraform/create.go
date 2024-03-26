@@ -527,7 +527,7 @@ func registerRepository(es *elasticsearch.Client, region, repo, arn string) erro
 
 	req := esapi.SnapshotCreateRepositoryRequest{
 		Body:       &buf,
-		Repository: "name",
+		Repository: repo,
 	}
 	fmt.Printf("%+v\n", req)
 	res, err := req.Do(context.Background(), es)
