@@ -23,7 +23,7 @@ output "elasticServer" {
 }
 
 output "elasticRoleARN" {
-  value = aws_aws_iam_role.es_role.arn
+  value = aws_iam_role.es_role.arn
 }
 
 output "s3bucket" {
