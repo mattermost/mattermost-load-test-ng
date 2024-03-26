@@ -499,7 +499,7 @@ func listSnapshots(es *elasticsearch.Client) error {
 	return nil
 }
 
-func registerRepository(es *elasticsearch.Client) error {
+func registerRepository(es *elasticsearch.Client, region, repo, arn string) error {
 	fmt.Println("Registering repository...")
 	type settings struct {
 		Bucket  string `json:"bucket"`
@@ -515,9 +515,9 @@ func registerRepository(es *elasticsearch.Client) error {
 	p := payload{
 		Type: "s3",
 		Settings: settings{
-			Bucket:  "bucket",
-			Region:  t.config.AWSRegion,
-			RoleARN: "role_arn",
+			Bucket:  repo,
+			Region:  region,
+			RoleARN: arn,
 		},
 	}
 	var buf bytes.Buffer
@@ -544,6 +544,8 @@ func registerRepository(es *elasticsearch.Client) error {
 	}
 	fmt.Println(elasticsearch.Version)
 	fmt.Println("Got response: ", resStr)
+
+	return nil
 }
 
 func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
@@ -575,7 +577,10 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 
 	// Register repository
-	if err := registerRepository(es); err != nil {
+	region := t.config.AWSRegion
+	repo := t.config.ElasticSearchSettings.SnapshotRepository
+	arn := output.ElasticSearchRoleARN
+	if err := registerRepository(es, region, repo, arn); err != nil {
 		return err
 	}
 

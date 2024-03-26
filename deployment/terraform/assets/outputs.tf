@@ -22,6 +22,10 @@ output "elasticServer" {
   value = aws_opensearch_domain.es_server
 }
 
+output "elasticRoleARN" {
+  value = aws_aws_iam_role.es_role.arn
+}
+
 output "s3bucket" {
   value = aws_s3_bucket.s3bucket
 }
@@ -38,3 +42,4 @@ output "dbSecurityGroup" {
 output "jobServers" {
   value = aws_instance.job_server[*]
 }
+
