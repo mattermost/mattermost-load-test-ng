@@ -501,10 +501,11 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create ElasticSearch client: %w", err)
 	}
 
-	es.Info()
-
 	req := esapi.SnapshotGetRequest{}
 	res, err := req.Do(context.Background(), es)
+	if err != nil {
+		return fmt.Errorf("unable to perform request")
+	}
 	var resStr string
 	if res.Body != nil {
 		b, err := io.ReadAll(res.Body)
