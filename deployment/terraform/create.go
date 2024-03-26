@@ -232,6 +232,7 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	if t.output.HasElasticSearch() {
+		mlog.Info("Setting up Elasticsearch")
 		err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
 		if err != nil {
 			return fmt.Errorf("unable to setup Elasticsearch server: %w", err)
