@@ -158,3 +158,7 @@ func (sshc *Client) Download(src string, dst io.Writer, sudo bool) error {
 func (sshc *Client) Close() error {
 	return sshc.client.Close()
 }
+
+func (sshc *Client) DialF() func(string, string) (net.Conn, error) {
+	return sshc.client.Dial
+}

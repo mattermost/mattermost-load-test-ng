@@ -6,15 +6,24 @@ package terraform
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/blang/semver"
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -222,6 +231,13 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	if t.output.HasElasticSearch() {
+		err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+		if err != nil {
+			return fmt.Errorf("unable to setup Elasticsearch server: %w", err)
+		}
+	}
+
 	// Note: This MUST be done after app servers have been set up.
 	// Otherwise, the vacuuming command will fail because no tables would
 	// have been created by then.
@@ -388,6 +404,138 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 	if err := t.initLoadtest(extAgent, initData); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func getCreds(profile string) (aws.Credentials, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithSharedConfigProfile(profile),
+	)
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	creds, err := cfg.Credentials.Retrieve(context.Background())
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	return creds, nil
+}
+
+type ElasticsearchTransport struct {
+	signer    *v4.Signer
+	creds     aws.Credentials
+	region    string
+	transport http.RoundTripper
+}
+
+func newElasticsearchTransport(sshc *ssh.Client, profile, region string) (*ElasticsearchTransport, error) {
+	creds, err := getCreds(profile)
+	if err != nil {
+		return nil, err
+	}
+
+	signer := v4.NewSigner()
+
+	// wow
+	transport := http.DefaultTransport
+	transport.(*http.Transport).Dial = sshc.DialF()
+
+	return &ElasticsearchTransport{
+		signer:    signer,
+		creds:     creds,
+		region:    region,
+		transport: transport,
+	}, nil
+}
+
+func (s ElasticsearchTransport) signRequest(req *http.Request) error {
+	body := []byte{}
+	var err error
+	if req.Body != nil {
+		body, err = io.ReadAll(req.Body)
+		defer req.Body.Close()
+		if err != nil {
+			return fmt.Errorf("unable to read request's body: %w", err)
+		}
+	}
+
+	bodySha := sha256.Sum256(body)
+	hexBodySha := make([]byte, hex.EncodedLen(len(bodySha)))
+	hex.Encode(hexBodySha, bodySha[:])
+	payloadHash := string(hexBodySha)
+
+	return s.signer.SignHTTP(context.Background(), s.creds, req, payloadHash, "es", s.region, time.Now())
+}
+
+func (s ElasticsearchTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := s.signRequest(req); err != nil {
+		return nil, err
+	}
+	return s.transport.RoundTrip(req)
+}
+
+func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+	esEndpoint := output.ElasticSearchServer.Endpoint
+
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("unable to create SSH client with IP %q: %w", err)
+	}
+
+	elasticsearchTransport, err := newElasticsearchTransport(sshc, t.config.AWSProfile, t.config.AWSRegion)
+	if err != nil {
+		return fmt.Errorf("unable to create SignerRoundTripper: %w", err)
+	}
+	es, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{esEndpoint},
+		Transport: elasticsearchTransport,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to create ElasticSearch client: %w", err)
+	}
+
+	es.Info()
+
+	req := esapi.SnapshotGetRequest{}
+	res, err := req.Do(context.Background(), es)
+	var resStr string
+	if res.Body != nil {
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		resStr = string(b)
+	}
+	fmt.Println(elasticsearch.Version)
+	fmt.Println("Got response: ", resStr)
+
+	// Register repository
+	// esapi.SnapshotCreateRepositoryRequest{
+	// 	Body: {
+	// 		type: "s3",
+	// 		settings: {
+	// 			bucket: "",
+	// 			region: "",
+	// 			role_arn: "",
+	// 		}
+	// 	},
+	// 	Repository: "name",
+	// }
+
+	// fmt.Println(es.Info())
+	// es.Info()
+	// es.Snapshot.Clone.WithHuman()
+	// req := esapi.IndexRequest{}
+	// req.Do(context.Background(), es)
+	// es.Cat.Repositories.
 
 	return nil
 }
