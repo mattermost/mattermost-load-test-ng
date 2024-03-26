@@ -442,7 +442,7 @@ func newElasticsearchTransport(sshc *ssh.Client, profile, region string) (*Elast
 
 	// wow
 	transport := http.DefaultTransport
-	transport.(*http.Transport).Dial = sshc.DialF()
+	transport.(*http.Transport).DialContext = sshc.DialContextF()
 
 	return &ElasticsearchTransport{
 		signer:    signer,

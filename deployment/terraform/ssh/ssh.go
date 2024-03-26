@@ -6,6 +6,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -159,6 +160,6 @@ func (sshc *Client) Close() error {
 	return sshc.client.Close()
 }
 
-func (sshc *Client) DialF() func(string, string) (net.Conn, error) {
-	return sshc.client.Dial
+func (sshc *Client) DialContextF() func(context.Context, string, string) (net.Conn, error) {
+	return sshc.client.DialContext
 }
