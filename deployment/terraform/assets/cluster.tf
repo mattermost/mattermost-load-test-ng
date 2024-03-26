@@ -218,7 +218,7 @@ data "aws_iam_policy_document" "es_policy_document" {
 
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
     resources = ["arn:aws:s3:::${var.es_snapshot_repository}/*"]
   }
 }
