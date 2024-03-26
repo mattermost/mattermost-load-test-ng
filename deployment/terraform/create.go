@@ -486,7 +486,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
-		return fmt.Errorf("unable to create SSH client with IP %q: %w", err)
+		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
 
 	elasticsearchTransport, err := newElasticsearchTransport(sshc, t.config.AWSProfile, t.config.AWSRegion)
@@ -504,7 +504,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	req := esapi.SnapshotGetRequest{}
 	res, err := req.Do(context.Background(), es)
 	if err != nil {
-		return fmt.Errorf("unable to perform request")
+		return fmt.Errorf("unable to perform request: %w", err)
 	}
 	var resStr string
 	if res.Body != nil {
