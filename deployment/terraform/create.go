@@ -529,6 +529,7 @@ func registerRepository(es *elasticsearch.Client, region, repo, arn string) erro
 		Body:       &buf,
 		Repository: "name",
 	}
+	fmt.Printf("%+v\n", req)
 	res, err := req.Do(context.Background(), es)
 	if err != nil {
 		return fmt.Errorf("unable to perform request: %w", err)
