@@ -478,30 +478,29 @@ func (s ElasticsearchTransport) RoundTrip(req *http.Request) (*http.Response, er
 	return s.transport.RoundTrip(req)
 }
 
-func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
-	output, err := t.Output()
+func listSnapshots(es *elasticsearch.Client) error {
+	fmt.Println("Listing snapshots...")
+	req := esapi.SnapshotGetRepositoryRequest{}
+	res, err := req.Do(context.Background(), es)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to perform request: %w", err)
 	}
-	esEndpoint := output.ElasticSearchServer.Endpoint
+	var resStr string
+	if res.Body != nil {
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		resStr = string(b)
+	}
+	fmt.Println("Got response: ", resStr)
 
-	sshc, err := extAgent.NewClient(ip)
-	if err != nil {
-		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
-	}
+	return nil
+}
 
-	elasticsearchTransport, err := newElasticsearchTransport(sshc, t.config.AWSProfile, t.config.AWSRegion)
-	if err != nil {
-		return fmt.Errorf("unable to create SignerRoundTripper: %w", err)
-	}
-	es, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{"https://" + esEndpoint},
-		Transport: elasticsearchTransport,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to create ElasticSearch client: %w", err)
-	}
-
+func registerRepository(es *elasticsearch.Client) error {
+	fmt.Println("Registering repository...")
 	type settings struct {
 		Bucket  string `json:"bucket"`
 		Region  string `json:"region"`
@@ -526,7 +525,6 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to encode payload: %w", err)
 	}
 
-	// Register repository
 	req := esapi.SnapshotCreateRepositoryRequest{
 		Body:       &buf,
 		Repository: "name",
@@ -546,6 +544,44 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 	fmt.Println(elasticsearch.Version)
 	fmt.Println("Got response: ", resStr)
+}
+
+func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+	esEndpoint := output.ElasticSearchServer.Endpoint
+
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
+	}
+
+	elasticsearchTransport, err := newElasticsearchTransport(sshc, t.config.AWSProfile, t.config.AWSRegion)
+	if err != nil {
+		return fmt.Errorf("unable to create SignerRoundTripper: %w", err)
+	}
+	es, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{"https://" + esEndpoint},
+		Transport: elasticsearchTransport,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to create ElasticSearch client: %w", err)
+	}
+
+	if err := listSnapshots(es); err != nil {
+		return err
+	}
+
+	// Register repository
+	if err := registerRepository(es); err != nil {
+		return err
+	}
+
+	if err := listSnapshots(es); err != nil {
+		return err
+	}
 
 	return nil
 }
