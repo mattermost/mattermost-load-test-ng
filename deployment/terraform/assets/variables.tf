@@ -113,6 +113,48 @@ variable "block_device_sizes_elasticsearch" {
   default = 20
 }
 
+# Keycloak variables
+variable "block_device_sizes_keycloak" {
+  type    = number
+  default = 10
+}
+
+variable "keycloak_instance_count" {
+  type    = number
+  default = 1
+}
+
+variable "keycloak_instance_type" {
+}
+
+variable "keycloak_version" {
+  type    = string
+  default = "24.0.2"
+}
+
+variable "keycloak_development_mode" {
+  type = bool
+}
+
+variable "keycloak_db_instance_count" {
+}
+
+variable "keycloak_db_instance_engine" {
+}
+
+variable "keycloak_db_instance_type" {
+}
+
+variable "keycloak_db_username" {
+}
+
+variable "keycloak_db_password" {
+}
+
+variable "keycloak_db_parameters" {
+  type = list(map(string))
+}
+
 variable "job_server_instance_count" {
 }
 

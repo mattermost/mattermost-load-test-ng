@@ -51,6 +51,8 @@ type Config struct {
 	ExternalDBSettings ExternalDBSettings
 	// External bucket connection settings.
 	ExternalBucketSettings ExternalBucketSettings
+	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
+	ExternalAuthProviderSettings ExternalAuthProviderSettings
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -114,6 +116,8 @@ type StorageSizes struct {
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
 	ElasticSearch int `default:"20"`
+	// Size, in GiB, for the storage of the keycloak instances
+	KeyCloak int `default:"10"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
@@ -177,6 +181,24 @@ type ExternalBucketSettings struct {
 	AmazonS3SSL             bool   `default:"true"`
 	AmazonS3SignV2          bool   `default:"false"`
 	AmazonS3SSE             bool   `default:"false"`
+}
+
+// ExternalAuthProviderSettings contains the necessary data
+// to configure an external auth provider.
+type ExternalAuthProviderSettings struct {
+	InstanceCount          int          `default:"0" validate:"range:[0,1]"`
+	DevelopmentMode        bool         `default:"false"`
+	KeycloakVersion        string       `default:"24.0.2"`
+	InstanceType           string       `default:"c5.xlarge"`
+	KeycloakAdminUser      string       `default:"mmuser"`
+	KeycloakAdminPassword  string       `default:"mmpass"`
+	KeycloakRealmFilePath  string       `default:""`
+	DatabaseInstanceCount  int          `default:"1" validate:"range:[0,1]"`
+	DatabaseInstanceEngine string       `default:"aurora-postgresql"`
+	DatabaseInstanceType   string       `default:"db.r6g.large"`
+	DatabaseUsername       string       `default:"mmuser"`
+	DatabasePassword       string       `default:"mmpassword"`
+	DatabaseParameters     DBParameters `default:"[]"`
 }
 
 // ElasticSearchSettings contains the necessary data
