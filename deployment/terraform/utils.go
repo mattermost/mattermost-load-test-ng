@@ -238,6 +238,15 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("db_enable_performance_insights=%t", t.config.TerraformDBSettings.EnablePerformanceInsights),
 		"-var", fmt.Sprintf("db_parameters=%s", t.config.TerraformDBSettings.DBParameters),
+		"-var", fmt.Sprintf("keycloak_instance_count=%d", t.config.ExternalAuthProviderSettings.InstanceCount),
+		"-var", fmt.Sprintf("keycloak_development_mode=%v", t.config.ExternalAuthProviderSettings.DevelopmentMode),
+		"-var", fmt.Sprintf("keycloak_instance_type=%s", t.config.ExternalAuthProviderSettings.InstanceType),
+		"-var", fmt.Sprintf("keycloak_db_instance_type=%s", t.config.ExternalAuthProviderSettings.DatabaseInstanceType),
+		"-var", fmt.Sprintf("keycloak_db_instance_count=%d", t.config.ExternalAuthProviderSettings.DatabaseInstanceCount),
+		"-var", fmt.Sprintf("keycloak_db_instance_engine=%s", t.config.ExternalAuthProviderSettings.DatabaseInstanceEngine),
+		"-var", fmt.Sprintf("keycloak_db_parameters=%s", t.config.ExternalAuthProviderSettings.DatabaseParameters),
+		"-var", fmt.Sprintf("keycloak_db_username=%s", t.config.ExternalAuthProviderSettings.DatabaseUsername),
+		"-var", fmt.Sprintf("keycloak_db_password=%s", t.config.ExternalAuthProviderSettings.DatabasePassword),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
@@ -249,6 +258,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("block_device_sizes_metrics=%d", t.config.StorageSizes.Metrics),
 		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
 		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
+		"-var", fmt.Sprintf("block_device_sizes_keycloak=%d", t.config.StorageSizes.KeyCloak),
 	}
 }
 

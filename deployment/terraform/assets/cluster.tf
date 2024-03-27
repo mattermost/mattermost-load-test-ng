@@ -695,3 +695,139 @@ resource "null_resource" "s3_dump" {
     command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }
+
+// Keycloak
+resource "aws_instance" "keycloak" {
+  tags = {
+    Name = "${var.cluster_name}-keycloak"
+  }
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = var.aws_ami
+  instance_type = var.keycloak_instance_type
+  count         = var.keycloak_instance_count > 0 ? 1 : 0
+  key_name      = aws_key_pair.key.id
+
+  vpc_security_group_ids = [
+    aws_security_group.keycloak[0].id,
+  ]
+
+  root_block_device {
+    volume_size = var.block_device_sizes_keycloak
+    volume_type = var.block_device_type
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get install unzip openjdk-17-jre -y",
+      "sudo mkdir -p /opt/keycloak",
+      "sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${var.keycloak_version}/keycloak-${var.keycloak_version}.zip",
+      "sudo unzip /opt/keycloak/keycloak-${var.keycloak_version}.zip -d /opt/keycloak",
+      "sudo mkdir -p /opt/keycloak/keycloak-${var.keycloak_version}/data/import",
+      "sudo chown -R ubuntu:ubuntu /opt/keycloak",
+    ]
+  }
+}
+
+resource "aws_security_group" "keycloak" {
+  count       = var.keycloak_instance_count > 0 ? 1 : 0
+  name        = "${var.cluster_name}-keycloak-security-group"
+  description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
+  }
+
+  // To access keycloak
+  ingress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_rds_cluster" "keycloak_db_cluster" {
+  count               = var.app_instance_count > 0 && !var.keycloak_development_mode ? var.keycloak_db_instance_count : 0
+  cluster_identifier  = "${var.cluster_name}-keycloak-db"
+  database_name       = "${var.cluster_name}keycloakdb"
+  master_username     = var.db_username
+  master_password     = var.db_password
+  skip_final_snapshot = true
+  apply_immediately   = true
+  engine              = var.keycloak_db_instance_engine
+  engine_version      = var.db_engine_version[var.keycloak_db_instance_engine]
+
+  vpc_security_group_ids = [aws_security_group.keycloak_db[0].id]
+}
+
+resource "aws_rds_cluster_instance" "keycloak_cluster_instances" {
+  count                        = var.app_instance_count > 0 && !var.keycloak_development_mode ? 1 : 0
+  identifier                   = "${var.cluster_name}-keycloak-db-${count.index}"
+  cluster_identifier           = "${var.cluster_name}-keycloak-db"
+  instance_class               = var.keycloak_db_instance_type
+  engine                       = var.keycloak_db_instance_engine
+  apply_immediately            = true
+  auto_minor_version_upgrade   = false
+  performance_insights_enabled = false
+  db_parameter_group_name      = length(var.keycloak_db_parameters) > 0 ? "${var.cluster_name}-keycloak-db-pg" : ""
+}
+
+resource "aws_db_parameter_group" "keycloak_db_params_group" {
+  name   = "${var.cluster_name}-keycloak-db-pg"
+  family = var.keycloak_db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
+  dynamic "parameter" {
+    for_each = var.keycloak_db_parameters
+    content {
+      name         = parameter.value["name"]
+      value        = parameter.value["value"]
+      apply_method = parameter.value["apply_method"]
+    }
+  }
+}
+
+resource "aws_rds_cluster_endpoint" "keycloak_cluster_endpoints" {
+  count                       = var.app_instance_count > 0 && !var.keycloak_development_mode ? 1 : 0
+  cluster_identifier          = aws_rds_cluster.keycloak_db_cluster[0].id
+  cluster_endpoint_identifier = "${var.cluster_name}-keycloak-wr"
+  custom_endpoint_type        = "ANY"
+}
+
+
+resource "aws_security_group" "keycloak_db" {
+  count = var.app_instance_count > 0 && !var.keycloak_development_mode ? 1 : 0
+  name  = "${var.cluster_name}-keycloak-db-security-group"
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app[0].id]
+  }
+}

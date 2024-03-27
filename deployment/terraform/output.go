@@ -31,6 +31,15 @@ type output struct {
 	ElasticServer struct {
 		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
+	KeycloakServer struct {
+		Value []Instance `json:"value"`
+	} `json:"keycloakServer"`
+	KeycloakDatabaseCluster struct {
+		Value []struct {
+			Endpoint          string `json:"endpoint"`
+			ClusterIdentifier string `json:"cluster_identifier"`
+		} `json:"value"`
+	} `json:"keycloakDatabaseCluster"`
 	JobServers struct {
 		Value []Instance `json:"value"`
 	} `json:"jobServers"`
@@ -48,17 +57,19 @@ type output struct {
 // Output contains the output variables which are
 // created after a deployment.
 type Output struct {
-	ClusterName         string
-	Proxy               Instance            `json:"proxy"`
-	Instances           []Instance          `json:"instances"`
-	DBCluster           DBCluster           `json:"dbCluster"`
-	Agents              []Instance          `json:"agents"`
-	MetricsServer       Instance            `json:"metricsServer"`
-	ElasticSearchServer ElasticSearchDomain `json:"elasticServer"`
-	JobServers          []Instance          `json:"jobServers"`
-	S3Bucket            S3Bucket            `json:"s3Bucket"`
-	S3Key               IAMAccess           `json:"s3Key"`
-	DBSecurityGroup     []SecurityGroup     `json:"dbSecurityGroup"`
+	ClusterName             string
+	Proxy                   Instance            `json:"proxy"`
+	Instances               []Instance          `json:"instances"`
+	DBCluster               DBCluster           `json:"dbCluster"`
+	Agents                  []Instance          `json:"agents"`
+	MetricsServer           Instance            `json:"metricsServer"`
+	ElasticSearchServer     ElasticSearchDomain `json:"elasticServer"`
+	JobServers              []Instance          `json:"jobServers"`
+	KeycloakServer          Instance            `json:"keycloakServer"`
+	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
+	S3Bucket                S3Bucket            `json:"s3Bucket"`
+	S3Key                   IAMAccess           `json:"s3Key"`
+	DBSecurityGroup         []SecurityGroup     `json:"dbSecurityGroup"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -148,6 +159,15 @@ func (t *Terraform) loadOutput() error {
 	if len(o.S3Key.Value) > 0 {
 		outputv2.S3Key = o.S3Key.Value[0]
 	}
+	if len(o.KeycloakServer.Value) > 0 {
+		outputv2.KeycloakServer = o.KeycloakServer.Value[0]
+	}
+	if len(o.KeycloakDatabaseCluster.Value) > 0 {
+		for _, ep := range o.KeycloakDatabaseCluster.Value {
+			outputv2.KeycloakDatabaseCluster.Endpoints = append(outputv2.KeycloakDatabaseCluster.Endpoints, ep.Endpoint)
+		}
+		outputv2.KeycloakDatabaseCluster.ClusterIdentifier = o.KeycloakDatabaseCluster.Value[0].ClusterIdentifier
+	}
 
 	if len(o.DBSecurityGroup.Value) > 0 {
 		outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, o.DBSecurityGroup.Value...)
@@ -217,6 +237,11 @@ func (o *Output) HasS3Key() bool {
 // HasJobServer returns whether a deployment has a dedicated job server.
 func (o *Output) HasJobServer() bool {
 	return len(o.JobServers) > 0
+}
+
+// HasKeycloak returns whether a deployment has Keycloak installed in it or not.
+func (o *Output) HasKeycloak() bool {
+	return o.KeycloakServer.PrivateIP != ""
 }
 
 // DBReaders returns the list of db reader endpoints.
