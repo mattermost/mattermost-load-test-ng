@@ -642,38 +642,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
 	}
 
-	if t.config.MSTeamsPluginDownloadURL != "" && t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-		msteamsCfg := make(map[string]interface{})
-		msteamsCfg["appmanifestdownload"] = ""
-		msteamsCfg["automaticallypromotesyntheticusers"] = false
-		msteamsCfg["buffersizeforfilestreaming"] = 20
-		msteamsCfg["certificatekey"] = ""
-		msteamsCfg["certificatepublic"] = ""
-		msteamsCfg["connectedusersallowed"] = 10000
-		msteamsCfg["connectedusersreportdownload"] = ""
-		msteamsCfg["disablesyncmsg"] = true
-		msteamsCfg["enabledteams"] = ""
-		msteamsCfg["evaluationapi"] = false
-		msteamsCfg["maxsizeforcompletedownload"] = 20
-		msteamsCfg["promptintervalfordmsandgms"] = 1
-		msteamsCfg["selectivesync"] = false
-		msteamsCfg["syncdirectmessages"] = true
-		msteamsCfg["syncfileattachments"] = false
-		msteamsCfg["syncguestusers"] = false
-		msteamsCfg["synclinkedchannels"] = false
-		msteamsCfg["syncreactions"] = true
-		msteamsCfg["syncusers"] = 30
-		msteamsCfg["syntheticuserauthdata"] = "ID"
-		msteamsCfg["syntheticuserauthservice"] = "saml"
-		msteamsCfg["encryptionkey"] = "MCng-plxp5FLTg1smK4Ed-gVDZPclVrV"
-		msteamsCfg["webhooksecret"] = "1NaHuxRmZfcePHShxBoyQhhCZlf9klpm"
-		msteamsCfg["tenantid"] = "fakeTenantID"
-		msteamsCfg["clientid"] = "fakeClientID"
-		msteamsCfg["clientsecret"] = "fakeClientSecret"
-		msteamsCfg["runAsLoadTest"] = true
-		cfg.PluginSettings.Plugins["com.mattermost.msteams-sync"] = msteamsCfg
-	}
-
 	if t.config.MattermostConfigPatchFile != "" {
 		data, err := os.ReadFile(t.config.MattermostConfigPatchFile)
 		if err != nil {
@@ -777,6 +745,53 @@ func pingServer(addr string) error {
 	}
 }
 
+func (t *Terraform) configureMSTeams(sshc *ssh.Client, ip string) {
+	msTeamsSettings, err := json.Marshal(t.config.MSTeamsPluginSettings)
+	if err != nil {
+		mlog.Error("could not read msteams plugin config", mlog.Err(err))
+		return
+	}
+
+	var msteamsCfg map[string]interface{}
+	if err = json.Unmarshal(msTeamsSettings, &msteamsCfg); err != nil {
+		mlog.Error("could not unmarshal msteams plugin config", mlog.Err(err))
+		return
+	}
+
+	pluginSettings := &model.PluginSettings{
+		Plugins: make(map[string]map[string]any),
+	}
+	logSettings := model.NewLogSettings()
+	logSettings.SetDefaults()
+	pluginSettings.SetDefaults(*logSettings)
+	pluginSettings.Enable = model.NewBool(true)
+	pluginSettings.EnableUploads = model.NewBool(true)
+	delete(msteamsCfg, "Enabled")
+	pluginSettings.Plugins["com.mattermost.msteams-sync"] = msteamsCfg
+	cfg := make(map[string]interface{})
+	cfg["PluginSettings"] = pluginSettings
+
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		mlog.Error("error in marshalling msteams plugin config", mlog.Err(err))
+		return
+	}
+
+	if out, err := sshc.Upload(bytes.NewReader(b), "msteams-config.json", false); err != nil {
+		mlog.Error("error uploading msteams-config.json:,", mlog.String("output", out), mlog.Err(err))
+		return
+	}
+
+	mlog.Info(string(b))
+
+	mlog.Info("Applying MS Teams plugin configuration", mlog.String("host", ip))
+	cmd := "/opt/mattermost/bin/mmctl config patch msteams-config.json --local"
+
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error(fmt.Sprintf("error running ssh command %q, output: %q:", cmd, string(out)), mlog.Err(err))
+	}
+}
+
 func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
 	if t.config.MSTeamsPluginDownloadURL == "" {
 		mlog.Info("MS Teams plugin not configured")
@@ -838,6 +853,8 @@ func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
+
+	t.configureMSTeams(sshc, ip)
 
 	if t.config.MSTeamsPluginSettings.Enabled {
 		mlog.Info("Enabling MS Teams plugin", mlog.String("host", ip))

@@ -213,32 +213,32 @@ type JobServerSettings struct {
 // MSTeamsPluginSettings contains the necessary data
 // for the MS Teams Plugin.
 type MSTeamsPluginSettings struct {
-	Enabled                            bool   `default:"true"`
-	TenantID                           string `default:"faketenantId"`
-	ClientID                           string `default:"fakeclientId"`
-	ClientSecret                       string `default:"fakeclientsecret"`
-	EncryptionKey                      string `default:""`
-	EvaluationAPI                      bool   `default:"false"`
-	WebhookSecret                      string `default:""`
-	EnabledTeams                       string `default:""`
-	SyncDirectMessages                 bool   `default:"true"`
-	SelectiveSync                      bool   `default:"false"`
-	SyncLinkedChannels                 bool   `default:"false"`
-	SyncReactions                      bool   `default:"false"`
-	SyncFileAttachments                bool   `default:"false"`
-	SyncUsers                          int    `default:"30"`
-	SyncGuestUsers                     bool   `default:"false"`
-	CertificatePublic                  string `default:""`
-	CertificateKey                     string `default:""`
-	MaxSizeForCompleteDownload         int    `default:"20"`
-	BufferSizeForFileStreaming         int    `default:"20"`
-	AutomaticallyPromoteSyntheticUsers bool   `default:"false"`
-	ConnectedUsersAllowed              int    `default:"10000"`
-	ConnectedUsersInvitePoolSize       int    `default:"0"`
-	SyntheticUserAuthService           string `default:"saml"`
-	SyntheticUserAuthData              string `default:"ID"`
-	DisableSyncMsg                     bool   `default:"true"`
-	RunAsLoadTest                      bool   `default:"true"`
+	Enabled                            bool   `default:"false"`
+	TenantID                           string `default:"faketenantId" json:"tenantid"`
+	ClientID                           string `default:"fakeclientId" json:"clientid"`
+	ClientSecret                       string `default:"fakeclientsecret" json:"clientsecret"`
+	EncryptionKey                      string `default:"" json:"encryptionkey"`
+	EvaluationAPI                      bool   `default:"false" json:"evaluationapi"`
+	WebhookSecret                      string `default:"" json:"webhooksecret"`
+	EnabledTeams                       string `default:"" json:"enabledteams"`
+	SyncDirectMessages                 bool   `default:"true" json:"syncdirectmessages"`
+	SelectiveSync                      bool   `default:"false" json:"selectiveSync"`
+	SyncLinkedChannels                 bool   `default:"false" json:"synclinkedchannels"`
+	SyncReactions                      bool   `default:"false" json:"syncreactions"`
+	SyncFileAttachments                bool   `default:"false" json:"syncfileattachments"`
+	SyncUsers                          int    `default:"30" json:"syncusers"`
+	SyncGuestUsers                     bool   `default:"false" json:"syncGuestUsers"`
+	CertificatePublic                  string `default:"" json:"certificatepublic"`
+	CertificateKey                     string `default:"" json:"certificatekey"`
+	MaxSizeForCompleteDownload         int    `default:"20" json:"maxSizeForCompleteDownload"`
+	BufferSizeForFileStreaming         int    `default:"20" json:"bufferSizeForFileStreaming"`
+	AutomaticallyPromoteSyntheticUsers bool   `default:"false" json:"automaticallyPromoteSyntheticUsers"`
+	ConnectedUsersAllowed              int    `default:"10000" json:"connectedusersallowed"`
+	ConnectedUsersInvitePoolSize       int    `default:"0" json:"connectedUsersInvitePoolSize"`
+	SyntheticUserAuthService           string `default:"saml" json:"syntheticUserAuthService"`
+	SyntheticUserAuthData              string `default:"ID" json:"syntheticUserAuthData"`
+	DisableSyncMsg                     bool   `default:"true" json:"disableSyncMsg"`
+	RunAsLoadTest                      bool   `default:"true" json:"runAsLoadTest"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.
