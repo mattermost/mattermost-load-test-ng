@@ -77,6 +77,13 @@ type teamPresenceMsg struct {
 	teamId string
 }
 
+type postedAckMsg struct {
+	postId     string
+	result     string
+	reason     string
+	postedData string
+}
+
 type ueTransport struct {
 	transport http.RoundTripper
 	ue        *UserEntity
