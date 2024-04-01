@@ -36,10 +36,9 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 				break
 			}
 
-			if err := c.user.PostedAck(post.Id, "success", "", ""); err != nil {
-				c.status <- c.newErrorStatus(fmt.Errorf("PostedAck failed: %w", err))
-				break
-			}
+			go func() {
+				c.user.PostedAck(post.Id, "success", "", "")
+			}()
 
 			cm, _ := c.user.Store().ChannelMember(post.ChannelId, c.user.Store().Id())
 			if cm.UserId != "" {
