@@ -227,37 +227,6 @@ func (t *Terraform) Create(initData bool) error {
 		if err := pingServer("http://" + pingURL); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
-
-		if t.output.HasKeycloak() {
-			keycloakCmdFmt := "/opt/mattermost/bin/mmctl config set %s '%s' --local"
-
-			keycloakScheme := "http"
-			if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-				keycloakScheme = "https"
-			}
-
-			// Set Keycloak settings
-			keycloakSettings := map[string]string{
-				"OpenIdSettings.Enable":            "true",
-				"OpenIdSettings.ButtonText":        "Keycloak Login",
-				"OpenIdSettings.DiscoveryEndpoint": keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + "master" + "/.well-known/openid-configuration",
-				"OpenIdSettings.Id":                "mattermost-openid",                // TODO
-				"OpenIdSettings.Secret":            "qbdUj4dacwfa5sIARIiXZxbsBFoopTyf", // TODO
-			}
-
-			sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
-			if err != nil {
-				return fmt.Errorf("error in getting ssh connection to %q: %w", t.output.Instances[0].PublicIP, err)
-			}
-
-			for key, value := range keycloakSettings {
-				cmd := fmt.Sprintf(keycloakCmdFmt, key, value)
-				mlog.Info("Setting keycloak configuration", mlog.String("cmd", cmd))
-				if out, err := sshc.RunCommand(cmd); err != nil {
-					return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
-				}
-			}
-		}
 	}
 
 	// Note: This MUST be done after app servers have been set up.
@@ -688,6 +657,19 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		if err != nil {
 			return fmt.Errorf("error patching config: %w", err)
 		}
+	}
+
+	if t.output.HasKeycloak() {
+		keycloakScheme := "http"
+		if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
+			keycloakScheme = "https"
+		}
+
+		cfg.OpenIdSettings.Enable = model.NewBool(true)
+		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PrivateDNS + ":8080/realms/master/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewString("mattermost-openid")
+		cfg.OpenIdSettings.Secret = model.NewString("qbdUj4dacwfa5sIARIiXZxbsBFoopTyf")
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
