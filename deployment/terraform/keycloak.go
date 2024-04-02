@@ -16,10 +16,10 @@ import (
 func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
 
-	command := "start-dev --health-enabled=true"
+	command := "start-dev"
 
 	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-		command = "start --health-enabled=true"
+		command = "start"
 	}
 
 	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PublicIP)
@@ -76,7 +76,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		Command         string
 	}{
 		KeycloakVersion: t.config.ExternalAuthProviderSettings.KeycloakVersion,
-		Command:         command,
+		Command:         command + " --health-enabled=true",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
