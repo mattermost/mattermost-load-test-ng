@@ -667,9 +667,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 		cfg.OpenIdSettings.Enable = model.NewBool(true)
 		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
-		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PrivateDNS + ":8080/realms/master/.well-known/openid-configuration")
-		cfg.OpenIdSettings.Id = model.NewString("mattermost-openid")
-		cfg.OpenIdSettings.Secret = model.NewString("qbdUj4dacwfa5sIARIiXZxbsBFoopTyf")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientID)
+		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")

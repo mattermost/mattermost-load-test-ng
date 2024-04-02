@@ -190,9 +190,12 @@ type ExternalAuthProviderSettings struct {
 	DevelopmentMode        bool         `default:"false"`
 	KeycloakVersion        string       `default:"24.0.2"`
 	InstanceType           string       `default:"c5.xlarge"`
-	KeycloakAdminUser      string       `default:"mmuser"`
-	KeycloakAdminPassword  string       `default:"mmpass"`
+	KeycloakAdminUser      string       `default:"mmuser" validate:"notempty"`
+	KeycloakAdminPassword  string       `default:"mmpass" validate:"notempty"`
 	KeycloakRealmFilePath  string       `default:""`
+	KeycloakRealmName      string       `default:"mattermost"`
+	KeycloakClientID       string       `default:"mattermost-openid"`
+	KeycloakClientSecret   string       `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
 	DatabaseInstanceCount  int          `default:"1" validate:"range:[0,1]"`
 	DatabaseInstanceEngine string       `default:"aurora-postgresql"`
 	DatabaseInstanceType   string       `default:"db.r6g.large"`
