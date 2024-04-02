@@ -36,7 +36,7 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 				break
 			}
 
-			if c.user.Store().Id() != post.UserId {
+			if ack, ok := ev.GetData()["should_ack"]; ok && ack.(bool) {
 				go func() {
 					c.user.PostedAck(post.Id, "success", "", "")
 				}()
