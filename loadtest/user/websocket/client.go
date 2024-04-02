@@ -214,5 +214,5 @@ func (c *Client) PostedAck(postId string, result string, reason string, postedDa
 		"data":       postedData,
 	}
 
-	return c.SendMessage("posted_ack", data)
+	return c.SendMessage("posted_notify_ack", data)
 }
