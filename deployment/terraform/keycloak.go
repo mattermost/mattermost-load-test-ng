@@ -14,6 +14,8 @@ import (
 )
 
 func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
+	keycloakBinPath := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/bin"
+
 	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
 
 	command := "start-dev"
@@ -54,9 +56,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN="+t.config.ExternalAuthProviderSettings.KeycloakAdminUser)
 	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN_PASSWORD="+t.config.ExternalAuthProviderSettings.KeycloakAdminPassword)
 
+	// Enable health endpoints
+	keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HEALTH_ENABLED=true")
+
+	// Production configuration
+	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
+		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HOSTNAME="+t.output.KeycloakServer.PublicDNS+":8080")
+	}
+
 	// Setup the database if not running in development mode
 	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_DB_URL="+t.output.KeycloakDatabaseCluster.Endpoints[0])
+		dsn := "postgres://" + t.config.ExternalAuthProviderSettings.DatabaseUsername + ":" + t.config.ExternalAuthProviderSettings.DatabasePassword + "@" + t.output.KeycloakDatabaseCluster.Endpoints[0] + "/" + t.output.KeycloakDatabaseCluster.ClusterIdentifier + "keycloakdb?sslmode=disable"
+		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_DB_URL="+dsn)
 	}
 
 	// Upload keycloak.env file
@@ -76,7 +87,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		Command         string
 	}{
 		KeycloakVersion: t.config.ExternalAuthProviderSettings.KeycloakVersion,
-		Command:         command + " --health-enabled=true",
+		Command:         command,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
@@ -102,7 +113,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 
 	// Wait for keycloak to start
 	url := fmt.Sprintf("http://%s:8080/health", t.output.KeycloakServer.PublicDNS)
-	timeout := time.After(20 * time.Second)
+	timeout := time.After(120 * time.Second) // yes, is **that** slow
 	for {
 		resp, err := http.Get(url)
 		if err == nil && resp.StatusCode == http.StatusOK {
@@ -112,11 +123,9 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		select {
 		case <-timeout:
 			return errors.New("timeout: keycloak service is not responding")
-		case <-time.After(2 * time.Second):
+		case <-time.After(5 * time.Second):
 		}
 	}
-
-	keycloakBinPath := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/bin"
 
 	// Disable SSL requirement
 	_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh config credentials --server http://127.0.0.1:8080 --user %s --password %s --realm master", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakAdminUser, t.config.ExternalAuthProviderSettings.KeycloakAdminPassword))

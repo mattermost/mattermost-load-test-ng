@@ -777,8 +777,8 @@ resource "aws_rds_cluster" "keycloak_db_cluster" {
   count               = var.app_instance_count > 0 && !var.keycloak_development_mode ? var.keycloak_db_instance_count : 0
   cluster_identifier  = "${var.cluster_name}-keycloak-db"
   database_name       = "${var.cluster_name}keycloakdb"
-  master_username     = var.db_username
-  master_password     = var.db_password
+  master_username     = var.keycloak_db_username
+  master_password     = var.keycloak_db_password
   skip_final_snapshot = true
   apply_immediately   = true
   engine              = var.keycloak_db_instance_engine

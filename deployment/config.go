@@ -187,7 +187,7 @@ type ExternalBucketSettings struct {
 // to configure an external auth provider.
 type ExternalAuthProviderSettings struct {
 	InstanceCount          int          `default:"0" validate:"range:[0,1]"`
-	DevelopmentMode        bool         `default:"false"`
+	DevelopmentMode        bool         `default:"true"`
 	KeycloakVersion        string       `default:"24.0.2"`
 	InstanceType           string       `default:"c5.xlarge"`
 	KeycloakAdminUser      string       `default:"mmuser" validate:"notempty"`
