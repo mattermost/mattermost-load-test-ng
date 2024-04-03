@@ -239,6 +239,8 @@ type MSTeamsPluginSettings struct {
 	SyntheticUserAuthData              string `default:"ID" json:"syntheticUserAuthData"`
 	DisableSyncMsg                     bool   `default:"true" json:"disableSyncMsg"`
 	RunAsLoadTest                      bool   `default:"true" json:"runAsLoadTest"`
+	LoadTestMaxIncomingPosts           int    `default:"5" json:"loadTestMaxIncomingPosts"`
+	LoadTestUseIncomingPostMessage     bool   `default:"false" json:"loadTestUseIncomingPostMessage"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.
