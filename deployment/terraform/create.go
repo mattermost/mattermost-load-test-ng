@@ -423,7 +423,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 
 		backends := ""
 		for _, addr := range t.output.Instances {
-			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
+			backends += "server " + addr.PrivateIP + ":8065 max_fails=0;\n"
 		}
 
 		nginxConfig, err := genNginxConfig()
