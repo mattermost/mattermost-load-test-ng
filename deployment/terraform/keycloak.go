@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -40,16 +41,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
 
-		// tell keycloak to import the realm
-		command = command + " --import-realm"
 	} else {
 		mlog.Info("No realm file provided, using loadtest's default realm configuration")
 
-		_, err := sshc.Upload(strings.NewReader(t.getAsset("keycloak-realm.json")), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/realm.json", true)
+		keycloakRealmFile, err := assets.AssetString("keycloak-realm.json")
+		if err != nil {
+			return fmt.Errorf("failed to read keycloak realm file: %w", err)
+		}
+
+		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
-
 	}
 
 	// Setup admin user
@@ -87,7 +90,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		Command         string
 	}{
 		KeycloakVersion: t.config.ExternalAuthProviderSettings.KeycloakVersion,
-		Command:         command,
+		Command:         command + " --import-realm",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
@@ -127,15 +130,23 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	// Disable SSL requirement
 	_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh config credentials --server http://127.0.0.1:8080 --user %s --password %s --realm master", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakAdminUser, t.config.ExternalAuthProviderSettings.KeycloakAdminPassword))
 	if err != nil {
 		return fmt.Errorf("failed to authenticate keycload admin: %w", err)
 	}
 
-	_, err = sshc.RunCommand(fmt.Sprintf(keycloakBinPath+"/kcadm.sh update realms/%s -s sslRequired=NONE", t.config.ExternalAuthProviderSettings.KeycloakRealmName))
+	// Disable SSL requirement on master realm to allow http connections on the web interface
+	_, err = sshc.RunCommand(keycloakBinPath + "/kcadm.sh update realms/master -s sslRequired=NONE")
 	if err != nil {
 		return fmt.Errorf("failed to disable ssl requirement: %w", err)
+	}
+
+	// Disable SSL requirement on the realm set up by the loadtest
+	if t.config.ExternalAuthProviderSettings.KeycloakRealmName != "" && t.config.ExternalAuthProviderSettings.KeycloakRealmName != "master" {
+		_, err = sshc.RunCommand(fmt.Sprintf(keycloakBinPath+"/kcadm.sh update realms/%s -s sslRequired=NONE", t.config.ExternalAuthProviderSettings.KeycloakRealmName))
+		if err != nil {
+			return fmt.Errorf("failed to disable ssl requirement: %w", err)
+		}
 	}
 
 	mlog.Info("Keycloak configured")
