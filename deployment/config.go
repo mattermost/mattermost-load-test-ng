@@ -193,6 +193,7 @@ type ExternalAuthProviderSettings struct {
 	KeycloakAdminUser      string       `default:"mmuser" validate:"notempty"`
 	KeycloakAdminPassword  string       `default:"mmpass" validate:"notempty"`
 	KeycloakRealmFilePath  string       `default:""`
+	GenerateUsersCount     int          `default:"0" validate:"range:[0,)"`
 	KeycloakRealmName      string       `default:"mattermost"`
 	KeycloakClientID       string       `default:"mattermost-openid"`
 	KeycloakClientSecret   string       `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -149,7 +150,58 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	// Populate users
+	if t.config.ExternalAuthProviderSettings.GenerateUsersCount > 0 {
+		if err := t.populateKeycloakUsers(sshc); err != nil {
+			return fmt.Errorf("failed to populate keycloak users: %w", err)
+		}
+
+		mlog.Info("---------------------------------------------------------------------")
+		mlog.Info("Keycloak users were populated into the `keycloak-users.txt` file.")
+		mlog.Info("Please setup the loadtest UsersConfiguration.UsersFilePath to use it.")
+		mlog.Info("---------------------------------------------------------------------")
+	}
+
 	mlog.Info("Keycloak configured")
+
+	return nil
+}
+
+func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
+	keycloakBinPath := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/bin"
+	usersTxtPath := t.getAsset("keycloak-users.txt")
+
+	// Check if users file exists. Prevents from creating users multiple times.
+	if _, err := os.Stat(usersTxtPath); err == nil || os.IsExist(err) {
+		return nil
+	}
+
+	mlog.Info("Populating keycloak with users", mlog.String("users_file", usersTxtPath), mlog.Int("users_count", t.config.ExternalAuthProviderSettings.GenerateUsersCount))
+
+	// Open users.txt file
+	handler, err := os.OpenFile(usersTxtPath, os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to open keycloak users file: %w", err)
+	}
+	defer handler.Close()
+
+	// Create users
+	for i := 1; i <= t.config.ExternalAuthProviderSettings.GenerateUsersCount; i++ {
+		username := fmt.Sprintf("keycloak-auto-%06d", i) // this is the password too
+		email := username + "@test.mattermost.com"
+
+		_, err := sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh create users -r %s -s username=%s -s enabled=true -s email=%s", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakRealmName, username, email))
+		if err != nil {
+			return fmt.Errorf("failed to create keycloak user: %w", err)
+		}
+
+		_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh set-password -r %s --username %s --new-password %s", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakRealmName, username, username))
+		if err != nil {
+			return fmt.Errorf("failed to set keycloak user password: %w", err)
+		}
+
+		handler.Write([]byte(fmt.Sprintf("openid:%s %s\n", email, username)))
+	}
 
 	return nil
 }

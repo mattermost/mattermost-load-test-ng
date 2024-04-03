@@ -19,6 +19,7 @@ In the case of the load-test tool, a Keycloak server is used as the authenticati
     "KeycloakAdminUser": "mmadmin",
     "KeycloakAdminPassword": "mmpass",
     "KeycloakRealmFilePath": "",
+    "GenerateUsersCount": 0,
     "InstanceType": "t3.medium",
     "DatabaseInstanceCount": 0,
     "DatabaseInstanceType": "db.t3.medium",
@@ -38,6 +39,7 @@ In the case of the load-test tool, a Keycloak server is used as the authenticati
 - **KeycloakAdminPassword**: The password of the Keycloak admin user.
 - **KeycloakRealmFilePath**: The path to a Keycloak realm file to use as import data.
   - If empty the load test will import a default one.
+- **GenerateUsersCount**: The number of users to generate in the Keycloak server, if `0` no users will be generated.
 - **InstanceType**: The instance type to use for the keycloak server.
 - **DatabaseInstanceCount**: The number of database instances to deploy. This defaults to `0` if `DevelopmentMode` is set to `true`.
 - **DatabaseInstanceType**: The instance type to use for the database.
