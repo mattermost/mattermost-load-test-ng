@@ -186,23 +186,45 @@ type ExternalBucketSettings struct {
 // ExternalAuthProviderSettings contains the necessary data
 // to configure an external auth provider.
 type ExternalAuthProviderSettings struct {
-	InstanceCount          int          `default:"0" validate:"range:[0,1]"`
-	DevelopmentMode        bool         `default:"true"`
-	KeycloakVersion        string       `default:"24.0.2"`
-	InstanceType           string       `default:"c5.xlarge"`
-	KeycloakAdminUser      string       `default:"mmuser" validate:"notempty"`
-	KeycloakAdminPassword  string       `default:"mmpass" validate:"notempty"`
-	KeycloakRealmFilePath  string       `default:""`
-	GenerateUsersCount     int          `default:"0" validate:"range:[0,)"`
-	KeycloakRealmName      string       `default:"mattermost"`
-	KeycloakClientID       string       `default:"mattermost-openid"`
-	KeycloakClientSecret   string       `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
-	DatabaseInstanceCount  int          `default:"1" validate:"range:[0,1]"`
-	DatabaseInstanceEngine string       `default:"aurora-postgresql"`
-	DatabaseInstanceType   string       `default:"db.r6g.large"`
-	DatabaseUsername       string       `default:"mmuser"`
-	DatabasePassword       string       `default:"mmpassword"`
-	DatabaseParameters     DBParameters `default:"[]"`
+	// InstanceCount is the number of keycloak instances to deploy. It should be 0 or 1.
+	// If set to 0, the deployment will not include a keycloak instance.
+	InstanceCount int `default:"0" validate:"range:[0,1]"`
+	// DevelopmentMode is set to true if the keycloak instance should be started in development mode.
+	DevelopmentMode bool `default:"true"`
+	// KeycloakVersion is the version of keycloak to deploy.
+	KeycloakVersion string `default:"24.0.2"`
+	// KeycloakInstanceType is the type of the EC2 instance for keycloak.
+	InstanceType string `default:"c5.xlarge"`
+	// KeycloakAdminUser is the username of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminUser string `default:"mmuser" validate:"notempty"`
+	// KeycloakAdminPassword is the password of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminPassword string `default:"mmpass" validate:"notempty"`
+	// KeycloakRealmFilePath is the path to the realm file to be uploaded to the keycloak instance.
+	// If empty, a default realm file will be used.
+	KeycloakRealmFilePath string `default:""`
+	// GenerateUsersCount is the number of users to generate in the keycloak instance.
+	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
+	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
+	KeycloakRealmName string `default:"mattermost"`
+	// KeycloakClientID is the client id to be used in Mattermost from the above realm.
+	// Must exist in the keycloak instance
+	KeycloakClientID string `default:"mattermost-openid"`
+	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
+	// Must exist in the keycloak instance
+	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
+	// DatabaseInstanceCount is the number of RDS instances to deploy for the keycloak database.
+	// It should be 0 or 1.
+	DatabaseInstanceCount int `default:"1" validate:"range:[0,1]"`
+	// DatabaseInstanceEngine is the type of the RDS instance for the keycloak database.
+	DatabaseInstanceEngine string `default:"aurora-postgresql"`
+	// DatabaseInstanceType is the type of the RDS instance for the keycloak database.
+	DatabaseInstanceType string `default:"db.r6g.large"`
+	// DatabaseUsername is the name of the database to be created.
+	DatabaseUsername string `default:"mmuser"`
+	// DatabasePassword is the password of the database to be created.
+	DatabasePassword string `default:"mmpassword"`
+	// DatabaseParameters contains the necessary data to configure the RDS instance to be deployed and provisioned.
+	DatabaseParameters DBParameters `default:"[]"`
 }
 
 // ElasticSearchSettings contains the necessary data
