@@ -34,11 +34,11 @@ type Config struct {
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
-	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
-	AgentInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Type of the EC2 instance for proxy.
@@ -132,7 +132,7 @@ type TerraformDBSettings struct {
 	// Number of DB instances.
 	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
-	InstanceType string `default:"db.r6g.large" validate:"notempty"`
+	InstanceType string `default:"db.r7g.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
@@ -201,7 +201,7 @@ type JobServerSettings struct {
 	// Job server instances count.
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
-	InstanceType string `default:"c5.xlarge"`
+	InstanceType string `default:"c7i.xlarge"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.
