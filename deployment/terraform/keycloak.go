@@ -156,10 +156,8 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("failed to populate keycloak users: %w", err)
 		}
 
-		mlog.Info("---------------------------------------------------------------------")
-		mlog.Info("Keycloak users were populated into the `keycloak-users.txt` file.")
-		mlog.Info("Please setup the loadtest UsersConfiguration.UsersFilePath to use it.")
-		mlog.Info("---------------------------------------------------------------------")
+		mlog.Info("Overriding the users file path with the generated one from keycloak")
+		t.config.UsersFilePath = t.getAsset("keycloak-users.txt")
 	}
 
 	mlog.Info("Keycloak configured")
