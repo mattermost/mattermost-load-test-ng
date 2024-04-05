@@ -182,7 +182,7 @@ func main() {
 	deploymentCmd := &cobra.Command{
 		Use:               "deployment",
 		Short:             "Manage a load-test deployment",
-		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "production") },
+		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "test") },
 		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 
@@ -230,7 +230,7 @@ func main() {
 	loadtestCmd := &cobra.Command{
 		Use:               "loadtest",
 		Short:             "Manage the load-test",
-		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "production") },
+		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "test") },
 		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 
@@ -381,7 +381,7 @@ func main() {
 	comparisonCmd := &cobra.Command{
 		Use:               "comparison",
 		Short:             "Manage fully automated load-test comparisons environments",
-		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "production") },
+		PersistentPreRun:  func(_ *cobra.Command, _ []string) { os.Setenv("MM_SERVICEENVIRONMENT", "test") },
 		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 	comparisonCmd.Flags().StringP("comparison-config", "", "", "path to the comparison config file to use")
