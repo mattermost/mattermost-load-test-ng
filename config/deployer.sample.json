@@ -6,9 +6,9 @@
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
   "AppInstanceCount": 1,
-  "AppInstanceType": "c5.xlarge",
+  "AppInstanceType": "c7i.xlarge",
   "AgentInstanceCount": 2,
-  "AgentInstanceType": "c5.xlarge",
+  "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
@@ -18,10 +18,10 @@
   },
   "JobServerSettings":{
     "InstanceCount": 0,
-    "InstanceType": "c5.xlarge"
+    "InstanceType": "c7i.xlarge"
   },
   "EnableAgentFullLogs": true,
-  "ProxyInstanceType": "c5.xlarge",
+  "ProxyInstanceType": "c7i.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
@@ -30,7 +30,7 @@
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r6g.large",
+    "InstanceType": "db.r7g.large",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": true,
