@@ -37,7 +37,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// Install realm file
 	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		// Copy realm file to server
-		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/realm.json", true)
+		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/keycloak-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
@@ -50,7 +50,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("failed to read keycloak realm file: %w", err)
 		}
 
-		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/realm.json", true)
+		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/keycloak-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
@@ -59,6 +59,9 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// Setup admin user
 	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN="+t.config.ExternalAuthProviderSettings.KeycloakAdminUser)
 	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN_PASSWORD="+t.config.ExternalAuthProviderSettings.KeycloakAdminPassword)
+
+	// Ensure Java JVM has enough memory
+	keycloakEnvFileContents = append(keycloakEnvFileContents, "JAVA_OPTS=-Xms1024m -Xmx2048m")
 
 	// Enable health endpoints
 	keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HEALTH_ENABLED=true")
