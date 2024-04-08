@@ -308,11 +308,16 @@ func (ue *UserEntity) PostedAck(postId string, result string, reason string, pos
 	if !ue.connected {
 		return errors.New("user is not connected")
 	}
-	ue.dataChan <- postedAckMsg{
+	select {
+	case ue.dataChan <- postedAckMsg{
 		postId,
 		result,
 		reason,
 		postedData,
+	}:
+	default:
+		return errors.New("failed to send posted ACK")
 	}
+
 	return nil
 }
