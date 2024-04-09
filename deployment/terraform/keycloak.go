@@ -37,7 +37,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// Install realm file
 	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		// Copy realm file to server
-		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/keycloak-realm.json", true)
+		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
@@ -45,12 +45,12 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	} else {
 		mlog.Info("No realm file provided, using loadtest's default realm configuration")
 
-		keycloakRealmFile, err := assets.AssetString("keycloak-realm.json")
+		keycloakRealmFile, err := assets.AssetString("mattermost-realm.json")
 		if err != nil {
 			return fmt.Errorf("failed to read keycloak realm file: %w", err)
 		}
 
-		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/keycloak-realm.json", true)
+		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
