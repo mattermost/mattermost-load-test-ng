@@ -35,11 +35,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Check if we should use a custom dump, a custom realm file or the default one
-	if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" {
-		if err := t.IngestKeycloakDump(); err != nil {
-			return fmt.Errorf("failed to ingest keycloak dump: %w", err)
-		}
-	} else if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
+	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)

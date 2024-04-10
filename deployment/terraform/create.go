@@ -251,7 +251,7 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	if t.output.HasKeycloak() {
-		if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" {
+		if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" && t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath == "" {
 			err := t.IngestKeycloakDump()
 			if err != nil {
 				return fmt.Errorf("failed to ingest keycloak dump: %w", err)
