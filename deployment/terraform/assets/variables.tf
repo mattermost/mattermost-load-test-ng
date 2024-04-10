@@ -138,9 +138,6 @@ variable "keycloak_development_mode" {
 variable "keycloak_db_instance_count" {
 }
 
-variable "keycloak_db_instance_engine" {
-}
-
 variable "keycloak_db_instance_type" {
 }
 
