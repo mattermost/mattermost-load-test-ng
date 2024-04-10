@@ -238,7 +238,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("db_enable_performance_insights=%t", t.config.TerraformDBSettings.EnablePerformanceInsights),
 		"-var", fmt.Sprintf("db_parameters=%s", t.config.TerraformDBSettings.DBParameters),
-		"-var", fmt.Sprintf("keycloak_instance_count=%d", t.config.ExternalAuthProviderSettings.InstanceCount),
+		"-var", fmt.Sprintf("keycloak_enabled=%v", t.config.ExternalAuthProviderSettings.Enabled),
 		"-var", fmt.Sprintf("keycloak_development_mode=%v", t.config.ExternalAuthProviderSettings.DevelopmentMode),
 		"-var", fmt.Sprintf("keycloak_instance_type=%s", t.config.ExternalAuthProviderSettings.InstanceType),
 		"-var", fmt.Sprintf("keycloak_db_instance_type=%s", t.config.ExternalAuthProviderSettings.DatabaseInstanceType),

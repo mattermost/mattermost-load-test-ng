@@ -711,7 +711,7 @@ resource "aws_instance" "keycloak" {
 
   ami           = var.aws_ami
   instance_type = var.keycloak_instance_type
-  count         = var.keycloak_instance_count > 0 ? 1 : 0
+  count         = var.keycloak_enabled ? 1 : 0
   key_name      = aws_key_pair.key.id
 
   vpc_security_group_ids = [
@@ -739,7 +739,7 @@ resource "aws_instance" "keycloak" {
 }
 
 resource "aws_security_group" "keycloak" {
-  count       = var.keycloak_instance_count > 0 ? 1 : 0
+  count       = var.keycloak_enabled ? 1 : 0
   name        = "${var.cluster_name}-keycloak-security-group"
   description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
 

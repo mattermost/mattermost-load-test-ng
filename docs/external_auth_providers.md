@@ -34,7 +34,7 @@ In the case of the load-test tool, a Keycloak server is used as the authenticati
 
 See the [reference code in the deployment/config.go file](../deployment/config.go#L188).
 
-- **InstanceCount**: The number of instances to deploy. (`0` or `1`, `0` disables the deployment of the Keycloak server)
+- **Enabled**: Whether to enable the deployment of the Keycloak server.
 - **DevelopmentMode**: Whether to deploy the server in development mode. This changes the command used to start the server from `start` (production) to `start-dev` (development) and disables the usage of an external database.
 - **KeycloakVersion**: The version of Keycloak to deploy.
 - **KeycloakAdminUser**: The username of the Keycloak admin user.

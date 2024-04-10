@@ -186,9 +186,8 @@ type ExternalBucketSettings struct {
 // ExternalAuthProviderSettings contains the necessary data
 // to configure an external auth provider.
 type ExternalAuthProviderSettings struct {
-	// InstanceCount is the number of keycloak instances to deploy. It should be 0 or 1.
-	// If set to 0, the deployment will not include a keycloak instance.
-	InstanceCount int `default:"0" validate:"range:[0,1]"`
+	// Enabled is set to true if the external auth provider should be enabled.
+	Enabled bool `default:"false"`
 	// DevelopmentMode is set to true if the keycloak instance should be started in development mode.
 	DevelopmentMode bool `default:"true"`
 	// KeycloakVersion is the version of keycloak to deploy.

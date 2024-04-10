@@ -119,8 +119,8 @@ variable "block_device_sizes_keycloak" {
   default = 10
 }
 
-variable "keycloak_instance_count" {
-  type = number
+variable "keycloak_enabled" {
+  type = bool
 }
 
 variable "keycloak_instance_type" {
