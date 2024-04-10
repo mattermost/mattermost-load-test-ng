@@ -23,6 +23,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
 
 	command := "start-dev"
+	extraArguments := []string{}
 
 	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
 		command = "start"
@@ -33,14 +34,17 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		return err
 	}
 
-	// Install realm file
-	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
-		// Copy realm file to server
+	// Check if we should use a custom dump, a custom realm file or the default one
+	if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" {
+		if err := t.IngestKeycloakDump(); err != nil {
+			return fmt.Errorf("failed to ingest keycloak dump: %w", err)
+		}
+	} else if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
-
+		extraArguments = append(extraArguments, "--import-realm")
 	} else {
 		mlog.Info("No realm file provided, using loadtest's default realm configuration")
 
@@ -53,6 +57,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
+		extraArguments = append(extraArguments, "--import-realm")
 	}
 
 	// Values for the keycloak.env file
@@ -94,7 +99,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		Command         string
 	}{
 		KeycloakVersion: t.config.ExternalAuthProviderSettings.KeycloakVersion,
-		Command:         command + " --import-realm",
+		Command:         command + " " + strings.Join(extraArguments, " "),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
