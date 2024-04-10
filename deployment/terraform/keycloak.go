@@ -249,7 +249,8 @@ func (t *Terraform) IngestKeycloakDump() error {
 
 	commands := []string{
 		"sudo rm -rf /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/*",
-		"tar xzf /tmp/" + fileName + " -d /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/",
+		"mkdir -p /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2",
+		"tar xzf /home/ubuntu/" + fileName + " -C /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/",
 		"sudo systemctl start keycloak",
 	}
 
