@@ -188,7 +188,9 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 
 	// Create users
 	for i := 1; i <= t.config.ExternalAuthProviderSettings.GenerateUsersCount; i++ {
-		username := fmt.Sprintf("keycloak-auto-%06d", i) // this is the password too
+		username := fmt.Sprintf("keycloak-auto-%06d", i)
+		password := username // we just use the same string for both
+
 		email := username + "@test.mattermost.com"
 
 		_, err := sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh create users -r %s -s username=%s -s enabled=true -s email=%s", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakRealmName, username, email))
@@ -196,12 +198,12 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 			return fmt.Errorf("failed to create keycloak user: %w", err)
 		}
 
-		_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh set-password -r %s --username %s --new-password %s", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakRealmName, username, username))
+		_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh set-password -r %s --username %s --new-password %s", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakRealmName, username, password))
 		if err != nil {
 			return fmt.Errorf("failed to set keycloak user password: %w", err)
 		}
 
-		handler.Write([]byte(fmt.Sprintf("openid:%s %s\n", email, username)))
+		handler.Write([]byte(fmt.Sprintf("openid:%s %s\n", email, password)))
 	}
 
 	return nil
