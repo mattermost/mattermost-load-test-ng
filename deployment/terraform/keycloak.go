@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -202,6 +204,55 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 		}
 
 		handler.Write([]byte(fmt.Sprintf("openid:%s %s\n", email, password)))
+	}
+
+	return nil
+}
+
+func (t *Terraform) IngestKeycloakDump() error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
+	if output.KeycloakServer.PrivateIP == "" {
+		return fmt.Errorf("no keycloak instances deployed")
+	}
+
+	client, err := extAgent.NewClient(output.KeycloakServer.PublicIP)
+	if err != nil {
+		return fmt.Errorf("error in getting ssh connection %w", err)
+	}
+	defer client.Close()
+
+	_, err = client.RunCommand("sudo systemctl stop keycloak")
+	if err != nil {
+		return fmt.Errorf("failed to stop keycloak before uploading the dump file: %w", err)
+	}
+
+	dumpURI := t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI
+	fileName := filepath.Base(dumpURI)
+	mlog.Info("Provisioning keycloak dump file", mlog.String("uri", dumpURI))
+	if err := deployment.ProvisionURL(client, dumpURI, fileName); err != nil {
+		return err
+	}
+
+	commands := []string{
+		"sudo rm -rf /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/*",
+		"tar xzf /tmp/" + fileName + " -d /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/",
+		"sudo systemctl start keycloak",
+	}
+
+	for _, cmd := range commands {
+		_, err = client.RunCommand(cmd)
+		if err != nil {
+			return fmt.Errorf("failed to run command %q: %w", cmd, err)
+		}
 	}
 
 	return nil

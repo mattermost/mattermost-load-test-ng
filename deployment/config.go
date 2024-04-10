@@ -202,6 +202,13 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakRealmFilePath is the path to the realm file to be uploaded to the keycloak instance.
 	// If empty, a default realm file will be used.
 	KeycloakRealmFilePath string `default:""`
+	// KeycloakDBDumpURI
+	// An optional URI to a keycloak database dump file to be uploaded on environment
+	// creation.
+	// The file is expected to be the h2 folder gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	// In such case, the dump file will be uploaded to the app servers.
+	KeycloakDBDumpURI string `default:""`
 	// GenerateUsersCount is the number of users to generate in the keycloak instance.
 	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
 	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
