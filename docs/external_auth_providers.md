@@ -52,7 +52,7 @@ See the [reference code in the deployment/config.go file](../deployment/config.g
 
 ## Enabling the Keycloak server
 
-In order to enable the deployment of the Keycloak server (and configuration of the Mattermost instance to go along with it) you only need to provide the raise the `ExernalAuthProviderSettings.InstanceCount` section to `1` in the deployer configuration.
+In order to enable the deployment of the Keycloak server (and configuration of the Mattermost instance to go along with it) you only need to set the `ExernalAuthProviderSettings.InstanceCount` section to `1` in the deployer configuration.
 
 ## The keycloak realm
 
