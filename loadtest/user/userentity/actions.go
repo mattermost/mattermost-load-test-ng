@@ -29,6 +29,10 @@ const (
 	authOpenIDSignup authOpenIDAction = "signup"
 )
 
+var (
+	openIDLoginFormActionRegex = regexp.MustCompile(`action=["'](.*?)["']`)
+)
+
 // SignUp signs up the user with the given credentials.
 func (ue *UserEntity) SignUp(email, username, password string) error {
 	var newUser *model.User
@@ -79,17 +83,16 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	// make a request to the openid login page of mattermost
 	resp, err := client.Get(ue.client.URL + "/oauth/openid/" + string(action))
 	if err != nil {
-		return fmt.Errorf("error while making request to openid login page: %w", err)
+		return fmt.Errorf("error while making request to openid %s page: %w", action, err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("error while reading response body: %w", err)
 	}
+	resp.Body.Close()
 
-	re := regexp.MustCompile(`action=["'](.*?)["']`)
-
-	loginURL := string(re.FindSubmatch(body)[1])
+	loginURL := string(openIDLoginFormActionRegex.FindSubmatch(body)[1])
 
 	loginResponse, err := client.PostForm(loginURL, url.Values{
 		"username": {ue.config.Username},
@@ -107,10 +110,11 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	for _, cookie := range cookies {
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
+			return nil
 		}
 	}
 
-	return nil
+	return fmt.Errorf("Token was not found in headers")
 }
 
 // Login logs the user in. It authenticates a user and starts a new session.
