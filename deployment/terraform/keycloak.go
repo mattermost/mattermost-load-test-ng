@@ -31,9 +31,6 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		return err
 	}
 
-	// Create keycloak.env file
-	var keycloakEnvFileContents []string
-
 	// Install realm file
 	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		// Copy realm file to server
@@ -56,15 +53,16 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	// Setup admin user
-	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN="+t.config.ExternalAuthProviderSettings.KeycloakAdminUser)
-	keycloakEnvFileContents = append(keycloakEnvFileContents, "KEYCLOAK_ADMIN_PASSWORD="+t.config.ExternalAuthProviderSettings.KeycloakAdminPassword)
-
-	// Ensure Java JVM has enough memory
-	keycloakEnvFileContents = append(keycloakEnvFileContents, "JAVA_OPTS=-Xms1024m -Xmx2048m")
-
-	// Enable health endpoints
-	keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HEALTH_ENABLED=true")
+	// Values for the keycloak.env file
+	keycloakEnvFileContents := []string{
+		// Enable health endpoints
+		"KC_HEALTH_ENABLED=true",
+		// Setup admin user
+		"KEYCLOAK_ADMIN=" + t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
+		"KEYCLOAK_ADMIN_PASSWORD=" + t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
+		// Ensure Java JVM has enough memory for large imports
+		"JAVA_OPTS=-Xms1024m -Xmx2048m",
+	}
 
 	// Production configuration
 	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
