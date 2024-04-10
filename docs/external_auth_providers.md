@@ -19,11 +19,11 @@ In the case of the load-test tool, a Keycloak server is used as the authenticati
     "KeycloakAdminUser": "mmadmin",
     "KeycloakAdminPassword": "mmpass",
     "KeycloakRealmFilePath": "",
+    "KeycloakDBDumpURI": "",
     "GenerateUsersCount": 0,
     "InstanceType": "t3.medium",
     "DatabaseInstanceCount": 0,
     "DatabaseInstanceType": "db.t3.medium",
-    "DatabaseInstanceEngine": "aurora-postgresql",
     "DatabaseUsername": "mmuser",
     "DatabasePassword": "mmpassword",
     "DatabaseParameters": []
@@ -41,11 +41,14 @@ See the [reference code in the deployment/config.go file](../deployment/config.g
 - **KeycloakAdminPassword**: The password of the Keycloak admin user.
 - **KeycloakRealmFilePath**: The path to a Keycloak realm file to use as import data.
   - If empty the load test will import a default one.
+  -  See the [The keycloak realm](#the-keycloak-realm) section for more information.
+- **KeycloakDBDumpURI**: The URI of a database dump to use as import data.
+  - See the [Importing a database dump](#importing-a-database-dump) section for more information.
 - **GenerateUsersCount**: The number of users to generate in the Keycloak server, if `0` no users will be generated.
+  - See the [Generating users](#generating-users) section for more information.
 - **InstanceType**: The instance type to use for the keycloak server.
 - **DatabaseInstanceCount**: The number of database instances to deploy. This defaults to `0` if `DevelopmentMode` is set to `true`.
 - **DatabaseInstanceType**: The instance type to use for the database.
-- **DatabaseInstanceEngine**: The database engine to use.
 - **DatabaseUsername**: The username to use for the database.
 - **DatabasePassword**: The password to use for the database.
 - **DatabaseParameters**: Additional parameters to use for the database.
@@ -63,6 +66,12 @@ The Keycloak server uses a realm to manage users and applications. A realm is a 
 - If this option is left empty, the load-test tool will use a default realm file with the following usable credentials:
   - To log in in mattermost: `keycloak-user-01` as username and password.
   - To log in into the Keycloak admin interface: `mmadmin`/`mmpass`.
+
+## Importing a database dump
+
+The `KeycloakDBDumpURI` configuration option allows you to import a database dump into the Keycloak server. This is useful when you want to use a database dump from a previous Keycloak server deployment.
+
+This option allows the use of an URI (can be `http://`, `https://`, or `file://`) to a database dump file. The dump file should be a `.tgz` archive with the `.db` files inside. This file will be uploaded and extracted directly into the Keycloak `$KEYCLOAK_PATH/data/h2` folder.
 
 ## Generating users
 
