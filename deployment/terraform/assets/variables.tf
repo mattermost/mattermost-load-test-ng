@@ -120,8 +120,7 @@ variable "block_device_sizes_keycloak" {
 }
 
 variable "keycloak_instance_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "keycloak_instance_type" {
