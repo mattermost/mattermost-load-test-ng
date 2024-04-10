@@ -781,8 +781,8 @@ resource "aws_rds_cluster" "keycloak_db_cluster" {
   master_password     = var.keycloak_db_password
   skip_final_snapshot = true
   apply_immediately   = true
-  engine              = var.keycloak_db_instance_engine
-  engine_version      = var.db_engine_version[var.keycloak_db_instance_engine]
+  engine              = "aurora-postgresql14"
+  engine_version      = var.db_engine_version["aurora-postgresql14"]
 
   vpc_security_group_ids = [aws_security_group.keycloak_db[0].id]
 }
@@ -792,7 +792,7 @@ resource "aws_rds_cluster_instance" "keycloak_cluster_instances" {
   identifier                   = "${var.cluster_name}-keycloak-db-${count.index}"
   cluster_identifier           = "${var.cluster_name}-keycloak-db"
   instance_class               = var.keycloak_db_instance_type
-  engine                       = var.keycloak_db_instance_engine
+  engine                       = "aurora-postgresql14"
   apply_immediately            = true
   auto_minor_version_upgrade   = false
   performance_insights_enabled = false
