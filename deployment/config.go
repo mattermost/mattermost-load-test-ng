@@ -215,8 +215,6 @@ type ExternalAuthProviderSettings struct {
 	// DatabaseInstanceCount is the number of RDS instances to deploy for the keycloak database.
 	// It should be 0 or 1.
 	DatabaseInstanceCount int `default:"1" validate:"range:[0,1]"`
-	// DatabaseInstanceEngine is the type of the RDS instance for the keycloak database.
-	DatabaseInstanceEngine string `default:"aurora-postgresql"`
 	// DatabaseInstanceType is the type of the RDS instance for the keycloak database.
 	DatabaseInstanceType string `default:"db.r6g.large"`
 	// DatabaseUsername is the name of the database to be created.
