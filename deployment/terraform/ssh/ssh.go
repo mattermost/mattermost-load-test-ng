@@ -6,6 +6,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -157,4 +158,9 @@ func (sshc *Client) Download(src string, dst io.Writer, sudo bool) error {
 // Close closes the underlying connection.
 func (sshc *Client) Close() error {
 	return sshc.client.Close()
+}
+
+// DialContextF returns the underlying client's DialContext function
+func (sshc *Client) DialContextF() func(context.Context, string, string) (net.Conn, error) {
+	return sshc.client.DialContext
 }
