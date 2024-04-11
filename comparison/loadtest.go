@@ -112,11 +112,11 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-type bucketOps struct {
+type s3ClientWrapper struct {
 	S3Client *s3.Client
 }
 
-func (bucket bucketOps) DeleteObjects(ctx context.Context, bucketName string, objectKeys []string) error {
+func (s3Wrapper s3ClientWrapper) DeleteObjects(ctx context.Context, bucketName string, objectKeys []string) error {
 	if len(objectKeys) == 0 {
 		return nil
 	}
@@ -125,27 +125,26 @@ func (bucket bucketOps) DeleteObjects(ctx context.Context, bucketName string, ob
 	for _, key := range objectKeys {
 		objectIds = append(objectIds, types.ObjectIdentifier{Key: aws.String(key)})
 	}
-	_, err := bucket.S3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+	_, err := s3Wrapper.S3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 		Bucket: aws.String(bucketName),
 		Delete: &types.Delete{Objects: objectIds},
 	})
 	if err != nil {
-		return fmt.Errorf("error deleting objects from bucket %q: %v", bucketName, err)
+		return fmt.Errorf("error deleting objects from bucket %q: %w", bucketName, err)
 	}
 	return err
 }
 
-func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) error {
+func emptyBucket(ctx context.Context, s3Wrapper *s3ClientWrapper, bucketName string) error {
 	params := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucketName),
 	}
-	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
+	p := s3.NewListObjectsV2Paginator(s3Wrapper.S3Client, params)
 
 	for p.HasMorePages() {
-
 		page, err := p.NextPage(ctx)
 		if err != nil {
-			return fmt.Errorf("error getting the page during empty bucket: %v", err)
+			return fmt.Errorf("error getting the page during empty bucket: %w", err)
 		}
 
 		var objKeys []string
@@ -153,8 +152,7 @@ func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) erro
 			objKeys = append(objKeys, *object.Key)
 		}
 
-		err = bucket.DeleteObjects(ctx, bucketName, objKeys)
-		if err != nil {
+		if err := s3Wrapper.DeleteObjects(ctx, bucketName, objKeys); err != nil {
 			return err
 		}
 	}
@@ -162,27 +160,26 @@ func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) erro
 	return nil
 }
 
-func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, sourceBucket string) error {
+func populateBucket(ctx context.Context, bucket *s3ClientWrapper, targetBucket, sourceBucket string) error {
 	params := &s3.ListObjectsV2Input{
 		Bucket: aws.String(sourceBucket),
 	}
 	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
 
 	for p.HasMorePages() {
-
 		page, err := p.NextPage(ctx)
 		if err != nil {
-			return fmt.Errorf("error getting the page during populate bucket: %v", err)
+			return fmt.Errorf("error getting the page during populate bucket: %w", err)
 		}
 
 		for _, object := range page.Contents {
 			_, err := bucket.S3Client.CopyObject(ctx, &s3.CopyObjectInput{
 				Bucket:     aws.String(targetBucket),
-				CopySource: aws.String(fmt.Sprintf("%v/%v", sourceBucket, *object.Key)),
+				CopySource: aws.String(fmt.Sprintf("%s/%s", sourceBucket, *object.Key)),
 				Key:        object.Key})
 
 			if err != nil {
-				return fmt.Errorf("failed to copy object %q: %v", *object.Key, err)
+				return fmt.Errorf("failed to copy object %q: %w", *object.Key, err)
 			}
 		}
 	}
@@ -315,7 +312,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 
 	s3client := s3.NewFromConfig(cfg)
-	bucket := bucketOps{S3Client: s3client}
+	bucket := s3ClientWrapper{S3Client: s3client}
 
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
@@ -334,12 +331,15 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		err := emptyBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id)
 		if err != nil {
 			resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
+			return
 		}
 
 		mlog.Info("Pre-populating S3 bucket")
-		err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, s3BucketURI)
+		srcBucketName := strings.TrimPrefix(s3BucketURI, "s3://")
+		err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, srcBucketName)
 		if err != nil {
 			resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
+			return
 		}
 
 		resetBucketErrCh <- nil
