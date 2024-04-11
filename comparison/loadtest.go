@@ -162,8 +162,9 @@ func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) erro
 }
 
 func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, sourceBucket string) error {
+	srcBucketName := strings.TrimLeft(sourceBucket, "s3://")
 	params := &s3.ListObjectsV2Input{
-		Bucket: aws.String(sourceBucket),
+		Bucket: aws.String(srcBucketName),
 	}
 	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
 
@@ -176,7 +177,7 @@ func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, source
 		for _, object := range page.Contents {
 			_, err := bucket.S3Client.CopyObject(ctx, &s3.CopyObjectInput{
 				Bucket:     aws.String(targetBucket),
-				CopySource: aws.String(fmt.Sprintf("%v/%v", sourceBucket, *object.Key)),
+				CopySource: aws.String(fmt.Sprintf("%v/%v", srcBucketName, *object.Key)),
 				Key:        object.Key})
 
 			if err != nil {
