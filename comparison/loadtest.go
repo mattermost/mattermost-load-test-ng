@@ -305,14 +305,12 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Value:   clearLicensesCmdValue,
 	}
 
-	// Should I use context background here?
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithSharedConfigProfile(t.Config().AWSProfile))
 	if err != nil {
 		return fmt.Errorf("error loading aws config: %w", err)
 	}
 
-	s3client := s3.NewFromConfig(cfg)
-	bucket := s3ClientWrapper{S3Client: s3client}
+	s3client := s3ClientWrapper{S3Client: s3.NewFromConfig(cfg)}
 
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
@@ -326,20 +324,22 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	defer resetBucketCancel()
 	resetBucketErrCh := make(chan error, 1)
 	go func() {
-		mlog.Info("Emptying S3 bucket")
+		if s3BucketURI != "" && tfOutput.HasS3Bucket() {
+			mlog.Info("Emptying S3 bucket")
 
-		err := emptyBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id)
-		if err != nil {
-			resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
-			return
-		}
+			err := emptyBucket(resetBucketCtx, &s3client, tfOutput.S3Bucket.Id)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
+				return
+			}
 
-		mlog.Info("Pre-populating S3 bucket")
-		srcBucketName := strings.TrimPrefix(s3BucketURI, "s3://")
-		err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, srcBucketName)
-		if err != nil {
-			resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
-			return
+			mlog.Info("Pre-populating S3 bucket")
+			srcBucketName := strings.TrimPrefix(s3BucketURI, "s3://")
+			err = populateBucket(resetBucketCtx, &s3client, tfOutput.S3Bucket.Id, srcBucketName)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
+				return
+			}
 		}
 
 		resetBucketErrCh <- nil
