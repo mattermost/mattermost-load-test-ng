@@ -41,17 +41,17 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
 		}
 		extraArguments = append(extraArguments, "--import-realm")
-	} else {
-		mlog.Info("No realm file provided, using loadtest's default realm configuration")
+	} else if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI == "" {
+		mlog.Info("No realm file or database dump provided, using loadtest's default keycloak realm configuration")
 
 		keycloakRealmFile, err := assets.AssetString("mattermost-realm.json")
 		if err != nil {
-			return fmt.Errorf("failed to read keycloak realm file: %w", err)
+			return fmt.Errorf("failed to read default keycloak realm file: %w", err)
 		}
 
 		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
 		if err != nil {
-			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
+			return fmt.Errorf("failed to upload default keycloak realm file: %w", err)
 		}
 		extraArguments = append(extraArguments, "--import-realm")
 	}
