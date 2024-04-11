@@ -142,7 +142,6 @@ func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) erro
 	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
 
 	for p.HasMorePages() {
-
 		page, err := p.NextPage(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting the page during empty bucket: %v", err)
@@ -169,7 +168,6 @@ func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, source
 	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
 
 	for p.HasMorePages() {
-
 		page, err := p.NextPage(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting the page during populate bucket: %v", err)
@@ -317,17 +315,21 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	defer resetBucketCancel()
 	resetBucketErrCh := make(chan error, 1)
 	go func() {
-		mlog.Info("Emptying S3 bucket")
+		if s3BucketURI != "" && tfOutput.HasS3Bucket() {
+			mlog.Info("Emptying S3 bucket")
 
-		err := emptyBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id)
-		if err != nil {
-			resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
-		}
+			err := emptyBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
+				return
+			}
 
-		mlog.Info("Pre-populating S3 bucket")
-		err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, s3BucketURI)
-		if err != nil {
-			resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
+			mlog.Info("Pre-populating S3 bucket")
+			err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, s3BucketURI)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
+				return
+			}
 		}
 
 		resetBucketErrCh <- nil
