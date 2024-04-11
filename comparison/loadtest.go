@@ -7,11 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
@@ -109,9 +112,82 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 	}
 }
 
-type localCmd struct {
-	msg   string
-	value []string
+type bucketOps struct {
+	S3Client *s3.Client
+}
+
+func (bucket bucketOps) DeleteObjects(ctx context.Context, bucketName string, objectKeys []string) error {
+	if len(objectKeys) == 0 {
+		return nil
+	}
+
+	var objectIds []types.ObjectIdentifier
+	for _, key := range objectKeys {
+		objectIds = append(objectIds, types.ObjectIdentifier{Key: aws.String(key)})
+	}
+	_, err := bucket.S3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+		Bucket: aws.String(bucketName),
+		Delete: &types.Delete{Objects: objectIds},
+	})
+	if err != nil {
+		return fmt.Errorf("error deleting objects from bucket %q: %v", bucketName, err)
+	}
+	return err
+}
+
+func emptyBucket(ctx context.Context, bucket *bucketOps, bucketName string) error {
+	params := &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucketName),
+	}
+	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
+
+	for p.HasMorePages() {
+
+		page, err := p.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting the page during empty bucket: %v", err)
+		}
+
+		var objKeys []string
+		for _, object := range page.Contents {
+			objKeys = append(objKeys, *object.Key)
+		}
+
+		err = bucket.DeleteObjects(ctx, bucketName, objKeys)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, sourceBucket string) error {
+	params := &s3.ListObjectsV2Input{
+		Bucket: aws.String(sourceBucket),
+	}
+	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
+
+	for p.HasMorePages() {
+
+		page, err := p.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting the page during populate bucket: %v", err)
+		}
+
+		for _, object := range page.Contents {
+			_, err := bucket.S3Client.CopyObject(ctx, &s3.CopyObjectInput{
+				Bucket:     aws.String(targetBucket),
+				CopySource: aws.String(fmt.Sprintf("%v/%v", sourceBucket, *object.Key)),
+				Key:        object.Key})
+
+			if err != nil {
+				return fmt.Errorf("failed to copy object %q: %v", *object.Key, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
@@ -220,20 +296,14 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	loadDBDumpCmd.Value = dbCmd
 
-	resetBucketCmds := []localCmd{}
-	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
-		deleteBucketCmd := localCmd{
-			msg:   "Emptying S3 bucket",
-			value: []string{"--profile", t.Config().AWSProfile, "s3", "rm", "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
-		}
-
-		prepopulateBucketCmd := localCmd{
-			msg:   "Pre-populating S3 bucket",
-			value: []string{"--profile", t.Config().AWSProfile, "s3", "cp", s3BucketURI, "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
-		}
-
-		resetBucketCmds = []localCmd{deleteBucketCmd, prepopulateBucketCmd}
+	// Should I use context background here?
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithSharedConfigProfile(t.Config().AWSProfile))
+	if err != nil {
+		return fmt.Errorf("error loading aws config: %w", err)
 	}
+
+	s3client := s3.NewFromConfig(cfg)
+	bucket := bucketOps{S3Client: s3client}
 
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
@@ -247,13 +317,19 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	defer resetBucketCancel()
 	resetBucketErrCh := make(chan error, 1)
 	go func() {
-		for _, c := range resetBucketCmds {
-			mlog.Info(c.msg)
-			if err := exec.CommandContext(resetBucketCtx, "aws", c.value...).Run(); err != nil {
-				resetBucketErrCh <- fmt.Errorf("failed to run local cmd %q: %w", c.value, err)
-				return
-			}
+		mlog.Info("Emptying S3 bucket")
+
+		err := emptyBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id)
+		if err != nil {
+			resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
 		}
+
+		mlog.Info("Pre-populating S3 bucket")
+		err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, s3BucketURI)
+		if err != nil {
+			resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
+		}
+
 		resetBucketErrCh <- nil
 	}()
 
