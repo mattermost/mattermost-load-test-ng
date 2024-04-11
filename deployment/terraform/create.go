@@ -695,6 +695,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
