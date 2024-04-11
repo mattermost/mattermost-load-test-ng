@@ -77,6 +77,13 @@ type teamPresenceMsg struct {
 	teamId string
 }
 
+type postedAckMsg struct {
+	postId     string
+	result     string
+	reason     string
+	postedData string
+}
+
 type ueTransport struct {
 	transport http.RoundTripper
 	ue        *UserEntity
@@ -153,7 +160,7 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 	}
 
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.dataChan = make(chan any)
+	ue.dataChan = make(chan any, 10)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil
