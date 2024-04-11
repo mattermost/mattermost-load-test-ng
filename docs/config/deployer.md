@@ -108,6 +108,18 @@ Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` servi
 
 You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
+### SnapshotRepository
+
+*string*
+
+If you want to deploy an already indexed database, you need to provide both the name of the repository where the snapshot lives and the snapshot's name. `SnapshotRepository` is the name of the repository.
+
+### SnapshotName
+
+*string*
+
+If you want to deploy an already indexed database, you need to provide both the name of the repository where the snapshot lives and the snapshot's name. `SnapshotName` is the name of the snapshot itself.
+
 ## JobServerSettings
 
 ### InstanceCount
