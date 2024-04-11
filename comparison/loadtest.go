@@ -168,6 +168,7 @@ func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, source
 	}
 	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
 
+	objectsCopied := 0
 	for p.HasMorePages() {
 		page, err := p.NextPage(ctx)
 		if err != nil {
@@ -184,6 +185,9 @@ func populateBucket(ctx context.Context, bucket *bucketOps, targetBucket, source
 				return fmt.Errorf("failed to copy object %q: %v", *object.Key, err)
 			}
 		}
+
+		objectsCopied += len(page.Contents)
+		mlog.Info("Pre-populating S3 bucket...", mlog.Int("objects copied", objectsCopied))
 	}
 
 	return nil
@@ -325,7 +329,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 				return
 			}
 
-			mlog.Info("Pre-populating S3 bucket")
+			mlog.Info("Pre-populating S3 bucket...")
 			err = populateBucket(resetBucketCtx, &bucket, tfOutput.S3Bucket.Id, s3BucketURI)
 			if err != nil {
 				resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
