@@ -410,6 +410,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 		return
 	}
+
 	func() {
 		defer func() {
 			err := sshc.Close()
@@ -426,16 +427,41 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=0;\n"
 		}
 
+		cacheObjects := "10m"
+		cacheSize := "3g"
+		// Extracting the instance class from the type.
+		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
+		parts := strings.Split(t.config.ProxyInstanceType, ".")
+		if len(parts) > 1 {
+			// Hack alert. There can be other higher variants like 12xlarge or even metal. But we are keeping it simple for now.
+			switch parts[1] {
+			case "4", "8":
+				cacheObjects = "50m"
+				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
+				// from my tests. So there's no point stretching it further.
+			}
+		}
+
 		nginxConfig, err := genNginxConfig()
 		if err != nil {
 			mlog.Error("Failed to generate nginx config", mlog.Err(err))
 			return
 		}
 
+		nginxSiteConfig, err := fillConfigTemplate(nginxSiteConfigTmpl, map[string]string{
+			"backends":     backends,
+			"cacheObjects": cacheObjects,
+			"cacheSize":    cacheSize,
+		})
+		if err != nil {
+			mlog.Error("Failed to generate nginx site config", mlog.Err(err))
+			return
+		}
+
 		batch := []uploadInfo{
 			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
 			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
-			{srcData: strings.TrimLeft(fmt.Sprintf(nginxSiteConfig, backends), "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
+			{srcData: strings.TrimLeft(nginxSiteConfig, "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
 			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
@@ -445,7 +471,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
-		cmd := "sudo sysctl -p && sudo service nginx reload"
+		cmd := "sudo sysctl -p && sudo service nginx restart"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
