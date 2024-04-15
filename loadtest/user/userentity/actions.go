@@ -99,11 +99,11 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 		"password": {ue.config.Password},
 	})
 	if err != nil {
-		return fmt.Errorf("error while logging in: %w", err)
+		return fmt.Errorf("error while %s in: %w", action, err)
 	}
 
 	if loginResponse.StatusCode != http.StatusOK {
-		return fmt.Errorf("login failed with status code %d", loginResponse.StatusCode)
+		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
 	cookies := jar.Cookies(loginResponse.Request.URL)
