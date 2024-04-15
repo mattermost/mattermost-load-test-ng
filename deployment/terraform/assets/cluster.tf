@@ -728,7 +728,7 @@ resource "aws_instance" "keycloak" {
       "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
-      "sudo apt-get install unzip openjdk-17-jre -y",
+      "sudo apt-get install unzip openjdk-17-jre postgresql postgresql-contrib -y",
       "sudo mkdir -p /opt/keycloak",
       "sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${var.keycloak_version}/keycloak-${var.keycloak_version}.zip",
       "sudo unzip /opt/keycloak/keycloak-${var.keycloak_version}.zip -d /opt/keycloak",

@@ -34,6 +34,20 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		return err
 	}
 
+	// Check if the keycloak database exists
+	result, _ := sshc.RunCommand(`sudo -iu postgres psql -l | grep keycloak 2> /dev/null`)
+	if len(result) == 0 {
+		_, err = sshc.RunCommand(`sudo -iu postgres psql <<EOSQL
+		CREATE USER keycloak WITH PASSWORD 'mmpass';
+		CREATE DATABASE keycloak OWNER keycloak;
+		GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+		EOSQL
+		'`)
+		if err != nil {
+			return fmt.Errorf("failed to setup keycloak database: %w", err)
+		}
+	}
+
 	// Check if we should use a custom dump, a custom realm file or the default one
 	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
@@ -65,6 +79,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		"KEYCLOAK_ADMIN_PASSWORD=" + t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
 		// Ensure Java JVM has enough memory for large imports
 		"JAVA_OPTS=-Xms1024m -Xmx2048m",
+		// Logging
+		"KC_LOG_FILE=/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/log/keycloak.log",
+		"KC_LOG_FILE_OUTPUT=json",
+		// Database
+		"KC_DB_POOL_MIN_SIZE=10",
+		"KC_DB_POOL_INITIAL_SIZE=10",
+		"KC_DB_POOL_MAX_SIZE=100",
+		"KC_DB=postgres",
+		"KC_DB_URL=jdbc:psql://localhost:5432/keycloak",
+		"KC_DB_PASSWORD=mmpass",
+		"KC_DB_USERNAME=keycloak",
+		"KC_DATABASE=keycloak",
 	}
 
 	// Production configuration
