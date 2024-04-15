@@ -193,7 +193,7 @@ type ElasticSearchSettings struct {
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
-	// SnapshotRepository is the name of the S3 repository where the snapshot to restore lives.
+	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
 	SnapshotRepository string
 	// SnapshotName is the name of the snapshot to restore.
 	SnapshotName string
