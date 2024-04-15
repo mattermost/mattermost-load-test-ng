@@ -19,6 +19,7 @@ Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target
@@ -344,6 +345,7 @@ WorkingDirectory=/opt/mattermost
 User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target
