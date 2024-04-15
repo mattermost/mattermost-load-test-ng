@@ -98,12 +98,6 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HOSTNAME="+t.output.KeycloakServer.PublicDNS+":8080")
 	}
 
-	// Setup the database if not running in development mode
-	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-		dsn := "postgres://" + t.config.ExternalAuthProviderSettings.DatabaseUsername + ":" + t.config.ExternalAuthProviderSettings.DatabasePassword + "@" + t.output.KeycloakDatabaseCluster.Endpoints[0] + "/" + t.output.KeycloakDatabaseCluster.ClusterIdentifier + "keycloakdb?sslmode=disable"
-		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_DB_URL="+dsn)
-	}
-
 	// Upload keycloak.env file
 	_, err = sshc.Upload(strings.NewReader(strings.Join(keycloakEnvFileContents, "\n")), "/etc/systemd/system/keycloak.env", true)
 	if err != nil {
@@ -170,14 +164,6 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	_, err = sshc.RunCommand(keycloakBinPath + "/kcadm.sh update realms/master -s sslRequired=NONE")
 	if err != nil {
 		return fmt.Errorf("failed to disable ssl requirement: %w", err)
-	}
-
-	// Disable SSL requirement on the realm set up by the loadtest
-	if t.config.ExternalAuthProviderSettings.KeycloakRealmName != "" && t.config.ExternalAuthProviderSettings.KeycloakRealmName != "master" {
-		_, err = sshc.RunCommand(fmt.Sprintf(keycloakBinPath+"/kcadm.sh update realms/%s -s sslRequired=NONE", t.config.ExternalAuthProviderSettings.KeycloakRealmName))
-		if err != nil {
-			return fmt.Errorf("failed to disable ssl requirement: %w", err)
-		}
 	}
 
 	// Populate users
