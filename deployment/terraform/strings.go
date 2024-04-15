@@ -163,7 +163,6 @@ http {
   access_log /var/log/nginx/access.log combined if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
-  include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*;
 }
 `
@@ -195,13 +194,13 @@ proxy_cache_use_stale timeout;
 proxy_cache_lock on;
 `
 
-const nginxSiteConfig = `
+const nginxSiteConfigTmpl = `
 upstream backend {
-%s
+{{.backends}}
   keepalive 256;
 }
 
-proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:{{.cacheObjects}} max_size={{.cacheSize}} inactive=60m use_temp_path=off;
 
 server {
   listen 80 reuseport;
