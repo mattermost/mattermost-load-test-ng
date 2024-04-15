@@ -60,28 +60,9 @@ type Repository struct {
 // ListRepositories returns the list of repositories registered in the server
 func (c *Client) ListRepositories() ([]Repository, error) {
 	req := esapi.SnapshotGetRepositoryRequest{}
-	res, err := req.Do(context.Background(), c.client)
-	if err != nil {
-		return nil, fmt.Errorf("unable to perform ListRepositories request: %w", err)
-	}
-	if res.Body == nil {
-		return nil, fmt.Errorf("no body returned by ListRepositories")
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return nil, fmt.Errorf("unable to list repositories: %q", res.String())
-	}
-
-	resBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	repositoriesResponse := make(map[string]repositoryResponse)
-	if err := json.Unmarshal(resBytes, &repositoriesResponse); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ListRepositories response: %w", err)
+	if err := c.get(req, &repositoriesResponse); err != nil {
+		return nil, fmt.Errorf("unable to perform ListRepositories request: %w", err)
 	}
 
 	repositories := []Repository{}
@@ -180,28 +161,9 @@ func (c *Client) ListSnapshots(repositoryName string) ([]Snapshot, error) {
 		// "_all". Welp.
 		Snapshot: []string{"_all"},
 	}
-	res, err := req.Do(context.Background(), c.client)
-	if err != nil {
-		return nil, fmt.Errorf("unable to perform ListSnapshots request: %w", err)
-	}
-	if res.Body == nil {
-		return nil, fmt.Errorf("no body returned by ListSnapshots")
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return nil, fmt.Errorf("unable to list snapshots in repo %q: %q", repositoryName, res.String())
-	}
-
-	resBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var snapshotsResponse snapshotsResponse
-	if err := json.Unmarshal(resBytes, &snapshotsResponse); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ListSnapshots response: %w", err)
+	if err := c.get(req, &snapshotsResponse); err != nil {
+		return nil, fmt.Errorf("unable to perform ListSnapshots request: %w", err)
 	}
 
 	snapshots := []Snapshot{}
@@ -304,28 +266,9 @@ func (c *Client) RestoreSnapshot(repositoryName, snapshotName string, opts Resto
 // as a plain slice of strings
 func (c *Client) ListIndices() ([]string, error) {
 	req := esapi.IndicesGetRequest{Index: []string{"_all"}}
-	res, err := req.Do(context.Background(), c.client)
-	if err != nil {
-		return nil, fmt.Errorf("unable to perform ListIndices request: %w", err)
-	}
-	if res.Body == nil {
-		return nil, fmt.Errorf("no body returned by ListIndices")
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return nil, fmt.Errorf("unable to list indices: %q", res.String())
-	}
-
-	resBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	resJSON := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(resBytes, &resJSON); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ListIndices response: %w", err)
+	if err := c.get(req, &resJSON); err != nil {
+		return nil, fmt.Errorf("unable to perform ListRepositories request: %w", err)
 	}
 
 	indices := []string{}
@@ -385,28 +328,9 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 	req := esapi.IndicesRecoveryRequest{
 		Index: indices,
 	}
-	res, err := req.Do(context.Background(), c.client)
-	if err != nil {
-		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
-	}
-	if res.Body == nil {
-		return nil, fmt.Errorf("no body returned by IndicesRecovery")
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return nil, fmt.Errorf("unable to get recovery info from indices %v: %q", indices, res.String())
-	}
-
-	resBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	indicesRecovery := make(indicesRecoveryResponse)
-	if err := json.Unmarshal(resBytes, &indicesRecovery); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal IndicesRecovery response: %w", err)
+	if err := c.get(req, &indicesRecovery); err != nil {
+		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
 	}
 
 	recovery := []IndexShardRecovery{}
@@ -424,4 +348,39 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 	}
 
 	return recovery, nil
+}
+
+// requestDoer models all esapi.XYZRequest, which contains a Do function to
+// perform the request with the provided client
+type requestDoer interface {
+	Do(context.Context, esapi.Transport) (*esapi.Response, error)
+}
+
+// get runs req.Do, performs the needed checks on the response, and stores the
+// result in the value pointed to by result
+func (c *Client) get(req requestDoer, result any) error {
+	res, err := req.Do(context.Background(), c.client)
+	if err != nil {
+		return fmt.Errorf("unable to perform request: %w", err)
+	}
+	if res.Body == nil {
+		return fmt.Errorf("no body returned")
+	}
+	defer res.Body.Close()
+	if res.IsError() {
+		// Consume body, docs say it's important to do so even if not needed
+		io.Copy(io.Discard, res.Body)
+		return fmt.Errorf("request failed: %q", res.String())
+	}
+
+	resBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(resBytes, result); err != nil {
+		return fmt.Errorf("unable to unmarshal response: %w", err)
+	}
+
+	return nil
 }
