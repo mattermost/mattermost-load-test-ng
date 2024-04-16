@@ -24,6 +24,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.26.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.9
 	github.com/elastic/go-elasticsearch/v7 v7.10.1-0.20201228193145-776f23a0c901
+	github.com/gliderlabs/ssh v0.1.1
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
 	github.com/mattermost/mattermost/server/public v0.0.15-0.20240228165319-9e99280a40f1
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20240228165319-9e99280a40f1
@@ -37,6 +38,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.9.0 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
+	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/antchfx/htmlquery v1.3.0 // indirect
 	github.com/antchfx/xmlquery v1.3.18 // indirect
 	github.com/antchfx/xpath v1.2.5 // indirect
