@@ -37,7 +37,11 @@ jobs:
         id: gen-ssh-key
         run: |
           ssh-keygen -t ed25519 -f $GITHUB_WORKSPACE/sshkey -q -N ""
-          echo "SSH_PRIVATE_KEY=`cat $GITHUB_WORKSPACE/sshkey`" >> $GITHUB_OUTPUT
+          {
+            echo 'SSH_PRIVATE_KEY<<EOF'
+            cat $GITHUB_WORKSPACE/sshkey
+            echo EOF
+          } >> $GITHUB_OUTPUT
 
       - uses: webfactory/ssh-agent@v0.9.0
         with:
