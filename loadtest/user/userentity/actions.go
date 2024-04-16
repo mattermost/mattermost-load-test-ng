@@ -110,6 +110,16 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	for _, cookie := range cookies {
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
+
+			me, _, err := ue.client.GetMe(context.Background(), "")
+			if err != nil {
+				return fmt.Errorf("error while getting user: %w", err)
+			}
+
+			if err := ue.store.SetUser(me); err != nil {
+				return fmt.Errorf("error while setting user: %w", err)
+			}
+
 			return nil
 		}
 	}
