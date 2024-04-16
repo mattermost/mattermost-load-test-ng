@@ -53,9 +53,9 @@ func NewAgent() (*ExtAgent, error) {
 	return &ExtAgent{agent: extAgent}, nil
 }
 
-// NewClient returns a Client object by dialing
-// the ssh agent.
-func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
+// NewClientWithPort returns a Client object by dialing
+// the ssh agent on the provided port
+func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
 	config := &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: []ssh.AuthMethod{
@@ -64,11 +64,17 @@ func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	sshc, err := ssh.Dial("tcp", ip+":22", config)
+	sshc, err := ssh.Dial("tcp", ip+port, config)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{client: sshc}, nil
+}
+
+// NewClient returns a Client object by dialing
+// the ssh agent on port 22
+func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
+	return ea.NewClientWithPort(ip, ":22")
 }
 
 // RunCommand runs a given command in a new ssh session.
