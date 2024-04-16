@@ -64,28 +64,48 @@ func getReportFilename(id int, res comparison.Result) string {
 }
 
 func printResults(results []comparison.Result) {
+	var resultsFile *os.File
+
+	// Create or open the file for writing
+	resultsFile, err := os.Create("results.txt")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resultsFile.Close()
+
 	for i, res := range results {
-		fmt.Println("==================================================")
-		fmt.Println("Comparison result:")
+		_, err = fmt.Fprintf(resultsFile, "==================================================")
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		_, err = fmt.Fprintf(resultsFile, "Comparison result:")
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
 		if res.Report != "" {
-			fmt.Printf("Report: %s\n", getReportFilename(i, res))
+			fmt.Fprintf(resultsFile, "Report: %s\n", getReportFilename(i, res))
 		}
 		if res.DashboardURL != "" {
-			fmt.Printf("Grafana Dashboard: %s\n", res.DashboardURL)
+			fmt.Fprintf(resultsFile, "Grafana Dashboard: %s\n", res.DashboardURL)
 		}
 		for _, ltRes := range res.LoadTests {
-			fmt.Printf("%s:\n", ltRes.Label)
-			fmt.Printf("  Type: %s\n", ltRes.Config.Type)
-			fmt.Printf("  DB Engine: %s\n", ltRes.Config.DBEngine)
+			fmt.Fprintf(resultsFile, "%s:\n", ltRes.Label)
+			fmt.Fprintf(resultsFile, "  Type: %s\n", ltRes.Config.Type)
+			fmt.Fprintf(resultsFile, "  DB Engine: %s\n", ltRes.Config.DBEngine)
 			if ltRes.Config.Type == comparison.LoadTestTypeBounded {
-				fmt.Printf("  Duration: %s\n", ltRes.Config.Duration)
-				fmt.Printf("  Users: %d\n", ltRes.Config.NumUsers)
+				fmt.Fprintf(resultsFile, "  Duration: %s\n", ltRes.Config.Duration)
+				fmt.Fprintf(resultsFile, "  Users: %d\n", ltRes.Config.NumUsers)
 			} else if ltRes.Config.Type == comparison.LoadTestTypeUnbounded {
-				fmt.Printf("  Supported Users: %d\n", ltRes.Status.SupportedUsers)
+				fmt.Fprintf(resultsFile, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
 			}
 			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		fmt.Printf("==================================================\n\n")
+		fmt.Fprintf(resultsFile, "==================================================\n\n")
 	}
 }
 
