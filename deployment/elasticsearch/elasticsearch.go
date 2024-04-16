@@ -10,6 +10,7 @@ import (
 
 	es "github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 )
 
@@ -30,7 +31,12 @@ type Client struct {
 // esEndoint, using the AWS profile to sign requests and tunneling those
 // requests through the SSH connection provided by the SSH client.
 func New(esEndpoint string, sshc *ssh.Client, awsProfile, awsRegion string) (*Client, error) {
-	transport, err := newElasticsearchRoundTripper(sshc, awsProfile, awsRegion)
+	creds, err := deployment.GetAWSCreds(awsProfile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS credentials")
+	}
+
+	transport, err := newElasticsearchRoundTripper(sshc, creds, awsRegion)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 )
 
@@ -26,12 +25,7 @@ type elasticsearchRoundTripper struct {
 	transport http.RoundTripper
 }
 
-func newElasticsearchRoundTripper(sshc *ssh.Client, awsProfile, awsRegion string) (*elasticsearchRoundTripper, error) {
-	creds, err := deployment.GetAWSCreds(awsProfile)
-	if err != nil {
-		return nil, err
-	}
-
+func newElasticsearchRoundTripper(sshc *ssh.Client, creds aws.Credentials, awsRegion string) (*elasticsearchRoundTripper, error) {
 	signer := v4.NewSigner()
 
 	// Use the default transport, except for DialContext, for which we use the
