@@ -36,7 +36,7 @@ func New(esEndpoint string, sshc *ssh.Client, awsProfile, awsRegion string) (*Cl
 		return nil, fmt.Errorf("failed to get AWS credentials")
 	}
 
-	transport, err := newElasticsearchRoundTripper(sshc, creds, awsRegion)
+	transport, err := newElasticsearchRoundTripper(sshc.DialContextF(), creds, awsRegion)
 	if err != nil {
 		return nil, err
 	}

@@ -7,12 +7,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 )
 
 // elasticsearchRoundTripper implements RoundTrip to use it as a Transport in
@@ -25,14 +25,15 @@ type elasticsearchRoundTripper struct {
 	transport http.RoundTripper
 }
 
-func newElasticsearchRoundTripper(sshc *ssh.Client, creds aws.Credentials, awsRegion string) (*elasticsearchRoundTripper, error) {
+type DialContextF func(context.Context, string, string) (net.Conn, error)
+
+func newElasticsearchRoundTripper(dialCtxt DialContextF, creds aws.Credentials, awsRegion string) (*elasticsearchRoundTripper, error) {
 	signer := v4.NewSigner()
 
 	// Use the default transport, except for DialContext, for which we use the
-	// SSH client dial, effectively tunneling all requests through the SSH
-	// connection
+	// provided function, effectively tunneling all requests through that connection
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.DialContext = sshc.DialContextF()
+	transport.DialContext = dialCtxt
 
 	return &elasticsearchRoundTripper{
 		signer:    signer,
