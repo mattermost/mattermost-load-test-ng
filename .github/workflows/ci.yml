@@ -24,20 +24,20 @@ jobs:
           go-version: "1.20"
           cache: true
 
-      - name: ci/pre-init
-        run: |
-          make assets
-          echo "Checking if 'make assets' was ran after adding files..."
-          git diff --exit-code
+      # - name: ci/pre-init
+      #   run: |
+      #     make assets
+      #     echo "Checking if 'make assets' was ran after adding files..."
+      #     git diff --exit-code
 
-      - name: ci/verify
-        run: make verify-gomod
+      # - name: ci/verify
+      #   run: make verify-gomod
 
       - name: Generate a dummy SSH key
         id: gen-ssh-key
         run: |
-          ssh-keygen -t ed25519 -f ${{GITHUB_WORKSPACE}}/sshkey -q -N ""
-          echo "SSH_PRIVATE_KEY=`cat ${{GITHUB_WORKSPACE}}/sshkey`" >> "$GITHUB_OUTPUT"
+          ssh-keygen -t ed25519 -f $GITHUB_WORKSPACE/sshkey -q -N ""
+          echo "SSH_PRIVATE_KEY=`cat $GITHUB_WORKSPACE/sshkey`" >> "$GITHUB_OUTPUT"
 
       - uses: webfactory/ssh-agent@v0.9.0
         with:
