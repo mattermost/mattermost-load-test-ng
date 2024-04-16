@@ -39,6 +39,9 @@ func TestRoundTrip(t *testing.T) {
 	setupSSHServer(t)
 	sshc := setupSSHClient(t)
 
+	// Custom DialContext function that simply calls sshc's DialContext after
+	// setting dialCtxtCalled to true, so that we can check that this function
+	// was actually called
 	dialCtxtCalled := false
 	dialCtxtF := func(ctxt context.Context, network string, addr string) (net.Conn, error) {
 		dialCtxtCalled = true
