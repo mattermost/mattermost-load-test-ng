@@ -379,13 +379,8 @@ func (c *Client) get(req requestDoer, result any) error {
 		return fmt.Errorf("request failed: %q", res.String())
 	}
 
-	resBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(resBytes, result); err != nil {
-		return fmt.Errorf("unable to unmarshal response: %w", err)
+	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
+		return fmt.Errorf("unable to decode response: %w", err)
 	}
 
 	return nil
