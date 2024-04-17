@@ -211,6 +211,7 @@ type ExternalAuthProviderSettings struct {
 	// GenerateUsersCount is the number of users to generate in the keycloak instance.
 	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
 	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
+	// Is used when creating users and to properly set the OpenID configuration in Mattermost.
 	KeycloakRealmName string `default:"mattermost"`
 	// KeycloakClientID is the client id to be used in Mattermost from the above realm.
 	// Must exist in the keycloak instance
@@ -218,17 +219,6 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
 	// Must exist in the keycloak instance
 	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
-	// DatabaseInstanceCount is the number of RDS instances to deploy for the keycloak database.
-	// It should be 0 or 1.
-	DatabaseInstanceCount int `default:"1" validate:"range:[0,1]"`
-	// DatabaseInstanceType is the type of the RDS instance for the keycloak database.
-	DatabaseInstanceType string `default:"db.r6g.large"`
-	// DatabaseUsername is the name of the database to be created.
-	DatabaseUsername string `default:"mmuser"`
-	// DatabasePassword is the password of the database to be created.
-	DatabasePassword string `default:"mmpassword"`
-	// DatabaseParameters contains the necessary data to configure the RDS instance to be deployed and provisioned.
-	DatabaseParameters DBParameters `default:"[]"`
 }
 
 // ElasticSearchSettings contains the necessary data

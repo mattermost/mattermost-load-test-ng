@@ -250,15 +250,6 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	if t.output.HasKeycloak() {
-		if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" && t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath == "" {
-			err := t.IngestKeycloakDump()
-			if err != nil {
-				return fmt.Errorf("failed to ingest keycloak dump: %w", err)
-			}
-		}
-	}
-
 	if t.output.HasDB() && initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		if err := t.createAdminUser(extAgent); err != nil {
 			return fmt.Errorf("could not create admin user: %w", err)

@@ -37,6 +37,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// Check if the keycloak database exists
 	result, _ := sshc.RunCommand(`sudo -iu postgres psql -l | grep keycloak 2> /dev/null`)
 	if len(result) == 0 {
+		mlog.Info("keycloak database not found, creating it and associated role")
 		_, err = sshc.RunCommand(`sudo -iu postgres psql <<EOSQL
 		CREATE USER keycloak WITH PASSWORD 'mmpass';
 		CREATE DATABASE keycloak OWNER keycloak;
@@ -45,6 +46,13 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		'`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
+		}
+
+		if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI != "" && t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath == "" {
+			err := t.IngestKeycloakDump()
+			if err != nil {
+				return fmt.Errorf("failed to ingest keycloak dump: %w", err)
+			}
 		}
 	}
 
@@ -83,19 +91,14 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		"KC_LOG_FILE=/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/log/keycloak.log",
 		"KC_LOG_FILE_OUTPUT=json",
 		// Database
-		"KC_DB_POOL_MIN_SIZE=10",
-		"KC_DB_POOL_INITIAL_SIZE=10",
-		"KC_DB_POOL_MAX_SIZE=100",
+		"KC_DB_POOL_MIN_SIZE=20",
+		"KC_DB_POOL_INITIAL_SIZE=20",
+		"KC_DB_POOL_MAX_SIZE=200",
 		"KC_DB=postgres",
 		"KC_DB_URL=jdbc:psql://localhost:5432/keycloak",
 		"KC_DB_PASSWORD=mmpass",
 		"KC_DB_USERNAME=keycloak",
 		"KC_DATABASE=keycloak",
-	}
-
-	// Production configuration
-	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-		keycloakEnvFileContents = append(keycloakEnvFileContents, "KC_HOSTNAME="+t.output.KeycloakServer.PublicDNS+":8080")
 	}
 
 	// Upload keycloak.env file
@@ -223,6 +226,8 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 }
 
 func (t *Terraform) IngestKeycloakDump() error {
+	mlog.Info("Populating keycloak database with provided dump")
+
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -243,6 +248,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 	defer client.Close()
 
+	// Ensure keycloak is stopped
 	_, err = client.RunCommand("sudo systemctl stop keycloak")
 	if err != nil {
 		return fmt.Errorf("failed to stop keycloak before uploading the dump file: %w", err)
@@ -256,15 +262,15 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 
 	commands := []string{
-		"sudo rm -rf /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/*",
-		"mkdir -p /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2",
-		"tar xzf /home/ubuntu/" + fileName + " -C /opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/h2/",
+		"tar xzf /home/ubuntu/" + fileName + " -C /tmp",
+		"sudo -iu postgres psql -d keycloak -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 		"sudo systemctl start keycloak",
 	}
 
 	for _, cmd := range commands {
-		_, err = client.RunCommand(cmd)
+		output, err := client.RunCommand(cmd)
 		if err != nil {
+			mlog.Error("Error running command", mlog.String("command", cmd), mlog.String("result", string(output)), mlog.Err(err))
 			return fmt.Errorf("failed to run command %q: %w", cmd, err)
 		}
 	}

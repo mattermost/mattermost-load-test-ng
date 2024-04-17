@@ -18,10 +18,6 @@ output "keycloakServer" {
   value = aws_instance.keycloak
 }
 
-output "keycloakDatabaseCluster" {
-  value = aws_rds_cluster_endpoint.keycloak_cluster_endpoints[*]
-}
-
 output "proxy" {
   value = aws_instance.proxy_server
 }
