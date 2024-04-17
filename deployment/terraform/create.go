@@ -546,7 +546,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	// Wait until the snapshot is completely restored, or 30 minutes have
 	// passed, whatever happens first
-	dur := 30 * time.Minute
+	dur := 45 * time.Minute
 	timeout := time.After(dur)
 	for {
 		select {
