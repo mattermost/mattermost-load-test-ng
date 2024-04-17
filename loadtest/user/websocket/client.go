@@ -205,11 +205,11 @@ func (c *Client) GetStatusesByIds(userIds []string) error {
 	return c.SendMessage("get_statuses_by_ids", data)
 }
 
-func (c *Client) PostedAck(postId string, result string, reason string, postedData string) error {
+func (c *Client) PostedAck(postId string, status string, reason string, postedData string) error {
 	data := map[string]interface{}{
 		"post_id":    postId,
 		"user_agent": "LoadTest",
-		"result":     result,
+		"status":     status,
 		"reason":     reason,
 		"data":       postedData,
 	}
