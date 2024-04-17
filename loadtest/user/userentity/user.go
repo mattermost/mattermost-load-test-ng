@@ -79,7 +79,7 @@ type teamPresenceMsg struct {
 
 type postedAckMsg struct {
 	postId     string
-	result     string
+	status     string
 	reason     string
 	postedData string
 }

@@ -212,7 +212,7 @@ start:
 						errChan <- fmt.Errorf("userentity: error in client.UpdateActiveTeam: %w", err)
 					}
 				case postedAckMsg:
-					if err := client.PostedAck(v.postId, v.result, v.reason, v.postedData); err != nil {
+					if err := client.PostedAck(v.postId, v.status, v.reason, v.postedData); err != nil {
 						errChan <- fmt.Errorf("userentity: error in client.PostedAck: %w", err)
 					}
 				}
