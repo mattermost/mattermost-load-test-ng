@@ -46,6 +46,7 @@ type User interface {
 	UpdateActiveChannel(channelId string) error
 	UpdateActiveThread(channelId string) error
 	UpdateActiveTeam(teamId string) error
+	PostedAck(postId string, status string, reason string, postedData string) error
 
 	//server
 	// GetConfig fetches and stores the server's configuration.
