@@ -108,6 +108,20 @@ Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` servi
 
 You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
 
+### SnapshotRepository
+
+*string*
+
+If you want to make a deployment containing an Elasticsearch server, and you have a database that has been previously indexed, you need to provide both the name of such a repository where the snapshot lives and the snapshot's name. `SnapshotRepository` is the name of the repository.
+
+A *snapshot repository*, as [defined by Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html#snapshot-workflow), is a storage location that contains snapshots of an Elasticsearch cluster. Elasticsearch supports different repository types, but the only one supported for now in the load-test tool are S3 buckets.
+
+### SnapshotName
+
+*string*
+
+If you want to deploy an already indexed database, you need to provide both the name of the repository where the snapshot lives and the snapshot's name. `SnapshotName` is the name of the snapshot itself.
+
 ## JobServerSettings
 
 ### InstanceCount

@@ -4,10 +4,13 @@
 package deployment
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 )
 
@@ -87,4 +90,21 @@ func BuildLoadDBDumpCmd(dumpFilename string, dbInfo DBSettings) (string, error) 
 	}
 
 	return strings.Join(cmds, " && "), nil
+}
+
+// GetAWSCreds returns the AWS credentials identified by the provided profile
+func GetAWSCreds(profile string) (aws.Credentials, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithSharedConfigProfile(profile),
+	)
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	creds, err := cfg.Credentials.Retrieve(context.Background())
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	return creds, nil
 }

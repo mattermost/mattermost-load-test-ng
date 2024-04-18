@@ -19,7 +19,12 @@ output "proxy" {
 }
 
 output "elasticServer" {
-  value = aws_opensearch_domain.es_server
+  value     = aws_opensearch_domain.es_server
+  sensitive = true
+}
+
+output "elasticRoleARN" {
+  value = aws_iam_role.es_role.arn
 }
 
 output "s3bucket" {
@@ -38,3 +43,4 @@ output "dbSecurityGroup" {
 output "jobServers" {
   value = aws_instance.job_server[*]
 }
+

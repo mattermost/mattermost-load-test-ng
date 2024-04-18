@@ -1,4 +1,3 @@
-
 terraform {
   required_providers {
     aws = {
@@ -191,59 +190,6 @@ resource "aws_instance" "proxy_server" {
     ]
   }
 }
-
-resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
-  aws_service_name = "es.amazonaws.com"
-}
-
-resource "aws_opensearch_domain" "es_server" {
-  tags = {
-    Name = "${var.cluster_name}-es_server"
-  }
-
-  domain_name    = "${var.cluster_name}-es"
-  engine_version = var.es_version
-
-  vpc_options {
-    subnet_ids = [
-      element(tolist(data.aws_subnets.selected.ids), 0)
-    ]
-    security_group_ids = [aws_security_group.elastic[0].id]
-  }
-
-
-  ebs_options {
-    ebs_enabled = true
-    volume_type = var.block_device_type
-    volume_size = var.block_device_sizes_elasticsearch
-  }
-
-  cluster_config {
-    instance_type = var.es_instance_type
-  }
-
-  access_policies = <<CONFIG
-  {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": "es:*",
-              "Principal": "*",
-              "Effect": "Allow",
-              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
-          }
-      ]
-  }
-  CONFIG
-
-  depends_on = [
-    aws_iam_service_linked_role.es,
-  ]
-
-  count = var.es_instance_count
-}
-
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"

@@ -31,6 +31,9 @@ type output struct {
 	ElasticServer struct {
 		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
+	ElasticRoleARN struct {
+		Value string
+	} `json:"elasticRoleARN"`
 	JobServers struct {
 		Value []Instance `json:"value"`
 	} `json:"jobServers"`
@@ -48,17 +51,18 @@ type output struct {
 // Output contains the output variables which are
 // created after a deployment.
 type Output struct {
-	ClusterName         string
-	Proxy               Instance            `json:"proxy"`
-	Instances           []Instance          `json:"instances"`
-	DBCluster           DBCluster           `json:"dbCluster"`
-	Agents              []Instance          `json:"agents"`
-	MetricsServer       Instance            `json:"metricsServer"`
-	ElasticSearchServer ElasticSearchDomain `json:"elasticServer"`
-	JobServers          []Instance          `json:"jobServers"`
-	S3Bucket            S3Bucket            `json:"s3Bucket"`
-	S3Key               IAMAccess           `json:"s3Key"`
-	DBSecurityGroup     []SecurityGroup     `json:"dbSecurityGroup"`
+	ClusterName          string
+	Proxy                Instance            `json:"proxy"`
+	Instances            []Instance          `json:"instances"`
+	DBCluster            DBCluster           `json:"dbCluster"`
+	Agents               []Instance          `json:"agents"`
+	MetricsServer        Instance            `json:"metricsServer"`
+	ElasticSearchServer  ElasticSearchDomain `json:"elasticServer"`
+	ElasticSearchRoleARN string              `json:"elasticRoleARN"`
+	JobServers           []Instance          `json:"jobServers"`
+	S3Bucket             S3Bucket            `json:"s3Bucket"`
+	S3Key                IAMAccess           `json:"s3Key"`
+	DBSecurityGroup      []SecurityGroup     `json:"dbSecurityGroup"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -141,6 +145,9 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.ElasticServer.Value) > 0 {
 		outputv2.ElasticSearchServer = o.ElasticServer.Value[0]
+	}
+	if len(o.ElasticRoleARN.Value) > 0 {
+		outputv2.ElasticSearchRoleARN = o.ElasticRoleARN.Value
 	}
 	if len(o.S3Bucket.Value) > 0 {
 		outputv2.S3Bucket = o.S3Bucket.Value[0]
