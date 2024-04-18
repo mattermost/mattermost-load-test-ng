@@ -63,7 +63,7 @@ func getReportFilename(id int, res comparison.Result) string {
 	return fmt.Sprintf("report_%s.md", name)
 }
 
-func printResults(results []comparison.Result) {
+func writeToFile() {
 	var resultsFile *os.File
 
 	// Create or open the file for writing
@@ -73,6 +73,16 @@ func printResults(results []comparison.Result) {
 		return
 	}
 	defer resultsFile.Close()
+
+}
+
+func printResults(results []comparison.Result, resultsFile *os.File) {
+	_, err := fmt.Println("Error with file:")
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
 
 	for i, res := range results {
 		_, err = fmt.Fprintf(resultsFile, "==================================================")
