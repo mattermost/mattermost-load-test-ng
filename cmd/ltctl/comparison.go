@@ -71,9 +71,13 @@ func writeToFile() *os.File {
 		return nil
 	}
 	return resultsFile
+
 }
 
 func printResults(results []comparison.Result, resultsFile *os.File) {
+	// Create a multi writer to write to both resultsFile and os.Stdout
+	multiWriter := io.MultiWriter(resultsFile, os.Stdout)
+
 	_, err := fmt.Println("Error with file:")
 
 	if err != nil {
@@ -82,33 +86,33 @@ func printResults(results []comparison.Result, resultsFile *os.File) {
 	}
 
 	for i, res := range results {
-		_, err = fmt.Fprintf(resultsFile, "==================================================")
+		_, err = fmt.Fprintf(multiWriter, "==================================================")
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
 
-		_, err = fmt.Fprintf(resultsFile, "Comparison result:")
+		_, err = fmt.Fprintf(multiWriter, "Comparison result:")
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
 
 		if res.Report != "" {
-			fmt.Fprintf(resultsFile, "Report: %s\n", getReportFilename(i, res))
+			fmt.Fprintf(multiWriter, "Report: %s\n", getReportFilename(i, res))
 		}
 		if res.DashboardURL != "" {
-			fmt.Fprintf(resultsFile, "Grafana Dashboard: %s\n", res.DashboardURL)
+			fmt.Fprintf(multiWriter, "Grafana Dashboard: %s\n", res.DashboardURL)
 		}
 		for _, ltRes := range res.LoadTests {
-			fmt.Fprintf(resultsFile, "%s:\n", ltRes.Label)
-			fmt.Fprintf(resultsFile, "  Type: %s\n", ltRes.Config.Type)
-			fmt.Fprintf(resultsFile, "  DB Engine: %s\n", ltRes.Config.DBEngine)
+			fmt.Fprintf(multiWriter, "%s:\n", ltRes.Label)
+			fmt.Fprintf(multiWriter, "  Type: %s\n", ltRes.Config.Type)
+			fmt.Fprintf(multiWriter, "  DB Engine: %s\n", ltRes.Config.DBEngine)
 			if ltRes.Config.Type == comparison.LoadTestTypeBounded {
-				fmt.Fprintf(resultsFile, "  Duration: %s\n", ltRes.Config.Duration)
-				fmt.Fprintf(resultsFile, "  Users: %d\n", ltRes.Config.NumUsers)
+				fmt.Fprintf(multiWriter, "  Duration: %s\n", ltRes.Config.Duration)
+				fmt.Fprintf(multiWriter, "  Users: %d\n", ltRes.Config.NumUsers)
 			} else if ltRes.Config.Type == comparison.LoadTestTypeUnbounded {
-				fmt.Fprintf(resultsFile, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
+				fmt.Fprintf(multiWriter, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
 			}
 			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
