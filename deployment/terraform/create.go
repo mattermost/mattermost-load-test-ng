@@ -263,6 +263,11 @@ func (t *Terraform) Create(initData bool) error {
 				}
 			}
 
+			// Clear licenses data
+			if err := t.ClearLicensesData(); err != nil {
+				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)
+			}
+
 			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
 				// updatePostgresSettings does some housekeeping stuff like setting
 				// default_search_config and vacuuming tables.
