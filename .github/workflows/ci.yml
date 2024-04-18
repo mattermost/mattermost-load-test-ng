@@ -20,7 +20,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.5"
+          go-version: "1.20"
           cache: true
 
       - name: ci/pre-init
@@ -31,6 +31,20 @@ jobs:
 
       - name: ci/verify
         run: make verify-gomod
+
+      - name: Generate a dummy SSH key
+        id: gen-ssh-key
+        run: |
+          ssh-keygen -t ed25519 -f $GITHUB_WORKSPACE/sshkey -q -N ""
+          {
+            echo 'SSH_PRIVATE_KEY<<EOF'
+            cat $GITHUB_WORKSPACE/sshkey
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+            ssh-private-key: ${{ steps.gen-ssh-key.outputs.SSH_PRIVATE_KEY }}
 
       - name: ci/check-style
         run: make check-style

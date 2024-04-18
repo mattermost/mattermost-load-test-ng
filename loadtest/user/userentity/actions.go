@@ -1030,6 +1030,16 @@ func (ue *UserEntity) GetEmojiImage(emojiId string) error {
 	return nil
 }
 
+// UploadEmoji uploads the given emoji to the server.
+func (ue *UserEntity) UploadEmoji(emoji *model.Emoji, image []byte, filename string) error {
+	_, _, err := ue.client.CreateEmoji(context.Background(), emoji, image, filename)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveReaction stores the given reaction.
 func (ue *UserEntity) SaveReaction(reaction *model.Reaction) error {
 	r, _, err := ue.client.SaveReaction(context.Background(), reaction)
@@ -1519,6 +1529,15 @@ func (ue *UserEntity) GetChannelsAndChannelMembersGQL(teamID string, includeDele
 	}
 
 	return chCursor, cmCursor, nil
+}
+
+func (ue *UserEntity) GetUsersForReporting(options *model.UserReportOptions) ([]*model.UserReport, error) {
+	report, _, err := ue.client.GetUsersForReporting(context.Background(), options)
+	if err != nil {
+		return nil, err
+	}
+
+	return report, nil
 }
 
 func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers map[string]string) (*http.Request, error) {

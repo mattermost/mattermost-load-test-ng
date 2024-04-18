@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-	rangeRegex = regexp.MustCompile(`range:(\[|\()(\S*)\,(\S*)(\]|\))`)
-	oneofRegex = regexp.MustCompile(`oneof:(\{)(.*)(\})`)
-	eachRegex  = regexp.MustCompile(`each:(.+)`)
+	emailRegex  = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	rangeRegex  = regexp.MustCompile(`range:(\[|\()(\S*)\,(\S*)(\]|\))`)
+	oneofRegex  = regexp.MustCompile(`oneof:(\{)(.*)(\})`)
+	eachRegex   = regexp.MustCompile(`each:(.+)`)
+	prefixRegex = regexp.MustCompile(`prefix:(.+)`)
 )
 
 // Validate validates each field of the value
@@ -183,6 +184,19 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 				if err := validate(eachValidation, "", p, v.Index(i)); err != nil {
 					return err
 				}
+			}
+		} else if strings.HasPrefix(validation, "prefix") {
+			if !prefixRegex.MatchString(validation) {
+				return fmt.Errorf("invalid prefix declaration")
+			}
+			kind := v.Kind()
+			if kind != reflect.String {
+				return fmt.Errorf("validation 'prefix' can only be applied to strings, but the type of this value is %s", kind.String())
+			}
+			prefix := prefixRegex.FindStringSubmatch(validation)[1]
+			value := v.String()
+			if !strings.HasPrefix(value, prefix) {
+				return fmt.Errorf("value %q is not prefixed by %q", value, prefix)
 			}
 		} else {
 			return fmt.Errorf("validation type %q unknown", validation)

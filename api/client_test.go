@@ -32,6 +32,9 @@ func TestAgentClientConcurrency(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	var wg sync.WaitGroup
 
 	t.Run("create", func(t *testing.T) {
@@ -40,6 +43,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		defaults.Set(&ucConfig)
 		agent, err := agentClient.New(id, server.URL, nil)
 		require.NoError(t, err)
@@ -192,11 +196,16 @@ func TestCoordClientConcurrency(t *testing.T) {
 
 	create := func(t *testing.T, i int) *coordClient.Coordinator {
 		t.Helper()
+
+		mmServer := createFakeMMServer()
+		t.Cleanup(mmServer.Close)
+
 		coord := createClient(t, i)
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
@@ -206,10 +215,13 @@ func TestCoordClientConcurrency(t *testing.T) {
 
 	t.Run("create/destroy", func(t *testing.T) {
 		coord := createClient(t, 0)
+		mmServer := createFakeMMServer()
+		defer mmServer.Close()
 		var coordConfig coordinator.Config
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		var success int

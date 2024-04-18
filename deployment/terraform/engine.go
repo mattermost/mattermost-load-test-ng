@@ -43,7 +43,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	return _runCommand(cmd, dst)
 }
 
-func (t *Terraform) runAWSCommand(ctx context.Context, args []string) error {
+func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Writer) error {
 	awsBin := "aws"
 	if _, err := exec.LookPath(awsBin); err != nil {
 		return fmt.Errorf("aws not installed. Please install aws. (https://aws.amazon.com/cli): %w", err)
@@ -58,7 +58,7 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string) error {
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
-	return _runCommand(cmd, nil)
+	return _runCommand(cmd, dst)
 }
 
 func _runCommand(cmd *exec.Cmd, dst io.Writer) error {

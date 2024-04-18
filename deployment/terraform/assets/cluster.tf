@@ -1,9 +1,8 @@
-
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 5.39"
     }
   }
 }
@@ -30,8 +29,11 @@ locals {
   private_ip = data.external.private_ip.result.ip
 }
 
-data "aws_subnet_ids" "selected" {
-  vpc_id = var.es_vpc
+data "aws_subnets" "selected" {
+  filter {
+    name   = "vpc-id"
+    values = [var.es_vpc]
+  }
 }
 
 resource "aws_key_pair" "key" {
@@ -60,12 +62,9 @@ resource "aws_instance" "app_server" {
     aws_security_group.app_gossip[0].id
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_app
+    volume_type = var.block_device_type
   }
 
   provisioner "file" {
@@ -75,6 +74,7 @@ resource "aws_instance" "app_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
@@ -110,23 +110,21 @@ resource "aws_instance" "metrics_server" {
     aws_security_group.metrics[0].id,
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_metrics
+    volume_type = var.block_device_type
   }
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus",
       "sudo systemctl enable prometheus",
-      "sudo apt-get install -y adduser libfontconfig1",
-      "wget https://dl.grafana.com/oss/release/grafana_9.5.1_amd64.deb",
-      "sudo dpkg -i grafana_9.5.1_amd64.deb",
+      "sudo apt-get install -y adduser libfontconfig1 musl",
+      "wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb",
+      "sudo dpkg -i grafana_10.2.3_amd64.deb",
       "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
@@ -157,12 +155,9 @@ resource "aws_instance" "proxy_server" {
   ]
   key_name = aws_key_pair.key.id
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_proxy
+    volume_type = var.block_device_type
   }
 
   connection {
@@ -174,75 +169,27 @@ resource "aws_instance" "proxy_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
+      "wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg",
+      "sudo sh -c 'echo \"deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" > /etc/apt/sources.list.d/nginx.list'",
+      "sudo sh -c 'echo \"deb-src http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" >> /etc/apt/sources.list.d/nginx.list'",
       "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
+      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
+      "sudo mkdir -p /etc/nginx/snippets",
+      "sudo mkdir -p /etc/nginx/sites-available",
+      "sudo mkdir -p /etc/nginx/sites-enabled",
       "sudo rm -f /etc/nginx/sites-enabled/default",
       "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
     ]
   }
 }
-
-resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
-  aws_service_name = "es.amazonaws.com"
-}
-
-resource "aws_elasticsearch_domain" "es_server" {
-  tags = {
-    Name = "${var.cluster_name}-es_server"
-  }
-
-  domain_name           = "${var.cluster_name}-es"
-  elasticsearch_version = var.es_version
-
-  vpc_options {
-    subnet_ids = [
-      element(tolist(data.aws_subnet_ids.selected.ids), 0)
-    ]
-    security_group_ids = [aws_security_group.elastic[0].id]
-  }
-
-  dynamic "ebs_options" {
-    for_each = var.es_ebs_options
-    content {
-      ebs_enabled = true
-      volume_type = lookup(ebs_options.value, "volume_type", "gp2")
-      volume_size = lookup(ebs_options.value, "volume_size", 20)
-    }
-  }
-
-  cluster_config {
-    instance_type = var.es_instance_type
-  }
-
-  access_policies = <<CONFIG
-  {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": "es:*",
-              "Principal": "*",
-              "Effect": "Allow",
-              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
-          }
-      ]
-  }
-  CONFIG
-
-  depends_on = [
-    aws_iam_service_linked_role.es,
-  ]
-
-  count = var.es_instance_count
-}
-
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"
@@ -329,7 +276,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 
 resource "aws_db_parameter_group" "db_params_group" {
   name   = "${var.cluster_name}-db-pg"
-  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql5.7" : "aurora-postgresql12"
+  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
@@ -369,16 +316,14 @@ resource "aws_instance" "loadtest_agent" {
 
   vpc_security_group_ids = [aws_security_group.agent.id]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_agent
+    volume_type = var.block_device_type
   }
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get -y update",
       "sudo apt-get install -y prometheus-node-exporter",
@@ -671,12 +616,9 @@ resource "aws_instance" "job_server" {
     aws_security_group.app[0].id,
   ]
 
-  dynamic "root_block_device" {
-    for_each = var.root_block_device
-    content {
-      volume_size = lookup(root_block_device.value, "volume_size", null)
-      volume_type = lookup(root_block_device.value, "volume_type", null)
-    }
+  root_block_device {
+    volume_size = var.block_device_sizes_job
+    volume_type = var.block_device_type
   }
 
   provisioner "file" {
@@ -686,6 +628,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "set -o errexit",
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
       "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",

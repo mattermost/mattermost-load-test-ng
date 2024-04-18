@@ -84,13 +84,13 @@ Number of ElasticSearch instances to be created. Right now, this config only sup
 
 *string*
 
-The type of instance for the Elasticsearch service. See type [here](https://aws.amazon.com/ec2/instance-types/).
+The type of instance for the Elasticsearch service. Only AWS OpenSearch instances are allowed. Instances that do not support EBS storage volumes are not allowed. Check [AWS documentation](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html) for the full list of instance types.
 
 ### Version
 
-*float64*
+*string*
 
-Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elasticsearch-service/faqs/?nc=sn&loc=6) the supported versions.
+Version of Elasticsearch to be deployed. Deployments only support AWS OpenSearch versions compatible with ElasticSearch, up to and including ElasticSearch v7.10.0; i.e., the ones prefixed by `Elasticsearch_.`. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions and the [`aws` Terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_domain#engine_version) to learn more about the specific string used.
 
 ## VpcID
 
@@ -98,7 +98,7 @@ Version of Elasticsearch to be deployed. See [here](https://aws.amazon.com/elast
 
 Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
 
-This ID is mandatory is you're going to instanciate an ES service in your cluster.
+This ID is mandatory is you're going to instantiate an ES service in your cluster.
 
 ### CreateRole
 
@@ -107,6 +107,20 @@ This ID is mandatory is you're going to instanciate an ES service in your cluste
 Elasticsearch depends on the `AWSServiceRoleForAmazonElasticsearchService` service-linked role. This role is unique and shared by all users of the account so if it's already created you can't create it again and you'll receive an error.
 
 You can check if the role is already created [here](https://console.aws.amazon.com/iam/home#roles) and if it isn't created set this property to true.
+
+### SnapshotRepository
+
+*string*
+
+If you want to make a deployment containing an Elasticsearch server, and you have a database that has been previously indexed, you need to provide both the name of such a repository where the snapshot lives and the snapshot's name. `SnapshotRepository` is the name of the repository.
+
+A *snapshot repository*, as [defined by Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html#snapshot-workflow), is a storage location that contains snapshots of an Elasticsearch cluster. Elasticsearch supports different repository types, but the only one supported for now in the load-test tool are S3 buckets.
+
+### SnapshotName
+
+*string*
+
+If you want to deploy an already indexed database, you need to provide both the name of the repository where the snapshot lives and the snapshot's name. `SnapshotName` is the name of the snapshot itself.
 
 ## JobServerSettings
 
@@ -446,3 +460,23 @@ The name of a host that will be used for two purposes:
 - It will override the server's site URL.
 - It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
 This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.
+
+## UsersFilePath
+
+*string*
+
+The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
+
+## PyroscopeSettings
+
+### EnableAppProfiling
+
+*bool*
+
+Enable continuous profiling of all the app instances.
+
+### EnableAgentProfiling
+
+*bool*
+
+Enable continuous profiling of all the agent instances.

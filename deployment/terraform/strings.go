@@ -18,7 +18,8 @@ User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
-Environment=MM_FEATUREFLAGS_GRAPHQL=false
+Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target
@@ -49,23 +50,59 @@ scrape_configs:
         - targets: [%s]
 `
 
-const pyroscopeConfig = `
-log-level: debug
-no-self-profiling: true
+type PyroscopeConfig struct {
+	LogLevel        string         `yaml:"log-level"`
+	NoSelfProfiling bool           `yaml:"no-self-profiling"`
+	ScrapeConfigs   []ScrapeConfig `yaml:"scrape-configs"`
+}
 
-scrape-configs:
-  - job-name: pyroscope
-    scheme: http
-    scrape-interval: 60s
-    enabled-profiles: [cpu, mem, goroutines]
-    static-configs:
-    - application: mattermost
-      spy-name: gospy
-      targets: [%s]
-    - application: agents
-      spy-name: gospy
-      targets: [%s]
-`
+type ScrapeConfig struct {
+	JobName         string         `yaml:"job-name"`
+	Scheme          string         `yaml:"scheme"`
+	ScrapeInterval  string         `yaml:"scrape-interval"`
+	EnabledProfiles []string       `yaml:"enabled-profiles,flow"`
+	StaticConfigs   []StaticConfig `yaml:"static-configs,omitempty"`
+}
+
+type StaticConfig struct {
+	Application string   `yaml:"application"`
+	SpyName     string   `yaml:"spy-name"`
+	Targets     []string `yaml:"targets,flow"`
+}
+
+func NewPyroscopeConfig(mmTargets, ltTargets []string) *PyroscopeConfig {
+	var staticConfigs []StaticConfig
+
+	if len(mmTargets) > 0 {
+		staticConfigs = append(staticConfigs, StaticConfig{
+			Application: "mattermost",
+			SpyName:     "gospy",
+			Targets:     mmTargets,
+		})
+	}
+
+	if len(ltTargets) > 0 {
+		staticConfigs = append(staticConfigs, StaticConfig{
+			Application: "agents",
+			SpyName:     "gospy",
+			Targets:     ltTargets,
+		})
+	}
+
+	return &PyroscopeConfig{
+		LogLevel:        "debug",
+		NoSelfProfiling: true,
+		ScrapeConfigs: []ScrapeConfig{
+			{
+				JobName:         "pryoscope",
+				Scheme:          "http",
+				ScrapeInterval:  "60s",
+				EnabledProfiles: []string{"cpu", "mem", "goroutines"},
+				StaticConfigs:   staticConfigs,
+			},
+		},
+	}
+}
 
 const metricsHosts = `
 127.0.0.1 localhost
@@ -126,7 +163,6 @@ http {
   access_log /var/log/nginx/access.log combined if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
-  include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*;
 }
 `
@@ -158,16 +194,16 @@ proxy_cache_use_stale timeout;
 proxy_cache_lock on;
 `
 
-const nginxSiteConfig = `
+const nginxSiteConfigTmpl = `
 upstream backend {
-%s
+{{.backends}}
   keepalive 256;
 }
 
-proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:{{.cacheObjects}} max_size={{.cacheSize}} inactive=60m use_temp_path=off;
 
 server {
-  listen 80;
+  listen 80 reuseport;
   server_name _;
 
   location ~ /api/v[0-9]+/(users/)?websocket$ {
@@ -308,6 +344,7 @@ WorkingDirectory=/opt/mattermost
 User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target

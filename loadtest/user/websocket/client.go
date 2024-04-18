@@ -160,6 +160,31 @@ func (c *Client) SendBinaryMessage(action string, data map[string]interface{}) e
 
 // Helper utilities that call SendMessage.
 
+func (c *Client) UpdateActiveChannel(channelId string) error {
+	data := map[string]interface{}{
+		"channel_id": channelId,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
+func (c *Client) UpdateActiveThread(channelId string, threadView bool) error {
+	data := map[string]interface{}{
+		"thread_channel_id": channelId,
+		"is_thread_view":    threadView,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
+func (c *Client) UpdateActiveTeam(teamId string) error {
+	data := map[string]interface{}{
+		"team_id": teamId,
+	}
+
+	return c.SendMessage("presence", data)
+}
+
 func (c *Client) UserTyping(channelId, parentId string) error {
 	data := map[string]interface{}{
 		"channel_id": channelId,
@@ -178,4 +203,16 @@ func (c *Client) GetStatusesByIds(userIds []string) error {
 		"user_ids": userIds,
 	}
 	return c.SendMessage("get_statuses_by_ids", data)
+}
+
+func (c *Client) PostedAck(postId string, status string, reason string, postedData string) error {
+	data := map[string]interface{}{
+		"post_id":    postId,
+		"user_agent": "LoadTest",
+		"status":     status,
+		"reason":     reason,
+		"data":       postedData,
+	}
+
+	return c.SendMessage("posted_notify_ack", data)
 }

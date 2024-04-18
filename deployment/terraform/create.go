@@ -10,12 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/elasticsearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -174,7 +176,7 @@ func (t *Terraform) Create(initData bool) error {
 			"--vpc-security-group-ids=" + sgID,
 			"--region=" + t.config.AWSRegion,
 		}
-		if err := t.runAWSCommand(nil, args); err != nil {
+		if err := t.runAWSCommand(nil, args, nil); err != nil {
 			return err
 		}
 	}
@@ -183,16 +185,6 @@ func (t *Terraform) Create(initData bool) error {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
 			return fmt.Errorf("error setting up metrics server: %w", err)
-		}
-	}
-
-	if t.output.HasDB() {
-		// Aurora sets the default_text_search_config parameter to 'simple';
-		// a more sane default for a generic deployment is 'english'
-		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-			if err := t.setDefaultTextSearchConfig(extAgent, "pg_catalog.english"); err != nil {
-				return fmt.Errorf("could not modify default_search_text_config: %w", err)
-			}
 		}
 	}
 
@@ -230,7 +222,67 @@ func (t *Terraform) Create(initData bool) error {
 		if err := pingServer("http://" + pingURL); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
+	}
 
+	// Ingesting the DB dump and restoring the Elasticsearch snapshot can
+	// happen concurrently to reduce the deployment's total time
+	errorsChan := make(chan error, 2)
+	var wg sync.WaitGroup
+
+	// Setup Elasticsearch
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if t.output.HasElasticSearch() {
+			mlog.Info("Setting up Elasticsearch")
+			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+
+			if err != nil {
+				errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
+				return
+			}
+		}
+
+		errorsChan <- nil
+	}()
+
+	// Ingest DB dump
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Note: This MUST be done after app servers have been set up.
+		// Otherwise, the vacuuming command will fail because no tables would
+		// have been created by then.
+		if t.output.HasDB() {
+			// Load the dump if specified
+			if !initData && t.config.DBDumpURI != "" {
+				err = t.IngestDump()
+				if err != nil {
+					errorsChan <- fmt.Errorf("failed to create ingest dump: %w", err)
+					return
+				}
+			}
+
+			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+				// updatePostgresSettings does some housekeeping stuff like setting
+				// default_search_config and vacuuming tables.
+				if err := t.updatePostgresSettings(extAgent); err != nil {
+					errorsChan <- fmt.Errorf("could not modify default_search_text_config: %w", err)
+					return
+				}
+			}
+		}
+
+		errorsChan <- nil
+	}()
+
+	// Fail on any errors from the two goroutines above
+	wg.Wait()
+	close(errorsChan)
+	for err := range errorsChan {
+		if err != nil {
+			return err
+		}
 	}
 
 	if t.output.HasDB() && initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
@@ -294,7 +346,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	// Upload files
 	batch := []uploadInfo{
 		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
-		{srcData: strings.TrimSpace(serviceFile), dstPath: "/lib/systemd/system/mattermost.service"},
+		{srcData: strings.TrimSpace(fmt.Sprintf(serviceFile, os.Getenv("MM_SERVICEENVIRONMENT"))), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 	}
 
@@ -382,6 +434,166 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 	return nil
 }
 
+func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
+	output, err := t.Output()
+	if err != nil {
+		return fmt.Errorf("unable to get Terraform output to setup ElasticSearch: %w", err)
+	}
+	esEndpoint := output.ElasticSearchServer.Endpoint
+
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
+	}
+
+	es, err := elasticsearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
+	if err != nil {
+		return fmt.Errorf("unable to create Elasticserach client: %w", err)
+	}
+
+	indices, err := es.ListIndices()
+	if err != nil {
+		return fmt.Errorf("unable to list indices: %w", err)
+	}
+	mlog.Debug("Indices in ElasticSearch domain", mlog.Array("indices", indices))
+
+	repositories, err := es.ListRepositories()
+	if err != nil {
+		return fmt.Errorf("unable to list repositories: %w", err)
+	}
+	mlog.Debug("Repositories registered", mlog.Array("repositories", repositories))
+
+	repo := t.config.ElasticSearchSettings.SnapshotRepository
+
+	// Check if the registered repositories already include the one configured
+	repoFound := false
+	for _, r := range repositories {
+		if r.Name == repo {
+			repoFound = true
+			break
+		}
+	}
+
+	// Register the repository configured if not found
+	if !repoFound {
+		arn := output.ElasticSearchRoleARN
+		if err := es.RegisterS3Repository(repo, arn); err != nil {
+			return fmt.Errorf("unable to register repository: %w", err)
+		}
+		mlog.Info("Repository registered", mlog.String("repository", repo))
+	}
+
+	// List all snapshots in the configured repository
+	snapshots, err := es.ListSnapshots(repo)
+	if err != nil {
+		return fmt.Errorf("unable to list snapshots: %w", err)
+	}
+	mlog.Debug("Snapshots in registered repository", mlog.Array("snapshots", snapshots))
+
+	// Look for the configured snapshot
+	var snapshot elasticsearch.Snapshot
+	snapshotName := t.config.ElasticSearchSettings.SnapshotName
+	for _, s := range snapshots {
+		if s.Name == snapshotName {
+			snapshot = s
+			break
+		}
+	}
+	if snapshot.Name == "" {
+		return fmt.Errorf("snapshot %q not found in repository %q", snapshotName, repo)
+	}
+
+	// Filter out indices starting with '.', like .kibana_1
+	snapshotIndices := []string{}
+	for _, i := range snapshot.Indices {
+		if !strings.HasPrefix(i, ".") {
+			snapshotIndices = append(snapshotIndices, i)
+		}
+
+	}
+	mlog.Debug("Indices in the snapshot to be restored", mlog.Array("snapshot indices", snapshotIndices))
+
+	// We need to close all indices already present in the ElasticSearch
+	// server that we want to restore from the snapshot. This is needed for
+	// fresh servers as well, since at least the users index is sometimes
+	// present on creation.
+	indicesToClose := []string{}
+	for _, index := range indices {
+		for _, snapshotIndex := range snapshotIndices {
+			if index == snapshotIndex {
+				indicesToClose = append(indicesToClose, index)
+			}
+		}
+	}
+
+	if len(indicesToClose) > 0 {
+		mlog.Info("Closing indices in ElasticSearch server...", mlog.Array("indices", indicesToClose))
+		if err := es.CloseIndices(indicesToClose); err != nil {
+			return fmt.Errorf("unable to close indices: %w", err)
+		}
+	}
+
+	mlog.Info("Restoring snapshot...",
+		mlog.String("repository", repo),
+		mlog.String("snapshot", snapshotName),
+		mlog.Array("indices", snapshotIndices))
+	opts := elasticsearch.RestoreSnapshotOpts{
+		WithIndices: snapshotIndices,
+	}
+	if err := es.RestoreSnapshot(repo, snapshotName, opts); err != nil {
+		return fmt.Errorf("unable to restore snapshot: %w", err)
+	}
+
+	// Wait until the snapshot is completely restored, or 30 minutes have
+	// passed, whatever happens first
+	dur := 45 * time.Minute
+	timeout := time.After(dur)
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout after %s, snapshot was not restored", dur.String())
+		case <-time.After(30 * time.Second):
+			indicesRecovery, err := es.IndicesRecovery(snapshotIndices)
+			if err != nil {
+				return fmt.Errorf("unable to get recovery info from indices: %w", err)
+			}
+
+			// Compute progress
+			var indicesDone, indicesInProgress, totalPerc int
+			for _, i := range indicesRecovery {
+				if i.Stage == "DONE" {
+					indicesDone++
+				} else {
+					indicesInProgress++
+				}
+
+				// Remove the trailing "%" and the dot, so 75.8% is converted to 758
+				percString := strings.ReplaceAll(i.Percent[:len(i.Percent)-1], ".", "")
+				perc, err := strconv.Atoi(percString)
+				if err != nil {
+					return fmt.Errorf("percentage %q cannot be parsed: %w", i.Percent, err)
+				}
+				totalPerc += perc
+			}
+
+			// Finish when all indices are marked as "DONE"
+			if indicesDone == len(snapshotIndices) {
+				mlog.Info("ElasticSearch snapshot restored")
+				return nil
+			}
+
+			// Otherwise, show the progress
+			avgPerc := float64(totalPerc) / 10 / float64(len(snapshotIndices))
+			indicesWaiting := len(snapshotIndices) - indicesDone - indicesInProgress
+			mlog.Info("Restoring ElasticSearch snapshot...",
+				mlog.String("avg % completed", fmt.Sprintf("%.2f", avgPerc)),
+				mlog.Int("indices waiting", indicesWaiting),
+				mlog.Int("indices in progress", indicesInProgress),
+				mlog.Int("indices recovered", indicesDone))
+		}
+	}
+}
+
 func genNginxConfig() (string, error) {
 	data := map[string]string{
 		"tcpNoDelay": "off",
@@ -400,6 +612,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 		return
 	}
+
 	func() {
 		defer func() {
 			err := sshc.Close()
@@ -413,7 +626,22 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 
 		backends := ""
 		for _, addr := range t.output.Instances {
-			backends += "server " + addr.PrivateIP + ":8065 max_fails=3;\n"
+			backends += "server " + addr.PrivateIP + ":8065 max_fails=0;\n"
+		}
+
+		cacheObjects := "10m"
+		cacheSize := "3g"
+		// Extracting the instance class from the type.
+		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
+		parts := strings.Split(t.config.ProxyInstanceType, ".")
+		if len(parts) > 1 {
+			// Hack alert. There can be other higher variants like 12xlarge or even metal. But we are keeping it simple for now.
+			switch parts[1] {
+			case "4", "8":
+				cacheObjects = "50m"
+				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
+				// from my tests. So there's no point stretching it further.
+			}
 		}
 
 		nginxConfig, err := genNginxConfig()
@@ -422,10 +650,20 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
+		nginxSiteConfig, err := fillConfigTemplate(nginxSiteConfigTmpl, map[string]string{
+			"backends":     backends,
+			"cacheObjects": cacheObjects,
+			"cacheSize":    cacheSize,
+		})
+		if err != nil {
+			mlog.Error("Failed to generate nginx site config", mlog.Err(err))
+			return
+		}
+
 		batch := []uploadInfo{
 			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
 			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
-			{srcData: strings.TrimLeft(fmt.Sprintf(nginxSiteConfig, backends), "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
+			{srcData: strings.TrimLeft(nginxSiteConfig, "\n"), dstPath: "/etc/nginx/sites-available/mattermost"},
 			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
@@ -435,7 +673,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
-		cmd := "sudo sysctl -p && sudo service nginx reload"
+		cmd := "sudo sysctl -p && sudo service nginx restart"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
@@ -465,11 +703,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
-func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config string) error {
-	if t.config.TerraformDBSettings.InstanceEngine != "aurora-postgresql" {
-		return fmt.Errorf("default_text_search_config can only be set in postgres")
-	}
-
+func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 	dns := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		t.config.TerraformDBSettings.UserName,
 		t.config.TerraformDBSettings.Password,
@@ -477,18 +711,31 @@ func (t *Terraform) setDefaultTextSearchConfig(extAgent *ssh.ExtAgent, config st
 		t.config.DBName(),
 	)
 
-	sqlCmd := fmt.Sprintf("ALTER DATABASE %s SET default_text_search_config TO \"%s\"",
-		t.config.DBName(),
-		config,
-	)
+	if len(t.output.Instances) == 0 {
+		return errors.New("no instances found in Terraform output")
+	}
 
-	cmd := fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
-
-	mlog.Info(fmt.Sprintf("Setting default_text_search_config to %q:", config), mlog.String("cmd", cmd))
 	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
 	if err != nil {
 		return err
 	}
+
+	const searchConfig = "pg_catalog.english"
+	sqlCmd := fmt.Sprintf("ALTER DATABASE %s SET default_text_search_config TO %q",
+		t.config.DBName(),
+		searchConfig,
+	)
+	cmd := fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+
+	mlog.Info(fmt.Sprintf("Setting default_text_search_config to %q:", searchConfig), mlog.String("cmd", cmd))
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
+	}
+
+	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers;"
+	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+
+	mlog.Info("Vacuuming the tables", mlog.String("cmd", cmd))
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
@@ -539,6 +786,13 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
 	cfg.ServiceSettings.PostPriority = model.NewBool(true)
+	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
+	// node or the proxy and set that.
+	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
+	cfg.ServiceSettings.EnableOpenTracing = model.NewBool(false)    // Large overhead, better to disable
+	cfg.ServiceSettings.EnableTutorial = model.NewBool(false)       // Makes manual testing easier
+	cfg.ServiceSettings.EnableOnboardingFlow = model.NewBool(false) // Makes manual testing easier
+
 	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewString("2500")
 
@@ -565,6 +819,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
 	cfg.LogSettings.EnableFile = model.NewBool(true)
 	cfg.LogSettings.FileLevel = model.NewString("WARN")
+	cfg.LogSettings.EnableSentry = model.NewBool(false)
 
 	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
 	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
@@ -576,9 +831,15 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
 	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
 	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
+	cfg.SqlSettings.Trace = model.NewBool(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
+	if t.output.HasElasticSearch() {
+		cfg.SqlSettings.DisableDatabaseSearch = model.NewBool(true)
+	}
 
-	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(50000)
+	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(200000)      // We don't want to be capped by this limit
+	cfg.TeamSettings.MaxChannelsPerTeam = model.NewInt64(200000) // We don't want to be capped by this limit
 	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
+	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(1000)
 
 	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
 	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
@@ -665,9 +926,11 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
 
 	// We lock to make this call safe for concurrent use
@@ -686,7 +949,7 @@ func pingServer(addr string) error {
 	mlog.Info("Checking server status:", mlog.String("host", addr))
 	client := model.NewAPIv4Client(addr)
 	client.HTTPClient.Timeout = 10 * time.Second
-	dur := 60 * time.Second
+	dur := 240 * time.Second
 	timeout := time.After(dur)
 
 	for {

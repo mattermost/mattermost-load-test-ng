@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type userAction struct {
@@ -73,6 +74,9 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		c.user.ClearUserData()
 		if err := c.connect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if resp := control.FetchStaticAssets(c.user); resp.Err != nil {
+			return resp
 		}
 	}
 
@@ -131,7 +135,7 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 		c.status <- c.newInfoStatus(resp.Info)
 		return c.login(u)
 	}
-	return resp
+	return control.FetchStaticAssets(u)
 }
 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
@@ -291,6 +295,12 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 
 	if err := u.SetCurrentTeam(&team); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveTeam(team.Id); err != nil {
+			mlog.Warn("Failed to update active team", mlog.String("team_id", team.Id))
+		}
 	}
 
 	// We should probably keep track of the last channel viewed in the team but
@@ -528,6 +538,12 @@ func switchChannel(u user.User) control.UserActionResponse {
 
 	if err := u.SetCurrentChannel(&channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if u.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveChannel(channel.Id); err != nil {
+			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
+		}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
@@ -811,8 +827,7 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		PostId: post.Id,
 	}
 
-	emojis := []string{"+1", "tada", "point_up", "raised_hands"}
-	reaction.EmojiName = emojis[rand.Intn(len(emojis))]
+	reaction.EmojiName = control.RandomEmoji()
 
 	reactions, err := u.Store().Reactions(post.Id)
 	if err != nil {
@@ -822,6 +837,22 @@ func (c *SimulController) addReaction(u user.User) control.UserActionResponse {
 		if reaction.UserId == reactions[i].UserId &&
 			reaction.EmojiName == reactions[i].EmojiName {
 			return control.UserActionResponse{Info: "reaction already added"}
+		}
+	}
+
+	reactionLimit, err := strconv.ParseInt(u.Store().ClientConfig()["UniqueEmojiReactionLimitPerPost"], 10, 64)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if reactionLimit != 0 {
+		uniqueEmojiNames := map[string]bool{reaction.EmojiName: true}
+		for _, r := range reactions {
+			uniqueEmojiNames[r.EmojiName] = true
+		}
+
+		if len(uniqueEmojiNames) >= int(reactionLimit) {
+			return control.UserActionResponse{Info: "reaction limit reached"}
 		}
 	}
 
@@ -1399,6 +1430,15 @@ func (c *SimulController) initialJoinTeam(u user.User) control.UserActionRespons
 		return c.joinTeam(c.user)
 	}
 
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		// Setting the active thread to empty to allow the optimization to kick in early.
+		// We don't do this in the webapp to keep the code simple, but it's okay to do this in load-test
+		// to magnify the boost.
+		if err := u.UpdateActiveThread(""); err != nil {
+			mlog.Warn("Failed to update active thread", mlog.String("channel_id", ""))
+		}
+	}
+
 	return resp
 }
 
@@ -1717,6 +1757,13 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		case <-time.After(idleTime):
 		}
 	}
+
+	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+		if err := u.UpdateActiveThread(thread.Post.ChannelId); err != nil {
+			mlog.Warn("Failed to update active thread", mlog.String("channel_id", thread.Post.ChannelId))
+		}
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
 }
 
@@ -2061,4 +2108,49 @@ func (c *SimulController) openPermalink(u user.User) control.UserActionResponse 
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("clicked permalink on post %s", postID)}
+}
+
+func (c *SimulController) generateUserReport(u user.User) control.UserActionResponse {
+	// We are detecting the sysadmin here, and not in the actions slice initialization,
+	// because the roles of a user aren't initialized until the user logs in.
+	// See https://github.com/mattermost/mattermost-load-test-ng/pull/675 for more context.
+	isAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !isAdmin {
+		return control.UserActionResponse{Info: "User is not an admin. Skipping from generating user report."}
+	}
+
+	// Simulate scrolling through the entire list of users
+	// (should be similar to generating the complete report and exporting it)
+	pageSize := 50
+	lastColumnValue := ""
+	lastId := ""
+	totalUsers := 0
+
+	for {
+		report, err := u.GetUsersForReporting(&model.UserReportOptions{
+			ReportingBaseOptions: model.ReportingBaseOptions{
+				SortColumn:      "Username",
+				PageSize:        pageSize,
+				FromColumnValue: lastColumnValue,
+				FromId:          lastId,
+			},
+		})
+
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		totalUsers += len(report)
+		if len(report) < pageSize {
+			break
+		}
+
+		lastColumnValue = report[len(report)-1].Username
+		lastId = report[len(report)-1].Id
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("generated user report for %d users", totalUsers)}
 }

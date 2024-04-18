@@ -13,9 +13,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"gopkg.in/yaml.v3"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -79,6 +82,32 @@ func (t *Terraform) UploadDashboard(dashboard string) (string, error) {
 	return url, nil
 }
 
+type PanelData struct {
+	Id        int
+	Title     string
+	Legend    string
+	Height    int
+	Width     int
+	PosX      int
+	PosY      int
+	Query     string
+	Threshold float64
+}
+
+// Panel dimensions for the Grafana dashboard containing the coordinator metrics.
+const (
+	// According to the Grafana docs, "the width of the dashboard is divided into
+	// 24 columns", so we set it to half that to fit two panels in each row.
+	panelWidth = 12
+	// According to the Grafana docs, each height unit "represents 30 pixels".
+	// Setting the height to 9 (270px) is a good default.
+	panelHeight = 9
+)
+
+type DashboardData struct {
+	Panels []PanelData
+}
+
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Updating Prometheus config
 	sshc, err := extAgent.NewClient(t.output.MetricsServer.PublicIP)
@@ -90,25 +119,25 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	var mmTargets, nodeTargets, esTargets, ltTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
-		mmTargets = append(mmTargets, fmt.Sprintf("'%s:8067'", host))
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	for i, val := range t.output.Agents {
 		host := fmt.Sprintf("agent-%d", i)
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
-		ltTargets = append(ltTargets, fmt.Sprintf("'%s:4000'", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+		ltTargets = append(ltTargets, fmt.Sprintf("%s:4000", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if t.output.HasProxy() {
 		host := "proxy"
-		nodeTargets = append(nodeTargets, fmt.Sprintf("'%s:9100'", host))
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		hosts += fmt.Sprintf("%s %s\n", t.output.Proxy.PrivateIP, host)
 	}
 
 	if t.output.HasElasticSearch() {
 		esEndpoint := fmt.Sprintf("https://%s", t.output.ElasticSearchServer.Endpoint)
-		esTargets = append(esTargets, "'metrics:9114'")
+		esTargets = append(esTargets, "metrics:9114")
 
 		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
 		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
@@ -128,24 +157,42 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	quoteAll := func(elems []string) []string {
+		quoted := make([]string, 0, len(elems))
+		for _, elem := range elems {
+			quoted = append(quoted, "'"+elem+"'")
+		}
+		return quoted
+	}
+
 	mlog.Info("Updating Prometheus config", mlog.String("host", t.output.MetricsServer.PublicIP))
 	prometheusConfigFile := fmt.Sprintf(prometheusConfig,
-		strings.Join(nodeTargets, ","),
-		strings.Join(mmTargets, ","),
-		strings.Join(esTargets, ","),
-		strings.Join(ltTargets, ","),
+		strings.Join(quoteAll(nodeTargets), ","),
+		strings.Join(quoteAll(mmTargets), ","),
+		strings.Join(quoteAll(esTargets), ","),
+		strings.Join(quoteAll(ltTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
 		return fmt.Errorf("error upload prometheus config: output: %s, error: %w", out, err)
 	}
+
 	mlog.Info("Updating Pyroscope config", mlog.String("host", t.output.MetricsServer.PublicIP))
-	pyroscopeConfigFile := fmt.Sprintf(pyroscopeConfig,
-		strings.Join(mmTargets, ","),
-		strings.Join(ltTargets, ","),
-	)
-	rdr = strings.NewReader(pyroscopeConfigFile)
-	if out, err := sshc.Upload(rdr, "/etc/pyroscope/server.yml", true); err != nil {
+	pyroscopeMMTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAppProfiling {
+		pyroscopeMMTargets = mmTargets
+	}
+	pyroscopeLTTargets := []string{}
+	if t.config.PyroscopeSettings.EnableAgentProfiling {
+		pyroscopeLTTargets = ltTargets
+	}
+	pyroscopeConfig, err := yaml.Marshal(NewPyroscopeConfig(pyroscopeMMTargets, pyroscopeLTTargets))
+	if err != nil {
+		return fmt.Errorf("error marshaling Pyroscope config yaml: %w", err)
+	}
+
+	pyroscopeReader := bytes.NewReader(pyroscopeConfig)
+	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/server.yml", true); err != nil {
 		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
 	}
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
@@ -204,6 +251,43 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
+	// Upload coordinator metrics dashboard
+	coordConfig, err := coordinator.ReadConfig("")
+	if err != nil {
+		return fmt.Errorf("error while reading coordinator's config: %w", err)
+	}
+	panels := []PanelData{}
+	i := 0
+	for _, query := range coordConfig.MonitorConfig.Queries {
+		if query.Alert {
+			panels = append(panels, PanelData{
+				Id:        i,
+				Title:     query.Description,
+				Legend:    query.Legend,
+				Height:    panelHeight,
+				Width:     panelWidth,
+				PosX:      panelWidth * (i % 2),
+				PosY:      panelHeight * (i / 2),
+				Query:     strings.ReplaceAll(query.Query, "\"", "\\\""),
+				Threshold: query.Threshold,
+			})
+			i++
+		}
+	}
+	// Create the coordinator dashboard only if there is at least one panel
+	if len(panels) > 0 {
+		dashboard := DashboardData{panels}
+		var b bytes.Buffer
+		tmpl, err := template.ParseFiles(t.getAsset("coordinator_dashboard_tmpl.json"))
+		if err != nil {
+			return err
+		}
+		tmpl.Execute(&b, dashboard)
+		if out, err := sshc.Upload(&b, "/var/lib/grafana/dashboards/coordinator_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading coordinator_dashboard.json: output: %s, error: %w", out, err)
+		}
 	}
 
 	if t.output.HasElasticSearch() {

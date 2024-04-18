@@ -34,11 +34,11 @@ type Config struct {
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
-	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
-	AgentInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Type of the EC2 instance for proxy.
@@ -71,7 +71,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.9.1/mattermost-load-test-ng-v1.9.1-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
@@ -95,6 +95,34 @@ type Config struct {
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
 	UsersFilePath string `default:""`
+	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
+	PyroscopeSettings PyroscopeSettings
+	// StorageSizes specifies the sizes of the disks for each instance type
+	StorageSizes StorageSizes
+}
+
+type StorageSizes struct {
+	// Size, in GiB, for the storage of the agents instances
+	Agent int `default:"10"`
+	// Size, in GiB, for the storage of the proxy instance
+	Proxy int `default:"10"`
+	// Size, in GiB, for the storage of the app instances
+	App int `default:"10"`
+	// Size, in GiB, for the storage of the metrics instance
+	Metrics int `default:"50"`
+	// Size, in GiB, for the storage of the job server instances
+	Job int `default:"50"`
+	// Size, in GiB, for the storage of the elasticsearch instances
+	ElasticSearch int `default:"20"`
+}
+
+// PyroscopeSettings contains flags to enable/disable the profiling
+// of the different parts of the deployment.
+type PyroscopeSettings struct {
+	// Enable profiling of all the app instances
+	EnableAppProfiling bool `default:"true"`
+	// Enable profiling of all the agent instances
+	EnableAgentProfiling bool `default:"true"`
 }
 
 // TerraformDBSettings contains the necessary data
@@ -104,7 +132,7 @@ type TerraformDBSettings struct {
 	// Number of DB instances.
 	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
-	InstanceType string `default:"db.r6g.large" validate:"notempty"`
+	InstanceType string `default:"db.r7g.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
@@ -112,7 +140,7 @@ type TerraformDBSettings struct {
 	// Password to connect to the DB.
 	Password string `default:"mostest80098bigpass_" validate:"notempty"`
 	// If set to true enables performance insights for the created DB instances.
-	EnablePerformanceInsights bool `default:"false"`
+	EnablePerformanceInsights bool `default:"true"`
 	// A list of DB specific parameters to use for the created instance.
 	DBParameters DBParameters
 	// ClusterIdentifier indicates to point to an existing cluster
@@ -160,11 +188,15 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version float64
+	Version string `default:"Elasticsearch_7.10" validate:"prefix:Elasticsearch_"`
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
+	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
+	SnapshotRepository string
+	// SnapshotName is the name of the snapshot to restore.
+	SnapshotName string
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -173,7 +205,7 @@ type JobServerSettings struct {
 	// Job server instances count.
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
-	InstanceType string `default:"c5.xlarge"`
+	InstanceType string `default:"c7i.xlarge"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.

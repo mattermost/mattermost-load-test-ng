@@ -30,6 +30,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/performance"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
@@ -365,6 +366,17 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		return nil, err
 	}
 
+	modAdmins := 0
+	if config.UsersConfiguration.PercentOfUsersAreAdmin > 0 {
+		modAdmins = int(1 / config.UsersConfiguration.PercentOfUsersAreAdmin)
+	}
+
+	err = createCustomEmoji(config)
+	if err != nil {
+		return nil, err
+	}
+	mlog.Info("Custom emoji created")
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
@@ -372,10 +384,14 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		email := fmt.Sprintf("%s-%d@example.com", namePrefix, id)
 		password := "testPass123$"
 
-		// If UsersFilePath was set, and we haven't yet consumed all of the credentials
-		// provided there, ovewrite this user's credentials with the next available
-		// user in that file
-		if len(creds) > 0 && id < len(creds) {
+		if modAdmins > 0 && id%modAdmins == 0 {
+			username = ""
+			email = config.ConnectionConfiguration.AdminEmail
+			password = config.ConnectionConfiguration.AdminPassword
+		} else if len(creds) > 0 && id < len(creds) {
+			// If UsersFilePath was set, and we haven't yet consumed all of the credentials
+			// provided there, ovewrite this user's credentials with the next available
+			// user in that file
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
@@ -405,8 +421,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 
 		ueSetup := userentity.Setup{
-			Store:     store,
-			Transport: transport,
+			Store:         store,
+			Transport:     transport,
+			ClientTimeout: transport.ResponseHeaderTimeout,
 		}
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
@@ -423,17 +440,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			if err != nil {
 				return nil, err
 			}
-			adminUeSetup := userentity.Setup{
-				Store: adminStore,
-			}
-			adminUeConfig := userentity.Config{
-				ServerURL:    config.ConnectionConfiguration.ServerURL,
-				WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-				Username:     "",
-				Email:        config.ConnectionConfiguration.AdminEmail,
-				Password:     config.ConnectionConfiguration.AdminPassword,
-			}
-			sysadmin := userentity.New(adminUeSetup, adminUeConfig)
+			sysadmin := createSysAdmin(adminStore, config)
 			if err := sysadmin.Login(); err != nil {
 				return nil, err
 			}
@@ -497,4 +504,44 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 	}
 
 	return users, nil
+}
+
+func createSysAdmin(store *memstore.MemStore, config *loadtest.Config) *userentity.UserEntity {
+	adminUeSetup := userentity.Setup{
+		Store: store,
+	}
+	adminUeConfig := userentity.Config{
+		ServerURL:    config.ConnectionConfiguration.ServerURL,
+		WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
+		Username:     "",
+		Email:        config.ConnectionConfiguration.AdminEmail,
+		Password:     config.ConnectionConfiguration.AdminPassword,
+	}
+	return userentity.New(adminUeSetup, adminUeConfig)
+}
+
+func createCustomEmoji(config *loadtest.Config) error {
+	adminStore, err := memstore.New(nil)
+	if err != nil {
+		return err
+	}
+	sysadmin := createSysAdmin(adminStore, config)
+	if err := sysadmin.Login(); err != nil {
+		return err
+	}
+
+	emoji := &model.Emoji{
+		CreatorId: sysadmin.Store().Id(),
+		Name:      "give_back_money",
+	}
+	buf := control.MustAsset("test_emoji.png")
+
+	err = sysadmin.UploadEmoji(emoji, buf, "image.png")
+	if err != nil {
+		var appErr *model.AppError
+		if errors.As(err, &appErr) && appErr.Id == "api.emoji.create.duplicate.app_error" {
+			return nil
+		}
+	}
+	return err
 }

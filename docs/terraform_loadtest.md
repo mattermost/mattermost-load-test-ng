@@ -57,6 +57,8 @@ Once done, it will output information about the entire cluster. Everything will 
 
 If you see an error when running `deployment create` mentioning a "resource already exists", it is most likely because your `ClusterName` is not a unique value within your AWS account. Run `go run ./cmd/ltctl deployment destroy` to clean up the half created deployment. Then change the `ClusterName` to something more unique for your loadtest and try again.
 
+NOTE: If you are not a Mattermost staff, then most likely you would want to set the `--service_environment` flag to `production` so that the right license type is picked up. Internally, we use test licenses.
+
 ### Get information on the current deployment
 
 ```sh
@@ -107,6 +109,8 @@ go run ./cmd/ltctl loadtest start
 ```
 
 This will begin to run the load-test across the whole cluster of load-test agents.
+
+NOTE: If you are not a Mattermost staff, then most likely you would want to set the `--service_environment` flag to `production` so that the right license type is picked up. Internally, we use test licenses.
 
 ### Show the load-test status
 

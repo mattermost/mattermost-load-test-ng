@@ -25,13 +25,16 @@ func TestCoordinatorAPI(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
 	// create httpexpect instance
 	e := httpexpect.New(t, server.URL+"/coordinator")
 
 	var ltConfig loadtest.Config
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
-	ltConfig.ConnectionConfiguration.ServerURL = "http://fakesitetotallydoesntexist.com"
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
 	var config coordinator.Config

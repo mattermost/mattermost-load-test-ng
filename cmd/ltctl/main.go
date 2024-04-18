@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/spf13/cobra"
 )
@@ -27,20 +28,12 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
 
-	// If DBDumpURI is not set, we seed data. Otherwise,
-	// we just load the dump.
 	initData := config.DBDumpURI == ""
 	err = t.Create(initData)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform env: %w", err)
 	}
 
-	if !initData {
-		err = t.IngestDump()
-		if err != nil {
-			return fmt.Errorf("failed to create ingest dump: %w", err)
-		}
-	}
 	return nil
 }
 
@@ -83,6 +76,55 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	return t.Sync()
+}
+
+func RunStopDBCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.StopDB()
+}
+
+func RunStartDBCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.StartDB()
+}
+
+func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	status, err := t.DBStatus()
+	if err != nil {
+		return fmt.Errorf("failed to get DB status: %w", err)
+	}
+
+	fmt.Println("Status: ", status)
+
+	return nil
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
@@ -130,6 +172,15 @@ func getConfig(cmd *cobra.Command) (deployment.Config, error) {
 	return *cfg, nil
 }
 
+func setServiceEnv(cmd *cobra.Command) {
+	serviceEnv, _ := cmd.Flags().GetString("service_environment")
+	// Set it to test if it's neither prod nor test.
+	if serviceEnv != model.ServiceEnvironmentProduction && serviceEnv != model.ServiceEnvironmentTest {
+		serviceEnv = model.ServiceEnvironmentTest
+	}
+	os.Setenv("MM_SERVICEENVIRONMENT", serviceEnv)
+}
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:          "ltctl",
@@ -137,10 +188,13 @@ func main() {
 		Short:        "Manage and control load-test deployments",
 	}
 	rootCmd.PersistentFlags().StringP("config", "c", "", "path to the deployer configuration file to use")
+	rootCmd.PersistentFlags().StringP("service_environment", "s", model.ServiceEnvironmentTest, "value of the MM_SERVICEENVIRONMENT variable. Valid values are production, test")
 
 	deploymentCmd := &cobra.Command{
-		Use:   "deployment",
-		Short: "Manage a load-test deployment",
+		Use:               "deployment",
+		Short:             "Manage a load-test deployment",
+		PersistentPreRun:  func(cmd *cobra.Command, _ []string) { setServiceEnv(cmd) },
+		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 
 	deploymentCommands := []*cobra.Command{
@@ -164,14 +218,31 @@ func main() {
 			Short: "Syncs the local .tfstate file with any changes made remotely",
 			RunE:  RunSyncCmdF,
 		},
+		{
+			Use:   "stop-db",
+			Short: "Stops the DB cluster and syncs the changes.",
+			RunE:  RunStopDBCmdF,
+		},
+		{
+			Use:   "start-db",
+			Short: "Starts the DB cluster and syncs the changes.",
+			RunE:  RunStartDBCmdF,
+		},
+		{
+			Use:   "db-info",
+			Short: "Display info about the DB cluster.",
+			RunE:  RunDBStatusCmdF,
+		},
 	}
 
 	deploymentCmd.AddCommand(deploymentCommands...)
 	rootCmd.AddCommand(deploymentCmd)
 
 	loadtestCmd := &cobra.Command{
-		Use:   "loadtest",
-		Short: "Manage the load-test",
+		Use:               "loadtest",
+		Short:             "Manage the load-test",
+		PersistentPreRun:  func(cmd *cobra.Command, _ []string) { setServiceEnv(cmd) },
+		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 
 	resetCmd := &cobra.Command{
@@ -181,12 +252,15 @@ func main() {
 	}
 	resetCmd.Flags().Bool("confirm", false, "Confirm you really want to reset the database and re-initialize it.")
 
+	ltStartCmd := &cobra.Command{
+		Use:   "start",
+		Short: "Start the coordinator in the current load-test deployment",
+		RunE:  RunLoadTestStartCmdF,
+	}
+	ltStartCmd.Flags().Bool("sync", false, "Changes the command to not return until the test has finished, and then stops the DB after that")
+
 	loadtestComands := []*cobra.Command{
-		{
-			Use:   "start",
-			Short: "Start the coordinator in the current load-test deployment",
-			RunE:  RunLoadTestStartCmdF,
-		},
+		ltStartCmd,
 		{
 			Use:   "stop",
 			Short: "Stop the coordinator in the current load-test deployment",
@@ -316,8 +390,10 @@ func main() {
 	rootCmd.AddCommand(reportCmd)
 
 	comparisonCmd := &cobra.Command{
-		Use:   "comparison",
-		Short: "Manage fully automated load-test comparisons environments",
+		Use:               "comparison",
+		Short:             "Manage fully automated load-test comparisons environments",
+		PersistentPreRun:  func(cmd *cobra.Command, _ []string) { setServiceEnv(cmd) },
+		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 	comparisonCmd.Flags().StringP("comparison-config", "", "", "path to the comparison config file to use")
 	runComparisonCmd := &cobra.Command{

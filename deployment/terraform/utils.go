@@ -225,9 +225,10 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
-		"-var", fmt.Sprintf("es_version=%.1f", t.config.ElasticSearchSettings.Version),
+		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
 		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
+		"-var", fmt.Sprintf("es_snapshot_repository=%s", t.config.ElasticSearchSettings.SnapshotRepository),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
@@ -243,6 +244,12 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
 		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
 		"-var", fmt.Sprintf("s3_external_bucket_name=%s", t.config.ExternalBucketSettings.AmazonS3Bucket),
+		"-var", fmt.Sprintf("block_device_sizes_agent=%d", t.config.StorageSizes.Agent),
+		"-var", fmt.Sprintf("block_device_sizes_proxy=%d", t.config.StorageSizes.Proxy),
+		"-var", fmt.Sprintf("block_device_sizes_app=%d", t.config.StorageSizes.App),
+		"-var", fmt.Sprintf("block_device_sizes_metrics=%d", t.config.StorageSizes.Metrics),
+		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
+		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
 	}
 }
 

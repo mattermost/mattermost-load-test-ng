@@ -49,7 +49,8 @@
     "InitialActiveUsers": 0,
     "UsersFilePath": "",
     "MaxActiveUsers": 2000,
-    "AvgSessionsPerUser": 1
+    "AvgSessionsPerUser": 1,
+    "PercentOfUsersAreAdmin": 0.0005
   },
   "LogSettings": {
     "EnableConsole": true,

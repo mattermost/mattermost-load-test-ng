@@ -41,6 +41,12 @@ type User interface {
 	// SendTypingEvent will push a user_typing event out to all connected users
 	// who are in the specified channel.
 	SendTypingEvent(channelId, parentId string) error
+	// These methods are to send info to the server on
+	// the state of the client.
+	UpdateActiveChannel(channelId string) error
+	UpdateActiveThread(channelId string) error
+	UpdateActiveTeam(teamId string) error
+	PostedAck(postId string, status string, reason string, postedData string) error
 
 	//server
 	// GetConfig fetches and stores the server's configuration.
@@ -92,6 +98,8 @@ type User interface {
 	GetUsers(page, perPage int) ([]string, error)
 	// GetUsersNotInChannel returns a list of user ids not in a given channel.
 	GetUsersNotInChannel(teamId, channelId string, page, perPage int) ([]string, error)
+	// GetUsersForReporting returns a list of users in a report format
+	GetUsersForReporting(options *model.UserReportOptions) ([]*model.UserReport, error)
 
 	// SetProfileImage sets the profile image for the user.
 	SetProfileImage(data []byte) error
@@ -243,6 +251,7 @@ type User interface {
 	GetEmojiList(page, perPage int) error
 	// GetEmojiImage fetches the image for a given emoji.
 	GetEmojiImage(emojiId string) error
+	UploadEmoji(emoji *model.Emoji, image []byte, filename string) error
 
 	// reactions
 	// SaveReaction stores the given reaction.
