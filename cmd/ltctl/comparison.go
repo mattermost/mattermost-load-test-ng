@@ -63,17 +63,14 @@ func getReportFilename(id int, res comparison.Result) string {
 	return fmt.Sprintf("report_%s.md", name)
 }
 
-func writeToFile() {
-	var resultsFile *os.File
-
+func writeToFile() *os.File {
 	// Create or open the file for writing
 	resultsFile, err := os.Create("results.txt")
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return nil
 	}
-	defer resultsFile.Close()
-
+	return resultsFile
 }
 
 func printResults(results []comparison.Result, resultsFile *os.File) {
