@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -290,7 +291,28 @@ func (c *SimulController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	c.serverVersion, _ = c.user.Store().ServerVersion()
+	// Init controller's server version
+	serverVersionString, err := c.user.Store().ServerVersion()
+	if err != nil {
+		c.sendFailStatus("server version could not be retrieved")
+		return
+	}
+	serverVersion, err := control.ParseServerVersion(serverVersionString)
+	if err != nil {
+		c.sendFailStatus("server version could not be parsed")
+		return
+	}
+	c.serverVersion = serverVersion
+
+	// Early check that the server version is greater or equal than the initialVersion
+	if !c.isVersionSupported(control.MinSupportedVersion) {
+		c.sendFailStatus(fmt.Sprintf(
+			"server version %q is lower than the minimum supported version %q",
+			serverVersion.String(),
+			control.MinSupportedVersion.String(),
+		))
+		return
+	}
 
 	initActions := []userAction{
 		{
@@ -351,15 +373,6 @@ func (c *SimulController) Run() {
 func (c *SimulController) runAction(action *userAction) {
 	if action == nil {
 		return
-	}
-
-	if action.minServerVersion != "" {
-		supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
-		if err != nil {
-			c.status <- c.newErrorStatus(err)
-		} else if !supported {
-			return
-		}
 	}
 
 	if resp := action.run(c.user); resp.Err != nil {
@@ -424,6 +437,10 @@ func (c *SimulController) InjectAction(actionID string) error {
 	default:
 		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
 	}
+}
+
+func (c *SimulController) isVersionSupported(version semver.Version) bool {
+	return version.LTE(c.serverVersion)
 }
 
 // ensure SimulController implements UserController interface

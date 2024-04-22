@@ -249,22 +249,11 @@ func PickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duratio
 	return idleTimeMs * time.Millisecond
 }
 
-// IsVersionSupported returns whether a given version is supported
-// by the provided server version string.
-func IsVersionSupported(version, serverVersionString string) (bool, error) {
-	v, err := semver.Parse(version)
-	if err != nil {
-		return false, err
-	}
-
-	serverVersion := serverVersionRE.FindString(serverVersionString)
-
-	sv, err := semver.Parse(serverVersion)
-	if err != nil {
-		return false, err
-	}
-
-	return v.LTE(sv), nil
+// ParseServerVersion finds the semver-compatible version substring in the string
+// returned by the server and tries to parse it
+func ParseServerVersion(versionString string) (semver.Version, error) {
+	serverVersion := serverVersionRE.FindString(versionString)
+	return semver.Parse(serverVersion)
 }
 
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
