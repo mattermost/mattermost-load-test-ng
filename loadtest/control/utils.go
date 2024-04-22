@@ -57,6 +57,12 @@ var (
 		"https://golang.org",
 		"https://reactjs.org",
 	}
+	// We support versions as old as the second-to-last ESR, but not older
+	MinSupportedVersion = semver.MustParse("7.8.0")
+
+	// A version guaranteed to be larger than any released version, useful for
+	// actions already added to the load-test but not yet merged in the server.
+	UnreleasedVersion = semver.Version{Major: math.MaxUint64}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
