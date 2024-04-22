@@ -36,6 +36,9 @@ variable "es_vpc" {
 variable "es_create_role" {
 }
 
+variable "es_snapshot_repository" {
+}
+
 variable "proxy_instance_type" {
 }
 

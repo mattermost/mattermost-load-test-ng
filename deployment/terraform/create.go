@@ -10,12 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/elasticsearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -229,24 +231,64 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	// Note: This MUST be done after app servers have been set up.
-	// Otherwise, the vacuuming command will fail because no tables would
-	// have been created by then.
-	if t.output.HasDB() {
-		// Load the dump if specified
-		if !initData && t.config.DBDumpURI != "" {
-			err = t.IngestDump()
+	// Ingesting the DB dump and restoring the Elasticsearch snapshot can
+	// happen concurrently to reduce the deployment's total time
+	errorsChan := make(chan error, 2)
+	var wg sync.WaitGroup
+
+	// Setup Elasticsearch
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if t.output.HasElasticSearch() {
+			mlog.Info("Setting up Elasticsearch")
+			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+
 			if err != nil {
-				return fmt.Errorf("failed to create ingest dump: %w", err)
+				errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
+				return
 			}
 		}
 
-		if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-			// updatePostgresSettings does some housekeeping stuff like setting
-			// default_search_config and vacuuming tables.
-			if err := t.updatePostgresSettings(extAgent); err != nil {
-				return fmt.Errorf("could not modify default_search_text_config: %w", err)
+		errorsChan <- nil
+	}()
+
+	// Ingest DB dump
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Note: This MUST be done after app servers have been set up.
+		// Otherwise, the vacuuming command will fail because no tables would
+		// have been created by then.
+		if t.output.HasDB() {
+			// Load the dump if specified
+			if !initData && t.config.DBDumpURI != "" {
+				err = t.IngestDump()
+				if err != nil {
+					errorsChan <- fmt.Errorf("failed to create ingest dump: %w", err)
+					return
+				}
 			}
+
+			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+				// updatePostgresSettings does some housekeeping stuff like setting
+				// default_search_config and vacuuming tables.
+				if err := t.updatePostgresSettings(extAgent); err != nil {
+					errorsChan <- fmt.Errorf("could not modify default_search_text_config: %w", err)
+					return
+				}
+			}
+		}
+
+		errorsChan <- nil
+	}()
+
+	// Fail on any errors from the two goroutines above
+	wg.Wait()
+	close(errorsChan)
+	for err := range errorsChan {
+		if err != nil {
+			return err
 		}
 	}
 
@@ -397,6 +439,166 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 	}
 
 	return nil
+}
+
+func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
+	output, err := t.Output()
+	if err != nil {
+		return fmt.Errorf("unable to get Terraform output to setup ElasticSearch: %w", err)
+	}
+	esEndpoint := output.ElasticSearchServer.Endpoint
+
+	sshc, err := extAgent.NewClient(ip)
+	if err != nil {
+		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
+	}
+
+	es, err := elasticsearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
+	if err != nil {
+		return fmt.Errorf("unable to create Elasticserach client: %w", err)
+	}
+
+	indices, err := es.ListIndices()
+	if err != nil {
+		return fmt.Errorf("unable to list indices: %w", err)
+	}
+	mlog.Debug("Indices in ElasticSearch domain", mlog.Array("indices", indices))
+
+	repositories, err := es.ListRepositories()
+	if err != nil {
+		return fmt.Errorf("unable to list repositories: %w", err)
+	}
+	mlog.Debug("Repositories registered", mlog.Array("repositories", repositories))
+
+	repo := t.config.ElasticSearchSettings.SnapshotRepository
+
+	// Check if the registered repositories already include the one configured
+	repoFound := false
+	for _, r := range repositories {
+		if r.Name == repo {
+			repoFound = true
+			break
+		}
+	}
+
+	// Register the repository configured if not found
+	if !repoFound {
+		arn := output.ElasticSearchRoleARN
+		if err := es.RegisterS3Repository(repo, arn); err != nil {
+			return fmt.Errorf("unable to register repository: %w", err)
+		}
+		mlog.Info("Repository registered", mlog.String("repository", repo))
+	}
+
+	// List all snapshots in the configured repository
+	snapshots, err := es.ListSnapshots(repo)
+	if err != nil {
+		return fmt.Errorf("unable to list snapshots: %w", err)
+	}
+	mlog.Debug("Snapshots in registered repository", mlog.Array("snapshots", snapshots))
+
+	// Look for the configured snapshot
+	var snapshot elasticsearch.Snapshot
+	snapshotName := t.config.ElasticSearchSettings.SnapshotName
+	for _, s := range snapshots {
+		if s.Name == snapshotName {
+			snapshot = s
+			break
+		}
+	}
+	if snapshot.Name == "" {
+		return fmt.Errorf("snapshot %q not found in repository %q", snapshotName, repo)
+	}
+
+	// Filter out indices starting with '.', like .kibana_1
+	snapshotIndices := []string{}
+	for _, i := range snapshot.Indices {
+		if !strings.HasPrefix(i, ".") {
+			snapshotIndices = append(snapshotIndices, i)
+		}
+
+	}
+	mlog.Debug("Indices in the snapshot to be restored", mlog.Array("snapshot indices", snapshotIndices))
+
+	// We need to close all indices already present in the ElasticSearch
+	// server that we want to restore from the snapshot. This is needed for
+	// fresh servers as well, since at least the users index is sometimes
+	// present on creation.
+	indicesToClose := []string{}
+	for _, index := range indices {
+		for _, snapshotIndex := range snapshotIndices {
+			if index == snapshotIndex {
+				indicesToClose = append(indicesToClose, index)
+			}
+		}
+	}
+
+	if len(indicesToClose) > 0 {
+		mlog.Info("Closing indices in ElasticSearch server...", mlog.Array("indices", indicesToClose))
+		if err := es.CloseIndices(indicesToClose); err != nil {
+			return fmt.Errorf("unable to close indices: %w", err)
+		}
+	}
+
+	mlog.Info("Restoring snapshot...",
+		mlog.String("repository", repo),
+		mlog.String("snapshot", snapshotName),
+		mlog.Array("indices", snapshotIndices))
+	opts := elasticsearch.RestoreSnapshotOpts{
+		WithIndices: snapshotIndices,
+	}
+	if err := es.RestoreSnapshot(repo, snapshotName, opts); err != nil {
+		return fmt.Errorf("unable to restore snapshot: %w", err)
+	}
+
+	// Wait until the snapshot is completely restored, or 30 minutes have
+	// passed, whatever happens first
+	dur := 45 * time.Minute
+	timeout := time.After(dur)
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout after %s, snapshot was not restored", dur.String())
+		case <-time.After(30 * time.Second):
+			indicesRecovery, err := es.IndicesRecovery(snapshotIndices)
+			if err != nil {
+				return fmt.Errorf("unable to get recovery info from indices: %w", err)
+			}
+
+			// Compute progress
+			var indicesDone, indicesInProgress, totalPerc int
+			for _, i := range indicesRecovery {
+				if i.Stage == "DONE" {
+					indicesDone++
+				} else {
+					indicesInProgress++
+				}
+
+				// Remove the trailing "%" and the dot, so 75.8% is converted to 758
+				percString := strings.ReplaceAll(i.Percent[:len(i.Percent)-1], ".", "")
+				perc, err := strconv.Atoi(percString)
+				if err != nil {
+					return fmt.Errorf("percentage %q cannot be parsed: %w", i.Percent, err)
+				}
+				totalPerc += perc
+			}
+
+			// Finish when all indices are marked as "DONE"
+			if indicesDone == len(snapshotIndices) {
+				mlog.Info("ElasticSearch snapshot restored")
+				return nil
+			}
+
+			// Otherwise, show the progress
+			avgPerc := float64(totalPerc) / 10 / float64(len(snapshotIndices))
+			indicesWaiting := len(snapshotIndices) - indicesDone - indicesInProgress
+			mlog.Info("Restoring ElasticSearch snapshot...",
+				mlog.String("avg % completed", fmt.Sprintf("%.2f", avgPerc)),
+				mlog.Int("indices waiting", indicesWaiting),
+				mlog.Int("indices in progress", indicesInProgress),
+				mlog.Int("indices recovered", indicesDone))
+		}
+	}
 }
 
 func genNginxConfig() (string, error) {
@@ -637,6 +839,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
 	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
 	cfg.SqlSettings.Trace = model.NewBool(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
+	if t.output.HasElasticSearch() {
+		cfg.SqlSettings.DisableDatabaseSearch = model.NewBool(true)
+	}
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(200000)      // We don't want to be capped by this limit
 	cfg.TeamSettings.MaxChannelsPerTeam = model.NewInt64(200000) // We don't want to be capped by this limit
@@ -741,6 +946,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")

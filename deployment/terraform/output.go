@@ -31,6 +31,9 @@ type output struct {
 	ElasticServer struct {
 		Value []ElasticSearchDomain `json:"value"`
 	} `json:"elasticServer"`
+	ElasticRoleARN struct {
+		Value string
+	} `json:"elasticRoleARN"`
 	KeycloakServer struct {
 		Value []Instance `json:"value"`
 	} `json:"keycloakServer"`
@@ -64,12 +67,13 @@ type Output struct {
 	Agents                  []Instance          `json:"agents"`
 	MetricsServer           Instance            `json:"metricsServer"`
 	ElasticSearchServer     ElasticSearchDomain `json:"elasticServer"`
+	ElasticSearchRoleARN    string              `json:"elasticRoleARN"`
 	JobServers              []Instance          `json:"jobServers"`
-	KeycloakServer          Instance            `json:"keycloakServer"`
-	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 	S3Bucket                S3Bucket            `json:"s3Bucket"`
 	S3Key                   IAMAccess           `json:"s3Key"`
 	DBSecurityGroup         []SecurityGroup     `json:"dbSecurityGroup"`
+	KeycloakServer          Instance            `json:"keycloakServer"`
+	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -152,6 +156,9 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.ElasticServer.Value) > 0 {
 		outputv2.ElasticSearchServer = o.ElasticServer.Value[0]
+	}
+	if len(o.ElasticRoleARN.Value) > 0 {
+		outputv2.ElasticSearchRoleARN = o.ElasticRoleARN.Value
 	}
 	if len(o.S3Bucket.Value) > 0 {
 		outputv2.S3Bucket = o.S3Bucket.Value[0]
