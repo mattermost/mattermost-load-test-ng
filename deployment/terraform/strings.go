@@ -48,7 +48,7 @@ scrape_configs:
   - job_name: loadtest
     static_configs:
         - targets: [%s]
-  - job_name: keylcoak
+  - job_name: keycloak
     static_configs:
         - targets: [%s]
 `

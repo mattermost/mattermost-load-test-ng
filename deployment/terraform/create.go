@@ -686,9 +686,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	}
 
 	if t.output.HasKeycloak() {
-		keycloakScheme := "http"
-		if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-			keycloakScheme = "https"
+		keycloakScheme := "https"
+		if t.config.ExternalAuthProviderSettings.DevelopmentMode {
+			keycloakScheme = "http"
 		}
 
 		cfg.OpenIdSettings.Enable = model.NewBool(true)

@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -18,32 +19,30 @@ import (
 )
 
 func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
-	keycloakBinPath := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/bin"
+	keycloakDir := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion
+	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
 	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
-
-	command := "start-dev"
 	extraArguments := []string{}
 
-	if !t.config.ExternalAuthProviderSettings.DevelopmentMode {
-		command = "start"
+	command := "start"
+	if t.config.ExternalAuthProviderSettings.DevelopmentMode {
+		command = "start-dev"
 	}
 
 	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PublicIP)
 	if err != nil {
-		return err
+		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
 
 	// Check if the keycloak database exists
-	result, _ := sshc.RunCommand(`sudo -iu postgres psql -l | grep keycloak 2> /dev/null`)
+	result, err := sshc.RunCommand(`sudo -iu postgres psql -l | grep keycloak | wc -l`)
+	if err != nil {
+		return fmt.Errorf("failed to check keycloak database: %w", err)
+	}
 	if len(result) == 0 {
 		mlog.Info("keycloak database not found, creating it and associated role")
-		_, err = sshc.RunCommand(`sudo -iu postgres psql <<EOSQL
-		CREATE USER keycloak WITH PASSWORD 'mmpass';
-		CREATE DATABASE keycloak OWNER keycloak;
-		GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
-		EOSQL
-		'`)
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -f /home/ubuntu/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
@@ -56,26 +55,28 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	// Check if we should use a custom dump, a custom realm file or the default one
-	if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
-		_, err := sshc.UploadFile(t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath, "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
-		if err != nil {
-			return fmt.Errorf("failed to upload keycloak realm file: %w", err)
-		}
+	// If no keycloak dump URI is provided, check if we should use a custom realm file or
+	// proceed with the default one.
+	if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI == "" {
 		extraArguments = append(extraArguments, "--import-realm")
-	} else if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI == "" {
-		mlog.Info("No realm file or database dump provided, using loadtest's default keycloak realm configuration")
-
 		keycloakRealmFile, err := assets.AssetString("mattermost-realm.json")
 		if err != nil {
 			return fmt.Errorf("failed to read default keycloak realm file: %w", err)
 		}
 
-		_, err = sshc.Upload(strings.NewReader(keycloakRealmFile), "/opt/keycloak/keycloak-"+t.config.ExternalAuthProviderSettings.KeycloakVersion+"/data/import/mattermost-realm.json", true)
+		if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
+			mlog.Info("Using provided realm configuration")
+			keycloakRealmFile = t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath
+		}
+
+		_, err = sshc.Upload(
+			strings.NewReader(keycloakRealmFile),
+			filepath.Join(keycloakDir, "data/import/mattermost-realm.json"),
+			true,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to upload default keycloak realm file: %w", err)
 		}
-		extraArguments = append(extraArguments, "--import-realm")
 	}
 
 	// Values for the keycloak.env file
@@ -88,7 +89,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		// Ensure Java JVM has enough memory for large imports
 		"JAVA_OPTS=-Xms1024m -Xmx2048m",
 		// Logging
-		"KC_LOG_FILE=/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/data/log/keycloak.log",
+		"KC_LOG_FILE=" + filepath.Join(keycloakDir, "data/log/keycloak.log"),
 		"KC_LOG_FILE_OUTPUT=json",
 		// Database
 		"KC_DB_POOL_MIN_SIZE=20",
@@ -108,7 +109,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Parse keycloak service file template
-	tmpl, err := template.New("keycloakServiceFile").Parse(string(keycloakServiceFileContents))
+	tmpl, err := template.New("keycloakServiceFile").Parse(keycloakServiceFileContents)
 	if err != nil {
 		return fmt.Errorf("failed to parse keycloak service file template: %w", err)
 	}
@@ -130,7 +131,12 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("failed to upload keycloak service file: %w", err)
 	}
 
-	// Enable and start service
+	_, err = sshc.RunCommand("sudo systemctl daemon-reload")
+	if err != nil {
+		return fmt.Errorf("failed to reload systemd: %w", err)
+	}
+
+	// Ensure service is enabled
 	_, err = sshc.RunCommand("sudo systemctl enable keycloak")
 	if err != nil {
 		return fmt.Errorf("failed to enable keycloak service: %w", err)
@@ -147,10 +153,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	timeout := time.After(120 * time.Second) // yes, is **that** slow
 	for {
 		resp, err := http.Get(url)
-		if err == nil && resp.StatusCode == http.StatusOK {
+		if err != nil {
+			mlog.Error("Failed to connect to keycloak", mlog.Err(err))
+			continue
+		}
+		resp.Body.Close()
+
+		// Keycloak is ready
+		if resp.StatusCode == http.StatusOK {
 			break
 		}
-		mlog.Info("Service not up yet, waiting...")
+
+		mlog.Info("Keycloak service not up yet, waiting...")
 		select {
 		case <-timeout:
 			return errors.New("timeout: keycloak service is not responding")
@@ -158,6 +172,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	// Authenticate as admin to execute keycloak commands
 	_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh config credentials --server http://127.0.0.1:8080 --user %s --password %s --realm master", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakAdminUser, t.config.ExternalAuthProviderSettings.KeycloakAdminPassword))
 	if err != nil {
 		return fmt.Errorf("failed to authenticate keycload admin: %w", err)
@@ -184,13 +199,55 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
+// populateKeycloakUsers creates users in keycloak and writes their credentials to a users file.
+// It will use the `GenerateUsersCount` configuration option to create as many users as the configuration
+// specifies. If the users file already exists and has the expected number of users, it will skip user creation.
+// If the file has less users than expected, it will start creating users from the next number by counting the
+// number of lines in the file.
+// If the file has more users than expected, it will log and skip the user creation.
 func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 	keycloakBinPath := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion + "/bin"
 	usersTxtPath := t.getAsset("keycloak-users.txt")
+	startNumber := 1
 
-	// Check if users file exists. Prevents from creating users multiple times.
+	// Check if users file exists and has the expected number of users. If the file has less users than expected,
+	// we will start creating users from the next number, otherwise we will skip user creation.
 	if _, err := os.Stat(usersTxtPath); err == nil || os.IsExist(err) {
-		return nil
+		// Check number of lines in the file to check the number of users already created
+		file, err := os.Open(usersTxtPath)
+		if err != nil {
+			return fmt.Errorf("failed to open keycloak users file: %w", err)
+		}
+		defer file.Close()
+
+		lines := 0
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			// Avoid empty lines (last line is empty since text files should end with a newline character)
+			if scanner.Text() == "" {
+				continue
+			}
+
+			lines++
+		}
+
+		if lines >= t.config.ExternalAuthProviderSettings.GenerateUsersCount {
+			mlog.Info(
+				"Users file already exists and has the expected number of users (or more), skipping user creation",
+				mlog.Int("generate_users_count", t.config.ExternalAuthProviderSettings.GenerateUsersCount),
+				mlog.Int("users_count", lines),
+			)
+			return nil
+		}
+
+		if lines < t.config.ExternalAuthProviderSettings.GenerateUsersCount {
+			startNumber = lines + 1
+			mlog.Info(
+				"Users file already exists but has less users than expected, starting from the next number",
+				mlog.Int("users_count", lines),
+				mlog.Int("start_number", startNumber),
+			)
+		}
 	}
 
 	mlog.Info("Populating keycloak with users", mlog.String("users_file", usersTxtPath), mlog.Int("users_count", t.config.ExternalAuthProviderSettings.GenerateUsersCount))
@@ -203,7 +260,7 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 	defer handler.Close()
 
 	// Create users
-	for i := 1; i <= t.config.ExternalAuthProviderSettings.GenerateUsersCount; i++ {
+	for i := startNumber; i <= t.config.ExternalAuthProviderSettings.GenerateUsersCount; i++ {
 		username := fmt.Sprintf("keycloak-auto-%06d", i)
 		password := username // we just use the same string for both
 
