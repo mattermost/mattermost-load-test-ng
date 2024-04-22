@@ -211,7 +211,7 @@ type ExternalAuthProviderSettings struct {
 	// GenerateUsersCount is the number of users to generate in the keycloak instance.
 	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
 	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
-	// Is used when creating users and to properly set the OpenID configuration in Mattermost.
+	// It is used when creating users and to properly set the OpenID configuration in Mattermost.
 	KeycloakRealmName string `default:"mattermost"`
 	// KeycloakClientID is the client id to be used in Mattermost from the above realm.
 	// Must exist in the keycloak instance
