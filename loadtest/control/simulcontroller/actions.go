@@ -26,8 +26,8 @@ type userAction struct {
 	name      string
 	run       control.UserAction
 	frequency float64
-	// Minimum supported server version
-	minServerVersion string
+	// The minimum server version in which this action is available
+	minServerVersion semver.Version
 }
 
 func (c *SimulController) connect() error {
@@ -793,7 +793,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		}
 	}
 
-	if isUrgent {
+	if isUrgent && c.isVersionSupported(semver.MustParse("7.6.0")) {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
 			Priority:                model.NewString("urgent"),
