@@ -188,20 +188,20 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 
 	addFile := func(instance, src string, compress bool, modifier func([]byte) ([]byte, error)) {
 		collectFiles = append(collectFiles, collectFileInfo{
-			instance,
-			src,
-			compress,
-			modifier,
+			src:      src,
+			instance: instance,
+			compress: compress,
+			modifier: modifier,
 		})
 	}
 
 	addCmd := func(instance, cmd string, outputName string, compress bool, modifier func([]byte) ([]byte, error)) {
 		collectCmds = append(collectCmds, collectCmdInfo{
-			instance,
-			cmd,
-			outputName,
-			compress,
-			modifier,
+			cmd:        cmd,
+			outputName: outputName,
+			instance:   instance,
+			compress:   compress,
+			modifier:   modifier,
 		})
 	}
 
