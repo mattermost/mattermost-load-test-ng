@@ -208,17 +208,29 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{appClients[0]},
 	}
 
-	dbCmd, err := deployment.BuildLoadDBDumpCmd(dumpFilename, deployment.DBSettings{
+	dbInfo := deployment.DBSettings{
 		UserName: dpConfig.TerraformDBSettings.UserName,
 		Password: dpConfig.TerraformDBSettings.Password,
 		DBName:   dbName,
 		Host:     tfOutput.DBWriter(),
 		Engine:   dpConfig.TerraformDBSettings.InstanceEngine,
-	})
+	}
+
+	dbCmd, err := deployment.BuildLoadDBDumpCmd(dumpFilename, dbInfo)
 	if err != nil {
 		return fmt.Errorf("error building command for loading DB dump: %w", err)
 	}
 	loadDBDumpCmd.Value = dbCmd
+
+	clearLicensesCmdValue, err := deployment.ClearLicensesCmd(dbInfo)
+	if err != nil {
+		return fmt.Errorf("error building command for clearing licenses data: %w", err)
+	}
+	clearLicensesCmd := deployment.Cmd{
+		Msg:     "Clearing old licenses data",
+		Clients: []*ssh.Client{appClients[0]},
+		Value:   clearLicensesCmdValue,
+	}
 
 	resetBucketCmds := []localCmd{}
 	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
@@ -238,7 +250,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
 	} else {
-		cmds = append(cmds, loadDBDumpCmd, startCmd)
+		cmds = append(cmds, loadDBDumpCmd, clearLicensesCmd, startCmd)
 	}
 
 	// Resetting the buckets can happen concurrently with the rest of the remote commands,

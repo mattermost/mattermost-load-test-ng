@@ -13,6 +13,76 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+// ClearLicensesData runs a SQL query to delete all data from old licenses in
+// the database. It does it by first stopping the server, then running the
+// query, then restarting the server again.
+func (t *Terraform) ClearLicensesData() error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
+	if len(output.Instances) < 1 {
+		return fmt.Errorf("no app instances deployed")
+	}
+
+	appClients := make([]*ssh.Client, len(output.Instances))
+	for i, instance := range output.Instances {
+		client, err := extAgent.NewClient(instance.PublicIP)
+		if err != nil {
+			return fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		defer client.Close()
+		appClients[i] = client
+	}
+
+	stopCmd := deployment.Cmd{
+		Msg:     "Stopping app servers",
+		Value:   "sudo systemctl stop mattermost",
+		Clients: appClients,
+	}
+
+	clearCmdValue, err := deployment.ClearLicensesCmd(deployment.DBSettings{
+		UserName: t.config.TerraformDBSettings.UserName,
+		Password: t.config.TerraformDBSettings.Password,
+		DBName:   t.config.DBName(),
+		Host:     output.DBWriter(),
+		Engine:   t.config.TerraformDBSettings.InstanceEngine,
+	})
+	if err != nil {
+		return fmt.Errorf("error building command to clear licenses data: %w", err)
+	}
+
+	clearCmd := deployment.Cmd{
+		Msg:     "Clearing old licenses data",
+		Value:   clearCmdValue,
+		Clients: appClients[0:1],
+	}
+
+	startCmd := deployment.Cmd{
+		Msg:     "Restarting app server",
+		Value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
+		Clients: appClients,
+	}
+
+	for _, c := range []deployment.Cmd{stopCmd, clearCmd, startCmd} {
+		mlog.Info(c.Msg)
+		for _, client := range c.Clients {
+			mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
+			if out, err := client.RunCommand(c.Value); err != nil {
+				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
+			}
+		}
+	}
+
+	return nil
+}
+
 // IngestDump works on an already deployed terraform setup and restores
 // the DB dump file to the Mattermost server. It uses the deployment config
 // for the dump URI.
