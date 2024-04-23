@@ -41,7 +41,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return fmt.Errorf("failed to check keycloak database: %w", err)
 	}
-	mlog.Info("keycloak database check result", mlog.String("result", strings.TrimSpace(string(result))))
+
 	if strings.TrimSpace(string(result)) == "0" {
 		mlog.Info("keycloak database not found, creating it and associated role")
 
@@ -327,7 +327,8 @@ func (t *Terraform) IngestKeycloakDump() error {
 
 	// Ensure keycloak is stopped
 	_, err = client.RunCommand("sudo systemctl stop keycloak")
-	if err != nil {
+	// Ignore errors if the serivce file does not exist yet (on first creation)
+	if err != nil && !strings.Contains(err.Error(), "exited with status 5") {
 		return fmt.Errorf("failed to stop keycloak before uploading the dump file: %w", err)
 	}
 
