@@ -138,9 +138,6 @@ variable "keycloak_development_mode" {
   type = bool
 }
 
-variable "keycloak_database_sql_file" {
-}
-
 # Job server variables
 variable "job_server_instance_count" {
 }

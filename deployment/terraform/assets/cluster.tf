@@ -675,11 +675,6 @@ resource "aws_instance" "keycloak" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = var.keycloak_database_sql_file
-    destination = "/home/ubuntu/keycloak-database-inital.sql"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",

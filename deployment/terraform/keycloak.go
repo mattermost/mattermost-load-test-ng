@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -40,9 +41,23 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return fmt.Errorf("failed to check keycloak database: %w", err)
 	}
-	if len(result) == 0 {
+	mlog.Info("keycloak database check result", mlog.String("result", strings.TrimSpace(string(result))))
+	if strings.TrimSpace(string(result)) == "0" {
 		mlog.Info("keycloak database not found, creating it and associated role")
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -f /home/ubuntu/keycloak-database.sql`)
+
+		// Upload and import keycloak initial SQL file``
+		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
+		if err != nil {
+			return fmt.Errorf("failed to upload keycloak base database sql file: %w", err)
+		}
+
+		// Allow postgres user to read the file
+		_, err = sshc.RunCommand("sudo chown postgres:postgres /var/lib/postgresql/keycloak-database.sql")
+		if err != nil {
+			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
+		}
+
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -f /var/lib/postgresql/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
@@ -154,14 +169,19 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	for {
 		resp, err := http.Get(url)
 		if err != nil {
-			mlog.Error("Failed to connect to keycloak", mlog.Err(err))
-			continue
+			// Avoid error spamming
+			if !errors.Is(err, syscall.ECONNREFUSED) {
+				mlog.Error("Failed to connect to keycloak", mlog.Err(err))
+				continue
+			}
 		}
-		resp.Body.Close()
 
-		// Keycloak is ready
-		if resp.StatusCode == http.StatusOK {
-			break
+		if err == nil {
+			resp.Body.Close()
+			// Keycloak is ready
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
 		}
 
 		mlog.Info("Keycloak service not up yet, waiting...")
