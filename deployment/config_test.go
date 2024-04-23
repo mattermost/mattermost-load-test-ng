@@ -48,3 +48,49 @@ func TestConfigIsValid(t *testing.T) {
 		})
 	})
 }
+
+func TestValidateElasticSearchConfig(t *testing.T) {
+	baseValidConfig := func() Config {
+		return Config{
+			ClusterName:           "clustername",
+			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz",
+			ElasticSearchSettings: ElasticSearchSettings{
+				InstanceCount: 1,
+				VpcID:         "vpc-01234567890abcdef",
+			},
+		}
+	}
+
+	t.Run("valid config", func(t *testing.T) {
+		cfg := baseValidConfig()
+		require.NoError(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid instance count", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ElasticSearchSettings.InstanceCount = 42
+		require.Error(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid VPC ID", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ElasticSearchSettings.VpcID = ""
+		require.Error(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid domain name for ES", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ClusterName = "InvalidClusterNameForES!@#$"
+
+		require.Error(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid domain name for ES but validation passes because InstanceCount == 0", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ClusterName = "InvalidClusterNameForES!@#$"
+		cfg.ElasticSearchSettings.InstanceCount = 0
+
+		require.NoError(t, cfg.validateElasticSearchConfig())
+	})
+}
