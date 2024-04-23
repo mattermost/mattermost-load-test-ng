@@ -14,7 +14,7 @@
     "InstanceType": "r6g.large.search",
     "VpcID": "",
     "Version": "Elasticsearch_7.10",
-    "CreateRole": false
+    "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": ""
   },
