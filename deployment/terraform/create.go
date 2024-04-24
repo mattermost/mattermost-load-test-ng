@@ -270,6 +270,13 @@ func (t *Terraform) Create(initData bool) error {
 				}
 			}
 
+			if len(t.config.DBExtraSQL) > 0 {
+				// Run extra SQL commands if specified
+				if err := t.ExecuteCustomSQL(); err != nil {
+					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
+				}
+			}
+
 			// Clear licenses data
 			if err := t.ClearLicensesData(); err != nil {
 				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)

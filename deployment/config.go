@@ -89,6 +89,11 @@ type Config struct {
 	// This can also point to a local file if prefixed with "file://".
 	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURI string `default:""`
+	// DBExtraSQL are optional URIs to SQL files containing SQL statements to be applied
+	// to the Mattermost database.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	DBExtraSQL []string `default:"[]`
 	// An optional host name that will:
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
@@ -204,9 +209,8 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakDBDumpURI
 	// An optional URI to a keycloak database dump file to be uploaded on environment
 	// creation.
-	// The file is expected to be the h2 folder gzip compressed.
+	// The file is expected to be gzip compressed.
 	// This can also point to a local file if prefixed with "file://".
-	// In such case, the dump file will be uploaded to the app servers.
 	KeycloakDBDumpURI string `default:""`
 	// GenerateUsersCount is the number of users to generate in the keycloak instance.
 	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
