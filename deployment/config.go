@@ -312,12 +312,16 @@ func checkPrefix(str string) bool {
 }
 
 func (c *Config) validateElasticSearchConfig() error {
+	if c.ElasticSearchSettings.InstanceCount == 0 {
+		return nil
+	}
+
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
 		if c.ElasticSearchSettings.InstanceCount > 1 {
 			return errors.New("it is not possible to create more than 1 instance of Elasticsearch")
 		}
 
-		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
+		if c.ElasticSearchSettings.VpcID == "" {
 			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
 		}
 

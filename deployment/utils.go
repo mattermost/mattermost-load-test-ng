@@ -57,39 +57,58 @@ func ProvisionURL(client *ssh.Client, url, filename string) error {
 	return nil
 }
 
-// BuildLoadDBDumpCmd returns a command string to feed the
-// provided DB dump file into the database. Example:
-//
-//	zcat dbdump.sql | mysql/psql connection_details && custom queries
-func BuildLoadDBDumpCmd(dumpFilename string, dbInfo DBSettings) (string, error) {
-	loadCmds := []string{
-		fmt.Sprintf("zcat %s", dumpFilename),
+func dbConnString(dbInfo DBSettings) (string, error) {
+	var dbConnCmd string
+
+	switch dbInfo.Engine {
+	case "aurora-postgresql":
+		dbConnCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
+	case "aurora-mysql":
+		dbConnCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
+	default:
+		return "", fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	var dbConnCmd string
+	return dbConnCmd, nil
+}
+
+// ClearLicensesCmd returns a command string to connect to the database and
+// delete all rows in the Licenses table and the ActiveLicenseId row in the
+// Systems table
+func ClearLicensesCmd(dbInfo DBSettings) (string, error) {
+	dbConnCmd, err := dbConnString(dbInfo)
+	if err != nil {
+		return "", err
+	}
+
 	var licenseClearCmd string
 	licenseClearQuery := "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"
 
 	switch dbInfo.Engine {
 	case "aurora-postgresql":
-		dbConnCmd = fmt.Sprintf("psql 'postgres://%[1]s:%[2]s@%[3]s/%[4]s?sslmode=disable'", dbInfo.UserName, dbInfo.Password, dbInfo.Host, dbInfo.DBName)
 		licenseClearCmd = fmt.Sprintf("%s -c %q", dbConnCmd, licenseClearQuery)
 	case "aurora-mysql":
-		dbConnCmd = fmt.Sprintf("mysql -h %[1]s -u %[2]s -p%[3]s %[4]s", dbInfo.Host, dbInfo.UserName, dbInfo.Password, dbInfo.DBName)
 		licenseClearCmd = fmt.Sprintf("%s -e %q", dbConnCmd, licenseClearQuery)
 	default:
 		return "", fmt.Errorf("invalid db engine %s", dbInfo.Engine)
 	}
 
-	loadCmds = append(loadCmds, dbConnCmd)
-	loadCmd := strings.Join(loadCmds, " | ")
+	return licenseClearCmd, nil
+}
 
-	cmds := []string{
-		loadCmd,
-		licenseClearCmd,
+// BuildLoadDBDumpCmd returns a command string to feed the
+// provided DB dump file into the database. Example:
+//
+//	zcat dbdump.sql | mysql/psql connection_details
+func BuildLoadDBDumpCmd(dumpFilename string, dbInfo DBSettings) (string, error) {
+	dbConnCmd, err := dbConnString(dbInfo)
+	if err != nil {
+		return "", err
 	}
 
-	return strings.Join(cmds, " && "), nil
+	loadCmd := fmt.Sprintf("zcat %s | %s", dumpFilename, dbConnCmd)
+
+	return loadCmd, nil
 }
 
 // GetAWSCreds returns the AWS credentials identified by the provided profile
