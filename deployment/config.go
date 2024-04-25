@@ -93,7 +93,7 @@ type Config struct {
 	// to the Mattermost database.
 	// The file is expected to be gzip compressed.
 	// This can also point to a local file if prefixed with "file://".
-	DBExtraSQL []string `default:"[]`
+	DBExtraSQL []string `default:"[]"`
 	// An optional host name that will:
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
