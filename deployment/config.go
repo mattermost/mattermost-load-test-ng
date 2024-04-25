@@ -221,6 +221,7 @@ type MSTeamsPluginSettings struct {
 	TenantID                           string `default:"faketenantId" json:"tenantid"`
 	ClientID                           string `default:"fakeclientId" json:"clientid"`
 	ClientSecret                       string `default:"fakeclientsecret" json:"clientsecret"`
+	DisableCheckCredentials            bool   `default:"false" json:"disablecheckcredentials"`
 	EncryptionKey                      string `default:"" json:"encryptionkey"`
 	EvaluationAPI                      bool   `default:"false" json:"evaluationapi"`
 	WebhookSecret                      string `default:"" json:"webhooksecret"`
