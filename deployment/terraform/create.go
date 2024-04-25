@@ -1021,6 +1021,10 @@ func (t *Terraform) configureMSTeams(sshc *ssh.Client, ip string) {
 		return
 	}
 
+	cmd := "rm msteams-config.json"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error(fmt.Sprintf("error running ssh command %q, output: %q:", cmd, string(out)), mlog.Err(err))
+	}
 	if out, err := sshc.Upload(bytes.NewReader(b), "msteams-config.json", false); err != nil {
 		mlog.Error("error uploading msteams-config.json:,", mlog.String("output", out), mlog.Err(err))
 		return
@@ -1029,7 +1033,7 @@ func (t *Terraform) configureMSTeams(sshc *ssh.Client, ip string) {
 	mlog.Info(string(b))
 
 	mlog.Info("Applying MS Teams plugin configuration", mlog.String("host", ip))
-	cmd := "/opt/mattermost/bin/mmctl config patch msteams-config.json --local"
+	cmd = "/opt/mattermost/bin/mmctl config patch msteams-config.json --local"
 
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		mlog.Error(fmt.Sprintf("error running ssh command %q, output: %q:", cmd, string(out)), mlog.Err(err))
@@ -1079,6 +1083,10 @@ func (t *Terraform) installMSTeams(extAgent *ssh.ExtAgent) error {
 	if uploadPlugin {
 		mlog.Info("Uploading plugin", mlog.String("file", pluginPath))
 
+		cmd := "rm " + pluginTarPath
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error(fmt.Sprintf("error running ssh command %q, output: %q:", cmd, string(out)), mlog.Err(err))
+		}
 		if out, err := sshc.UploadFile(pluginPath, pluginTarPath, false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", pluginPath, string(out), err)
 		}
