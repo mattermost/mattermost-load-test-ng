@@ -159,7 +159,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	if t.output.HasKeycloak() {
 		host := "keycloak"
-		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080/metrics", host))
+		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
 		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
