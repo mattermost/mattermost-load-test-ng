@@ -221,31 +221,33 @@ type MSTeamsPluginSettings struct {
 	TenantID                           string `default:"faketenantId" json:"tenantid"`
 	ClientID                           string `default:"fakeclientId" json:"clientid"`
 	ClientSecret                       string `default:"fakeclientsecret" json:"clientsecret"`
-	DisableCheckCredentials            bool   `default:"false" json:"disablecheckcredentials"`
 	EncryptionKey                      string `default:"" json:"encryptionkey"`
 	EvaluationAPI                      bool   `default:"false" json:"evaluationapi"`
 	WebhookSecret                      string `default:"" json:"webhooksecret"`
 	EnabledTeams                       string `default:"" json:"enabledteams"`
 	SyncDirectMessages                 bool   `default:"true" json:"syncdirectmessages"`
-	SelectiveSync                      bool   `default:"false" json:"selectiveSync"`
+	SelectiveSync                      bool   `default:"false" json:"selectivesync"`
 	SyncLinkedChannels                 bool   `default:"false" json:"synclinkedchannels"`
 	SyncReactions                      bool   `default:"false" json:"syncreactions"`
 	SyncFileAttachments                bool   `default:"false" json:"syncfileattachments"`
 	SyncUsers                          int    `default:"30" json:"syncusers"`
-	SyncGuestUsers                     bool   `default:"false" json:"syncGuestUsers"`
+	SyncGuestUsers                     bool   `default:"false" json:"syncguestusers"`
 	CertificatePublic                  string `default:"" json:"certificatepublic"`
 	CertificateKey                     string `default:"" json:"certificatekey"`
-	MaxSizeForCompleteDownload         int    `default:"20" json:"maxSizeForCompleteDownload"`
-	BufferSizeForFileStreaming         int    `default:"20" json:"bufferSizeForFileStreaming"`
-	AutomaticallyPromoteSyntheticUsers bool   `default:"false" json:"automaticallyPromoteSyntheticUsers"`
+	MaxSizeForCompleteDownload         int    `default:"20" json:"maxsizeforcompletedownload"`
+	BufferSizeForFileStreaming         int    `default:"20" json:"buffersizeforfilestreaming"`
 	ConnectedUsersAllowed              int    `default:"10000" json:"connectedusersallowed"`
-	ConnectedUsersInvitePoolSize       int    `default:"0" json:"connectedUsersInvitePoolSize"`
-	SyntheticUserAuthService           string `default:"saml" json:"syntheticUserAuthService"`
-	SyntheticUserAuthData              string `default:"ID" json:"syntheticUserAuthData"`
-	DisableSyncMsg                     bool   `default:"true" json:"disableSyncMsg"`
-	RunAsLoadTest                      bool   `default:"true" json:"runAsLoadTest"`
-	LoadTestMaxIncomingPosts           int    `default:"5" json:"loadTestMaxIncomingPosts"`
-	LoadTestUseIncomingPostMessage     bool   `default:"false" json:"loadTestUseIncomingPostMessage"`
+	NewUserConnections                 string `default:"enabled" json:"newuserconnections"`
+	ConnectedUsersInvitePoolSize       int    `default:"0" json:"connectedusersinvitepoolsize"`
+	SyntheticUserAuthService           string `default:"saml" json:"syntheticuserauthservice"`
+	SyntheticUserAuthData              string `default:"ID" json:"syntheticuserauthdata"`
+	AutomaticallyPromoteSyntheticUsers bool   `json:"automaticallyPromoteSyntheticUsers"`
+	DisableSyncMsg                     bool   `default:"false" json:"disablesyncmsg"`
+	DisableCheckCredentials            bool   `default:"true" json:"disablecheckcredentials"`
+	RunAsLoadTest                      bool   `default:"true" json:"runasloadtest"`
+	MaxIncomingPosts                   int    `default:"50" json:"maxincomingposts"`
+	MinIncomingPosts                   int    `default:"20" json:"minincomingposts"`
+	IncludeIncomingPostContent         bool   `default:"false" json:"includeincomingpostcontent"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.
