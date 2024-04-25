@@ -743,6 +743,13 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
 
+	sqlCmd = "ALTER TABLE remoteclusters ADD COLUMN IF NOT EXISTS name VARCHAR(64) default null;"
+	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
+	mlog.Info("Run migration for remoteclusters table (needed when updating from 6.1)")
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
+	}
+
 	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers;"
 	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
 
