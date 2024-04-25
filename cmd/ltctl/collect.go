@@ -25,10 +25,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type collectInfo struct {
-	instance string
+type collectFileInfo struct {
 	src      string
+	instance string
 	compress bool
+	// modifier, if not nil, is a function that lets the caller modify the downloaded
+	// content before adding it to the tarball
+	modifier func([]byte) ([]byte, error)
+}
+
+type collectCmdInfo struct {
+	cmd        string
+	outputName string
+	instance   string
+	compress   bool
 	// modifier, if not nil, is a function that lets the caller modify the downloaded
 	// content before adding it to the tarball
 	modifier func([]byte) ([]byte, error)
@@ -173,24 +183,37 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 		return err
 	}
 
-	var collection []collectInfo
-	addInfo := func(instance, src string, compress bool, modifier func([]byte) ([]byte, error)) {
-		collection = append(collection, collectInfo{
-			instance,
-			src,
-			compress,
-			modifier,
+	var collectFiles []collectFileInfo
+	var collectCmds []collectCmdInfo
+
+	addFile := func(instance, src string, compress bool, modifier func([]byte) ([]byte, error)) {
+		collectFiles = append(collectFiles, collectFileInfo{
+			src:      src,
+			instance: instance,
+			compress: compress,
+			modifier: modifier,
 		})
 	}
-	for name := range clients {
+
+	addCmd := func(instance, cmd string, outputName string, compress bool, modifier func([]byte) ([]byte, error)) {
+		collectCmds = append(collectCmds, collectCmdInfo{
+			cmd:        cmd,
+			outputName: outputName,
+			instance:   instance,
+			compress:   compress,
+			modifier:   modifier,
+		})
+	}
+
+	for instance := range clients {
 		switch {
-		case name == "proxy":
-			addInfo(name, "/var/log/nginx/error.log", true, nil)
-			addInfo(name, "/etc/nginx/nginx.conf", false, nil)
-			addInfo(name, "/etc/nginx/sites-enabled/mattermost", false, nil)
-		case strings.HasPrefix(name, "app"):
-			addInfo(name, "/opt/mattermost/logs/mattermost.log", true, nil)
-			addInfo(name, "/opt/mattermost/config/config.json", false, func(input []byte) ([]byte, error) {
+		case instance == "proxy":
+			addFile(instance, "/var/log/nginx/error.log", true, nil)
+			addFile(instance, "/etc/nginx/nginx.conf", false, nil)
+			addFile(instance, "/etc/nginx/sites-enabled/mattermost", false, nil)
+		case strings.HasPrefix(instance, "app"):
+			addFile(instance, "/opt/mattermost/logs/mattermost.log", true, nil)
+			addFile(instance, "/opt/mattermost/config/config.json", false, func(input []byte) ([]byte, error) {
 				var cfg model.Config
 				if err := json.Unmarshal(input, &cfg); err != nil {
 					return nil, fmt.Errorf("failed to unmarshal MM configuration: %w", err)
@@ -202,92 +225,48 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				}
 				return sanitizedCfg, nil
 			})
-		case strings.HasPrefix(name, "agent"):
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true, nil)
-		case name == "coordinator":
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true, nil)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false, nil)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false, nil)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false, nil)
-			addInfo(name, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false, nil)
+		case strings.HasPrefix(instance, "agent"):
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true, nil)
+		case instance == "coordinator":
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true, nil)
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false, nil)
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false, nil)
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false, nil)
+			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false, nil)
 			continue
 		}
-		addInfo(name, "dmesg", false, nil)
+		addCmd(instance, "sudo dmesg", "dmesg.out", false, nil)
 	}
 
 	var wg sync.WaitGroup
-	filesChan := make(chan file, len(collection))
-	wg.Add(len(collection))
-	for _, info := range collection {
-		go func(info collectInfo) {
+	collectChan := make(chan file, len(collectFiles)+len(collectCmds))
+	wg.Add(len(collectFiles))
+	for _, fileInfo := range collectFiles {
+		go func(fileInfo collectFileInfo) {
 			defer wg.Done()
-
-			sshc := clients[info.instance]
-
-			var downloadPath string
-
-			if !filepath.IsAbs(info.src) {
-				cmd := info.src
-				info.src = fmt.Sprintf("/tmp/%s.log", info.src)
-				cmd = fmt.Sprintf("%s > %s", cmd, info.src)
-				if _, err := sshc.RunCommand(cmd); err != nil {
-					fmt.Printf("failed to run cmd %q: %s\n", cmd, err)
-					return
-				}
-			}
-
-			if info.compress {
-				downloadPath = fmt.Sprintf("/tmp/%s.xz", filepath.Base(info.src))
-				cmd := fmt.Sprintf("cat %s | xz -2 -T4 > %s", info.src, downloadPath)
-				if _, err := sshc.RunCommand(cmd); err != nil {
-					fmt.Printf("failed to run cmd %q: %s\n", cmd, err)
-					return
-				}
-			}
-
-			if downloadPath == "" {
-				downloadPath = info.src
-			}
-
-			var b bytes.Buffer
-			if err := sshc.Download(downloadPath, &b, false); err != nil {
-				fmt.Printf("failed to download file %q: %s\n", downloadPath, err)
-				return
-			}
-
-			// Apply modifiers to the data if any
-			var output []byte
-			if info.modifier != nil {
-				output, err = info.modifier(b.Bytes())
-				if err != nil {
-					fmt.Printf("failed to modify file %q: %s\n", downloadPath, err)
-					return
-				}
-			} else {
-				output = b.Bytes()
-			}
-
-			fmt.Printf("collected %s from %s instance\n", filepath.Base(downloadPath), info.instance)
-
-			file := file{
-				name: fmt.Sprintf("%s_%s", info.instance, filepath.Base(downloadPath)),
-				data: output,
-			}
-
-			filesChan <- file
-		}(info)
+			sshc := clients[fileInfo.instance]
+			collectFile(sshc, collectChan, fileInfo)
+		}(fileInfo)
+	}
+	wg.Add(len(collectCmds))
+	for _, cmdInfo := range collectCmds {
+		go func(cmdInfo collectCmdInfo) {
+			defer wg.Done()
+			sshc := clients[cmdInfo.instance]
+			collectCmd(sshc, collectChan, cmdInfo)
+		}(cmdInfo)
 	}
 
 	wg.Wait()
 
-	numFiles := len(filesChan)
+	numFiles := len(collectChan)
 	if numFiles == 0 {
 		return errors.New("failed to collect any file")
 	}
 
 	files := make([]file, numFiles)
 	for i := 0; i < numFiles; i++ {
-		files[i] = <-filesChan
+		files[i] = <-collectChan
 	}
 
 	if err := saveCollection(outputName, files); err != nil {
@@ -295,4 +274,64 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 	}
 
 	return nil
+}
+
+func collectFile(sshc *ssh.Client, collectChan chan file, fileInfo collectFileInfo) {
+	downloadPath := fileInfo.src
+
+	if fileInfo.compress {
+		downloadPath = fmt.Sprintf("/tmp/%s.xz", filepath.Base(fileInfo.src))
+		cmd := fmt.Sprintf("cat %s | xz -2 -T4 > %s", fileInfo.src, downloadPath)
+		if _, err := sshc.RunCommand(cmd); err != nil {
+			fmt.Printf("failed to run cmd %q: %s\n", cmd, err)
+			return
+		}
+	}
+
+	var b bytes.Buffer
+	if err := sshc.Download(downloadPath, &b, false); err != nil {
+		fmt.Printf("failed to download file %q: %s\n", downloadPath, err)
+		return
+	}
+
+	// Apply modifiers to the data if any
+	var output []byte
+	var err error
+	if fileInfo.modifier != nil {
+		output, err = fileInfo.modifier(b.Bytes())
+		if err != nil {
+			fmt.Printf("failed to modify file %q: %s\n", downloadPath, err)
+			return
+		}
+	} else {
+		output = b.Bytes()
+	}
+
+	fmt.Printf("collected %s from %s instance\n", filepath.Base(downloadPath), fileInfo.instance)
+
+	file := file{
+		name: fmt.Sprintf("%s_%s", fileInfo.instance, filepath.Base(downloadPath)),
+		data: output,
+	}
+
+	collectChan <- file
+}
+
+func collectCmd(sshc *ssh.Client, collectChan chan file, cmdInfo collectCmdInfo) {
+	outPath := fmt.Sprintf("/tmp/%s", cmdInfo.outputName)
+
+	cmd := fmt.Sprintf("%s > %s", cmdInfo.cmd, outPath)
+	if _, err := sshc.RunCommand(cmd); err != nil {
+		fmt.Printf("failed to run cmd %q: %s\n", cmd, err)
+		return
+	}
+
+	fileInfo := collectFileInfo{
+		src:      outPath,
+		instance: cmdInfo.instance,
+		compress: cmdInfo.compress,
+		modifier: cmdInfo.modifier,
+	}
+
+	collectFile(sshc, collectChan, fileInfo)
 }

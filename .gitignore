@@ -88,3 +88,5 @@ config/metricswatcher.json
 mattermost-load-test.iml
 
 .terraform.tfstate.lock.info
+
+*.tar

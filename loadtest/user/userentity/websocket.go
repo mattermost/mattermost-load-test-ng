@@ -211,7 +211,12 @@ start:
 					if err := client.UpdateActiveTeam(v.teamId); err != nil {
 						errChan <- fmt.Errorf("userentity: error in client.UpdateActiveTeam: %w", err)
 					}
+				case postedAckMsg:
+					if err := client.PostedAck(v.postId, v.status, v.reason, v.postedData); err != nil {
+						errChan <- fmt.Errorf("userentity: error in client.PostedAck: %w", err)
+					}
 				}
+
 			}
 			if chanClosed {
 				client.Close()
@@ -296,5 +301,23 @@ func (ue *UserEntity) UpdateActiveTeam(teamId string) error {
 	ue.dataChan <- teamPresenceMsg{
 		teamId: teamId,
 	}
+	return nil
+}
+
+func (ue *UserEntity) PostedAck(postId string, result string, reason string, postedData string) error {
+	if !ue.connected {
+		return errors.New("user is not connected")
+	}
+	select {
+	case ue.dataChan <- postedAckMsg{
+		postId,
+		result,
+		reason,
+		postedData,
+	}:
+	default:
+		return errors.New("failed to send posted ACK")
+	}
+
 	return nil
 }

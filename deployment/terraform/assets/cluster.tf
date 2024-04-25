@@ -1,4 +1,3 @@
-
 terraform {
   required_providers {
     aws = {
@@ -174,70 +173,23 @@ resource "aws_instance" "proxy_server" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
+      "wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg",
+      "sudo sh -c 'echo \"deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" > /etc/apt/sources.list.d/nginx.list'",
+      "sudo sh -c 'echo \"deb-src http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" >> /etc/apt/sources.list.d/nginx.list'",
       "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
+      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
+      "sudo mkdir -p /etc/nginx/snippets",
+      "sudo mkdir -p /etc/nginx/sites-available",
+      "sudo mkdir -p /etc/nginx/sites-enabled",
       "sudo rm -f /etc/nginx/sites-enabled/default",
       "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
     ]
   }
 }
-
-resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
-  aws_service_name = "es.amazonaws.com"
-}
-
-resource "aws_opensearch_domain" "es_server" {
-  tags = {
-    Name = "${var.cluster_name}-es_server"
-  }
-
-  domain_name    = "${var.cluster_name}-es"
-  engine_version = var.es_version
-
-  vpc_options {
-    subnet_ids = [
-      element(tolist(data.aws_subnets.selected.ids), 0)
-    ]
-    security_group_ids = [aws_security_group.elastic[0].id]
-  }
-
-
-  ebs_options {
-    ebs_enabled = true
-    volume_type = var.block_device_type
-    volume_size = var.block_device_sizes_elasticsearch
-  }
-
-  cluster_config {
-    instance_type = var.es_instance_type
-  }
-
-  access_policies = <<CONFIG
-  {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": "es:*",
-              "Principal": "*",
-              "Effect": "Allow",
-              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
-          }
-      ]
-  }
-  CONFIG
-
-  depends_on = [
-    aws_iam_service_linked_role.es,
-  ]
-
-  count = var.es_instance_count
-}
-
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"

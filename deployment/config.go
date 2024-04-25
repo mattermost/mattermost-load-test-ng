@@ -34,11 +34,11 @@ type Config struct {
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
-	AppInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
-	AgentInstanceType string `default:"c5.xlarge" validate:"notempty"`
+	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Type of the EC2 instance for proxy.
@@ -138,7 +138,7 @@ type TerraformDBSettings struct {
 	// Number of DB instances.
 	InstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the DB instance.
-	InstanceType string `default:"db.r6g.large" validate:"notempty"`
+	InstanceType string `default:"db.r7g.large" validate:"notempty"`
 	// Type of the DB instance - postgres or mysql.
 	InstanceEngine string `default:"aurora-postgresql" validate:"oneof:{aurora-mysql, aurora-postgresql}"`
 	// Username to connect to the DB.
@@ -199,6 +199,10 @@ type ElasticSearchSettings struct {
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
+	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
+	SnapshotRepository string
+	// SnapshotName is the name of the snapshot to restore.
+	SnapshotName string
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -207,7 +211,7 @@ type JobServerSettings struct {
 	// Job server instances count.
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
-	InstanceType string `default:"c5.xlarge"`
+	InstanceType string `default:"c7i.xlarge"`
 }
 
 // MSTeamsPluginSettings contains the necessary data
@@ -305,12 +309,16 @@ func checkPrefix(str string) bool {
 }
 
 func (c *Config) validateElasticSearchConfig() error {
+	if c.ElasticSearchSettings.InstanceCount == 0 {
+		return nil
+	}
+
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
 		if c.ElasticSearchSettings.InstanceCount > 1 {
 			return errors.New("it is not possible to create more than 1 instance of Elasticsearch")
 		}
 
-		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
+		if c.ElasticSearchSettings.VpcID == "" {
 			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
 		}
 
