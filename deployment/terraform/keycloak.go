@@ -57,7 +57,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
 		}
 
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -f /var/lib/postgresql/keycloak-database.sql`)
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /var/lib/postgresql/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
