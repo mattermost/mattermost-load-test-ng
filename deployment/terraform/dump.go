@@ -175,10 +175,10 @@ func (t *Terraform) ExecuteCustomSQL() error {
 
 	var commands []deployment.Cmd
 
-	for _, sqlUri := range t.config.DBExtraSQL {
-		fileName := filepath.Base(sqlUri)
-		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlUri))
-		if err := deployment.ProvisionURL(appClients[0], sqlUri, fileName); err != nil {
+	for _, sqlURI := range t.config.DBExtraSQL {
+		fileName := filepath.Base(sqlURI)
+		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlURI))
+		if err := deployment.ProvisionURL(appClients[0], sqlURI, fileName); err != nil {
 			return err
 		}
 
