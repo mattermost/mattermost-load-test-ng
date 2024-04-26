@@ -44,7 +44,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 5,
+  "id": 4,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -457,7 +457,7 @@
       "id": 54,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -478,13 +478,17 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "msteams_connect_system_plugin_info{plugin=\"msteams\"} OR on() label_replace(vector(2), \"version\", \"<=1.5.3\", \"\", \"\")\n",
+          "expr": "sum(msteams_connect_system_plugin_info{job=\"msteams\"}) by (version)",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "{{version}}",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "Plugin Versions",
@@ -546,7 +550,7 @@
             "uid": "P3497915E6DC419FB"
           },
           "editorMode": "code",
-          "expr": "min(msteams_connect_msgraph_client_secret_end_date_timestamp_seconds{plugin=\"msteams\"}  * 1000)",
+          "expr": "min(msteams_connect_msgraph_client_secret_end_date_timestamp_seconds{job=\"msteams\"}  * 1000)",
           "instant": false,
           "legendFormat": "Expiry Timestamp",
           "range": true,
@@ -5332,7 +5336,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines{plugin=\"msteams\"}",
+          "expr": "go_goroutines{job=\"msteams\"}",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -5344,7 +5348,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(go_goroutines{plugin=\"msteams\"})",
+          "expr": "sum(go_goroutines{job=\"msteams\"})",
           "hide": false,
           "instant": false,
           "legendFormat": "Total",
@@ -5489,7 +5493,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_inuse_bytes{plugin=\"msteams\"}",
+          "expr": "go_memstats_heap_inuse_bytes{job=\"msteams\"}",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -5835,7 +5839,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "",
+  "refresh": "10s",
   "schemaVersion": 39,
   "tags": [
     "mattermost",
@@ -6060,6 +6064,6 @@
   "timezone": "utc",
   "title": "MS Teams (By Instance)",
   "uid": "c97b2768-e8bd-42fb-92e4-ad26dbf943db",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }
