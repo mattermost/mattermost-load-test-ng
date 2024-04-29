@@ -304,7 +304,7 @@ func (c *Config) validateDBName() error {
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/deployer.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "./config/deployer.json", &cfg); err != nil {
 		return nil, err
 	}
 

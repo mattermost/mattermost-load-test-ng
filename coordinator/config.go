@@ -10,6 +10,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
+const DefaultConfigLocation = "./config/coordinator.json"
+
 // Config holds the necessary information to drive a cluster of
 // load-test agents performing a load-test on a target instance.
 type Config struct {
@@ -34,7 +36,7 @@ type Config struct {
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/coordinator.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, DefaultConfigLocation, &cfg); err != nil {
 		return nil, err
 	}
 
