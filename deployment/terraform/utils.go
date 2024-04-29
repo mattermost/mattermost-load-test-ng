@@ -15,6 +15,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -271,4 +272,24 @@ func (t *Terraform) getClusterDSN() (string, error) {
 
 func (t *Terraform) getAsset(filename string) string {
 	return filepath.Join(t.config.TerraformStateDir, filename)
+}
+
+// getServerURL returns the URL of the server to be used for testing.
+// server URL priority:
+// 1. SiteURL
+// 2. Proxy IP
+// 3. First app server IP
+func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
+	url := output.Instances[0].PrivateIP
+	if deploymentConfig.SiteURL != "" {
+		url = deploymentConfig.SiteURL
+	}
+
+	if !output.HasProxy() {
+		url = url + ":8065"
+	} else if deploymentConfig.SiteURL == "" {
+		url = output.Proxy.PrivateIP
+	}
+
+	return url
 }

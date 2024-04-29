@@ -24,21 +24,7 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 		return nil, err
 	}
 
-	// server URL priority:
-	// 1. SiteURL
-	// 2. Proxy IP
-	// 3. First app server IP
-
-	url := t.output.Instances[0].PrivateIP
-	if t.config.SiteURL != "" {
-		url = t.config.SiteURL
-	}
-
-	if !t.output.HasProxy() {
-		url = url + ":8065"
-	} else if t.config.SiteURL == "" {
-		url = t.output.Proxy.PrivateIP
-	}
+	url := getServerURL(t.output, t.config)
 
 	cfg.ConnectionConfiguration.ServerURL = "http://" + url
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
