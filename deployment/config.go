@@ -198,7 +198,7 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakVersion is the version of keycloak to deploy.
 	KeycloakVersion string `default:"24.0.2"`
 	// KeycloakInstanceType is the type of the EC2 instance for keycloak.
-	InstanceType string `default:"c5.xlarge"`
+	InstanceType string `default:"c7i.xlarge"`
 	// KeycloakAdminUser is the username of the keycloak admin interface (admin on the master realm)
 	KeycloakAdminUser string `default:"mmuser" validate:"notempty"`
 	// KeycloakAdminPassword is the password of the keycloak admin interface (admin on the master realm)
