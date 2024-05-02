@@ -96,6 +96,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Values for the keycloak.env file
+	// TODO: Move to static asserts as a template file
 	keycloakEnvFileContents := []string{
 		// Enable health endpoints
 		"KC_HEALTH_ENABLED=true",
@@ -233,7 +234,7 @@ func (t *Terraform) populateKeycloakUsers(sshc *ssh.Client) error {
 
 	// Check if users file exists and has the expected number of users. If the file has less users than expected,
 	// we will start creating users from the next number, otherwise we will skip user creation.
-	if _, err := os.Stat(usersTxtPath); err == nil || os.IsExist(err) {
+	if _, err := os.Stat(usersTxtPath); err == nil {
 		// Check number of lines in the file to check the number of users already created
 		file, err := os.Open(usersTxtPath)
 		if err != nil {
