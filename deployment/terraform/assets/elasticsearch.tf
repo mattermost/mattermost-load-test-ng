@@ -96,7 +96,8 @@ resource "aws_opensearch_domain" "es_server" {
   }
 
   cluster_config {
-    instance_type = var.es_instance_type
+    instance_count = var.es_instance_count
+    instance_type  = var.es_instance_type
   }
 
   access_policies = <<CONFIG
@@ -145,5 +146,5 @@ resource "aws_opensearch_domain" "es_server" {
     enabled = true
   }
 
-  count = var.es_instance_count
+  count = var.es_instance_count > 0 ? 1 : 0
 }
