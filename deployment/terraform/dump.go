@@ -163,28 +163,24 @@ func (t *Terraform) ExecuteCustomSQL() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	appClients := make([]*ssh.Client, len(output.Instances))
-	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
-		if err != nil {
-			return fmt.Errorf("error in getting ssh connection %w", err)
-		}
-		defer client.Close()
-		appClients[i] = client
+	client, err := extAgent.NewClient(output.Instances[0].PublicIP)
+	if err != nil {
+		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
+	defer client.Close()
 
 	var commands []deployment.Cmd
 
 	for _, sqlURI := range t.config.DBExtraSQL {
 		fileName := filepath.Base(sqlURI)
 		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlURI))
-		if err := deployment.ProvisionURL(appClients[0], sqlURI, fileName); err != nil {
+		if err := deployment.ProvisionURL(client, sqlURI, fileName); err != nil {
 			return err
 		}
 
 		loadSQLFileCmd := deployment.Cmd{
 			Msg:     "Loading SQL file: " + fileName,
-			Clients: []*ssh.Client{appClients[0]},
+			Clients: []*ssh.Client{client},
 		}
 
 		dbCmd, err := deployment.BuildLoadDBDumpCmd(fileName, deployment.DBSettings{
