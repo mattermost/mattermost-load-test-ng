@@ -1,5 +1,5 @@
 resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
+  count            = var.es_instance_count > 0 && var.es_create_role ? 1 : 0
   aws_service_name = "es.amazonaws.com"
 }
 
