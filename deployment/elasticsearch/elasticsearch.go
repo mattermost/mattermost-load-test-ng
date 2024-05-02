@@ -342,6 +342,9 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 	recovery := []IndexShardRecovery{}
 	for _, resp := range indicesRecovery {
 		for _, shard := range resp.Shards {
+			if shard.Type != "SNAPSHOT" {
+				continue
+			}
 			recovery = append(recovery, IndexShardRecovery{
 				Index: shard.Source.Index,
 				Type:  shard.Type,
