@@ -14,6 +14,10 @@ output "metricsServer" {
   value = aws_instance.metrics_server
 }
 
+output "keycloakServer" {
+  value = aws_instance.keycloak
+}
+
 output "proxy" {
   value = aws_instance.proxy_server
 }

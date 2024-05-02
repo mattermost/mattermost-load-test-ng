@@ -188,6 +188,13 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	if t.output.HasKeycloak() {
+		// Setting up keycloak.
+		if err := t.setupKeycloak(extAgent); err != nil {
+			return fmt.Errorf("error setting up keycloak server: %w", err)
+		}
+	}
+
 	if t.output.HasAppServers() {
 		var siteURL string
 		switch {
@@ -260,6 +267,13 @@ func (t *Terraform) Create(initData bool) error {
 				if err != nil {
 					errorsChan <- fmt.Errorf("failed to create ingest dump: %w", err)
 					return
+				}
+			}
+
+			if len(t.config.DBExtraSQL) > 0 {
+				// Run extra SQL commands if specified
+				if err := t.ExecuteCustomSQL(); err != nil {
+					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
 				}
 			}
 
@@ -888,6 +902,19 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		}
 	}
 
+	if t.output.HasKeycloak() {
+		keycloakScheme := "https"
+		if t.config.ExternalAuthProviderSettings.DevelopmentMode {
+			keycloakScheme = "http"
+		}
+
+		cfg.OpenIdSettings.Enable = model.NewBool(true)
+		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientID)
+		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
+	}
+
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in marshalling config: %w", err)
@@ -937,6 +964,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under

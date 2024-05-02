@@ -89,6 +89,7 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	u := New(Setup{Store: s}, Config{
 		th.config.ConnectionConfiguration.ServerURL,
 		th.config.ConnectionConfiguration.WebSocketURL,
+		AuthenticationTypeMattermost,
 		"testuser",
 		"testuser@example.com",
 		"testpassword",

@@ -647,3 +647,80 @@ resource "null_resource" "s3_dump" {
     command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }
+
+// Keycloak
+resource "aws_instance" "keycloak" {
+  tags = {
+    Name = "${var.cluster_name}-keycloak"
+  }
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = var.aws_ami
+  instance_type = var.keycloak_instance_type
+  count         = var.keycloak_enabled ? 1 : 0
+  key_name      = aws_key_pair.key.id
+
+  vpc_security_group_ids = [
+    aws_security_group.keycloak[0].id,
+  ]
+
+  root_block_device {
+    volume_size = var.block_device_sizes_keycloak
+    volume_type = var.block_device_type
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get install unzip openjdk-17-jre postgresql postgresql-contrib -y",
+      "sudo mkdir -p /opt/keycloak",
+      "sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${var.keycloak_version}/keycloak-${var.keycloak_version}.zip",
+      "sudo unzip /opt/keycloak/keycloak-${var.keycloak_version}.zip -d /opt/keycloak",
+      "sudo mkdir -p /opt/keycloak/keycloak-${var.keycloak_version}/data/import",
+      "sudo chown -R ubuntu:ubuntu /opt/keycloak",
+    ]
+  }
+}
+
+resource "aws_security_group" "keycloak" {
+  count       = var.keycloak_enabled ? 1 : 0
+  name        = "${var.cluster_name}-keycloak-security-group"
+  description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
+  }
+
+  // To access keycloak
+  ingress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

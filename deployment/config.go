@@ -51,6 +51,8 @@ type Config struct {
 	ExternalDBSettings ExternalDBSettings
 	// External bucket connection settings.
 	ExternalBucketSettings ExternalBucketSettings
+	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
+	ExternalAuthProviderSettings ExternalAuthProviderSettings
 	// URL from where to download Mattermost release.
 	// This can also point to a local binary path if the user wants to run loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
@@ -87,6 +89,11 @@ type Config struct {
 	// This can also point to a local file if prefixed with "file://".
 	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURI string `default:""`
+	// DBExtraSQL are optional URIs to SQL files containing SQL statements to be applied
+	// to the Mattermost database.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	DBExtraSQL []string `default:"[]"`
 	// An optional host name that will:
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
@@ -114,6 +121,8 @@ type StorageSizes struct {
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
 	ElasticSearch int `default:"20"`
+	// Size, in GiB, for the storage of the keycloak instances
+	KeyCloak int `default:"10"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
@@ -177,6 +186,43 @@ type ExternalBucketSettings struct {
 	AmazonS3SSL             bool   `default:"true"`
 	AmazonS3SignV2          bool   `default:"false"`
 	AmazonS3SSE             bool   `default:"false"`
+}
+
+// ExternalAuthProviderSettings contains the necessary data
+// to configure an external auth provider.
+type ExternalAuthProviderSettings struct {
+	// Enabled is set to true if the external auth provider should be enabled.
+	Enabled bool `default:"false"`
+	// DevelopmentMode is set to true if the keycloak instance should be started in development mode.
+	DevelopmentMode bool `default:"true"`
+	// KeycloakVersion is the version of keycloak to deploy.
+	KeycloakVersion string `default:"24.0.2"`
+	// KeycloakInstanceType is the type of the EC2 instance for keycloak.
+	InstanceType string `default:"c7i.xlarge"`
+	// KeycloakAdminUser is the username of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminUser string `default:"mmuser" validate:"notempty"`
+	// KeycloakAdminPassword is the password of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminPassword string `default:"mmpass" validate:"notempty"`
+	// KeycloakRealmFilePath is the path to the realm file to be uploaded to the keycloak instance.
+	// If empty, a default realm file will be used.
+	KeycloakRealmFilePath string `default:""`
+	// KeycloakDBDumpURI
+	// An optional URI to a keycloak database dump file to be uploaded on environment
+	// creation.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	KeycloakDBDumpURI string `default:""`
+	// GenerateUsersCount is the number of users to generate in the keycloak instance.
+	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
+	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
+	// It is used when creating users and to properly set the OpenID configuration in Mattermost.
+	KeycloakRealmName string `default:"mattermost"`
+	// KeycloakClientID is the client id to be used in Mattermost from the above realm.
+	// Must exist in the keycloak instance
+	KeycloakClientID string `default:"mattermost-openid"`
+	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
+	// Must exist in the keycloak instance
+	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
 }
 
 // ElasticSearchSettings contains the necessary data
