@@ -311,7 +311,7 @@ type indexRecoveryResponse struct {
 
 type indicesRecoveryResponse map[string]indexRecoveryResponse
 
-// IndexShardRecovery represents the information returned by the IndicesRecovery
+// SnapshotIndexShardRecovery represents the information returned by the IndicesRecovery
 // request for a single index shard, specifying:
 //   - Index: the name of the index where this shard lives.
 //   - Type: the type of the shard, normally "SNAPSHOT" for shards that are
@@ -321,16 +321,16 @@ type indicesRecoveryResponse map[string]indexRecoveryResponse
 //     meaning the shard has already been restored.
 //   - Percent: the percentage of bytes already restored. Note this is not the
 //     percentage of files already restored.
-type IndexShardRecovery struct {
+type SnapshotIndexShardRecovery struct {
 	Index   string
-	Type    string
 	Stage   string
 	Percent string
 }
 
-// IndicesRecovery returns status information for each index shard in the server.
+// SnapshotIndicesRecovery returns status information for each index shard in
+// the server of type SNAPSHOT.
 // This is useful to track the completion of a snapshot restoration process.
-func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error) {
+func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShardRecovery, error) {
 	req := esapi.IndicesRecoveryRequest{
 		Index: indices,
 	}
@@ -339,15 +339,15 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
 	}
 
-	recovery := []IndexShardRecovery{}
+	recovery := []SnapshotIndexShardRecovery{}
 	for _, resp := range indicesRecovery {
 		for _, shard := range resp.Shards {
+			// Add only the shards correspondign to the snapshot restoration
 			if shard.Type != "SNAPSHOT" {
 				continue
 			}
-			recovery = append(recovery, IndexShardRecovery{
+			recovery = append(recovery, SnapshotIndexShardRecovery{
 				Index: shard.Source.Index,
-				Type:  shard.Type,
 				Stage: shard.Stage,
 				// We're using the percentage of bytes restored,
 				// not the percentage of files restored

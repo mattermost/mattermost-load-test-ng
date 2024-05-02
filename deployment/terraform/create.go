@@ -558,7 +558,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		case <-timeout:
 			return fmt.Errorf("timeout after %s, snapshot was not restored", dur.String())
 		case <-time.After(30 * time.Second):
-			indicesRecovery, err := es.IndicesRecovery(snapshotIndices)
+			indicesRecovery, err := es.SnapshotIndicesRecovery(snapshotIndices)
 			if err != nil {
 				return fmt.Errorf("unable to get recovery info from indices: %w", err)
 			}
