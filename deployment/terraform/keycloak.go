@@ -35,6 +35,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
+	defer sshc.Close()
 
 	// Check if the keycloak database exists
 	result, err := sshc.RunCommand(`sudo -iu postgres psql -l | grep keycloak | wc -l`)
