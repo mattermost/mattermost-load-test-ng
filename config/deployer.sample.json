@@ -56,6 +56,14 @@
     "AmazonS3SignV2": false,
     "AmazonS3SSE": false
   },
+  "ExternalAuthProviderSettings": {
+    "Enabled": false,
+    "KeycloakAdminUser": "mmadmin",
+    "KeycloakAdminPassword": "mmpass",
+    "KeycloakRealmFilePath": "",
+    "KeycloakDBDumpURI": "",
+    "GenerateUsersCount": 0
+  },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
   "MattermostLicenseFile": "",
   "MattermostConfigPatchFile": "",

@@ -48,6 +48,9 @@ scrape_configs:
   - job_name: loadtest
     static_configs:
         - targets: [%s]
+  - job_name: keycloak
+    static_configs:
+        - targets: [%s]
   - job_name: msteams
     static_configs:
         - targets: [%s]
@@ -364,4 +367,19 @@ org_role = Editor
 
 [dashboards]
 default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json
+`
+
+const keycloakServiceFileContents = `
+[Unit]
+Description=Keycloak
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/systemd/system/keycloak.env
+ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
+
+[Install]
+WantedBy=multi-user.target
 `
