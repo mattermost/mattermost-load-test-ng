@@ -71,6 +71,15 @@ The `GenerateUsersCount` configuration option allows you to generate a number of
 
 This option will override the `UsersConfiguration.UserFilePath` option with the path to a file containing the generated users.
 
+## Specifying users in the `UsersFilePath` file
+
+Keycloak users can be specified in the file specified by the `UsersConfiguration.UserFilePath` configuration option by prepending `openid:` to the users email. This will tell the load-test tool to use the OpenID Connect authentication provider to authenticate the user.
+
+```txt
+openid:user1@test.mattermost.com user1password
+...
+```
+
 ## Development mode
 
 The `DevelopmentMode` configuration option allows you to deploy the Keycloak server in development mode. This changes the command used to start the server from `start` (production) to `start-dev` (development) so Keycloak [disables several features](https://www.keycloak.org/server/configuration#_starting_keycloak_in_development_mode) to ease up the environment creation process.
