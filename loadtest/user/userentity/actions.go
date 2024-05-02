@@ -111,6 +111,7 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
 
+			// TODO: Move to Login/SignUp methods (GetUserByUsername)
 			me, _, err := ue.client.GetMe(context.Background(), "")
 			if err != nil {
 				return fmt.Errorf("error while getting user: %w", err)
