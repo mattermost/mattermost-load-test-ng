@@ -31,8 +31,12 @@ func (t *Terraform) ClearLicensesData() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	appClients := make([]*ssh.Client, len(output.Instances))
-	for i, instance := range output.Instances {
+	allInstances := []Instance{}
+	allInstances = append(allInstances, output.Instances...)
+	allInstances = append(allInstances, output.JobServers...)
+
+	appClients := make([]*ssh.Client, len(allInstances))
+	for i, instance := range allInstances {
 		client, err := extAgent.NewClient(instance.PublicIP)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
@@ -101,8 +105,12 @@ func (t *Terraform) IngestDump() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	appClients := make([]*ssh.Client, len(output.Instances))
-	for i, instance := range output.Instances {
+	allInstances := []Instance{}
+	allInstances = append(allInstances, output.Instances...)
+	allInstances = append(allInstances, output.JobServers...)
+
+	appClients := make([]*ssh.Client, len(allInstances))
+	for i, instance := range allInstances {
 		client, err := extAgent.NewClient(instance.PublicIP)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
