@@ -63,7 +63,7 @@ func getReportFilename(id int, res comparison.Result) string {
 	return fmt.Sprintf("report_%s.md", name)
 }
 
-func writeToFile() *os.File {
+func writeToFile() io.Writer {
 	// Create or open the file for writing
 	resultsFile, err := os.Create("results.txt")
 	if err != nil {
@@ -74,9 +74,9 @@ func writeToFile() *os.File {
 
 }
 
-func printResults(results []comparison.Result, resultsFile *os.File) {
+func printResults(results []comparison.Result, writer io.Writer) {
 	// Create a multi writer to write to both resultsFile and os.Stdout
-	multiWriter := io.MultiWriter(resultsFile, os.Stdout)
+	multiWriter := io.MultiWriter(writer, os.Stdout)
 
 	_, err := fmt.Println("Error with file:")
 
@@ -116,7 +116,7 @@ func printResults(results []comparison.Result, resultsFile *os.File) {
 			}
 			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		fmt.Fprintf(resultsFile, "==================================================\n\n")
+		fmt.Fprintf(multiWriter, "==================================================\n\n")
 	}
 }
 
