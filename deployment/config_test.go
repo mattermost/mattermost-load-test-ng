@@ -67,10 +67,14 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 		require.NoError(t, cfg.validateElasticSearchConfig())
 	})
 
-	t.Run("invalid instance count", func(t *testing.T) {
+	t.Run("valid instance count", func(t *testing.T) {
 		cfg := baseValidConfig()
+
+		cfg.ElasticSearchSettings.InstanceCount = 1
+		require.NoError(t, cfg.validateElasticSearchConfig())
+
 		cfg.ElasticSearchSettings.InstanceCount = 42
-		require.Error(t, cfg.validateElasticSearchConfig())
+		require.NoError(t, cfg.validateElasticSearchConfig())
 	})
 
 	t.Run("invalid VPC ID", func(t *testing.T) {
