@@ -342,7 +342,7 @@ func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShard
 	recovery := []SnapshotIndexShardRecovery{}
 	for _, resp := range indicesRecovery {
 		for _, shard := range resp.Shards {
-			// Add only the shards correspondign to the snapshot restoration
+			// Add only the shards corresponding to the snapshot restoration
 			if shard.Type != "SNAPSHOT" {
 				continue
 			}
