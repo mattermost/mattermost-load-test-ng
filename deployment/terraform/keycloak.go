@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -95,55 +93,32 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	// Values for the keycloak.env file
-	// TODO: Move to static asserts as a template file
-	keycloakEnvFileContents := []string{
-		// Enable health endpoints
-		"KC_HEALTH_ENABLED=true",
-		// Setup admin user
-		"KEYCLOAK_ADMIN=" + t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
-		"KEYCLOAK_ADMIN_PASSWORD=" + t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
-		// Ensure Java JVM has enough memory for large imports
-		"JAVA_OPTS=-Xms1024m -Xmx2048m",
-		// Logging
-		"KC_LOG_FILE=" + filepath.Join(keycloakDir, "data/log/keycloak.log"),
-		"KC_LOG_FILE_OUTPUT=json",
-		// Database
-		"KC_DB_POOL_MIN_SIZE=20",
-		"KC_DB_POOL_INITIAL_SIZE=20",
-		"KC_DB_POOL_MAX_SIZE=200",
-		"KC_DB=postgres",
-		"KC_DB_URL=jdbc:psql://localhost:5432/keycloak",
-		"KC_DB_PASSWORD=mmpass",
-		"KC_DB_USERNAME=keycloak",
-		"KC_DATABASE=keycloak",
+	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]string{
+		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
+		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
+		"KeycloakLogFilePath":   filepath.Join(keycloakDir, "data/log/keycloak.log"),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to fill keycloak.env file template: %w", err)
 	}
 
 	// Upload keycloak.env file
-	_, err = sshc.Upload(strings.NewReader(strings.Join(keycloakEnvFileContents, "\n")), "/etc/systemd/system/keycloak.env", true)
+	_, err = sshc.Upload(strings.NewReader(keycloakEnvFileContents), "/etc/systemd/system/keycloak.env", true)
 	if err != nil {
 		return fmt.Errorf("failed to upload keycloak env file: %w", err)
 	}
 
 	// Parse keycloak service file template
-	tmpl, err := template.New("keycloakServiceFile").Parse(keycloakServiceFileContents)
-	if err != nil {
-		return fmt.Errorf("failed to parse keycloak service file template: %w", err)
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, struct {
-		KeycloakVersion string
-		Command         string
-	}{
-		KeycloakVersion: t.config.ExternalAuthProviderSettings.KeycloakVersion,
-		Command:         command + " " + strings.Join(extraArguments, " "),
+	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]string{
+		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
+		"Command":         command + " " + strings.Join(extraArguments, " "),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
 	}
 
 	// Install systemd service
-	_, err = sshc.Upload(&buf, "/etc/systemd/system/keycloak.service", true)
+	_, err = sshc.Upload(strings.NewReader(keycloakServiceFileContents), "/etc/systemd/system/keycloak.service", true)
 	if err != nil {
 		return fmt.Errorf("failed to upload keycloak service file: %w", err)
 	}
