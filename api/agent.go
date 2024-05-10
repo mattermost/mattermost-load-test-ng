@@ -393,23 +393,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			// If UsersFilePath was set, and we haven't yet consumed all of the credentials
 			// provided there, ovewrite this user's credentials with the next available
 			// user in that file
-			username = creds[id].username
-			email = creds[id].email
-			password = creds[id].password
-
-			// Check if the user has a custom authentication type. Custom authentication types are
-			// specified by prepending the username with the authentication type followed by a colon.
-			// Example: "openid:user1@test.mattermost.com user1password"
-			// TODO: Move to util function
-			if usernameParts := strings.Split(username, ":"); len(usernameParts) > 1 {
-				authenticationType = usernameParts[0]
-				username = usernameParts[1]
-
-				// Fix the email as well
-				if emailParts := strings.Split(email, ":"); len(emailParts) > 1 {
-					email = emailParts[1]
-				}
-			}
+			username, email, password, authenticationType = parseUserFromLine(creds[id])
 		}
 
 		ueConfig := userentity.Config{
