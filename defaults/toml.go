@@ -1,30 +1,23 @@
 package defaults
 
 import (
-	"fmt"
-	"os"
+	"io"
 
 	"github.com/pelletier/go-toml/v2"
 )
 
-func ReadFromTOML(path string, value any) error {
-	if err := Set(value); err != nil {
-		return err
+type TOMLDecoder struct {
+	*toml.Decoder
+}
+
+// DisallowUnknownFields will disallow unknown fields in the TOML file.
+// Override this method to ensure Decoder interface is met
+func (d *TOMLDecoder) DisallowUnknownFields() {
+	d.Decoder.DisallowUnknownFields()
+}
+
+func NewTOMLDecoder(r io.Reader) Decoder {
+	return &TOMLDecoder{
+		toml.NewDecoder(r),
 	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("could not open file: %w", err)
-	}
-	defer file.Close()
-
-	dec := toml.NewDecoder(file)
-	dec.DisallowUnknownFields()
-
-	err = dec.Decode(&value)
-	if err != nil {
-		return fmt.Errorf("could not decode file: %w", err)
-	}
-
-	return nil
 }

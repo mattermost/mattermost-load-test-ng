@@ -15,16 +15,16 @@ type testCFG struct {
 	}
 }
 
-func getTestCFG(t *testing.T, fileContents string) (testCFG, *os.File, func()) {
+func getTestCFG(t *testing.T, fileContents, extension string) (*os.File, func()) {
 	t.Helper()
-	f, err := os.CreateTemp("", "loadtest")
+	f, err := os.CreateTemp("", "loadtest-*."+extension)
 	require.NoError(t, err)
 
 	_, err = f.Write([]byte(fileContents))
 	require.NoError(t, err)
 	require.NoError(t, f.Close())
 
-	return testCFG{}, f, func() {
-		defer os.Remove(f.Name()) // clean up
+	return f, func() {
+		os.Remove(f.Name()) // clean up
 	}
 }
