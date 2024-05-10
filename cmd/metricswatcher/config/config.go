@@ -37,7 +37,7 @@ func SetupMetricsCheck(cmd *cobra.Command, args []string) {
 func ReadConfig(configFilePath string) (*MetricsWatcherConfiguration, error) {
 	var cfg MetricsWatcherConfiguration
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/metricswatcher.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "./config/metricswatcher.json", &cfg); err != nil {
 		return nil, err
 	}
 

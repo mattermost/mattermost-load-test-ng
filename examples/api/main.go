@@ -29,7 +29,7 @@ func loadConfig(cmd *cobra.Command) (Config, error) {
 	if configFilePath == "" {
 		return config, errors.New("config file is required")
 	}
-	if err := defaults.ReadFromJSON(configFilePath, "", &config); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "", &config); err != nil {
 		return config, err
 	}
 	if err := defaults.Validate(config); err != nil {
