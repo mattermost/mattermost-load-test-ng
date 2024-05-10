@@ -10,7 +10,7 @@ func TestConfigIsValid(t *testing.T) {
 	baseConfig := func() Config {
 		return Config{
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0-rc2/mattermost-load-test-ng-v1.15.0-rc2-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz",
 		}
 	}
 
@@ -46,5 +46,55 @@ func TestConfigIsValid(t *testing.T) {
 
 			require.NoError(t, c.IsValid())
 		})
+	})
+}
+
+func TestValidateElasticSearchConfig(t *testing.T) {
+	baseValidConfig := func() Config {
+		return Config{
+			ClusterName:           "clustername",
+			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz",
+			ElasticSearchSettings: ElasticSearchSettings{
+				InstanceCount: 1,
+				VpcID:         "vpc-01234567890abcdef",
+			},
+		}
+	}
+
+	t.Run("valid config", func(t *testing.T) {
+		cfg := baseValidConfig()
+		require.NoError(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("valid instance count", func(t *testing.T) {
+		cfg := baseValidConfig()
+
+		cfg.ElasticSearchSettings.InstanceCount = 1
+		require.NoError(t, cfg.validateElasticSearchConfig())
+
+		cfg.ElasticSearchSettings.InstanceCount = 42
+		require.NoError(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid VPC ID", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ElasticSearchSettings.VpcID = ""
+		require.Error(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid domain name for ES", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ClusterName = "InvalidClusterNameForES!@#$"
+
+		require.Error(t, cfg.validateElasticSearchConfig())
+	})
+
+	t.Run("invalid domain name for ES but validation passes because InstanceCount == 0", func(t *testing.T) {
+		cfg := baseValidConfig()
+		cfg.ClusterName = "InvalidClusterNameForES!@#$"
+		cfg.ElasticSearchSettings.InstanceCount = 0
+
+		require.NoError(t, cfg.validateElasticSearchConfig())
 	})
 }

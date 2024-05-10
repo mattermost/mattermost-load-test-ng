@@ -116,7 +116,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
@@ -157,6 +157,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if t.output.HasKeycloak() {
+		host := "keycloak"
+		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
+		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
+	}
+
 	quoteAll := func(elems []string) []string {
 		quoted := make([]string, 0, len(elems))
 		for _, elem := range elems {
@@ -171,6 +177,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(mmTargets), ","),
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
+		strings.Join(quoteAll(keycloakTargets), ""),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {

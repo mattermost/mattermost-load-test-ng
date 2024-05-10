@@ -39,7 +39,7 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 				DBName:   "mattermost",
 				Host:     "localhost",
 			},
-			cmd: `zcat mysql.dump.sql.xz | mysql -h localhost -u mmuser -pmostest mattermost && mysql -h localhost -u mmuser -pmostest mattermost -e "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"`,
+			cmd: `zcat mysql.dump.sql.xz | mysql -h localhost -u mmuser -pmostest mattermost`,
 		},
 		{
 			name:     "psql",
@@ -51,13 +51,68 @@ func TestBuildLoadDBDumpCmd(t *testing.T) {
 				DBName:   "mattermost",
 				Host:     "localhost",
 			},
-			cmd: `zcat psql.dump.sql.xz | psql 'postgres://mmuser:mostest@localhost/mattermost?sslmode=disable' && psql 'postgres://mmuser:mostest@localhost/mattermost?sslmode=disable' -c "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"`,
+			cmd: `zcat psql.dump.sql.xz | psql 'postgres://mmuser:mostest@localhost/mattermost?sslmode=disable'`,
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd, err := BuildLoadDBDumpCmd(tc.dumpName, tc.dbInfo)
+			if tc.err != "" {
+				require.EqualError(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.cmd, cmd)
+		})
+	}
+}
+
+func TestClearLicensesCmd(t *testing.T) {
+	tcs := []struct {
+		name   string
+		dbInfo DBSettings
+		cmd    string
+		err    string
+	}{
+		{
+			name: "invalid engine",
+			dbInfo: DBSettings{
+				Engine:   "invalid",
+				UserName: "mmuser",
+				Password: "mostest",
+				DBName:   "mattermost",
+				Host:     "localhost",
+			},
+			err: "invalid db engine invalid",
+		},
+		{
+			name: "mysql",
+			dbInfo: DBSettings{
+				Engine:   "aurora-mysql",
+				UserName: "mmuser",
+				Password: "mostest",
+				DBName:   "mattermost",
+				Host:     "localhost",
+			},
+			cmd: `mysql -h localhost -u mmuser -pmostest mattermost -e "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"`,
+		},
+		{
+			name: "psql",
+			dbInfo: DBSettings{
+				Engine:   "aurora-postgresql",
+				UserName: "mmuser",
+				Password: "mostest",
+				DBName:   "mattermost",
+				Host:     "localhost",
+			},
+			cmd: `psql 'postgres://mmuser:mostest@localhost/mattermost?sslmode=disable' -c "DELETE FROM Systems WHERE Name = 'ActiveLicenseId'; DELETE FROM Licenses;"`,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd, err := ClearLicensesCmd(tc.dbInfo)
 			if tc.err != "" {
 				require.EqualError(t, err, tc.err)
 			} else {

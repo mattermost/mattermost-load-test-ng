@@ -19,6 +19,7 @@ Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target
@@ -45,6 +46,9 @@ scrape_configs:
     static_configs:
         - targets: [%s]
   - job_name: loadtest
+    static_configs:
+        - targets: [%s]
+  - job_name: keycloak
     static_configs:
         - targets: [%s]
 `
@@ -162,7 +166,6 @@ http {
   access_log /var/log/nginx/access.log combined if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
-  include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*;
 }
 `
@@ -194,16 +197,16 @@ proxy_cache_use_stale timeout;
 proxy_cache_lock on;
 `
 
-const nginxSiteConfig = `
+const nginxSiteConfigTmpl = `
 upstream backend {
-%s
+{{.backends}}
   keepalive 256;
 }
 
-proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:10m max_size=3g inactive=120m use_temp_path=off;
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mattermost_cache:{{.cacheObjects}} max_size={{.cacheSize}} inactive=60m use_temp_path=off;
 
 server {
-  listen 80;
+  listen 80 reuseport;
   server_name _;
 
   location ~ /api/v[0-9]+/(users/)?websocket$ {
@@ -244,6 +247,16 @@ net.ipv4.tcp_fin_timeout = 30
 
 # Reuse TIME-WAIT sockets for new outgoing connections.
 net.ipv4.tcp_tw_reuse = 1
+
+# TCP buffer sizes are tuned for 10Gbit/s bandwidth and 0.5ms RTT (as measured intra EC2 cluster).
+# This gives a BDP (bandwidth-delay-product) of 625000 bytes.
+net.ipv4.tcp_rmem = 4096 156250 625000
+net.ipv4.tcp_wmem = 4096 156250 625000
+net.core.rmem_max = 312500
+net.core.wmem_max = 312500
+net.core.rmem_default = 312500
+net.core.wmem_default = 312500
+net.ipv4.tcp_mem = 1638400 1638400 1638400
 `
 
 const serverSysctlConfig = `
@@ -344,6 +357,7 @@ WorkingDirectory=/opt/mattermost
 User=ubuntu
 Group=ubuntu
 LimitNOFILE=49152
+Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
 WantedBy=multi-user.target
@@ -359,4 +373,19 @@ org_role = Editor
 
 [dashboards]
 default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json
+`
+
+const keycloakServiceFileContents = `
+[Unit]
+Description=Keycloak
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/systemd/system/keycloak.env
+ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
+
+[Install]
+WantedBy=multi-user.target
 `

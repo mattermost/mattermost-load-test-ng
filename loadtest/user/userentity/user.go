@@ -33,12 +33,19 @@ type UserEntity struct {
 	wsServerSeq int64
 }
 
+const (
+	AuthenticationTypeMattermost = "mattermost"
+	AuthenticationTypeOpenID     = "openid"
+)
+
 // Config holds necessary information required by a UserEntity.
 type Config struct {
 	// The URL of the Mattermost web server.
 	ServerURL string
 	// The URL of the mattermost WebSocket server.
 	WebSocketURL string
+	// The type of authentication to be used by the entity.
+	AuthenticationType string
 	// The username to be used by the entity.
 	Username string
 	// The email to be used by the entity.
@@ -75,6 +82,13 @@ type threadPresenceMsg struct {
 
 type teamPresenceMsg struct {
 	teamId string
+}
+
+type postedAckMsg struct {
+	postId     string
+	status     string
+	reason     string
+	postedData string
 }
 
 type ueTransport struct {
@@ -153,7 +167,7 @@ func (ue *UserEntity) Connect() (<-chan error, error) {
 	}
 
 	ue.wsEventChan = make(chan *model.WebSocketEvent)
-	ue.dataChan = make(chan any)
+	ue.dataChan = make(chan any, 10)
 	go ue.listen(ue.wsErrorChan)
 	ue.connected = true
 	return ue.wsErrorChan, nil

@@ -6,6 +6,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -52,9 +53,9 @@ func NewAgent() (*ExtAgent, error) {
 	return &ExtAgent{agent: extAgent}, nil
 }
 
-// NewClient returns a Client object by dialing
-// the ssh agent.
-func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
+// NewClientWithPort returns a Client object by dialing
+// the ssh agent on the provided port
+func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
 	config := &ssh.ClientConfig{
 		User: "ubuntu",
 		Auth: []ssh.AuthMethod{
@@ -63,11 +64,17 @@ func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	sshc, err := ssh.Dial("tcp", ip+":22", config)
+	sshc, err := ssh.Dial("tcp", ip+port, config)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{client: sshc}, nil
+}
+
+// NewClient returns a Client object by dialing
+// the ssh agent on port 22
+func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
+	return ea.NewClientWithPort(ip, ":22")
 }
 
 // RunCommand runs a given command in a new ssh session.
@@ -157,4 +164,9 @@ func (sshc *Client) Download(src string, dst io.Writer, sudo bool) error {
 // Close closes the underlying connection.
 func (sshc *Client) Close() error {
 	return sshc.client.Close()
+}
+
+// DialContextF returns the underlying client's DialContext function
+func (sshc *Client) DialContextF() func(context.Context, string, string) (net.Conn, error) {
+	return sshc.client.DialContext
 }

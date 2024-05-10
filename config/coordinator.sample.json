@@ -72,7 +72,7 @@
         "Description": "Percentage of TCP timeouts in the proxy node",
         "Legend": "Percent",
         "Query": "100 * rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) / (rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) + node_netstat_Tcp_CurrEstab{instance=~\"proxy:9100\"})",
-        "Threshold": 0.2,
+        "Threshold": 0.6,
         "MinIntervalSec": 60,
         "Alert": true
       },
@@ -81,7 +81,7 @@
         "Description": "Percentage of TCP timeouts in the app nodes",
         "Legend": "Percent",
         "Query": "100 * avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) / (avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) + avg(node_netstat_Tcp_CurrEstab{instance=~\"app.*\"}))",
-        "Threshold": 3.0,
+        "Threshold": 9.0,
         "MinIntervalSec": 60,
         "Alert": true
       }

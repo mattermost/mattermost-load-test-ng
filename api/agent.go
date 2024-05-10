@@ -363,7 +363,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 	creds, err := getUserCredentials(config.UsersConfiguration.UsersFilePath, config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting user credentials from file: %w", err)
 	}
 
 	modAdmins := 0
@@ -373,7 +373,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 	err = createCustomEmoji(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating custom emoji from config: %w", err)
 	}
 	mlog.Info("Custom emoji created")
 
@@ -383,6 +383,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		username := fmt.Sprintf("%s-%d", namePrefix, id)
 		email := fmt.Sprintf("%s-%d@example.com", namePrefix, id)
 		password := "testPass123$"
+		authenticationType := userentity.AuthenticationTypeMattermost
 
 		if modAdmins > 0 && id%modAdmins == 0 {
 			username = ""
@@ -395,15 +396,31 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
+
+			// Check if the user has a custom authentication type. Custom authentication types are
+			// specified by prepending the username with the authentication type followed by a colon.
+			// Example: "openid:user1@test.mattermost.com user1password"
+			// TODO: Move to util function
+			if usernameParts := strings.Split(username, ":"); len(usernameParts) > 1 {
+				authenticationType = usernameParts[0]
+				username = usernameParts[1]
+
+				// Fix the email as well
+				if emailParts := strings.Split(email, ":"); len(emailParts) > 1 {
+					email = emailParts[1]
+				}
+			}
 		}
 
 		ueConfig := userentity.Config{
-			ServerURL:    config.ConnectionConfiguration.ServerURL,
-			WebSocketURL: config.ConnectionConfiguration.WebSocketURL,
-			Username:     username,
-			Email:        email,
-			Password:     password,
+			ServerURL:          config.ConnectionConfiguration.ServerURL,
+			WebSocketURL:       config.ConnectionConfiguration.WebSocketURL,
+			AuthenticationType: authenticationType,
+			Username:           username,
+			Email:              email,
+			Password:           password,
 		}
+
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          250,
 			MaxStoredUsers:          500,
@@ -413,11 +430,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			MaxStoredReactions:      10,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating memory store: %w", err)
 		}
 
 		if err := store.SetServerVersion(serverVersion); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error setting server version: %w", err)
 		}
 
 		ueSetup := userentity.Setup{
@@ -527,7 +544,7 @@ func createCustomEmoji(config *loadtest.Config) error {
 	}
 	sysadmin := createSysAdmin(adminStore, config)
 	if err := sysadmin.Login(); err != nil {
-		return err
+		return fmt.Errorf("error login as sysadmin: %w", err)
 	}
 
 	emoji := &model.Emoji{

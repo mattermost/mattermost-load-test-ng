@@ -13,10 +13,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-// IngestDump works on an already deployed terraform setup and restores
-// the DB dump file to the Mattermost server. It uses the deployment config
-// for the dump URI.
-func (t *Terraform) IngestDump() error {
+// ClearLicensesData runs a SQL query to delete all data from old licenses in
+// the database. It does it by first stopping the server, then running the
+// query, then restarting the server again.
+func (t *Terraform) ClearLicensesData() error {
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -41,22 +41,81 @@ func (t *Terraform) IngestDump() error {
 		appClients[i] = client
 	}
 
+	stopCmd := deployment.Cmd{
+		Msg:     "Stopping app servers",
+		Value:   "sudo systemctl stop mattermost",
+		Clients: appClients,
+	}
+
+	clearCmdValue, err := deployment.ClearLicensesCmd(deployment.DBSettings{
+		UserName: t.config.TerraformDBSettings.UserName,
+		Password: t.config.TerraformDBSettings.Password,
+		DBName:   t.config.DBName(),
+		Host:     output.DBWriter(),
+		Engine:   t.config.TerraformDBSettings.InstanceEngine,
+	})
+	if err != nil {
+		return fmt.Errorf("error building command to clear licenses data: %w", err)
+	}
+
+	clearCmd := deployment.Cmd{
+		Msg:     "Clearing old licenses data",
+		Value:   clearCmdValue,
+		Clients: appClients[0:1],
+	}
+
+	startCmd := deployment.Cmd{
+		Msg:     "Restarting app server",
+		Value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
+		Clients: appClients,
+	}
+
+	for _, c := range []deployment.Cmd{stopCmd, clearCmd, startCmd} {
+		mlog.Info(c.Msg)
+		for _, client := range c.Clients {
+			mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
+			if out, err := client.RunCommand(c.Value); err != nil {
+				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
+			}
+		}
+	}
+
+	return nil
+}
+
+// IngestDump works on an already deployed terraform setup and restores
+// the DB dump file to the Mattermost server. It uses the deployment config
+// for the dump URI.
+func (t *Terraform) IngestDump() error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
+	if len(t.output.Instances) < 1 {
+		return fmt.Errorf("no app instances deployed")
+	}
+
+	appClients := make([]*ssh.Client, len(output.Instances))
+	for i, instance := range output.Instances {
+		client, err := extAgent.NewClient(instance.PublicIP)
+		if err != nil {
+			return fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		defer client.Close()
+		appClients[i] = client
+	}
+
 	dumpURI := t.config.DBDumpURI
 	fileName := filepath.Base(dumpURI)
 	mlog.Info("Provisioning dump file", mlog.String("uri", dumpURI))
 	if err := deployment.ProvisionURL(appClients[0], dumpURI, fileName); err != nil {
 		return err
-	}
-
-	// stop
-	// reset
-	// load dump
-	// start
-
-	stopCmd := deployment.Cmd{
-		Msg:     "Stopping app servers",
-		Value:   "sudo systemctl stop mattermost",
-		Clients: appClients,
 	}
 
 	resetCmd, err := getResetCmd(t.config, output, appClients)
@@ -81,13 +140,122 @@ func (t *Terraform) IngestDump() error {
 	}
 	loadDBDumpCmd.Value = dbCmd
 
-	startCmd := deployment.Cmd{
+	if err := t.executeDatabaseCommands([]deployment.Cmd{resetCmd, loadDBDumpCmd}); err != nil {
+		return fmt.Errorf("error ingesting db dump: %w", err)
+	}
+
+	return nil
+}
+
+// ExecuteCustomSQL executes provided custom SQL files in the app instances.
+func (t *Terraform) ExecuteCustomSQL() error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
+	if len(output.Instances) < 1 {
+		return fmt.Errorf("no app instances deployed")
+	}
+
+	client, err := extAgent.NewClient(output.Instances[0].PublicIP)
+	if err != nil {
+		return fmt.Errorf("error in getting ssh connection %w", err)
+	}
+	defer client.Close()
+
+	var commands []deployment.Cmd
+
+	for _, sqlURI := range t.config.DBExtraSQL {
+		fileName := filepath.Base(sqlURI)
+		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlURI))
+		if err := deployment.ProvisionURL(client, sqlURI, fileName); err != nil {
+			return err
+		}
+
+		loadSQLFileCmd := deployment.Cmd{
+			Msg:     "Loading SQL file: " + fileName,
+			Clients: []*ssh.Client{client},
+		}
+
+		dbCmd, err := deployment.BuildLoadDBDumpCmd(fileName, deployment.DBSettings{
+			UserName: t.config.TerraformDBSettings.UserName,
+			Password: t.config.TerraformDBSettings.Password,
+			DBName:   t.config.DBName(),
+			Host:     output.DBWriter(),
+			Engine:   t.config.TerraformDBSettings.InstanceEngine,
+		})
+		if err != nil {
+			return fmt.Errorf("error building command for loading DB dump: %w", err)
+		}
+		loadSQLFileCmd.Value = dbCmd
+
+		commands = append(commands, loadSQLFileCmd)
+	}
+
+	if err := t.executeDatabaseCommands(commands); err != nil {
+		return fmt.Errorf("error executing custom SQL files: %w", err)
+	}
+
+	return nil
+}
+
+// executeDatabaseCommands executes a series of commands stopping the mattermost service in the
+// app instances then executing the provided commands and finally starting the mattermost service.
+func (t *Terraform) executeDatabaseCommands(extraCommands []deployment.Cmd) error {
+	output, err := t.Output()
+	if err != nil {
+		return err
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return err
+	}
+
+	if len(output.Instances) < 1 {
+		return fmt.Errorf("no app instances deployed")
+	}
+
+	appClients := make([]*ssh.Client, len(output.Instances))
+	for i, instance := range output.Instances {
+		client, err := extAgent.NewClient(instance.PublicIP)
+		if err != nil {
+			return fmt.Errorf("error in getting ssh connection %w", err)
+		}
+		defer client.Close()
+		appClients[i] = client
+	}
+
+	commands := []deployment.Cmd{{
+		Msg:     "Stopping app servers",
+		Value:   "sudo systemctl stop mattermost",
+		Clients: appClients,
+	}}
+
+	// Append provided commands
+	commands = append(commands, extraCommands...)
+
+	commands = append(commands, deployment.Cmd{
 		Msg:     "Restarting app server",
 		Value:   "sudo systemctl start mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 		Clients: appClients,
+	})
+
+	if err := t.executeCommands(commands); err != nil {
+		return fmt.Errorf("error executing database commands: %w", err)
 	}
 
-	for _, c := range []deployment.Cmd{stopCmd, resetCmd, loadDBDumpCmd, startCmd} {
+	return nil
+}
+
+func (t *Terraform) executeCommands(commands []deployment.Cmd) error {
+	for _, c := range commands {
 		mlog.Info(c.Msg)
 		for _, client := range c.Clients {
 			mlog.Debug("Running cmd", mlog.String("cmd", c.Value))

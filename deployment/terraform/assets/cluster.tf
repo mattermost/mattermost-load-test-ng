@@ -1,4 +1,3 @@
-
 terraform {
   required_providers {
     aws = {
@@ -174,70 +173,23 @@ resource "aws_instance" "proxy_server" {
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "echo 'tcp_bbr' | sudo tee -a /etc/modules",
       "sudo modprobe tcp_bbr",
+      "wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg",
+      "sudo sh -c 'echo \"deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" > /etc/apt/sources.list.d/nginx.list'",
+      "sudo sh -c 'echo \"deb-src http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" >> /etc/apt/sources.list.d/nginx.list'",
       "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y nginx",
+      "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable nginx",
+      "sudo mkdir -p /etc/nginx/snippets",
+      "sudo mkdir -p /etc/nginx/sites-available",
+      "sudo mkdir -p /etc/nginx/sites-enabled",
       "sudo rm -f /etc/nginx/sites-enabled/default",
       "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
     ]
   }
 }
-
-resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
-  aws_service_name = "es.amazonaws.com"
-}
-
-resource "aws_opensearch_domain" "es_server" {
-  tags = {
-    Name = "${var.cluster_name}-es_server"
-  }
-
-  domain_name    = "${var.cluster_name}-es"
-  engine_version = var.es_version
-
-  vpc_options {
-    subnet_ids = [
-      element(tolist(data.aws_subnets.selected.ids), 0)
-    ]
-    security_group_ids = [aws_security_group.elastic[0].id]
-  }
-
-
-  ebs_options {
-    ebs_enabled = true
-    volume_type = var.block_device_type
-    volume_size = var.block_device_sizes_elasticsearch
-  }
-
-  cluster_config {
-    instance_type = var.es_instance_type
-  }
-
-  access_policies = <<CONFIG
-  {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": "es:*",
-              "Principal": "*",
-              "Effect": "Allow",
-              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
-          }
-      ]
-  }
-  CONFIG
-
-  depends_on = [
-    aws_iam_service_linked_role.es,
-  ]
-
-  count = var.es_instance_count
-}
-
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"
@@ -693,5 +645,82 @@ resource "null_resource" "s3_dump" {
 
   provisioner "local-exec" {
     command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
+  }
+}
+
+// Keycloak
+resource "aws_instance" "keycloak" {
+  tags = {
+    Name = "${var.cluster_name}-keycloak"
+  }
+
+  connection {
+    # The default username for our AMI
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+  }
+
+  ami           = var.aws_ami
+  instance_type = var.keycloak_instance_type
+  count         = var.keycloak_enabled ? 1 : 0
+  key_name      = aws_key_pair.key.id
+
+  vpc_security_group_ids = [
+    aws_security_group.keycloak[0].id,
+  ]
+
+  root_block_device {
+    volume_size = var.block_device_sizes_keycloak
+    volume_type = var.block_device_type
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-get -y update",
+      "sudo apt-get install unzip openjdk-17-jre postgresql postgresql-contrib -y",
+      "sudo mkdir -p /opt/keycloak",
+      "sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${var.keycloak_version}/keycloak-${var.keycloak_version}.zip",
+      "sudo unzip /opt/keycloak/keycloak-${var.keycloak_version}.zip -d /opt/keycloak",
+      "sudo mkdir -p /opt/keycloak/keycloak-${var.keycloak_version}/data/import",
+      "sudo chown -R ubuntu:ubuntu /opt/keycloak",
+    ]
+  }
+}
+
+resource "aws_security_group" "keycloak" {
+  count       = var.keycloak_enabled ? 1 : 0
+  name        = "${var.cluster_name}-keycloak-security-group"
+  description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
+  }
+
+  // To access keycloak
+  ingress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
