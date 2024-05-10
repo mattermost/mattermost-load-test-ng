@@ -469,7 +469,7 @@ type user struct {
 	password string
 }
 
-func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, error) {
+func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error) {
 	var users []user
 	if usersFilePath == "" {
 		return users, nil
