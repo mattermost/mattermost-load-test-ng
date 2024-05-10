@@ -14,12 +14,12 @@ S3BucketDumpURI = ''
 SiteURL = ''
 
 # Agent configuration
-AgentInstanceCount = 2.0
+AgentInstanceCount = 2
 AgentInstanceType = 'c5.xlarge'
 EnableAgentFullLogs = true
 
 # App servers configuration
-AppInstanceCount = 1.0
+AppInstanceCount = 1
 AppInstanceType = 'c5.xlarge'
 
 # Cluster configuration
@@ -31,7 +31,7 @@ ClusterVpcID = ''
 DBDumpURI = ''
 
 # Load test configuration
-LoadTestDownloadURL = 'https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0-rc2/mattermost-load-test-ng-v1.15.0-rc2-linux-amd64.tar.gz'
+LoadTestDownloadURL = 'https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15-rc2/mattermost-load-test-ng-v1.15-rc2-linux-amd64.tar.gz'
 SSHPublicKey = '~/.ssh/id_rsa.pub'
 TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 
@@ -40,7 +40,7 @@ ProxyInstanceType = 'c5.xlarge'
 
 [ElasticSearchSettings]
 CreateRole = false
-InstanceCount = 0.0
+InstanceCount = 0
 InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
 VpcID = ''
@@ -63,7 +63,7 @@ DataSourceSearchReplicas = []
 DriverName = 'cockroach'
 
 [JobServerSettings]
-InstanceCount = 0.0
+InstanceCount = 0
 InstanceType = 'c5.xlarge'
 
 [LogSettings]
@@ -120,18 +120,18 @@ Name = 'P99 API times'
 Query = 'histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))'
 
 [StorageSizes]
-Agent = 10.0
-App = 10.0
-ElasticSearch = 20.0
-Job = 50.0
-Metrics = 50.0
-Proxy = 10.0
+Agent = 10
+App = 10
+ElasticSearch = 20
+Job = 50
+Metrics = 50
+Proxy = 10
 
 [TerraformDBSettings]
 ClusterIdentifier = ''
 DBParameters = []
 EnablePerformanceInsights = true
-InstanceCount = 1.0
+InstanceCount = 1
 InstanceEngine = 'aurora-postgresql'
 InstanceType = 'db.r6g.large'
 Password = 'mostest80098bigpass_'
