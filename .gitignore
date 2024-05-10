@@ -65,14 +65,8 @@ dummies.log
 sessions.db
 
 # ignore local config
-config/config.json
-config/coordinator.json
-config/simplecontroller.json
-config/simulcontroller.json
-config/gencontroller.json
-config/deployer.json
-config/comparison.json
-config/metricswatcher.json
+config/*
+!config/*.sample.*
 
 # binaries
 /ltagent
