@@ -1,0 +1,60 @@
+[ConnectionConfiguration]
+AdminEmail = 'sysadmin@sample.mattermost.com'
+AdminPassword = 'Sys@dmin-sample1'
+ServerURL = 'http://localhost:8065'
+WebSocketURL = 'ws://localhost:8065'
+
+[InstanceConfiguration]
+NumAdmins = 0.0
+NumChannels = 10.0
+NumPosts = 0.0
+NumReactions = 0.0
+NumTeams = 2.0
+PercentDirectChannels = 0.6
+PercentGroupChannels = 0.1
+PercentPrivateChannels = 0.1
+PercentPublicChannels = 0.2
+PercentReplies = 0.5
+PercentRepliesInLongThreads = 0.05
+PercentUrgentPosts = 0.001
+
+[LogSettings]
+ConsoleJson = false
+ConsoleLevel = 'ERROR'
+EnableColor = false
+EnableConsole = true
+EnableFile = true
+FileJson = true
+FileLevel = 'INFO'
+FileLocation = 'ltagent.log'
+
+[UserControllerConfiguration]
+ServerVersion = ''
+Type = 'simulative'
+
+[[UserControllerConfiguration.RatesDistribution]]
+Percentage = 0.05
+Rate = 1.0
+
+[[UserControllerConfiguration.RatesDistribution]]
+Percentage = 0.1
+Rate = 2.0
+
+[[UserControllerConfiguration.RatesDistribution]]
+Percentage = 0.15
+Rate = 3.0
+
+[[UserControllerConfiguration.RatesDistribution]]
+Percentage = 0.4
+Rate = 6.0
+
+[[UserControllerConfiguration.RatesDistribution]]
+Percentage = 0.3
+Rate = 30.0
+
+[UsersConfiguration]
+AvgSessionsPerUser = 1.0
+InitialActiveUsers = 0.0
+MaxActiveUsers = 2000.0
+PercentOfUsersAreAdmin = 0.0005
+UsersFilePath = ''
