@@ -2,7 +2,6 @@ package defaults
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 )
@@ -12,28 +11,16 @@ type Decoder interface {
 	DisallowUnknownFields()
 }
 
-type DecoderFactory func(r io.Reader) Decoder
-
-// ReadFrom reads a file from the given path and path and decodes it into the given value,
-// based on the file extension.
-func ReadFrom(path, fallbackPath string, value any) error {
-	if strings.HasSuffix(path, ".toml") || strings.HasSuffix(fallbackPath, ".toml") {
-		return readFromFile(NewTOMLDecoder, path, fallbackPath, value)
-	}
-
-	return readFromFile(NewJSONDecoder, path, fallbackPath, value)
-}
-
 // readFromFile reads a configuration file to the value.
 // This function will try to read from given path, if it is empty will try
 // fallback path. If it fails on fallback, it will set value to it's defaults
-func readFromFile(dFactory DecoderFactory, path, fallbackPath string, value any) error {
+func ReadFrom(path, fallbackPath string, value any) error {
 	if err := Set(value); err != nil {
 		return err
 	}
 
 	if path != "" {
-		if err := read(dFactory, path, value); err != nil {
+		if err := read(path, value); err != nil {
 			return fmt.Errorf("failed to read from path %s: %w", path, err)
 		}
 		return nil
@@ -44,7 +31,7 @@ func readFromFile(dFactory DecoderFactory, path, fallbackPath string, value any)
 		return nil
 	}
 
-	if err := read(dFactory, fallbackPath, value); err != nil {
+	if err := read(fallbackPath, value); err != nil {
 		return fmt.Errorf("failed to read from fallback path %s: %w", fallbackPath, err)
 	}
 
@@ -52,14 +39,20 @@ func readFromFile(dFactory DecoderFactory, path, fallbackPath string, value any)
 }
 
 // read reads a file to the value using the provided decoder
-func read(decoderFactory DecoderFactory, path string, value any) error {
+func read(path string, value any) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("could not open file: %w", err)
 	}
 	defer file.Close()
 
-	dec := decoderFactory(file)
+	var dec Decoder
+	if strings.Contains(path, ".toml") {
+		dec = NewTOMLDecoder(file)
+	} else {
+		dec = NewJSONDecoder(file)
+	}
+
 	dec.DisallowUnknownFields()
 	err = dec.Decode(value)
 	if err != nil {

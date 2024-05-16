@@ -5,11 +5,13 @@ import (
 	"io"
 )
 
+var _ Decoder = (*JSONDecoder)(nil)
+
 type JSONDecoder struct {
 	*json.Decoder
 }
 
-func NewJSONDecoder(r io.Reader) Decoder {
+func NewJSONDecoder(r io.Reader) *JSONDecoder {
 	return &JSONDecoder{
 		json.NewDecoder(r),
 	}

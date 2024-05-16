@@ -8,6 +8,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+var _ Decoder = (*TOMLDecoder)(nil)
+
 type TOMLDecoder struct {
 	*toml.Decoder
 }
@@ -28,7 +30,7 @@ func (d *TOMLDecoder) Decode(value interface{}) error {
 	return err
 }
 
-func NewTOMLDecoder(r io.Reader) Decoder {
+func NewTOMLDecoder(r io.Reader) *TOMLDecoder {
 	return &TOMLDecoder{
 		toml.NewDecoder(r),
 	}
