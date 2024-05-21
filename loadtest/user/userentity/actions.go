@@ -92,6 +92,10 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	}
 	resp.Body.Close()
 
+	loginURLMatches := openIDLoginFormActionRegex.FindSubmatch(body)
+	if len(loginURLMatches) == 0 {
+		return errors.New("login URL not found in keyloak login page, there was probably an error or the configuration is wrong")
+	}
 	loginURL := string(openIDLoginFormActionRegex.FindSubmatch(body)[1])
 
 	loginResponse, err := client.PostForm(loginURL, url.Values{
