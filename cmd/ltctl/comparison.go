@@ -63,60 +63,47 @@ func getReportFilename(id int, res comparison.Result) string {
 	return fmt.Sprintf("report_%s.md", name)
 }
 
-func writeToFile() io.Writer {
-	// Create or open the file for writing
-	resultsFile, err := os.Create("results.txt")
-	if err != nil {
-		fmt.Println("Error:", err)
-		return nil
-	}
-	return resultsFile
-
-}
-
 func printResults(results []comparison.Result, writer io.Writer) {
-	// Create a multi writer to write to both resultsFile and os.Stdout
-	multiWriter := io.MultiWriter(writer, os.Stdout)
 
 	_, err := fmt.Println("Error with file:")
 
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+
 	}
 
 	for i, res := range results {
-		_, err = fmt.Fprintf(multiWriter, "==================================================")
+		_, err = fmt.Fprintf(writer, "==================================================")
 		if err != nil {
 			fmt.Println("Error:", err)
-			return
+
 		}
 
-		_, err = fmt.Fprintf(multiWriter, "Comparison result:")
+		_, err = fmt.Fprintf(writer, "Comparison result:")
 		if err != nil {
 			fmt.Println("Error:", err)
-			return
+
 		}
 
 		if res.Report != "" {
-			fmt.Fprintf(multiWriter, "Report: %s\n", getReportFilename(i, res))
+			fmt.Fprintf(writer, "Report: %s\n", getReportFilename(i, res))
 		}
 		if res.DashboardURL != "" {
-			fmt.Fprintf(multiWriter, "Grafana Dashboard: %s\n", res.DashboardURL)
+			fmt.Fprintf(writer, "Grafana Dashboard: %s\n", res.DashboardURL)
 		}
 		for _, ltRes := range res.LoadTests {
-			fmt.Fprintf(multiWriter, "%s:\n", ltRes.Label)
-			fmt.Fprintf(multiWriter, "  Type: %s\n", ltRes.Config.Type)
-			fmt.Fprintf(multiWriter, "  DB Engine: %s\n", ltRes.Config.DBEngine)
+			fmt.Fprintf(writer, "%s:\n", ltRes.Label)
+			fmt.Fprintf(writer, "  Type: %s\n", ltRes.Config.Type)
+			fmt.Fprintf(writer, "  DB Engine: %s\n", ltRes.Config.DBEngine)
 			if ltRes.Config.Type == comparison.LoadTestTypeBounded {
-				fmt.Fprintf(multiWriter, "  Duration: %s\n", ltRes.Config.Duration)
-				fmt.Fprintf(multiWriter, "  Users: %d\n", ltRes.Config.NumUsers)
+				fmt.Fprintf(writer, "  Duration: %s\n", ltRes.Config.Duration)
+				fmt.Fprintf(writer, "  Users: %d\n", ltRes.Config.NumUsers)
 			} else if ltRes.Config.Type == comparison.LoadTestTypeUnbounded {
-				fmt.Fprintf(multiWriter, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
+				fmt.Fprintf(writer, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
 			}
 			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		fmt.Fprintf(multiWriter, "==================================================\n\n")
+		fmt.Fprintf(writer, "==================================================\n\n")
 	}
 }
 
@@ -192,16 +179,27 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		if err := writeReports(output.Results, outputPath); err != nil {
 			return fmt.Errorf("failed to write reports: %w", err)
 		}
-		printResults(output.Results)
-	}
 
-	if archive {
-		if err := createArchive(outputPath, archivePath); err != nil {
-			return fmt.Errorf("failed to create archive: %w", err)
+		//write to file here
+		resultsFile, errResult := os.Create("results.txt")
+		if errResult != nil {
+			fmt.Println("Error:", errResult)
+		}
+		defer resultsFile.Close()
+
+		multiWriter := io.MultiWriter(resultsFile, os.Stdout)
+
+		printResults(output.Results, multiWriter)
+
+		if archive {
+			if err := createArchive(outputPath, archivePath); err != nil {
+				return fmt.Errorf("failed to create archive: %w", err)
+			}
 		}
 	}
 
 	return nil
+
 }
 
 func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
