@@ -796,10 +796,10 @@ func Reload(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	_, err = u.GetAllTeams(0, 50)
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
-	}
+	// _, err = u.GetAllTeams(0, 50)
+	// if err != nil {
+	// 	return UserActionResponse{Err: NewUserError(err)}
+	// }
 
 	_, err = u.GetTeamsForUser(userId)
 	if err != nil {
