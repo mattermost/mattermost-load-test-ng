@@ -420,6 +420,31 @@ func main() {
 	comparisonCmd.AddCommand(runComparisonCmd, destroyComparisonCmd, collectComparisonCmd)
 	rootCmd.AddCommand(comparisonCmd)
 
+	wizardCmd := &cobra.Command{
+		Use:               "wizard",
+		Short:             "Wizard utilities to setup the",
+		PersistentPreRun:  func(cmd *cobra.Command, _ []string) { setServiceEnv(cmd) },
+		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
+	}
+
+	wizardCreateConfigCmd := &cobra.Command{
+		Use:   "createconfig",
+		Short: "Create configuration files",
+		RunE:  RunWizardCreateConfigF,
+	}
+	wizardCreateConfigCmd.Flags().Bool("create-config", true, "Create a config.json file")
+	wizardCreateConfigCmd.Flags().Bool("create-deployer", true, "Create a deployer.json file")
+	wizardCreateConfigCmd.Flags().Int("active-users", 1000, "Number of expected concurrent active users")
+	wizardCreateConfigCmd.Flags().Bool("with-elasticsearch", false, "Enable Elasticsearch")
+	wizardCreateConfigCmd.Flags().Bool("with-keycloak", false, "Enable Keycloak")
+	// cmd.Flags().String("license-file-path", "", "Path to the license file")
+	// cmd.MarkFlagRequired("license-file-path")
+
+	wizardCmdCommands := []*cobra.Command{wizardCreateConfigCmd}
+
+	wizardCmd.AddCommand(wizardCmdCommands...)
+	rootCmd.AddCommand(wizardCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
