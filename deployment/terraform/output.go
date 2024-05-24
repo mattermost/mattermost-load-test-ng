@@ -6,6 +6,7 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strings"
 )
 
@@ -55,6 +56,11 @@ type output struct {
 	DBSecurityGroup struct {
 		Value []SecurityGroup `json:"value"`
 	} `json:"dbSecurityGroup"`
+	RedisServer struct {
+		Value []struct {
+			CacheNodes []RedisInstance `json:"cache_nodes"`
+		} `json:"value"`
+	} `json:"redisServer"`
 }
 
 // Output contains the output variables which are
@@ -74,6 +80,7 @@ type Output struct {
 	DBSecurityGroup         []SecurityGroup     `json:"dbSecurityGroup"`
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
+	RedisServer             RedisInstance       `json:"redisServer"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -89,6 +96,12 @@ type Instance struct {
 type ElasticSearchDomain struct {
 	Endpoint string `json:"endpoint"`
 	Tags     Tags   `json:"tags"`
+}
+
+type RedisInstance struct {
+	Address string `json:"address"`
+	Id      string `json:"id"`
+	Port    int    `json:"port"`
 }
 
 // Tags are the values attached to resource.
@@ -180,6 +193,13 @@ func (t *Terraform) loadOutput() error {
 		outputv2.DBSecurityGroup = append(outputv2.DBSecurityGroup, o.DBSecurityGroup.Value...)
 	}
 
+	if len(o.RedisServer.Value) > 0 {
+		if len(o.RedisServer.Value[0].CacheNodes) == 0 {
+			return errors.New("No cache_nodes entry found in Terraform value output for Redis")
+		}
+		outputv2.RedisServer = o.RedisServer.Value[0].CacheNodes[0]
+	}
+
 	t.output = outputv2
 
 	return nil
@@ -214,6 +234,11 @@ func (o *Output) HasDB() bool {
 // HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
 func (o *Output) HasElasticSearch() bool {
 	return o.ElasticSearchServer.Endpoint != ""
+}
+
+// HasRedis returns whether a deployment has ElasticSaearch installed in it or not.
+func (o *Output) HasRedis() bool {
+	return o.RedisServer.Address != ""
 }
 
 // HasAppServers returns whether a deployment includes app server instances.
