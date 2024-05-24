@@ -557,7 +557,8 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		mlog.String("snapshot", snapshotName),
 		mlog.Array("indices", snapshotIndices))
 	opts := elasticsearch.RestoreSnapshotOpts{
-		WithIndices: snapshotIndices,
+		WithIndices:      snapshotIndices,
+		NumberOfReplicas: t.config.ElasticSearchSettings.InstanceCount - 1,
 	}
 	if err := es.RestoreSnapshot(repo, snapshotName, opts); err != nil {
 		return fmt.Errorf("unable to restore snapshot: %w", err)

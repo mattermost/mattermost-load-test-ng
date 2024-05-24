@@ -209,29 +209,49 @@ func (c *Client) CloseIndices(indices []string) error {
 	return err
 }
 
-// RestoreSnapshotOpts exposes two options for configuring the RestoreSnapshot
+// RestoreSnapshotOpts exposes three options for configuring the RestoreSnapshot
 // request:
 //   - WithIndices, a list of the indices from the snapshot that need to be
 //     restored.
 //   - WithoutIndices, a list of the indices from the snapshot that need to be
 //     skipped.
+//   - NumberOfReplicas, the number of replicas each primary shard has.
+//     Defaults to 1.
 type RestoreSnapshotOpts struct {
-	WithIndices    []string
-	WithoutIndices []string
+	WithIndices      []string
+	WithoutIndices   []string
+	NumberOfReplicas int
 }
 
 // MarshalJSON implements the Marshaler interface so that RestoreSnapshotOpts
 // can be easily marshalled.
 func (r RestoreSnapshotOpts) MarshalJSON() ([]byte, error) {
+	type restoreSnapshotBodyIndexSettings struct {
+		NumReplicas int `json:"index.number_of_replicas"`
+	}
+
+	type restoreSnapshotBody struct {
+		Indices       string                           `json:"indices"`
+		IndexSettings restoreSnapshotBodyIndexSettings `json:"index_settings"`
+	}
+
+	// Set the indices we want and the ones we want to exclude
 	indices := []string{}
 	indices = append(indices, r.WithIndices...)
 	for _, i := range r.WithoutIndices {
 		indices = append(indices, "-"+i)
 	}
 
-	payload := struct {
-		Indices string `json:"indices"`
-	}{strings.Join(indices, ",")}
+	// Set the number of replicas of each shard
+	numReplicas := 1
+	if r.NumberOfReplicas > 0 {
+		numReplicas = r.NumberOfReplicas
+	}
+
+	payload := restoreSnapshotBody{
+		Indices:       strings.Join(indices, ","),
+		IndexSettings: restoreSnapshotBodyIndexSettings{numReplicas},
+	}
 
 	return json.Marshal(payload)
 }
