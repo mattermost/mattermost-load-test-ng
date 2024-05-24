@@ -379,6 +379,29 @@ func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShard
 	return recovery, nil
 }
 
+const (
+	ClusterStatusGreen  = "green"
+	ClusterStatusYellow = "yellow"
+	ClusterStatusRed    = "red"
+)
+
+type ClusterHealthResponse struct {
+	Status             string `json:"status"`
+	InitializingShards int    `json:"initializing_shards"`
+	UnassignedShards   int    `json:"unassigned_shards"`
+}
+
+func (c *Client) ClusterHealth() (ClusterHealthResponse, error) {
+	req := esapi.ClusterHealthRequest{}
+
+	var response ClusterHealthResponse
+	if err := c.get(req, &response); err != nil {
+		return ClusterHealthResponse{}, fmt.Errorf("unable to perform ClusterHealth request: %w", err)
+	}
+
+	return response, nil
+}
+
 // requestDoer models all esapi.XYZRequest, which contains a Do function to
 // perform the request with the provided client
 type requestDoer interface {

@@ -564,9 +564,33 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to restore snapshot: %w", err)
 	}
 
-	// Wait until the snapshot is completely restored, or 30 minutes have
+	// Wait until the snapshot is completely restored, or 45 minutes have
 	// passed, whatever happens first
-	dur := 45 * time.Minute
+	if err := waitForSnapshot(45*time.Minute, es, snapshotIndices); err != nil {
+		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
+	}
+
+	// Double-check that the cluster's status is green: even if the index is
+	// fully restored, the creation of shard replicas may not have finished,
+	// so we give it an additional 45 minutes. The time it takes for all shards
+	// to get assigned and initialized is proportional to the number of nodes
+	// in the Elasticsearch cluster.
+	// The large combined timeout (45 minutes for restoring the snapshot, 45
+	// minutes for a green cluster) will rarely happen, but we need a large
+	// timeout here as well in case the snapshot is already restored and we
+	// re-deploy the cluster with additional data nodes: in that case,
+	// waitForSnapshot will return immediately, so we'll only wait for the
+	// cluster's status to get green.
+	if err := waitForGreenCluster(45*time.Minute, es); err != nil {
+		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
+	}
+
+	return nil
+}
+
+// waitForSnapshot blocks until the snapshot is fully restored or the provided
+// timeout is reached
+func waitForSnapshot(dur time.Duration, es *elasticsearch.Client, snapshotIndices []string) error {
 	timeout := time.After(dur)
 	for {
 		select {
@@ -610,6 +634,34 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 				mlog.Int("indices waiting", indicesWaiting),
 				mlog.Int("indices in progress", indicesInProgress),
 				mlog.Int("indices recovered", indicesDone))
+		}
+	}
+}
+
+// waitForGreenCluster blocks until the cluster's status is green or the
+// provided timeout is reached
+func waitForGreenCluster(dur time.Duration, es *elasticsearch.Client) error {
+	timeout := time.After(dur)
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout after %s, cluster's status did not become green", dur.String())
+		case <-time.After(30 * time.Second):
+			clusterHealth, err := es.ClusterHealth()
+			if err != nil {
+				return fmt.Errorf("unable to get cluster status: %w", err)
+			}
+
+			// Finish when the cluster's status is green
+			if clusterHealth.Status == elasticsearch.ClusterStatusGreen {
+				return nil
+			}
+
+			mlog.Info("Waiting for cluster's status to become green",
+				mlog.String("current status", clusterHealth.Status),
+				mlog.Int("initializing shards", clusterHealth.InitializingShards),
+				mlog.Int("unassigned shards", clusterHealth.UnassignedShards),
+			)
 		}
 	}
 }
