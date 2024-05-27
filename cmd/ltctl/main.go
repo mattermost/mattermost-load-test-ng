@@ -60,7 +60,6 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-
 	return t.Destroy()
 }
 
