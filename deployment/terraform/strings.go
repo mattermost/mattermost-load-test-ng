@@ -389,3 +389,18 @@ ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
 [Install]
 WantedBy=multi-user.target
 `
+
+const keycloakEnvFileContents = `KC_HEALTH_ENABLED=true
+KEYCLOAK_ADMIN={{ .KeycloakAdminUser }}
+KEYCLOAK_ADMIN_PASSWORD={{ .KeycloakAdminPassword }}
+JAVA_OPTS=-Xms1024m -Xmx2048m
+KC_LOG_FILE={{ .KeycloakLogFilePath }}
+KC_LOG_FILE_OUTPUT=json
+KC_DB_POOL_MIN_SIZE=20
+KC_DB_POOL_INITIAL_SIZE=20
+KC_DB_POOL_MAX_SIZE=200
+KC_DB=postgres
+C_DB_URL=jdbc:psql://localhost:5433/keycloak"
+KC_DB_PASSWORD=mmpass
+KC_DB_USERNAME=keycloak
+KC_DATABASE=keycloak`

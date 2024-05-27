@@ -92,6 +92,10 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	}
 	resp.Body.Close()
 
+	loginURLMatches := openIDLoginFormActionRegex.FindSubmatch(body)
+	if len(loginURLMatches) == 0 {
+		return errors.New("login URL not found in keyloak login page, there was probably an error or the configuration is wrong")
+	}
 	loginURL := string(openIDLoginFormActionRegex.FindSubmatch(body)[1])
 
 	loginResponse, err := client.PostForm(loginURL, url.Values{
@@ -110,17 +114,6 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	for _, cookie := range cookies {
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
-
-			// TODO: Move to Login/SignUp methods (GetUserByUsername)
-			me, _, err := ue.client.GetMe(context.Background(), "")
-			if err != nil {
-				return fmt.Errorf("error while getting user: %w", err)
-			}
-
-			if err := ue.store.SetUser(me); err != nil {
-				return fmt.Errorf("error while setting user: %w", err)
-			}
-
 			return nil
 		}
 	}
@@ -134,23 +127,29 @@ func (ue *UserEntity) Login() error {
 	if err != nil {
 		return err
 	}
+	var loggedUser *model.User
 
 	switch ue.config.AuthenticationType {
 	case AuthenticationTypeOpenID:
 		if err := ue.authOpenID(authOpenIDLogin); err != nil {
 			return fmt.Errorf("error while logging in using OpenID: %w", err)
 		}
+
+		loggedUser, _, err = ue.client.GetUserByUsername(context.Background(), user.Username, "")
+		if err != nil {
+			return fmt.Errorf("error while getting user by username through openid: %w", err)
+		}
 	default:
-		loggedUser, _, err := ue.client.Login(context.Background(), user.Email, user.Password)
+		loggedUser, _, err = ue.client.Login(context.Background(), user.Email, user.Password)
 		if err != nil {
 			return fmt.Errorf("error while logging in: %w", err)
 		}
+	}
 
-		// We need to set user again because the user ID does not get set
-		// if a user is already signed up.
-		if err := ue.store.SetUser(loggedUser); err != nil {
-			return fmt.Errorf("error while setting user: %w", err)
-		}
+	// We need to set user again because the user ID does not get set
+	// if a user is already signed up.
+	if err := ue.store.SetUser(loggedUser); err != nil {
+		return fmt.Errorf("error while setting user: %w", err)
 	}
 	return nil
 }

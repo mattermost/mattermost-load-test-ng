@@ -396,20 +396,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			username = creds[id].username
 			email = creds[id].email
 			password = creds[id].password
-
-			// Check if the user has a custom authentication type. Custom authentication types are
-			// specified by prepending the username with the authentication type followed by a colon.
-			// Example: "openid:user1@test.mattermost.com user1password"
-			// TODO: Move to util function
-			if usernameParts := strings.Split(username, ":"); len(usernameParts) > 1 {
-				authenticationType = usernameParts[0]
-				username = usernameParts[1]
-
-				// Fix the email as well
-				if emailParts := strings.Split(email, ":"); len(emailParts) > 1 {
-					email = emailParts[1]
-				}
-			}
+			authenticationType = creds[id].authService
 		}
 
 		ueConfig := userentity.Config{
@@ -480,12 +467,13 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 }
 
 type user struct {
-	email    string
-	username string
-	password string
+	email       string
+	username    string
+	password    string
+	authService string
 }
 
-func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, error) {
+func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error) {
 	var users []user
 	if usersFilePath == "" {
 		return users, nil
@@ -509,11 +497,30 @@ func getUserCredentials(usersFilePath string, config *loadtest.Config) ([]user, 
 		// This is not terribly important to be correct.
 		username := strings.Split(email, "@")[0]
 		username = strings.Replace(username, "+", "-", -1)
+		authService := userentity.AuthenticationTypeMattermost
+
+		// Check if the user has a custom authentication type. Custom authentication types are
+		// specified by prepending the email with the authentication type followed by a colon.
+		// Example: "openid:email1@xample.com"
+		if strings.Contains(username, ":") {
+			split := strings.Split(username, ":")
+			if len(split) != 2 {
+				return nil, fmt.Errorf("invalid custom authentication found in %q", email)
+			}
+			authService = split[0]
+			if authService != userentity.AuthenticationTypeOpenID && authService != userentity.AuthenticationTypeMattermost {
+				return nil, fmt.Errorf("invalid custom authentication type %q", authService)
+			}
+
+			username = split[1]
+			email = strings.Replace(email, authService+":", "", 1)
+		}
 
 		users = append(users, user{
-			email:    email,
-			username: username,
-			password: password,
+			email:       email,
+			username:    username,
+			password:    password,
+			authService: authService,
 		})
 	}
 	if err := scanner.Err(); err != nil {
