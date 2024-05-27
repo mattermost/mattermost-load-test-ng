@@ -11,9 +11,9 @@ type Decoder interface {
 	DisallowUnknownFields()
 }
 
-// readFromFile reads a configuration file to the value.
+// ReadFrom reads a configuration file to the value.
 // This function will try to read from given path, if it is empty will try
-// fallback path. If it fails on fallback, it will set value to it's defaults
+// fallback path. If it fails on fallback, it will set value to its defaults
 func ReadFrom(path, fallbackPath string, value any) error {
 	if err := Set(value); err != nil {
 		return err
