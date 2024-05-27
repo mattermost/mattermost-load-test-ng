@@ -936,6 +936,12 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+
+		// Make all indices have a shard replica in every data node
+		numReplicas := t.config.ElasticSearchSettings.InstanceCount - 1
+		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewInt(numReplicas)
+		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
+		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
