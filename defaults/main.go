@@ -47,7 +47,7 @@ func read(path string, value any) error {
 	defer file.Close()
 
 	var dec Decoder
-	if strings.Contains(path, ".toml") {
+	if strings.HasSuffix(path, ".toml") {
 		dec = NewTOMLDecoder(file)
 	} else {
 		dec = NewJSONDecoder(file)
