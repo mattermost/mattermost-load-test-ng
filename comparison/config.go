@@ -117,7 +117,7 @@ func (c *Config) IsValid() error {
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/comparison.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "./config/comparison.json", &cfg); err != nil {
 		return nil, err
 	}
 

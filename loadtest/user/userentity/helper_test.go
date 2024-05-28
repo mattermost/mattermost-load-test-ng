@@ -65,7 +65,7 @@ func HelperSetup(tb testing.TB) *TestHelper {
 	var th TestHelper
 	th.tb = tb
 	var cfg config
-	err := defaults.ReadFromJSON("", "../../../config/config.sample.json", &cfg)
+	err := defaults.ReadFrom("", "../../../config/config.sample.json", &cfg)
 	require.Nil(th.tb, err)
 	require.NotNil(th.tb, cfg)
 	th.config = cfg

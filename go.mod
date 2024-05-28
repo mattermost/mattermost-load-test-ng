@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/common v0.48.0
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/spf13/cobra v1.8.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fasthttp v1.7.1 // indirect
 	golang.org/x/crypto v0.20.0
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
@@ -30,6 +30,7 @@ require (
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
 	github.com/mattermost/mattermost/server/public v0.1.4-0.20240527204624-beb8d5e8e07a
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20240527204624-beb8d5e8e07a
+	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wiggin77/merror v1.0.5
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
