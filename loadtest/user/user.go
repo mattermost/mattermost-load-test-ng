@@ -317,4 +317,8 @@ type User interface {
 	// GraphQL
 	GetInitialDataGQL() error
 	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
+
+	// Client Metrics
+	ObserveClientMetric(t model.MetricType, v float64) error
+	SubmitPerformanceReport() error
 }

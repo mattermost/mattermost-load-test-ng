@@ -49,6 +49,7 @@ type MemStore struct {
 	threadsQueue        *CQueue[model.ThreadResponse]
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	featureFlags        map[string]bool
+	report              *model.PerformanceReport
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -125,6 +126,7 @@ func (s *MemStore) Clear() {
 	s.threadsQueue.Reset()
 	clearMap(s.sidebarCategories)
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
+	s.report = &model.PerformanceReport{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1184,4 +1186,59 @@ func (s *MemStore) PostsWithAckRequests() ([]string, error) {
 	}
 
 	return ids, nil
+}
+
+func (s *MemStore) SetPerformanceReport(report *model.PerformanceReport) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	s.report = report
+}
+
+func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if s.report == nil {
+		return nil, nil
+	}
+
+	report := &model.PerformanceReport{
+		Version:  s.report.Version,
+		ClientID: s.report.ClientID,
+		Start:    s.report.Start,
+		End:      s.report.End,
+	}
+
+	for k, v := range s.report.Labels {
+		if report.Labels == nil {
+			report.Labels = make(map[string]string)
+		}
+		report.Labels[k] = v
+	}
+
+	for i, h := range s.report.Histograms {
+		if report.Histograms == nil {
+			report.Histograms = make([]*model.MetricSample, len(s.report.Histograms))
+		}
+		report.Histograms[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	for i, h := range s.report.Counters {
+		if report.Counters == nil {
+			report.Counters = make([]*model.MetricSample, len(s.report.Counters))
+		}
+		report.Counters[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	return report, nil
 }
