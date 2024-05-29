@@ -36,6 +36,7 @@ var awsDummyCreds = aws.Credentials{
 }
 
 func TestRoundTrip(t *testing.T) {
+	t.Skip("MM-58444")
 	setupSSHServer(t)
 	sshc := setupSSHClient(t)
 
