@@ -941,7 +941,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		numReplicas := t.config.ElasticSearchSettings.InstanceCount - 1
 		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewInt(numReplicas)
 		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
-		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
+		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewInt(numReplicas)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
