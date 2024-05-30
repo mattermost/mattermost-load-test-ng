@@ -122,6 +122,18 @@ A *snapshot repository*, as [defined by Elasticsearch](https://www.elastic.co/gu
 
 If you want to deploy an already indexed database, you need to provide both the name of the repository where the snapshot lives and the snapshot's name. `SnapshotName` is the name of the snapshot itself.
 
+### RestoreTimeoutMinutes
+
+*int*
+
+The maximum time, in minutes, that the system will wait for the Elasticsearch snapshot to be restored. Defaults to 45 minutes.
+
+### ClusterTimeoutMinutes
+
+*int*
+
+The maximum time, in minutes, that the system will wait for the Elasticsearch cluster status to get green after having restored the snapshot. Defaults to 45 minutes.
+
 ## JobServerSettings
 
 ### InstanceCount
