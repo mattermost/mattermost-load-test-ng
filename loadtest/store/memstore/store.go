@@ -1209,17 +1209,17 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 		End:      s.report.End,
 	}
 
+	if s.report.Labels != nil {
+		report.Labels = make(map[string]string)
+	}
 	for k, v := range s.report.Labels {
-		if report.Labels == nil {
-			report.Labels = make(map[string]string)
-		}
 		report.Labels[k] = v
 	}
 
+	if s.report.Histograms != nil {
+		report.Histograms = make([]*model.MetricSample, len(s.report.Histograms))
+	}
 	for i, h := range s.report.Histograms {
-		if report.Histograms == nil {
-			report.Histograms = make([]*model.MetricSample, len(s.report.Histograms))
-		}
 		report.Histograms[i] = &model.MetricSample{
 			Metric:    h.Metric,
 			Value:     h.Value,
@@ -1228,10 +1228,10 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 		}
 	}
 
+	if s.report.Counters != nil {
+		report.Counters = make([]*model.MetricSample, len(s.report.Counters))
+	}
 	for i, h := range s.report.Counters {
-		if report.Counters == nil {
-			report.Counters = make([]*model.MetricSample, len(s.report.Counters))
-		}
 		report.Counters[i] = &model.MetricSample{
 			Metric:    h.Metric,
 			Value:     h.Value,

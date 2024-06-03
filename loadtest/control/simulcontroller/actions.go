@@ -67,7 +67,7 @@ func (c *SimulController) disconnect() error {
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 
 	if full {
 		if err := c.disconnect(); err != nil {
@@ -83,7 +83,8 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	}
 
 	defer func() {
-		err := c.user.ObserveClientMetric(model.ClientPageLoadDuration, float64(time.Now().UnixMilli()-start)/1000)
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientPageLoadDuration, elapsed/1000)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -148,13 +149,14 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 }
 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 	for {
 		resp := control.Login(u)
 		if resp.Err == nil {
 			err := c.connect()
 			if err == nil {
-				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, float64(time.Now().UnixMilli()-start)/1000)
+				elapsed := time.Since(start).Seconds()
+				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed/1000)
 				if err != nil {
 					mlog.Warn("Failed to store observation", mlog.Err(err))
 				}
@@ -294,7 +296,7 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 }
 
 func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
 	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
 		return control.UserActionResponse{Info: "no other team to switch to"}
@@ -302,7 +304,8 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	defer func() {
-		err := c.user.ObserveClientMetric(model.ClientTeamSwitchDuration, float64(time.Now().UnixMilli()-start)/1000)
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientTeamSwitchDuration, elapsed/1000)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -455,7 +458,7 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 }
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
 	if resp.Err != nil {
 		return resp
@@ -500,7 +503,8 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	// This is a good enough approximation.
 	if rand.Float64() < 0.01 {
 		defer func() {
-			err := u.ObserveClientMetric(model.ClientRHSLoadDuration, float64(time.Now().UnixMilli()-start)/1000)
+			elapsed := time.Since(start).Seconds()
+			err := u.ObserveClientMetric(model.ClientRHSLoadDuration, elapsed/1000)
 			if err != nil {
 				mlog.Warn("Failed to store observation", mlog.Err(err))
 			}
@@ -548,7 +552,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 }
 
 func switchChannel(u user.User) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -565,7 +569,8 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
 	}
 	defer func() {
-		err := u.ObserveClientMetric(model.ClientChannelSwitchDuration, float64(time.Now().UnixMilli()-start)/1000)
+		elapsed := time.Since(start).Seconds()
+		err := u.ObserveClientMetric(model.ClientChannelSwitchDuration, elapsed/1000)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -1507,7 +1512,7 @@ func sendTypingEventIfEnabled(u user.User, channelId string) error {
 }
 
 func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionResponse {
-	start := time.Now().UnixMilli()
+	start := time.Now()
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
 	if resp.Err != nil || !collapsedThreads {
 		return resp
@@ -1542,7 +1547,8 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 	}
 
 	defer func() {
-		err := c.user.ObserveClientMetric(model.ClientGlobalThreadsLoadDuration, float64(time.Now().UnixMilli()-start)/1000)
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientGlobalThreadsLoadDuration, elapsed/1000)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}

@@ -861,7 +861,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(1000)
 
 	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
-	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
 	cfg.ClusterSettings.Enable = model.NewBool(true)
 	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
