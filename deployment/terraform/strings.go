@@ -404,3 +404,7 @@ C_DB_URL=jdbc:psql://localhost:5433/keycloak"
 KC_DB_PASSWORD=mmpass
 KC_DB_USERNAME=keycloak
 KC_DATABASE=keycloak`
+
+const prometheusNodeExporterConfig = `
+ARGS="--collector.ethtool"
+`
