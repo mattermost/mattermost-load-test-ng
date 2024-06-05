@@ -294,13 +294,21 @@ net.ipv4.tcp_notsent_lowat = 16384
 
 # TCP buffer sizes are tuned for 10Gbit/s bandwidth and 0.5ms RTT (as measured intra EC2 cluster).
 # This gives a BDP (bandwidth-delay-product) of 625000 bytes.
-net.ipv4.tcp_rmem = 4096 156250 625000
-net.ipv4.tcp_wmem = 4096 156250 625000
-net.core.rmem_max = 312500
-net.core.wmem_max = 312500
-net.core.rmem_default = 312500
-net.core.wmem_default = 312500
-net.ipv4.tcp_mem = 1638400 1638400 1638400
+# The maximum socket buffer size for kernel autotuning is set to be twice the BDP (2500000).
+# The default socket buffer size is set to 1/4 BDP (156250).
+net.ipv4.tcp_rmem = 4096 156250 2500000
+net.ipv4.tcp_wmem = 4096 156250 2500000
+
+# Bumping the theoretical maximum buffer size for receiving TCP sockets not making use of autotuning (i.e. using SO_RCVBUF).
+net.core.rmem_max = 2500000
+# Bumping the theoretical maximum buffer size for sending TCP sockets not making use of autotuning (i.e. using SO_SNDBUF).
+net.core.wmem_max = 2500000
+
+# Bumping the theoretical maximum buffer size of receiving UDP sockets.
+net.core.rmem_max = 16777216
+
+# Setting the theoretical maximum buffer size of sending UDP sockets.
+net.core.wmem_max = 16777216
 `
 
 const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
