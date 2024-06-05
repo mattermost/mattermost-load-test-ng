@@ -1657,7 +1657,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_LOADTEST-SOURCE}"
+        "uid": "loadtest-source"
       },
       "fieldConfig": {
         "defaults": {
@@ -1775,7 +1775,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_LOADTEST-SOURCE}"
+            "uid": "loadtest-source"
           },
           "editorMode": "code",
           "expr": "(rate(node_netstat_Tcp_RetransSegs{instance=~\"$server\"}[1m]) / rate(node_netstat_Tcp_OutSegs{instance=~\"$server\"}[1m])) * 100",
