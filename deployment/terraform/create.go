@@ -751,7 +751,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
-		cmd := "sudo sysctl -p && sudo service nginx restart"
+		cmd := "sudo ethtool -G $(ip route show to default | awk '{print $5}') rx 8192 && sudo sysctl -p && sudo service nginx restart"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
