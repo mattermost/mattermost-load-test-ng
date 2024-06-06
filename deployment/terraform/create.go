@@ -708,6 +708,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 
 		cacheObjects := "10m"
 		cacheSize := "3g"
+		rxQueueSize := 1024 // This is the default on most EC2 instances
 		// Extracting the instance class from the type.
 		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
 		parts := strings.Split(t.config.ProxyInstanceType, ".")
@@ -718,6 +719,11 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 				cacheObjects = "50m"
 				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
 				// from my tests. So there's no point stretching it further.
+
+				// MM-58179
+				// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
+				// (and retransmissions) on particularly bursty connections (e.g. websockets).
+				rxQueueSize = 8192
 			}
 		}
 
@@ -751,12 +757,12 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
-		cmd := "sudo ethtool -G $(ip route show to default | awk '{print $5}') rx 8192 && sudo sysctl -p && sudo service nginx restart"
+		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
+		cmd := fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
 		}
-
 	}()
 }
 
