@@ -317,4 +317,7 @@ type User interface {
 	// GraphQL
 	GetInitialDataGQL() error
 	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
+
+	// User Survey Plugin
+	ConnectSurveyAPI() error
 }

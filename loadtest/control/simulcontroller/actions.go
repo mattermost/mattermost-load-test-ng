@@ -740,6 +740,16 @@ func editPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
 }
 
+func (c *SimulController) ConnectSurveyAPI(u user.User) control.UserActionResponse {
+
+	//rq.Header.Set(HeaderAuth, c.AuthType+" "+c.AuthToken)
+
+	err := u.ConnectSurveyAPI()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+}
+
 func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {

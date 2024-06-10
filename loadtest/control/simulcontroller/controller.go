@@ -18,6 +18,11 @@ import (
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
+			name:      "surveyConnectAPI",
+			run:       c.ConnectSurveyAPI,
+			frequency: 0.05,
+		},
+		{
 			name:      "SwitchChannel",
 			run:       switchChannel,
 			frequency: 6.5219,

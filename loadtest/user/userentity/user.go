@@ -4,6 +4,7 @@
 package userentity
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -149,6 +150,16 @@ func New(setup Setup, config Config) *UserEntity {
 	}
 
 	return &ue
+}
+
+func (ue *UserEntity) ConnectSurveyAPI() error {
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/connected"
+	r, err := ue.client.DoAPIPost(context.Background(), url, "{}")
+	if err != nil {
+		return err
+	}
+	defer closeBody(r)
+	return nil
 }
 
 // Connect creates a WebSocket connection to the server and starts listening for messages.

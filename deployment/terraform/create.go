@@ -767,7 +767,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
 	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to instance public IP: %s, error: %w", t.output.Instances[0].PublicIP, err)
 	}
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		if strings.Contains(string(out), "account with that username already exists") {
