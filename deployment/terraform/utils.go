@@ -168,9 +168,9 @@ func validateLicense(filename string) error {
 	}
 
 	validator := &utils.LicenseValidatorImpl{}
-	ok, licenseStr := validator.ValidateLicense(data)
-	if !ok {
-		return errors.New("failed to validate license")
+	licenseStr, err := validator.ValidateLicense(data)
+	if err != nil {
+		return fmt.Errorf("failed to validate license: %w", err)
 	}
 
 	var license model.License
