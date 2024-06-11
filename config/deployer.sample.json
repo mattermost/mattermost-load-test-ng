@@ -16,7 +16,9 @@
     "Version": "Elasticsearch_7.10",
     "CreateRole": false,
     "SnapshotRepository": "",
-    "SnapshotName": ""
+    "SnapshotName": "",
+    "RestoreTimeoutMinutes": "",
+    "ClusterTimeoutMinutes": ""
   },
   "JobServerSettings":{
     "InstanceCount": 0,

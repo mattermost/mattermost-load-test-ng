@@ -243,6 +243,10 @@ type ElasticSearchSettings struct {
 	SnapshotRepository string
 	// SnapshotName is the name of the snapshot to restore.
 	SnapshotName string
+	// RestoreTimeoutMinutes is the maximum time, in minutes, that the system will wait for the snapshot to be restored.
+	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
+	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
