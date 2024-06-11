@@ -741,13 +741,39 @@ func editPost(u user.User) control.UserActionResponse {
 }
 
 func (c *SimulController) ConnectSurveyAPI(u user.User) control.UserActionResponse {
-
-	//rq.Header.Set(HeaderAuth, c.AuthType+" "+c.AuthToken)
-
+	mlog.Info("ConnectSurveyAPI called")
 	err := u.ConnectSurveyAPI()
 	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		mlog.Info("ConnectSurveyAPI failed err: " + err.Error())
+		return control.UserActionResponse{Err: fmt.Errorf("ConnectSurveyAPI %w", control.NewUserError(err))}
 	}
+
+	mlog.Info("ConnectSurveyAPI successful")
+	return control.UserActionResponse{Info: "success"}
+}
+
+func (c *SimulController) SubmitPartialResponse(u user.User) control.UserActionResponse {
+	mlog.Info("SubmitPartialResponse called")
+	err := u.SubmitPartialResponse()
+	if err != nil {
+		mlog.Info("SubmitPartialResponse failed err: " + err.Error())
+		return control.UserActionResponse{Err: fmt.Errorf("SubmitPartialResponse %w", control.NewUserError(err))}
+	}
+
+	mlog.Info("SubmitPartialResponse successful")
+	return control.UserActionResponse{Info: "success"}
+}
+
+func (c *SimulController) SubmitCompleteResponse(u user.User) control.UserActionResponse {
+	mlog.Info("SubmitCompleteResponse called")
+	err := u.SubmitCompleteResponse()
+	if err != nil {
+		mlog.Info("SubmitCompleteResponse failed err: " + err.Error())
+		return control.UserActionResponse{Err: fmt.Errorf("SubmitCompleteResponse %w", control.NewUserError(err))}
+	}
+
+	mlog.Info("SubmitCompleteResponse successful")
+	return control.UserActionResponse{Info: "success"}
 }
 
 func (c *SimulController) createPost(u user.User) control.UserActionResponse {

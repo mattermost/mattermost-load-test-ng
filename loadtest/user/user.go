@@ -320,4 +320,6 @@ type User interface {
 
 	// User Survey Plugin
 	ConnectSurveyAPI() error
+	SubmitPartialResponse() error
+	SubmitCompleteResponse() error
 }

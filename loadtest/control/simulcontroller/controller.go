@@ -20,6 +20,16 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:      "surveyConnectAPI",
 			run:       c.ConnectSurveyAPI,
+			frequency: 0.01,
+		},
+		{
+			name:      "SubmitPartialResponse",
+			run:       c.SubmitPartialResponse,
+			frequency: 0.05,
+		},
+		{
+			name:      "SubmitCompleteResponse",
+			run:       c.SubmitCompleteResponse,
 			frequency: 0.05,
 		},
 		{

@@ -154,7 +154,33 @@ func New(setup Setup, config Config) *UserEntity {
 
 func (ue *UserEntity) ConnectSurveyAPI() error {
 	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/connected"
-	r, err := ue.client.DoAPIPost(context.Background(), url, "{}")
+	payload := "{}"
+
+	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
+	if err != nil {
+		return err
+	}
+	defer closeBody(r)
+	return nil
+}
+
+func (ue *UserEntity) SubmitPartialResponse() error {
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/pdb65yegxjf3tmk3wu7qnp9fyh/response"
+	payload := "{\"response\":{\"a0e57d81-3cae-4184-9603-032f9770ff35\":\"9\"}}"
+
+	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
+	if err != nil {
+		return err
+	}
+	defer closeBody(r)
+	return nil
+}
+
+func (ue *UserEntity) SubmitCompleteResponse() error {
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/pdb65yegxjf3tmk3wu7qnp9fyh/response"
+	payload := "{\"response\":{\"a0e57d81-3cae-4184-9603-032f9770ff35\":\"9\",\"098bad2d-a2cc-4775-805f-ca4493c8aaa5\":\"sdfsdfsdfsd\"},\"responseType\":\"complete\"}"
+
+	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
 	if err != nil {
 		return err
 	}
