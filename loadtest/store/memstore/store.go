@@ -1189,15 +1189,15 @@ func (s *MemStore) PostsWithAckRequests() ([]string, error) {
 }
 
 func (s *MemStore) SetPerformanceReport(report *model.PerformanceReport) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	s.report = report
 }
 
 func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.report == nil {
 		return nil, nil
 	}

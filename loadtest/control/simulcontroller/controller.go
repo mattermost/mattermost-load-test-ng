@@ -207,11 +207,6 @@ func getActionList(c *SimulController) []userAction {
 			run:       c.generateUserReport,
 			frequency: 0.0001,
 		},
-		{
-			name:      "SubmitClientPerformanceReport",
-			run:       submitPerformanceReport,
-			frequency: 0.0001,
-		},
 	}
 
 	return actions

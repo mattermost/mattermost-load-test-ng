@@ -84,7 +84,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 
 	defer func() {
 		elapsed := time.Since(start).Seconds()
-		err := c.user.ObserveClientMetric(model.ClientPageLoadDuration, elapsed/1000)
+		err := c.user.ObserveClientMetric(model.ClientPageLoadDuration, elapsed)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -156,7 +156,7 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 			err := c.connect()
 			if err == nil {
 				elapsed := time.Since(start).Seconds()
-				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed/1000)
+				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed)
 				if err != nil {
 					mlog.Warn("Failed to store observation", mlog.Err(err))
 				}
@@ -305,7 +305,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 	}
 	defer func() {
 		elapsed := time.Since(start).Seconds()
-		err := c.user.ObserveClientMetric(model.ClientTeamSwitchDuration, elapsed/1000)
+		err := c.user.ObserveClientMetric(model.ClientTeamSwitchDuration, elapsed)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -504,7 +504,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	if rand.Float64() < 0.01 {
 		defer func() {
 			elapsed := time.Since(start).Seconds()
-			err := u.ObserveClientMetric(model.ClientRHSLoadDuration, elapsed/1000)
+			err := u.ObserveClientMetric(model.ClientRHSLoadDuration, elapsed)
 			if err != nil {
 				mlog.Warn("Failed to store observation", mlog.Err(err))
 			}
@@ -570,7 +570,7 @@ func switchChannel(u user.User) control.UserActionResponse {
 	}
 	defer func() {
 		elapsed := time.Since(start).Seconds()
-		err := u.ObserveClientMetric(model.ClientChannelSwitchDuration, elapsed/1000)
+		err := u.ObserveClientMetric(model.ClientChannelSwitchDuration, elapsed)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
@@ -1548,7 +1548,7 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 
 	defer func() {
 		elapsed := time.Since(start).Seconds()
-		err := c.user.ObserveClientMetric(model.ClientGlobalThreadsLoadDuration, elapsed/1000)
+		err := c.user.ObserveClientMetric(model.ClientGlobalThreadsLoadDuration, elapsed)
 		if err != nil {
 			mlog.Warn("Failed to store observation", mlog.Err(err))
 		}
