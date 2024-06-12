@@ -82,7 +82,7 @@ resource "aws_instance" "app_server" {
       "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
-      "sudo apt-get install -y postgresql-client-11",
+      "sudo apt-get install -y postgresql-client-14",
       "sudo apt-get install -y prometheus-node-exporter",
       "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
     ]
@@ -634,7 +634,7 @@ resource "aws_instance" "job_server" {
       "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
       "sudo apt-get -y update",
       "sudo apt-get install -y mysql-client-8.0",
-      "sudo apt-get install -y postgresql-client-11",
+      "sudo apt-get install -y postgresql-client-14",
       "sudo apt-get install -y prometheus-node-exporter"
     ]
   }
