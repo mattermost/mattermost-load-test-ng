@@ -80,6 +80,9 @@
               }
             ]
           }
+          {{ if eq $panel.Legend "Percent" }}
+          ,"unit": "percent"
+          {{ end }}
         },
         "overrides": []
       },
