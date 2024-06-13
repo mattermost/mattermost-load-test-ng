@@ -17,21 +17,11 @@ import (
 
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
-		{
-			name:      "surveyConnectAPI",
-			run:       c.ConnectSurveyAPI,
-			frequency: 0.01,
-		},
-		{
-			name:      "SubmitPartialResponse",
-			run:       c.SubmitPartialResponse,
-			frequency: 0.05,
-		},
-		{
-			name:      "SubmitCompleteResponse",
-			run:       c.SubmitCompleteResponse,
-			frequency: 0.05,
-		},
+		//{
+		//	name:      "ConnectSurvey",
+		//	run:       c.ConnectSurveyAPI,
+		//	frequency: 0.0008, // same as frequency of full reload
+		//},
 		{
 			name:      "SwitchChannel",
 			run:       switchChannel,
@@ -314,6 +304,9 @@ func (c *SimulController) Run() {
 		{
 			run: c.initialJoinTeam,
 		},
+		//{
+		//	run: c.UserSurvey,
+		//},
 	}
 
 	for i := 0; i < len(initActions); i++ {

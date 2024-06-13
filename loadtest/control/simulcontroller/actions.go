@@ -740,8 +740,33 @@ func editPost(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("post edited, id %v", postId)}
 }
 
+func (c *SimulController) UserSurvey(u user.User) control.UserActionResponse {
+	mlog.Info("UserSurvey called")
+
+	response := c.ConnectSurveyAPI(u)
+	if response.Err != nil {
+		return response
+	}
+
+	//time.Sleep(time.Duration(3) * time.Second)
+
+	response = c.SubmitPartialResponse(u)
+	if response.Err != nil {
+		return response
+	}
+
+	//time.Sleep(time.Duration(3) * time.Second)
+
+	response = c.SubmitCompleteResponse(u)
+	if response.Err != nil {
+		return response
+	}
+
+	return control.UserActionResponse{Info: "UserSurvey success"}
+}
+
 func (c *SimulController) ConnectSurveyAPI(u user.User) control.UserActionResponse {
-	mlog.Info("ConnectSurveyAPI called")
+	mlog.Info("ABC ConnectSurveyAPI called")
 	err := u.ConnectSurveyAPI()
 	if err != nil {
 		mlog.Info("ConnectSurveyAPI failed err: " + err.Error())
@@ -753,7 +778,7 @@ func (c *SimulController) ConnectSurveyAPI(u user.User) control.UserActionRespon
 }
 
 func (c *SimulController) SubmitPartialResponse(u user.User) control.UserActionResponse {
-	mlog.Info("SubmitPartialResponse called")
+	mlog.Info("DEF SubmitPartialResponse called")
 	err := u.SubmitPartialResponse()
 	if err != nil {
 		mlog.Info("SubmitPartialResponse failed err: " + err.Error())
@@ -765,7 +790,7 @@ func (c *SimulController) SubmitPartialResponse(u user.User) control.UserActionR
 }
 
 func (c *SimulController) SubmitCompleteResponse(u user.User) control.UserActionResponse {
-	mlog.Info("SubmitCompleteResponse called")
+	mlog.Info("XYZ SubmitCompleteResponse called")
 	err := u.SubmitCompleteResponse()
 	if err != nil {
 		mlog.Info("SubmitCompleteResponse failed err: " + err.Error())

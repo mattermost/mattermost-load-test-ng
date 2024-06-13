@@ -6,6 +6,8 @@ package userentity
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"net/http"
 	"os"
 	"time"
@@ -156,8 +158,9 @@ func (ue *UserEntity) ConnectSurveyAPI() error {
 	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/connected"
 	payload := "{}"
 
-	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
+	r, err := ue.client.DoAPIRequest(context.Background(), http.MethodPost, url, payload, "")
 	if err != nil {
+		mlog.Error(fmt.Sprintf("failed to call ConnectSurveyAPI for username: %s, id: %s, error: %s", ue.config.Username, ue.store.Id(), err.Error()))
 		return err
 	}
 	defer closeBody(r)
@@ -165,11 +168,12 @@ func (ue *UserEntity) ConnectSurveyAPI() error {
 }
 
 func (ue *UserEntity) SubmitPartialResponse() error {
-	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/pdb65yegxjf3tmk3wu7qnp9fyh/response"
-	payload := "{\"response\":{\"a0e57d81-3cae-4184-9603-032f9770ff35\":\"9\"}}"
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/65gdrwe6xtfkmbzx9dtmexqr1y/response"
+	payload := "{\"response\":{\"2a8415d8-f562-42a0-98e6-f9e48152a9ec\":\"10\"}}"
 
-	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
+	r, err := ue.client.DoAPIRequest(context.Background(), http.MethodPost, url, payload, "")
 	if err != nil {
+		mlog.Error(fmt.Sprintf("failed to call SubmitPartialResponse for username: %s, id: %s, error: %s", ue.config.Username, ue.store.Id(), err.Error()))
 		return err
 	}
 	defer closeBody(r)
@@ -177,11 +181,12 @@ func (ue *UserEntity) SubmitPartialResponse() error {
 }
 
 func (ue *UserEntity) SubmitCompleteResponse() error {
-	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/pdb65yegxjf3tmk3wu7qnp9fyh/response"
-	payload := "{\"response\":{\"a0e57d81-3cae-4184-9603-032f9770ff35\":\"9\",\"098bad2d-a2cc-4775-805f-ca4493c8aaa5\":\"sdfsdfsdfsd\"},\"responseType\":\"complete\"}"
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/65gdrwe6xtfkmbzx9dtmexqr1y/response"
+	payload := "{\"response\":{\"2a8415d8-f562-42a0-98e6-f9e48152a9ec\":\"10\",\"ac8ee963-b2e6-4111-828a-bbc578a8dbb1\":\"a\",\"6e6c528b-04af-4655-81b4-1ffb23dd2d38\":\"b\"},\"responseType\":\"complete\"}"
 
-	r, err := ue.client.DoAPIPost(context.Background(), url, payload)
+	r, err := ue.client.DoAPIRequest(context.Background(), http.MethodPost, url, payload, "")
 	if err != nil {
+		mlog.Error(fmt.Sprintf("failed to call SubmitCompleteResponse for username: %s, id: %s, error: %s", ue.config.Username, ue.store.Id(), err.Error()))
 		return err
 	}
 	defer closeBody(r)
