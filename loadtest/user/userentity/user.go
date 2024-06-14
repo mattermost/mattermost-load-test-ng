@@ -168,8 +168,8 @@ func (ue *UserEntity) ConnectSurveyAPI() error {
 }
 
 func (ue *UserEntity) SubmitPartialResponse() error {
-	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/65gdrwe6xtfkmbzx9dtmexqr1y/response"
-	payload := "{\"response\":{\"2a8415d8-f562-42a0-98e6-f9e48152a9ec\":\"10\"}}"
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/h4jnratnktfy9b6u1z86rbigth/response"
+	payload := "{\"response\":{\"120d9351-6c36-426c-8703-cdb896c7818f\":\"10\"}}"
 
 	r, err := ue.client.DoAPIRequest(context.Background(), http.MethodPost, url, payload, "")
 	if err != nil {
@@ -181,8 +181,8 @@ func (ue *UserEntity) SubmitPartialResponse() error {
 }
 
 func (ue *UserEntity) SubmitCompleteResponse() error {
-	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/65gdrwe6xtfkmbzx9dtmexqr1y/response"
-	payload := "{\"response\":{\"2a8415d8-f562-42a0-98e6-f9e48152a9ec\":\"10\",\"ac8ee963-b2e6-4111-828a-bbc578a8dbb1\":\"a\",\"6e6c528b-04af-4655-81b4-1ffb23dd2d38\":\"b\"},\"responseType\":\"complete\"}"
+	url := ue.client.URL + "/plugins/com.mattermost.user-survey/api/v1/survey/h4jnratnktfy9b6u1z86rbigth/response"
+	payload := "{\"response\":{\"120d9351-6c36-426c-8703-cdb896c7818f\":\"10\",\"3c99a51d-9dba-417b-a75d-5c093a2f437b\":\"dd\",\"dc36049e-6195-49f3-ab2c-6c6aa8374fb0\":\"asdffd\"},\"responseType\":\"complete\"}"
 
 	r, err := ue.client.DoAPIRequest(context.Background(), http.MethodPost, url, payload, "")
 	if err != nil {
