@@ -12,6 +12,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,7 @@ func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 	var ltConfig loadtest.Config
 	defaults.Set(&coordConfig)
 	defaults.Set(&ltConfig)
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	coordConfig.ClusterConfig.Agents[0].ApiURL = serverURL
 	coord, err := client.New(id, serverURL, nil)
@@ -70,6 +72,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		_, err := coord.Create(&coordConfig, &ltConfig)
@@ -81,6 +84,7 @@ func TestCreateCoordinator(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
 		status, err := coord.Create(&coordConfig, &ltConfig)

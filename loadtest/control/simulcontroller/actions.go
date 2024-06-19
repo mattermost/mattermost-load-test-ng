@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
@@ -25,8 +26,8 @@ type userAction struct {
 	name      string
 	run       control.UserAction
 	frequency float64
-	// Minimum supported server version
-	minServerVersion string
+	// The minimum server version in which this action is available
+	minServerVersion semver.Version
 }
 
 func (c *SimulController) connect() error {
@@ -792,7 +793,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		}
 	}
 
-	if isUrgent {
+	if isUrgent && c.isVersionSupported(semver.MustParse("7.6.0")) {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
 			Priority:                model.NewString("urgent"),
@@ -1072,13 +1073,10 @@ func unreadCheck(u user.User) control.UserActionResponse {
 }
 
 func (c *SimulController) searchChannels(u user.User) control.UserActionResponse {
-	ok, err := control.IsVersionSupported("6.4.0", c.serverVersion)
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	var team model.Team
-	if ok {
+	isVersion640Supported := c.isVersionSupported(semver.MustParse("6.4.0"))
+	if isVersion640Supported {
+		var err error
 		// Selecting any random team if >=6.4 version.
 		team, err = u.Store().RandomTeam(store.SelectMemberOf)
 		if err != nil {
@@ -1114,7 +1112,7 @@ func (c *SimulController) searchChannels(u user.User) control.UserActionResponse
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
 		// Searching channels from all teams if >= 6.4 version.
-		if ok {
+		if isVersion640Supported {
 			channels, err := u.SearchChannels(&model.ChannelSearch{
 				Term: term,
 			})

@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
@@ -52,6 +53,7 @@ func TestAgentAPI(t *testing.T) {
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
@@ -194,6 +196,7 @@ func TestAgentAPIConcurrency(t *testing.T) {
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
 
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
