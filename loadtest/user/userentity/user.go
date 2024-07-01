@@ -36,6 +36,7 @@ type UserEntity struct {
 const (
 	AuthenticationTypeMattermost = "mattermost"
 	AuthenticationTypeOpenID     = "openid"
+	AuthenticationTypeSAML       = "saml"
 )
 
 // Config holds necessary information required by a UserEntity.
