@@ -144,6 +144,9 @@ type UserStore interface {
 
 	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
 	PostsWithAckRequests() ([]string, error)
+
+	// PerformanceReport returns a copy of underlying performance report
+	PerformanceReport() (*model.PerformanceReport, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -252,4 +255,7 @@ type MutableUserStore interface {
 
 	// SidebarCategories
 	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error
+
+	// ClientPerformance
+	SetPerformanceReport(report *model.PerformanceReport)
 }
