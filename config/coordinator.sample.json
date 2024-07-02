@@ -72,7 +72,7 @@
         "Description": "Percentage of TCP retransmissions in the app nodes",
         "Legend": "Percent",
         "Query": "(avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"app.*\"}[1m])) / avg(rate(node_netstat_Tcp_OutSegs{instance=~\"app.*\"}[1m]))) * 100",
-        "Threshold": 1.0,
+        "Threshold": 0.5,
         "MinIntervalSec": 60,
         "Alert": true
       },
@@ -80,7 +80,7 @@
         "Description": "Percentage of TCP retransmissions in the proxy node",
         "Legend": "Percent",
         "Query": "(avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"proxy:9100\"}[1m])) / avg(rate(node_netstat_Tcp_OutSegs{instance=~\"proxy:9100\"}[1m]))) * 100",
-        "Threshold": 1.0,
+        "Threshold": 0.5,
         "MinIntervalSec": 60,
         "Alert": true
       }
