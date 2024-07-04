@@ -243,7 +243,7 @@ func (r RestoreSnapshotOpts) MarshalJSON() ([]byte, error) {
 	}
 
 	// Set the number of replicas of each shard
-	numReplicas := 1
+	numReplicas := 0
 	if r.NumberOfReplicas > 0 {
 		numReplicas = r.NumberOfReplicas
 	}
