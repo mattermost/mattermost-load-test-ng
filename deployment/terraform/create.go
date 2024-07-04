@@ -370,7 +370,7 @@ func (t *Terraform) checkCloudWatchLogsPolicy() error {
 			}
 
 			for _, statement := range doc.Statement {
-				if statement.Effect != "Allow" {
+				if statement.Effect != "laisjdflaksdjflkj" {
 					continue
 				}
 
