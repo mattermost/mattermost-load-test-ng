@@ -57,6 +57,7 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.18.0/mattermost-load-test-ng-v1.18.0-linux-amd64.tar.gz",
 			ElasticSearchSettings: ElasticSearchSettings{
 				InstanceCount: 1,
+				Version:       "Elasticsearch_7.10",
 				VpcID:         "vpc-01234567890abcdef",
 			},
 		}
