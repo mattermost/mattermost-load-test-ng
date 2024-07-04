@@ -409,6 +409,7 @@ func (t *Terraform) checkCloudWatchLogsPolicy() error {
 	found := false
 	var policy cwtypes.ResourcePolicy
 	for hasMore {
+		mlog.Debug("getting more")
 		input := cloudwatchlogs.DescribeResourcePoliciesInput{
 			Limit:     &limit,
 			NextToken: nextToken,
@@ -420,7 +421,6 @@ func (t *Terraform) checkCloudWatchLogsPolicy() error {
 
 		policy, err = findPolicy(output.ResourcePolicies)
 		if err != nil {
-			mlog.Debug("getting more")
 			nextToken = output.NextToken
 			hasMore = nextToken != nil
 			continue
