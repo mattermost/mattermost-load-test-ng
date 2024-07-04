@@ -234,7 +234,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string `default:"Elasticsearch_7.10" validate:"prefix:Elasticsearch_"`
+	Version string `default:"Elasticsearch_7.10"`
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
@@ -336,6 +336,10 @@ func (c *Config) validateElasticSearchConfig() error {
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
 
+	}
+
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
 	}
 
 	return nil
