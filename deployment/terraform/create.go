@@ -10,15 +10,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
-	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/elasticsearch"
@@ -185,8 +181,23 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	if err := t.checkCloudWatchLogsPolicy(); err != nil {
-		return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+	// Check if a policy to publish logs from OpenSearch Service to CloudWatch
+	// exists, and create it otherwise.
+	// Note that we are doing this outside of Terraform. This is because we
+	// only need one policy in the account, not one per deployment. This
+	// behaviour is also enforced by the rate limitation on this type of
+	// policies: there can only be 10 such policies per region per account.
+	// Check the docs for more information:
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+	if err = t.checkCloudWatchLogsPolicy(); err != nil {
+		if err != ErrNotFound {
+			return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+		}
+
+		mlog.Info("No CloudWatchLogs policy found, creating a new one")
+		if err := t.createCloudWatchLogsPolicy(); err != nil {
+			return fmt.Errorf("failed creating CloudWatchLogs policy")
+		}
 	}
 
 	if t.output.HasMetrics() {
@@ -329,175 +340,6 @@ func (t *Terraform) Create(initData bool) error {
 		runcmd = "ltctl"
 	}
 	fmt.Printf("To start coordinator, you can use %q command.\n", runcmd+" loadtest start")
-	return nil
-}
-
-// checkCloudWatchLogsPolicy checks whether the AWS account has a
-// CloudWatchLogs resource-based policy attached to the OpenSearch service
-// that allows the logs:PutLogEventsBatch, logs:PutLogEvents and
-// logs:CreateLogStream actions over the OpenSearch service.
-// In particular, this is the minimum we need:
-//
-//	{
-//		Version: "2012-10-17",
-//		Statement: []{
-//			{
-//				Effect: "Allow",
-//				Principal: polDocStmtPrincipal{
-//					Service: "es.amazonaws.com",
-//				},
-//				Action: []string{
-//					"logs:PutLogEventsBatch",
-//					"logs:PutLogEvents",
-//					"logs:CreateLogStream",
-//				},
-//				Resource: "arn:aws:logs:*",
-//			},
-//		},
-//	}
-//
-// If such policy does not exist, we create it. Note that we are doing this
-// outside of Terraform. This is because we only need one policy in the
-// account, not one per deployment. This behaviour is also enforced by the rate
-// limitation on this type of policies: there can only be 10 such policies per
-// region per account. Check the docs for more information:
-// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
-func (t *Terraform) checkCloudWatchLogsPolicy() error {
-	type polDocStmtPrincipal struct {
-		Service string `json:"Service"`
-	}
-	type polDocStmt struct {
-		Effect    string              `json:"Effect"`
-		Principal polDocStmtPrincipal `json:"Principal"`
-		Action    []string            `json:"Action"`
-		Resource  string              `json:"Resource"`
-	}
-	type polDoc struct {
-		Version   string       `json:"Version"`
-		Statement []polDocStmt `json:"Statement"`
-	}
-
-	// Create CloudWatchLogs client
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
-	)
-	if err != nil {
-		return err
-	}
-	cwclient := cloudwatchlogs.NewFromConfig(cfg)
-
-	// Function to check the policy we need in AWS
-	findPolicy := func(policies []cwtypes.ResourcePolicy) (cwtypes.ResourcePolicy, error) {
-		for _, policy := range policies {
-			var doc polDoc
-			err := json.Unmarshal([]byte(*policy.PolicyDocument), &doc)
-			if err != nil {
-				return cwtypes.ResourcePolicy{}, err
-			}
-
-			if len(doc.Statement) == 0 {
-				continue
-			}
-
-			for _, statement := range doc.Statement {
-				if statement.Effect != "Allow" {
-					continue
-				}
-
-				if statement.Principal.Service != "es.amazonaws.com" {
-					continue
-				}
-				if !slices.Contains(statement.Action, "logs:PutLogEventsBatch") {
-					continue
-				}
-
-				if !slices.Contains(statement.Action, "logs:PutLogEvents") {
-					continue
-				}
-
-				if !slices.Contains(statement.Action, "logs:CreateLogStream") {
-					continue
-				}
-
-				if statement.Resource != "arn:aws:logs:*" {
-					continue
-				}
-
-				return policy, nil
-			}
-
-		}
-
-		return cwtypes.ResourcePolicy{}, fmt.Errorf("policy not found")
-	}
-
-	// Iterate through all available policies and check if one of them passes
-	// the verification findPolicy check
-	var nextToken *string
-	limit := int32(10)
-	hasMore := true
-	found := false
-	var policy cwtypes.ResourcePolicy
-	for hasMore {
-		input := cloudwatchlogs.DescribeResourcePoliciesInput{
-			Limit:     &limit,
-			NextToken: nextToken,
-		}
-		output, err := cwclient.DescribeResourcePolicies(context.Background(), &input)
-		if err != nil {
-			return err
-		}
-		nextToken = output.NextToken
-		hasMore = nextToken != nil
-
-		policy, err = findPolicy(output.ResourcePolicies)
-		if err != nil {
-			continue
-		}
-
-		found = true
-		break
-	}
-
-	if found {
-		// There's at least one policy that has all permissions we need,
-		// so we can skip creating one
-		mlog.Debug("CloudWatchLogs policy found", mlog.String("name", *policy.PolicyName))
-		return nil
-	}
-
-	doc := polDoc{
-		Version: "2012-10-17",
-		Statement: []polDocStmt{
-			{
-				Effect: "Allow",
-				Principal: polDocStmtPrincipal{
-					Service: "es.amazonaws.com",
-				},
-				Action: []string{
-					"logs:PutLogEventsBatch",
-					"logs:PutLogEvents",
-					"logs:CreateLogStream",
-				},
-				Resource: "arn:aws:logs:*",
-			},
-		},
-	}
-	docJsonBytes, err := json.Marshal(doc)
-	if err != nil {
-		return err
-	}
-	docJsonStr := string(docJsonBytes)
-
-	mlog.Info("No CloudWatchLogs policy found, creating a new one", mlog.String("policy document", docJsonStr))
-	input := cloudwatchlogs.PutResourcePolicyInput{
-		PolicyName:     model.NewString("lt-cloudwatch-log-policy"),
-		PolicyDocument: model.NewString(docJsonStr),
-	}
-	if _, err := cwclient.PutResourcePolicy(context.Background(), &input); err != nil {
-		return fmt.Errorf("failed to create CloudWatchLogs policy; it can be manually created by running `aws logs put-resource-policy --policy-name lt-cloudwatch-log-policy --policy-document %q`; the next `deployment create` should work when such a policy is present in the AWS account; original error: %w", docJsonStr, err)
-	}
-
 	return nil
 }
 
