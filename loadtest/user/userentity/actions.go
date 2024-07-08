@@ -31,6 +31,7 @@ const (
 
 var (
 	keycloakIDPLoginFormActionRegex = regexp.MustCompile(`action=["'](.*?)["']`)
+	keycloakSAMLInputValueRegex     = regexp.MustCompile(`input type=["']hidden["'] name=["'](\w+)["'] value=["'](.*?)["']`)
 )
 
 // SignUp signs up the user with the given credentials.
@@ -123,9 +124,49 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
-	cookies := jar.Cookies(loginResponse.Request.URL)
+	// Perform an extra step when doing SAML authentication, since the Keycloak server wont redirect
+	// to the Mattermost server automatically, instead it will display a form with the SAML response
+	// that needs to be submitted to the Mattermost server. This is done via Javascript in the browser,
+	// but we can simulate it by parsing the form and doing the same request manually.
+	if provider == AuthenticationTypeSAML {
+		samlResponseBody, err := io.ReadAll(loginResponse.Body)
+		if err != nil {
+			return fmt.Errorf("error while reading saml response body: %w", err)
+		}
+
+		redirectURLMatcher := keycloakIDPLoginFormActionRegex.FindSubmatch(samlResponseBody)
+		if len(redirectURLMatcher) == 0 {
+			return errors.New("redirect URL not found in SAML login page, there was probably an error or the configuration is wrong")
+		}
+		formURL := string(redirectURLMatcher[1])
+
+		inputMatcher := keycloakSAMLInputValueRegex.FindAllSubmatch(samlResponseBody, -1)
+		if len(inputMatcher) == 0 {
+			return errors.New("input values not found in SAML login page, there was probably an error or the configuration is wrong")
+		}
+		queryParams := url.Values{}
+		for _, matches := range inputMatcher {
+			if len(matches) != 3 {
+				return errors.New("invalid input value found in SAML login page, there was probably an error or the configuration is wrong")
+			}
+			queryParams.Add(string(matches[1]), string(matches[2]))
+		}
+
+		samlForm, err := client.PostForm(formURL, queryParams)
+		if err != nil {
+			return fmt.Errorf("error while posting SAML form: %w", err)
+		}
+		if samlForm.StatusCode != http.StatusOK {
+			return fmt.Errorf("SAML form failed with status code %d", samlForm.StatusCode)
+		}
+	}
+
+	serverURL, err := url.Parse(ue.client.URL)
+	if err != nil {
+		return fmt.Errorf("error while parsing server URL: %w", err)
+	}
+	cookies := jar.Cookies(serverURL)
 	for _, cookie := range cookies {
-		fmt.Printf("Cookie: %s=%s", cookie.Name, cookie.Value)
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
 			return nil
