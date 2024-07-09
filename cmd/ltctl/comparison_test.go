@@ -40,13 +40,13 @@ func TestPrintResults(t *testing.T) {
 
 	// Verify the output
 	expectedOutput := `==================================================Comparison result:Report: report_0_postgres_bounded_100.md
-Grafana Dashboard: http://example.com/dashboard\nTest:1\nType: bounded
+Grafana Dashboard: http://example.com/dashboard
+Test:1
+  Type: bounded
   DB Engine: postgres
   Duration: 10m
   Users: 100
   Errors: 2
-==================================================
-
-`
+==================================================`
 	require.Equal(t, expectedOutput, buf.String())
 }

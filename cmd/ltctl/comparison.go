@@ -101,7 +101,7 @@ func printResults(results []comparison.Result, writer io.Writer) {
 			} else if ltRes.Config.Type == comparison.LoadTestTypeUnbounded {
 				fmt.Fprintf(writer, "  Supported Users: %d\n", ltRes.Status.SupportedUsers)
 			}
-			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
+			fmt.Fprintf(writer, "  Errors: %d\n", ltRes.Status.NumErrors)
 		}
 		fmt.Fprintf(writer, "==================================================\n\n")
 	}
