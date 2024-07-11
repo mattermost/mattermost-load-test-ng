@@ -210,20 +210,32 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to login to mattermost: %w", err)
 	}
+	// Guess where the deployment configuration is located
+	deploymentConfig, err := deployment.ReadConfig(filepath.Join(filepath.Dir(ltConfigPath), "deployer"+filepath.Ext(ltConfigPath)))
+	if err != nil {
+		return fmt.Errorf("failed to read deployment configuration: %w", err)
+	}
 
-	keycloakHost, err := cmd.Flags().GetString("keycloak-host")
+	var keycloakHost string
+	keycloakHost, err = cmd.Flags().GetString("keycloak-host")
 	if err != nil {
 		return fmt.Errorf("failed to read flag: %w", err)
 	}
 
-	keycloakUsername, err := cmd.Flags().GetString("keycloak-username")
-	if err != nil {
-		return fmt.Errorf("failed to read flag: %w", err)
-	}
-
-	keycloakPassword, err := cmd.Flags().GetString("keycloak-password")
-	if err != nil {
-		return fmt.Errorf("failed to read flag: %w", err)
+	// Use the terraform output terraform host if a manual one is not provided. Useful for development.
+	if keycloakHost == "" {
+		t, err := terraform.New("", *deploymentConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create terraform client: %w", err)
+		}
+		terraformOutput, err := t.Output()
+		if err != nil {
+			return fmt.Errorf("failed to get terraform output: %w", err)
+		}
+		if len(terraformOutput.KeycloakDatabaseCluster.Endpoints) == 0 {
+			return fmt.Errorf("keycloak database cluster not found in terraform output")
+		}
+		keycloakHost = terraformOutput.KeycloakDatabaseCluster.Endpoints[0]
 	}
 
 	keycloakRealm, err := cmd.Flags().GetString("keycloak-realm")
@@ -238,7 +250,12 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 
 	keycloakClient := gocloak.NewClient(keycloakHost)
 	ctx := context.Background()
-	token, err := keycloakClient.LoginAdmin(ctx, keycloakUsername, keycloakPassword, keycloakRealm)
+	token, err := keycloakClient.LoginAdmin(
+		ctx,
+		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminUser,
+		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminPassword,
+		"master", // TODO: Allow specifying the master realm
+	)
 	if err != nil {
 		return fmt.Errorf("failed to login to keycloak: %w", err)
 	}
