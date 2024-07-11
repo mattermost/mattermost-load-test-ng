@@ -8,8 +8,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"slices"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/spf13/cobra"
@@ -18,8 +22,171 @@ import (
 )
 
 const (
-	requestTiemout = 30 * time.Second
+	keycloakMigratedGroup = "mattermost-migrated-users"
+
+	// How much time to wait for a single operation to complete (all requests used during the
+	// migration of an user)
+	operationTimeout = 30 * time.Second
 )
+
+func RunSyncFromKeycloakCommandF(cmd *cobra.Command, _ []string) error {
+	ltConfigPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
+	cfg, err := loadtest.ReadConfig(ltConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to read load test configuration: %w", err)
+	}
+
+	// Guess where the deployment configuration is located
+	deploymentConfig, err := deployment.ReadConfig(filepath.Join(filepath.Dir(ltConfigPath), "deployer"+filepath.Ext(ltConfigPath)))
+	if err != nil {
+		return fmt.Errorf("failed to read deployment configuration: %w", err)
+	}
+
+	var keycloakHost string
+	keycloakHost, err = cmd.Flags().GetString("keycloak-host")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
+	// Use the terraform output terraform host if a manual one is not provided. Useful for development.
+	if keycloakHost == "" {
+		t, err := terraform.New("", *deploymentConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create terraform client: %w", err)
+		}
+		terraformOutput, err := t.Output()
+		if err != nil {
+			return fmt.Errorf("failed to get terraform output: %w", err)
+		}
+		if len(terraformOutput.KeycloakDatabaseCluster.Endpoints) == 0 {
+			return fmt.Errorf("keycloak database cluster not found in terraform output")
+		}
+		keycloakHost = terraformOutput.KeycloakDatabaseCluster.Endpoints[0]
+	}
+
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
+	mmClient := model.NewAPIv4Client(cfg.ConnectionConfiguration.ServerURL)
+
+	_, _, err = mmClient.Login(cmd.Context(), cfg.ConnectionConfiguration.AdminEmail, cfg.ConnectionConfiguration.AdminPassword)
+	if err != nil {
+		return fmt.Errorf("failed to login to mattermost: %w", err)
+	}
+
+	userPassword, err := cmd.Flags().GetString("set-user-password-to")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
+	updateExistingUsers, err := cmd.Flags().GetBool("update-existing-users")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
+	keycloakClient := gocloak.NewClient(keycloakHost)
+	ctx := context.Background()
+	token, err := keycloakClient.LoginAdmin(
+		ctx,
+		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminUser,
+		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminPassword,
+		"master", // TODO: Allow specifying the master realm
+	)
+	if err != nil {
+		return fmt.Errorf("failed to login to keycloak: %w", err)
+	}
+
+	if !dryRun {
+		// Create group for migrated users if it does not exist
+		_, err := keycloakClient.CreateGroup(ctx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, gocloak.Group{
+			Name: gocloak.StringP(keycloakMigratedGroup),
+		})
+		if err != nil {
+			// Ignore if group already exists
+			if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code != 409 {
+				return fmt.Errorf("failed to create group for user migrations in keycloak: %w", err)
+			}
+		}
+	}
+
+	start := 0
+	perPage := 100
+	for {
+		requestCtx, cancel := context.WithTimeout(cmd.Context(), operationTimeout)
+		defer cancel()
+		users, err := keycloakClient.GetUsers(requestCtx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, gocloak.GetUsersParams{
+			First: &start,
+			Max:   &perPage,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get users from keycloak: %w", err)
+		}
+
+		for _, user := range users {
+			// Check if user is already migrated
+			if user.Groups != nil && slices.Contains(*user.Groups, keycloakMigratedGroup) {
+				continue
+			}
+
+			// Check if user already exists in Mattermost
+			mmUser, resp, err := mmClient.GetUserByUsername(requestCtx, *user.Username, "")
+			if err != nil && resp.StatusCode != 404 {
+				return fmt.Errorf("failed to get user from mattermost: %w", err)
+			}
+
+			// If user exists in Mattermost and we are not updating existing users, skip
+			if mmUser != nil && !updateExistingUsers {
+				continue
+			}
+
+			if !dryRun && false {
+				if mmUser == nil {
+					// If user does not exist in Mattermost, create it
+					_, _, err = mmClient.CreateUser(requestCtx, &model.User{
+						Username:    *user.Username,
+						Email:       *user.Email,
+						Password:    userPassword,
+						AuthService: model.ServiceOpenid,
+						AuthData:    user.ID,
+					})
+					if err != nil {
+						return fmt.Errorf("failed to create user in mattermost: %w", err)
+					}
+				} else {
+					// If user exists in Mattermost, update it with the new auth data
+					mmUser.AuthData = user.ID
+					mmUser.AuthService = model.ServiceOpenid
+					mmUser.Password = ""
+					_, _, err = mmClient.UpdateUser(requestCtx, mmUser)
+					if err != nil {
+						return fmt.Errorf("failed to update user in mattermost: %w", err)
+					}
+				}
+
+				// Add user to migrated group in keycloak to avoid syncing them again
+				if err := keycloakClient.AddUserToGroup(ctx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, *user.ID, keycloakMigratedGroup); err != nil {
+					return fmt.Errorf("failed to mark user migrated in keycloak: %w", err)
+				}
+			}
+
+			slog.Info("migrated user", slog.String("username", *user.Username))
+
+			if len(users) == 0 {
+				break
+			}
+
+			start += perPage
+		}
+
+		return nil
+	}
+}
 
 func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	ltConfigPath, err := cmd.Flags().GetString("config")
@@ -79,7 +246,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	page := 0
 	perPage := 100
 	for {
-		requestCtx, cancel := context.WithTimeout(cmd.Context(), requestTiemout)
+		requestCtx, cancel := context.WithTimeout(cmd.Context(), operationTimeout)
 		defer cancel()
 		users, _, err := mmClient.GetUsers(requestCtx, page, perPage, "")
 		if err != nil {
@@ -149,6 +316,19 @@ func MakeSyncFromMattermostCommand() *cobra.Command {
 	return cmd
 }
 
+func MakeSyncFromKeycloakCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "from_keycloak",
+		Short: "Migrate data from Keycloak to Mattermost",
+		RunE:  RunSyncFromKeycloakCommandF,
+	}
+
+	cmd.Flags().Bool("update-existing-users", false, "Update existing users in Mattermost")
+	cmd.Flags().String("set-user-password-to", "testpassword", "Set's the user password to the provided value")
+
+	return cmd
+}
+
 func MakeSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "sync",
@@ -157,12 +337,10 @@ func MakeSyncCommand() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringP("keycloak-host", "", "http://localhost:8484", "keycloak host")
-	cmd.PersistentFlags().StringP("keycloak-realm", "", "mattermost", "keycloak realm")
-	cmd.PersistentFlags().StringP("keycloak-username", "", "admin", "keycloak username")
-	cmd.PersistentFlags().StringP("keycloak-password", "", "admin", "keycloak password")
 	cmd.PersistentFlags().BoolP("dry-run", "", false, "perform a dry run without making any changes")
 
 	cmd.AddCommand(MakeSyncFromMattermostCommand())
+	cmd.AddCommand(MakeSyncFromKeycloakCommand())
 	return cmd
 }
 
