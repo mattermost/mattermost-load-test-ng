@@ -181,6 +181,25 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	// Check if a policy to publish logs from OpenSearch Service to CloudWatch
+	// exists, and create it otherwise.
+	// Note that we are doing this outside of Terraform. This is because we
+	// only need one policy in the account, not one per deployment. This
+	// behaviour is also enforced by the rate limitation on this type of
+	// policies: there can only be 10 such policies per region per account.
+	// Check the docs for more information:
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+	if err = t.checkCloudWatchLogsPolicy(); err != nil {
+		if err != ErrNotFound {
+			return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+		}
+
+		mlog.Info("No CloudWatchLogs policy found, creating a new one")
+		if err := t.createCloudWatchLogsPolicy(); err != nil {
+			return fmt.Errorf("failed creating CloudWatchLogs policy")
+		}
+	}
+
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
