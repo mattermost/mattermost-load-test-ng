@@ -37,13 +37,15 @@ func newController(t *testing.T) (*SimulController, chan control.UserStatus) {
 }
 
 func TestNew(t *testing.T) {
-	c, _ := newController(t)
+	c, statusChan := newController(t)
+	close(statusChan) // not used
 
 	require.Equal(t, len(c.actionList), len(c.actionMap))
 }
 
 func TestSetRate(t *testing.T) {
-	c, _ := newController(t)
+	c, statusChan := newController(t)
+	close(statusChan) // not used
 	require.Equal(t, 1.0, c.rate)
 
 	err := c.SetRate(-1.0)
@@ -93,7 +95,8 @@ func TestRunStop(t *testing.T) {
 }
 
 func TestGetActionList(t *testing.T) {
-	c, _ := newController(t)
+	c, statusChan := newController(t)
+	close(statusChan) // not used
 	for _, action := range getActionList(c) {
 		require.NotZero(t, action.minServerVersion, "All actions must have minServerVersion set")
 	}
