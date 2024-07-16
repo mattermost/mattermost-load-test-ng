@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -830,20 +829,10 @@ func Reload(u user.User) UserActionResponse {
 			}
 		}
 
-		serverVersionString, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
 
-		serverVersion, err := ParseServerVersion(serverVersionString)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if serverVersion.GTE(semver.MustParse("6.4.0")) {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 
@@ -961,20 +950,9 @@ func ReloadGQL(u user.User) UserActionResponse {
 			}
 		}
 
-		serverVersionString, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
-
-		serverVersion, err := ParseServerVersion(serverVersionString)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if serverVersion.GTE(semver.MustParse("6.4.0")) {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 

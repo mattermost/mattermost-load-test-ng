@@ -793,7 +793,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 		}
 	}
 
-	if isUrgent && c.isVersionSupported(semver.MustParse("7.6.0")) {
+	if isUrgent {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
 			Priority:                model.NewString("urgent"),
@@ -1073,24 +1073,9 @@ func unreadCheck(u user.User) control.UserActionResponse {
 }
 
 func (c *SimulController) searchChannels(u user.User) control.UserActionResponse {
-	var team model.Team
-	isVersion640Supported := c.isVersionSupported(semver.MustParse("6.4.0"))
-	if isVersion640Supported {
-		var err error
-		// Selecting any random team if >=6.4 version.
-		team, err = u.Store().RandomTeam(store.SelectMemberOf)
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-	} else {
-		// Selecting only current team otherwise.
-		teamPtr, err2 := u.Store().CurrentTeam()
-		if err2 != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err2)}
-		} else if teamPtr == nil {
-			return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
-		}
-		team = *teamPtr
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	channel, err := u.Store().RandomChannel(team.Id, store.SelectAny)
@@ -1111,21 +1096,9 @@ func (c *SimulController) searchChannels(u user.User) control.UserActionResponse
 	}
 
 	return control.EmulateUserTyping(channel.Name[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
-		// Searching channels from all teams if >= 6.4 version.
-		if isVersion640Supported {
-			channels, err := u.SearchChannels(&model.ChannelSearch{
-				Term: term,
-			})
-			if err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-			return control.UserActionResponse{Info: fmt.Sprintf("found %d channels", len(channels))}
-		}
-		channels, err := u.SearchChannelsForTeam(team.Id, &model.ChannelSearch{
+		channels, err := u.SearchChannels(&model.ChannelSearch{
 			Term: term,
 		})
-		// Duplicating the else part because the channels types are different.
-		// One is []*model.Channel, other is model.ChannelListWithTeamData
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
