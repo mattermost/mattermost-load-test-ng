@@ -124,7 +124,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
-	// Perform an extra step when doing SAML authentication, since the Keycloak server wont redirect
+	// Perform an extra step when doing SAML authentication, since the Keycloak server won't redirect
 	// to the Mattermost server automatically, instead it will display a form with the SAML response
 	// that needs to be submitted to the Mattermost server. This is done via Javascript in the browser,
 	// but we can simulate it by parsing the form and doing the same request manually.
