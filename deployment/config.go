@@ -53,7 +53,7 @@ type Config struct {
 	ExternalBucketSettings ExternalBucketSettings
 	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
 	ExternalAuthProviderSettings ExternalAuthProviderSettings
-	// URL from where to download the Mattermost release.
+	// URL from which to download the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Point to a local binary path if the user wants to run the loadtest
 	// on a custom build. The path should be prefixed with "file://". In that case,
