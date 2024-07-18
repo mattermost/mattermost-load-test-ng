@@ -59,7 +59,7 @@ type Config struct {
 	// on a custom build. The path should be prefixed with "file://". In that case,
 	// only the binary gets replaced, and the rest of the build comes
 	// from the release at MattermostDownloadURL
-	MattermostBinaryPath string `default:"" validate:"url`
+	MattermostBinaryPath string `default:"" validate:"url"`
 	// Path to the Mattermost EE license file.
 	MattermostLicenseFile string `default:"" validate:"file"`
 	// Optional path to a partial Mattermost config file to be applied as patch during
