@@ -508,7 +508,11 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 				return nil, fmt.Errorf("invalid custom authentication found in %q", email)
 			}
 			authService = split[0]
-			if authService != userentity.AuthenticationTypeOpenID && authService != userentity.AuthenticationTypeSAML && authService != userentity.AuthenticationTypeMattermost {
+			switch(authService) {
+			case userentity.AuthenticationTypeOpenID:
+			case userentity.AuthenticationTypeSAML:
+			case userentity.AuthenticationTypeMattermost:
+			default :
 				return nil, fmt.Errorf("invalid custom authentication type %q", authService)
 			}
 
