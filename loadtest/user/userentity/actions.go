@@ -133,6 +133,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 		if err != nil {
 			return fmt.Errorf("error while reading saml response body: %w", err)
 		}
+		loginResponse.Body.Close()
 
 		redirectURLMatcher := keycloakIDPLoginFormActionRegex.FindSubmatch(samlResponseBody)
 		if len(redirectURLMatcher) == 0 {
@@ -156,6 +157,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 		if err != nil {
 			return fmt.Errorf("error while posting SAML form: %w", err)
 		}
+		samlForm.Body.Close()
 		if samlForm.StatusCode != http.StatusOK {
 			return fmt.Errorf("SAML form failed with status code %d", samlForm.StatusCode)
 		}
