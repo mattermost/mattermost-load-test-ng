@@ -99,7 +99,7 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
-		return fmt.Errorf("license validation failed: %w", err)
+		mlog.Error(fmt.Errorf("license validation failed: %w", err).Error())
 	}
 
 	extAgent, err := ssh.NewAgent()
@@ -124,8 +124,9 @@ func (t *Terraform) Create(initData bool) error {
 
 	var uploadBinary bool
 	var binaryPath string
-	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
-		binaryPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+
+	if t.config.MattermostBinaryPath != "" {
+		binaryPath = strings.TrimPrefix(t.config.MattermostBinaryPath, filePrefix)
 		info, err := os.Stat(binaryPath)
 		if err != nil {
 			return err
@@ -140,7 +141,6 @@ func (t *Terraform) Create(initData bool) error {
 			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
 		}
 
-		t.config.MattermostDownloadURL = latestReleaseURL
 		uploadBinary = true
 	}
 
