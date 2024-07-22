@@ -181,7 +181,7 @@ proxy_buffers 256 16k;
 proxy_buffer_size 16k;
 client_body_timeout 60s;
 send_timeout        300s;
-lingering_timeout   30s;
+lingering_timeout   5s;
 proxy_connect_timeout   30s;
 proxy_send_timeout      90s;
 proxy_read_timeout      90s;
@@ -194,6 +194,7 @@ proxy_cache mattermost_cache;
 proxy_cache_revalidate on;
 proxy_cache_min_uses 2;
 proxy_cache_use_stale timeout;
+proxy_cache_lock on;
 `
 
 const nginxSiteConfigTmpl = `
