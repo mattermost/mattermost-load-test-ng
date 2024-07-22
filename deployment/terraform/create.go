@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,6 +32,7 @@ const cmdExecTimeoutMinutes = 120
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
+	releaseSuffix    = "tar.gz"
 )
 
 // requiredVersion specifies the supported versions of Terraform,
@@ -122,25 +124,40 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	var uploadPath string
 	var uploadBinary bool
-	var binaryPath string
+	var uploadRelease bool
 
-	if t.config.MattermostBinaryPath != "" {
-		binaryPath = strings.TrimPrefix(t.config.MattermostBinaryPath, filePrefix)
-		info, err := os.Stat(binaryPath)
+	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) &&
+		strings.HasSuffix(t.config.MattermostDownloadURL, releaseSuffix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
+		if err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("release path %s has to be a regular file", uploadPath)
+		}
+
+		uploadRelease = true
+	} else if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
 		if err != nil {
 			return err
 		}
 
 		// We make sure the file is executable by both the owner and group.
 		if info.Mode()&0110 != 0110 {
-			return fmt.Errorf("file %s has to be an executable", binaryPath)
+			return fmt.Errorf("file %s has to be an executable", uploadPath)
 		}
 
 		if !info.Mode().IsRegular() {
-			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
+			return fmt.Errorf("binary path %s has to be a regular file", uploadPath)
 		}
 
+		t.config.MattermostDownloadURL = latestReleaseURL
 		uploadBinary = true
 	}
 
@@ -213,7 +230,7 @@ func (t *Terraform) Create(initData bool) error {
 		}
 
 		// Updating the config.json for each instance of app server
-		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath, siteURL); err != nil {
+		if err := t.setupAppServers(extAgent, uploadBinary, uploadRelease, uploadPath, siteURL); err != nil {
 			return fmt.Errorf("error setting up app servers: %w", err)
 		}
 
@@ -324,16 +341,16 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string, siteURL string) error {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
@@ -342,15 +359,15 @@ func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, b
 	return nil
 }
 
-func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, uploadRelease, uploadPath, !t.output.HasJobServer())
 }
 
-func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, binaryPath, true)
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, uploadRelease, uploadPath, true)
 }
 
-func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
@@ -402,11 +419,28 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	// provision MM build
-	commands := []string{
-		"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
-		"tar xzf mattermost-dist.tar.gz",
-		"sudo rm -rf /opt/mattermost",
-		"sudo mv mattermost /opt/",
+	var commands []string
+	if uploadRelease {
+		mlog.Info("Uploading release from tar.gz file", mlog.String("host", ip))
+
+		filename := path.Base(uploadPath)
+		if out, err := sshc.UploadFile(uploadPath, "/home/ubuntu/"+filename, false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
+		}
+		commands = []string{
+			"tar xzf " + filename,
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
+	} else {
+		mlog.Info("Uploading release from MattermostDownloadURL", mlog.String("host", ip))
+
+		commands = []string{
+			"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
+			"tar xzf mattermost-dist.tar.gz",
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
 	}
 	mlog.Info("Provisioning MM build", mlog.String("host", ip))
 	cmd = strings.Join(commands, " && ")
@@ -423,8 +457,8 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	if uploadBinary {
 		mlog.Info("Uploading binary", mlog.String("host", ip))
 
-		if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-			return fmt.Errorf("error uploading file %q, output: %q: %w", binaryPath, string(out), err)
+		if out, err := sshc.UploadFile(uploadPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
 	}
 

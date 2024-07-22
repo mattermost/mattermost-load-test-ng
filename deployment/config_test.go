@@ -15,36 +15,22 @@ func TestConfigIsValid(t *testing.T) {
 	}
 
 	t.Run("paths", func(t *testing.T) {
-		t.Run("MattermostDownloadUrl should be an url", func(t *testing.T) {
+		t.Run("MattermostDownloadUrl can be an url", func(t *testing.T) {
 			c := baseConfig()
 
 			require.NoError(t, c.IsValid())
 		})
 
-		t.Run("MattermostDownloadUrl should not be a path", func(t *testing.T) {
+		t.Run("MattermostDownloadUrl can be a path", func(t *testing.T) {
 			c := baseConfig()
 			c.MattermostDownloadURL = "file:///some/path"
 
-			require.Error(t, c.IsValid())
-		})
-
-		t.Run("empty MattermostBinaryPath is valid", func(t *testing.T) {
-			c := baseConfig()
-			c.MattermostBinaryPath = ""
-
 			require.NoError(t, c.IsValid())
 		})
 
-		t.Run("non-empty MattermostBinaryPath is valid", func(t *testing.T) {
+		t.Run("MattermostDownloadUrl must be an url or a file", func(t *testing.T) {
 			c := baseConfig()
-			c.MattermostBinaryPath = "file:///some/path"
-
-			require.NoError(t, c.IsValid())
-		})
-
-		t.Run("non-empty MattermostBinaryPath should be a path", func(t *testing.T) {
-			c := baseConfig()
-			c.MattermostBinaryPath = "https://example.com"
+			c.MattermostDownloadURL = "/some/path"
 
 			require.Error(t, c.IsValid())
 		})
