@@ -137,7 +137,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 
 		redirectURLMatcher := keycloakIDPLoginFormActionRegex.FindSubmatch(samlResponseBody)
 		if len(redirectURLMatcher) == 0 {
-			return errors.New("redirect URL not found in SAML login page, there was probably an error or the configuration is wrong")
+			return errors.New("redirect URL not found in SAML login page, there was probably an error in configuration or the login page changed and the regular expression requires updating")
 		}
 		formURL := string(redirectURLMatcher[1])
 
