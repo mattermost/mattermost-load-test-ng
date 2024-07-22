@@ -99,7 +99,7 @@ func (t *Terraform) Create(initData bool) error {
 	}
 
 	if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
-		mlog.Error(fmt.Errorf("license validation failed: %w", err).Error())
+		return fmt.Errorf("license validation failed: %w", err)
 	}
 
 	extAgent, err := ssh.NewAgent()
