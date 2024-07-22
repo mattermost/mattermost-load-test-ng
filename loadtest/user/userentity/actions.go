@@ -21,16 +21,17 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
-// Possible actions for the openID authentication
-type authOpenIDAction string
+// Possible actions for the IDP authentication
+type authIDPAction string
 
 const (
-	authOpenIDLogin  authOpenIDAction = "login"
-	authOpenIDSignup authOpenIDAction = "signup"
+	authIDPLogin  authIDPAction = "login"
+	authIDPSignup authIDPAction = "signup"
 )
 
 var (
-	openIDLoginFormActionRegex = regexp.MustCompile(`action=["'](.*?)["']`)
+	keycloakIDPLoginFormActionRegex = regexp.MustCompile(`action=["'](.*?)["']`)
+	keycloakSAMLInputValueRegex     = regexp.MustCompile(`input type=["']hidden["'] name=["'](\w+)["'] value=["'](.*?)["']`)
 )
 
 // SignUp signs up the user with the given credentials.
@@ -39,15 +40,18 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 	var err error
 
 	switch ue.config.AuthenticationType {
+	case AuthenticationTypeSAML:
+		fallthrough
 	case AuthenticationTypeOpenID:
-		if err := ue.authOpenID(authOpenIDSignup); err != nil {
-			return fmt.Errorf("error while signing up using OpenID: %w", err)
+		if err := ue.authIDP(authIDPSignup, ue.config.AuthenticationType); err != nil {
+			return fmt.Errorf("error while signing up using %s: %w", ue.config.AuthenticationType, err)
 		}
 
 		newUser, _, err = ue.client.GetUserByUsername(context.Background(), username, "")
 		if err != nil {
 			return fmt.Errorf("error while getting user by username: %w", err)
 		}
+
 	default:
 		user := model.User{
 			Email:    email,
@@ -65,10 +69,10 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 	return ue.store.SetUser(newUser)
 }
 
-// authOpenID logs the user in using OpenID.
-func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
-	if action != authOpenIDLogin && action != authOpenIDSignup {
-		return errors.New("invalid openid auth action")
+// authIDP logs the user in using the specified idp
+func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
+	if action != authIDPLogin && action != authIDPSignup {
+		return errors.New("invalid idp auth action")
 	}
 
 	jar, err := cookiejar.New(nil)
@@ -80,10 +84,20 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 		Jar: jar,
 	}
 
-	// make a request to the openid login page of mattermost
-	resp, err := client.Get(ue.client.URL + "/oauth/openid/" + string(action))
+	// make a request to the provider login page of mattermost
+	var authURL string
+	switch provider {
+	case AuthenticationTypeSAML:
+		authURL = ue.client.URL + "/login/sso/saml"
+	case AuthenticationTypeOpenID:
+		authURL = ue.client.URL + "/oauth/openid/" + string(action)
+	default:
+		return fmt.Errorf("invalid idp provider: %s", provider)
+	}
+
+	resp, err := client.Get(authURL)
 	if err != nil {
-		return fmt.Errorf("error while making request to openid %s page: %w", action, err)
+		return fmt.Errorf("error while making request to %s %s page: %w", provider, action, err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -92,11 +106,11 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 	}
 	resp.Body.Close()
 
-	loginURLMatches := openIDLoginFormActionRegex.FindSubmatch(body)
+	loginURLMatches := keycloakIDPLoginFormActionRegex.FindSubmatch(body)
 	if len(loginURLMatches) == 0 {
 		return errors.New("login URL not found in keyloak login page, there was probably an error or the configuration is wrong")
 	}
-	loginURL := string(openIDLoginFormActionRegex.FindSubmatch(body)[1])
+	loginURL := string(loginURLMatches[1])
 
 	loginResponse, err := client.PostForm(loginURL, url.Values{
 		"username": {ue.config.Username},
@@ -110,7 +124,50 @@ func (ue *UserEntity) authOpenID(action authOpenIDAction) error {
 		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
-	cookies := jar.Cookies(loginResponse.Request.URL)
+	// Perform an extra step when doing SAML authentication, since the Keycloak server won't redirect
+	// to the Mattermost server automatically, instead it will display a form with the SAML response
+	// that needs to be submitted to the Mattermost server. This is done via Javascript in the browser,
+	// but we can simulate it by parsing the form and doing the same request manually.
+	if provider == AuthenticationTypeSAML {
+		samlResponseBody, err := io.ReadAll(loginResponse.Body)
+		if err != nil {
+			return fmt.Errorf("error while reading saml response body: %w", err)
+		}
+		loginResponse.Body.Close()
+
+		redirectURLMatcher := keycloakIDPLoginFormActionRegex.FindSubmatch(samlResponseBody)
+		if len(redirectURLMatcher) == 0 {
+			return errors.New("redirect URL not found in SAML login page, there was probably an error in configuration or the login page changed and the regular expression requires updating")
+		}
+		formURL := string(redirectURLMatcher[1])
+
+		inputMatcher := keycloakSAMLInputValueRegex.FindAllSubmatch(samlResponseBody, -1)
+		if len(inputMatcher) == 0 {
+			return errors.New("input values not found in SAML login page, there was probably an error or the configuration is wrong")
+		}
+		queryParams := url.Values{}
+		for _, matches := range inputMatcher {
+			if len(matches) != 3 {
+				return errors.New("invalid input value found in SAML login page, there was probably an error or the configuration is wrong")
+			}
+			queryParams.Add(string(matches[1]), string(matches[2]))
+		}
+
+		samlForm, err := client.PostForm(formURL, queryParams)
+		if err != nil {
+			return fmt.Errorf("error while posting SAML form: %w", err)
+		}
+		samlForm.Body.Close()
+		if samlForm.StatusCode != http.StatusOK {
+			return fmt.Errorf("SAML form failed with status code %d", samlForm.StatusCode)
+		}
+	}
+
+	serverURL, err := url.Parse(ue.client.URL)
+	if err != nil {
+		return fmt.Errorf("error while parsing server URL: %w", err)
+	}
+	cookies := jar.Cookies(serverURL)
 	for _, cookie := range cookies {
 		if cookie.Name == "MMAUTHTOKEN" {
 			ue.client.SetToken(cookie.Value)
@@ -130,14 +187,16 @@ func (ue *UserEntity) Login() error {
 	var loggedUser *model.User
 
 	switch ue.config.AuthenticationType {
+	case AuthenticationTypeSAML:
+		fallthrough
 	case AuthenticationTypeOpenID:
-		if err := ue.authOpenID(authOpenIDLogin); err != nil {
-			return fmt.Errorf("error while logging in using OpenID: %w", err)
+		if err := ue.authIDP(authIDPLogin, ue.config.AuthenticationType); err != nil {
+			return fmt.Errorf("error while logging in using %s: %w", ue.config.AuthenticationType, err)
 		}
 
 		loggedUser, _, err = ue.client.GetUserByUsername(context.Background(), user.Username, "")
 		if err != nil {
-			return fmt.Errorf("error while getting user by username through openid: %w", err)
+			return fmt.Errorf("error while getting user by username through %s: %w", ue.config.AuthenticationType, err)
 		}
 	default:
 		loggedUser, _, err = ue.client.Login(context.Background(), user.Email, user.Password)
