@@ -181,7 +181,7 @@ proxy_buffers 256 16k;
 proxy_buffer_size 16k;
 client_body_timeout 60s;
 send_timeout        300s;
-lingering_timeout   5s;
+lingering_timeout   30s;
 proxy_connect_timeout   30s;
 proxy_send_timeout      90s;
 proxy_read_timeout      90s;
