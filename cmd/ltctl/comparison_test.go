@@ -32,6 +32,19 @@ func TestPrintResults(t *testing.T) {
 						NumErrors:      2,
 					},
 				},
+				{
+					Label: "Test2",
+					Config: comparison.LoadTestConfig{
+						Type:     "bounded",
+						DBEngine: "postgres",
+						NumUsers: 100,
+						Duration: "10m",
+					},
+					Status: coordinator.Status{
+						SupportedUsers: 80,
+						NumErrors:      2,
+					},
+				},
 			},
 		},
 	}
@@ -41,12 +54,20 @@ func TestPrintResults(t *testing.T) {
 	// Verify the output
 	expectedOutput := `==================================================Comparison result:Report: report_0_postgres_bounded_100.md
 Grafana Dashboard: http://example.com/dashboard
-Test:1
+Test1:
   Type: bounded
   DB Engine: postgres
   Duration: 10m
   Users: 100
   Errors: 2
-==================================================`
+Test2:
+  Type: bounded
+  DB Engine: postgres
+  Duration: 10m
+  Users: 100
+  Errors: 2
+==================================================
+
+`
 	require.Equal(t, expectedOutput, buf.String())
 }
