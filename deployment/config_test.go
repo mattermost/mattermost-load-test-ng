@@ -14,6 +14,28 @@ func TestConfigIsValid(t *testing.T) {
 		}
 	}
 
+	t.Run("paths", func(t *testing.T) {
+		t.Run("MattermostDownloadUrl can be an url", func(t *testing.T) {
+			c := baseConfig()
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("MattermostDownloadUrl can be a path", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostDownloadURL = "file:///some/path"
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("MattermostDownloadUrl must be an url or a file", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostDownloadURL = "/some/path"
+
+			require.Error(t, c.IsValid())
+		})
+	})
+
 	t.Run("DBName is valid", func(t *testing.T) {
 		t.Run("empty ClusterIdentifier and empty DBName is valid", func(t *testing.T) {
 			c := baseConfig()
