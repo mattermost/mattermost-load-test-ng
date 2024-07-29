@@ -17,8 +17,8 @@
     "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": "",
-    "RestoreTimeoutMinutes": "",
-    "ClusterTimeoutMinutes": ""
+    "RestoreTimeoutMinutes": 45,
+    "ClusterTimeoutMinutes": 45
   },
   "JobServerSettings":{
     "InstanceCount": 0,
