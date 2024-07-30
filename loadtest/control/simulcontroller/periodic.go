@@ -10,12 +10,12 @@ import (
 
 const (
 	getUsersStatusByIdsInterval = 60 * time.Second
-	submitClientMetircsInterval = 60 * time.Second
+	submitClientMetricsInterval = 60 * time.Second
 )
 
 func (c *SimulController) periodicActions(wg *sync.WaitGroup) {
-	st := time.NewTicker(getUsersStatusByIdsInterval)
-	mt := time.NewTicker(submitClientMetircsInterval)
+	getUserStatusTicker := time.NewTicker(getUsersStatusByIdsInterval)
+	submitMetricsTicker := time.NewTicker(submitClientMetricsInterval)
 
 	defer func() {
 		mt.Stop()

@@ -44,7 +44,7 @@ func (ue *UserEntity) SubmitPerformanceReport() error {
 	if err != nil {
 		return err
 	}
-	report.End = float64(time.Now().UnixMilli() / 1000)
+	report.End = float64(time.Now().UnixMilli()) / 1000
 
 	_, err = ue.client.SubmitClientMetrics(context.Background(), report)
 	if err != nil {
