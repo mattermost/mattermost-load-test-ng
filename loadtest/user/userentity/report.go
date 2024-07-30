@@ -51,7 +51,7 @@ func (ue *UserEntity) SubmitPerformanceReport() error {
 		return err
 	}
 	ue.store.SetPerformanceReport(&model.PerformanceReport{
-		Start: float64(time.Now().UnixMilli() / 1000),
+		Start: float64(time.Now().UnixMilli()) / 1000,
 	})
 
 	return nil

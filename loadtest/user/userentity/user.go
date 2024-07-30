@@ -155,7 +155,7 @@ func New(setup Setup, config Config) *UserEntity {
 			"agent":    randomUserAgent(),
 		},
 		ClientID: model.NewId(),
-		Start:    float64(time.Now().UnixMilli() / 1000),
+		Start:    float64(time.Now().UnixMilli()) / 1000,
 	})
 
 	return &ue
