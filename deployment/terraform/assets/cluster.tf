@@ -102,7 +102,7 @@ resource "aws_instance" "metrics_server" {
   }
 
   ami           = var.aws_ami
-  instance_type = "t3.xlarge"
+  instance_type = "t3.2xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
 
