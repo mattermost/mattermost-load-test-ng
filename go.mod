@@ -26,6 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.37.3
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.173.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
