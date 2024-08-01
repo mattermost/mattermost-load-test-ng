@@ -792,7 +792,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			return
 		}
 
-		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB
+		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB (Usually of instance classes >=4xlarge)
 			cacheObjects = "50m"
 			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
 			// from my tests. So there's no point stretching it further.
