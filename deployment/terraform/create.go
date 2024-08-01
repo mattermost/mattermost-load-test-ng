@@ -21,6 +21,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/v8/config"
@@ -681,6 +684,26 @@ func genNginxConfig() (string, error) {
 	return fillConfigTemplate(nginxConfigTmpl, data)
 }
 
+func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
+	}
+	descOutput, err := ec2.NewFromConfig(cfg).DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []types.InstanceType{types.InstanceType(t.config.ProxyInstanceType)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error trying to describe instance type: %v", err)
+	}
+
+	if len(descOutput.InstanceTypes) == 0 {
+		return nil, fmt.Errorf("no instance types returned")
+	}
+	return &descOutput.InstanceTypes[0], nil
+}
+
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 	ip := t.output.Proxy.PublicDNS
 
@@ -709,22 +732,22 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		cacheObjects := "10m"
 		cacheSize := "3g"
 		rxQueueSize := 1024 // This is the default on most EC2 instances
-		// Extracting the instance class from the type.
-		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
-		parts := strings.Split(t.config.ProxyInstanceType, ".")
-		if len(parts) > 1 {
-			// Hack alert. There can be other higher variants like 12xlarge or even metal. But we are keeping it simple for now.
-			switch parts[1] {
-			case "4", "8":
-				cacheObjects = "50m"
-				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
-				// from my tests. So there's no point stretching it further.
 
-				// MM-58179
-				// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
-				// (and retransmissions) on particularly bursty connections (e.g. websockets).
-				rxQueueSize = 8192
-			}
+		info, err := t.getProxyInstanceInfo()
+		if err != nil {
+			mlog.Error("Error while getting proxy info", mlog.Err(err))
+			return
+		}
+
+		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB (Usually of instance classes >=4xlarge)
+			cacheObjects = "50m"
+			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
+			// from my tests. So there's no point stretching it further.
+
+			// MM-58179
+			// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
+			// (and retransmissions) on particularly bursty connections (e.g. websockets).
+			rxQueueSize = 8192
 		}
 
 		nginxConfig, err := genNginxConfig()
