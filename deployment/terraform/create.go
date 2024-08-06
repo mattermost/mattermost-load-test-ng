@@ -1118,6 +1118,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
 
 	// We lock to make this call safe for concurrent use

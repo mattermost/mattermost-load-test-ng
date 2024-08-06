@@ -335,6 +335,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if t.output.HasRedis() {
+		buf, err = os.ReadFile(t.getAsset("redis_dashboard_data.json"))
+		if err != nil {
+			return err
+		}
+		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/redis_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading redis_dashboard_json: output: %s, error: %w", out, err)
+		}
+	}
+
 	// Restart grafana
 	cmd = "sudo service grafana-server restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
