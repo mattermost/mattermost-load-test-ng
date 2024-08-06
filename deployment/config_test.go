@@ -10,9 +10,31 @@ func TestConfigIsValid(t *testing.T) {
 	baseConfig := func() Config {
 		return Config{
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.18.0/mattermost-load-test-ng-v1.18.0-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz",
 		}
 	}
+
+	t.Run("paths", func(t *testing.T) {
+		t.Run("MattermostDownloadUrl can be an url", func(t *testing.T) {
+			c := baseConfig()
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("MattermostDownloadUrl can be a path", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostDownloadURL = "file:///some/path"
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("MattermostDownloadUrl must be an url or a file", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostDownloadURL = "/some/path"
+
+			require.Error(t, c.IsValid())
+		})
+	})
 
 	t.Run("DBName is valid", func(t *testing.T) {
 		t.Run("empty ClusterIdentifier and empty DBName is valid", func(t *testing.T) {
@@ -54,7 +76,7 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 		return Config{
 			ClusterName:           "clustername",
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.18.0/mattermost-load-test-ng-v1.18.0-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz",
 			ElasticSearchSettings: ElasticSearchSettings{
 				InstanceCount: 1,
 				Version:       "Elasticsearch_7.10",

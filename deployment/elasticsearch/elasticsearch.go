@@ -242,23 +242,29 @@ func (r RestoreSnapshotOpts) MarshalJSON() ([]byte, error) {
 		indices = append(indices, "-"+i)
 	}
 
-	// Set the number of replicas of each shard
-	numReplicas := 1
-	if r.NumberOfReplicas > 0 {
-		numReplicas = r.NumberOfReplicas
-	}
-
 	payload := restoreSnapshotBody{
 		Indices:       strings.Join(indices, ","),
-		IndexSettings: restoreSnapshotBodyIndexSettings{numReplicas},
+		IndexSettings: restoreSnapshotBodyIndexSettings{r.NumberOfReplicas},
 	}
 
 	return json.Marshal(payload)
 }
 
+func (r RestoreSnapshotOpts) IsValid() error {
+	if r.NumberOfReplicas < 0 {
+		return fmt.Errorf("number of replicas must be at least 0, but it is %d", r.NumberOfReplicas)
+	}
+
+	return nil
+}
+
 // RestoreSnapshot restores a snapshot from a repository using the options
 // provided.
 func (c *Client) RestoreSnapshot(repositoryName, snapshotName string, opts RestoreSnapshotOpts) error {
+	if err := opts.IsValid(); err != nil {
+		return fmt.Errorf("invalid options for restoring the snapshot: %w", err)
+	}
+
 	body, err := json.Marshal(opts)
 	if err != nil {
 		return err

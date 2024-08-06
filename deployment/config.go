@@ -53,11 +53,11 @@ type Config struct {
 	ExternalBucketSettings ExternalBucketSettings
 	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
 	ExternalAuthProviderSettings ExternalAuthProviderSettings
-	// URL from where to download Mattermost release.
-	// This can also point to a local binary path if the user wants to run loadtest
-	// on a custom build. The path should be prefixed with "file://". In that case,
-	// only the binary gets replaced, and the rest of the build comes from the latest
-	// stable release.
+	// MattermostDownloadURL supports the following use cases:
+	// 1. If it is a URL, it should be the Mattermost release to use.
+	// 2. If it is a file:// uri pointing to a binary, use the latest Mattermost release and replace
+	//    its binary with the binary pointed to by the file:// uri.
+	// 3. If it is a file:// pointing to a tar.gz, use that as the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
 	MattermostLicenseFile string `default:"" validate:"file"`
@@ -73,7 +73,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.18.0/mattermost-load-test-ng-v1.18.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings

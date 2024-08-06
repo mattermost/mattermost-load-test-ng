@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,6 +23,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/v8/config"
@@ -32,6 +36,7 @@ const cmdExecTimeoutMinutes = 120
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
+	releaseSuffix    = "tar.gz"
 )
 
 // requiredVersion specifies the supported versions of Terraform,
@@ -123,22 +128,37 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	var uploadPath string
 	var uploadBinary bool
-	var binaryPath string
-	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
-		binaryPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
-		info, err := os.Stat(binaryPath)
+	var uploadRelease bool
+
+	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) &&
+		strings.HasSuffix(t.config.MattermostDownloadURL, releaseSuffix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
+		if err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("release path %s has to be a regular file", uploadPath)
+		}
+
+		uploadRelease = true
+	} else if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
 		if err != nil {
 			return err
 		}
 
 		// We make sure the file is executable by both the owner and group.
 		if info.Mode()&0110 != 0110 {
-			return fmt.Errorf("file %s has to be an executable", binaryPath)
+			return fmt.Errorf("file %s has to be an executable", uploadPath)
 		}
 
 		if !info.Mode().IsRegular() {
-			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
+			return fmt.Errorf("binary path %s has to be a regular file", uploadPath)
 		}
 
 		t.config.MattermostDownloadURL = latestReleaseURL
@@ -182,6 +202,25 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	// Check if a policy to publish logs from OpenSearch Service to CloudWatch
+	// exists, and create it otherwise.
+	// Note that we are doing this outside of Terraform. This is because we
+	// only need one policy in the account, not one per deployment. This
+	// behaviour is also enforced by the rate limitation on this type of
+	// policies: there can only be 10 such policies per region per account.
+	// Check the docs for more information:
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+	if err = t.checkCloudWatchLogsPolicy(); err != nil {
+		if err != ErrNotFound {
+			return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+		}
+
+		mlog.Info("No CloudWatchLogs policy found, creating a new one")
+		if err := t.createCloudWatchLogsPolicy(); err != nil {
+			return fmt.Errorf("failed creating CloudWatchLogs policy")
+		}
+	}
+
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
@@ -214,7 +253,7 @@ func (t *Terraform) Create(initData bool) error {
 		}
 
 		// Updating the config.json for each instance of app server
-		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath, siteURL); err != nil {
+		if err := t.setupAppServers(extAgent, uploadBinary, uploadRelease, uploadPath, siteURL); err != nil {
 			return fmt.Errorf("error setting up app servers: %w", err)
 		}
 
@@ -325,16 +364,16 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string, siteURL string) error {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
@@ -343,15 +382,15 @@ func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, b
 	return nil
 }
 
-func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, uploadRelease, uploadPath, !t.output.HasJobServer())
 }
 
-func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, binaryPath, true)
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, uploadRelease, uploadPath, true)
 }
 
-func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
@@ -403,11 +442,28 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	// provision MM build
-	commands := []string{
-		"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
-		"tar xzf mattermost-dist.tar.gz",
-		"sudo rm -rf /opt/mattermost",
-		"sudo mv mattermost /opt/",
+	var commands []string
+	if uploadRelease {
+		mlog.Info("Uploading release from tar.gz file", mlog.String("host", ip))
+
+		filename := path.Base(uploadPath)
+		if out, err := sshc.UploadFile(uploadPath, "/home/ubuntu/"+filename, false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
+		}
+		commands = []string{
+			"tar xzf " + filename,
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
+	} else {
+		mlog.Info("Uploading release from MattermostDownloadURL", mlog.String("host", ip))
+
+		commands = []string{
+			"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
+			"tar xzf mattermost-dist.tar.gz",
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
 	}
 	mlog.Info("Provisioning MM build", mlog.String("host", ip))
 	cmd = strings.Join(commands, " && ")
@@ -424,8 +480,8 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	if uploadBinary {
 		mlog.Info("Uploading binary", mlog.String("host", ip))
 
-		if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-			return fmt.Errorf("error uploading file %q, output: %q: %w", binaryPath, string(out), err)
+		if out, err := sshc.UploadFile(uploadPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
 	}
 
@@ -682,6 +738,26 @@ func genNginxConfig() (string, error) {
 	return fillConfigTemplate(nginxConfigTmpl, data)
 }
 
+func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
+	}
+	descOutput, err := ec2.NewFromConfig(cfg).DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []types.InstanceType{types.InstanceType(t.config.ProxyInstanceType)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error trying to describe instance type: %v", err)
+	}
+
+	if len(descOutput.InstanceTypes) == 0 {
+		return nil, fmt.Errorf("no instance types returned")
+	}
+	return &descOutput.InstanceTypes[0], nil
+}
+
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 	ip := t.output.Proxy.PublicDNS
 
@@ -710,22 +786,22 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 		cacheObjects := "10m"
 		cacheSize := "3g"
 		rxQueueSize := 1024 // This is the default on most EC2 instances
-		// Extracting the instance class from the type.
-		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
-		parts := strings.Split(t.config.ProxyInstanceType, ".")
-		if len(parts) > 1 {
-			// Hack alert. There can be other higher variants like 12xlarge or even metal. But we are keeping it simple for now.
-			switch parts[1] {
-			case "4", "8":
-				cacheObjects = "50m"
-				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
-				// from my tests. So there's no point stretching it further.
 
-				// MM-58179
-				// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
-				// (and retransmissions) on particularly bursty connections (e.g. websockets).
-				rxQueueSize = 8192
-			}
+		info, err := t.getProxyInstanceInfo()
+		if err != nil {
+			mlog.Error("Error while getting proxy info", mlog.Err(err))
+			return
+		}
+
+		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB (Usually of instance classes >=4xlarge)
+			cacheObjects = "50m"
+			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
+			// from my tests. So there's no point stretching it further.
+
+			// MM-58179
+			// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
+			// (and retransmissions) on particularly bursty connections (e.g. websockets).
+			rxQueueSize = 8192
 		}
 
 		nginxConfig, err := genNginxConfig()
