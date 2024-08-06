@@ -176,7 +176,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
 		rdr := strings.NewReader(redisExporterService)
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
-			return fmt.Errorf("error upload redis exporter service file: output: %s, error: %w", out, err)
+			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
 		}
 		cmd := "sudo systemctl enable redis-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {

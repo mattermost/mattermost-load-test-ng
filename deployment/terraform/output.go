@@ -236,7 +236,7 @@ func (o *Output) HasElasticSearch() bool {
 	return o.ElasticSearchServer.Endpoint != ""
 }
 
-// HasRedis returns whether a deployment has ElasticSaearch installed in it or not.
+// HasRedis returns whether a deployment has Redis installed in it or not.
 func (o *Output) HasRedis() bool {
 	return o.RedisServer.Address != ""
 }
