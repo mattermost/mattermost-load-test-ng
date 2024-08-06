@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1041,6 +1042,15 @@ func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 		}
 	}
 	return collapsedThreads, UserActionResponse{}
+}
+
+func DraftsEnabled(u user.User) (bool, UserActionResponse) {
+	allow, err := strconv.ParseBool(u.Store().ClientConfig()["AllowSyncedDrafts"])
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return allow, UserActionResponse{}
 }
 
 // MessageExport simulates the given user performing

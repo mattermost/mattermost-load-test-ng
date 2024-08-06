@@ -934,101 +934,102 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 	cfg := &model.Config{}
 	cfg.SetDefaults()
-	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
-	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
-	cfg.ServiceSettings.SiteURL = model.NewString(siteURL)
-	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
-	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
-	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
-	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
-	cfg.ServiceSettings.ThreadAutoFollow = model.NewBool(true)
-	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
-	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
-	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
-	cfg.ServiceSettings.PostPriority = model.NewBool(true)
+	cfg.ServiceSettings.ListenAddress = model.NewPointer(":8065")
+	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer("/home/ubuntu/mattermost.mattermost-license")
+	cfg.ServiceSettings.SiteURL = model.NewPointer(siteURL)
+	cfg.ServiceSettings.ReadTimeout = model.NewPointer(60)
+	cfg.ServiceSettings.WriteTimeout = model.NewPointer(60)
+	cfg.ServiceSettings.IdleTimeout = model.NewPointer(90)
+	cfg.ServiceSettings.EnableLocalMode = model.NewPointer(true)
+	cfg.ServiceSettings.ThreadAutoFollow = model.NewPointer(true)
+	cfg.ServiceSettings.CollapsedThreads = model.NewPointer(model.CollapsedThreadsDefaultOn)
+	cfg.ServiceSettings.EnableLinkPreviews = model.NewPointer(true)
+	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewPointer(true)
+	cfg.ServiceSettings.PostPriority = model.NewPointer(true)
+	cfg.ServiceSettings.AllowSyncedDrafts = model.NewPointer(true)
 	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
 	// node or the proxy and set that.
-	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
-	cfg.ServiceSettings.EnableOpenTracing = model.NewBool(false)    // Large overhead, better to disable
-	cfg.ServiceSettings.EnableTutorial = model.NewBool(false)       // Makes manual testing easier
-	cfg.ServiceSettings.EnableOnboardingFlow = model.NewBool(false) // Makes manual testing easier
+	cfg.ServiceSettings.AllowCorsFrom = model.NewPointer("*")
+	cfg.ServiceSettings.EnableOpenTracing = model.NewPointer(false)    // Large overhead, better to disable
+	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)       // Makes manual testing easier
+	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false) // Makes manual testing easier
 
-	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
-	cfg.EmailSettings.SMTPPort = model.NewString("2500")
+	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.PrivateIP)
+	cfg.EmailSettings.SMTPPort = model.NewPointer("2500")
 
 	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
-		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.output.S3Key.Id)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.output.S3Key.Secret)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.output.S3Bucket.Id)
-		cfg.FileSettings.AmazonS3Region = model.NewString(t.output.S3Bucket.Region)
+		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.output.S3Key.Id)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewPointer(t.output.S3Key.Secret)
+		cfg.FileSettings.AmazonS3Bucket = model.NewPointer(t.output.S3Bucket.Id)
+		cfg.FileSettings.AmazonS3Region = model.NewPointer(t.output.S3Bucket.Region)
 	} else if t.config.ExternalBucketSettings.AmazonS3Bucket != "" {
-		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.config.ExternalBucketSettings.AmazonS3Bucket)
-		cfg.FileSettings.AmazonS3PathPrefix = model.NewString(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
-		cfg.FileSettings.AmazonS3Region = model.NewString(t.config.ExternalBucketSettings.AmazonS3Region)
-		cfg.FileSettings.AmazonS3Endpoint = model.NewString(t.config.ExternalBucketSettings.AmazonS3Endpoint)
-		cfg.FileSettings.AmazonS3SSL = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSL)
-		cfg.FileSettings.AmazonS3SignV2 = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SignV2)
-		cfg.FileSettings.AmazonS3SSE = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSE)
+		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
+		cfg.FileSettings.AmazonS3Bucket = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Bucket)
+		cfg.FileSettings.AmazonS3PathPrefix = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
+		cfg.FileSettings.AmazonS3Region = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Region)
+		cfg.FileSettings.AmazonS3Endpoint = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Endpoint)
+		cfg.FileSettings.AmazonS3SSL = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SSL)
+		cfg.FileSettings.AmazonS3SignV2 = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SignV2)
+		cfg.FileSettings.AmazonS3SSE = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SSE)
 	}
 
-	cfg.LogSettings.EnableConsole = model.NewBool(true)
-	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
-	cfg.LogSettings.EnableFile = model.NewBool(true)
-	cfg.LogSettings.FileLevel = model.NewString("WARN")
-	cfg.LogSettings.EnableSentry = model.NewBool(false)
+	cfg.LogSettings.EnableConsole = model.NewPointer(true)
+	cfg.LogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.LogSettings.EnableFile = model.NewPointer(true)
+	cfg.LogSettings.FileLevel = model.NewPointer("WARN")
+	cfg.LogSettings.EnableSentry = model.NewPointer(false)
 
-	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
-	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
-	cfg.NotificationLogSettings.EnableFile = model.NewBool(true)
-	cfg.NotificationLogSettings.FileLevel = model.NewString("WARN")
+	cfg.NotificationLogSettings.EnableConsole = model.NewPointer(true)
+	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.NotificationLogSettings.EnableFile = model.NewPointer(true)
+	cfg.NotificationLogSettings.FileLevel = model.NewPointer("WARN")
 
-	cfg.SqlSettings.DriverName = model.NewString(driverName)
-	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
+	cfg.SqlSettings.DriverName = model.NewPointer(driverName)
+	cfg.SqlSettings.DataSource = model.NewPointer(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
-	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
-	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
-	cfg.SqlSettings.Trace = model.NewBool(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
+	cfg.SqlSettings.MaxIdleConns = model.NewPointer(100)
+	cfg.SqlSettings.MaxOpenConns = model.NewPointer(100)
+	cfg.SqlSettings.Trace = model.NewPointer(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
 	if t.output.HasElasticSearch() {
-		cfg.SqlSettings.DisableDatabaseSearch = model.NewBool(true)
+		cfg.SqlSettings.DisableDatabaseSearch = model.NewPointer(true)
 	}
 
-	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(200000)      // We don't want to be capped by this limit
-	cfg.TeamSettings.MaxChannelsPerTeam = model.NewInt64(200000) // We don't want to be capped by this limit
-	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
-	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(1000)
+	cfg.TeamSettings.MaxUsersPerTeam = model.NewPointer(200000)           // We don't want to be capped by this limit
+	cfg.TeamSettings.MaxChannelsPerTeam = model.NewPointer(int64(200000)) // We don't want to be capped by this limit
+	cfg.TeamSettings.EnableOpenServer = model.NewPointer(true)
+	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewPointer(int64(1000))
 
-	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
-	cfg.ClusterSettings.Enable = model.NewBool(true)
-	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
-	cfg.ClusterSettings.EnableGossipCompression = model.NewBool(false)
-	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewBool(true)
+	cfg.ClusterSettings.GossipPort = model.NewPointer(8074)
+	cfg.ClusterSettings.Enable = model.NewPointer(true)
+	cfg.ClusterSettings.ClusterName = model.NewPointer(t.config.ClusterName)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewPointer(false)
+	cfg.ClusterSettings.EnableGossipCompression = model.NewPointer(false)
+	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewPointer(true)
 
-	cfg.MetricsSettings.Enable = model.NewBool(true)
+	cfg.MetricsSettings.Enable = model.NewPointer(true)
 
-	cfg.PluginSettings.Enable = model.NewBool(true)
-	cfg.PluginSettings.EnableUploads = model.NewBool(true)
+	cfg.PluginSettings.Enable = model.NewPointer(true)
+	cfg.PluginSettings.EnableUploads = model.NewPointer(true)
 
-	cfg.JobSettings.RunJobs = model.NewBool(jobServerEnabled)
+	cfg.JobSettings.RunJobs = model.NewPointer(jobServerEnabled)
 
 	if t.output.HasElasticSearch() {
-		cfg.ElasticsearchSettings.ConnectionURL = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
-		cfg.ElasticsearchSettings.Username = model.NewString("")
-		cfg.ElasticsearchSettings.Password = model.NewString("")
-		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
-		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
-		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
-		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+		cfg.ElasticsearchSettings.ConnectionURL = model.NewPointer("https://" + t.output.ElasticSearchServer.Endpoint)
+		cfg.ElasticsearchSettings.Username = model.NewPointer("")
+		cfg.ElasticsearchSettings.Password = model.NewPointer("")
+		cfg.ElasticsearchSettings.Sniff = model.NewPointer(false)
+		cfg.ElasticsearchSettings.EnableIndexing = model.NewPointer(true)
+		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewPointer(true)
+		cfg.ElasticsearchSettings.EnableSearching = model.NewPointer(true)
 
 		// Make all indices have a shard replica in every data node
 		numReplicas := t.config.ElasticSearchSettings.InstanceCount - 1
-		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewInt(numReplicas)
-		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewInt(numReplicas)
-		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewInt(numReplicas)
+		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewPointer(numReplicas)
+		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewPointer(numReplicas)
+		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewPointer(numReplicas)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
@@ -1054,11 +1055,11 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 			keycloakScheme = "http"
 		}
 
-		cfg.OpenIdSettings.Enable = model.NewBool(true)
-		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
-		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
-		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientID)
-		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
+		cfg.OpenIdSettings.Enable = model.NewPointer(true)
+		cfg.OpenIdSettings.ButtonText = model.NewPointer("Keycloak Login")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewPointer(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientID)
+		cfg.OpenIdSettings.Secret = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
