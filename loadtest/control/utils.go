@@ -61,7 +61,7 @@ var (
 	MinSupportedVersion = semver.MustParse("7.8.0")
 
 	// UnreleasedVersion is a version guaranteed to be larger than any released
-	// ersion, useful for actions already added to the load-test but not yet
+	// version, useful for actions already added to the load-test but not yet
 	// merged in the server.
 	UnreleasedVersion = semver.Version{Major: math.MaxUint64}
 )
