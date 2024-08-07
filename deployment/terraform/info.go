@@ -51,6 +51,10 @@ func displayInfo(output *Output) {
 		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 	}
 
+	if output.HasProxy() {
+		fmt.Println("Proxy: " + output.Proxy.PublicIP)
+	}
+
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
