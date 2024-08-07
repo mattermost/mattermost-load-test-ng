@@ -41,6 +41,8 @@ type Config struct {
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
+	// Number of proxy instances.
+	ProxyInstanceCount int `default:"1" validate:"range:[0,1]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
@@ -98,6 +100,10 @@ type Config struct {
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
 	SiteURL string `default:"ltserver"`
+	// ServerURL is the URL of the Mattermost server URL that the agent client will use to connect to the
+	// Mattermost servers. This is used to override the server URL in the agent's config in case there's a
+	// proxy in front of the Mattermost server.
+	ServerURL string `default:""`
 	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
