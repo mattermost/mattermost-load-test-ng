@@ -207,6 +207,24 @@ func getActionList(c *SimulController) []userAction {
 			run:       c.generateUserReport,
 			frequency: 0.0001,
 		},
+		{
+			name:             "UpsertDraft",
+			run:              c.upsertDraft,
+			frequency:        0.504,
+			minServerVersion: "7.7.0",
+		},
+		{
+			name:             "GetDrafts",
+			run:              c.getDrafts,
+			frequency:        0.037,
+			minServerVersion: "7.7.0",
+		},
+		{
+			name:             "DeleteDraft",
+			run:              c.deleteDraft,
+			frequency:        1.41,
+			minServerVersion: "7.7.0",
+		},
 	}
 
 	return actions

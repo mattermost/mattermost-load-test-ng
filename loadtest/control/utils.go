@@ -19,7 +19,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
-	"github.com/wiggin77/merror"
 )
 
 type PostsSearchOpts struct {
@@ -270,6 +269,26 @@ func IsVersionSupported(version, serverVersionString string) (bool, error) {
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
 // all uploaded files to the post.
 func AttachFilesToPost(u user.User, post *model.Post) error {
+	fileIDs, err := _attachFilesToObj(u, post.ChannelId)
+	if err != nil {
+		return err
+	}
+	post.FileIds = fileIDs
+	return nil
+}
+
+// AttachFilesToDraft uploads at least one file on behalf of the user, attaching
+// all uploaded files to the draft.
+func AttachFilesToDraft(u user.User, draft *model.Draft) error {
+	fileIDs, err := _attachFilesToObj(u, draft.ChannelId)
+	if err != nil {
+		return err
+	}
+	draft.FileIds = fileIDs
+	return nil
+}
+
+func _attachFilesToObj(u user.User, channelID string) ([]string, error) {
 	type file struct {
 		data   []byte
 		upload bool
@@ -297,7 +316,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 		wg.Add(1)
 		go func(filename string, data []byte) {
 			defer wg.Done()
-			resp, err := u.UploadFile(data, post.ChannelId, filename)
+			resp, err := u.UploadFile(data, channelID, filename)
 			if err != nil {
 				errChan <- err
 				return
@@ -311,15 +330,16 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 	close(errChan)
 
 	// Attach all successfully uploaded files
+	var fileIDs []string
 	for fileId := range fileIdsChan {
-		post.FileIds = append(post.FileIds, fileId)
+		fileIDs = append(fileIDs, fileId)
 	}
 
 	// Collect all errors
-	merr := merror.New()
+	var finalErr error
 	for err := range errChan {
-		merr.Append(err)
+		finalErr = errors.Join(finalErr, err)
 	}
 
-	return merr.ErrorOrNil()
+	return fileIDs, finalErr
 }
