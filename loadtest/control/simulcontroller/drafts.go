@@ -51,10 +51,9 @@ func (c *SimulController) upsertDraft(u user.User) control.UserActionResponse {
 	}
 
 	var rootId = ""
-
-	// 33% of the time draft will be a thread reply
-	// NOTE: This needs to be verified.
-	if rand.Float64() < 0.33 {
+	// 87% of the time draft will be a thread reply
+	// source: https://hub.mattermost.com/private-core/pl/qqr4t6n3wpbdxnouhy9qrabewh
+	if rand.Float64() < 0.87 {
 		post, err := u.Store().RandomPostForChannel(channel.Id)
 		if errors.Is(err, memstore.ErrPostNotFound) {
 			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
