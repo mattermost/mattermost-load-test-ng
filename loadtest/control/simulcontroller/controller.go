@@ -210,19 +210,19 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:             "UpsertDraft",
 			run:              c.upsertDraft,
-			frequency:        0.933,
+			frequency:        0.504,
 			minServerVersion: "7.7.0",
 		},
 		{
 			name:             "GetDrafts",
 			run:              c.getDrafts,
-			frequency:        0.564,
+			frequency:        0.037,
 			minServerVersion: "7.7.0",
 		},
 		{
 			name:             "DeleteDraft",
 			run:              c.deleteDraft,
-			frequency:        1.755,
+			frequency:        1.41,
 			minServerVersion: "7.7.0",
 		},
 	}

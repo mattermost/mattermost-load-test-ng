@@ -176,9 +176,9 @@ type MutableUserStore interface {
 	SetStatus(userId string, status *model.Status) error
 
 	// drafts
-	// SetDraft
+	// SetDraft stores the draft for the given teamId, and channelId or rootId.
 	SetDraft(teamId, id string, draft *model.Draft) error
-	// SetDrafts
+	// SetDrafts stores the given drafts.
 	SetDrafts(teamId string, drafts []*model.Draft) error
 
 	// posts

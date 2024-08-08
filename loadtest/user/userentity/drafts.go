@@ -51,9 +51,5 @@ func (ue *UserEntity) DeleteDraft(channelId string, rootId string) error {
 	}
 
 	_, _, err = ue.client.DeleteDraft(context.Background(), user.Id, channelId, rootId)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
