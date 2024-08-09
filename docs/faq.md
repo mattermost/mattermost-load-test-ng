@@ -111,6 +111,14 @@ If you want to stress test this specific job during a load-test, you can use the
     }
 }
 ```
+
+### Can I use a custom load balancer (like an ALB/NLB) in front of the Mattermost server?
+
+Yes, it's possible by disabling the proxy server and setting up the SiteURL manually pointint to the reverse proxy. The app servers must be registered with the load balancer manually while the environment is being created, so the ideal scenario is to setup the LB/Target Group in advance and then register the instances as they become available:
+
+- Setup the `deployer.json` with: `ProxyInstanceCount` set to `0` and `ServerURL` or `SiteURL` pointing to your reverse proxy host, depending on your needs.
+- While your environment is being created, you can configure your reverse proxy to point to the Mattermost servers when the app servers are ready.
+
 ## Troubleshooting
 
 ### Increase debugging level
@@ -138,7 +146,7 @@ Also the `Max Users Per Team` setting in Mattermost System Console should be eno
 
 ### Agent failing with `MaxActiveUsers is not compatible with max Rlimit value` error
 
-This means the maximum number of file descriptors is lower than what the agent needs to operate. 
+This means the maximum number of file descriptors is lower than what the agent needs to operate.
 
 The following command can be run to raise the limit to the suggested value:
 
@@ -158,7 +166,4 @@ sudo systemctl daemon-reload
 sudo systemctl restart ltapi
 ```
 
-You will have to run this for every loadtest agent you have. These will be appended by `agent-` when you run the `ltctl ssh` command above. 
-
-
-
+You will have to run this for every loadtest agent you have. These will be appended by `agent-` when you run the `ltctl ssh` command above.
