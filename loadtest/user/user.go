@@ -117,6 +117,14 @@ type User interface {
 	// It returns the users in the system based on the given username.
 	AutocompleteUsersInTeam(teamId, username string, limit int) (map[string]bool, error)
 
+	// drafts
+	// GetDrafts fetches and stores drafts for the given user in a specified team.
+	GetDrafts(teamId string) error
+	// UpsertDraft creates and stores a new draft made by the user.
+	UpsertDraft(teamId string, draft *model.Draft) error
+	// DeleteDraft deletes the draft for the given user in a specified channel.
+	DeleteDraft(channelId, rootId string) error
+
 	// posts
 	// CreatePost creates and stores a new post made by the user.
 	CreatePost(post *model.Post) (string, error)
