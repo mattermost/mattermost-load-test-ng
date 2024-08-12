@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -85,83 +86,109 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	wg := sync.WaitGroup{}
+	wgDone := make(chan struct{})
+	errChan := make(chan error, 1)
+
 	for i, val := range t.output.Agents {
-		sshc, err := extAgent.NewClient(val.PublicIP)
-		if err != nil {
-			return err
-		}
-		mlog.Info("Configuring agent", mlog.String("ip", val.PublicIP))
-		if uploadBinary {
-			dstFilePath := "/home/ubuntu/tmp.tar.gz"
-			mlog.Info("Uploading binary", mlog.String("file", packagePath))
-			if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
-				return fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
-			}
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		cmd := strings.Join(commands, " && ")
-		if out, err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running command, got output: %q: %w", out, err)
-		}
-
-		tpl, err := template.New("").Parse(apiServiceFile)
-		if err != nil {
-			return fmt.Errorf("could not parse agent service template: %w", err)
-		}
-
-		serverCmd := baseAPIServerCmd
-		if t.config.EnableAgentFullLogs {
-			serverCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
-		}
-
-		buf := bytes.NewBufferString("")
-		tpl.Execute(buf, serverCmd)
-
-		batch := []uploadInfo{
-			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
-			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
-			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
-		}
-
-		if t.config.UsersFilePath != "" {
-			batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[i], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
-		}
-
-		// If SiteURL is set, update /etc/hosts to point to the correct IP
-		if t.config.SiteURL != "" {
-			output, err := t.Output()
+			sshc, err := extAgent.NewClient(val.PublicIP)
 			if err != nil {
-				return err
+				errChan <- err
+			}
+			mlog.Info("Configuring agent", mlog.String("ip", val.PublicIP))
+			if uploadBinary {
+				dstFilePath := "/home/ubuntu/tmp.tar.gz"
+				mlog.Info("Uploading binary", mlog.String("file", packagePath))
+				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
+					errChan <- fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
+				}
 			}
 
-			// The new entry in /etc/hosts will make SiteURL point to:
-			// - The first instance's IP if there's a single node
-			// - The proxy's IP if there's more than one node
-			ip := output.Instances[0].PrivateIP
-			if output.HasProxy() {
-				ip = output.Proxy.PrivateIP
+			cmd := strings.Join(commands, " && ")
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
 			}
 
-			proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
-			appHostsFile := fmt.Sprintf(appHosts, proxyHost)
+			tpl, err := template.New("").Parse(apiServiceFile)
+			if err != nil {
+				errChan <- fmt.Errorf("could not parse agent service template: %w", err)
+			}
 
-			batch = append(batch, uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts", msg: "Updating /etc/hosts to point to the correct IP"})
-		}
+			serverCmd := baseAPIServerCmd
+			if t.config.EnableAgentFullLogs {
+				serverCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
+			}
 
-		if err := uploadBatch(sshc, batch); err != nil {
-			return fmt.Errorf("batch upload failed: %w", err)
-		}
+			buf := bytes.NewBufferString("")
+			tpl.Execute(buf, serverCmd)
 
-		if out, err := sshc.RunCommand("sudo sysctl -p"); err != nil {
-			return fmt.Errorf("error running command, got output: %q: %w", out, err)
-		}
+			batch := []uploadInfo{
+				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
+				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
+				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+			}
 
-		mlog.Info("Starting load-test api server")
-		if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
-			return fmt.Errorf("error running command, got output: %q: %w", out, err)
-		}
+			if t.config.UsersFilePath != "" {
+				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[i], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
+			}
+
+			// If SiteURL is set, update /etc/hosts to point to the correct IP
+			if t.config.SiteURL != "" {
+				output, err := t.Output()
+				if err != nil {
+					errChan <- err
+				}
+
+				// The new entry in /etc/hosts will make SiteURL point to:
+				// - The first instance's IP if there's a single node
+				// - The proxy's IP if there's more than one node
+				ip := output.Instances[0].PrivateIP
+				if output.HasProxy() {
+					ip = output.Proxy.PrivateIP
+				}
+
+				proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
+				appHostsFile := fmt.Sprintf(appHosts, proxyHost)
+
+				batch = append(batch, uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts", msg: "Updating /etc/hosts to point to the correct IP"})
+			}
+
+			if err := uploadBatch(sshc, batch); err != nil {
+				errChan <- fmt.Errorf("batch upload failed: %w", err)
+			}
+
+			if out, err := sshc.RunCommand("sudo sysctl -p"); err != nil {
+				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
+			}
+
+			mlog.Info("Starting load-test api server")
+			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
+				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
+			}
+		}()
 	}
+
+	// Run another goroutine to check when all agents have finished configuring
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+
+	// Wait for all the agent setup to finish or return an error if one of them fails
+	select {
+	case <-wgDone:
+		// Do nothing, operation successful.
+		break
+	case err := <-errChan:
+		close(errChan)
+		return fmt.Errorf("error configuring one of the agents agents: %w", err)
+	}
+
 	return nil
 }
 
