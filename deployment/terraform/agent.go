@@ -92,14 +92,18 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 	for i, val := range t.output.Agents {
 		wg.Add(1)
+		agentNumber := i
+		instance := val
+
 		go func() {
+			// Copy val into instance
 			defer wg.Done()
 
-			sshc, err := extAgent.NewClient(val.PublicIP)
+			sshc, err := extAgent.NewClient(instance.PublicIP)
 			if err != nil {
 				errChan <- err
 			}
-			mlog.Info("Configuring agent", mlog.String("ip", val.PublicIP))
+			mlog.Info("Configuring agent", mlog.String("ip", instance.PublicIP), mlog.Int("agent", agentNumber))
 			if uploadBinary {
 				dstFilePath := "/home/ubuntu/tmp.tar.gz"
 				mlog.Info("Uploading binary", mlog.String("file", packagePath))
@@ -134,7 +138,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			if t.config.UsersFilePath != "" {
-				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[i], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
+				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
 			}
 
 			// If SiteURL is set, update /etc/hosts to point to the correct IP
