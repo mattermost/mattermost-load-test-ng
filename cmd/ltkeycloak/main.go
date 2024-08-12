@@ -276,7 +276,6 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			}
 
 			if !dryRun {
-
 				kcUserID, err := keycloakClient.CreateUser(ctx, token.AccessToken, keycloakRealm, gocloak.User{
 					Username:      &user.Username,
 					Email:         &user.Email,
@@ -306,9 +305,9 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 				if err != nil {
 					return fmt.Errorf("failed to update user in mattermost: %w", err)
 				}
-
-				slog.Info("migrated user", slog.String("username", user.Username))
 			}
+
+			slog.Info("migrated user", slog.String("username", user.Username))
 		}
 
 		if len(users) == 0 {
@@ -329,6 +328,7 @@ func MakeSyncFromMattermostCommand() *cobra.Command {
 	}
 
 	cmd.Flags().String("set-user-password-to", "testpassword", "Set's the user password to the provided value")
+	cmd.Flags().String("keycloak-realm", "master", "The Keycloak realm to migrate users to")
 
 	return cmd
 }
