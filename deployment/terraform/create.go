@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"strconv"
@@ -1032,6 +1033,13 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewPointer(numReplicas)
 	}
 
+	if t.output.HasRedis() {
+		cfg.CacheSettings.CacheType = model.NewString(model.CacheTypeRedis)
+		redisEndpoint := net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port))
+		cfg.CacheSettings.RedisAddress = model.NewString(redisEndpoint)
+		cfg.CacheSettings.RedisDB = model.NewInt(0)
+	}
+
 	if t.config.MattermostConfigPatchFile != "" {
 		data, err := os.ReadFile(t.config.MattermostConfigPatchFile)
 		if err != nil {
@@ -1111,6 +1119,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
 
 	// We lock to make this call safe for concurrent use
