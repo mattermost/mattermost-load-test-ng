@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -228,64 +229,46 @@ func TestGeneratePostsSearchTerm(t *testing.T) {
 	})
 }
 
-func TestIsVersionSupported(t *testing.T) {
+func TestParseServerVersion(t *testing.T) {
 	testCases := []struct {
-		version       string
-		serverVersion string
-		expected      bool
-		expectedErr   string
+		name            string
+		version         string
+		expectedVersion semver.Version
+		expectedErr     string
 	}{
 		{
-			version:       "",
-			serverVersion: "",
-			expected:      false,
-			expectedErr:   "Version string empty",
+			name:        "Empty string",
+			version:     "",
+			expectedErr: "Version string empty",
 		},
 		{
-			version:       "invalid",
-			serverVersion: "",
-			expected:      false,
-			expectedErr:   "No Major.Minor.Patch elements found",
+			name:        "Non-empty but invalid string",
+			version:     "invalid",
+			expectedErr: "Version string empty",
 		},
 		{
-			version:       "5.30.0",
-			serverVersion: "invalid",
-			expected:      false,
-			expectedErr:   "Version string empty",
+			name:            "Valid string",
+			version:         "5.30.1",
+			expectedVersion: semver.MustParse("5.30.1"),
+			expectedErr:     "",
 		},
 		{
-			version:       "5.30.1",
-			serverVersion: "5.30.0",
-			expected:      false,
-			expectedErr:   "",
-		},
-		{
-			version:       "5.30.0",
-			serverVersion: "5.30.0",
-			expected:      true,
-			expectedErr:   "",
-		},
-		{
-			version:       "5.29.0",
-			serverVersion: "5.30.0",
-			expected:      true,
-			expectedErr:   "",
-		},
-		{
-			version:       "5.29.0",
-			serverVersion: "5.30.0.dev.d74e4887bd588dbe342a45c77d6dc52a.false",
-			expected:      true,
-			expectedErr:   "",
+			name:            "Valid string with pre-version",
+			version:         "5.30.0.dev.d74e4887bd588dbe342a45c77d6dc52a.false",
+			expectedVersion: semver.MustParse("5.30.0"),
+			expectedErr:     "",
 		},
 	}
 
 	for _, tc := range testCases {
-		ok, err := IsVersionSupported(tc.version, tc.serverVersion)
-		if tc.expectedErr == "" {
-			require.Nil(t, err)
-		} else {
-			require.Equal(t, tc.expectedErr, err.Error())
-		}
-		require.Equal(t, tc.expected, ok)
+		t.Run(tc.name, func(t *testing.T) {
+			sv, err := ParseServerVersion(tc.version)
+			if tc.expectedErr == "" {
+				require.Nil(t, err)
+			} else {
+				require.Equal(t, tc.expectedErr, err.Error())
+			}
+			require.Equal(t, tc.expectedVersion, sv)
+		})
 	}
 }

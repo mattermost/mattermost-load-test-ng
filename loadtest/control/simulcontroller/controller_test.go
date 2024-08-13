@@ -12,7 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNew(t *testing.T) {
+func newController(t *testing.T) (*SimulController, chan control.UserStatus) {
+	t.Helper()
+
 	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
 	require.NoError(t, err)
 	require.NotNil(t, config)
@@ -26,31 +28,27 @@ func TestNew(t *testing.T) {
 		WebSocketURL: "ws://localhost:8065",
 	})
 
-	c, err := New(1, user, config, make(chan control.UserStatus))
-	require.Nil(t, err)
+	statusChan := make(chan control.UserStatus)
+
+	c, err := New(1, user, config, statusChan)
+	require.NoError(t, err)
+
+	return c, statusChan
+}
+
+func TestNew(t *testing.T) {
+	c, statusChan := newController(t)
+	close(statusChan) // not used
 
 	require.Equal(t, len(c.actionList), len(c.actionMap))
 }
 
 func TestSetRate(t *testing.T) {
-	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
-	require.NoError(t, err)
-	require.NotNil(t, config)
-
-	store, err := memstore.New(nil)
-	require.NotNil(t, store)
-	require.NoError(t, err)
-
-	user := userentity.New(userentity.Setup{Store: store}, userentity.Config{
-		ServerURL:    "http://localhost:8065",
-		WebSocketURL: "ws://localhost:8065",
-	})
-
-	c, err := New(1, user, config, make(chan control.UserStatus))
-	require.Nil(t, err)
+	c, statusChan := newController(t)
+	close(statusChan) // not used
 	require.Equal(t, 1.0, c.rate)
 
-	err = c.SetRate(-1.0)
+	err := c.SetRate(-1.0)
 	require.NotNil(t, err)
 	require.Equal(t, 1.0, c.rate)
 
@@ -64,22 +62,7 @@ func TestSetRate(t *testing.T) {
 }
 
 func TestRunStop(t *testing.T) {
-	store, err := memstore.New(nil)
-	require.NotNil(t, store)
-	require.NoError(t, err)
-
-	user := userentity.New(userentity.Setup{Store: store}, userentity.Config{
-		ServerURL:    "http://localhost:8065",
-		WebSocketURL: "ws://localhost:8065",
-	})
-	statusChan := make(chan control.UserStatus)
-
-	config, err := ReadConfig("../../../config/simulcontroller.sample.json")
-	require.NoError(t, err)
-	require.NotNil(t, config)
-
-	c, err := New(1, user, config, statusChan)
-	require.Nil(t, err)
+	c, statusChan := newController(t)
 
 	doneRunning := make(chan struct{})
 	go func() {
@@ -109,4 +92,12 @@ func TestRunStop(t *testing.T) {
 	<-doneRunning
 	close(statusChan)
 	<-doneHandlingStatus
+}
+
+func TestGetActionList(t *testing.T) {
+	c, statusChan := newController(t)
+	close(statusChan) // not used
+	for _, action := range getActionList(c) {
+		require.NotZero(t, action.minServerVersion, "All actions must have minServerVersion set")
+	}
 }

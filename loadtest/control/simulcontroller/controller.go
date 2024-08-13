@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -18,213 +19,256 @@ import (
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
-			name:      "SwitchChannel",
-			run:       switchChannel,
-			frequency: 6.5219,
+			name:             "SwitchChannel",
+			run:              switchChannel,
+			frequency:        6.5219,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "SwitchTeam",
-			run:       c.switchTeam,
-			frequency: 0.0001,
+			name:             "SwitchTeam",
+			run:              c.switchTeam,
+			frequency:        0.0001,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "ScrollChannel",
-			run:       c.scrollChannel,
-			frequency: 1.9873,
+			name:             "ScrollChannel",
+			run:              c.scrollChannel,
+			frequency:        1.9873,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "OpenDirectOrGroupChannel",
-			run:       openDirectOrGroupChannel,
-			frequency: 0.9843,
+			name:             "OpenDirectOrGroupChannel",
+			run:              openDirectOrGroupChannel,
+			frequency:        0.9843,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "UnreadCheck",
-			run:       unreadCheck,
-			frequency: 1,
+			name:             "UnreadCheck",
+			run:              unreadCheck,
+			frequency:        1,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "CreatePost",
-			run:       c.createPost,
-			frequency: 1,
+			name:             "CreatePost",
+			run:              c.createPost,
+			frequency:        1,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "JoinChannel",
-			run:       c.joinChannel,
-			frequency: 0.0049,
+			name:             "JoinChannel",
+			run:              c.joinChannel,
+			frequency:        0.0049,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "SearchChannels",
-			run:       c.searchChannels,
-			frequency: 0.0150,
+			name:             "SearchChannels",
+			run:              c.searchChannels,
+			frequency:        0.0150,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "AddReaction",
-			run:       c.addReaction,
-			frequency: 0.1306,
+			name:             "AddReaction",
+			run:              c.addReaction,
+			frequency:        0.1306,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "FullReload",
-			run:       c.fullReload,
-			frequency: 0.0008,
+			name:             "FullReload",
+			run:              c.fullReload,
+			frequency:        0.0008,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "CreateDirectChannel",
-			run:       c.createDirectChannel,
-			frequency: 0.0055,
+			name:             "CreateDirectChannel",
+			run:              c.createDirectChannel,
+			frequency:        0.0055,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "LogoutLogin",
-			run:       c.logoutLogin,
-			frequency: 0.0006,
+			name:             "LogoutLogin",
+			run:              c.logoutLogin,
+			frequency:        0.0006,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "SearchUsers",
-			run:       searchUsers,
-			frequency: 0.0320,
+			name:             "SearchUsers",
+			run:              searchUsers,
+			frequency:        0.0320,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "SearchPosts",
-			run:       searchPosts,
-			frequency: 0.0218,
+			name:             "SearchPosts",
+			run:              searchPosts,
+			frequency:        0.0218,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "CreatePostReminder",
-			run:       c.createPostReminder,
-			frequency: 0.0005,
+			name:             "CreatePostReminder",
+			run:              c.createPostReminder,
+			frequency:        0.0005,
+			minServerVersion: control.MinSupportedVersion, // 7.3.0
 		},
 		{
-			name:      "EditPost",
-			run:       editPost,
-			frequency: 0.0400,
+			name:             "EditPost",
+			run:              editPost,
+			frequency:        0.0400,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "DeletePost",
-			run:       deletePost,
-			frequency: 0.0049,
+			name:             "DeletePost",
+			run:              deletePost,
+			frequency:        0.0049,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "UpdateCustomStatus",
-			run:       c.updateCustomStatus,
-			frequency: 0.0028,
+			name:             "UpdateCustomStatus",
+			run:              c.updateCustomStatus,
+			frequency:        0.0028,
+			minServerVersion: control.MinSupportedVersion, // 5.33.0
 		},
 		{
-			name:      "RemoveCustomStatus",
-			run:       c.removeCustomStatus,
-			frequency: 0.0026,
+			name:             "RemoveCustomStatus",
+			run:              c.removeCustomStatus,
+			frequency:        0.0026,
+			minServerVersion: control.MinSupportedVersion, // 5.33.0
 		},
 		{
-			name:      "CreateSidebarCategory",
-			run:       c.createSidebarCategory,
-			frequency: 0.0001,
+			name:             "CreateSidebarCategory",
+			run:              c.createSidebarCategory,
+			frequency:        0.0001,
+			minServerVersion: control.MinSupportedVersion, // 5.26.0
 		},
 		{
-			name:      "UpdateSidebarCategory",
-			run:       c.updateSidebarCategory,
-			frequency: 0.0040,
+			name:             "UpdateSidebarCategory",
+			run:              c.updateSidebarCategory,
+			frequency:        0.0040,
+			minServerVersion: control.MinSupportedVersion, // 5.26.0
 		},
 		{
-			name:      "SearchGroupChannels",
-			run:       searchGroupChannels,
-			frequency: 0.0204,
+			name:             "SearchGroupChannels",
+			run:              searchGroupChannels,
+			frequency:        0.0204,
+			minServerVersion: control.MinSupportedVersion, // 5.14.0
 		},
 		{
-			name:      "CreateGroupChannel",
-			run:       c.createGroupChannel,
-			frequency: 0.0029,
+			name:             "CreateGroupChannel",
+			run:              c.createGroupChannel,
+			frequency:        0.0029,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "CreatePrivateChannel",
-			run:       createPrivateChannel,
-			frequency: 0.0002,
+			name:             "CreatePrivateChannel",
+			run:              createPrivateChannel,
+			frequency:        0.0002,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "CreatePublicChannel",
-			run:       createPublicChannel,
-			frequency: 0.0001,
+			name:             "CreatePublicChannel",
+			run:              createPublicChannel,
+			frequency:        0.0001,
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
-			name:      "ViewGlobalThreads",
-			run:       c.viewGlobalThreads,
-			frequency: 0.6023,
+			name:             "ViewGlobalThreads",
+			run:              c.viewGlobalThreads,
+			frequency:        0.6023,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "FollowThread",
-			run:       c.followThread,
-			frequency: 0.0005,
+			name:             "FollowThread",
+			run:              c.followThread,
+			frequency:        0.0005,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "UnfollowThread",
-			run:       c.unfollowThread,
-			frequency: 0.0050,
+			name:             "UnfollowThread",
+			run:              c.unfollowThread,
+			frequency:        0.0050,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "ViewThread",
-			run:       c.viewThread,
-			frequency: 0.2841,
+			name:             "ViewThread",
+			run:              c.viewThread,
+			frequency:        0.2841,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "MarkAllThreadsInTeamAsRead",
-			run:       c.markAllThreadsInTeamAsRead,
-			frequency: 0.0001,
+			name:             "MarkAllThreadsInTeamAsRead",
+			run:              c.markAllThreadsInTeamAsRead,
+			frequency:        0.0001,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "UpdateThreadRead",
-			run:       c.updateThreadRead,
-			frequency: 0.3236,
+			name:             "UpdateThreadRead",
+			run:              c.updateThreadRead,
+			frequency:        0.3236,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "CreateAclPost",
-			run:       control.CreateAckPost,
-			frequency: 0.0001,
+			name:             "CreateAckPost",
+			run:              control.CreateAckPost,
+			frequency:        0.0001,
+			minServerVersion: semver.MustParse("8.0.0"),
 		},
 		{
-			name:      "AckToPost",
-			run:       control.AckToPost,
-			frequency: 0.0001,
+			name:             "AckToPost",
+			run:              control.AckToPost,
+			frequency:        0.0001,
+			minServerVersion: semver.MustParse("8.0.0"),
 		},
 		{
-			name:      "CreatePersistentNotificationPost",
-			run:       control.CreatePersistentNotificationPost,
-			frequency: 0.0001,
+			name:             "CreatePersistentNotificationPost",
+			run:              control.CreatePersistentNotificationPost,
+			frequency:        0.0001,
+			minServerVersion: semver.MustParse("8.0.0"),
 		},
 		{
-			name:      "ClickUserProfile",
-			run:       c.openUserProfile,
-			frequency: 0.03,
+			name:             "ClickUserProfile",
+			run:              c.openUserProfile,
+			frequency:        0.03,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "ClickPermalink",
-			run:       c.openPermalink,
-			frequency: 0.3,
+			name:             "ClickPermalink",
+			run:              c.openPermalink,
+			frequency:        0.3,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "ReconnectWebSocket",
-			run:       c.reconnectWebSocket,
-			frequency: 0.144,
+			name:             "ReconnectWebSocket",
+			run:              c.reconnectWebSocket,
+			frequency:        0.144,
+			minServerVersion: control.MinSupportedVersion, // 5.37.0
 		},
 		{
-			name:      "GenerateUserReport",
-			run:       c.generateUserReport,
-			frequency: 0.0001,
+			name:             "GenerateUserReport",
+			run:              c.generateUserReport,
+			frequency:        0.0001,
+			minServerVersion: semver.MustParse("8.0.0"),
 		},
 		{
 			name:             "UpsertDraft",
 			run:              c.upsertDraft,
 			frequency:        0.504,
-			minServerVersion: "7.7.0",
+			minServerVersion: control.MinSupportedVersion, // 7.7.0
 		},
 		{
 			name:             "GetDrafts",
 			run:              c.getDrafts,
 			frequency:        0.037,
-			minServerVersion: "7.7.0",
+			minServerVersion: control.MinSupportedVersion, // 7.7.0
 		},
 		{
 			name:             "DeleteDraft",
 			run:              c.deleteDraft,
 			frequency:        1.41,
-			minServerVersion: "7.7.0",
+			minServerVersion: control.MinSupportedVersion, // 7.7.0
 		},
+		// All actions are required to contain a valid minServerVersion:
+		//   - If the action is present in server versions equal or older than
+		//     control.MinSupportedVersion, use control.MinSupportedVersion.
+		//   - If the action is not released in any stable version of the
+		//     server, use control.UnreleasedVersion
 	}
 
 	return actions
@@ -253,7 +297,7 @@ type SimulController struct {
 	disconnectChan     chan struct{}   // notifies disconnection to the ws and periodic goroutines
 	connectedFlag      int32           // indicates that the controller is connected
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
-	serverVersion      string          // stores the current server version
+	serverVersion      semver.Version  // stores the current server version
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -308,7 +352,28 @@ func (c *SimulController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	c.serverVersion, _ = c.user.Store().ServerVersion()
+	// Init controller's server version
+	serverVersionString, err := c.user.Store().ServerVersion()
+	if err != nil {
+		c.sendFailStatus("server version could not be retrieved")
+		return
+	}
+	serverVersion, err := control.ParseServerVersion(serverVersionString)
+	if err != nil {
+		c.sendFailStatus("server version could not be parsed")
+		return
+	}
+	c.serverVersion = serverVersion
+
+	// Early check that the server version is greater or equal than the initialVersion
+	if !c.isVersionSupported(control.MinSupportedVersion) {
+		c.sendFailStatus(fmt.Sprintf(
+			"server version %q is lower than the minimum supported version %q",
+			serverVersion.String(),
+			control.MinSupportedVersion.String(),
+		))
+		return
+	}
 
 	initActions := []userAction{
 		{
@@ -341,14 +406,21 @@ func (c *SimulController) Run() {
 	}
 
 	var action *userAction
-	var err error
+
+	// Filter only actions that are available for the current server
+	var supportedActions []userAction
+	for _, action := range c.actionList {
+		if c.isVersionSupported(action.minServerVersion) {
+			supportedActions = append(supportedActions, action)
+		}
+	}
 
 	for {
 		select {
 		case ia := <-c.injectedActionChan: // injected actions are run first
 			action = &ia
 		default:
-			action, err = pickAction(c.actionList)
+			action, err = pickAction(supportedActions)
 			if err != nil {
 				panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
 			}
@@ -369,15 +441,6 @@ func (c *SimulController) Run() {
 func (c *SimulController) runAction(action *userAction) {
 	if action == nil {
 		return
-	}
-
-	if action.minServerVersion != "" {
-		supported, err := control.IsVersionSupported(action.minServerVersion, c.serverVersion)
-		if err != nil {
-			c.status <- c.newErrorStatus(err)
-		} else if !supported {
-			return
-		}
 	}
 
 	if resp := action.run(c.user); resp.Err != nil {
@@ -442,6 +505,10 @@ func (c *SimulController) InjectAction(actionID string) error {
 	default:
 		return fmt.Errorf("action %s could not be queued: %w", actionID, control.ErrInjectActionQueueFull)
 	}
+}
+
+func (c *SimulController) isVersionSupported(version semver.Version) bool {
+	return version.LTE(c.serverVersion)
 }
 
 // ensure SimulController implements UserController interface
