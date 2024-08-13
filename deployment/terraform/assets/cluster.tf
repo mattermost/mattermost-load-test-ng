@@ -84,7 +84,6 @@ resource "aws_instance" "app_server" {
       "sudo apt-get install -y mysql-client-8.0",
       "sudo apt-get install -y postgresql-client-14",
       "sudo apt-get install -y prometheus-node-exporter",
-      # "sudo NEEDRESTART_MODE=a apt-get install -y redis-tools",
       "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
     ]
   }
