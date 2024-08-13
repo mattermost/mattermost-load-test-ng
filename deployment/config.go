@@ -51,11 +51,13 @@ type Config struct {
 	ExternalDBSettings ExternalDBSettings
 	// External bucket connection settings.
 	ExternalBucketSettings ExternalBucketSettings
-	// URL from where to download Mattermost release.
-	// This can also point to a local binary path if the user wants to run loadtest
-	// on a custom build. The path should be prefixed with "file://". In that case,
-	// only the binary gets replaced, and the rest of the build comes from the latest
-	// stable release.
+	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
+	ExternalAuthProviderSettings ExternalAuthProviderSettings
+	// MattermostDownloadURL supports the following use cases:
+	// 1. If it is a URL, it should be the Mattermost release to use.
+	// 2. If it is a file:// uri pointing to a binary, use the latest Mattermost release and replace
+	//    its binary with the binary pointed to by the file:// uri.
+	// 3. If it is a file:// pointing to a tar.gz, use that as the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
 	MattermostLicenseFile string `default:"" validate:"file"`
@@ -71,8 +73,9 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.15.0/mattermost-load-test-ng-v1.15.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -87,6 +90,11 @@ type Config struct {
 	// This can also point to a local file if prefixed with "file://".
 	// In such case, the dump file will be uploaded to the app servers.
 	DBDumpURI string `default:""`
+	// DBExtraSQL are optional URIs to SQL files containing SQL statements to be applied
+	// to the Mattermost database.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	DBExtraSQL []string `default:"[]"`
 	// An optional host name that will:
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
@@ -114,6 +122,8 @@ type StorageSizes struct {
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
 	ElasticSearch int `default:"20"`
+	// Size, in GiB, for the storage of the keycloak instances
+	KeyCloak int `default:"10"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
@@ -179,6 +189,43 @@ type ExternalBucketSettings struct {
 	AmazonS3SSE             bool   `default:"false"`
 }
 
+// ExternalAuthProviderSettings contains the necessary data
+// to configure an external auth provider.
+type ExternalAuthProviderSettings struct {
+	// Enabled is set to true if the external auth provider should be enabled.
+	Enabled bool `default:"false"`
+	// DevelopmentMode is set to true if the keycloak instance should be started in development mode.
+	DevelopmentMode bool `default:"true"`
+	// KeycloakVersion is the version of keycloak to deploy.
+	KeycloakVersion string `default:"24.0.2"`
+	// KeycloakInstanceType is the type of the EC2 instance for keycloak.
+	InstanceType string `default:"c7i.xlarge"`
+	// KeycloakAdminUser is the username of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminUser string `default:"mmuser" validate:"notempty"`
+	// KeycloakAdminPassword is the password of the keycloak admin interface (admin on the master realm)
+	KeycloakAdminPassword string `default:"mmpass" validate:"notempty"`
+	// KeycloakRealmFilePath is the path to the realm file to be uploaded to the keycloak instance.
+	// If empty, a default realm file will be used.
+	KeycloakRealmFilePath string `default:""`
+	// KeycloakDBDumpURI
+	// An optional URI to a keycloak database dump file to be uploaded on environment
+	// creation.
+	// The file is expected to be gzip compressed.
+	// This can also point to a local file if prefixed with "file://".
+	KeycloakDBDumpURI string `default:""`
+	// GenerateUsersCount is the number of users to generate in the keycloak instance.
+	GenerateUsersCount int `default:"0" validate:"range:[0,)"`
+	// KeycloakRealmName is the name of the realm to be used in Mattermost. Must exist in the keycloak instance.
+	// It is used when creating users and to properly set the OpenID configuration in Mattermost.
+	KeycloakRealmName string `default:"mattermost"`
+	// KeycloakClientID is the client id to be used in Mattermost from the above realm.
+	// Must exist in the keycloak instance
+	KeycloakClientID string `default:"mattermost-openid"`
+	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
+	// Must exist in the keycloak instance
+	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
+}
+
 // ElasticSearchSettings contains the necessary data
 // to configure an ElasticSearch instance to be deployed
 // and provisioned.
@@ -188,7 +235,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string `default:"Elasticsearch_7.10" validate:"prefix:Elasticsearch_"`
+	Version string `default:"Elasticsearch_7.10"`
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
@@ -197,6 +244,21 @@ type ElasticSearchSettings struct {
 	SnapshotRepository string
 	// SnapshotName is the name of the snapshot to restore.
 	SnapshotName string
+	// RestoreTimeoutMinutes is the maximum time, in minutes, that the system will wait for the snapshot to be restored.
+	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
+	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+}
+
+type RedisSettings struct {
+	// Enabled indicates whether to add Redis or not.
+	Enabled bool
+	// NodeType indicates the instance type.
+	NodeType string `default:"cache.m7g.2xlarge"`
+	// ParameterGroupName indicates the parameter group to attach.
+	ParameterGroupName string `default:"default.redis7"`
+	// EngineVersion indicates the engine version.
+	EngineVersion string `default:"7.1"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -270,12 +332,12 @@ func checkPrefix(str string) bool {
 }
 
 func (c *Config) validateElasticSearchConfig() error {
-	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.ElasticSearchSettings.InstanceCount > 1 {
-			return errors.New("it is not possible to create more than 1 instance of Elasticsearch")
-		}
+	if c.ElasticSearchSettings.InstanceCount == 0 {
+		return nil
+	}
 
-		if c.ElasticSearchSettings.InstanceCount > 0 && c.ElasticSearchSettings.VpcID == "" {
+	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
+		if c.ElasticSearchSettings.VpcID == "" {
 			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
 		}
 
@@ -286,6 +348,10 @@ func (c *Config) validateElasticSearchConfig() error {
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
 
+	}
+
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
 	}
 
 	return nil
@@ -308,7 +374,7 @@ func (c *Config) validateDBName() error {
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/deployer.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "./config/deployer.json", &cfg); err != nil {
 		return nil, err
 	}
 

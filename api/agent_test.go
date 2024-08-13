@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gavv/httpexpect"
@@ -226,4 +229,73 @@ func TestAgentAPIConcurrency(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestGetUserCredentials(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		fileContents  []string
+		expectedCreds []user
+		expectErr     bool
+	}{
+		{
+			name: "get simple credentials",
+			expectedCreds: []user{{
+				email:       "email1@sample.mattermost.com",
+				password:    "password",
+				username:    "email1",
+				authService: userentity.AuthenticationTypeMattermost,
+			}, {
+				email:       "email2@sample.mattermost.com",
+				password:    "password",
+				username:    "email2",
+				authService: userentity.AuthenticationTypeMattermost,
+			}},
+			fileContents: []string{
+				"email1@sample.mattermost.com password",
+				"email2@sample.mattermost.com password",
+			},
+		}, {
+			name: "get credentials with custom auth provider",
+			expectedCreds: []user{{
+				email:       "email1@sample.mattermost.com",
+				password:    "password",
+				username:    "email1",
+				authService: userentity.AuthenticationTypeOpenID,
+			}},
+			fileContents: []string{
+				"openid:email1@sample.mattermost.com password",
+			},
+		}, {
+			name:      "incorrect auth provider",
+			expectErr: true,
+			fileContents: []string{
+				"incorrect:email@sample.mattermost.com password",
+			},
+		}, {
+			name:      "incorrect number of fields",
+			expectErr: true,
+			fileContents: []string{
+				"bogus",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpFile, err := os.CreateTemp("", "credentials")
+			require.NoError(t, err)
+			defer os.Remove(tmpFile.Name())
+
+			_, err = tmpFile.Write([]byte(strings.Join(tc.fileContents, "\n")))
+			require.NoError(t, err)
+
+			creds, err := getUserCredentials(tmpFile.Name(), nil)
+
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedCreds, creds)
+			}
+		})
+	}
 }

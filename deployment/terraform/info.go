@@ -5,6 +5,8 @@ package terraform
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 )
 
 // Info displays information about the current load-test deployment.
@@ -56,6 +58,13 @@ func displayInfo(output *Output) {
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
 		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
 	}
+	if output.HasKeycloak() {
+		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PublicIP)
+		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PublicDNS + ":8080/")
+		if len(output.KeycloakDatabaseCluster.Endpoints) > 0 {
+			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Endpoints[0])
+		}
+	}
 	if output.HasDB() {
 		fmt.Println("DB Cluster Identifier: ", output.DBCluster.ClusterIdentifier)
 		fmt.Println("DB writer endpoint: " + output.DBWriter())
@@ -66,6 +75,10 @@ func displayInfo(output *Output) {
 
 	if output.HasElasticSearch() {
 		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticSearchServer.Endpoint)
+	}
+
+	if output.HasRedis() {
+		fmt.Println("Redis endpoint: ", net.JoinHostPort(output.RedisServer.Address, strconv.Itoa(output.RedisServer.Port)))
 	}
 	fmt.Println("==================================================")
 }

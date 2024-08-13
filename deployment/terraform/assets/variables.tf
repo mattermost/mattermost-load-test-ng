@@ -39,6 +39,20 @@ variable "es_create_role" {
 variable "es_snapshot_repository" {
 }
 
+# Redis variables
+
+variable "redis_enabled" {
+}
+
+variable "redis_node_type" {
+}
+
+variable "redis_param_group_name" {
+}
+
+variable "redis_engine_version" {
+}
+
 variable "proxy_instance_type" {
 }
 
@@ -116,6 +130,29 @@ variable "block_device_sizes_elasticsearch" {
   default = 20
 }
 
+# Keycloak variables
+variable "block_device_sizes_keycloak" {
+  type    = number
+  default = 10
+}
+
+variable "keycloak_enabled" {
+  type = bool
+}
+
+variable "keycloak_instance_type" {
+}
+
+variable "keycloak_version" {
+  type    = string
+  default = "24.0.2"
+}
+
+variable "keycloak_development_mode" {
+  type = bool
+}
+
+# Job server variables
 variable "job_server_instance_count" {
 }
 

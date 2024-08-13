@@ -246,6 +246,24 @@ func getActionList(c *SimulController) []userAction {
 			frequency:        0.0001,
 			minServerVersion: semver.MustParse("8.0.0"),
 		},
+		{
+			name:             "UpsertDraft",
+			run:              c.upsertDraft,
+			frequency:        0.504,
+			minServerVersion: semver.MustParse("7.7.0"),
+		},
+		{
+			name:             "GetDrafts",
+			run:              c.getDrafts,
+			frequency:        0.037,
+			minServerVersion: semver.MustParse("7.7.0"),
+		},
+		{
+			name:             "DeleteDraft",
+			run:              c.deleteDraft,
+			frequency:        1.41,
+			minServerVersion: semver.MustParse("7.7.0"),
+		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than
 		//     control.MinSupportedVersion, use control.MinSupportedVersion.

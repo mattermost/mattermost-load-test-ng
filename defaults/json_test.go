@@ -1,42 +1,41 @@
 package defaults
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type testCFG struct {
-	Setting string `default:"hi"`
-	Another int    `default:"1"`
-}
-
 func TestReadFromJSON(t *testing.T) {
-	cfg := testCFG{}
-	f, err := os.CreateTemp("", "loadtest")
-	require.NoError(t, err)
-	defer os.Remove(f.Name()) // clean up
+	t.Run("changed values", func(t *testing.T) {
+		var cfg testCFG
+		f, cleanup := getTestCFG(t, `{"setting": "hello", "another": 2}`, "json")
+		defer cleanup()
 
-	// Ensuring that a bad config throws an error
-	_, err = f.Write([]byte(`{"setting": "hello" "another": 1}`))
-	require.NoError(t, err)
-	require.NoError(t, f.Close())
+		require.NoError(t, ReadFrom(f.Name(), "", &cfg))
+		assert.Equal(t, "hello", cfg.Setting)
+		assert.Equal(t, 2, cfg.Another)
+	})
 
-	require.Error(t, ReadFromJSON("", f.Name(), &cfg))
+	t.Run("unknown field", func(t *testing.T) {
+		var cfg testCFG
+		f, cleanup := getTestCFG(t, `{"setting": "hello", "unknown": 2}`, "json")
+		defer cleanup()
 
-	cfg = testCFG{}
-	f1, err := os.CreateTemp("", "loadtest")
-	require.NoError(t, err)
-	defer os.Remove(f1.Name()) // clean up
+		err := ReadFrom(f.Name(), "", &cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown field")
+	})
 
-	// Ensuring default values get correctly overridden
-	_, err = f1.Write([]byte(`{"setting": "hello"}`))
-	require.NoError(t, err)
-	require.NoError(t, f1.Close())
+	t.Run("ensure default values", func(t *testing.T) {
+		var cfg testCFG
+		f, cleanup := getTestCFG(t, `{"setting": "hello"}`, "json")
+		defer cleanup()
 
-	require.NoError(t, ReadFromJSON("", f1.Name(), &cfg))
-	assert.Equal(t, 1, cfg.Another)
-	assert.Equal(t, "hello", cfg.Setting)
+		require.NoError(t, ReadFrom(f.Name(), "", &cfg))
+		assert.Equal(t, 1, cfg.Another)
+		assert.Equal(t, "hello", cfg.Setting)
+		assert.Equal(t, "nested", cfg.Nested.Setting)
+	})
 }

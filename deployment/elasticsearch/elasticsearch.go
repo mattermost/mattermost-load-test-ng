@@ -209,36 +209,62 @@ func (c *Client) CloseIndices(indices []string) error {
 	return err
 }
 
-// RestoreSnapshotOpts exposes two options for configuring the RestoreSnapshot
+// RestoreSnapshotOpts exposes three options for configuring the RestoreSnapshot
 // request:
 //   - WithIndices, a list of the indices from the snapshot that need to be
 //     restored.
 //   - WithoutIndices, a list of the indices from the snapshot that need to be
 //     skipped.
+//   - NumberOfReplicas, the number of replicas each primary shard has.
+//     Defaults to 1.
 type RestoreSnapshotOpts struct {
-	WithIndices    []string
-	WithoutIndices []string
+	WithIndices      []string
+	WithoutIndices   []string
+	NumberOfReplicas int
 }
 
 // MarshalJSON implements the Marshaler interface so that RestoreSnapshotOpts
 // can be easily marshalled.
 func (r RestoreSnapshotOpts) MarshalJSON() ([]byte, error) {
+	type restoreSnapshotBodyIndexSettings struct {
+		NumReplicas int `json:"index.number_of_replicas"`
+	}
+
+	type restoreSnapshotBody struct {
+		Indices       string                           `json:"indices"`
+		IndexSettings restoreSnapshotBodyIndexSettings `json:"index_settings"`
+	}
+
+	// Set the indices we want and the ones we want to exclude
 	indices := []string{}
 	indices = append(indices, r.WithIndices...)
 	for _, i := range r.WithoutIndices {
 		indices = append(indices, "-"+i)
 	}
 
-	payload := struct {
-		Indices string `json:"indices"`
-	}{strings.Join(indices, ",")}
+	payload := restoreSnapshotBody{
+		Indices:       strings.Join(indices, ","),
+		IndexSettings: restoreSnapshotBodyIndexSettings{r.NumberOfReplicas},
+	}
 
 	return json.Marshal(payload)
+}
+
+func (r RestoreSnapshotOpts) IsValid() error {
+	if r.NumberOfReplicas < 0 {
+		return fmt.Errorf("number of replicas must be at least 0, but it is %d", r.NumberOfReplicas)
+	}
+
+	return nil
 }
 
 // RestoreSnapshot restores a snapshot from a repository using the options
 // provided.
 func (c *Client) RestoreSnapshot(repositoryName, snapshotName string, opts RestoreSnapshotOpts) error {
+	if err := opts.IsValid(); err != nil {
+		return fmt.Errorf("invalid options for restoring the snapshot: %w", err)
+	}
+
 	body, err := json.Marshal(opts)
 	if err != nil {
 		return err
@@ -311,7 +337,7 @@ type indexRecoveryResponse struct {
 
 type indicesRecoveryResponse map[string]indexRecoveryResponse
 
-// IndexShardRecovery represents the information returned by the IndicesRecovery
+// SnapshotIndexShardRecovery represents the information returned by the IndicesRecovery
 // request for a single index shard, specifying:
 //   - Index: the name of the index where this shard lives.
 //   - Type: the type of the shard, normally "SNAPSHOT" for shards that are
@@ -321,16 +347,16 @@ type indicesRecoveryResponse map[string]indexRecoveryResponse
 //     meaning the shard has already been restored.
 //   - Percent: the percentage of bytes already restored. Note this is not the
 //     percentage of files already restored.
-type IndexShardRecovery struct {
+type SnapshotIndexShardRecovery struct {
 	Index   string
-	Type    string
 	Stage   string
 	Percent string
 }
 
-// IndicesRecovery returns status information for each index shard in the server.
+// SnapshotIndicesRecovery returns status information for each index shard in
+// the server of type SNAPSHOT.
 // This is useful to track the completion of a snapshot restoration process.
-func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error) {
+func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShardRecovery, error) {
 	req := esapi.IndicesRecoveryRequest{
 		Index: indices,
 	}
@@ -339,12 +365,15 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
 	}
 
-	recovery := []IndexShardRecovery{}
+	recovery := []SnapshotIndexShardRecovery{}
 	for _, resp := range indicesRecovery {
 		for _, shard := range resp.Shards {
-			recovery = append(recovery, IndexShardRecovery{
+			// Add only the shards corresponding to the snapshot restoration
+			if shard.Type != "SNAPSHOT" {
+				continue
+			}
+			recovery = append(recovery, SnapshotIndexShardRecovery{
 				Index: shard.Source.Index,
-				Type:  shard.Type,
 				Stage: shard.Stage,
 				// We're using the percentage of bytes restored,
 				// not the percentage of files restored
@@ -354,6 +383,29 @@ func (c *Client) IndicesRecovery(indices []string) ([]IndexShardRecovery, error)
 	}
 
 	return recovery, nil
+}
+
+const (
+	ClusterStatusGreen  = "green"
+	ClusterStatusYellow = "yellow"
+	ClusterStatusRed    = "red"
+)
+
+type ClusterHealthResponse struct {
+	Status             string `json:"status"`
+	InitializingShards int    `json:"initializing_shards"`
+	UnassignedShards   int    `json:"unassigned_shards"`
+}
+
+func (c *Client) ClusterHealth() (ClusterHealthResponse, error) {
+	req := esapi.ClusterHealthRequest{}
+
+	var response ClusterHealthResponse
+	if err := c.get(req, &response); err != nil {
+		return ClusterHealthResponse{}, fmt.Errorf("unable to perform ClusterHealth request: %w", err)
+	}
+
+	return response, nil
 }
 
 // requestDoer models all esapi.XYZRequest, which contains a Do function to

@@ -69,19 +69,18 @@
         "Alert": true
       },
       {
-        "Description": "Percentage of TCP timeouts in the proxy node",
+        "Description": "Percentage of TCP retransmissions in the app nodes",
         "Legend": "Percent",
-        "Query": "100 * rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) / (rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"proxy:9100\"}[1m]) + node_netstat_Tcp_CurrEstab{instance=~\"proxy:9100\"})",
-        "Threshold": 0.2,
+        "Query": "(avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"app.*\"}[1m])) / avg(rate(node_netstat_Tcp_OutSegs{instance=~\"app.*\"}[1m]))) * 100",
+        "Threshold": 0.5,
         "MinIntervalSec": 60,
         "Alert": true
       },
-
       {
-        "Description": "Percentage of TCP timeouts in the app nodes",
+        "Description": "Percentage of TCP retransmissions in the proxy node",
         "Legend": "Percent",
-        "Query": "100 * avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) / (avg(rate(node_netstat_TcpExt_TCPTimeouts{instance=~\"app.*\"}[1m])) + avg(node_netstat_Tcp_CurrEstab{instance=~\"app.*\"}))",
-        "Threshold": 3.0,
+        "Query": "(avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"proxy:9100\"}[1m])) / avg(rate(node_netstat_Tcp_OutSegs{instance=~\"proxy:9100\"}[1m]))) * 100",
+        "Threshold": 0.5,
         "MinIntervalSec": 60,
         "Alert": true
       }

@@ -23,10 +23,8 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	url := t.output.Instances[0].PrivateIP + ":8065"
-	if t.output.HasProxy() {
-		url = t.output.Proxy.PrivateIP
-	}
+
+	url := getServerURL(t.output, t.config)
 
 	cfg.ConnectionConfiguration.ServerURL = "http://" + url
 	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
@@ -123,10 +121,32 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
 			{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 		}
 
 		if t.config.UsersFilePath != "" {
 			batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[i], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
+		}
+
+		// If SiteURL is set, update /etc/hosts to point to the correct IP
+		if t.config.SiteURL != "" {
+			output, err := t.Output()
+			if err != nil {
+				return err
+			}
+
+			// The new entry in /etc/hosts will make SiteURL point to:
+			// - The first instance's IP if there's a single node
+			// - The proxy's IP if there's more than one node
+			ip := output.Instances[0].PrivateIP
+			if output.HasProxy() {
+				ip = output.Proxy.PrivateIP
+			}
+
+			proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
+			appHostsFile := fmt.Sprintf(appHosts, proxyHost)
+
+			batch = append(batch, uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts", msg: "Updating /etc/hosts to point to the correct IP"})
 		}
 
 		if err := uploadBatch(sshc, batch); err != nil {

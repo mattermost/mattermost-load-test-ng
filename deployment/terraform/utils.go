@@ -15,6 +15,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -167,9 +168,9 @@ func validateLicense(filename string) error {
 	}
 
 	validator := &utils.LicenseValidatorImpl{}
-	ok, licenseStr := validator.ValidateLicense(data)
-	if !ok {
-		return errors.New("failed to validate license")
+	licenseStr, err := validator.ValidateLicense(data)
+	if err != nil {
+		return fmt.Errorf("failed to validate license: %w", err)
 	}
 
 	var license model.License
@@ -239,6 +240,9 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("db_password=%s", t.config.TerraformDBSettings.Password),
 		"-var", fmt.Sprintf("db_enable_performance_insights=%t", t.config.TerraformDBSettings.EnablePerformanceInsights),
 		"-var", fmt.Sprintf("db_parameters=%s", t.config.TerraformDBSettings.DBParameters),
+		"-var", fmt.Sprintf("keycloak_enabled=%v", t.config.ExternalAuthProviderSettings.Enabled),
+		"-var", fmt.Sprintf("keycloak_development_mode=%v", t.config.ExternalAuthProviderSettings.DevelopmentMode),
+		"-var", fmt.Sprintf("keycloak_instance_type=%s", t.config.ExternalAuthProviderSettings.InstanceType),
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
@@ -250,6 +254,11 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("block_device_sizes_metrics=%d", t.config.StorageSizes.Metrics),
 		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
 		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
+		"-var", fmt.Sprintf("block_device_sizes_keycloak=%d", t.config.StorageSizes.KeyCloak),
+		"-var", fmt.Sprintf("redis_enabled=%t", t.config.RedisSettings.Enabled),
+		"-var", fmt.Sprintf("redis_node_type=%s", t.config.RedisSettings.NodeType),
+		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
+		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 	}
 }
 
@@ -267,4 +276,24 @@ func (t *Terraform) getClusterDSN() (string, error) {
 
 func (t *Terraform) getAsset(filename string) string {
 	return filepath.Join(t.config.TerraformStateDir, filename)
+}
+
+// getServerURL returns the URL of the server to be used for testing.
+// server URL priority:
+// 1. SiteURL
+// 2. Proxy IP
+// 3. First app server IP
+func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
+	url := output.Instances[0].PrivateIP
+	if deploymentConfig.SiteURL != "" {
+		url = deploymentConfig.SiteURL
+	}
+
+	if !output.HasProxy() {
+		url = url + ":8065"
+	} else if deploymentConfig.SiteURL == "" {
+		url = output.Proxy.PrivateIP
+	}
+
+	return url
 }

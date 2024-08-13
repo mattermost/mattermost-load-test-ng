@@ -14,6 +14,10 @@ output "metricsServer" {
   value = aws_instance.metrics_server
 }
 
+output "keycloakServer" {
+  value = aws_instance.keycloak
+}
+
 output "proxy" {
   value = aws_instance.proxy_server
 }
@@ -25,6 +29,10 @@ output "elasticServer" {
 
 output "elasticRoleARN" {
   value = aws_iam_role.es_role.arn
+}
+
+output "redisServer" {
+  value = aws_elasticache_cluster.redis_server
 }
 
 output "s3bucket" {

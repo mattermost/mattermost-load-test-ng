@@ -1,5 +1,5 @@
 resource "aws_iam_service_linked_role" "es" {
-  count            = var.es_instance_count && var.es_create_role ? 1 : 0
+  count            = var.es_instance_count > 0 && var.es_create_role ? 1 : 0
   aws_service_name = "es.amazonaws.com"
 }
 
@@ -46,31 +46,28 @@ resource "aws_iam_role_policy_attachment" "es_attach" {
   policy_arn = aws_iam_policy.es_policy.arn
 }
 
+/* MM-59316: For this to work, the AWS account needs to have a
+   resource-based policy like the following one:
+   {
+     "Statement": [
+       {
+         "Action": [
+           "logs:PutLogEventsBatch",
+           "logs:PutLogEvents",
+           "logs:CreateLogStream"
+         ],
+         "Effect": "Allow",
+         "Principal": {
+           "Service": "es.amazonaws.com"
+         },
+         "Resource": "arn:aws:logs:*"
+       }
+     ],
+     "Version": "2012-10-17"
+   }
+*/
 resource "aws_cloudwatch_log_group" "es_log_group" {
   name = "${var.cluster_name}-log-group"
-}
-
-data "aws_iam_policy_document" "es_log_policy" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["es.amazonaws.com"]
-    }
-
-    actions = [
-      "logs:PutLogEvents",
-      "logs:PutLogEventsBatch",
-      "logs:CreateLogStream",
-    ]
-
-    resources = ["arn:aws:logs:*"]
-  }
-}
-resource "aws_cloudwatch_log_resource_policy" "es_log_cloudwatch_policy" {
-  policy_name     = "${var.cluster_name}-cloudwatch-log-policy"
-  policy_document = data.aws_iam_policy_document.es_log_policy.json
 }
 
 resource "aws_opensearch_domain" "es_server" {
@@ -96,7 +93,8 @@ resource "aws_opensearch_domain" "es_server" {
   }
 
   cluster_config {
-    instance_type = var.es_instance_type
+    instance_count = var.es_instance_count
+    instance_type  = var.es_instance_type
   }
 
   access_policies = <<CONFIG
@@ -145,5 +143,5 @@ resource "aws_opensearch_domain" "es_server" {
     enabled = true
   }
 
-  count = var.es_instance_count
+  count = var.es_instance_count > 0 ? 1 : 0
 }

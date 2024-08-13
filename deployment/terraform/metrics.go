@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -116,7 +118,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
@@ -157,6 +159,37 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if t.output.HasKeycloak() {
+		host := "keycloak"
+		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
+		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
+	}
+
+	if t.output.HasRedis() {
+		redisEndpoint := fmt.Sprintf("redis://%s", net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port)))
+		redisTargets = append(redisTargets, "metrics:9121")
+
+		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
+
+		// TODO: Pass username/pass later if we ever start using them internally.
+		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
+		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
+		rdr := strings.NewReader(redisExporterService)
+		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
+			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
+		}
+		cmd := "sudo systemctl enable redis-exporter"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+
+		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
+		cmd = "sudo service redis-exporter restart"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+	}
+
 	quoteAll := func(elems []string) []string {
 		quoted := make([]string, 0, len(elems))
 		for _, elem := range elems {
@@ -171,6 +204,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(mmTargets), ","),
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
+		strings.Join(quoteAll(keycloakTargets), ""),
+		strings.Join(quoteAll(redisTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
@@ -297,6 +332,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/es_dashboard.json", true); err != nil {
 			return fmt.Errorf("error while uploading es_dashboard_json: output: %s, error: %w", out, err)
+		}
+	}
+
+	if t.output.HasRedis() {
+		buf, err = os.ReadFile(t.getAsset("redis_dashboard_data.json"))
+		if err != nil {
+			return err
+		}
+		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/redis_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading redis_dashboard_json: output: %s, error: %w", out, err)
 		}
 	}
 

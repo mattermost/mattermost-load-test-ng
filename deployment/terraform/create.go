@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +23,9 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/v8/config"
@@ -31,6 +36,7 @@ const cmdExecTimeoutMinutes = 120
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
+	releaseSuffix    = "tar.gz"
 )
 
 // requiredVersion specifies the supported versions of Terraform,
@@ -122,22 +128,37 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	var uploadPath string
 	var uploadBinary bool
-	var binaryPath string
-	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
-		binaryPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
-		info, err := os.Stat(binaryPath)
+	var uploadRelease bool
+
+	if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) &&
+		strings.HasSuffix(t.config.MattermostDownloadURL, releaseSuffix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
+		if err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("release path %s has to be a regular file", uploadPath)
+		}
+
+		uploadRelease = true
+	} else if strings.HasPrefix(t.config.MattermostDownloadURL, filePrefix) {
+		uploadPath = strings.TrimPrefix(t.config.MattermostDownloadURL, filePrefix)
+		info, err := os.Stat(uploadPath)
 		if err != nil {
 			return err
 		}
 
 		// We make sure the file is executable by both the owner and group.
 		if info.Mode()&0110 != 0110 {
-			return fmt.Errorf("file %s has to be an executable", binaryPath)
+			return fmt.Errorf("file %s has to be an executable", uploadPath)
 		}
 
 		if !info.Mode().IsRegular() {
-			return fmt.Errorf("binary path %s has to be a regular file", binaryPath)
+			return fmt.Errorf("binary path %s has to be a regular file", uploadPath)
 		}
 
 		t.config.MattermostDownloadURL = latestReleaseURL
@@ -181,10 +202,36 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
+	// Check if a policy to publish logs from OpenSearch Service to CloudWatch
+	// exists, and create it otherwise.
+	// Note that we are doing this outside of Terraform. This is because we
+	// only need one policy in the account, not one per deployment. This
+	// behaviour is also enforced by the rate limitation on this type of
+	// policies: there can only be 10 such policies per region per account.
+	// Check the docs for more information:
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
+	if err = t.checkCloudWatchLogsPolicy(); err != nil {
+		if err != ErrNotFound {
+			return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+		}
+
+		mlog.Info("No CloudWatchLogs policy found, creating a new one")
+		if err := t.createCloudWatchLogsPolicy(); err != nil {
+			return fmt.Errorf("failed creating CloudWatchLogs policy")
+		}
+	}
+
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
 		if err := t.setupMetrics(extAgent); err != nil {
 			return fmt.Errorf("error setting up metrics server: %w", err)
+		}
+	}
+
+	if t.output.HasKeycloak() {
+		// Setting up keycloak.
+		if err := t.setupKeycloak(extAgent); err != nil {
+			return fmt.Errorf("error setting up keycloak server: %w", err)
 		}
 	}
 
@@ -206,7 +253,7 @@ func (t *Terraform) Create(initData bool) error {
 		}
 
 		// Updating the config.json for each instance of app server
-		if err := t.setupAppServers(extAgent, uploadBinary, binaryPath, siteURL); err != nil {
+		if err := t.setupAppServers(extAgent, uploadBinary, uploadRelease, uploadPath, siteURL); err != nil {
 			return fmt.Errorf("error setting up app servers: %w", err)
 		}
 
@@ -263,6 +310,18 @@ func (t *Terraform) Create(initData bool) error {
 				}
 			}
 
+			if len(t.config.DBExtraSQL) > 0 {
+				// Run extra SQL commands if specified
+				if err := t.ExecuteCustomSQL(); err != nil {
+					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
+				}
+			}
+
+			// Clear licenses data
+			if err := t.ClearLicensesData(); err != nil {
+				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)
+			}
+
 			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
 				// updatePostgresSettings does some housekeeping stuff like setting
 				// default_search_config and vacuuming tables.
@@ -305,16 +364,16 @@ func (t *Terraform) Create(initData bool) error {
 	return nil
 }
 
-func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, binaryPath string, siteURL string) error {
+func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, binaryPath)
+		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath)
 		if err != nil {
 			return err
 		}
@@ -323,15 +382,15 @@ func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, b
 	return nil
 }
 
-func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, binaryPath, !t.output.HasJobServer())
+func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, uploadRelease, uploadPath, !t.output.HasJobServer())
 }
 
-func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, binaryPath string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, binaryPath, true)
+func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string) error {
+	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, uploadRelease, uploadPath, true)
 }
 
-func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, binaryPath string, jobServerEnabled bool) error {
+func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool) error {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
@@ -348,6 +407,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 		{srcData: strings.TrimSpace(fmt.Sprintf(serviceFile, os.Getenv("MM_SERVICEENVIRONMENT"))), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+		{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 	}
 
 	// Specify a hosts file when the SiteURL is set, so that it points to
@@ -382,11 +442,28 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	// provision MM build
-	commands := []string{
-		"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
-		"tar xzf mattermost-dist.tar.gz",
-		"sudo rm -rf /opt/mattermost",
-		"sudo mv mattermost /opt/",
+	var commands []string
+	if uploadRelease {
+		mlog.Info("Uploading release from tar.gz file", mlog.String("host", ip))
+
+		filename := path.Base(uploadPath)
+		if out, err := sshc.UploadFile(uploadPath, "/home/ubuntu/"+filename, false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
+		}
+		commands = []string{
+			"tar xzf " + filename,
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
+	} else {
+		mlog.Info("Uploading release from MattermostDownloadURL", mlog.String("host", ip))
+
+		commands = []string{
+			"wget -O mattermost-dist.tar.gz " + t.config.MattermostDownloadURL,
+			"tar xzf mattermost-dist.tar.gz",
+			"sudo rm -rf /opt/mattermost",
+			"sudo mv mattermost /opt/",
+		}
 	}
 	mlog.Info("Provisioning MM build", mlog.String("host", ip))
 	cmd = strings.Join(commands, " && ")
@@ -403,8 +480,8 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	if uploadBinary {
 		mlog.Info("Uploading binary", mlog.String("host", ip))
 
-		if out, err := sshc.UploadFile(binaryPath, "/opt/mattermost/bin/mattermost", false); err != nil {
-			return fmt.Errorf("error uploading file %q, output: %q: %w", binaryPath, string(out), err)
+		if out, err := sshc.UploadFile(uploadPath, "/opt/mattermost/bin/mattermost", false); err != nil {
+			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
 	}
 
@@ -435,6 +512,8 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 }
 
 func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
+	esSettings := t.config.ElasticSearchSettings
+
 	output, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("unable to get Terraform output to setup ElasticSearch: %w", err)
@@ -463,7 +542,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 	mlog.Debug("Repositories registered", mlog.Array("repositories", repositories))
 
-	repo := t.config.ElasticSearchSettings.SnapshotRepository
+	repo := esSettings.SnapshotRepository
 
 	// Check if the registered repositories already include the one configured
 	repoFound := false
@@ -492,7 +571,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	// Look for the configured snapshot
 	var snapshot elasticsearch.Snapshot
-	snapshotName := t.config.ElasticSearchSettings.SnapshotName
+	snapshotName := esSettings.SnapshotName
 	for _, s := range snapshots {
 		if s.Name == snapshotName {
 			snapshot = s
@@ -538,22 +617,49 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		mlog.String("snapshot", snapshotName),
 		mlog.Array("indices", snapshotIndices))
 	opts := elasticsearch.RestoreSnapshotOpts{
-		WithIndices: snapshotIndices,
+		WithIndices:      snapshotIndices,
+		NumberOfReplicas: esSettings.InstanceCount - 1,
 	}
 	if err := es.RestoreSnapshot(repo, snapshotName, opts); err != nil {
 		return fmt.Errorf("unable to restore snapshot: %w", err)
 	}
 
-	// Wait until the snapshot is completely restored, or 30 minutes have
-	// passed, whatever happens first
-	dur := 45 * time.Minute
+	// Wait until the snapshot is completely restored, or the user-specified
+	// timeout is triggered, whatever happens first
+	restoreTimeout := time.Duration(esSettings.RestoreTimeoutMinutes) * time.Minute
+	if err := waitForSnapshot(restoreTimeout, es, snapshotIndices); err != nil {
+		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
+	}
+
+	// Double-check that the cluster's status is green: even if the index is
+	// fully restored, the creation of shard replicas may not have finished,
+	// so we give it an additional timeout. The time it takes for all shards
+	// to get assigned and initialized is proportional to the number of nodes
+	// in the Elasticsearch cluster.
+	// The potentially large combined timeout (by default, 45 minutes for
+	// restoring the snapshot, 45 minutes for a green cluster) will rarely
+	// happen, but we need a large timeout here as well in case the snapshot is
+	// already restored and we re-deploy the cluster with additional data
+	// nodes: in that case, waitForSnapshot will return immediately, so we'll
+	// only wait for the cluster's status to get green.
+	clusterTimeout := time.Duration(esSettings.ClusterTimeoutMinutes) * time.Minute
+	if err := waitForGreenCluster(clusterTimeout, es); err != nil {
+		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
+	}
+
+	return nil
+}
+
+// waitForSnapshot blocks until the snapshot is fully restored or the provided
+// timeout is reached
+func waitForSnapshot(dur time.Duration, es *elasticsearch.Client, snapshotIndices []string) error {
 	timeout := time.After(dur)
 	for {
 		select {
 		case <-timeout:
 			return fmt.Errorf("timeout after %s, snapshot was not restored", dur.String())
 		case <-time.After(30 * time.Second):
-			indicesRecovery, err := es.IndicesRecovery(snapshotIndices)
+			indicesRecovery, err := es.SnapshotIndicesRecovery(snapshotIndices)
 			if err != nil {
 				return fmt.Errorf("unable to get recovery info from indices: %w", err)
 			}
@@ -594,6 +700,34 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 }
 
+// waitForGreenCluster blocks until the cluster's status is green or the
+// provided timeout is reached
+func waitForGreenCluster(dur time.Duration, es *elasticsearch.Client) error {
+	timeout := time.After(dur)
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout after %s, cluster's status did not become green", dur.String())
+		case <-time.After(30 * time.Second):
+			clusterHealth, err := es.ClusterHealth()
+			if err != nil {
+				return fmt.Errorf("unable to get cluster status: %w", err)
+			}
+
+			// Finish when the cluster's status is green
+			if clusterHealth.Status == elasticsearch.ClusterStatusGreen {
+				return nil
+			}
+
+			mlog.Info("Waiting for cluster's status to become green",
+				mlog.String("current status", clusterHealth.Status),
+				mlog.Int("initializing shards", clusterHealth.InitializingShards),
+				mlog.Int("unassigned shards", clusterHealth.UnassignedShards),
+			)
+		}
+	}
+}
+
 func genNginxConfig() (string, error) {
 	data := map[string]string{
 		"tcpNoDelay": "off",
@@ -602,6 +736,26 @@ func genNginxConfig() (string, error) {
 		data["tcpNoDelay"] = "on"
 	}
 	return fillConfigTemplate(nginxConfigTmpl, data)
+}
+
+func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
+	}
+	descOutput, err := ec2.NewFromConfig(cfg).DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []types.InstanceType{types.InstanceType(t.config.ProxyInstanceType)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error trying to describe instance type: %v", err)
+	}
+
+	if len(descOutput.InstanceTypes) == 0 {
+		return nil, fmt.Errorf("no instance types returned")
+	}
+	return &descOutput.InstanceTypes[0], nil
 }
 
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
@@ -631,17 +785,23 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 
 		cacheObjects := "10m"
 		cacheSize := "3g"
-		// Extracting the instance class from the type.
-		// Usually they are of the form (m7/c7).(large/2xlarge/4xlarge/..)
-		parts := strings.Split(t.config.ProxyInstanceType, ".")
-		if len(parts) > 1 {
-			// Hack alert. There can be other higher variants like 12xlarge or even metal. But we are keeping it simple for now.
-			switch parts[1] {
-			case "4", "8":
-				cacheObjects = "50m"
-				cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
-				// from my tests. So there's no point stretching it further.
-			}
+		rxQueueSize := 1024 // This is the default on most EC2 instances
+
+		info, err := t.getProxyInstanceInfo()
+		if err != nil {
+			mlog.Error("Error while getting proxy info", mlog.Err(err))
+			return
+		}
+
+		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB (Usually of instance classes >=4xlarge)
+			cacheObjects = "50m"
+			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
+			// from my tests. So there's no point stretching it further.
+
+			// MM-58179
+			// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
+			// (and retransmissions) on particularly bursty connections (e.g. websockets).
+			rxQueueSize = 8192
 		}
 
 		nginxConfig, err := genNginxConfig()
@@ -667,18 +827,19 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
 			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
+			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
 			return
 		}
 
-		cmd := "sudo sysctl -p && sudo service nginx restart"
+		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
+		cmd := fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
 		}
-
 	}()
 }
 
@@ -774,96 +935,109 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 	cfg := &model.Config{}
 	cfg.SetDefaults()
-	cfg.ServiceSettings.ListenAddress = model.NewString(":8065")
-	cfg.ServiceSettings.LicenseFileLocation = model.NewString("/home/ubuntu/mattermost.mattermost-license")
-	cfg.ServiceSettings.SiteURL = model.NewString(siteURL)
-	cfg.ServiceSettings.ReadTimeout = model.NewInt(60)
-	cfg.ServiceSettings.WriteTimeout = model.NewInt(60)
-	cfg.ServiceSettings.IdleTimeout = model.NewInt(90)
-	cfg.ServiceSettings.EnableLocalMode = model.NewBool(true)
-	cfg.ServiceSettings.ThreadAutoFollow = model.NewBool(true)
-	cfg.ServiceSettings.CollapsedThreads = model.NewString(model.CollapsedThreadsDefaultOn)
-	cfg.ServiceSettings.EnableLinkPreviews = model.NewBool(true)
-	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewBool(true)
-	cfg.ServiceSettings.PostPriority = model.NewBool(true)
+	cfg.ServiceSettings.ListenAddress = model.NewPointer(":8065")
+	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer("/home/ubuntu/mattermost.mattermost-license")
+	cfg.ServiceSettings.SiteURL = model.NewPointer(siteURL)
+	cfg.ServiceSettings.ReadTimeout = model.NewPointer(60)
+	cfg.ServiceSettings.WriteTimeout = model.NewPointer(60)
+	cfg.ServiceSettings.IdleTimeout = model.NewPointer(90)
+	cfg.ServiceSettings.EnableLocalMode = model.NewPointer(true)
+	cfg.ServiceSettings.ThreadAutoFollow = model.NewPointer(true)
+	cfg.ServiceSettings.CollapsedThreads = model.NewPointer(model.CollapsedThreadsDefaultOn)
+	cfg.ServiceSettings.EnableLinkPreviews = model.NewPointer(true)
+	cfg.ServiceSettings.EnablePermalinkPreviews = model.NewPointer(true)
+	cfg.ServiceSettings.PostPriority = model.NewPointer(true)
+	cfg.ServiceSettings.AllowSyncedDrafts = model.NewPointer(true)
 	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
 	// node or the proxy and set that.
-	cfg.ServiceSettings.AllowCorsFrom = model.NewString("*")
-	cfg.ServiceSettings.EnableOpenTracing = model.NewBool(false)    // Large overhead, better to disable
-	cfg.ServiceSettings.EnableTutorial = model.NewBool(false)       // Makes manual testing easier
-	cfg.ServiceSettings.EnableOnboardingFlow = model.NewBool(false) // Makes manual testing easier
+	cfg.ServiceSettings.AllowCorsFrom = model.NewPointer("*")
+	cfg.ServiceSettings.EnableOpenTracing = model.NewPointer(false)    // Large overhead, better to disable
+	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)       // Makes manual testing easier
+	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false) // Makes manual testing easier
 
-	cfg.EmailSettings.SMTPServer = model.NewString(t.output.MetricsServer.PrivateIP)
-	cfg.EmailSettings.SMTPPort = model.NewString("2500")
+	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.PrivateIP)
+	cfg.EmailSettings.SMTPPort = model.NewPointer("2500")
 
 	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
-		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.output.S3Key.Id)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.output.S3Key.Secret)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.output.S3Bucket.Id)
-		cfg.FileSettings.AmazonS3Region = model.NewString(t.output.S3Bucket.Region)
+		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.output.S3Key.Id)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewPointer(t.output.S3Key.Secret)
+		cfg.FileSettings.AmazonS3Bucket = model.NewPointer(t.output.S3Bucket.Id)
+		cfg.FileSettings.AmazonS3Region = model.NewPointer(t.output.S3Bucket.Region)
 	} else if t.config.ExternalBucketSettings.AmazonS3Bucket != "" {
-		cfg.FileSettings.DriverName = model.NewString("amazons3")
-		cfg.FileSettings.AmazonS3AccessKeyId = model.NewString(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
-		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewString(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
-		cfg.FileSettings.AmazonS3Bucket = model.NewString(t.config.ExternalBucketSettings.AmazonS3Bucket)
-		cfg.FileSettings.AmazonS3PathPrefix = model.NewString(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
-		cfg.FileSettings.AmazonS3Region = model.NewString(t.config.ExternalBucketSettings.AmazonS3Region)
-		cfg.FileSettings.AmazonS3Endpoint = model.NewString(t.config.ExternalBucketSettings.AmazonS3Endpoint)
-		cfg.FileSettings.AmazonS3SSL = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSL)
-		cfg.FileSettings.AmazonS3SignV2 = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SignV2)
-		cfg.FileSettings.AmazonS3SSE = model.NewBool(t.config.ExternalBucketSettings.AmazonS3SSE)
+		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
+		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3AccessKeyId)
+		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SecretAccessKey)
+		cfg.FileSettings.AmazonS3Bucket = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Bucket)
+		cfg.FileSettings.AmazonS3PathPrefix = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3PathPrefix)
+		cfg.FileSettings.AmazonS3Region = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Region)
+		cfg.FileSettings.AmazonS3Endpoint = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3Endpoint)
+		cfg.FileSettings.AmazonS3SSL = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SSL)
+		cfg.FileSettings.AmazonS3SignV2 = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SignV2)
+		cfg.FileSettings.AmazonS3SSE = model.NewPointer(t.config.ExternalBucketSettings.AmazonS3SSE)
 	}
 
-	cfg.LogSettings.EnableConsole = model.NewBool(true)
-	cfg.LogSettings.ConsoleLevel = model.NewString("ERROR")
-	cfg.LogSettings.EnableFile = model.NewBool(true)
-	cfg.LogSettings.FileLevel = model.NewString("WARN")
-	cfg.LogSettings.EnableSentry = model.NewBool(false)
+	cfg.LogSettings.EnableConsole = model.NewPointer(true)
+	cfg.LogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.LogSettings.EnableFile = model.NewPointer(true)
+	cfg.LogSettings.FileLevel = model.NewPointer("WARN")
+	cfg.LogSettings.EnableSentry = model.NewPointer(false)
 
-	cfg.NotificationLogSettings.EnableConsole = model.NewBool(true)
-	cfg.NotificationLogSettings.ConsoleLevel = model.NewString("ERROR")
-	cfg.NotificationLogSettings.EnableFile = model.NewBool(true)
-	cfg.NotificationLogSettings.FileLevel = model.NewString("WARN")
+	cfg.NotificationLogSettings.EnableConsole = model.NewPointer(true)
+	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.NotificationLogSettings.EnableFile = model.NewPointer(true)
+	cfg.NotificationLogSettings.FileLevel = model.NewPointer("WARN")
 
-	cfg.SqlSettings.DriverName = model.NewString(driverName)
-	cfg.SqlSettings.DataSource = model.NewString(clusterDSN)
+	cfg.SqlSettings.DriverName = model.NewPointer(driverName)
+	cfg.SqlSettings.DataSource = model.NewPointer(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
-	cfg.SqlSettings.MaxIdleConns = model.NewInt(100)
-	cfg.SqlSettings.MaxOpenConns = model.NewInt(100)
-	cfg.SqlSettings.Trace = model.NewBool(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
+	cfg.SqlSettings.MaxIdleConns = model.NewPointer(100)
+	cfg.SqlSettings.MaxOpenConns = model.NewPointer(100)
+	cfg.SqlSettings.Trace = model.NewPointer(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
 	if t.output.HasElasticSearch() {
-		cfg.SqlSettings.DisableDatabaseSearch = model.NewBool(true)
+		cfg.SqlSettings.DisableDatabaseSearch = model.NewPointer(true)
 	}
 
-	cfg.TeamSettings.MaxUsersPerTeam = model.NewInt(200000)      // We don't want to be capped by this limit
-	cfg.TeamSettings.MaxChannelsPerTeam = model.NewInt64(200000) // We don't want to be capped by this limit
-	cfg.TeamSettings.EnableOpenServer = model.NewBool(true)
-	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewInt64(1000)
+	cfg.TeamSettings.MaxUsersPerTeam = model.NewPointer(200000)           // We don't want to be capped by this limit
+	cfg.TeamSettings.MaxChannelsPerTeam = model.NewPointer(int64(200000)) // We don't want to be capped by this limit
+	cfg.TeamSettings.EnableOpenServer = model.NewPointer(true)
+	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewPointer(int64(1000))
 
-	cfg.ClusterSettings.GossipPort = model.NewInt(8074)
-	cfg.ClusterSettings.StreamingPort = model.NewInt(8075)
-	cfg.ClusterSettings.Enable = model.NewBool(true)
-	cfg.ClusterSettings.ClusterName = model.NewString(t.config.ClusterName)
-	cfg.ClusterSettings.ReadOnlyConfig = model.NewBool(false)
-	cfg.ClusterSettings.EnableGossipCompression = model.NewBool(false)
-	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewBool(true)
+	cfg.ClusterSettings.GossipPort = model.NewPointer(8074)
+	cfg.ClusterSettings.Enable = model.NewPointer(true)
+	cfg.ClusterSettings.ClusterName = model.NewPointer(t.config.ClusterName)
+	cfg.ClusterSettings.ReadOnlyConfig = model.NewPointer(false)
+	cfg.ClusterSettings.EnableGossipCompression = model.NewPointer(false)
+	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewPointer(true)
 
-	cfg.MetricsSettings.Enable = model.NewBool(true)
+	cfg.MetricsSettings.Enable = model.NewPointer(true)
 
-	cfg.PluginSettings.Enable = model.NewBool(true)
-	cfg.PluginSettings.EnableUploads = model.NewBool(true)
+	cfg.PluginSettings.Enable = model.NewPointer(true)
+	cfg.PluginSettings.EnableUploads = model.NewPointer(true)
 
-	cfg.JobSettings.RunJobs = model.NewBool(jobServerEnabled)
+	cfg.JobSettings.RunJobs = model.NewPointer(jobServerEnabled)
 
 	if t.output.HasElasticSearch() {
-		cfg.ElasticsearchSettings.ConnectionURL = model.NewString("https://" + t.output.ElasticSearchServer.Endpoint)
-		cfg.ElasticsearchSettings.Username = model.NewString("")
-		cfg.ElasticsearchSettings.Password = model.NewString("")
-		cfg.ElasticsearchSettings.Sniff = model.NewBool(false)
-		cfg.ElasticsearchSettings.EnableIndexing = model.NewBool(true)
-		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewBool(true)
-		cfg.ElasticsearchSettings.EnableSearching = model.NewBool(true)
+		cfg.ElasticsearchSettings.ConnectionURL = model.NewPointer("https://" + t.output.ElasticSearchServer.Endpoint)
+		cfg.ElasticsearchSettings.Username = model.NewPointer("")
+		cfg.ElasticsearchSettings.Password = model.NewPointer("")
+		cfg.ElasticsearchSettings.Sniff = model.NewPointer(false)
+		cfg.ElasticsearchSettings.EnableIndexing = model.NewPointer(true)
+		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewPointer(true)
+		cfg.ElasticsearchSettings.EnableSearching = model.NewPointer(true)
+
+		// Make all indices have a shard replica in every data node
+		numReplicas := t.config.ElasticSearchSettings.InstanceCount - 1
+		cfg.ElasticsearchSettings.ChannelIndexReplicas = model.NewPointer(numReplicas)
+		cfg.ElasticsearchSettings.PostIndexReplicas = model.NewPointer(numReplicas)
+		cfg.ElasticsearchSettings.UserIndexReplicas = model.NewPointer(numReplicas)
+	}
+
+	if t.output.HasRedis() {
+		cfg.CacheSettings.CacheType = model.NewString(model.CacheTypeRedis)
+		redisEndpoint := net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port))
+		cfg.CacheSettings.RedisAddress = model.NewString(redisEndpoint)
+		cfg.CacheSettings.RedisDB = model.NewInt(0)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {
@@ -881,6 +1055,19 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		if err != nil {
 			return fmt.Errorf("error patching config: %w", err)
 		}
+	}
+
+	if t.output.HasKeycloak() {
+		keycloakScheme := "https"
+		if t.config.ExternalAuthProviderSettings.DevelopmentMode {
+			keycloakScheme = "http"
+		}
+
+		cfg.OpenIdSettings.Enable = model.NewPointer(true)
+		cfg.OpenIdSettings.ButtonText = model.NewPointer("Keycloak Login")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewPointer(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientID)
+		cfg.OpenIdSettings.Secret = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
@@ -932,6 +1119,8 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under

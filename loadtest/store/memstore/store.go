@@ -48,6 +48,7 @@ type MemStore struct {
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue[model.ThreadResponse]
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
+	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
 }
 
@@ -81,50 +82,49 @@ func (s *MemStore) Clear() {
 	defer s.lock.Unlock()
 	s.preferences = nil
 	s.config = nil
-	// Wiping out the slice entries.
-	for i := range s.emojis {
-		s.emojis[i] = nil
-	}
+	clear(s.emojis)
 	s.emojis = []*model.Emoji{}
-	clearMap(s.posts)
+	clear(s.posts)
 	s.posts = map[string]*model.Post{}
-	clearMap(s.clientConfig)
+	clear(s.clientConfig)
 	s.clientConfig = map[string]string{}
 	s.postsQueue.Reset()
-	clearMap(s.teams)
+	clear(s.teams)
 	s.teams = map[string]*model.Team{}
-	clearMap(s.channels)
+	clear(s.channels)
 	s.channels = map[string]*model.Channel{}
 	channelStats := map[string]*model.ChannelStats{}
 	if s.currentChannel != nil && s.channelStats[s.currentChannel.Id] != nil {
 		channelStats[s.currentChannel.Id] = s.channelStats[s.currentChannel.Id]
 	}
 	s.channelStats = channelStats
-	clearMap(s.channelMembers)
+	clear(s.channelMembers)
 	s.channelMembers = map[string]map[string]*model.ChannelMember{}
 	s.channelMembersQueue.Reset()
-	clearMap(s.teamMembers)
+	clear(s.teamMembers)
 	s.teamMembers = map[string]map[string]*model.TeamMember{}
-	clearMap(s.users)
+	clear(s.users)
 	s.users = map[string]*model.User{}
 	s.usersQueue.Reset()
-	clearMap(s.statuses)
+	clear(s.statuses)
 	s.statuses = map[string]*model.Status{}
 	s.statusesQueue.Reset()
-	clearMap(s.reactions)
+	clear(s.reactions)
 	s.reactions = map[string][]*model.Reaction{}
 	s.reactionsQueue.Reset()
-	clearMap(s.roles)
+	clear(s.roles)
 	s.roles = map[string]*model.Role{}
-	clearMap(s.license)
+	clear(s.license)
 	s.license = map[string]string{}
-	clearMap(s.channelViews)
+	clear(s.channelViews)
 	s.channelViews = map[string]int64{}
-	clearMap(s.threads)
+	clear(s.threads)
 	s.threads = map[string]*model.ThreadResponse{}
 	s.threadsQueue.Reset()
-	clearMap(s.sidebarCategories)
+	clear(s.sidebarCategories)
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
+	clear(s.drafts)
+	s.drafts = map[string]map[string]*model.Draft{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1184,4 +1184,40 @@ func (s *MemStore) PostsWithAckRequests() ([]string, error) {
 	}
 
 	return ids, nil
+}
+
+// SetDraft stores the draft for the given teamId, and channelId or rootId.
+func (s *MemStore) SetDraft(teamId, id string, draft *model.Draft) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if draft == nil {
+		return errors.New("memstore: draft should not be nil")
+	}
+
+	if s.drafts[teamId] == nil {
+		s.drafts[teamId] = map[string]*model.Draft{}
+	}
+
+	s.drafts[teamId][id] = draft
+	return nil
+}
+
+// SetDrafts stores the given drafts.
+func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.drafts[teamId] = map[string]*model.Draft{}
+	for _, d := range drafts {
+		rootID := d.RootId
+		// Note: rootID should never be empty.
+		// Need to verify if this is the right logic.
+		if rootID == "" {
+			rootID = d.ChannelId
+		}
+		s.drafts[teamId][rootID] = d
+	}
+
+	return nil
 }

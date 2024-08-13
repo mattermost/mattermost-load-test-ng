@@ -27,7 +27,7 @@ type Config struct {
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
-	if err := defaults.ReadFromJSON(configFilePath, "./config/simulcontoller.json", &cfg); err != nil {
+	if err := defaults.ReadFrom(configFilePath, "./config/simulcontroller.json", &cfg); err != nil {
 		return nil, err
 	}
 

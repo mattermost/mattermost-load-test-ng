@@ -48,6 +48,12 @@ scrape_configs:
   - job_name: loadtest
     static_configs:
         - targets: [%s]
+  - job_name: keycloak
+    static_configs:
+        - targets: [%s]
+  - job_name: redis
+    static_configs:
+        - targets: [%s]
 `
 
 type PyroscopeConfig struct {
@@ -178,7 +184,7 @@ proxy_buffers 256 16k;
 proxy_buffer_size 16k;
 client_body_timeout 60s;
 send_timeout        300s;
-lingering_timeout   5s;
+lingering_timeout   30s;
 proxy_connect_timeout   30s;
 proxy_send_timeout      90s;
 proxy_read_timeout      90s;
@@ -244,6 +250,16 @@ net.ipv4.tcp_fin_timeout = 30
 
 # Reuse TIME-WAIT sockets for new outgoing connections.
 net.ipv4.tcp_tw_reuse = 1
+
+# TCP buffer sizes are tuned for 10Gbit/s bandwidth and 0.5ms RTT (as measured intra EC2 cluster).
+# This gives a BDP (bandwidth-delay-product) of 625000 bytes.
+net.ipv4.tcp_rmem = 4096 156250 625000
+net.ipv4.tcp_wmem = 4096 156250 625000
+net.core.rmem_max = 312500
+net.core.wmem_max = 312500
+net.core.rmem_default = 312500
+net.core.wmem_default = 312500
+net.ipv4.tcp_mem = 1638400 1638400 1638400
 `
 
 const serverSysctlConfig = `
@@ -281,13 +297,21 @@ net.ipv4.tcp_notsent_lowat = 16384
 
 # TCP buffer sizes are tuned for 10Gbit/s bandwidth and 0.5ms RTT (as measured intra EC2 cluster).
 # This gives a BDP (bandwidth-delay-product) of 625000 bytes.
-net.ipv4.tcp_rmem = 4096 156250 625000
-net.ipv4.tcp_wmem = 4096 156250 625000
-net.core.rmem_max = 312500
-net.core.wmem_max = 312500
-net.core.rmem_default = 312500
-net.core.wmem_default = 312500
-net.ipv4.tcp_mem = 1638400 1638400 1638400
+# The maximum socket buffer size for kernel autotuning is set to be 4x the BDP (2500000).
+# The default socket buffer size is set to 1/4 BDP (156250).
+net.ipv4.tcp_rmem = 4096 156250 2500000
+net.ipv4.tcp_wmem = 4096 156250 2500000
+
+# Bumping the theoretical maximum buffer size for receiving TCP sockets not making use of autotuning (i.e. using SO_RCVBUF).
+net.core.rmem_max = 2500000
+# Bumping the theoretical maximum buffer size for sending TCP sockets not making use of autotuning (i.e. using SO_SNDBUF).
+net.core.wmem_max = 2500000
+
+# Bumping the theoretical maximum buffer size of receiving UDP sockets.
+net.core.rmem_max = 16777216
+
+# Setting the theoretical maximum buffer size of sending UDP sockets.
+net.core.wmem_max = 16777216
 `
 
 const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
@@ -330,6 +354,24 @@ Group=ubuntu
 WantedBy=multi-user.target
 `
 
+const redisExporterServiceFile = `
+[Unit]
+Description=Redis prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/redis_exporter
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
 const jobServerServiceFile = `
 [Unit]
 Description=Mattermost Job Server
@@ -360,4 +402,38 @@ org_role = Editor
 
 [dashboards]
 default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json
+`
+
+const keycloakServiceFileContents = `
+[Unit]
+Description=Keycloak
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/systemd/system/keycloak.env
+ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const keycloakEnvFileContents = `KC_HEALTH_ENABLED=true
+KEYCLOAK_ADMIN={{ .KeycloakAdminUser }}
+KEYCLOAK_ADMIN_PASSWORD={{ .KeycloakAdminPassword }}
+JAVA_OPTS=-Xms1024m -Xmx2048m
+KC_LOG_FILE={{ .KeycloakLogFilePath }}
+KC_LOG_FILE_OUTPUT=json
+KC_DB_POOL_MIN_SIZE=20
+KC_DB_POOL_INITIAL_SIZE=20
+KC_DB_POOL_MAX_SIZE=200
+KC_DB=postgres
+C_DB_URL=jdbc:psql://localhost:5433/keycloak"
+KC_DB_PASSWORD=mmpass
+KC_DB_USERNAME=keycloak
+KC_DATABASE=keycloak`
+
+const prometheusNodeExporterConfig = `
+ARGS="--collector.ethtool"
 `
