@@ -114,7 +114,7 @@ If you want to stress test this specific job during a load-test, you can use the
 
 ### Can I use a custom load balancer (like an ALB/NLB) in front of the Mattermost server?
 
-Yes, it's possible by disabling the proxy server and setting up the SiteURL manually pointint to the reverse proxy. The app servers must be registered with the load balancer manually while the environment is being created, so the ideal scenario is to setup the LB/Target Group in advance and then register the instances as they become available:
+Yes, it's possible by disabling the proxy server and setting up the `SiteURL` manually pointing to the reverse proxy. The app servers must be registered with the load balancer manually while the environment is being created, so the ideal scenario is to setup the LB/Target Group in advance and then register the instances as they become available:
 
 - Setup the `deployer.json` with: `ProxyInstanceCount` set to `0` and `ServerURL` or `SiteURL` pointing to your reverse proxy host, depending on your needs.
 - While your environment is being created, you can configure your reverse proxy to point to the Mattermost servers when the app servers are ready.
