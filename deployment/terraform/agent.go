@@ -86,7 +86,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	wg := sync.WaitGroup{}
+		wg := sync.WaitGroup{}
 	wgDone := make(chan struct{})
 	errChan := make(chan error, 1)
 
@@ -106,7 +106,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			mlog.Info("Configuring agent", mlog.String("ip", instance.PublicIP), mlog.Int("agent", agentNumber))
 			if uploadBinary {
 				dstFilePath := "/home/ubuntu/tmp.tar.gz"
-				mlog.Info("Uploading binary", mlog.String("file", packagePath))
+				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
 				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 					errChan <- fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
 				}
@@ -170,7 +170,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
 			}
 
-			mlog.Info("Starting load-test api server")
+			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
 			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
 				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
 			}
