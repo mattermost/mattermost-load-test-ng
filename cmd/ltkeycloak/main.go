@@ -296,7 +296,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 							continue
 						}
 
-						slog.Error("failed to create user in keycloak", err.Error())
+						slog.Error("failed to create user in keycloak", slog.String("err", err.Error()))
 						continue
 					}
 
@@ -306,7 +306,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 
 					_, _, err = mmClient.UpdateUser(ctx, user)
 					if err != nil {
-						slog.Error("failed to update user in mattermost", err.Error())
+						slog.Error("failed to update user in mattermost", slog.String("err", err.Error()))
 						continue
 					}
 					slog.Info("migrated user", slog.String("username", user.Username))
@@ -321,7 +321,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 						"master", // TODO: Allow specifying the master realm
 					)
 					if err != nil {
-						slog.Error("failed to refresh keycloak token", err.Error())
+						slog.Error("failed to refresh keycloak token", slog.String("err", err.Error()))
 						close(doneChan)
 						panic(err)
 					}
@@ -347,7 +347,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			case email := <-usersTxtChan:
 				_, err := usersTxtFile.Write([]byte(model.UserAuthServiceSaml + ":" + email + " " + userPassword + "\n"))
 				if err != nil {
-					slog.Error("failed to write to users.txt", err.Error())
+					slog.Error("failed to write to users.txt", slog.String("err", err.Error()))
 				}
 
 			case <-doneChan:
