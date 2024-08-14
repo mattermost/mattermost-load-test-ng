@@ -86,7 +86,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-		wg := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	wgDone := make(chan struct{})
 	errChan := make(chan error, 1)
 
