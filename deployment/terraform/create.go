@@ -440,6 +440,21 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
 	}
 
+	// Setup SAML certificate for Keycloak
+	if t.output.HasKeycloak() {
+		samlIDPCert, err := os.ReadFile(t.getAsset("saml-idp.crt"))
+		if err != nil {
+			return fmt.Errorf("error reading saml-idp.crt: %w", err)
+		}
+
+		batch = []uploadInfo{
+			{
+				srcData: string(samlIDPCert),
+				dstPath: "/etc/mattermost/config/saml-idp.crt",
+			},
+		}
+	}
+
 	// provision MM build
 	var commands []string
 	if uploadRelease {
@@ -1054,11 +1069,48 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 			keycloakScheme = "http"
 		}
 
+		keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080"
+
 		cfg.OpenIdSettings.Enable = model.NewBool(true)
 		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
-		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
-		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientID)
-		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakSAMLClientID)
+		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakSAMLClientSecret)
+		cfg.SamlSettings.Enable = model.NewPointer(false)
+		cfg.SamlSettings.Enable = model.NewPointer(true)
+		cfg.SamlSettings.EnableSyncWithLdap = model.NewPointer(false)
+		cfg.SamlSettings.EnableSyncWithLdapIncludeAuth = model.NewPointer(false)
+		cfg.SamlSettings.IgnoreGuestsLdapSync = model.NewPointer(false)
+		cfg.SamlSettings.Verify = model.NewPointer(false)
+		cfg.SamlSettings.Encrypt = model.NewPointer(false)
+		cfg.SamlSettings.SignRequest = model.NewPointer(false)
+		cfg.SamlSettings.IdpURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/protocol/saml")
+		cfg.SamlSettings.IdpDescriptorURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName)
+		cfg.SamlSettings.IdpMetadataURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/protocol/saml/descriptor")
+		cfg.SamlSettings.ServiceProviderIdentifier = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakRealmName)
+		cfg.SamlSettings.AssertionConsumerServiceURL = model.NewPointer(keycloakUrl + "/login/sso/saml")
+		cfg.SamlSettings.SignatureAlgorithm = model.NewPointer("RSAwithSHA1")
+		cfg.SamlSettings.CanonicalAlgorithm = model.NewPointer("Canonical1.0")
+		cfg.SamlSettings.ScopingIDPProviderId = model.NewPointer("")
+		cfg.SamlSettings.ScopingIDPName = model.NewPointer("")
+		cfg.SamlSettings.IdpCertificateFile = model.NewPointer("saml-idp.crt")
+		cfg.SamlSettings.PublicCertificateFile = model.NewPointer("")
+		cfg.SamlSettings.PrivateKeyFile = model.NewPointer("")
+		cfg.SamlSettings.IdAttribute = model.NewPointer("id")
+		cfg.SamlSettings.GuestAttribute = model.NewPointer("")
+		cfg.SamlSettings.EnableAdminAttribute = model.NewPointer(false)
+		cfg.SamlSettings.AdminAttribute = model.NewPointer("")
+		cfg.SamlSettings.FirstNameAttribute = model.NewPointer("")
+		cfg.SamlSettings.LastNameAttribute = model.NewPointer("")
+		cfg.SamlSettings.EmailAttribute = model.NewPointer("email")
+		cfg.SamlSettings.UsernameAttribute = model.NewPointer("username")
+		cfg.SamlSettings.NicknameAttribute = model.NewPointer("")
+		cfg.SamlSettings.LocaleAttribute = model.NewPointer("")
+		cfg.SamlSettings.PositionAttribute = model.NewPointer("")
+		cfg.SamlSettings.LoginButtonText = model.NewPointer("SAML")
+		cfg.SamlSettings.LoginButtonColor = model.NewPointer("#34a28b")
+		cfg.SamlSettings.LoginButtonBorderColor = model.NewPointer("#2389D7")
+		cfg.SamlSettings.LoginButtonTextColor = model.NewPointer("#ffffff")
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
