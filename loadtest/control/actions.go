@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -829,20 +830,10 @@ func Reload(u user.User) UserActionResponse {
 			}
 		}
 
-		ver, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
 
-		ok, err := IsVersionSupported("6.4.0", ver)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if ok {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 
@@ -960,20 +951,9 @@ func ReloadGQL(u user.User) UserActionResponse {
 			}
 		}
 
-		ver, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
-
-		ok, err := IsVersionSupported("6.4.0", ver)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if ok {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 
@@ -1041,6 +1021,15 @@ func CollapsedThreadsEnabled(u user.User) (bool, UserActionResponse) {
 		}
 	}
 	return collapsedThreads, UserActionResponse{}
+}
+
+func DraftsEnabled(u user.User) (bool, UserActionResponse) {
+	allow, err := strconv.ParseBool(u.Store().ClientConfig()["AllowSyncedDrafts"])
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return allow, UserActionResponse{}
 }
 
 // MessageExport simulates the given user performing

@@ -5,6 +5,8 @@ package terraform
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 )
 
 // Info displays information about the current load-test deployment.
@@ -77,6 +79,10 @@ func displayInfo(output *Output) {
 
 	if output.HasElasticSearch() {
 		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticSearchServer.Endpoint)
+	}
+
+	if output.HasRedis() {
+		fmt.Println("Redis endpoint: ", net.JoinHostPort(output.RedisServer.Address, strconv.Itoa(output.RedisServer.Port)))
 	}
 	fmt.Println("==================================================")
 }

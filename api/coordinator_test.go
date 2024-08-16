@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
 	"github.com/gavv/httpexpect"
@@ -34,6 +35,7 @@ func TestCoordinatorAPI(t *testing.T) {
 	var ltConfig loadtest.Config
 	err := defaults.Set(&ltConfig)
 	require.NoError(t, err)
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 

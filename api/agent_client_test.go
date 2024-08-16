@@ -14,6 +14,7 @@ import (
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
@@ -52,6 +53,7 @@ func createAgent(t *testing.T, id, serverURL string) *client.Agent {
 	var ucConfig simulcontroller.Config
 	defaults.Set(&ltConfig)
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 	defaults.Set(&ucConfig)
 	agent, err := client.New(id, serverURL, nil)
 	require.NoError(t, err)

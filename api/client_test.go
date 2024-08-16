@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
@@ -43,6 +44,7 @@ func TestAgentClientConcurrency(t *testing.T) {
 		var ltConfig loadtest.Config
 		var ucConfig simulcontroller.Config
 		defaults.Set(&ltConfig)
+		ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		defaults.Set(&ucConfig)
 		agent, err := agentClient.New(id, server.URL, nil)
@@ -205,6 +207,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL
@@ -221,6 +224,7 @@ func TestCoordClientConcurrency(t *testing.T) {
 		var ltConfig loadtest.Config
 		defaults.Set(&coordConfig)
 		defaults.Set(&ltConfig)
+		ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
 		ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 		coordConfig.ClusterConfig.Agents[0].Id = coord.Id() + "-agent"
 		coordConfig.ClusterConfig.Agents[0].ApiURL = server.URL

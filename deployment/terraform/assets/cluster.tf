@@ -129,7 +129,10 @@ resource "aws_instance" "metrics_server" {
       "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
       "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
       "sudo mkdir /opt/elasticsearch_exporter",
-      "sudo tar -zxvf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1",
+      "sudo tar -zxf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1",
+      "wget https://github.com/oliver006/redis_exporter/releases/download/v1.58.0/redis_exporter-v1.58.0.linux-amd64.tar.gz",
+      "sudo mkdir /opt/redis_exporter",
+      "sudo tar -zxf redis_exporter-v1.58.0.linux-amd64.tar.gz -C /opt/redis_exporter --strip-components=1",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable grafana-server",
       "sudo service grafana-server start",
@@ -246,6 +249,19 @@ resource "aws_iam_user_policy" "s3userpolicy" {
   ]
 }
 EOF
+}
+
+resource "aws_elasticache_cluster" "redis_server" {
+  cluster_id           = "${var.cluster_name}-redis"
+  engine               = "redis"
+  node_type            = "${var.redis_node_type}"
+  count                = var.redis_enabled ? 1 : 0
+  num_cache_nodes      = 1
+  parameter_group_name = "${var.redis_param_group_name}"
+  engine_version       = "${var.redis_engine_version}"
+  port                 = 6379
+
+  security_group_ids = [aws_security_group.redis[0].id]
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -534,6 +550,20 @@ resource "aws_security_group_rule" "metrics-egress" {
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group" "redis" {
+  name        = "${var.cluster_name}-redis-security-group"
+  description = "Security group for redis instance"
+
+  ingress {
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
+  }
+
+  count = 1
 }
 
 resource "aws_security_group" "elastic" {

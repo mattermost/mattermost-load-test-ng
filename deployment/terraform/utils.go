@@ -256,6 +256,10 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
 		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
 		"-var", fmt.Sprintf("block_device_sizes_keycloak=%d", t.config.StorageSizes.KeyCloak),
+		"-var", fmt.Sprintf("redis_enabled=%t", t.config.RedisSettings.Enabled),
+		"-var", fmt.Sprintf("redis_node_type=%s", t.config.RedisSettings.NodeType),
+		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
+		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 	}
 }
 

@@ -31,7 +31,7 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.10.1-0.20201228193145-776f23a0c901
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.1.7-0.20240726090344-5547504c1d68
+	github.com/mattermost/mattermost/server/public v0.1.7-0.20240806035841-540febd866aa
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20240726090344-5547504c1d68
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/vmihailenco/msgpack/v5 v5.4.1
