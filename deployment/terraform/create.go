@@ -272,7 +272,7 @@ func (t *Terraform) Create(initData bool) error {
 
 	// Ingesting the DB dump and restoring the Elasticsearch snapshot can
 	// happen concurrently to reduce the deployment's total time
-	errorsChan := make(chan error, 2)
+	errorsChan := make(chan error, 5)
 	var wg sync.WaitGroup
 
 	// Setup Elasticsearch
