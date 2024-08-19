@@ -36,7 +36,6 @@ var awsDummyCreds = aws.Credentials{
 }
 
 func TestRoundTrip(t *testing.T) {
-	t.Skip("MM-58444")
 	setupSSHServer(t)
 	sshc := setupSSHClient(t)
 
@@ -98,8 +97,13 @@ func setupSSHClient(t *testing.T) *ltssh.Client {
 
 	extAgent, err := ltssh.NewAgent()
 	require.NoError(t, err)
-	sshc, err := extAgent.NewClientWithPort(sshIP, sshPort)
-	require.NoError(t, err)
+
+	// Wait for the SSH server to start
+	var sshc *ltssh.Client
+	require.Eventually(t, func() bool {
+		sshc, err = extAgent.NewClientWithPort(sshIP, sshPort)
+		return err == nil
+	}, 5*time.Second, 100*time.Millisecond)
 
 	return sshc
 }

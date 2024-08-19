@@ -19,7 +19,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
-	"github.com/wiggin77/merror"
 )
 
 type PostsSearchOpts struct {
@@ -57,6 +56,13 @@ var (
 		"https://golang.org",
 		"https://reactjs.org",
 	}
+	// MinSupportedVersion is, by definition, the third-to-last ESR
+	MinSupportedVersion = semver.MustParse("7.8.0")
+
+	// UnreleasedVersion is a version guaranteed to be larger than any released
+	// version, useful for actions already added to the load-test but not yet
+	// merged in the server.
+	UnreleasedVersion = semver.Version{Major: math.MaxUint64}
 )
 
 // getErrOrigin returns a string indicating the location of the error that
@@ -249,27 +255,36 @@ func PickIdleTimeMs(minIdleTimeMs, avgIdleTimeMs int, rate float64) time.Duratio
 	return idleTimeMs * time.Millisecond
 }
 
-// IsVersionSupported returns whether a given version is supported
-// by the provided server version string.
-func IsVersionSupported(version, serverVersionString string) (bool, error) {
-	v, err := semver.Parse(version)
-	if err != nil {
-		return false, err
-	}
-
-	serverVersion := serverVersionRE.FindString(serverVersionString)
-
-	sv, err := semver.Parse(serverVersion)
-	if err != nil {
-		return false, err
-	}
-
-	return v.LTE(sv), nil
+// ParseServerVersion finds the semver-compatible version substring in the string
+// returned by the server and tries to parse it
+func ParseServerVersion(versionString string) (semver.Version, error) {
+	serverVersion := serverVersionRE.FindString(versionString)
+	return semver.Parse(serverVersion)
 }
 
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
 // all uploaded files to the post.
 func AttachFilesToPost(u user.User, post *model.Post) error {
+	fileIDs, err := _attachFilesToObj(u, post.ChannelId)
+	if err != nil {
+		return err
+	}
+	post.FileIds = fileIDs
+	return nil
+}
+
+// AttachFilesToDraft uploads at least one file on behalf of the user, attaching
+// all uploaded files to the draft.
+func AttachFilesToDraft(u user.User, draft *model.Draft) error {
+	fileIDs, err := _attachFilesToObj(u, draft.ChannelId)
+	if err != nil {
+		return err
+	}
+	draft.FileIds = fileIDs
+	return nil
+}
+
+func _attachFilesToObj(u user.User, channelID string) ([]string, error) {
 	type file struct {
 		data   []byte
 		upload bool
@@ -297,7 +312,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 		wg.Add(1)
 		go func(filename string, data []byte) {
 			defer wg.Done()
-			resp, err := u.UploadFile(data, post.ChannelId, filename)
+			resp, err := u.UploadFile(data, channelID, filename)
 			if err != nil {
 				errChan <- err
 				return
@@ -311,15 +326,16 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 	close(errChan)
 
 	// Attach all successfully uploaded files
+	var fileIDs []string
 	for fileId := range fileIdsChan {
-		post.FileIds = append(post.FileIds, fileId)
+		fileIDs = append(fileIDs, fileId)
 	}
 
 	// Collect all errors
-	merr := merror.New()
+	var finalErr error
 	for err := range errChan {
-		merr.Append(err)
+		finalErr = errors.Join(finalErr, err)
 	}
 
-	return merr.ErrorOrNil()
+	return fileIDs, finalErr
 }

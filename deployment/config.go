@@ -53,11 +53,11 @@ type Config struct {
 	ExternalBucketSettings ExternalBucketSettings
 	// ExternalAuthProviderSettings contains the settings for configuring an external auth provider.
 	ExternalAuthProviderSettings ExternalAuthProviderSettings
-	// URL from where to download Mattermost release.
-	// This can also point to a local binary path if the user wants to run loadtest
-	// on a custom build. The path should be prefixed with "file://". In that case,
-	// only the binary gets replaced, and the rest of the build comes from the latest
-	// stable release.
+	// MattermostDownloadURL supports the following use cases:
+	// 1. If it is a URL, it should be the Mattermost release to use.
+	// 2. If it is a file:// uri pointing to a binary, use the latest Mattermost release and replace
+	//    its binary with the binary pointed to by the file:// uri.
+	// 3. If it is a file:// pointing to a tar.gz, use that as the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
 	MattermostLicenseFile string `default:"" validate:"file"`
@@ -73,8 +73,9 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.17.0/mattermost-load-test-ng-v1.17.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -238,7 +239,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string `default:"Elasticsearch_7.10" validate:"prefix:Elasticsearch_"`
+	Version string `default:"Elasticsearch_7.10"`
 	// Id of the VPC associated with the instance to be created.
 	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
@@ -251,6 +252,17 @@ type ElasticSearchSettings struct {
 	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
 	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+}
+
+type RedisSettings struct {
+	// Enabled indicates whether to add Redis or not.
+	Enabled bool
+	// NodeType indicates the instance type.
+	NodeType string `default:"cache.m7g.2xlarge"`
+	// ParameterGroupName indicates the parameter group to attach.
+	ParameterGroupName string `default:"default.redis7"`
+	// EngineVersion indicates the engine version.
+	EngineVersion string `default:"7.1"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -340,6 +352,10 @@ func (c *Config) validateElasticSearchConfig() error {
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
 
+	}
+
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
 	}
 
 	return nil

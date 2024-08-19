@@ -346,7 +346,6 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		MaxConnsPerHost:       maxHTTPconns,
 		MaxIdleConns:          maxHTTPconns,
 		MaxIdleConnsPerHost:   maxHTTPconns,
-		ResponseHeaderTimeout: 5 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   1 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -427,7 +426,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		ueSetup := userentity.Setup{
 			Store:         store,
 			Transport:     transport,
-			ClientTimeout: transport.ResponseHeaderTimeout,
+			ClientTimeout: 5 * time.Second,
 		}
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
@@ -508,7 +507,11 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 				return nil, fmt.Errorf("invalid custom authentication found in %q", email)
 			}
 			authService = split[0]
-			if authService != userentity.AuthenticationTypeOpenID && authService != userentity.AuthenticationTypeMattermost {
+			switch authService {
+			case userentity.AuthenticationTypeOpenID:
+			case userentity.AuthenticationTypeSAML:
+			case userentity.AuthenticationTypeMattermost:
+			default:
 				return nil, fmt.Errorf("invalid custom authentication type %q", authService)
 			}
 

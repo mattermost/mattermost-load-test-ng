@@ -82,7 +82,7 @@ verify-gomod: ## Run go mod verify.
 check-style: golangci-lint ## Check the style of the code.
 
 golangci-lint:
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57
 
 	@echo Running golangci-lint
 	$(GOBIN)/golangci-lint run ./...

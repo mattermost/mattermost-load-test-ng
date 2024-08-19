@@ -17,8 +17,14 @@
     "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": "",
-    "RestoreTimeoutMinutes": "",
-    "ClusterTimeoutMinutes": ""
+    "RestoreTimeoutMinutes": 45,
+    "ClusterTimeoutMinutes": 45
+  },
+  "RedisSettings": {
+    "Enabled": false,
+    "NodeType": "cache.m7g.2xlarge",
+    "ParameterGroupName": "default.redis7",
+    "EngineVersion": "7.1"
   },
   "JobServerSettings":{
     "InstanceCount": 0,
@@ -72,7 +78,7 @@
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.17.0/mattermost-load-test-ng-v1.17.0-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",

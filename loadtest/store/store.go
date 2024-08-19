@@ -116,6 +116,8 @@ type UserStore interface {
 	RandomThread() (model.ThreadResponse, error)
 	// RandomCategory returns a random category from a team
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
+	// RandomDraftForTeam returns a random draft id for a team for the current user
+	RandomDraftForTeam(teamId string) (string, error)
 
 	// profile
 	// ProfileImageLastUpdated returns the etag returned by the server when first
@@ -172,6 +174,12 @@ type MutableUserStore interface {
 	// statuses
 	// SetStatus stores the status for the given userId.
 	SetStatus(userId string, status *model.Status) error
+
+	// drafts
+	// SetDraft stores the draft for the given teamId, and channelId or rootId.
+	SetDraft(teamId, id string, draft *model.Draft) error
+	// SetDrafts stores the given drafts.
+	SetDrafts(teamId string, drafts []*model.Draft) error
 
 	// posts
 	// SetPost stores the given post.
