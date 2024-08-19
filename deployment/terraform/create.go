@@ -1058,16 +1058,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	}
 
 	if t.output.HasKeycloak() {
-		keycloakScheme := "https"
-		if t.config.ExternalAuthProviderSettings.DevelopmentMode {
-			keycloakScheme = "http"
+		if err := t.setupKeycloakAppConfig(sshc, cfg); err != nil {
+			return fmt.Errorf("error setting up Keycloak config: %w", err)
 		}
-
-		cfg.OpenIdSettings.Enable = model.NewPointer(true)
-		cfg.OpenIdSettings.ButtonText = model.NewPointer("Keycloak Login")
-		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewPointer(keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
-		cfg.OpenIdSettings.Id = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientID)
-		cfg.OpenIdSettings.Secret = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
 	}
 
 	b, err := json.MarshalIndent(cfg, "", "  ")
