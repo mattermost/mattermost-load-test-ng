@@ -6,9 +6,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
 	"time"
@@ -17,6 +17,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/spf13/cobra"
 
 	gocloak "github.com/Nerzal/gocloak/v13"
@@ -92,9 +93,11 @@ func RunSyncFromKeycloakCommandF(cmd *cobra.Command, _ []string) error {
 	}
 
 	keycloakClient := gocloak.NewClient(keycloakHost)
-	ctx := context.Background()
+	keycloakCtx, keycloakCtxCancel := context.WithTimeout(context.Background(), operationTimeout)
+	defer keycloakCtxCancel()
+
 	token, err := keycloakClient.LoginAdmin(
-		ctx,
+		keycloakCtx,
 		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminUser,
 		deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminPassword,
 		"master", // TODO: Allow specifying the master realm
@@ -105,7 +108,10 @@ func RunSyncFromKeycloakCommandF(cmd *cobra.Command, _ []string) error {
 
 	if !dryRun {
 		// Create group for migrated users if it does not exist
-		_, err := keycloakClient.CreateGroup(ctx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, gocloak.Group{
+		keycloakCtx, keycloakCtxCancel := context.WithTimeout(context.Background(), operationTimeout)
+		defer keycloakCtxCancel()
+
+		_, err := keycloakClient.CreateGroup(keycloakCtx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, gocloak.Group{
 			Name: gocloak.StringP(keycloakMigratedGroup),
 		})
 		if err != nil {
@@ -171,12 +177,12 @@ func RunSyncFromKeycloakCommandF(cmd *cobra.Command, _ []string) error {
 				}
 
 				// Add user to migrated group in keycloak to avoid syncing them again
-				if err := keycloakClient.AddUserToGroup(ctx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, *user.ID, keycloakMigratedGroup); err != nil {
+				if err := keycloakClient.AddUserToGroup(requestCtx, token.AccessToken, deploymentConfig.ExternalAuthProviderSettings.KeycloakRealmName, *user.ID, keycloakMigratedGroup); err != nil {
 					return fmt.Errorf("failed to mark user migrated in keycloak: %w", err)
 				}
 			}
 
-			slog.Info("migrated user", slog.String("username", *user.Username))
+			mlog.Info("migrated user", mlog.String("username", *user.Username))
 
 			if len(users) == 0 {
 				break
@@ -260,10 +266,13 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to refresh keycloak token: %w", err)
 	}
 
-	usersChan := make(chan *model.User, 10000)
-	usersTxtChan := make(chan string, 10000)
 	doneChan := make(chan struct{})
-	workers := 4
+	workers := runtime.NumCPU()
+	if workers > 4 {
+		workers = 4
+	}
+	usersTxtChan := make(chan string, workers*2)
+	usersChan := make(chan *model.User, workers*2)
 
 	wg := sync.WaitGroup{}
 
@@ -296,7 +305,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 							continue
 						}
 
-						slog.Error("failed to create user in keycloak", slog.String("err", err.Error()))
+						mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
 						continue
 					}
 
@@ -306,14 +315,14 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 
 					_, _, err = mmClient.UpdateUser(ctx, user)
 					if err != nil {
-						slog.Error("failed to update user in mattermost", slog.String("err", err.Error()))
+						mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
 						continue
 					}
-					slog.Info("migrated user", slog.String("username", user.Username))
+					mlog.Info("migrated user", mlog.String("username", user.Username))
 					wg.Done()
 
 				case <-refreshTokenTicker.C:
-					slog.Info("refreshing keycloak token", slog.Int("worker", workerNumber))
+					mlog.Info("refreshing keycloak token", mlog.Int("worker", workerNumber))
 					keycloakToken, err = keycloakClient.LoginAdmin(
 						ctx,
 						deploymentConfig.ExternalAuthProviderSettings.KeycloakAdminUser,
@@ -321,7 +330,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 						"master", // TODO: Allow specifying the master realm
 					)
 					if err != nil {
-						slog.Error("failed to refresh keycloak token", slog.String("err", err.Error()))
+						mlog.Error("failed to refresh keycloak token", mlog.String("err", err.Error()))
 						close(doneChan)
 						panic(err)
 					}
@@ -337,7 +346,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	go func() {
 		usersTxtFile, err := os.OpenFile("users.txt", os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			slog.Error("failed to open users.txt file")
+			mlog.Error("failed to open users.txt file")
 			panic(err)
 		}
 		defer usersTxtFile.Close()
@@ -347,7 +356,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			case email := <-usersTxtChan:
 				_, err := usersTxtFile.Write([]byte(model.UserAuthServiceSaml + ":" + email + " " + userPassword + "\n"))
 				if err != nil {
-					slog.Error("failed to write to users.txt", slog.String("err", err.Error()))
+					mlog.Error("failed to write to users.txt", mlog.String("err", err.Error()))
 				}
 
 			case <-doneChan:
@@ -359,7 +368,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	page := 0
 	perPage := 100
 	for {
-		slog.Info("fetching mattermost users", slog.Int("page", page), slog.Int("per_page", perPage))
+		mlog.Info("fetching mattermost users", mlog.Int("page", page), mlog.Int("per_page", perPage))
 		users, _, err := mmClient.GetUsers(ctx, page, perPage, "")
 		if err != nil {
 			return fmt.Errorf("failed to get users from mattermost: %w", err)
@@ -383,7 +392,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 				wg.Add(1)
 				usersChan <- user
 			} else {
-				slog.Info("dry-run: would migrate user", slog.String("username", user.Username))
+				mlog.Info("dry-run: would migrate user", mlog.String("username", user.Username))
 			}
 		}
 
@@ -399,7 +408,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 
 	finished := time.Now()
 
-	slog.Info("migration finished", slog.Duration("duration", finished.Sub(started)))
+	mlog.Info("migration finished", mlog.Duration("duration", finished.Sub(started)))
 
 	return nil
 }
