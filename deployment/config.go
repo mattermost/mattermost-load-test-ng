@@ -223,6 +223,10 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
 	// Must exist in the keycloak instance
 	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
+	// KeycloakSAMLClientID is the client id to be used in Mattermost from the SAML client.
+	KeycloakSAMLClientID string `default:"mattermost-saml"`
+	// KeycloakSAMLClientSecret is the SAML client secret from the above realm to be used in Mattermost.
+	KeycloakSAMLClientSecret string `default:"9c2edd74-9e20-454d-8cc2-0714e43f5f7e"`
 }
 
 // ElasticSearchSettings contains the necessary data
