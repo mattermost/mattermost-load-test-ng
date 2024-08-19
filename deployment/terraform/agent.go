@@ -96,7 +96,6 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		instance := val
 
 		go func() {
-			// Copy val into instance
 			defer wg.Done()
 
 			sshc, err := extAgent.NewClient(instance.PublicIP)
