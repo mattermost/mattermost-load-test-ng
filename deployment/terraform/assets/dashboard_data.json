@@ -2059,14 +2059,14 @@
             "uid": "loadtest-source"
           },
           "editorMode": "code",
-          "expr": "sum(increase(node_ethtool_bw_in_allowance_exceeded[5m])) by (instance)",
+          "expr": "sum(increase(node_ethtool_bw_in_allowance_exceeded[1m])) by (instance)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Count of incoming bw exceeded",
+      "title": "Count of incoming bw exceeded in a minute",
       "type": "timeseries"
     },
     {
@@ -2154,14 +2154,14 @@
             "uid": "loadtest-source"
           },
           "editorMode": "code",
-          "expr": "sum(increase(node_ethtool_pps_allowance_exceeded[5m])) by (instance)",
+          "expr": "sum(increase(node_ethtool_pps_allowance_exceeded[1m])) by (instance)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Count of PPS exceeded",
+      "title": "Count of PPS exceeded in a minute",
       "type": "timeseries"
     },
     {
@@ -2249,14 +2249,14 @@
             "uid": "loadtest-source"
           },
           "editorMode": "code",
-          "expr": "sum(increase(node_ethtool_bw_out_allowance_exceeded[5m])) by (instance)",
+          "expr": "sum(increase(node_ethtool_bw_out_allowance_exceeded[1m])) by (instance)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Count of outgoing bw exceeded",
+      "title": "Count of outgoing bw exceeded in a minute",
       "type": "timeseries"
     },
     {
@@ -2344,14 +2344,14 @@
             "uid": "loadtest-source"
           },
           "editorMode": "code",
-          "expr": "sum(increase(node_ethtool_conntrack_allowance_exceeded[5m])) by (instance)",
+          "expr": "sum(increase(node_ethtool_conntrack_allowance_exceeded[1m])) by (instance)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Count of conntrack exceeded",
+      "title": "Count of conntrack exceeded in a minute",
       "type": "timeseries"
     }
   ],
