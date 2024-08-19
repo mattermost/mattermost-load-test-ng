@@ -56,10 +56,10 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 	defer refreshTokenTicker.Stop()
 
 	for {
-		ctx := context.Background()
-
 		select {
 		case user := <-worker.usersChan:
+			ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
+
 			kcUserID, err := worker.keycloakClient.CreateUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, gocloak.User{
 				Username:      &user.Username,
 				Email:         &user.Email,
@@ -74,6 +74,7 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 				},
 			})
 			if err != nil {
+				cancel()
 				// Ignore already existing users
 				if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 					mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
@@ -90,13 +91,16 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 
 			_, _, err = worker.mmClient.UpdateUser(ctx, user)
 			if err != nil {
+				cancel()
 				mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
 				continue
 			}
 			mlog.Info("migrated user", mlog.String("username", user.Username))
 			worker.wg.Done()
-
+			cancel()
 		case <-refreshTokenTicker.C:
+			ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
+
 			mlog.Info("refreshing keycloak token", mlog.Int("worker", worker.workerNumber))
 			var err error
 			worker.keycloakToken, err = worker.keycloakClient.LoginAdmin(
@@ -106,10 +110,12 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 				"master", // TODO: Allow specifying the master realm
 			)
 			if err != nil {
+				cancel()
 				mlog.Error("failed to refresh keycloak token", mlog.String("err", err.Error()))
 				close(worker.doneChan)
 			}
 
+			cancel()
 		case <-worker.doneChan:
 			return
 		}
