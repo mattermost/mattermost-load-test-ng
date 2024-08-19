@@ -1076,11 +1076,11 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 		keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080"
 
-		cfg.OpenIdSettings.Enable = model.NewBool(true)
-		cfg.OpenIdSettings.ButtonText = model.NewString("Keycloak Login")
-		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewString(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
-		cfg.OpenIdSettings.Id = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientID)
-		cfg.OpenIdSettings.Secret = model.NewString(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
+		cfg.OpenIdSettings.Enable = model.NewPointer(true)
+		cfg.OpenIdSettings.ButtonText = model.NewPointer("Keycloak Login")
+		cfg.OpenIdSettings.DiscoveryEndpoint = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
+		cfg.OpenIdSettings.Id = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientID)
+		cfg.OpenIdSettings.Secret = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
 		cfg.SamlSettings.Enable = model.NewPointer(false)
 		cfg.SamlSettings.Enable = model.NewPointer(true)
 		cfg.SamlSettings.EnableSyncWithLdap = model.NewPointer(false)
