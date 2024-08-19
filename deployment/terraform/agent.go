@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"text/template"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -87,8 +88,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	}
 
 	wg := sync.WaitGroup{}
-	wgDone := make(chan struct{})
-	errChan := make(chan error, 1)
+	var foundErr atomic.Bool
 
 	for i, val := range t.output.Agents {
 		wg.Add(1)
@@ -101,25 +101,33 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			sshc, err := extAgent.NewClient(instance.PublicIP)
 			if err != nil {
-				errChan <- err
+				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
 			}
 			mlog.Info("Configuring agent", mlog.String("ip", instance.PublicIP), mlog.Int("agent", agentNumber))
 			if uploadBinary {
 				dstFilePath := "/home/ubuntu/tmp.tar.gz"
 				mlog.Info("Uploading binary", mlog.String("file", packagePath))
 				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
-					errChan <- fmt.Errorf("error uploading file %q, output: %q: %w", packagePath, out, err)
+					mlog.Error("error uploading file", mlog.String("path", packagePath), mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+					foundErr.Store(true)
+					return
 				}
 			}
 
 			cmd := strings.Join(commands, " && ")
 			if out, err := sshc.RunCommand(cmd); err != nil {
-				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
+				mlog.Error("error running command", mlog.Int("agent", agentNumber), mlog.String("output", string(out)), mlog.Err(err))
+				foundErr.Store(true)
+				return
 			}
 
 			tpl, err := template.New("").Parse(apiServiceFile)
 			if err != nil {
-				errChan <- fmt.Errorf("could not parse agent service template: %w", err)
+				mlog.Error("could not parse agent service template", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
 			}
 
 			serverCmd := baseAPIServerCmd
@@ -145,7 +153,9 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			if t.config.SiteURL != "" {
 				output, err := t.Output()
 				if err != nil {
-					errChan <- err
+					mlog.Error("error getting output", mlog.Err(err), mlog.Int("agent", agentNumber))
+					foundErr.Store(true)
+					return
 				}
 
 				// The new entry in /etc/hosts will make SiteURL point to:
@@ -163,34 +173,30 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			if err := uploadBatch(sshc, batch); err != nil {
-				errChan <- fmt.Errorf("batch upload failed: %w", err)
+				mlog.Error("error uploading batch", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
 			}
 
 			if out, err := sshc.RunCommand("sudo sysctl -p"); err != nil {
-				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
+				mlog.Error("error running sysctl", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
 			}
 
 			mlog.Info("Starting load-test api server")
 			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
-				errChan <- fmt.Errorf("error running command, got output: %q: %w", out, err)
+				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
 			}
 		}()
 	}
 
-	// Run another goroutine to check when all agents have finished configuring
-	go func() {
-		wg.Wait()
-		close(wgDone)
-	}()
+	wg.Wait()
 
-	// Wait for all the agent setup to finish or return an error if one of them fails
-	select {
-	case <-wgDone:
-		// Do nothing, operation successful.
-		break
-	case err := <-errChan:
-		close(errChan)
-		return fmt.Errorf("error configuring one of the agents agents: %w", err)
+	if foundErr.Load() {
+		return errors.New("error configuring agents, check above logs for more information")
 	}
 
 	return nil
