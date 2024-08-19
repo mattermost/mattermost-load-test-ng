@@ -108,7 +108,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			mlog.Info("Configuring agent", mlog.String("ip", instance.PublicIP), mlog.Int("agent", agentNumber))
 			if uploadBinary {
 				dstFilePath := "/home/ubuntu/tmp.tar.gz"
-				mlog.Info("Uploading binary", mlog.String("file", packagePath))
+				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
 				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 					mlog.Error("error uploading file", mlog.String("path", packagePath), mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 					foundErr.Store(true)
@@ -184,7 +184,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				return
 			}
 
-			mlog.Info("Starting load-test api server")
+			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
 			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
