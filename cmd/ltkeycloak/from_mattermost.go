@@ -198,8 +198,8 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	if workers > 4 {
 		workers = 4
 	}
-	usersTxtChan := make(chan string, workers*2)
-	usersChan := make(chan *model.User, workers*2)
+	usersTxtChan := make(chan string)
+	usersChan := make(chan *model.User)
 
 	wg := sync.WaitGroup{}
 
