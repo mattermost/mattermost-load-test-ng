@@ -1045,7 +1045,7 @@
             "name": "",
             "description": "",
             "rootUrl": "",
-            "adminUrl": "",
+            "adminUrl": "http://localhost:8065/login/sso/saml",
             "baseUrl": "",
             "surrogateAuthRequired": false,
             "enabled": true,
@@ -1053,11 +1053,9 @@
             "clientAuthenticatorType": "client-secret",
             "secret": "9c2edd74-9e20-454d-8cc2-0714e43f5f7e",
             "redirectUris": [
-                "*"
+                "http://localhost:8065/login/sso/saml"
             ],
-            "webOrigins": [
-                "*"
-            ],
+            "webOrigins": [],
             "notBefore": 0,
             "bearerOnly": false,
             "consentRequired": false,
