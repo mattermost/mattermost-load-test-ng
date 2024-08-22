@@ -85,7 +85,7 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 				continue
 			}
 
-			user.AuthData = model.NewString(kcUserID)
+			user.AuthData = model.NewPointer(kcUserID)
 			user.AuthService = model.UserAuthServiceSaml
 			user.Password = ""
 
