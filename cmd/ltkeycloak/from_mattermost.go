@@ -17,10 +17,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, userPassword string) {
+func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, errorsChan chan error, workersWg *sync.WaitGroup, userPassword string) {
+	workersWg.Add(1)
+	defer workersWg.Done()
+
 	usersTxtFile, err := os.OpenFile("users.txt", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		mlog.Error("failed to open users.txt file")
+		errorsChan <- err
+		return
 	}
 	defer usersTxtFile.Close()
 
@@ -30,6 +35,8 @@ func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, userPasswor
 			_, err := usersTxtFile.Write([]byte(model.UserAuthServiceSaml + ":" + email + " " + userPassword + "\n"))
 			if err != nil {
 				mlog.Error("failed to write to users.txt", mlog.String("err", err.Error()))
+				errorsChan <- err
+				return
 			}
 
 		case <-doneChan:
@@ -41,7 +48,9 @@ func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, userPasswor
 type workerConfig struct {
 	workerNumber     int
 	usersChan        chan *model.User
-	wg               *sync.WaitGroup
+	operationsWg     *sync.WaitGroup
+	workersWg        *sync.WaitGroup
+	errorsChan       chan error
 	mmClient         *model.Client4
 	keycloakClient   *gocloak.GoCloak
 	keycloakToken    *gocloak.JWT
@@ -54,6 +63,7 @@ type workerConfig struct {
 func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 	refreshTokenTicker := time.NewTicker(30 * time.Second)
 	defer refreshTokenTicker.Stop()
+	defer worker.workersWg.Done()
 
 	for {
 		select {
@@ -82,7 +92,8 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 				}
 
 				mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
-				continue
+				worker.errorsChan <- err
+				return
 			}
 
 			user.AuthData = model.NewPointer(kcUserID)
@@ -93,10 +104,17 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 			if err != nil {
 				cancel()
 				mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
-				continue
+
+				// Delete keycloak user to maintain consistency
+				if deleteErr := worker.keycloakClient.DeleteUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, kcUserID); deleteErr != nil {
+					mlog.Error("failed to delete user in keycloak", mlog.String("err", deleteErr.Error()))
+				}
+
+				worker.errorsChan <- err
+				return
 			}
 			mlog.Info("migrated user", mlog.String("username", user.Username))
-			worker.wg.Done()
+			worker.operationsWg.Done()
 			cancel()
 		case <-refreshTokenTicker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
@@ -198,22 +216,28 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	if workers > 4 {
 		workers = 4
 	}
+	errorsChan := make(chan error, workers+1)
 	usersTxtChan := make(chan string)
 	usersChan := make(chan *model.User)
 
-	wg := sync.WaitGroup{}
+	operationsWg := &sync.WaitGroup{}
+	workersWg := &sync.WaitGroup{}
 
 	// Worker to write to the users.txt file
-	go userTxtWriter(usersTxtChan, doneChan, userPassword)
+	go userTxtWriter(usersTxtChan, doneChan, errorsChan, workersWg, userPassword)
 
 	// Workers to run the sync and call the MM and Keycloak APIs
 	for i := 0; i < workers; i++ {
+		workersWg.Add(1)
+
 		workerNumber := i + 1
 
 		go migrateMattermostUsersToKeycloak(&workerConfig{
 			workerNumber:     workerNumber,
 			usersChan:        usersChan,
-			wg:               &wg,
+			workersWg:        workersWg,
+			operationsWg:     operationsWg,
+			errorsChan:       errorsChan,
 			mmClient:         mmClient,
 			keycloakClient:   keycloakClient,
 			keycloakToken:    keycloakToken,
@@ -240,7 +264,9 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			}
 
 			// Write the user to the users.txt file
-			usersTxtChan <- user.Email
+			if !dryRun {
+				usersTxtChan <- user.Email
+			}
 
 			// Already migrated
 			if user.AuthService == model.UserAuthServiceSaml {
@@ -248,22 +274,23 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			}
 
 			if !dryRun {
-				wg.Add(1)
+				operationsWg.Add(1)
 				usersChan <- user
 			} else {
 				mlog.Info("dry-run: would migrate user", mlog.String("username", user.Username))
 			}
 		}
 
-		if len(users) == 0 {
+		if len(users) < perPage {
 			break
 		}
 
 		page++
 	}
 
-	wg.Wait()
+	operationsWg.Wait()
 	close(doneChan)
+	workersWg.Wait() // Wait for all goroutines to finish after all operations are done
 
 	finished := time.Now()
 
