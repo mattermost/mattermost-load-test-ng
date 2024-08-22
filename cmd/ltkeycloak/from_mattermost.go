@@ -18,6 +18,8 @@ import (
 )
 
 func migrateUser(worker *workerConfig, user *model.User) error {
+	defer worker.operationsWg.Done()
+
 	ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
 	defer cancel()
 
@@ -35,9 +37,6 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		},
 	})
 	if err != nil {
-		cancel()
-		worker.operationsWg.Done()
-
 		// Ignore already existing users
 		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
