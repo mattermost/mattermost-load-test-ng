@@ -154,7 +154,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to read flag: %w", err)
 	}
 
-	// Use the terraform output terraform host if a manual one is not provided. Useful for development.
+	// Use the terraform output keycloak host if a manual one is not provided. Useful for development.
 	if keycloakHost == "" {
 		t, err := terraform.New("", *deploymentConfig)
 		if err != nil {
