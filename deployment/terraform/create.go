@@ -273,7 +273,7 @@ func (t *Terraform) Create(initData bool) error {
 
 	// Ingesting the DB dump and restoring the Elasticsearch snapshot can
 	// happen concurrently to reduce the deployment's total time
-	errorsChan := make(chan error, 5)
+	errorsChan := make(chan error, 2)
 	var wg sync.WaitGroup
 
 	// Setup Elasticsearch
@@ -314,12 +314,14 @@ func (t *Terraform) Create(initData bool) error {
 				// Run extra SQL commands if specified
 				if err := t.ExecuteCustomSQL(); err != nil {
 					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
+					return
 				}
 			}
 
 			// Clear licenses data
 			if err := t.ClearLicensesData(); err != nil {
 				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)
+				return
 			}
 
 			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
