@@ -162,7 +162,17 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to read flag: %w", err)
 	}
 
-	mmClient := model.NewAPIv4Client("http://" + deploymentConfig.SiteURL)
+	siteURL := deploymentConfig.SiteURL
+
+	mattermostHost, err := cmd.Flags().GetString("mattermost-host")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+	if mattermostHost != "" {
+		siteURL = mattermostHost
+	}
+
+	mmClient := model.NewAPIv4Client("http://" + siteURL)
 
 	_, _, err = mmClient.Login(cmd.Context(), deploymentConfig.AdminEmail, deploymentConfig.AdminPassword)
 	if err != nil {
