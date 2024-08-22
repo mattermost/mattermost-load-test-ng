@@ -195,9 +195,11 @@ proxy_pass http://backend;
 const nginxCacheCommonConfig = `
 proxy_cache mattermost_cache;
 proxy_cache_revalidate on;
-proxy_cache_min_uses 2;
-proxy_cache_use_stale timeout;
+proxy_cache_min_uses 1;
+proxy_cache_use_stale updating;
 proxy_cache_lock on;
+proxy_cache_lock_timeout 2s;
+proxy_cache_background_update on;
 `
 
 const nginxSiteConfigTmpl = `
