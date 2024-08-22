@@ -17,6 +17,59 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func migrateUser(worker *workerConfig, user *model.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
+	defer cancel()
+
+	kcUserID, err := worker.keycloakClient.CreateUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, gocloak.User{
+		Username:      &user.Username,
+		Email:         &user.Email,
+		Enabled:       gocloak.BoolP(true),
+		EmailVerified: &user.EmailVerified,
+		Credentials: &[]gocloak.CredentialRepresentation{
+			{
+				Temporary: gocloak.BoolP(false),
+				Type:      gocloak.StringP("password"),
+				Value:     gocloak.StringP(worker.userPassword),
+			},
+		},
+	})
+	if err != nil {
+		cancel()
+		worker.operationsWg.Done()
+
+		// Ignore already existing users
+		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
+			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
+			return nil
+		}
+
+		mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
+		worker.errorsChan <- err
+		return err
+	}
+
+	user.AuthData = model.NewPointer(kcUserID)
+	user.AuthService = model.UserAuthServiceSaml
+	user.Password = ""
+
+	_, _, err = worker.mmClient.UpdateUser(ctx, user)
+	if err != nil {
+		mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
+
+		// Delete keycloak user to maintain consistency
+		if deleteErr := worker.keycloakClient.DeleteUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, kcUserID); deleteErr != nil {
+			mlog.Error("failed to delete user in keycloak", mlog.String("err", deleteErr.Error()))
+		}
+
+		worker.errorsChan <- err
+		return err
+	}
+	mlog.Info("migrated user", mlog.String("username", user.Username))
+
+	return nil
+}
+
 func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, errorsChan chan error, workersWg *sync.WaitGroup, userPassword string) {
 	workersWg.Add(1)
 	defer workersWg.Done()
@@ -68,57 +121,9 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 	for {
 		select {
 		case user := <-worker.usersChan:
-			ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
-
-			kcUserID, err := worker.keycloakClient.CreateUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, gocloak.User{
-				Username:      &user.Username,
-				Email:         &user.Email,
-				Enabled:       gocloak.BoolP(true),
-				EmailVerified: &user.EmailVerified,
-				Credentials: &[]gocloak.CredentialRepresentation{
-					{
-						Temporary: gocloak.BoolP(false),
-						Type:      gocloak.StringP("password"),
-						Value:     gocloak.StringP(worker.userPassword),
-					},
-				},
-			})
-			if err != nil {
-				cancel()
-				worker.operationsWg.Done()
-
-				// Ignore already existing users
-				if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
-					mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
-					continue
-				}
-
-				mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
-				worker.errorsChan <- err
-				return
+			if err := migrateUser(worker, user); err != nil {
+				mlog.Error("failed to migrate user", mlog.String("err", err.Error()))
 			}
-
-			user.AuthData = model.NewPointer(kcUserID)
-			user.AuthService = model.UserAuthServiceSaml
-			user.Password = ""
-
-			_, _, err = worker.mmClient.UpdateUser(ctx, user)
-			if err != nil {
-				cancel()
-				mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
-
-				// Delete keycloak user to maintain consistency
-				if deleteErr := worker.keycloakClient.DeleteUser(ctx, worker.keycloakToken.AccessToken, worker.keycloakRealm, kcUserID); deleteErr != nil {
-					mlog.Error("failed to delete user in keycloak", mlog.String("err", deleteErr.Error()))
-				}
-
-				worker.errorsChan <- err
-				worker.operationsWg.Done()
-				return
-			}
-			mlog.Info("migrated user", mlog.String("username", user.Username))
-			worker.operationsWg.Done()
-			cancel()
 		case <-refreshTokenTicker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
 
