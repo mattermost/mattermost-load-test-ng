@@ -85,6 +85,8 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 			})
 			if err != nil {
 				cancel()
+				worker.operationsWg.Done()
+
 				// Ignore already existing users
 				if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 					mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
@@ -111,6 +113,7 @@ func migrateMattermostUsersToKeycloak(worker *workerConfig) {
 				}
 
 				worker.errorsChan <- err
+				worker.operationsWg.Done()
 				return
 			}
 			mlog.Info("migrated user", mlog.String("username", user.Username))
