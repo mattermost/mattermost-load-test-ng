@@ -1,4 +1,4 @@
-package elasticsearch
+package opensearch
 
 import (
 	"bytes"
@@ -15,10 +15,10 @@ import (
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 )
 
-// elasticsearchRoundTripper implements RoundTrip to use it as a Transport in
+// opensearchRoundTripper implements RoundTrip to use it as a Transport in
 // an http client. It signs the requests using AWS Signature Version 4 before
 // letting the request go through its inner transport's RoundTrip.
-type elasticsearchRoundTripper struct {
+type opensearchRoundTripper struct {
 	signer    *v4.Signer
 	creds     aws.Credentials
 	region    string
@@ -27,7 +27,7 @@ type elasticsearchRoundTripper struct {
 
 type DialContextF func(context.Context, string, string) (net.Conn, error)
 
-func newElasticsearchRoundTripper(dialCtxt DialContextF, creds aws.Credentials, awsRegion string) (*elasticsearchRoundTripper, error) {
+func newOpensearchRoundTripper(dialCtxt DialContextF, creds aws.Credentials, awsRegion string) (*opensearchRoundTripper, error) {
 	signer := v4.NewSigner()
 
 	// Use the default transport, except for DialContext, for which we use the
@@ -35,7 +35,7 @@ func newElasticsearchRoundTripper(dialCtxt DialContextF, creds aws.Credentials, 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.DialContext = dialCtxt
 
-	return &elasticsearchRoundTripper{
+	return &opensearchRoundTripper{
 		signer:    signer,
 		creds:     creds,
 		region:    awsRegion,
@@ -45,7 +45,7 @@ func newElasticsearchRoundTripper(dialCtxt DialContextF, creds aws.Credentials, 
 
 // RoundTrip implements the RoundTripper interface, signing the request with AWS
 // Signature Version 4 before passing it to the underlying transport's RoundTrip
-func (s elasticsearchRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (s opensearchRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := s.signRequest(req); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s elasticsearchRoundTripper) RoundTrip(req *http.Request) (*http.Response,
 }
 
 // signRequest sign the provided request using AWS Signature Version 4
-func (s elasticsearchRoundTripper) signRequest(req *http.Request) error {
+func (s opensearchRoundTripper) signRequest(req *http.Request) error {
 	body := []byte{}
 	if req.Body != nil {
 		var err error

@@ -19,7 +19,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/elasticsearch"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -525,18 +525,18 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
 
-	es, err := elasticsearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
+	os, err := opensearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
 	if err != nil {
 		return fmt.Errorf("unable to create Elasticserach client: %w", err)
 	}
 
-	indices, err := es.ListIndices()
+	indices, err := os.ListIndices()
 	if err != nil {
 		return fmt.Errorf("unable to list indices: %w", err)
 	}
 	mlog.Debug("Indices in ElasticSearch domain", mlog.Array("indices", indices))
 
-	repositories, err := es.ListRepositories()
+	repositories, err := os.ListRepositories()
 	if err != nil {
 		return fmt.Errorf("unable to list repositories: %w", err)
 	}
@@ -556,21 +556,21 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	// Register the repository configured if not found
 	if !repoFound {
 		arn := output.ElasticSearchRoleARN
-		if err := es.RegisterS3Repository(repo, arn); err != nil {
+		if err := os.RegisterS3Repository(repo, arn); err != nil {
 			return fmt.Errorf("unable to register repository: %w", err)
 		}
 		mlog.Info("Repository registered", mlog.String("repository", repo))
 	}
 
 	// List all snapshots in the configured repository
-	snapshots, err := es.ListSnapshots(repo)
+	snapshots, err := os.ListSnapshots(repo)
 	if err != nil {
 		return fmt.Errorf("unable to list snapshots: %w", err)
 	}
 	mlog.Debug("Snapshots in registered repository", mlog.Array("snapshots", snapshots))
 
 	// Look for the configured snapshot
-	var snapshot elasticsearch.Snapshot
+	var snapshot opensearch.Snapshot
 	snapshotName := esSettings.SnapshotName
 	for _, s := range snapshots {
 		if s.Name == snapshotName {
@@ -607,7 +607,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	if len(indicesToClose) > 0 {
 		mlog.Info("Closing indices in ElasticSearch server...", mlog.Array("indices", indicesToClose))
-		if err := es.CloseIndices(indicesToClose); err != nil {
+		if err := os.CloseIndices(indicesToClose); err != nil {
 			return fmt.Errorf("unable to close indices: %w", err)
 		}
 	}
@@ -616,18 +616,18 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		mlog.String("repository", repo),
 		mlog.String("snapshot", snapshotName),
 		mlog.Array("indices", snapshotIndices))
-	opts := elasticsearch.RestoreSnapshotOpts{
+	opts := opensearch.RestoreSnapshotOpts{
 		WithIndices:      snapshotIndices,
 		NumberOfReplicas: esSettings.InstanceCount - 1,
 	}
-	if err := es.RestoreSnapshot(repo, snapshotName, opts); err != nil {
+	if err := os.RestoreSnapshot(repo, snapshotName, opts); err != nil {
 		return fmt.Errorf("unable to restore snapshot: %w", err)
 	}
 
 	// Wait until the snapshot is completely restored, or the user-specified
 	// timeout is triggered, whatever happens first
 	restoreTimeout := time.Duration(esSettings.RestoreTimeoutMinutes) * time.Minute
-	if err := waitForSnapshot(restoreTimeout, es, snapshotIndices); err != nil {
+	if err := waitForSnapshot(restoreTimeout, os, snapshotIndices); err != nil {
 		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
 	}
 
@@ -643,7 +643,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	// nodes: in that case, waitForSnapshot will return immediately, so we'll
 	// only wait for the cluster's status to get green.
 	clusterTimeout := time.Duration(esSettings.ClusterTimeoutMinutes) * time.Minute
-	if err := waitForGreenCluster(clusterTimeout, es); err != nil {
+	if err := waitForGreenCluster(clusterTimeout, os); err != nil {
 		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
 	}
 
@@ -652,7 +652,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 // waitForSnapshot blocks until the snapshot is fully restored or the provided
 // timeout is reached
-func waitForSnapshot(dur time.Duration, es *elasticsearch.Client, snapshotIndices []string) error {
+func waitForSnapshot(dur time.Duration, es *opensearch.Client, snapshotIndices []string) error {
 	timeout := time.After(dur)
 	for {
 		select {
@@ -702,7 +702,7 @@ func waitForSnapshot(dur time.Duration, es *elasticsearch.Client, snapshotIndice
 
 // waitForGreenCluster blocks until the cluster's status is green or the
 // provided timeout is reached
-func waitForGreenCluster(dur time.Duration, es *elasticsearch.Client) error {
+func waitForGreenCluster(dur time.Duration, es *opensearch.Client) error {
 	timeout := time.After(dur)
 	for {
 		select {
@@ -715,7 +715,7 @@ func waitForGreenCluster(dur time.Duration, es *elasticsearch.Client) error {
 			}
 
 			// Finish when the cluster's status is green
-			if clusterHealth.Status == elasticsearch.ClusterStatusGreen {
+			if clusterHealth.Status == opensearch.ClusterStatusGreen {
 				return nil
 			}
 
@@ -994,9 +994,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.SqlSettings.MaxIdleConns = model.NewPointer(100)
 	cfg.SqlSettings.MaxOpenConns = model.NewPointer(100)
 	cfg.SqlSettings.Trace = model.NewPointer(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
-	if t.output.HasElasticSearch() {
-		cfg.SqlSettings.DisableDatabaseSearch = model.NewPointer(true)
-	}
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewPointer(200000)           // We don't want to be capped by this limit
 	cfg.TeamSettings.MaxChannelsPerTeam = model.NewPointer(int64(200000)) // We don't want to be capped by this limit
@@ -1025,6 +1022,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		cfg.ElasticsearchSettings.EnableIndexing = model.NewPointer(true)
 		cfg.ElasticsearchSettings.EnableAutocomplete = model.NewPointer(true)
 		cfg.ElasticsearchSettings.EnableSearching = model.NewPointer(true)
+		cfg.ElasticsearchSettings.Backend = model.NewPointer(model.ElasticsearchSettingsOSBackend)
 
 		// Make all indices have a shard replica in every data node
 		numReplicas := t.config.ElasticSearchSettings.InstanceCount - 1
