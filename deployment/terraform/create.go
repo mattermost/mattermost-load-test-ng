@@ -1114,6 +1114,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
+	assets.RestoreAssets(t.config.TerraformStateDir, "saml-idp.crt")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
