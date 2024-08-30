@@ -994,6 +994,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.SqlSettings.MaxIdleConns = model.NewPointer(100)
 	cfg.SqlSettings.MaxOpenConns = model.NewPointer(100)
 	cfg.SqlSettings.Trace = model.NewPointer(false) // Can be enabled for specific tests, but defaulting to false to declutter logs
+	if t.output.HasElasticSearch() {
+		cfg.SqlSettings.DisableDatabaseSearch = model.NewPointer(true)
+	}
 
 	cfg.TeamSettings.MaxUsersPerTeam = model.NewPointer(200000)           // We don't want to be capped by this limit
 	cfg.TeamSettings.MaxChannelsPerTeam = model.NewPointer(int64(200000)) // We don't want to be capped by this limit
