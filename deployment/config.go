@@ -75,7 +75,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
@@ -230,6 +230,10 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
 	// Must exist in the keycloak instance
 	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
+	// KeycloakSAMLClientID is the client id to be used in Mattermost from the SAML client.
+	KeycloakSAMLClientID string `default:"mattermost-saml"`
+	// KeycloakSAMLClientSecret is the SAML client secret from the above realm to be used in Mattermost.
+	KeycloakSAMLClientSecret string `default:"9c2edd74-9e20-454d-8cc2-0714e43f5f7e"`
 }
 
 // ElasticSearchSettings contains the necessary data
@@ -356,8 +360,16 @@ func (c *Config) validateElasticSearchConfig() error {
 
 	}
 
-	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
-		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
+	}
+
+	if c.ElasticSearchSettings.SnapshotRepository == "" {
+		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
+	}
+
+	if c.ElasticSearchSettings.SnapshotName == "" {
+		return fmt.Errorf("Empty SnapshotName. Must supply a value")
 	}
 
 	return nil
