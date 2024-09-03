@@ -314,12 +314,14 @@ func (t *Terraform) Create(initData bool) error {
 				// Run extra SQL commands if specified
 				if err := t.ExecuteCustomSQL(); err != nil {
 					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
+					return
 				}
 			}
 
 			// Clear licenses data
 			if err := t.ClearLicensesData(); err != nil {
 				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)
+				return
 			}
 
 			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
@@ -432,6 +434,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 			uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts"},
 		)
 	}
+
 	if err := uploadBatch(sshc, batch); err != nil {
 		return fmt.Errorf("batch upload failed: %w", err)
 	}

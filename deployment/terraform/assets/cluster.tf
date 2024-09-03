@@ -114,7 +114,7 @@ resource "aws_instance" "proxy_server" {
   }
   ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
-  count                       = var.app_instance_count > 1 ? 1 : 0
+  count                       = var.proxy_instance_count
   associate_public_ip_address = true
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
