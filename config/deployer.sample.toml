@@ -79,6 +79,7 @@ FileLocation = 'deployer.log'
 [PyroscopeSettings]
 EnableAgentProfiling = true
 EnableAppProfiling = true
+BlockProfileRate = 0
 
 [Report]
 Label = '{instance=~"app.*"}'

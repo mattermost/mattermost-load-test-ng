@@ -129,13 +129,15 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				return
 			}
 
-			serverCmd := baseAPIServerCmd
-			if t.config.EnableAgentFullLogs {
-				serverCmd = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
+			tplVars := map[string]any{
+				"blockProfileRate": t.config.PyroscopeSettings.BlockProfileRate,
+				"execStart":        baseAPIServerCmd,
 			}
-
+			if t.config.EnableAgentFullLogs {
+				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
+			}
 			buf := bytes.NewBufferString("")
-			tpl.Execute(buf, serverCmd)
+			tpl.Execute(buf, tplVars)
 
 			batch := []uploadInfo{
 				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},

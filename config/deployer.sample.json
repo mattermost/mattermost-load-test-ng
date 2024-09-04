@@ -140,6 +140,7 @@
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,
-    "EnableAgentProfiling": true
+    "EnableAgentProfiling": true,
+    "BlockProfileRate": 0
   }
 }

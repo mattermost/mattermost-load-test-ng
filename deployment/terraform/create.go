@@ -1015,6 +1015,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewPointer(true)
 
 	cfg.MetricsSettings.Enable = model.NewPointer(true)
+	cfg.MetricsSettings.BlockProfileRate = model.NewPointer(t.config.PyroscopeSettings.BlockProfileRate)
 
 	cfg.PluginSettings.Enable = model.NewPointer(true)
 	cfg.PluginSettings.EnableUploads = model.NewPointer(true)

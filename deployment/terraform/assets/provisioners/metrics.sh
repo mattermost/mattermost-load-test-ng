@@ -30,9 +30,14 @@ do
       sudo service grafana-server start && \
       sudo systemctl enable inbucket && \
       sudo service inbucket start && \
-      wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb && \
-      sudo apt-get install ./pyroscope_0.37.2_amd64.deb && \
-      sudo systemctl enable pyroscope-server && \
+      wget https://github.com/grafana/alloy/releases/download/v1.3.1/alloy-1.3.1-1.amd64.deb && \
+      sudo dpkg -i alloy-1.3.1-1.amd64.deb && \
+      sudo systemctl enable alloy && \
+      wget https://github.com/grafana/pyroscope/releases/download/v1.7.1/pyroscope_1.7.1_linux_amd64.deb && \
+      sudo dpkg -i pyroscope_1.7.1_linux_amd64.deb && \
+      sudo mkdir -p /var/lib/pyroscope && \
+      sudo chown pyroscope:pyroscope -R /var/lib/pyroscope && \
+      sudo systemctl enable pyroscope && \
       exit 0
    n=$((n+1)) 
    sleep 2
