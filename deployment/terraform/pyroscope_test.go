@@ -81,16 +81,16 @@ pyroscope.write "write_job" {
 pyroscope.scrape "scrape_job" {
 	targets = [{
 		__address__  = "app-0:8067",
-		service_name = "app-0",
+		service_name = "app",
 	}, {
 		__address__  = "app-1:8067",
-		service_name = "app-1",
+		service_name = "app",
 	}, {
 		__address__  = "agent-0:4000",
-		service_name = "agent-0",
+		service_name = "agent",
 	}, {
 		__address__  = "agent-1:4000",
-		service_name = "agent-1",
+		service_name = "agent",
 	}]
 	forward_to = [pyroscope.write.write_job.receiver]
 
