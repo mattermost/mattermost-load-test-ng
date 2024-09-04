@@ -76,7 +76,7 @@ func NewAlloyConfig(mmTargets, ltTargets []string) AlloyConfig {
 	c.PyroscopeScrape.ProfilingConfig.Goroutine.Enabled = true
 
 	for _, target := range append(mmTargets, ltTargets...) {
-		serviceName, _, _ := strings.Cut(target, ":")
+		serviceName, _, _ := strings.Cut(target, "-")
 		c.PyroscopeScrape.Targets = append(c.PyroscopeScrape.Targets, PyroscopeTarget{
 			Address:     target,
 			ServiceName: serviceName,
