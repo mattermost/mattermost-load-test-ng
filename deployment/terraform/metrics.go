@@ -20,7 +20,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
-	"gopkg.in/yaml.v3"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -221,15 +220,23 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if t.config.PyroscopeSettings.EnableAgentProfiling {
 		pyroscopeLTTargets = ltTargets
 	}
-	pyroscopeConfig, err := yaml.Marshal(NewPyroscopeConfig(pyroscopeMMTargets, pyroscopeLTTargets))
+	alloyConfig, err := NewAlloyConfig(pyroscopeMMTargets, pyroscopeLTTargets).marshal()
 	if err != nil {
-		return fmt.Errorf("error marshaling Pyroscope config yaml: %w", err)
+		return fmt.Errorf("error marshaling Alloy config: %w", err)
 	}
-
+	pyroscopeConfig, err := NewPyroscopeConfig().marshal()
+	if err != nil {
+		return fmt.Errorf("error marshaling Pyroscope config: %w", err)
+	}
+	alloyReader := bytes.NewReader(alloyConfig)
+	if out, err := sshc.Upload(alloyReader, "/etc/alloy/config.alloy", true); err != nil {
+		return fmt.Errorf("error upload alloy config: output: %s, error: %w", out, err)
+	}
 	pyroscopeReader := bytes.NewReader(pyroscopeConfig)
-	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/server.yml", true); err != nil {
+	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/config.yml", true); err != nil {
 		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
 	}
+
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
 	rdr = strings.NewReader(metricsHostsFile)
 	if out, err := sshc.Upload(rdr, "/etc/hosts", true); err != nil {
@@ -242,8 +249,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
+	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.PublicIP))
+	cmd = "sudo service alloy restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd = "sudo service pyroscope-server restart"
+	cmd = "sudo service pyroscope restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}

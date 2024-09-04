@@ -139,6 +139,9 @@ type PyroscopeSettings struct {
 	EnableAppProfiling bool `default:"true"`
 	// Enable profiling of all the agent instances
 	EnableAgentProfiling bool `default:"true"`
+	// Set the pprof block profile rate.
+	// This value applies to both agent and Mattermost server processes.
+	BlockProfileRate int `default:"0"`
 }
 
 // TerraformDBSettings contains the necessary data
