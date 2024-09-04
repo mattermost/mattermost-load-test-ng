@@ -281,12 +281,16 @@ func (t *Terraform) Create(initData bool) error {
 	go func() {
 		defer wg.Done()
 		if t.output.HasElasticSearch() {
-			mlog.Info("Setting up Elasticsearch")
-			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+			if val := os.Getenv("DISABLE_ES_SETUP"); val == "true" {
+				mlog.Info("DISABLE_ES_SETUP set, skipping Elasticsearch setup")
+			} else {
+				mlog.Info("Setting up Elasticsearch")
+				err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
 
-			if err != nil {
-				errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
-				return
+				if err != nil {
+					errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
+					return
+				}
 			}
 		}
 
