@@ -49,7 +49,7 @@ func TestPrintResults(t *testing.T) {
 		},
 	}
 	// Call the function with the test data and the buffer
-	printResults(results, buf)
+	writeResults(results, buf)
 
 	// Verify the output
 	expectedOutput := `==================================================Comparison result:Report: report_0_postgres_bounded_100.md
