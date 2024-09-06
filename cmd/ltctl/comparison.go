@@ -67,8 +67,8 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 	var content string
 
 	for i, res := range results {
-		content += fmt.Sprintf("==================================================")
-		content += fmt.Sprintf("Comparison result:")
+		content += ("==================================================")
+		content += ("Comparison result:")
 		content += fmt.Sprintf("Report: %s\n", getReportFilename(i, res))
 		content += fmt.Sprintf("Grafana Dashboard: %s\n", res.DashboardURL)
 		for _, ltRes := range res.LoadTests {
@@ -83,7 +83,7 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 			}
 			content += fmt.Sprintf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		content += fmt.Sprintf("==================================================\n\n")
+		content += ("==================================================\n\n")
 	}
 	_, err := fmt.Fprintf(writer, content)
 	return err
