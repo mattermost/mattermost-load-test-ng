@@ -262,11 +262,11 @@ EOF
 resource "aws_elasticache_cluster" "redis_server" {
   cluster_id           = "${var.cluster_name}-redis"
   engine               = "redis"
-  node_type            = "${var.redis_node_type}"
+  node_type            = var.redis_node_type
   count                = var.redis_enabled ? 1 : 0
   num_cache_nodes      = 1
-  parameter_group_name = "${var.redis_param_group_name}"
-  engine_version       = "${var.redis_engine_version}"
+  parameter_group_name = var.redis_param_group_name
+  engine_version       = var.redis_engine_version
   port                 = 6379
 
   security_group_ids = [aws_security_group.redis[0].id]
