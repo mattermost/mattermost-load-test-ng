@@ -10,6 +10,11 @@ terraform {
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
+  default_tags {
+    tags = {
+      ClusterName = var.cluster_name
+    }
+  }
 }
 
 data "aws_region" "current" {}
