@@ -117,7 +117,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets, cloudwatchTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
@@ -189,6 +189,48 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	yacePort := "9106"
+	yaceDurationSeconds := "300" // Used for period, length, delay and scraping interval
+
+	cloudwatchTargets = append(cloudwatchTargets, "metrics:"+yacePort)
+
+	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PublicIP))
+	yaceConfig, err := fillConfigTemplate(yaceConfigFile, map[string]string{
+		"ClusterName": t.output.ClusterName,
+		"Period":      yaceDurationSeconds,
+		"Length":      yaceDurationSeconds,
+		"Delay":       yaceDurationSeconds,
+	})
+	if err != nil {
+		return fmt.Errorf("error rendering YACE configuration template: %w", err)
+	}
+	yace := strings.NewReader(yaceConfig)
+	if out, err := sshc.Upload(yace, "/opt/yace/conf.yml", true); err != nil {
+		return fmt.Errorf("error upload yace config: output: %s, error: %w", out, err)
+	}
+
+	yaceService, err := fillConfigTemplate(yaceServiceFile, map[string]string{
+		"ScrapingInterval": yaceDurationSeconds,
+		"Port":             yacePort,
+	})
+	if err != nil {
+		return fmt.Errorf("error rendering YACE service template: %w", err)
+	}
+	yaceServiceReader := strings.NewReader(yaceService)
+	if out, err := sshc.Upload(yaceServiceReader, "/lib/systemd/system/yace.service", true); err != nil {
+		return fmt.Errorf("error uploading yace service file: output: %s, error: %w", out, err)
+	}
+	cmd := "sudo systemctl enable yace"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
+	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PublicIP))
+	cmd = "sudo service yace restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
 	quoteAll := func(elems []string) []string {
 		quoted := make([]string, 0, len(elems))
 		for _, elem := range elems {
@@ -205,6 +247,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(ltTargets), ","),
 		strings.Join(quoteAll(keycloakTargets), ""),
 		strings.Join(quoteAll(redisTargets), ","),
+		strings.Join(quoteAll(cloudwatchTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
@@ -244,7 +287,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd := "sudo service prometheus restart"
+	cmd = "sudo service prometheus restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
