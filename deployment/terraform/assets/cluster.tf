@@ -82,6 +82,63 @@ resource "aws_instance" "app_server" {
   }
 }
 
+
+data "aws_iam_policy_document" "metrics_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "metrics_role" {
+  name               = "${var.cluster_name}-metrics-role"
+  assume_role_policy = data.aws_iam_policy_document.metrics_assume_role.json
+}
+
+resource "aws_iam_instance_profile" "metrics_profile" {
+  name = "metrics_profile"
+  role = aws_iam_role.metrics_role.name
+}
+
+# List of required permissions taken from
+# https://github.com/nerdswords/yet-another-cloudwatch-exporter/blob/f5ddcf4323dc97034491114d4074ae672cfc411f/README.md#authentication
+data "aws_iam_policy_document" "metrics_policy_document" {
+  statement {
+    effect    = "Allow"
+    resources = ["*"]
+    actions = [
+      "tag:GetResources",
+      "cloudwatch:GetMetricData",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "apigateway:GET",
+      "aps:ListWorkspaces",
+      "autoscaling:DescribeAutoScalingGroups",
+      "dms:DescribeReplicationInstances",
+      "dms:DescribeReplicationTasks",
+      "ec2:DescribeTransitGatewayAttachments",
+      "ec2:DescribeSpotFleetRequests",
+      "shield:ListProtections",
+      "storagegateway:ListGateways",
+      "storagegateway:ListTagsForResource",
+      "iam:ListAccountAliases",
+    ]
+  }
+}
+
+
+resource "aws_iam_role_policy" "metrics_policy" {
+  name   = "${var.cluster_name}-metrics-policy"
+  role   = aws_iam_role.metrics_role.name
+  policy = data.aws_iam_policy_document.metrics_policy_document.json
+}
+
 resource "aws_instance" "metrics_server" {
   tags = {
     Name = "${var.cluster_name}-metrics"
@@ -102,6 +159,8 @@ resource "aws_instance" "metrics_server" {
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
   ]
+
+  iam_instance_profile = aws_iam_instance_profile.metrics_profile.name
 
   root_block_device {
     volume_size = var.block_device_sizes_metrics
@@ -468,6 +527,17 @@ resource "aws_security_group_rule" "metrics-prometheus" {
   type              = "ingress"
   from_port         = 9090
   to_port           = 9090
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+
+resource "aws_security_group_rule" "metrics-cloudwatchexporter" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 9106
+  to_port           = 9106
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
