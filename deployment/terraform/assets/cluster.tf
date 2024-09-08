@@ -214,6 +214,10 @@ resource "aws_elasticache_cluster" "redis_server" {
 }
 
 resource "aws_rds_cluster" "db_cluster" {
+  tags = {
+    Name = "${var.cluster_name}-db-cluster"
+  }
+
   count               = var.app_instance_count > 0 && var.db_instance_count > 0 && var.db_cluster_identifier == "" ? 1 : 0
   cluster_identifier  = var.db_cluster_identifier != "" ? "" : "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
@@ -228,6 +232,10 @@ resource "aws_rds_cluster" "db_cluster" {
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
+  tags = {
+    Name = "${var.cluster_name}-db-${count.index}"
+  }
+
   count                        = var.app_instance_count > 0 ? var.db_instance_count : 0
   identifier                   = "${var.cluster_name}-db-${count.index}"
   cluster_identifier           = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster[0].id
