@@ -37,6 +37,7 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 
 # Proxy server configuration
 ProxyInstanceType = 'c5.xlarge'
+ProxyInstanceCount = 1
 
 [ElasticSearchSettings]
 CreateRole = false
