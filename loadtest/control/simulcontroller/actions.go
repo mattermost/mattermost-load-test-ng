@@ -150,11 +150,17 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 }
 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
+	start := time.Now()
 	for {
 		resp := control.Login(u)
 		if resp.Err == nil {
 			err := c.connect()
 			if err == nil {
+				elapsed := time.Since(start).Seconds()
+				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed)
+				if err != nil {
+					mlog.Warn("Failed to store observation", mlog.Err(err))
+				}
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)

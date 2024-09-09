@@ -6,7 +6,6 @@ package userentity
 import (
 	"errors"
 	"net/http"
-	"net/http/httptrace"
 	"os"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 
 	"github.com/gocolly/colly/v2"
 	"github.com/mattermost/mattermost/server/public/model"
-	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // UserEntity is an implementation of the User interface
@@ -103,16 +101,6 @@ type ueTransport struct {
 // This is used to collect metrics regarding the timing of HTTP calls.
 func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
-	trace := &httptrace.ClientTrace{
-		GotFirstResponseByte: func() {
-			elapsed := time.Since(startTime).Seconds()
-			err := t.ue.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed)
-			if err != nil {
-				mlog.Warn("Failed to store observation", mlog.Err(err))
-			}
-		},
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	resp, err := t.transport.RoundTrip(req)
 	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
 	if os.IsTimeout(err) {
