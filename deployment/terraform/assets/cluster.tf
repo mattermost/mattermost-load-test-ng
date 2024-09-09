@@ -660,7 +660,7 @@ resource "aws_security_group_rule" "app-to-inbucket" {
 }
 
 resource "aws_security_group" "proxy" {
-  count       = var.proxy_instance_count > 0 ? 1 : 0
+  count       = var.proxy_instance_count
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
