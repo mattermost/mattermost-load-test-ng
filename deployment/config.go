@@ -42,7 +42,7 @@ type Config struct {
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Number of proxy instances.
-	ProxyInstanceCount int `default:"0" validate:"range:[0,1]"`
+	ProxyInstanceCount int `default:"1" validate:"range:[0,1]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
