@@ -151,8 +151,8 @@ func New(setup Setup, config Config) *UserEntity {
 	ue.store.SetPerformanceReport(&model.PerformanceReport{
 		Version: "0.1.0",
 		Labels: map[string]string{
-			"platform": randomPlatform(),
-			"agent":    randomUserAgent(),
+			"platform": "other",
+			"agent":    "other",
 		},
 		ClientID: model.NewId(),
 		Start:    float64(time.Now().UnixMilli()) / 1000,

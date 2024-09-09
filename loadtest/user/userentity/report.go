@@ -2,15 +2,9 @@ package userentity
 
 import (
 	"context"
-	"math/rand"
 	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
-)
-
-var (
-	userAgents = []string{"desktop", "firefox", "chrome", "safari", "edge", "other"}
-	platforms  = []string{"linux", "macos", "ios", "android", "windows", "other"}
 )
 
 func (ue *UserEntity) ObserveClientMetric(t model.MetricType, v float64) error {
@@ -55,14 +49,4 @@ func (ue *UserEntity) SubmitPerformanceReport() error {
 	})
 
 	return nil
-}
-
-func randomUserAgent() string {
-	i := rand.Intn(len(userAgents))
-	return userAgents[i]
-}
-
-func randomPlatform() string {
-	i := rand.Intn(len(platforms))
-	return platforms[i]
 }
