@@ -67,8 +67,8 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 	var content string
 
 	for i, res := range results {
-		content += ("==================================================")
-		content += ("Comparison result:")
+		content += "=================================================="
+		content += "Comparison result:"
 		content += fmt.Sprintf("Report: %s\n", getReportFilename(i, res))
 		content += fmt.Sprintf("Grafana Dashboard: %s\n", res.DashboardURL)
 		for _, ltRes := range res.LoadTests {
@@ -83,7 +83,7 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 			}
 			content += fmt.Sprintf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		content += ("==================================================\n\n")
+		content += "==================================================\n\n"
 	}
 	_, err := fmt.Fprintf(writer, content)
 	return err
@@ -162,7 +162,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write reports: %w", err)
 		}
 
-		//write to file here
+		//create the file
 		resultsFile, errResult := os.Create(filepath.Join(outputPath, "results.txt"))
 		if errResult != nil {
 			fmt.Println("Error:", errResult)
@@ -172,7 +172,12 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 
 		multiWriter := io.MultiWriter(resultsFile, os.Stdout)
 
-		writeResults(output.Results, multiWriter)
+		// Call writeResults and handle any errors it returns
+		err := writeResults(output.Results, multiWriter)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return fmt.Errorf("failed to write results: %w", err)
+		}
 
 		if archive {
 			if err := createArchive(outputPath, archivePath); err != nil {
