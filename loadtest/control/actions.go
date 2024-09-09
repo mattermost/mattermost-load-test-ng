@@ -830,20 +830,10 @@ func Reload(u user.User) UserActionResponse {
 			}
 		}
 
-		ver, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
 
-		ok, err := IsVersionSupported("6.4.0", ver)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if ok {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 
@@ -961,20 +951,9 @@ func ReloadGQL(u user.User) UserActionResponse {
 			}
 		}
 
-		ver, err := u.Store().ServerVersion()
+		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-		}
-
-		ok, err := IsVersionSupported("6.4.0", ver)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
-		if ok {
-			_, err = u.GetChannelsForUser(userId)
-			if err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
 		}
 	}
 

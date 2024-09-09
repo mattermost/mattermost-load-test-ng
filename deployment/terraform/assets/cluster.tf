@@ -73,19 +73,7 @@ resource "aws_instance" "app_server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "echo 'tcp_bbr' | sudo tee -a /etc/modules",
-      "sudo modprobe tcp_bbr",
-      "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
-      "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
-      "sudo apt-get -y update",
-      "sudo apt-get install -y mysql-client-8.0",
-      "sudo apt-get install -y postgresql-client-14",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
-    ]
+    script = "provisioners/app.sh"
   }
 }
 
@@ -116,29 +104,7 @@ resource "aws_instance" "metrics_server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus",
-      "sudo systemctl enable prometheus",
-      "sudo apt-get install -y adduser libfontconfig1 musl",
-      "wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb",
-      "sudo dpkg -i grafana_10.2.3_amd64.deb",
-      "wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb",
-      "sudo dpkg -i inbucket_2.1.0_linux_amd64.deb",
-      "wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz",
-      "sudo mkdir /opt/elasticsearch_exporter",
-      "sudo tar -zxvf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl enable grafana-server",
-      "sudo service grafana-server start",
-      "sudo systemctl enable inbucket",
-      "sudo service inbucket start",
-      "wget https://dl.pyroscope.io/release/pyroscope_0.37.2_amd64.deb",
-      "sudo apt-get install ./pyroscope_0.37.2_amd64.deb",
-      "sudo systemctl enable pyroscope-server"
-    ]
+    script = "provisioners/metrics.sh"
   }
 }
 
@@ -148,7 +114,7 @@ resource "aws_instance" "proxy_server" {
   }
   ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
-  count                       = var.app_instance_count > 1 ? 1 : 0
+  count                       = var.proxy_instance_count
   associate_public_ip_address = true
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
@@ -168,26 +134,7 @@ resource "aws_instance" "proxy_server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "echo 'tcp_bbr' | sudo tee -a /etc/modules",
-      "sudo modprobe tcp_bbr",
-      "wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg",
-      "sudo sh -c 'echo \"deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" > /etc/apt/sources.list.d/nginx.list'",
-      "sudo sh -c 'echo \"deb-src http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx\" >> /etc/apt/sources.list.d/nginx.list'",
-      "sudo apt-get -y update",
-      "sudo apt-get install -y nginx",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl enable nginx",
-      "sudo mkdir -p /etc/nginx/snippets",
-      "sudo mkdir -p /etc/nginx/sites-available",
-      "sudo mkdir -p /etc/nginx/sites-enabled",
-      "sudo rm -f /etc/nginx/sites-enabled/default",
-      "sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost"
-    ]
+    script = "provisioners/proxy.sh"
   }
 }
 
@@ -246,6 +193,19 @@ resource "aws_iam_user_policy" "s3userpolicy" {
   ]
 }
 EOF
+}
+
+resource "aws_elasticache_cluster" "redis_server" {
+  cluster_id           = "${var.cluster_name}-redis"
+  engine               = "redis"
+  node_type            = "${var.redis_node_type}"
+  count                = var.redis_enabled ? 1 : 0
+  num_cache_nodes      = 1
+  parameter_group_name = "${var.redis_param_group_name}"
+  engine_version       = "${var.redis_engine_version}"
+  port                 = 6379
+
+  security_group_ids = [aws_security_group.redis[0].id]
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -322,13 +282,7 @@ resource "aws_instance" "loadtest_agent" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "sudo apt-get -y update",
-      "sudo apt-get install -y prometheus-node-exporter",
-      "sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04"
-    ]
+    script = "provisioners/agent.sh"
   }
 }
 
@@ -536,6 +490,20 @@ resource "aws_security_group_rule" "metrics-egress" {
   security_group_id = aws_security_group.metrics[0].id
 }
 
+resource "aws_security_group" "redis" {
+  name        = "${var.cluster_name}-redis-security-group"
+  description = "Security group for redis instance"
+
+  ingress {
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
+  }
+
+  count = 1
+}
+
 resource "aws_security_group" "elastic" {
   name        = "${var.cluster_name}-elastic-security-group"
   description = "Security group for elastic instance"
@@ -563,7 +531,7 @@ resource "aws_security_group_rule" "app-to-inbucket" {
 }
 
 resource "aws_security_group" "proxy" {
-  count       = var.app_instance_count > 1 ? 1 : 0
+  count       = var.proxy_instance_count
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
 
@@ -627,16 +595,7 @@ resource "aws_instance" "job_server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg",
-      "sudo sh -c 'echo \"deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main\" > /etc/apt/sources.list.d/pgdg.list'",
-      "sudo apt-get -y update",
-      "sudo apt-get install -y mysql-client-8.0",
-      "sudo apt-get install -y postgresql-client-14",
-      "sudo apt-get install -y prometheus-node-exporter"
-    ]
+    script = "provisioners/job.sh"
   }
 }
 
@@ -675,17 +634,15 @@ resource "aws_instance" "keycloak" {
     volume_type = var.block_device_type
   }
 
+  provisioner "file" {
+    source      = "provisioners/keycloak.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
   provisioner "remote-exec" {
     inline = [
-      "set -o errexit",
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-      "sudo apt-get -y update",
-      "sudo apt-get install unzip openjdk-17-jre postgresql postgresql-contrib -y",
-      "sudo mkdir -p /opt/keycloak",
-      "sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${var.keycloak_version}/keycloak-${var.keycloak_version}.zip",
-      "sudo unzip /opt/keycloak/keycloak-${var.keycloak_version}.zip -d /opt/keycloak",
-      "sudo mkdir -p /opt/keycloak/keycloak-${var.keycloak_version}/data/import",
-      "sudo chown -R ubuntu:ubuntu /opt/keycloak",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh ${var.keycloak_version}",
     ]
   }
 }

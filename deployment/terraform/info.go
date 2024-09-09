@@ -5,6 +5,8 @@ package terraform
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 )
 
 // Info displays information about the current load-test deployment.
@@ -51,6 +53,10 @@ func displayInfo(output *Output) {
 		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
 	}
 
+	if output.HasProxy() {
+		fmt.Println("Proxy: " + output.Proxy.PublicIP)
+	}
+
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
@@ -73,6 +79,10 @@ func displayInfo(output *Output) {
 
 	if output.HasElasticSearch() {
 		fmt.Println("ElasticSearch cluster endpoint: " + output.ElasticSearchServer.Endpoint)
+	}
+
+	if output.HasRedis() {
+		fmt.Println("Redis endpoint: ", net.JoinHostPort(output.RedisServer.Address, strconv.Itoa(output.RedisServer.Port)))
 	}
 	fmt.Println("==================================================")
 }

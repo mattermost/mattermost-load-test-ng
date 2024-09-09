@@ -41,6 +41,8 @@ type Config struct {
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
+	// Number of proxy instances.
+	ProxyInstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
@@ -73,8 +75,9 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.19.0/mattermost-load-test-ng-v1.19.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
+	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -98,6 +101,10 @@ type Config struct {
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
 	SiteURL string `default:"ltserver"`
+	// ServerURL is the URL of the Mattermost server URL that the agent client will use to connect to the
+	// Mattermost servers. This is used to override the server URL in the agent's config in case there's a
+	// proxy in front of the Mattermost server.
+	ServerURL string `default:""`
 	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
@@ -132,6 +139,9 @@ type PyroscopeSettings struct {
 	EnableAppProfiling bool `default:"true"`
 	// Enable profiling of all the agent instances
 	EnableAgentProfiling bool `default:"true"`
+	// Set the pprof block profile rate.
+	// This value applies to both agent and Mattermost server processes.
+	BlockProfileRate int `default:"0"`
 }
 
 // TerraformDBSettings contains the necessary data
@@ -223,6 +233,10 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakClientSecret is the client secret from the above realm to be used in Mattermost.
 	// Must exist in the keycloak instance
 	KeycloakClientSecret string `default:"qbdUj4dacwfa5sIARIiXZxbsBFoopTyf"`
+	// KeycloakSAMLClientID is the client id to be used in Mattermost from the SAML client.
+	KeycloakSAMLClientID string `default:"mattermost-saml"`
+	// KeycloakSAMLClientSecret is the SAML client secret from the above realm to be used in Mattermost.
+	KeycloakSAMLClientSecret string `default:"9c2edd74-9e20-454d-8cc2-0714e43f5f7e"`
 }
 
 // ElasticSearchSettings contains the necessary data
@@ -247,6 +261,17 @@ type ElasticSearchSettings struct {
 	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
 	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+}
+
+type RedisSettings struct {
+	// Enabled indicates whether to add Redis or not.
+	Enabled bool
+	// NodeType indicates the instance type.
+	NodeType string `default:"cache.m7g.2xlarge"`
+	// ParameterGroupName indicates the parameter group to attach.
+	ParameterGroupName string `default:"default.redis7"`
+	// EngineVersion indicates the engine version.
+	EngineVersion string `default:"7.1"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -338,8 +363,16 @@ func (c *Config) validateElasticSearchConfig() error {
 
 	}
 
-	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
-		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
+	}
+
+	if c.ElasticSearchSettings.SnapshotRepository == "" {
+		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
+	}
+
+	if c.ElasticSearchSettings.SnapshotName == "" {
+		return fmt.Errorf("Empty SnapshotName. Must supply a value")
 	}
 
 	return nil

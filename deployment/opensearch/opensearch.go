@@ -1,20 +1,19 @@
-package elasticsearch
+package opensearch
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
-	es "github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 )
 
-// Client is a wrapper on top of the official go-elasticsearch
+// Client is a wrapper on top of the official opensearch
 // client, implementing a custom transport that modifies the request in two
 // ways:
 //   - Requests are signed using AWS Signature Version 4 before passing them
@@ -22,9 +21,9 @@ import (
 //   - The transport is tunneled through the provided SSH client using its Dial
 //     function
 type Client struct {
-	client    *es.Client
+	client    *opensearchapi.Client
 	awsRegion string
-	transport *elasticsearchRoundTripper
+	transport *opensearchRoundTripper
 }
 
 // New builds a new Client for the AWS OpenSearch Domain pointed to by
@@ -36,24 +35,23 @@ func New(esEndpoint string, sshc *ssh.Client, awsProfile, awsRegion string) (*Cl
 		return nil, fmt.Errorf("failed to get AWS credentials")
 	}
 
-	transport, err := newElasticsearchRoundTripper(sshc.DialContextF(), creds, awsRegion)
+	transport, err := newOpensearchRoundTripper(sshc.DialContextF(), creds, awsRegion)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := es.NewClient(es.Config{
-		Addresses: []string{"https://" + esEndpoint},
-		Transport: transport,
+	client, err := opensearchapi.NewClient(opensearchapi.Config{
+		Client: opensearch.Config{
+			Addresses: []string{"https://" + esEndpoint},
+			Transport: transport,
+		},
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{client, awsRegion, transport}, nil
-}
-
-type repositoryResponse struct {
-	Type string `json:"type"`
 }
 
 // Repository represents a snapshot repository, with a Name and a Type
@@ -65,14 +63,13 @@ type Repository struct {
 
 // ListRepositories returns the list of repositories registered in the server
 func (c *Client) ListRepositories() ([]Repository, error) {
-	req := esapi.SnapshotGetRepositoryRequest{}
-	repositoriesResponse := make(map[string]repositoryResponse)
-	if err := c.get(req, &repositoriesResponse); err != nil {
+	resp, err := c.client.Snapshot.Repository.Get(context.Background(), nil)
+	if err != nil {
 		return nil, fmt.Errorf("unable to perform ListRepositories request: %w", err)
 	}
 
 	repositories := []Repository{}
-	for k, r := range repositoriesResponse {
+	for k, r := range resp.Repos {
 		repo := Repository{
 			Name: k,
 			Type: r.Type,
@@ -110,41 +107,17 @@ func (c *Client) RegisterS3Repository(name, arn string) error {
 		return fmt.Errorf("unable to encode payload: %w", err)
 	}
 
-	req := esapi.SnapshotCreateRepositoryRequest{
-		Body:       &buf,
-		Repository: name,
-	}
-	res, err := req.Do(context.Background(), c.client)
+	res, err := c.client.Snapshot.Repository.Create(context.Background(), opensearchapi.SnapshotRepositoryCreateReq{
+		Repo: name,
+		Body: &buf,
+	})
 	if err != nil {
 		return fmt.Errorf("unable to perform RegisterRepository request: %w", err)
 	}
-	if res.Body == nil {
+	if res.Inspect().Response.Body == nil {
 		return fmt.Errorf("no body returned by RegisterRepository")
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return fmt.Errorf("unable to register repository %q with ARN %q: %q", name, arn, res.String())
-	}
-
-	// Consume body, docs say it's important to do so even if not needed
-	_, err = io.Copy(io.Discard, res.Body)
-	return err
-}
-
-type shardsResponse struct {
-	Total int `json:"total"`
-}
-
-type snapshotResponse struct {
-	Name    string         `json:"snapshot"`
-	Indices []string       `json:"indices"`
-	Shards  shardsResponse `json:"shards"`
-}
-
-type snapshotsResponse struct {
-	Snapshots []snapshotResponse `json:"snapshots"`
+	return nil
 }
 
 // Snapshot represents a snapshot in one of the repositories registered in the
@@ -159,23 +132,22 @@ type Snapshot struct {
 // ListSnapshots returns the list of snapshots included in the repository
 // specified by repositoryName
 func (c *Client) ListSnapshots(repositoryName string) ([]Snapshot, error) {
-	req := esapi.SnapshotGetRequest{
-		Repository: repositoryName,
+	resp, err := c.client.Snapshot.Get(context.Background(), opensearchapi.SnapshotGetReq{
+		Repo: repositoryName,
 		// The API should support listing all snapshots in a repository in
 		// *any* other way, but you need to abuse the Snapshot field, which is
 		// supposed to be a list of snapshots, to pass a single field that is
 		// "_all". Welp.
-		Snapshot: []string{"_all"},
-	}
-	var snapshotsResponse snapshotsResponse
-	if err := c.get(req, &snapshotsResponse); err != nil {
+		Snapshots: []string{"_all"},
+	})
+	if err != nil {
 		return nil, fmt.Errorf("unable to perform ListSnapshots request: %w", err)
 	}
 
 	snapshots := []Snapshot{}
-	for _, s := range snapshotsResponse.Snapshots {
+	for _, s := range resp.Snapshots {
 		snapshot := Snapshot{
-			Name:        s.Name,
+			Name:        s.Snapshot,
 			Indices:     s.Indices,
 			TotalShards: s.Shards.Total,
 		}
@@ -189,24 +161,16 @@ func (c *Client) ListSnapshots(repositoryName string) ([]Snapshot, error) {
 // containing indices with the same names as the ones provided can be restored;
 // otherwise, the restored indices would need to be renamed.
 func (c *Client) CloseIndices(indices []string) error {
-	req := esapi.IndicesCloseRequest{Index: indices}
-	res, err := req.Do(context.Background(), c.client)
+	resp, err := c.client.Indices.Close(context.Background(), opensearchapi.IndicesCloseReq{
+		Index: strings.Join(indices, ","),
+	})
 	if err != nil {
 		return fmt.Errorf("unable to perform CloseIndices request: %w", err)
 	}
-	if res.Body == nil {
+	if resp.Inspect().Response.Body == nil {
 		return fmt.Errorf("no body returned by CloseIndices")
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return fmt.Errorf("unable to close indices %v: %q", indices, res.String())
-	}
-
-	// Consume body, docs say it's important to do so even if not needed
-	_, err = io.Copy(io.Discard, res.Body)
-	return err
+	return nil
 }
 
 // RestoreSnapshotOpts exposes three options for configuring the RestoreSnapshot
@@ -270,72 +234,37 @@ func (c *Client) RestoreSnapshot(repositoryName, snapshotName string, opts Resto
 		return err
 	}
 
-	req := esapi.SnapshotRestoreRequest{
-		Repository: repositoryName,
-		Snapshot:   snapshotName,
-		Body:       bytes.NewBuffer(body),
-	}
-	res, err := req.Do(context.Background(), c.client)
+	res, err := c.client.Snapshot.Restore(context.Background(), opensearchapi.SnapshotRestoreReq{
+		Repo:     repositoryName,
+		Snapshot: snapshotName,
+		Body:     bytes.NewBuffer(body),
+	})
 	if err != nil {
 		return fmt.Errorf("unable to perform RestoreSnapshot request: %w", err)
 	}
-	if res.Body == nil {
+	if res.Inspect().Response.Body == nil {
 		return fmt.Errorf("no body returned by RestoreSnapshot")
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return fmt.Errorf("unable to restore snapshot %q from repo %q with opts %+v: %q", snapshotName, repositoryName, opts, res.String())
-	}
-
-	// Consume body, docs say it's important to do so even if not needed
-	_, err = io.Copy(io.Discard, res.Body)
-	return err
+	return nil
 }
 
 // ListIndices returns the names of the indices already present in the server
 // as a plain slice of strings
 func (c *Client) ListIndices() ([]string, error) {
-	req := esapi.IndicesGetRequest{Index: []string{"_all"}}
-	resJSON := make(map[string]json.RawMessage)
-	if err := c.get(req, &resJSON); err != nil {
+	resp, err := c.client.Indices.Get(context.Background(), opensearchapi.IndicesGetReq{
+		Indices: []string{"_all"},
+	})
+	if err != nil {
 		return nil, fmt.Errorf("unable to perform ListRepositories request: %w", err)
 	}
 
 	indices := []string{}
-	for index := range resJSON {
+	for index := range resp.Indices {
 		indices = append(indices, index)
 	}
 
 	return indices, nil
 }
-
-type withPercent struct {
-	Percent string `json:"percent"`
-}
-
-type indexResponse struct {
-	Size  withPercent `json:"size"`
-	Files withPercent `json:"files"`
-}
-
-type sourceResponse struct {
-	Index string `json:"index"`
-}
-
-type shardResponse struct {
-	Type   string         `json:"type"`
-	Stage  string         `json:"stage"`
-	Index  indexResponse  `json:"index"`
-	Source sourceResponse `json:"source"`
-}
-
-type indexRecoveryResponse struct {
-	Shards []shardResponse `json:"shards"`
-}
-
-type indicesRecoveryResponse map[string]indexRecoveryResponse
 
 // SnapshotIndexShardRecovery represents the information returned by the IndicesRecovery
 // request for a single index shard, specifying:
@@ -357,23 +286,21 @@ type SnapshotIndexShardRecovery struct {
 // the server of type SNAPSHOT.
 // This is useful to track the completion of a snapshot restoration process.
 func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShardRecovery, error) {
-	req := esapi.IndicesRecoveryRequest{
-		Index: indices,
-	}
-	indicesRecovery := make(indicesRecoveryResponse)
-	if err := c.get(req, &indicesRecovery); err != nil {
+	resp, err := c.client.Indices.Recovery(context.Background(), &opensearchapi.IndicesRecoveryReq{
+		Indices: indices,
+	})
+	if err != nil {
 		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
 	}
-
 	recovery := []SnapshotIndexShardRecovery{}
-	for _, resp := range indicesRecovery {
+	for _, resp := range resp.Indices {
 		for _, shard := range resp.Shards {
 			// Add only the shards corresponding to the snapshot restoration
 			if shard.Type != "SNAPSHOT" {
 				continue
 			}
 			recovery = append(recovery, SnapshotIndexShardRecovery{
-				Index: shard.Source.Index,
+				Index: shard.Source.Name,
 				Stage: shard.Stage,
 				// We're using the percentage of bytes restored,
 				// not the percentage of files restored
@@ -398,42 +325,16 @@ type ClusterHealthResponse struct {
 }
 
 func (c *Client) ClusterHealth() (ClusterHealthResponse, error) {
-	req := esapi.ClusterHealthRequest{}
-
-	var response ClusterHealthResponse
-	if err := c.get(req, &response); err != nil {
+	resp, err := c.client.Cluster.Health(context.Background(), &opensearchapi.ClusterHealthReq{
+		Indices: []string{"_all"},
+	})
+	if err != nil {
 		return ClusterHealthResponse{}, fmt.Errorf("unable to perform ClusterHealth request: %w", err)
 	}
 
-	return response, nil
-}
-
-// requestDoer models all esapi.XYZRequest, which contains a Do function to
-// perform the request with the provided client
-type requestDoer interface {
-	Do(context.Context, esapi.Transport) (*esapi.Response, error)
-}
-
-// get runs req.Do, performs the needed checks on the response, and stores the
-// result in the value pointed to by result
-func (c *Client) get(req requestDoer, result any) error {
-	res, err := req.Do(context.Background(), c.client)
-	if err != nil {
-		return fmt.Errorf("unable to perform request: %w", err)
-	}
-	if res.Body == nil {
-		return fmt.Errorf("no body returned")
-	}
-	defer res.Body.Close()
-	if res.IsError() {
-		// Consume body, docs say it's important to do so even if not needed
-		io.Copy(io.Discard, res.Body)
-		return fmt.Errorf("request failed: %q", res.String())
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
-		return fmt.Errorf("unable to decode response: %w", err)
-	}
-
-	return nil
+	return ClusterHealthResponse{
+		Status:             resp.Status,
+		InitializingShards: resp.InitializingShards,
+		UnassignedShards:   resp.UnassignedShards,
+	}, nil
 }

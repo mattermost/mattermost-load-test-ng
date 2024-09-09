@@ -51,61 +51,10 @@ scrape_configs:
   - job_name: keycloak
     static_configs:
         - targets: [%s]
+  - job_name: redis
+    static_configs:
+        - targets: [%s]
 `
-
-type PyroscopeConfig struct {
-	LogLevel        string         `yaml:"log-level"`
-	NoSelfProfiling bool           `yaml:"no-self-profiling"`
-	ScrapeConfigs   []ScrapeConfig `yaml:"scrape-configs"`
-}
-
-type ScrapeConfig struct {
-	JobName         string         `yaml:"job-name"`
-	Scheme          string         `yaml:"scheme"`
-	ScrapeInterval  string         `yaml:"scrape-interval"`
-	EnabledProfiles []string       `yaml:"enabled-profiles,flow"`
-	StaticConfigs   []StaticConfig `yaml:"static-configs,omitempty"`
-}
-
-type StaticConfig struct {
-	Application string   `yaml:"application"`
-	SpyName     string   `yaml:"spy-name"`
-	Targets     []string `yaml:"targets,flow"`
-}
-
-func NewPyroscopeConfig(mmTargets, ltTargets []string) *PyroscopeConfig {
-	var staticConfigs []StaticConfig
-
-	if len(mmTargets) > 0 {
-		staticConfigs = append(staticConfigs, StaticConfig{
-			Application: "mattermost",
-			SpyName:     "gospy",
-			Targets:     mmTargets,
-		})
-	}
-
-	if len(ltTargets) > 0 {
-		staticConfigs = append(staticConfigs, StaticConfig{
-			Application: "agents",
-			SpyName:     "gospy",
-			Targets:     ltTargets,
-		})
-	}
-
-	return &PyroscopeConfig{
-		LogLevel:        "debug",
-		NoSelfProfiling: true,
-		ScrapeConfigs: []ScrapeConfig{
-			{
-				JobName:         "pryoscope",
-				Scheme:          "http",
-				ScrapeInterval:  "60s",
-				EnabledProfiles: []string{"cpu", "mem", "goroutines"},
-				StaticConfigs:   staticConfigs,
-			},
-		},
-	}
-}
 
 const metricsHosts = `
 127.0.0.1 localhost
@@ -321,7 +270,8 @@ After=network.target
 [Service]
 Type=simple
 Environment="GOGC=50"
-ExecStart={{ printf "%s" .}}
+Environment="BLOCK_PROFILE_RATE={{ printf "%d" .blockProfileRate}}"
+ExecStart={{ printf "%s" .execStart}}
 Restart=always
 RestartSec=1
 WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
@@ -344,6 +294,24 @@ ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const redisExporterServiceFile = `
+[Unit]
+Description=Redis prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/redis_exporter
 User=ubuntu
 Group=ubuntu
 
@@ -408,7 +376,7 @@ KC_DB_POOL_MIN_SIZE=20
 KC_DB_POOL_INITIAL_SIZE=20
 KC_DB_POOL_MAX_SIZE=200
 KC_DB=postgres
-C_DB_URL=jdbc:psql://localhost:5433/keycloak"
+KC_DB_URL=jdbc:psql://localhost:5433/keycloak
 KC_DB_PASSWORD=mmpass
 KC_DB_USERNAME=keycloak
 KC_DATABASE=keycloak`

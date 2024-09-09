@@ -1033,7 +1033,7 @@ func (s *MemStore) ServerVersion() (string, error) {
 	return s.serverVersion, nil
 }
 
-// SetProfileImage sets as stored the profile image for the given user.
+// SetServerVersion stores the given server version.
 func (s *MemStore) SetServerVersion(version string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()

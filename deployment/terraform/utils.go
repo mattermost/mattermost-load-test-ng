@@ -230,6 +230,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
 		"-var", fmt.Sprintf("es_snapshot_repository=%s", t.config.ElasticSearchSettings.SnapshotRepository),
+		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
@@ -255,6 +256,10 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
 		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
 		"-var", fmt.Sprintf("block_device_sizes_keycloak=%d", t.config.StorageSizes.KeyCloak),
+		"-var", fmt.Sprintf("redis_enabled=%t", t.config.RedisSettings.Enabled),
+		"-var", fmt.Sprintf("redis_node_type=%s", t.config.RedisSettings.NodeType),
+		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
+		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 	}
 }
 
@@ -276,10 +281,15 @@ func (t *Terraform) getAsset(filename string) string {
 
 // getServerURL returns the URL of the server to be used for testing.
 // server URL priority:
-// 1. SiteURL
-// 2. Proxy IP
-// 3. First app server IP
+// 1. ServerURL
+// 2. SiteURL
+// 3. Proxy IP
+// 4. First app server IP
 func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
+	if deploymentConfig.ServerURL != "" {
+		return deploymentConfig.ServerURL
+	}
+
 	url := output.Instances[0].PrivateIP
 	if deploymentConfig.SiteURL != "" {
 		url = deploymentConfig.SiteURL

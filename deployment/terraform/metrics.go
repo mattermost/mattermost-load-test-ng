@@ -10,15 +10,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
-	"gopkg.in/yaml.v3"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -116,7 +117,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
@@ -163,6 +164,31 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
+	if t.output.HasRedis() {
+		redisEndpoint := fmt.Sprintf("redis://%s", net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port)))
+		redisTargets = append(redisTargets, "metrics:9121")
+
+		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
+
+		// TODO: Pass username/pass later if we ever start using them internally.
+		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
+		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
+		rdr := strings.NewReader(redisExporterService)
+		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
+			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
+		}
+		cmd := "sudo systemctl enable redis-exporter"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+
+		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.PublicIP))
+		cmd = "sudo service redis-exporter restart"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+		}
+	}
+
 	quoteAll := func(elems []string) []string {
 		quoted := make([]string, 0, len(elems))
 		for _, elem := range elems {
@@ -178,6 +204,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
 		strings.Join(quoteAll(keycloakTargets), ""),
+		strings.Join(quoteAll(redisTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {
@@ -193,15 +220,23 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if t.config.PyroscopeSettings.EnableAgentProfiling {
 		pyroscopeLTTargets = ltTargets
 	}
-	pyroscopeConfig, err := yaml.Marshal(NewPyroscopeConfig(pyroscopeMMTargets, pyroscopeLTTargets))
+	alloyConfig, err := NewAlloyConfig(pyroscopeMMTargets, pyroscopeLTTargets).marshal()
 	if err != nil {
-		return fmt.Errorf("error marshaling Pyroscope config yaml: %w", err)
+		return fmt.Errorf("error marshaling Alloy config: %w", err)
 	}
-
+	pyroscopeConfig, err := NewPyroscopeConfig().marshal()
+	if err != nil {
+		return fmt.Errorf("error marshaling Pyroscope config: %w", err)
+	}
+	alloyReader := bytes.NewReader(alloyConfig)
+	if out, err := sshc.Upload(alloyReader, "/etc/alloy/config.alloy", true); err != nil {
+		return fmt.Errorf("error upload alloy config: output: %s, error: %w", out, err)
+	}
 	pyroscopeReader := bytes.NewReader(pyroscopeConfig)
-	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/server.yml", true); err != nil {
+	if out, err := sshc.Upload(pyroscopeReader, "/etc/pyroscope/config.yml", true); err != nil {
 		return fmt.Errorf("error upload pyroscope config: output: %s, error: %w", out, err)
 	}
+
 	metricsHostsFile := fmt.Sprintf(metricsHosts, hosts)
 	rdr = strings.NewReader(metricsHostsFile)
 	if out, err := sshc.Upload(rdr, "/etc/hosts", true); err != nil {
@@ -214,8 +249,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
+	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.PublicIP))
+	cmd = "sudo service alloy restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd = "sudo service pyroscope-server restart"
+	cmd = "sudo service pyroscope restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -304,6 +345,16 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/es_dashboard.json", true); err != nil {
 			return fmt.Errorf("error while uploading es_dashboard_json: output: %s, error: %w", out, err)
+		}
+	}
+
+	if t.output.HasRedis() {
+		buf, err = os.ReadFile(t.getAsset("redis_dashboard_data.json"))
+		if err != nil {
+			return err
+		}
+		if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/redis_dashboard.json", true); err != nil {
+			return fmt.Errorf("error while uploading redis_dashboard_json: output: %s, error: %w", out, err)
 		}
 	}
 
