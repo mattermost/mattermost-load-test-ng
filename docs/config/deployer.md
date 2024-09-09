@@ -154,6 +154,12 @@ The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.
 
 Allows to log the agent service command output (`stdout` & `stderr`) to home directory.
 
+## ProxyInstanceCount
+
+*int*
+
+Number of proxy instances to run. Right now, only values `0` and `1` are allowed. Check [this FAQ](../faq.md#can-i-use-a-custom-load-balancer-like-an-albnlb-in-front-of-the-mattermost-server) for more information.
+
 ## ProxyInstanceType
 
 *string*
