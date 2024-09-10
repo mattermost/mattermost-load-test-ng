@@ -175,7 +175,6 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		// Call writeResults and handle any errors it returns
 		err := writeResults(output.Results, multiWriter)
 		if err != nil {
-			fmt.Println("Error:", err)
 			return fmt.Errorf("failed to write results: %w", err)
 		}
 
