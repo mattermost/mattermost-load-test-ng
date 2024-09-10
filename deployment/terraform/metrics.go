@@ -336,11 +336,15 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return err
 	}
+	bufStr, err := fillConfigTemplate(string(buf), map[string]string{"ClusterName": t.output.ClusterName})
+	if err != nil {
+		return err
+	}
 	cmd = "sudo mkdir -p /var/lib/grafana/dashboards"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
-	if out, err := sshc.Upload(bytes.NewReader(buf), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
+	if out, err := sshc.Upload(strings.NewReader(bufStr), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
