@@ -165,7 +165,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		//create the file
 		resultsFile, errResult := os.Create(filepath.Join(outputPath, "results.txt"))
 		if errResult != nil {
-			return fmt.Errorf("failed to create file: %w", err)
+			return fmt.Errorf("failed to create file: %w", errResult)
 		}
 		defer resultsFile.Close()
 
