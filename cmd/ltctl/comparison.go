@@ -63,30 +63,30 @@ func getReportFilename(id int, res comparison.Result) string {
 	return fmt.Sprintf("report_%s.md", name)
 }
 
-func printResults(results []comparison.Result) {
+func writeResults(results []comparison.Result, writer io.Writer) error {
+	var content string
+
 	for i, res := range results {
-		fmt.Println("==================================================")
-		fmt.Println("Comparison result:")
-		if res.Report != "" {
-			fmt.Printf("Report: %s\n", getReportFilename(i, res))
-		}
-		if res.DashboardURL != "" {
-			fmt.Printf("Grafana Dashboard: %s\n", res.DashboardURL)
-		}
+		content += "=================================================="
+		content += "Comparison result:"
+		content += fmt.Sprintf("Report: %s\n", getReportFilename(i, res))
+		content += fmt.Sprintf("Grafana Dashboard: %s\n", res.DashboardURL)
 		for _, ltRes := range res.LoadTests {
-			fmt.Printf("%s:\n", ltRes.Label)
-			fmt.Printf("  Type: %s\n", ltRes.Config.Type)
-			fmt.Printf("  DB Engine: %s\n", ltRes.Config.DBEngine)
+			content += fmt.Sprintf("%s:\n", ltRes.Label)
+			content += fmt.Sprintf("  Type: %s\n", ltRes.Config.Type)
+			content += fmt.Sprintf("  DB Engine: %s\n", ltRes.Config.DBEngine)
 			if ltRes.Config.Type == comparison.LoadTestTypeBounded {
-				fmt.Printf("  Duration: %s\n", ltRes.Config.Duration)
-				fmt.Printf("  Users: %d\n", ltRes.Config.NumUsers)
+				content += fmt.Sprintf("  Duration: %s\n", ltRes.Config.Duration)
+				content += fmt.Sprintf("  Users: %d\n", ltRes.Config.NumUsers)
 			} else if ltRes.Config.Type == comparison.LoadTestTypeUnbounded {
-				fmt.Printf("  Supported Users: %d\n", ltRes.Status.SupportedUsers)
+				content += fmt.Sprintf("  Supported Users: %d\n", ltRes.Status.SupportedUsers)
 			}
-			fmt.Printf("  Errors: %d\n", ltRes.Status.NumErrors)
+			content += fmt.Sprintf("  Errors: %d\n", ltRes.Status.NumErrors)
 		}
-		fmt.Printf("==================================================\n\n")
+		content += "==================================================\n\n"
 	}
+	_, err := fmt.Fprintf(writer, content)
+	return err
 }
 
 func writeReports(results []comparison.Result, outPath string) error {
@@ -161,16 +161,31 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 		if err := writeReports(output.Results, outputPath); err != nil {
 			return fmt.Errorf("failed to write reports: %w", err)
 		}
-		printResults(output.Results)
-	}
 
-	if archive {
-		if err := createArchive(outputPath, archivePath); err != nil {
-			return fmt.Errorf("failed to create archive: %w", err)
+		//create the file
+		resultsFile, errResult := os.Create(filepath.Join(outputPath, "results.txt"))
+		if errResult != nil {
+			return fmt.Errorf("failed to create file: %w", errResult)
+		}
+		defer resultsFile.Close()
+
+		multiWriter := io.MultiWriter(resultsFile, os.Stdout)
+
+		// Call writeResults and handle any errors it returns
+		err := writeResults(output.Results, multiWriter)
+		if err != nil {
+			return fmt.Errorf("failed to write results: %w", err)
+		}
+
+		if archive {
+			if err := createArchive(outputPath, archivePath); err != nil {
+				return fmt.Errorf("failed to create archive: %w", err)
+			}
 		}
 	}
 
 	return nil
+
 }
 
 func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
