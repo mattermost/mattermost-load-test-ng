@@ -332,7 +332,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Upload dashboard json
-	buf, err = os.ReadFile(t.getAsset("dashboard_data.json"))
+	buf, err = os.ReadFile(t.getAsset("default_dashboard_tmpl.json"))
 	if err != nil {
 		return err
 	}
