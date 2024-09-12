@@ -113,7 +113,7 @@
           "expr": "rate(mattermost_post_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "metric": "mattermost_post_total",
           "refId": "A",
           "step": 5
@@ -229,7 +229,7 @@
           "expr": "rate(mattermost_http_requests_total{instance=~\"$server\"}[1m])",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ instance }}",
+          "legendFormat": "{{`{{instance}}`}}",
           "metric": "mattermost_http_errors_total",
           "refId": "A",
           "step": 5
@@ -341,7 +341,7 @@
           "expr": "mattermost_http_websockets_total{instance=~\"$server\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "metric": "mattermost_http_websockets_total",
           "refId": "A",
           "step": 5
@@ -452,7 +452,7 @@
           "expr": "mattermost_db_master_connections_total{instance=~\"$server\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "metric": "mattermost_db_master_connections_total",
           "refId": "A",
           "step": 5
@@ -565,7 +565,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "avg-{{ instance }}",
+          "legendFormat": "avg-{{`{{instance}}`}}",
           "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
@@ -578,7 +578,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "hide": false,
-          "legendFormat": "p99-{{instance}}",
+          "legendFormat": "p99-{{`{{instance}}`}}",
           "refId": "B"
         }
       ],
@@ -676,7 +676,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "avg-{{ instance }}",
+          "legendFormat": "avg-{{`{{instance}}`}}",
           "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
@@ -689,7 +689,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "hide": false,
-          "legendFormat": "p99-{{instance}}",
+          "legendFormat": "p99-{{`{{instance}}`}}",
           "refId": "B"
         }
       ],
@@ -787,7 +787,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "avg-{{ instance }}",
+          "legendFormat": "avg-{{`{{instance}}`}}",
           "metric": "mattermost_api_time_sum",
           "refId": "A",
           "step": 5
@@ -800,7 +800,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (instance,le))",
           "format": "time_series",
           "hide": false,
-          "legendFormat": "p99-{{instance}}",
+          "legendFormat": "p99-{{`{{instance}}`}}",
           "refId": "B"
         }
       ],
@@ -897,7 +897,7 @@
           "expr": "go_memstats_alloc_bytes{instance=~\"$server\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "Alloc-{{instance}}",
+          "legendFormat": "Alloc-{{`{{instance}}`}}",
           "metric": "go_memstats_alloc_bytes_total",
           "refId": "A",
           "step": 5
@@ -911,7 +911,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "StackAlloc-{{instance}}",
+          "legendFormat": "StackAlloc-{{`{{instance}}`}}",
           "metric": "go_memstats_alloc_bytes_total",
           "refId": "B",
           "step": 5
@@ -925,7 +925,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "HeapAlloc-{{instance}}",
+          "legendFormat": "HeapAlloc-{{`{{instance}}`}}",
           "metric": "go_memstats_alloc_bytes_total",
           "refId": "C",
           "step": 5
@@ -1024,7 +1024,7 @@
           "expr": "irate(mattermost_process_cpu_seconds_total{instance=~\"$server\"}[1m])* 100",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "refId": "A",
           "step": 5
         }
@@ -1122,7 +1122,7 @@
           "expr": "go_goroutines{instance=~\"$server\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "metric": "go_goroutines",
           "refId": "A",
           "step": 5
@@ -1235,7 +1235,7 @@
             "uid": "loadtest-source"
           },
           "expr": "sum(increase(loadtest_http_timeouts_total{instance=~\"$server\"}[1m])) by (instance)",
-          "legendFormat": "{{ instance }}",
+          "legendFormat": "{{`{{instance}}`}}",
           "refId": "A"
         },
         {
@@ -1339,7 +1339,7 @@
             "uid": "loadtest-source"
           },
           "expr": "sum(increase(loadtest_http_errors_total{instance=~\"$server\"}[1m])) by (status_code)",
-          "legendFormat": "agent - {{ status_code }} ",
+          "legendFormat": "agent - {{`{{status_code}}`}} ",
           "refId": "A"
         },
         {
@@ -1348,7 +1348,7 @@
             "uid": "loadtest-source"
           },
           "expr": "sum(increase(mattermost_api_time_count{instance=~\"$server\",status_code=~\"4..|5..\"}[1m])) by (status_code)",
-          "legendFormat": "app - {{ status_code }}",
+          "legendFormat": "app - {{`{{status_code}}`}}",
           "refId": "B"
         }
       ],
@@ -1451,7 +1451,7 @@
           "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"user\"}[1m])) by (instance)",
           "hide": false,
           "instant": false,
-          "legendFormat": "User {{instance}}",
+          "legendFormat": "User {{`{{instance}}`}}",
           "refId": "A"
         },
         {
@@ -1461,7 +1461,7 @@
           },
           "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"system\"}[1m])) by (instance)",
           "hide": false,
-          "legendFormat": "System {{instance}}",
+          "legendFormat": "System {{`{{instance}}`}}",
           "refId": "B"
         },
         {
@@ -1471,7 +1471,7 @@
           },
           "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=\"idle\"}[1m])) by (instance)",
           "hide": false,
-          "legendFormat": "Idle {{instance}}",
+          "legendFormat": "Idle {{`{{instance}}`}}",
           "refId": "C"
         },
         {
@@ -1481,7 +1481,7 @@
           },
           "expr": "sum(rate(node_cpu_seconds_total{instance=~\"$server\",mode=~\"irq|softirq|iowait\"}[1m])) by (instance)",
           "hide": false,
-          "legendFormat": "Other {{instance}}",
+          "legendFormat": "Other {{`{{instance}}`}}",
           "refId": "D"
         }
       ],
@@ -1578,7 +1578,7 @@
           "expr": "(node_memory_MemTotal_bytes{instance=~\"$server\"} - node_memory_MemFree_bytes{instance=~\"$server\"} - node_memory_Buffers_bytes{instance=~\"$server\"} - node_memory_Cached_bytes{instance=~\"$server\"})",
           "hide": false,
           "instant": false,
-          "legendFormat": "Used {{ instance }}",
+          "legendFormat": "Used {{`{{instance}}`}}",
           "refId": "A"
         },
         {
@@ -1587,7 +1587,7 @@
             "uid": "loadtest-source"
           },
           "expr": "node_memory_MemTotal_bytes{instance=~\"$server\"}",
-          "legendFormat": "Total {{ instance }}",
+          "legendFormat": "Total {{`{{instance}}`}}",
           "refId": "B"
         }
       ],
@@ -1689,7 +1689,7 @@
           "expr": "(sum(rate(node_network_transmit_bytes_total{instance=~\"$server\"}[1m])) by (instance))*8",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "TX Rate {{ instance }}",
+          "legendFormat": "TX Rate {{`{{instance}}`}}",
           "refId": "A"
         },
         {
@@ -1701,7 +1701,7 @@
           "hide": false,
           "instant": false,
           "intervalFactor": 1,
-          "legendFormat": "RX Rate {{ instance }}",
+          "legendFormat": "RX Rate {{`{{instance}}`}}",
           "refId": "B"
         }
       ],
@@ -1802,7 +1802,7 @@
           "expr": "node_netstat_Tcp_CurrEstab{instance=~\"$server\"}",
           "hide": false,
           "instant": false,
-          "legendFormat": "Established {{ instance }}",
+          "legendFormat": "Established {{`{{instance}}`}}",
           "refId": "A"
         },
         {
@@ -1813,7 +1813,7 @@
           "expr": "irate(node_netstat_TcpExt_TCPTimeouts{instance=~\"$server\"}[1m])",
           "hide": false,
           "instant": false,
-          "legendFormat": "Timeouts {{ instance }}",
+          "legendFormat": "Timeouts {{`{{instance}}`}}",
           "refId": "B"
         },
         {
@@ -1966,7 +1966,7 @@
           "editorMode": "code",
           "expr": "(rate(node_netstat_Tcp_RetransSegs{instance=~\"$server\"}[1m]) / rate(node_netstat_Tcp_OutSegs{instance=~\"$server\"}[1m])) * 100",
           "instant": false,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{`{{instance}}`}}",
           "range": true,
           "refId": "A"
         }
