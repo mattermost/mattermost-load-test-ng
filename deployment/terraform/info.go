@@ -65,8 +65,8 @@ func displayInfo(output *Output) {
 	if output.HasKeycloak() {
 		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PublicIP)
 		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PublicDNS + ":8080/")
-		if len(output.KeycloakDatabaseCluster.Endpoints) > 0 {
-			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Endpoints[0])
+		if len(output.KeycloakDatabaseCluster.Instances) > 0 {
+			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Instances[0].Endpoint)
 		}
 	}
 	if output.HasDB() {
