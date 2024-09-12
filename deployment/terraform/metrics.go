@@ -432,7 +432,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		HomeDashboardID int    `json:"homeDashboardId"`
 		Timezone        string `json:"timezone"`
 	}{
-		HomeDashboardID: 2,
+		HomeDashboardID: 4,
 	}
 	data, err := json.Marshal(&payload)
 	if err != nil {
