@@ -323,10 +323,21 @@ func (c *Config) IsValid() error {
 		return err
 	}
 
+	if err := c.validateProxyConfig(); err != nil {
+		return err
+	}
+
 	if err := c.validateDBName(); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (c *Config) validateProxyConfig() error {
+	if c.AppInstanceCount > 1 && c.ProxyInstanceCount < 1 && c.ServerURL == "" {
+		return fmt.Errorf("the deployment will create more than one app node, but no proxy is being deployed and no external proxy has been configured: either set ProxyInstanceCount to 1, or set ServerURL to the URL of an external proxy")
+	}
 	return nil
 }
 
