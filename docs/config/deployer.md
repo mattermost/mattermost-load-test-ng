@@ -492,3 +492,9 @@ Enable continuous profiling of all the app instances.
 *bool*
 
 Enable continuous profiling of all the agent instances.
+
+### BlockProfileRate
+
+*int*
+
+Set the pprof block profile rate. This value applies to both agent and Mattermost server processes.

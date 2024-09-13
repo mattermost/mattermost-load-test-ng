@@ -87,6 +87,21 @@ func TestGetServerURL(t *testing.T) {
 				SiteURL: "ltserver",
 			},
 			expected: "ltserver",
+		}, {
+			name: "serverurl takes priority",
+			output: &Output{
+				Instances: []Instance{{
+					PrivateIP: "localhost",
+				}},
+				Proxy: Instance{
+					PrivateIP: "proxy_ip",
+				},
+			},
+			config: &deployment.Config{
+				SiteURL:   "siteurl",
+				ServerURL: "serverurl",
+			},
+			expected: "serverurl",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

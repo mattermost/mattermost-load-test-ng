@@ -30,9 +30,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.173.0
 	github.com/elastic/go-elasticsearch/v7 v7.10.1-0.20201228193145-776f23a0c901
 	github.com/gliderlabs/ssh v0.1.1
+	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
 	github.com/mattermost/mattermost/server/public v0.1.7-0.20240806035841-540febd866aa
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20240726090344-5547504c1d68
+	github.com/opensearch-project/opensearch-go/v4 v4.1.0
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wiggin77/merror v1.0.5
@@ -102,9 +104,11 @@ require (
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/ohler55/ojg v1.20.1 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.18.1 // indirect
+	github.com/opensearch-project/opensearch-go v1.1.0
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect

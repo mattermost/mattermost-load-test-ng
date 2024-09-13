@@ -41,6 +41,8 @@ type Config struct {
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
+	// Number of proxy instances.
+	ProxyInstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
@@ -99,6 +101,10 @@ type Config struct {
 	//   - Override the SiteUrl
 	//   - Point to the proxy IP via a new entry in the server's /etc/hosts file
 	SiteURL string `default:"ltserver"`
+	// ServerURL is the URL of the Mattermost server URL that the agent client will use to connect to the
+	// Mattermost servers. This is used to override the server URL in the agent's config in case there's a
+	// proxy in front of the Mattermost server.
+	ServerURL string `default:""`
 	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
@@ -133,6 +139,9 @@ type PyroscopeSettings struct {
 	EnableAppProfiling bool `default:"true"`
 	// Enable profiling of all the agent instances
 	EnableAgentProfiling bool `default:"true"`
+	// Set the pprof block profile rate.
+	// This value applies to both agent and Mattermost server processes.
+	BlockProfileRate int `default:"0"`
 }
 
 // TerraformDBSettings contains the necessary data
@@ -354,8 +363,16 @@ func (c *Config) validateElasticSearchConfig() error {
 
 	}
 
-	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
-		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
+	}
+
+	if c.ElasticSearchSettings.SnapshotRepository == "" {
+		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
+	}
+
+	if c.ElasticSearchSettings.SnapshotName == "" {
+		return fmt.Errorf("Empty SnapshotName. Must supply a value")
 	}
 
 	return nil

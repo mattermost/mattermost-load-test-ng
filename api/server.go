@@ -6,6 +6,9 @@ package api
 import (
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/performance"
@@ -56,7 +59,10 @@ func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
 			<body>
 				<div><a href="/debug/pprof/">Profiling Root</a></div>
 				<div><a href="/debug/pprof/heap">Heap profile</a></div>
+				<div><a href="/debug/pprof/allocs">Allocs profile</a></div>
 				<div><a href="/debug/pprof/profile">CPU profile</a></div>
+				<div><a href="/debug/pprof/goroutine">Goroutine profile</a></div>
+				<div><a href="/debug/pprof/block">Block profile</a></div>
 				<div><a href="/debug/pprof/trace">Trace profile</a></div>
 			</body>
 		</html>
@@ -98,10 +104,17 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	c.HandleFunc("/{id}/stop", a.stopCoordinatorHandler).Methods("POST")
 	c.HandleFunc("/{id}/inject", a.coordinatorInjectActionHandler).Methods("POST").Queries("action", "{[a-zA-Z]+}")
 
+	if val, err := strconv.Atoi(os.Getenv("BLOCK_PROFILE_RATE")); err == nil && val > 0 {
+		agentLog.Info("setting block profile rate", mlog.Int("value", val))
+		runtime.SetBlockProfileRate(val)
+	}
 	// Debug endpoint.
 	p := router.PathPrefix("/debug/pprof").Subrouter()
 	p.HandleFunc("/", a.pprofIndexHandler).Methods("GET")
 	p.Handle("/heap", pprof.Handler("heap")).Methods("GET")
+	p.Handle("/allocs", pprof.Handler("heap")).Methods("GET")
+	p.Handle("/goroutine", pprof.Handler("goroutine")).Methods("GET")
+	p.Handle("/block", pprof.Handler("block")).Methods("GET")
 	p.HandleFunc("/profile", pprof.Profile).Methods("GET")
 	p.HandleFunc("/trace", pprof.Trace).Methods("GET")
 
