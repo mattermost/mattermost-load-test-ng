@@ -415,28 +415,11 @@ discovery:
       length: {{.Length}}
       delay: {{.Delay}}
       addCloudwatchTimestamp: true
+      nilToZero: true
       searchTags:
         - key: ClusterName
           value: {{.ClusterName}}
       metrics:
-        - name: CPUUtilization
-          statistics: [Average]
-        - name: NetworkIn
-          statistics: [Average, Sum]
-        - name: NetworkOut
-          statistics: [Average, Sum]
-        - name: NetworkPacketsIn
-          statistics: [Sum]
-        - name: NetworkPacketsOut
-          statistics: [Sum]
-        - name: DiskReadBytes
-          statistics: [Sum]
-        - name: DiskWriteBytes
-          statistics: [Sum]
-        - name: DiskReadOps
-          statistics: [Sum]
-        - name: DiskWriteOps
-          statistics: [Sum]
         - name: StatusCheckFailed
           statistics: [Sum]
         - name: StatusCheckFailed_Instance
