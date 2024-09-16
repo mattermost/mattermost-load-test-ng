@@ -51,14 +51,21 @@
                   "color": "semi-dark-green",
                   "index": 0,
                   "text": "Up"
-                },
-                "1": {
-                  "color": "semi-dark-red",
-                  "index": 1,
-                  "text": "Down"
                 }
               },
               "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "semi-dark-red",
+                  "index": 1,
+                  "text": "Down"
+                },
+                "to": 999999999
+              },
+              "type": "range"
             }
           ],
           "max": 1,
