@@ -26,6 +26,99 @@
     {
       "datasource": {
         "type": "prometheus",
+        "uid": "P207FEC8D12DA302B"
+      },
+      "description": "Reports whether the instance has passed all status checks; i.e. system and instance checks. For a more detailed report, check the `aws_ec2_status_check_failed_system_sum` and `aws_ec2_status_check_failed_instance_sum` metrics.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "semi-dark-green",
+                  "index": 0,
+                  "text": "Up"
+                },
+                "1": {
+                  "color": "semi-dark-red",
+                  "index": 1,
+                  "text": "Down"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 46,
+      "options": {
+        "colWidth": 0.9,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P207FEC8D12DA302B"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(aws_ec2_status_check_failed_sum) by (tag_Name)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "5m",
+          "legendFormat": "{{tag_Name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Instances status",
+      "type": "status-history"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
         "uid": "loadtest-source"
       },
       "fieldConfig": {
@@ -88,7 +181,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 8
       },
       "id": 7,
       "options": {
@@ -200,7 +293,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 8
       },
       "id": 10,
       "options": {
@@ -316,7 +409,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 17
       },
       "id": 6,
       "options": {
@@ -427,7 +520,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 17
       },
       "id": 1,
       "options": {
@@ -539,7 +632,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 26
       },
       "id": 11,
       "options": {
@@ -650,7 +743,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 26
       },
       "id": 32,
       "options": {
@@ -761,7 +854,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 35
       },
       "id": 34,
       "options": {
@@ -872,7 +965,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 35
       },
       "id": 5,
       "options": {
@@ -999,7 +1092,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 44
       },
       "id": 13,
       "options": {
@@ -1097,7 +1190,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 44
       },
       "id": 4,
       "options": {
@@ -1209,7 +1302,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 53
       },
       "id": 29,
       "options": {
@@ -1316,7 +1409,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 53
       },
       "id": 31,
       "options": {
@@ -1421,7 +1514,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 54
+        "y": 62
       },
       "id": 21,
       "options": {
@@ -1553,7 +1646,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 54
+        "y": 62
       },
       "id": 23,
       "options": {
@@ -1659,7 +1752,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 63
+        "y": 71
       },
       "id": 25,
       "interval": "",
@@ -1773,7 +1866,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 63
+        "y": 71
       },
       "id": 27,
       "options": {
@@ -1937,7 +2030,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 80
       },
       "id": 35,
       "options": {
@@ -2037,7 +2130,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 80
       },
       "id": 36,
       "options": {
@@ -2132,7 +2225,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 81
+        "y": 89
       },
       "id": 38,
       "options": {
@@ -2227,7 +2320,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 81
+        "y": 89
       },
       "id": 37,
       "options": {
@@ -2322,7 +2415,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 90
+        "y": 98
       },
       "id": 39,
       "options": {
@@ -2360,7 +2453,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 107
       },
       "id": 41,
       "panels": [],
@@ -2376,7 +2469,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 100
+        "y": 108
       },
       "id": 43,
       "options": {
@@ -2455,7 +2548,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 109
+        "y": 117
       },
       "id": 44,
       "options": {
@@ -2552,7 +2645,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 109
+        "y": 117
       },
       "id": 45,
       "options": {
