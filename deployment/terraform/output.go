@@ -194,8 +194,7 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.KeycloakDatabaseCluster.Value) > 0 {
 		for _, inst := range o.KeycloakDatabaseCluster.Value {
-			// outputv2.KeycloakDatabaseCluster.Endpoints = append(outputv2.KeycloakDatabaseCluster.Endpoints, ep.Endpoint)
-			outputv2.KeycloakDatabaseCluster.Instances = append(outputv2.DBCluster.Instances, DBInstance{
+			outputv2.KeycloakDatabaseCluster.Instances = append(outputv2.KeycloakDatabaseCluster.Instances, DBInstance{
 				Endpoint: inst.Endpoint,
 				IsWriter: inst.Writer,
 			})
