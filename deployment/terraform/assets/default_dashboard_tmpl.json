@@ -108,7 +108,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "5m",
-          "legendFormat": "{{tag_Name}}",
+          "legendFormat": "{{`{{tag_Name}}`}}",
           "range": true,
           "refId": "A"
         }
