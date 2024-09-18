@@ -52,7 +52,10 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 	user.AuthService = model.UserAuthServiceSaml
 	user.Password = ""
 
-	_, _, err = worker.mmClient.UpdateUser(ctx, user)
+	_, _, err = worker.mmClient.UpdateUserAuth(ctx, user.Id, &model.UserAuth{
+		AuthData:    model.NewPointer(kcUserID),
+		AuthService: model.UserAuthServiceSaml,
+	})
 	if err != nil {
 		mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
 
