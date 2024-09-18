@@ -61,8 +61,7 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 				}
 
 				if len(users) != 1 {
-					err = fmt.Errorf("expected 1 user, got %d", len(users))
-					mlog.Error("got more users than expected in keycloak", mlog.String("username", user.Username), mlog.Int("users_count", len(users)))
+					err = fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
 					worker.errorsChan <- err
 					return err
 				}
