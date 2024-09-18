@@ -247,15 +247,6 @@ resource "aws_db_parameter_group" "db_params_group" {
   }
 }
 
-resource "aws_rds_cluster_endpoint" "cluster_endpoints" {
-  count                       = var.db_instance_count > 0 ? var.db_instance_count : 0
-  cluster_identifier          = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster[0].id
-  cluster_endpoint_identifier = aws_rds_cluster_instance.cluster_instances[count.index].writer ? "${var.cluster_name}-wr" : "${var.cluster_name}-rd${count.index}"
-  custom_endpoint_type        = "ANY"
-
-  static_members = [aws_rds_cluster_instance.cluster_instances[count.index].id]
-}
-
 resource "aws_instance" "loadtest_agent" {
   tags = {
     Name = "${var.cluster_name}-agent-${count.index}"
