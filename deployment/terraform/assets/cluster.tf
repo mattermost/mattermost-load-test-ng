@@ -110,7 +110,7 @@ resource "aws_instance" "metrics_server" {
 
 resource "aws_instance" "proxy_server" {
   tags = {
-    Name = "${var.cluster_name}-proxy"
+    Name = "${var.cluster_name}-proxy-${count.index}"
   }
   ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
@@ -522,7 +522,7 @@ resource "aws_security_group_rule" "app-to-inbucket" {
 }
 
 resource "aws_security_group" "proxy" {
-  count       = var.proxy_instance_count
+  count       = var.proxy_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
 
