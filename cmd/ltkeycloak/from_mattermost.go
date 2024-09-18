@@ -86,6 +86,10 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		}
 	}
 
+	user.AuthData = model.NewPointer(kcUserID)
+	user.AuthService = model.UserAuthServiceSaml
+	user.Password = ""
+
 	_, _, err = worker.mmClient.UpdateUserAuth(ctx, user.Id, &model.UserAuth{
 		AuthData:    model.NewPointer(kcUserID),
 		AuthService: model.UserAuthServiceSaml,
