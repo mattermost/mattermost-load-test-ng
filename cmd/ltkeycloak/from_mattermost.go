@@ -41,35 +41,36 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
 
-			// If the `--force-migrate` flag is set, we need to get the user ID of the already existing user from
-			// keycloak to set up the auth data of the mattermost user.
-			if worker.forceMigrate {
-				mlog.Debug("trying to fetch the user from keycloak to update the mattermost user", mlog.String("username", user.Username))
-				users, err := worker.keycloakClient.GetUsers(
-					ctx,
-					worker.keycloakToken.AccessToken,
-					worker.keycloakRealm,
-					gocloak.GetUsersParams{
-						Username: &user.Username,
-						Exact:    gocloak.BoolP(true),
-					},
-				)
-				if err != nil {
-					mlog.Error("failed to get user from keycloak", mlog.String("err", err.Error()))
-					worker.errorsChan <- err
-					return err
-				}
-
-				if len(users) != 1 {
-					err = fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
-					worker.errorsChan <- err
-					return err
-				}
-
-				kcUserID = *users[0].ID
-			} else {
+			// Return early if we are not forcing the migration of all the users users
+			if !worker.forceMigrate {
 				return err
 			}
+
+			// If the `--force-migrate` flag is set, we need to get the user ID of the already existing user from
+			// keycloak to set up the auth data of the mattermost user.
+			mlog.Debug("trying to fetch the user from keycloak to update the mattermost user", mlog.String("username", user.Username))
+			users, err := worker.keycloakClient.GetUsers(
+				ctx,
+				worker.keycloakToken.AccessToken,
+				worker.keycloakRealm,
+				gocloak.GetUsersParams{
+					Username: &user.Username,
+					Exact:    gocloak.BoolP(true),
+				},
+			)
+			if err != nil {
+				mlog.Error("failed to get user from keycloak", mlog.String("err", err.Error()))
+				worker.errorsChan <- err
+				return err
+			}
+
+			if len(users) != 1 {
+				err = fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
+				worker.errorsChan <- err
+				return err
+			}
+
+			kcUserID = *users[0].ID
 		} else {
 			mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
 			worker.errorsChan <- err
