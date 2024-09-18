@@ -70,6 +70,13 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 				return err
 			}
 
+			// This should not happen, but just in case...
+			if users[0] == nil || users[0].ID == nil {
+				err = fmt.Errorf("somehow keycloak returned incorrect data for user %s (nil values)", user.Username)
+				worker.errorsChan <- err
+				return err
+			}
+
 			kcUserID = *users[0].ID
 		} else {
 			mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
