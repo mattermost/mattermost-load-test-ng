@@ -43,6 +43,7 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 
 			// Return early if we are not forcing the migration of all the users users
 			if !worker.forceMigrate {
+				worker.errorsChan <- err
 				return err
 			}
 
@@ -83,14 +84,12 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 			worker.errorsChan <- err
 			return err
 		}
-
 	}
 
-	user.AuthData = model.NewPointer(kcUserID)
-	user.AuthService = model.UserAuthServiceSaml
-	user.Password = ""
-
-	_, _, err = worker.mmClient.UpdateUser(ctx, user)
+	_, _, err = worker.mmClient.UpdateUserAuth(ctx, user.Id, &model.UserAuth{
+		AuthData:    model.NewPointer(kcUserID),
+		AuthService: model.UserAuthServiceSaml,
+	})
 	if err != nil {
 		mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
 
@@ -321,6 +320,8 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		}
 
 		for _, user := range users {
+			u := *user
+
 			// Skip bots
 			if user.IsBot {
 				continue
@@ -338,7 +339,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 
 			if !dryRun {
 				operationsWg.Add(1)
-				usersChan <- user
+				usersChan <- &u
 			} else {
 				mlog.Info("dry-run: would migrate user", mlog.String("username", user.Username))
 			}
