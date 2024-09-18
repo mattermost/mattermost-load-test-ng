@@ -41,9 +41,9 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
 
-			// If the `--migrate-all-users` flag is set, we need to get the user ID of the already existing user from
+			// If the `--force-migrate` flag is set, we need to get the user ID of the already existing user from
 			// keycloak to set up the auth data of the mattermost user.
-			if worker.migrateAllUsers {
+			if worker.forceMigrate {
 				mlog.Debug("trying to fetch the user from keycloak to update the mattermost user", mlog.String("username", user.Username))
 				users, err := worker.keycloakClient.GetUsers(
 					ctx,
@@ -141,7 +141,7 @@ type workerConfig struct {
 	userPassword     string
 	deploymentConfig *deployment.Config
 	doneChan         chan struct{}
-	migrateAllUsers  bool
+	forceMigrate     bool
 }
 
 func migrateMattermostUsersToKeycloak(worker *workerConfig) {
@@ -260,7 +260,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to refresh keycloak token: %w", err)
 	}
 
-	migrateAllUsers, err := cmd.Flags().GetBool("migrate-all-users")
+	migrateAllUsers, err := cmd.Flags().GetBool("force-migrate")
 	if err != nil {
 		return fmt.Errorf("failed to read flag: %w", err)
 	}
@@ -299,7 +299,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			userPassword:     userPassword,
 			deploymentConfig: deploymentConfig,
 			doneChan:         doneChan,
-			migrateAllUsers:  migrateAllUsers,
+			forceMigrate:     migrateAllUsers,
 		})
 	}
 

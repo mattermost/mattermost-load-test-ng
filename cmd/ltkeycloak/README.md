@@ -28,7 +28,7 @@ Global Flags:
       --dry-run                  perform a dry run without making any changes
       --keycloak-host string     keycloak host (default "http://localhost:8484")
       --mattermost-host string   The Mattermost host to migrate users from
-      --migrate-all-users        Migrate all users ignoring their current auth method
+      --force-migrate            Migrate all users ignoring their current auth method
 ```
 
 #### Example
