@@ -41,7 +41,7 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
 
-			// Return early if we are not forcing the migration of all the users users
+			// Return early if we are not forcing the migration of all the users
 			if !worker.forceMigrate {
 				worker.errorsChan <- err
 				return err
