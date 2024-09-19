@@ -266,7 +266,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to refresh keycloak token: %w", err)
 	}
 
-	migrateAllUsers, err := cmd.Flags().GetBool("force-migrate")
+	forceMigrate, err := cmd.Flags().GetBool("force-migrate")
 	if err != nil {
 		return fmt.Errorf("failed to read flag: %w", err)
 	}
@@ -305,7 +305,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			userPassword:     userPassword,
 			deploymentConfig: deploymentConfig,
 			doneChan:         doneChan,
-			forceMigrate:     migrateAllUsers,
+			forceMigrate:     forceMigrate,
 		})
 	}
 
@@ -333,7 +333,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			}
 
 			// Already migrated
-			if user.AuthService == model.UserAuthServiceSaml && !migrateAllUsers {
+			if user.AuthService == model.UserAuthServiceSaml && !forceMigrate {
 				continue
 			}
 
