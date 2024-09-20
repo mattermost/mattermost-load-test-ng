@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"time"
@@ -59,6 +61,27 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Wri
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
 	return _runCommand(cmd, dst)
+}
+
+func buildGoPackage(ctx context.Context, pkg string, dst io.Writer) (string, error) {
+	var cancel context.CancelFunc
+	if ctx == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), cmdExecTimeoutMinutes*time.Minute)
+		defer cancel()
+	}
+
+	var buildPath = os.Getenv("GOBIN")
+	if buildPath == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		buildPath = filepath.Join(cwd, "bin/")
+		os.Setenv("GOBIN", buildPath)
+		defer os.Unsetenv("GOBIN")
+	}
+
+	return buildPath, _runCommand(exec.CommandContext(ctx, "go", "install", pkg), dst)
 }
 
 func _runCommand(cmd *exec.Cmd, dst io.Writer) error {

@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,12 +32,15 @@ import (
 	"github.com/mattermost/mattermost/server/v8/config"
 )
 
-const cmdExecTimeoutMinutes = 120
-
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
 	releaseSuffix    = "tar.gz"
+	netpeekPkg       = "github.com/streamer45/netpeek@v0.1.3"
+
+	cmdExecTimeoutMinutes = 120
+
+	gossipPort = 8074
 )
 
 // requiredVersion specifies the supported versions of Terraform,
@@ -410,6 +414,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		{srcData: strings.TrimSpace(fmt.Sprintf(serviceFile, os.Getenv("MM_SERVICEENVIRONMENT"))), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 		{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+		{srcData: strings.TrimSpace(fmt.Sprintf(netpeekServiceFile, gossipPort)), dstPath: "/lib/systemd/system/netpeek.service"},
 	}
 
 	// Specify a hosts file when the SiteURL is set, so that it points to
@@ -486,6 +491,27 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		if out, err := sshc.UploadFile(uploadPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
+	}
+
+	// Stop netpeek service in case it's already deployed
+	cmd = "sudo service netpeek stop"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+	// Build, upload and start netpeek utility
+	mlog.Info("Building netpeek binary", mlog.String("host", ip))
+	buildPath, err := buildGoPackage(nil, netpeekPkg, nil)
+	if err != nil {
+		return fmt.Errorf("failed to build netpeek binary: %w", err)
+	}
+	mlog.Info("Uploading netpeek binary", mlog.String("host", ip))
+	if out, err := sshc.UploadFile(filepath.Join(buildPath, "netpeek"), "/usr/local/bin/netpeek", true); err != nil {
+		return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
+	}
+	mlog.Info("Starting netpeek service", mlog.String("host", ip))
+	cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo service netpeek restart"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
 
 	// Starting mattermost.
@@ -1003,7 +1029,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.TeamSettings.EnableOpenServer = model.NewPointer(true)
 	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewPointer(int64(1000))
 
-	cfg.ClusterSettings.GossipPort = model.NewPointer(8074)
+	cfg.ClusterSettings.GossipPort = model.NewPointer(gossipPort)
 	cfg.ClusterSettings.Enable = model.NewPointer(true)
 	cfg.ClusterSettings.ClusterName = model.NewPointer(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewPointer(false)

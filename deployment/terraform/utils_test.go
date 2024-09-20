@@ -4,6 +4,9 @@
 package terraform
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -108,4 +111,21 @@ func TestGetServerURL(t *testing.T) {
 			require.Equal(t, tc.expected, getServerURL(tc.output, tc.config))
 		})
 	}
+}
+
+func TestBuildGoPackage(t *testing.T) {
+	dir, err := os.MkdirTemp("", "example")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
+
+	gobin := os.Getenv("GOBIN")
+	defer os.Setenv("GOBIN", gobin)
+	os.Setenv("GOBIN", dir)
+
+	buildPath, err := buildGoPackage(context.Background(), netpeekPkg, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, dir, buildPath)
+	_, err = os.Stat(filepath.Join(dir, "netpeek"))
+	require.NoError(t, err)
 }
