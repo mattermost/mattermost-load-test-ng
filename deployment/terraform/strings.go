@@ -54,6 +54,9 @@ scrape_configs:
   - job_name: redis
     static_configs:
         - targets: [%s]
+  - job_name: cloudwatch
+    static_configs:
+        - targets: [%s]
 `
 
 const metricsHosts = `
@@ -312,6 +315,130 @@ ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/redis_exporter
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const yaceConfigFile = `
+apiVersion: v1alpha1
+discovery:
+  exportedTagsOnMetrics:
+    AWS/RDS:
+      - Name
+      - ClusterName
+    AWS/ES:
+      - Name
+      - ClusterName
+    AWS/EC2:
+      - Name
+      - ClusterName
+  jobs:
+    - type: AWS/RDS
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average]
+        - name: DatabaseConnections
+          statistics: [Sum]
+        - name: FreeableMemory
+          statistics: [Average]
+        - name: FreeStorageSpace
+          statistics: [Average]
+        - name: ReadThroughput
+          statistics: [Average]
+        - name: WriteThroughput
+          statistics: [Average]
+        - name: ReadLatency
+          statistics: [Maximum]
+        - name: WriteLatency
+          statistics: [Maximum]
+        - name: ReadIOPS
+          statistics: [Average]
+        - name: WriteIOPS
+          statistics: [Average]
+    - type: AWS/ES
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average]
+        - name: FreeStorageSpace
+          statistics: [Sum]
+        - name: ClusterStatus.green
+          statistics: [Maximum]
+        - name: ClusterStatus.yellow
+          statistics: [Maximum]
+        - name: ClusterStatus.red
+          statistics: [Maximum]
+        - name: Shards.active
+          statistics: [Sum]
+        - name: Shards.unassigned
+          statistics: [Sum]
+        - name: Shards.delayedUnassigned
+          statistics: [Sum]
+        - name: Shards.activePrimary
+          statistics: [Sum]
+        - name: Shards.initializing
+          statistics: [Sum]
+        - name: Shards.initializing
+          statistics: [Sum]
+        - name: Shards.relocating
+          statistics: [Sum]
+        - name: Nodes
+          statistics: [Maximum]
+        - name: SearchableDocuments
+          statistics: [Maximum]
+        - name: DeletedDocuments
+          statistics: [Maximum]
+    - type: AWS/EC2
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      nilToZero: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: StatusCheckFailed
+          statistics: [Sum]
+        - name: StatusCheckFailed_Instance
+          statistics: [Sum]
+        - name: StatusCheckFailed_System
+          statistics: [Sum]
+`
+
+const yaceServiceFile = `
+[Unit]
+Description=Cloudwatch prometheus exporter - YACE
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/yace/yace -listen-address :{{.Port}} -config.file /opt/yace/conf.yml -scraping-interval {{.ScrapingInterval}}
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/yace
 User=ubuntu
 Group=ubuntu
 

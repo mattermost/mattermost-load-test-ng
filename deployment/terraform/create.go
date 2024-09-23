@@ -1111,7 +1111,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
-	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard_data.json")
+	assets.RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
 	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")

@@ -10,6 +10,11 @@ terraform {
 provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
+  default_tags {
+    tags = {
+      ClusterName = var.cluster_name
+    }
+  }
 }
 
 data "aws_region" "current" {}
@@ -77,6 +82,63 @@ resource "aws_instance" "app_server" {
   }
 }
 
+
+data "aws_iam_policy_document" "metrics_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "metrics_role" {
+  name               = "${var.cluster_name}-metrics-role"
+  assume_role_policy = data.aws_iam_policy_document.metrics_assume_role.json
+}
+
+resource "aws_iam_instance_profile" "metrics_profile" {
+  name = "metrics_profile"
+  role = aws_iam_role.metrics_role.name
+}
+
+# List of required permissions taken from
+# https://github.com/nerdswords/yet-another-cloudwatch-exporter/blob/f5ddcf4323dc97034491114d4074ae672cfc411f/README.md#authentication
+data "aws_iam_policy_document" "metrics_policy_document" {
+  statement {
+    effect    = "Allow"
+    resources = ["*"]
+    actions = [
+      "tag:GetResources",
+      "cloudwatch:GetMetricData",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "apigateway:GET",
+      "aps:ListWorkspaces",
+      "autoscaling:DescribeAutoScalingGroups",
+      "dms:DescribeReplicationInstances",
+      "dms:DescribeReplicationTasks",
+      "ec2:DescribeTransitGatewayAttachments",
+      "ec2:DescribeSpotFleetRequests",
+      "shield:ListProtections",
+      "storagegateway:ListGateways",
+      "storagegateway:ListTagsForResource",
+      "iam:ListAccountAliases",
+    ]
+  }
+}
+
+
+resource "aws_iam_role_policy" "metrics_policy" {
+  name   = "${var.cluster_name}-metrics-policy"
+  role   = aws_iam_role.metrics_role.name
+  policy = data.aws_iam_policy_document.metrics_policy_document.json
+}
+
 resource "aws_instance" "metrics_server" {
   tags = {
     Name = "${var.cluster_name}-metrics"
@@ -97,6 +159,8 @@ resource "aws_instance" "metrics_server" {
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
   ]
+
+  iam_instance_profile = aws_iam_instance_profile.metrics_profile.name
 
   root_block_device {
     volume_size = var.block_device_sizes_metrics
@@ -198,17 +262,21 @@ EOF
 resource "aws_elasticache_cluster" "redis_server" {
   cluster_id           = "${var.cluster_name}-redis"
   engine               = "redis"
-  node_type            = "${var.redis_node_type}"
+  node_type            = var.redis_node_type
   count                = var.redis_enabled ? 1 : 0
   num_cache_nodes      = 1
-  parameter_group_name = "${var.redis_param_group_name}"
-  engine_version       = "${var.redis_engine_version}"
+  parameter_group_name = var.redis_param_group_name
+  engine_version       = var.redis_engine_version
   port                 = 6379
 
   security_group_ids = [aws_security_group.redis[0].id]
 }
 
 resource "aws_rds_cluster" "db_cluster" {
+  tags = {
+    Name = "${var.cluster_name}-db-cluster"
+  }
+
   count               = var.app_instance_count > 0 && var.db_instance_count > 0 && var.db_cluster_identifier == "" ? 1 : 0
   cluster_identifier  = var.db_cluster_identifier != "" ? "" : "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
@@ -223,6 +291,10 @@ resource "aws_rds_cluster" "db_cluster" {
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
+  tags = {
+    Name = "${var.cluster_name}-db-${count.index}"
+  }
+
   count                        = var.app_instance_count > 0 ? var.db_instance_count : 0
   identifier                   = "${var.cluster_name}-db-${count.index}"
   cluster_identifier           = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster[0].id
@@ -446,6 +518,17 @@ resource "aws_security_group_rule" "metrics-prometheus" {
   type              = "ingress"
   from_port         = 9090
   to_port           = 9090
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+
+resource "aws_security_group_rule" "metrics-cloudwatchexporter" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 9106
+  to_port           = 9106
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id
