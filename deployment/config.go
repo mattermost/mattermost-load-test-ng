@@ -113,6 +113,8 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+	// EnableNetPeekMetrics enables fine grained networking metrics collection through netpeek utility.
+	EnableNetPeekMetrics bool `default:"false"`
 }
 
 type StorageSizes struct {
