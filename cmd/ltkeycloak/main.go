@@ -26,6 +26,7 @@ func MakeSyncCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("keycloak-host", "", "http://localhost:8484", "keycloak host")
 	cmd.PersistentFlags().String("mattermost-host", "", "The Mattermost host to migrate users from")
 	cmd.PersistentFlags().BoolP("dry-run", "", false, "perform a dry run without making any changes")
+	cmd.PersistentFlags().BoolP("force-migrate", "", false, "Migrate all users ignoring their current auth method")
 
 	cmd.AddCommand(MakeSyncFromMattermostCommand())
 	return cmd
