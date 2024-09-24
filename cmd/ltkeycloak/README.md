@@ -15,7 +15,11 @@ ltkeycloak [command] [flags]
 This command will sync users from a Mattermost server to a Keycloak server, setting the same password for all users and creating a txt file to be used with the loadtest.
 
 ```
+Usage:
+  ltkeycloak sync from_mattermost [flags]
+
 Flags:
+  -h, --help                          help for from_mattermost
       --keycloak-realm string         The Keycloak realm to migrate users to (default "master")
       --set-user-password-to string   Set's the user password to the provided value (default "testpassword")
 
@@ -24,6 +28,7 @@ Global Flags:
       --dry-run                  perform a dry run without making any changes
       --keycloak-host string     keycloak host (default "http://localhost:8484")
       --mattermost-host string   The Mattermost host to migrate users from
+      --force-migrate            Migrate all users ignoring their current auth method
 ```
 
 #### Example

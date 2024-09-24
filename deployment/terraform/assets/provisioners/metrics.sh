@@ -38,8 +38,11 @@ do
       sudo mkdir -p /var/lib/pyroscope && \
       sudo chown pyroscope:pyroscope -R /var/lib/pyroscope && \
       sudo systemctl enable pyroscope && \
+      sudo mkdir /opt/yace && \
+      wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v0.61.2/yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz && \
+      sudo tar -zxf yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz -C /opt/yace && \
       exit 0
-   n=$((n+1)) 
+   n=$((n+1))
    sleep 2
 done
 
