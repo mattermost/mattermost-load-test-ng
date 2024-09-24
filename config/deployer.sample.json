@@ -144,4 +144,6 @@
     "EnableAgentProfiling": true,
     "BlockProfileRate": 0
   }
+  "CustomTags": {
+  }
 }
