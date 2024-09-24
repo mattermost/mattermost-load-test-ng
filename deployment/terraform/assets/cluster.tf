@@ -380,6 +380,13 @@ resource "aws_security_group" "app" {
     protocol        = "tcp"
     security_groups = [aws_security_group.metrics[0].id]
   }
+  # netpeek metrics
+  ingress {
+    from_port       = 9045
+    to_port         = 9045
+    protocol        = "tcp"
+    security_groups = [aws_security_group.metrics[0].id]
+  }
   egress {
     from_port   = 0
     to_port     = 0

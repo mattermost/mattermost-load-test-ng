@@ -20,6 +20,8 @@ do
       sudo apt-get install -y postgresql-client-14 && \
       sudo apt-get install -y prometheus-node-exporter && \
       sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
+      wget https://github.com/streamer45/netpeek/releases/download/v0.1.4/netpeek-v0.1.4 && \
+      sudo mv netpeek-v* /usr/local/bin/netpeek && sudo chmod +x /usr/local/bin/netpeek && \
       exit 0
    n=$((n+1)) 
    sleep 2
