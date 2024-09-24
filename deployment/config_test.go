@@ -123,3 +123,40 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 		require.NoError(t, cfg.validateElasticSearchConfig())
 	})
 }
+
+func TestTerraformMapString(t *testing.T) {
+	var nilMap TerraformMap
+	emptyMap := make(TerraformMap)
+
+	testCases := []struct {
+		actual   TerraformMap
+		expected string
+	}{
+		{
+			actual: TerraformMap{
+				"uno": "1",
+			},
+			expected: "{uno = \"1\"}",
+		},
+		{
+			actual: TerraformMap{
+				"uno": "1",
+				"dos": "2",
+			},
+			expected: "{uno = \"1\", dos = \"2\"}",
+		},
+		{
+			actual:   nilMap,
+			expected: "{}",
+		},
+		{
+			actual:   emptyMap,
+			expected: "{}",
+		},
+	}
+
+	for _, testCase := range testCases {
+		require.Equal(t, testCase.expected, testCase.actual.String())
+	}
+
+}
