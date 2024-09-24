@@ -54,7 +54,11 @@ func displayInfo(output *Output) {
 	}
 
 	if output.HasProxy() {
-		fmt.Println("Proxy(ies):")
+		if len(output.Proxies) > 1 {
+			fmt.Println("Proxies:")
+		} else {
+			fmt.Println("Proxy:")
+		}
 		for _, inst := range output.Proxies {
 			fmt.Println("- " + inst.PublicIP)
 		}

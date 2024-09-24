@@ -240,8 +240,8 @@ func (t *Terraform) getAppHostsFile(index int) (string, error) {
 	}
 
 	// The new entry in /etc/hosts will make SiteURL point to:
-	// - The first instance's IP if there's a single node
-	// - The proxy's IP(s) if there's more than one node
+	// - The first instance's IP if there's a single app node
+	// - The IP of one of the proxy nodes if there's more than one app node
 	proxyHost := ""
 	if output.HasProxy() {
 		// This allows a bare-bones multi-proxy setup

@@ -120,7 +120,7 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
-	// Match against the proxy or metrics servers, as well as convenient aliases.
+	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
 		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
