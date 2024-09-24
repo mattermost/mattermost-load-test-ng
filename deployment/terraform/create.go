@@ -492,11 +492,6 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	if t.config.EnableNetPeekMetrics {
-		// Stop netpeek service in case it's already deployed
-		cmd = "sudo service netpeek stop"
-		if out, err := sshc.RunCommand(cmd); err != nil {
-			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
-		}
 		mlog.Info("Starting netpeek service", mlog.String("host", ip))
 		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo service netpeek restart"
 		if out, err := sshc.RunCommand(cmd); err != nil {
