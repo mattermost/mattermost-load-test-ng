@@ -11,9 +11,12 @@ provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
   default_tags {
-    tags = {
-      ClusterName = var.cluster_name
-    }
+    tags = merge(
+      {
+        "ClusterName" = var.cluster_name
+      },
+      var.custom_tags
+    )
   }
 }
 

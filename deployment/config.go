@@ -113,6 +113,21 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+	// CustomTags is an optional list of key-value pairs, which will be used as default
+	// tags for all resources deployed
+	CustomTags TerraformMap
+}
+
+// TerraformMap is a map of string -> string that serializes to the format expected by
+// the Terraform AWS provider when formatted as a string
+type TerraformMap map[string]string
+
+func (t TerraformMap) String() string {
+	var pairs []string
+	for key, value := range t {
+		pairs = append(pairs, fmt.Sprintf("%s = %q", key, value))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
 }
 
 type StorageSizes struct {
