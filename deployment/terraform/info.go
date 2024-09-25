@@ -60,7 +60,7 @@ func displayInfo(output *Output) {
 			fmt.Println("Proxy:")
 		}
 		for _, inst := range output.Proxies {
-			fmt.Println("- " + inst.PublicIP)
+			fmt.Println("- " + inst.Tags.Name + ": " + inst.PublicIP)
 		}
 	}
 
