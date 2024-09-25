@@ -68,7 +68,7 @@ type output struct {
 // created after a deployment.
 type Output struct {
 	ClusterName             string
-	Proxy                   Instance            `json:"proxy"`
+	Proxies                 []Instance          `json:"proxies"`
 	Instances               []Instance          `json:"instances"`
 	DBCluster               DBCluster           `json:"dbCluster"`
 	Agents                  []Instance          `json:"agents"`
@@ -163,8 +163,9 @@ func (t *Terraform) loadOutput() error {
 	}
 
 	if len(o.Proxy.Value) > 0 {
-		outputv2.Proxy = o.Proxy.Value[0]
+		outputv2.Proxies = append(outputv2.Proxies, o.Proxy.Value...)
 	}
+
 	if len(o.DBCluster.Value) > 0 {
 		for _, inst := range o.DBCluster.Value {
 			outputv2.DBCluster.Instances = append(outputv2.DBCluster.Instances, DBInstance{
@@ -236,7 +237,7 @@ func (t *Terraform) Output() (*Output, error) {
 
 // HasProxy returns whether a deployment has proxy installed in it or not.
 func (o *Output) HasProxy() bool {
-	return o.Proxy.PrivateIP != ""
+	return len(o.Proxies) > 0
 }
 
 // HasDB returns whether a deployment has database installed in it or not.

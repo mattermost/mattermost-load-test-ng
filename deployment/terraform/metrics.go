@@ -132,9 +132,11 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if t.output.HasProxy() {
-		host := "proxy"
-		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
-		hosts += fmt.Sprintf("%s %s\n", t.output.Proxy.PrivateIP, host)
+		for i, val := range t.output.Proxies {
+			host := fmt.Sprintf("proxy-%d", i)
+			nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+			hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
+		}
 	}
 
 	if t.output.HasElasticSearch() {

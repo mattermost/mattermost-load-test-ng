@@ -150,7 +150,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
 	}
 	if output.HasProxy() {
-		fmt.Printf(" - %s\n", output.Proxy.Tags.Name)
+		for _, inst := range output.Proxies {
+			fmt.Printf(" - %s\n", inst.Tags.Name)
+		}
 	}
 	if output.HasMetrics() {
 		fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)

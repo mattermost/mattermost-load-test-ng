@@ -56,9 +56,9 @@ func TestGetServerURL(t *testing.T) {
 				Instances: []Instance{{
 					PrivateIP: "localhost",
 				}},
-				Proxy: Instance{
+				Proxies: []Instance{{
 					PrivateIP: "proxy_ip",
-				},
+				}},
 			},
 			config:   &deployment.Config{},
 			expected: "proxy_ip",
@@ -79,9 +79,9 @@ func TestGetServerURL(t *testing.T) {
 				Instances: []Instance{{
 					PrivateIP: "localhost",
 				}},
-				Proxy: Instance{
+				Proxies: []Instance{{
 					PrivateIP: "proxy_ip",
-				},
+				}},
 			},
 			config: &deployment.Config{
 				SiteURL: "ltserver",
@@ -93,9 +93,9 @@ func TestGetServerURL(t *testing.T) {
 				Instances: []Instance{{
 					PrivateIP: "localhost",
 				}},
-				Proxy: Instance{
+				Proxies: []Instance{{
 					PrivateIP: "proxy_ip",
-				},
+				}},
 			},
 			config: &deployment.Config{
 				SiteURL:   "siteurl",

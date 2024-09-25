@@ -113,10 +113,15 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
-	// Match against the proxy or metrics servers, as well as convenient aliases.
+	// Match against proxy names
+	for _, inst := range output.Proxies {
+		if resource == inst.Tags.Name {
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+		}
+	}
+
+	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
-	case "proxy", output.Proxy.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.Proxy.PublicIP)), nil
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
 		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
 	}
@@ -135,8 +140,8 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	case "grafana":
 		url += output.MetricsServer.PublicDNS + ":3000"
 	case "mattermost":
-		if output.Proxy.PublicDNS != "" {
-			url += output.Proxy.PublicDNS
+		if output.HasProxy() {
+			url += output.Proxies[0].PublicDNS
 		} else {
 			url += output.Instances[0].PublicDNS + ":8065"
 		}
@@ -298,7 +303,9 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	if !output.HasProxy() {
 		url = url + ":8065"
 	} else if deploymentConfig.SiteURL == "" {
-		url = output.Proxy.PrivateIP
+		// It's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
+		// So we can safely take the IP of the first entry.
+		url = output.Proxies[0].PrivateIP
 	}
 
 	return url
