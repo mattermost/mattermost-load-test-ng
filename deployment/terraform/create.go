@@ -31,12 +31,14 @@ import (
 	"github.com/mattermost/mattermost/server/v8/config"
 )
 
-const cmdExecTimeoutMinutes = 120
-
 const (
 	latestReleaseURL = "https://latest.mattermost.com/mattermost-enterprise-linux"
 	filePrefix       = "file://"
 	releaseSuffix    = "tar.gz"
+
+	cmdExecTimeoutMinutes = 120
+
+	gossipPort = 8074
 )
 
 // requiredVersion specifies the supported versions of Terraform,
@@ -246,7 +248,10 @@ func (t *Terraform) Create(initData bool) error {
 			siteURL = "http://" + t.config.SiteURL + ":8065"
 		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
-			siteURL = "http://" + t.output.Proxy.PublicDNS
+			// This case will only succeed if siteURL is empty.
+			// And it's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
+			// So we can safely take the DNS of the first entry.
+			siteURL = "http://" + t.output.Proxies[0].PublicDNS
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
 		default:
 			siteURL = "http://" + t.output.Instances[0].PublicDNS + ":8065"
@@ -261,9 +266,12 @@ func (t *Terraform) Create(initData bool) error {
 		// hostname that only instances know how to resolve
 		pingURL := t.output.Instances[0].PublicDNS + ":8065"
 		if t.output.HasProxy() {
-			// Updating the nginx config on proxy server
-			t.setupProxyServer(extAgent)
-			pingURL = t.output.Proxy.PublicDNS
+			for _, inst := range t.output.Proxies {
+				// Updating the nginx config on proxy server
+				t.setupProxyServer(extAgent, inst.PublicDNS)
+			}
+			// We can ping the server through any of the proxies, doesn't matter here.
+			pingURL = t.output.Proxies[0].PublicDNS
 		}
 
 		if err := pingServer("http://" + pingURL); err != nil {
@@ -410,26 +418,18 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		{srcData: strings.TrimSpace(fmt.Sprintf(serviceFile, os.Getenv("MM_SERVICEENVIRONMENT"))), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 		{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+		{srcData: strings.TrimSpace(fmt.Sprintf(netpeekServiceFile, gossipPort)), dstPath: "/lib/systemd/system/netpeek.service"},
 	}
 
-	// Specify a hosts file when the SiteURL is set, so that it points to
-	// either the proxy IP or, if there's no proxy, to localhost.
+	// If SiteURL is set, update /etc/hosts to point to the correct IP
 	if t.config.SiteURL != "" {
-		output, err := t.Output()
+		// Here it's fine to just use the first proxy because this is
+		// only to resolve permalinks.
+		appHostsFile, err := t.getAppHostsFile(0)
 		if err != nil {
 			return err
 		}
 
-		// The new entry in /etc/hosts will make SiteURL point to:
-		// - The first instance's IP if there's a single node
-		// - The proxy's IP if there's more than one node
-		ip := output.Instances[0].PrivateIP
-		if output.HasProxy() {
-			ip = output.Proxy.PrivateIP
-		}
-
-		proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
-		appHostsFile := fmt.Sprintf(appHosts, proxyHost)
 		batch = append(batch,
 			uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts"},
 		)
@@ -485,6 +485,14 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 
 		if out, err := sshc.UploadFile(uploadPath, "/opt/mattermost/bin/mattermost", false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
+		}
+	}
+
+	if t.config.EnableNetPeekMetrics {
+		mlog.Info("Starting netpeek service", mlog.String("host", ip))
+		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo service netpeek restart"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 		}
 	}
 
@@ -761,9 +769,7 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 	return &descOutput.InstanceTypes[0], nil
 }
 
-func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
-	ip := t.output.Proxy.PublicDNS
-
+func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, ip string) {
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
@@ -1003,7 +1009,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.TeamSettings.EnableOpenServer = model.NewPointer(true)
 	cfg.TeamSettings.MaxNotificationsPerChannel = model.NewPointer(int64(1000))
 
-	cfg.ClusterSettings.GossipPort = model.NewPointer(8074)
+	cfg.ClusterSettings.GossipPort = model.NewPointer(gossipPort)
 	cfg.ClusterSettings.Enable = model.NewPointer(true)
 	cfg.ClusterSettings.ClusterName = model.NewPointer(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewPointer(false)

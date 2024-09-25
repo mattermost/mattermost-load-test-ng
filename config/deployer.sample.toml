@@ -12,6 +12,7 @@ MattermostDownloadURL = 'https://latest.mattermost.com/mattermost-enterprise-lin
 MattermostLicenseFile = ''
 S3BucketDumpURI = ''
 SiteURL = ''
+EnableNetPeekMetrics = false
 
 # Agent configuration
 AgentInstanceCount = 2

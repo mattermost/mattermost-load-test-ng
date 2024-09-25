@@ -117,11 +117,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	var hosts string
-	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets, cloudwatchTargets []string
+	var mmTargets, nodeTargets, esTargets, ltTargets, keycloakTargets, redisTargets, cloudwatchTargets, netpeekTargets []string
 	for i, val := range t.output.Instances {
 		host := fmt.Sprintf("app-%d", i)
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+		netpeekTargets = append(netpeekTargets, fmt.Sprintf("%s:9045", host))
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	for i, val := range t.output.Agents {
@@ -131,9 +132,11 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if t.output.HasProxy() {
-		host := "proxy"
-		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
-		hosts += fmt.Sprintf("%s %s\n", t.output.Proxy.PrivateIP, host)
+		for i, val := range t.output.Proxies {
+			host := fmt.Sprintf("proxy-%d", i)
+			nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+			hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
+		}
 	}
 
 	if t.output.HasElasticSearch() {
@@ -248,6 +251,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(keycloakTargets), ""),
 		strings.Join(quoteAll(redisTargets), ","),
 		strings.Join(quoteAll(cloudwatchTargets), ","),
+		strings.Join(quoteAll(netpeekTargets), ","),
 	)
 	rdr := strings.NewReader(prometheusConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/prometheus/prometheus.yml", true); err != nil {

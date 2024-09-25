@@ -27,7 +27,7 @@ func displayInfo(output *Output) {
 
 	if output.HasAppServers() {
 		if output.HasProxy() {
-			fmt.Println("Mattermost URL: http://" + output.Proxy.PublicDNS)
+			fmt.Println("Mattermost URL: http://" + output.Proxies[0].PublicDNS)
 		} else {
 			fmt.Println("Mattermost URL: http://" + output.Instances[0].PublicDNS + ":8065")
 		}
@@ -54,7 +54,14 @@ func displayInfo(output *Output) {
 	}
 
 	if output.HasProxy() {
-		fmt.Println("Proxy: " + output.Proxy.PublicIP)
+		if len(output.Proxies) > 1 {
+			fmt.Println("Proxies:")
+		} else {
+			fmt.Println("Proxy:")
+		}
+		for _, inst := range output.Proxies {
+			fmt.Println("- " + inst.Tags.Name + ": " + inst.PublicIP)
+		}
 	}
 
 	if output.HasMetrics() {
