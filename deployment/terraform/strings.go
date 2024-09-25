@@ -55,6 +55,8 @@ scrape_configs:
     static_configs:
         - targets: [%s]
   - job_name: cloudwatch
+        - targets: [%s]
+  - job_name: netpeek
     static_configs:
         - targets: [%s]
 `
@@ -510,4 +512,19 @@ KC_DATABASE=keycloak`
 
 const prometheusNodeExporterConfig = `
 ARGS="--collector.ethtool"
+`
+
+const netpeekServiceFile = `
+[Unit]
+Description=netpeek
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c '/usr/local/bin/netpeek -iface "$(ip route show to default | awk \'{print $5}\')" -port %d'
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
 `

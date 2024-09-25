@@ -485,6 +485,15 @@ This config is used for tests that require an existing database dump that contai
 
 The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
 
+## EnableNetPeekMetrics
+
+*bool*
+
+If true, enables the collection of fine grained networking metrics through the [netpeek](https://github.com/streamer45/netpeek) utility.
+
+> [!WARNING]
+> These metrics can introduce a not negligible computational overhead on high traffic deployments.
+
 ## PyroscopeSettings
 
 ### EnableAppProfiling

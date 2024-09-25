@@ -2684,6 +2684,119 @@
       ],
       "title": "RDS - Freeable memory",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P207FEC8D12DA302B"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 90
+      },
+      "id": 40,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P207FEC8D12DA302B"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(netpeek_rx_bytes_total{instance=~\"$server\"}[1m])) by (instance,protocol))*8",
+          "instant": false,
+          "legendFormat": "RX({{`{{protocol}}`}}) - {{`{{instance}}`}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P207FEC8D12DA302B"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(netpeek_tx_bytes_total{instance=~\"$server\"}[1m])) by (instance,protocol))*8",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "TX({{`{{protocol}}`}}) - {{`{{instance}}`}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Intra-cluster traffic",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
