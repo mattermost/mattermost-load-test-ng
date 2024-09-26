@@ -11,9 +11,12 @@ provider "aws" {
   region  = var.aws_region
   profile = var.aws_profile
   default_tags {
-    tags = {
-      ClusterName = var.cluster_name
-    }
+    tags = merge(
+      {
+        "ClusterName" = var.cluster_name
+      },
+      var.custom_tags
+    )
   }
 }
 
@@ -104,7 +107,7 @@ resource "aws_iam_role" "metrics_role" {
 }
 
 resource "aws_iam_instance_profile" "metrics_profile" {
-  name = "metrics_profile"
+  name = "${var.cluster_name}-metrics_profile"
   role = aws_iam_role.metrics_role.name
 }
 
