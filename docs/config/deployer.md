@@ -320,6 +320,12 @@ Example:
     ]
 ```
 
+### EngineVersion
+
+*string*
+
+Specifies the version of the database engine. If left empty, the defaults will be used.
+
 ## ExternalDBSettings
 
 ### DriverName

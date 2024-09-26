@@ -239,6 +239,8 @@ type TerraformDBSettings struct {
 	// If ClusterIdentifier is not empty, DBName should be set to the name of the database in such cluster.
 	// If ClusterIdentifier is empty, the database created will use DBName as its name.
 	DBName string `default:""`
+	// EngineVersion specifies the version of the database engine.
+	EngineVersion string `default:""`
 }
 
 // ExternalDBSettings contains the necessary data
