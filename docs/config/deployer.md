@@ -522,3 +522,9 @@ Enable continuous profiling of all the agent instances.
 *int*
 
 Set the pprof block profile rate. This value applies to both agent and Mattermost server processes.
+
+## CustomTags
+
+*map[string]string*
+
+Optional map of key-value pairs, used to tag all deployed resources in AWS. Check [AWS documentation on tags](https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/what-are-tags.html) for more information and best practices.
