@@ -115,6 +115,21 @@ type Config struct {
 	StorageSizes StorageSizes
 	// EnableNetPeekMetrics enables fine grained networking metrics collection through netpeek utility.
 	EnableNetPeekMetrics bool `default:"false"`
+	// CustomTags is an optional list of key-value pairs, which will be used as default
+	// tags for all resources deployed
+	CustomTags TerraformMap
+}
+
+// TerraformMap is a map of string -> string that serializes to the format expected by
+// the Terraform AWS provider when formatted as a string
+type TerraformMap map[string]string
+
+func (t TerraformMap) String() string {
+	var pairs []string
+	for key, value := range t {
+		pairs = append(pairs, fmt.Sprintf("%s = %q", key, value))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
 }
 
 type StorageSizes struct {
