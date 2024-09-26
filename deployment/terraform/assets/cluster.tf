@@ -37,6 +37,8 @@ locals {
 data "aws_subnets" "selected" {
   filter {
     name   = "vpc-id"
+    // TODO: Any specific reason we use a specific VPC for ES only here?
+    // Should we use the `cluster_vpc_id` variable instead and remove `es_vpc`?
     values = [var.es_vpc]
   }
 }
