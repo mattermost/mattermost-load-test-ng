@@ -47,7 +47,8 @@
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": true,
     "DBParameters": [],
-    "ClusterIdentifier": ""
+    "ClusterIdentifier": "",
+    "EngineVersion": ""
   },
   "ExternalDBSettings": {
     "DriverName": "cockroach",
