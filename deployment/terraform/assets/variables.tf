@@ -180,3 +180,7 @@ variable "aws_region" {
 
 variable "aws_ami" {
 }
+
+variable "custom_tags" {
+  type = map(string)
+}

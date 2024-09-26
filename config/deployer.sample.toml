@@ -140,3 +140,5 @@ InstanceType = 'db.r6g.large'
 Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
 EngineVersion = ''
+
+[CustomTags]
