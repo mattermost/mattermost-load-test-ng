@@ -98,10 +98,15 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		}
 	}()
 
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		mlog.Info(scanner.Text())
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			mlog.Info(scanner.Text())
+		}
+	}()
+
 	// No need to check for scanner.Error as cmd.Wait() already does that.
 	wg.Wait()
 

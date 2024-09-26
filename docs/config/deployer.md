@@ -19,7 +19,6 @@ AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazo
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
 
 
-
 ## ClusterName
 
 *string*
@@ -237,6 +236,12 @@ Example:
     ]
 ```
 
+### EngineVersion
+
+*string*
+
+Specifies the version of the database engine. If left empty, the defaults will be used.
+
 ## ExternalDBSettings
 
 ### DriverName
@@ -323,8 +328,8 @@ Whether to use SSE or not.
 
 *string*
 
-The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.  
-The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).  
+The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.
+The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).
 Only the binary gets replaced, and the rest of the build comes from the latest stable release.
 
 ## MattermostLicenseFile
