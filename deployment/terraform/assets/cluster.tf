@@ -290,6 +290,7 @@ resource "aws_security_group" "app" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port   = 22
@@ -329,6 +330,7 @@ resource "aws_security_group" "app_gossip" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 8074
@@ -366,6 +368,7 @@ resource "aws_security_group" "app_gossip" {
 resource "aws_security_group" "db" {
   count = var.app_instance_count > 0 ? 1 : 0
   name  = "${var.cluster_name}-db-security-group"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 3306
@@ -438,6 +441,7 @@ resource "aws_security_group_rule" "agent-node-exporter" {
 resource "aws_security_group" "metrics" {
   count = var.app_instance_count > 0 ? 1 : 0
   name  = "${var.cluster_name}-metrics-security-group"
+  vpc_id      = var.cluster_vpc_id
 }
 
 resource "aws_security_group_rule" "metrics-ssh" {
@@ -493,6 +497,7 @@ resource "aws_security_group_rule" "metrics-egress" {
 resource "aws_security_group" "redis" {
   name        = "${var.cluster_name}-redis-security-group"
   description = "Security group for redis instance"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 6379
@@ -507,6 +512,7 @@ resource "aws_security_group" "redis" {
 resource "aws_security_group" "elastic" {
   name        = "${var.cluster_name}-elastic-security-group"
   description = "Security group for elastic instance"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 443
@@ -534,6 +540,7 @@ resource "aws_security_group" "proxy" {
   count       = var.proxy_instance_count
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port   = 80
@@ -651,6 +658,7 @@ resource "aws_security_group" "keycloak" {
   count       = var.keycloak_enabled ? 1 : 0
   name        = "${var.cluster_name}-keycloak-security-group"
   description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
 
   egress {
     from_port   = 0
