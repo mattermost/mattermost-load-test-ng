@@ -32,7 +32,7 @@ locals {
 data "aws_subnets" "selected" {
   filter {
     name   = "vpc-id"
-    values = [var.es_vpc]
+    values = [var.cluster_vpc_id]
   }
 }
 
@@ -57,6 +57,7 @@ resource "aws_instance" "app_server" {
   instance_type = var.app_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.app_instance_count
+  subnet_id     = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
@@ -93,6 +94,7 @@ resource "aws_instance" "metrics_server" {
   instance_type = "t3.xlarge"
   count         = var.app_instance_count > 0 ? 1 : 0
   key_name      = aws_key_pair.key.id
+  subnet_id     = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
@@ -116,6 +118,8 @@ resource "aws_instance" "proxy_server" {
   instance_type               = var.proxy_instance_type
   count                       = var.proxy_instance_count
   associate_public_ip_address = true
+  subnet_id                   = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
+
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
   ]
@@ -271,7 +275,8 @@ resource "aws_instance" "loadtest_agent" {
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
-  subnet_id                   = var.cluster_subnet_id
+  subnet_id                   = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
+
   associate_public_ip_address = true
 
   vpc_security_group_ids = [aws_security_group.agent.id]
@@ -587,6 +592,7 @@ resource "aws_instance" "job_server" {
   instance_type = var.job_server_instance_type
   key_name      = aws_key_pair.key.id
   count         = var.job_server_instance_count
+  subnet_id     = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
   ]
@@ -631,6 +637,7 @@ resource "aws_instance" "keycloak" {
   instance_type = var.keycloak_instance_type
   count         = var.keycloak_enabled ? 1 : 0
   key_name      = aws_key_pair.key.id
+  subnet_id     = var.cluster_subnet_id != "" ? var.cluster_subnet_id : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,
