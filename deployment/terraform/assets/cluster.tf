@@ -105,7 +105,7 @@ resource "aws_iam_role" "metrics_role" {
 }
 
 resource "aws_iam_instance_profile" "metrics_profile" {
-  name = "metrics_profile"
+  name = "${var.cluster_name}-metrics_profile"
   role = aws_iam_role.metrics_role.name
 }
 
