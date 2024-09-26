@@ -217,7 +217,7 @@ resource "aws_rds_cluster" "db_cluster" {
   skip_final_snapshot = true
   apply_immediately   = true
   engine              = var.db_instance_engine
-  engine_version      = var.db_engine_version[var.db_instance_engine]
+  engine_version      = var.db_engine_version != "" ? var.db_engine_version : var.db_default_engine_version[var.db_instance_engine]
 
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
