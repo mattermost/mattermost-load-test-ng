@@ -166,6 +166,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	if output.HasMetrics() {
 		fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)
 	}
+	if output.HasKeycloak() {
+		fmt.Printf(" - %s\n", output.KeycloakServer.Tags.Name)
+	}
 	return nil
 }
 

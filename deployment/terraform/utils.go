@@ -123,6 +123,10 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
+	if output.KeycloakServer.Tags.Name == resource {
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PublicIP)), nil
+	}
+
 	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
