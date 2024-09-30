@@ -19,9 +19,6 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 > [!TIP]
 > Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
 
-> [!NOTE]
-> RDS clusters generally have a multi-az requirement which means it's not possible to force all instances (e.g. writer, readers) to be on the same availability zone.
-
 ## AWSAMI
 
 *string*
