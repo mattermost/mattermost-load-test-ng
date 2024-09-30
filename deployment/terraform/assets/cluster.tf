@@ -61,10 +61,12 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami
-  instance_type = var.app_instance_type
-  key_name      = aws_key_pair.key.id
-  count         = var.app_instance_count
+  ami                         = var.aws_ami
+  instance_type               = var.app_instance_type
+  key_name                    = aws_key_pair.key.id
+  count                       = var.app_instance_count
+  availability_zone           = var.aws_az
+
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
@@ -154,10 +156,11 @@ resource "aws_instance" "metrics_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami
-  instance_type = "t3.xlarge"
-  count         = var.app_instance_count > 0 ? 1 : 0
-  key_name      = aws_key_pair.key.id
+  ami               = var.aws_ami
+  instance_type     = "t3.xlarge"
+  count             = var.app_instance_count > 0 ? 1 : 0
+  key_name          = aws_key_pair.key.id
+  availability_zone = var.aws_az
 
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
@@ -179,10 +182,13 @@ resource "aws_instance" "proxy_server" {
   tags = {
     Name = "${var.cluster_name}-proxy-${count.index}"
   }
+
   ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
   count                       = var.proxy_instance_count
   associate_public_ip_address = true
+  availability_zone           = var.aws_az
+
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
   ]
@@ -263,16 +269,16 @@ EOF
 }
 
 resource "aws_elasticache_cluster" "redis_server" {
-  cluster_id           = "${var.cluster_name}-redis"
-  engine               = "redis"
-  node_type            = var.redis_node_type
-  count                = var.redis_enabled ? 1 : 0
-  num_cache_nodes      = 1
-  parameter_group_name = var.redis_param_group_name
-  engine_version       = var.redis_engine_version
-  port                 = 6379
-
-  security_group_ids = [aws_security_group.redis[0].id]
+  cluster_id                   = "${var.cluster_name}-redis"
+  engine                       = "redis"
+  node_type                    = var.redis_node_type
+  count                        = var.redis_enabled ? 1 : 0
+  num_cache_nodes              = 1
+  parameter_group_name         = var.redis_param_group_name
+  engine_version               = var.redis_engine_version
+  port                         = 6379
+  security_group_ids           = [aws_security_group.redis[0].id]
+  availability_zone            = var.aws_az
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -307,6 +313,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   auto_minor_version_upgrade   = false
   performance_insights_enabled = var.db_enable_performance_insights
   db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
+  availability_zone            = var.aws_az
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
@@ -339,6 +346,7 @@ resource "aws_instance" "loadtest_agent" {
   count                       = var.agent_instance_count
   subnet_id                   = var.cluster_subnet_id
   associate_public_ip_address = true
+  availability_zone           = var.aws_az
 
   vpc_security_group_ids = [aws_security_group.agent.id]
 
@@ -660,10 +668,12 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami
-  instance_type = var.job_server_instance_type
-  key_name      = aws_key_pair.key.id
-  count         = var.job_server_instance_count
+  ami                         = var.aws_ami
+  instance_type               = var.job_server_instance_type
+  key_name                    = aws_key_pair.key.id
+  count                       = var.job_server_instance_count
+  availability_zone           = var.aws_az
+
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
   ]
@@ -704,10 +714,11 @@ resource "aws_instance" "keycloak" {
     host = self.public_ip
   }
 
-  ami           = var.aws_ami
-  instance_type = var.keycloak_instance_type
-  count         = var.keycloak_enabled ? 1 : 0
-  key_name      = aws_key_pair.key.id
+  ami                         = var.aws_ami
+  instance_type               = var.keycloak_instance_type
+  count                       = var.keycloak_enabled ? 1 : 0
+  key_name                    = aws_key_pair.key.id
+  availability_zone           = var.aws_az
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,

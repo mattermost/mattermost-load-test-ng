@@ -12,12 +12,18 @@ AWS profile to use for the deployment. Also used for all AWS CLI commands run lo
 
 AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
 
+## AWSAvailabilityZone
+
+AWS Availability Zone in which to deploy instances. See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
+
+> [!TIP]
+> Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
+
 ## AWSAMI
 
 *string*
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
-
 
 
 ## ClusterName
