@@ -55,6 +55,7 @@ scrape_configs:
     static_configs:
         - targets: [%s]
   - job_name: cloudwatch
+    static_configs:
         - targets: [%s]
   - job_name: netpeek
     static_configs:
