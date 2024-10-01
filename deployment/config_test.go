@@ -129,8 +129,9 @@ func TestTerraformMapString(t *testing.T) {
 	emptyMap := make(TerraformMap)
 
 	testCases := []struct {
-		actual   TerraformMap
-		expected string
+		actual    TerraformMap
+		expected  string
+		expected2 string
 	}{
 		{
 			actual: TerraformMap{
@@ -143,7 +144,8 @@ func TestTerraformMapString(t *testing.T) {
 				"uno": "1",
 				"dos": "2",
 			},
-			expected: "{uno = \"1\", dos = \"2\"}",
+			expected:  "{uno = \"1\", dos = \"2\"}",
+			expected2: "{dos = \"2\", uno = \"1\"}",
 		},
 		{
 			actual:   nilMap,
@@ -156,7 +158,10 @@ func TestTerraformMapString(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		require.Equal(t, testCase.expected, testCase.actual.String())
-	}
+		actual := testCase.actual.String()
 
+		// map order is non deterministic
+		equals := testCase.expected == actual || (testCase.expected2 != "" && testCase.expected2 == actual)
+		require.True(t, equals)
+	}
 }

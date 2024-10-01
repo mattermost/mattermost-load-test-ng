@@ -25,7 +25,7 @@ type Config struct {
 	AWSRegion string `default:"us-east-1"`
 	// AWSAvailabilityZone defines the Availability Zone
 	// in which instances should be deployed.
-	AWSAvailabilityZone string `default:"us-east-1a"`
+	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// ClusterName is the name of the cluster.
