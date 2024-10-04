@@ -147,5 +147,6 @@
     "BlockProfileRate": 0
   },
   "CustomTags": {
-  }
+  },
+  "MetricsInstanceType": "t3.xlarge"
 }

@@ -267,6 +267,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
 		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 		"-var", fmt.Sprintf("custom_tags=%s", t.config.CustomTags),
+		"-var", fmt.Sprintf("metrics_instance_type=%s", t.config.MetricsInstanceType),
 	}
 }
 

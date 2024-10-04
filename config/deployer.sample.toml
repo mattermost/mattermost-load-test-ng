@@ -142,3 +142,5 @@ Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
 
 [CustomTags]
+
+MetricsInstanceType = 't3.xlarge'

@@ -121,6 +121,8 @@ type Config struct {
 	// CustomTags is an optional list of key-value pairs, which will be used as default
 	// tags for all resources deployed
 	CustomTags TerraformMap
+	// Type of the EC2 instance for metrics.
+	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 }
 
 // TerraformMap is a map of string -> string that serializes to the format expected by
