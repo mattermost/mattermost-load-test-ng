@@ -538,6 +538,15 @@ const otelcolOperatorAppAgent = `
         severity:
           parse_from: attributes.level`
 
+const otelcolOperatorProxy = `
+      - type: regex_parser
+        regex: '^(?P<time>\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<sev>[a-z]*)\] (?P<msg>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y/%m/%d %H:%M:%S'
+        severity:
+          parse_from: attributes.sev`
+
 const otelcolConfigTmpl = `
 receivers:
   otlp:

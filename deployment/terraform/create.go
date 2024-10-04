@@ -268,7 +268,7 @@ func (t *Terraform) Create(initData bool) error {
 		if t.output.HasProxy() {
 			for _, inst := range t.output.Proxies {
 				// Updating the nginx config on proxy server
-				t.setupProxyServer(extAgent, inst.PublicDNS)
+				t.setupProxyServer(extAgent, inst)
 			}
 			// We can ping the server through any of the proxies, doesn't matter here.
 			pingURL = t.output.Proxies[0].PublicDNS
@@ -786,7 +786,9 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 	return &descOutput.InstanceTypes[0], nil
 }
 
-func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, ip string) {
+func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) {
+	ip := instance.PublicDNS
+
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
@@ -846,6 +848,18 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, ip string) {
 			return
 		}
 
+		otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
+			"IncludeFiles":      "/var/log/nginx/error.log",
+			"ServiceName":       "proxy",
+			"ServiceInstanceId": instance.Tags.Name,
+			"MetricsIP":         t.output.MetricsServer.PrivateIP,
+			"Operator":          otelcolOperatorProxy,
+		})
+		if err != nil {
+			mlog.Error("unable to render otelcol config template", mlog.String("proxy", instance.Tags.Name), mlog.Err(err))
+			return
+		}
+
 		batch := []uploadInfo{
 			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
 			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
@@ -854,14 +868,21 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, ip string) {
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+			{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
 			return
 		}
 
+		cmd := "sudo systemctl restart otelcol-contrib"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
+			return
+		}
+
 		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
-		cmd := fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
+		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
