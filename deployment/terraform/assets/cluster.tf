@@ -593,7 +593,7 @@ resource "aws_security_group" "redis" {
     security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
   }
 
-  count = 1
+  count = var.redis_enabled ? 1 : 0
 }
 
 resource "aws_security_group" "elastic" {
