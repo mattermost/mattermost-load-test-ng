@@ -139,11 +139,28 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
+			otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
+				"IncludeFiles": strings.Join([]string{
+					"/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+					"/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+				}, ", "),
+				"ServiceName":       "agent",
+				"ServiceInstanceId": instance.Tags.Name,
+				"MetricsIP":         t.output.MetricsServer.PrivateIP,
+				"Operator":          otelcolOperatorAppAgent,
+			})
+			if err != nil {
+				mlog.Error("unable to render otelcol config template", mlog.Int("agent", agentNumber), mlog.Err(err))
+				foundErr.Store(true)
+				return
+			}
+
 			batch := []uploadInfo{
 				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+				{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
 			}
 
 			if t.config.UsersFilePath != "" {
@@ -164,6 +181,13 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			if err := uploadBatch(sshc, batch); err != nil {
 				mlog.Error("error uploading batch", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			cmd = "sudo systemctl restart otelcol-contrib"
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.Int("agent", agentNumber), mlog.String("cmd", cmd), mlog.String("out", string(out)), mlog.Err(err))
 				foundErr.Store(true)
 				return
 			}
