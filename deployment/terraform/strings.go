@@ -529,3 +529,43 @@ RestartSec=1
 [Install]
 WantedBy=multi-user.target
 `
+
+const otelcolOperatorAppAgent = `
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%L Z'
+        severity:
+          parse_from: attributes.level`
+
+const otelcolConfigTmpl = `
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog:
+    include: [ {{.IncludeFiles}} ]
+    resource:
+      service.name: "{{.ServiceName}}"
+      service.instance.id: "{{.ServiceInstanceId}}"
+    operators: {{.Operator}}
+
+exporters:
+  otlphttp/logs:
+    endpoint: "http://{{.MetricsIP}}:3100/otlp"
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [otlphttp/logs,debug]
+`
