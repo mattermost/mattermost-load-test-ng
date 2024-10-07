@@ -176,13 +176,13 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 		return err
 	}
 
-	if !output.HasAppServers() {
-		return errors.New("no active deployment found")
-	}
-
 	clients, err := createClients(output)
 	if err != nil {
 		return err
+	}
+
+	if len(clients) == 0 {
+		return errors.New("no active deployment found")
 	}
 
 	var collectFiles []collectFileInfo
