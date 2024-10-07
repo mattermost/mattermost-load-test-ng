@@ -62,10 +62,6 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 
 	mlog.Info("bounded load-test has completed")
 
-	// TODO: remove this once MM-30326 has been merged and a new release
-	// published.
-	status.StopTime = time.Now()
-
 	return status, nil
 }
 
