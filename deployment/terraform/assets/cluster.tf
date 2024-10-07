@@ -763,7 +763,7 @@ resource "aws_instance" "keycloak" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.private_ip
+    host = self.private_dns
   }
 
   ami               = var.aws_ami
@@ -772,6 +772,7 @@ resource "aws_instance" "keycloak" {
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
   subnet_id         = (length(var.cluster_subnet_ids.keycloak) > 0) ? element(tolist(var.cluster_subnet_ids.keycloak), count.index) : null
+
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,
