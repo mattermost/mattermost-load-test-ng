@@ -98,13 +98,13 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		go func() {
 			defer wg.Done()
 
-			sshc, err := extAgent.NewClient(instance.PublicIP)
+			sshc, err := extAgent.NewClient(instance.PrivateIP)
 			if err != nil {
 				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return
 			}
-			mlog.Info("Configuring agent", mlog.String("ip", instance.PublicIP), mlog.Int("agent", agentNumber))
+			mlog.Info("Configuring agent", mlog.String("ip", instance.PrivateIP), mlog.Int("agent", agentNumber))
 			if uploadBinary {
 				dstFilePath := "/home/ubuntu/tmp.tar.gz"
 				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
@@ -207,7 +207,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].PrivateIP
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
 		return err
