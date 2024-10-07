@@ -117,6 +117,8 @@ resource "aws_opensearch_domain" "es_server" {
   ]
 
   log_publishing_options {
+    # BRANCH: disable log publishing manually due to MM-59316
+    enabled = false
     cloudwatch_log_group_arn = aws_cloudwatch_log_group.es_log_group.arn
     log_type                 = "ES_APPLICATION_LOGS"
   }
