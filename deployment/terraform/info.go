@@ -27,9 +27,9 @@ func displayInfo(output *Output) {
 
 	if output.HasAppServers() {
 		if output.HasProxy() {
-			fmt.Println("Mattermost URL: http://" + output.Proxies[0].PublicDNS)
+			fmt.Println("Mattermost URL: http://" + output.Proxies[0].PrivateDNS)
 		} else {
-			fmt.Println("Mattermost URL: http://" + output.Instances[0].PublicDNS + ":8065")
+			fmt.Println("Mattermost URL: http://" + output.Instances[0].PrivateDNS + ":8065")
 		}
 		fmt.Println("App Server(s):")
 		for _, instance := range output.Instances {
@@ -71,10 +71,7 @@ func displayInfo(output *Output) {
 	}
 	if output.HasKeycloak() {
 		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PublicIP)
-		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PublicDNS + ":8080/")
-		if len(output.KeycloakDatabaseCluster.Instances) > 0 {
-			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Instances[0].Endpoint)
-		}
+		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PrivateDNS + ":8080/")
 	}
 	if output.HasDB() {
 		fmt.Println("DB Cluster Identifier: ", output.DBCluster.ClusterIdentifier)

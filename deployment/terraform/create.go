@@ -237,13 +237,10 @@ func (t *Terraform) Create(initData bool) error {
 			siteURL = "http://" + t.config.SiteURL + ":8065"
 		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
-			// This case will only succeed if siteURL is empty.
-			// And it's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
-			// So we can safely take the DNS of the first entry.
-			siteURL = "http://" + t.output.Proxies[0].PublicDNS
+			siteURL = "http://" + t.output.Proxies[0].PrivateDNS
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
 		default:
-			siteURL = "http://" + t.output.Instances[0].PublicDNS + ":8065"
+			siteURL = "http://" + t.output.Instances[0].PrivateDNS + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
@@ -253,14 +250,14 @@ func (t *Terraform) Create(initData bool) error {
 
 		// The URL to ping cannot be the same as the site URL, since that one could contain a
 		// hostname that only instances know how to resolve
-		pingURL := t.output.Instances[0].PublicDNS + ":8065"
+		pingURL := t.output.Instances[0].PrivateDNS + ":8065"
 		if t.output.HasProxy() {
 			for _, inst := range t.output.Proxies {
 				// Updating the nginx config on proxy server
 				t.setupProxyServer(extAgent, inst)
 			}
 			// We can ping the server through any of the proxies, doesn't matter here.
-			pingURL = t.output.Proxies[0].PublicDNS
+			pingURL = t.output.Proxies[0].PrivateDNS
 		}
 
 		if err := pingServer("http://" + pingURL); err != nil {

@@ -142,7 +142,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Wait for keycloak to start
-	url := fmt.Sprintf("http://%s:8080/health", t.output.KeycloakServer.PublicDNS)
+	url := fmt.Sprintf("http://%s:8080/health", t.output.KeycloakServer.PrivateIP)
 	timeout := time.After(120 * time.Second) // yes, is **that** slow
 	for {
 		resp, err := http.Get(url)
@@ -351,7 +351,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 		return fmt.Errorf("error uploading saml-idp.crt: %s - %w", out, err)
 	}
 
-	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080"
+	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PrivateDNS + ":8080"
 
 	cfg.OpenIdSettings.Enable = model.NewPointer(true)
 	cfg.OpenIdSettings.ButtonText = model.NewPointer("OpenID Login")
