@@ -99,31 +99,31 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 			dp := c.deployments[res.deploymentID]
 			t, err := terraform.New(res.deploymentID, dp.config)
 			if err != nil {
-				mlog.Error("Failed to create terraform engine", mlog.Err(err))
+				mlog.Error("Failed to create terraform engine", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				return
 			}
 			output, err := t.Output()
 			if err != nil {
-				mlog.Error("Failed to get terraform output", mlog.Err(err))
+				mlog.Error("Failed to get terraform output", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				return
 			}
 
 			promURL := "http://" + output.MetricsServer.PublicIP + ":9090"
 			helper, err := prometheus.NewHelper(promURL)
 			if err != nil {
-				mlog.Error("Failed to create prometheus.Helper", mlog.Err(err))
+				mlog.Error("Failed to create prometheus.Helper", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				return
 			}
 			g := report.New(res.LoadTests[0].Label, helper, dp.config.Report)
 			baseReport, err := g.Generate(res.LoadTests[0].Status.StartTime, res.LoadTests[0].Status.StopTime)
 			if err != nil {
-				mlog.Error("Error while generating report", mlog.Err(err))
+				mlog.Error("Error while generating report", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				return
 			}
 			g = report.New(res.LoadTests[1].Label, helper, dp.config.Report)
 			newReport, err := g.Generate(res.LoadTests[1].Status.StartTime, res.LoadTests[1].Status.StopTime)
 			if err != nil {
-				mlog.Error("Error while generating report", mlog.Err(err))
+				mlog.Error("Error while generating report", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				return
 			}
 
@@ -139,7 +139,7 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 
 				err := report.Compare(&buf, opts, baseReport, newReport)
 				if err != nil {
-					mlog.Error("Failed to compare reports", mlog.Err(err))
+					mlog.Error("Failed to compare reports", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 				}
 				res.Report = buf.String()
 			}
@@ -149,13 +149,13 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 				title := fmt.Sprintf("Comparison - %d - %s - %s",
 					res.LoadTests[0].loadTestID, res.LoadTests[0].Config.DBEngine, res.LoadTests[0].Config.Type)
 				if err := report.GenerateDashboard(title, baseReport, newReport, &dashboardData); err != nil {
-					mlog.Error("Failed to generate dashboard", mlog.Err(err))
+					mlog.Error("Failed to generate dashboard", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 					return
 				}
 
 				url, err := t.UploadDashboard(dashboardData.String())
 				if err != nil {
-					mlog.Error("Failed to upload dashboard", mlog.Err(err))
+					mlog.Error("Failed to upload dashboard", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
 					return
 				}
 				res.DashboardURL = fmt.Sprintf("http://%s:3000%s", output.MetricsServer.PublicIP, url)
