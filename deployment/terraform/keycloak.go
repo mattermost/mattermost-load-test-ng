@@ -82,7 +82,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		if t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath != "" {
 			mlog.Info("Using provided realm configuration")
 			keycloakRealmFile = t.config.ExternalAuthProviderSettings.KeycloakRealmFilePath
-		}``
+		}
 
 		_, err = sshc.Upload(
 			strings.NewReader(keycloakRealmFile),
