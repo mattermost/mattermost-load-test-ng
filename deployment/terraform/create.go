@@ -210,16 +210,18 @@ func (t *Terraform) Create(initData bool) error {
 	// policies: there can only be 10 such policies per region per account.
 	// Check the docs for more information:
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
-	if err = t.checkCloudWatchLogsPolicy(); err != nil {
-		if err != ErrNotFound {
-			return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
-		}
 
-		mlog.Info("No CloudWatchLogs policy found, creating a new one")
-		if err := t.createCloudWatchLogsPolicy(); err != nil {
-			return fmt.Errorf("failed creating CloudWatchLogs policy")
-		}
-	}
+	// BRANCH: disabling this due to being disabled in the terraform code
+	// if err = t.checkCloudWatchLogsPolicy(); err != nil {
+	// 	if err != ErrNotFound {
+	// 		return fmt.Errorf("failed to check CloudWatchLogs policy: %w", err)
+	// 	}
+
+	// 	mlog.Info("No CloudWatchLogs policy found, creating a new one")
+	// 	if err := t.createCloudWatchLogsPolicy(); err != nil {
+	// 		return fmt.Errorf("failed creating CloudWatchLogs policy")
+	// 	}
+	// }
 
 	if t.output.HasMetrics() {
 		// Setting up metrics server.
