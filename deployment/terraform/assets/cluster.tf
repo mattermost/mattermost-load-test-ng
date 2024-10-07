@@ -640,7 +640,7 @@ resource "aws_instance" "keycloak" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = self.private_ip
   }
 
   ami           = var.aws_ami
