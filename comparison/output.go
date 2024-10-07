@@ -39,6 +39,7 @@ type DeploymentInfo struct {
 // LoadTestResult holds information regarding a load-test
 // performed during a comparison.
 type LoadTestResult struct {
+	Failed bool               // A flag indicating whether the load-test failed
 	Label  string             // A label for the load-test.
 	Config LoadTestConfig     // The config object associated with the load-test.
 	Status coordinator.Status // The final status of the load-test.
@@ -88,6 +89,12 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 	for res := range resultsCh {
 		go func(res Result) {
 			defer wg.Done()
+
+			if len(res.LoadTests) < 2 || res.LoadTests[0].Failed || res.LoadTests[1].Failed {
+				mlog.Error("unable to generate results", mlog.String("deployment ID", res.deploymentID))
+				resCh <- res
+				return
+			}
 
 			dp := c.deployments[res.deploymentID]
 			t, err := terraform.New(res.deploymentID, dp.config)

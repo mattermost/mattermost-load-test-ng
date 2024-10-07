@@ -67,6 +67,13 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 	var content string
 
 	for i, res := range results {
+		if len(res.LoadTests) < 2 || res.LoadTests[0].Failed || res.LoadTests[1].Failed {
+			content += "==================================================\n"
+			content += fmt.Sprintf("Deployment %d: No results generated\n", i)
+			content += "==================================================\n\n"
+			continue
+		}
+
 		content += "=================================================="
 		content += "Comparison result:"
 		content += fmt.Sprintf("Report: %s\n", getReportFilename(i, res))

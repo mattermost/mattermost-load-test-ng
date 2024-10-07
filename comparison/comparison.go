@@ -101,18 +101,24 @@ func (c *Comparison) Run() (Output, error) {
 					mlog.Debug("initializing load-test")
 					// initialize instance state
 					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI); err != nil {
+						res.LoadTests[i] = LoadTestResult{Failed: true}
 						errsCh <- err
-						return
+						break
 					}
 					mlog.Debug("load-test init done")
 
 					status, err := runLoadTest(t, lt)
 					if err != nil {
+						res.LoadTests[i] = LoadTestResult{Failed: true}
 						errsCh <- err
-						return
+						break
 					}
-					res.LoadTests[i] = LoadTestResult{loadTestID: ltID,
-						Label: buildCfg.Label, Config: lt, Status: status}
+					res.LoadTests[i] = LoadTestResult{
+						loadTestID: ltID,
+						Label:      buildCfg.Label,
+						Config:     lt,
+						Status:     status,
+					}
 				}
 
 				resultsCh <- res
