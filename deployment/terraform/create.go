@@ -248,10 +248,10 @@ func (t *Terraform) Create(initData bool) error {
 			siteURL = "http://" + t.config.SiteURL + ":8065"
 		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
-			siteURL = "http://" + t.output.Proxy.PublicDNS
+			siteURL = "http://" + t.output.Proxy.PrivateDNS
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
 		default:
-			siteURL = "http://" + t.output.Instances[0].PublicDNS + ":8065"
+			siteURL = "http://" + t.output.Instances[0].PrivateDNS + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
@@ -261,11 +261,11 @@ func (t *Terraform) Create(initData bool) error {
 
 		// The URL to ping cannot be the same as the site URL, since that one could contain a
 		// hostname that only instances know how to resolve
-		pingURL := t.output.Instances[0].PublicDNS + ":8065"
+		pingURL := t.output.Instances[0].PrivateDNS + ":8065"
 		if t.output.HasProxy() {
 			// Updating the nginx config on proxy server
 			t.setupProxyServer(extAgent)
-			pingURL = t.output.Proxy.PublicDNS
+			pingURL = t.output.Proxy.PrivateDNS
 		}
 
 		if err := pingServer("http://" + pingURL); err != nil {
@@ -768,7 +768,7 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 }
 
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent) {
-	ip := t.output.Proxy.PublicDNS
+	ip := t.output.Proxy.PrivateDNS
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
