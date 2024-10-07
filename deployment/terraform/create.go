@@ -372,14 +372,14 @@ func (t *Terraform) Create(initData bool) error {
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupMMServer(extAgent, val.PrivateIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupJobServer(extAgent, val.PrivateIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
@@ -788,7 +788,7 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 }
 
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) {
-	ip := instance.PublicDNS
+	ip := instance.PrivateDNS
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
