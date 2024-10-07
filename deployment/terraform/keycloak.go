@@ -22,7 +22,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakDir := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion
 	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
-	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
+	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PrivateIP))
 	extraArguments := []string{}
 
 	command := "start"
@@ -30,7 +30,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		command = "start-dev"
 	}
 
-	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PublicIP)
+	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PrivateIP)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -297,7 +297,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.KeycloakServer.PublicIP)
+	client, err := extAgent.NewClient(output.KeycloakServer.PrivateIP)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}

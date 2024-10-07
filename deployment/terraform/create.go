@@ -282,7 +282,7 @@ func (t *Terraform) Create(initData bool) error {
 				mlog.Info("DISABLE_ES_SETUP set, skipping Elasticsearch setup")
 			} else {
 				mlog.Info("Setting up Elasticsearch")
-				err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+				err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PrivateIP)
 
 				if err != nil {
 					errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
@@ -889,7 +889,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP)
 	if err != nil {
 		return err
 	}
@@ -915,7 +915,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return errors.New("no instances found in Terraform output")
 	}
 
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP)
 	if err != nil {
 		return err
 	}

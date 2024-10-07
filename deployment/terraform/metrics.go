@@ -111,7 +111,7 @@ type DashboardData struct {
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Updating Prometheus config
-	sshc, err := extAgent.NewClient(t.output.MetricsServer.PublicIP)
+	sshc, err := extAgent.NewClient(t.output.MetricsServer.PrivateIP)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Waiting for Grafana to be back up.
-	url := fmt.Sprintf("http://%s@%s:3000/api/user/preferences", defaultGrafanaUsernamePass, t.output.MetricsServer.PublicIP)
+	url := fmt.Sprintf("http://%s@%s:3000/api/user/preferences", defaultGrafanaUsernamePass, t.output.MetricsServer.PrivateIP)
 	timeout := time.After(10 * time.Second)
 	for {
 		resp, err := http.Get(url)
