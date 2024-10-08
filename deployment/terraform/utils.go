@@ -352,7 +352,7 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 	}
 
 	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
-	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profile, awsconfig.WithRegion(t.config.AWSRegion))
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the
