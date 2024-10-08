@@ -3,6 +3,7 @@ package defaults
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,6 +19,7 @@ func TestValidate(t *testing.T) {
 		MaxUsers      int    `default:"1000" validate:"range:(0,]"`
 		LogLevel      string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
 		S3URI         string `default:"" validate:"s3uri"`
+		LicenseFile   string `default:"" validate:"emptyorfile"`
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -369,6 +371,50 @@ func TestValidate(t *testing.T) {
 			PrefixedValue string `validate:"prefixasdf:start"`
 		}
 		err := Validate(cfg{"start"})
+		require.Error(t, err)
+	})
+
+	t.Run("empty emptyorfile", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.LicenseFile = ""
+
+		err := Validate(&cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("valid non-empty emptyorfile", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		// We need a file that exists, so let's use the path to the executable running
+		// this test, which is guaranteed to exist when the test is running
+		f, err := os.Executable()
+		require.NoError(t, err)
+		cfg.LicenseFile = f
+
+		err = Validate(&cfg)
+		require.NoError(t, err)
+	})
+
+	t.Run("invalid emptyorfile", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.LicenseFile = "/invalid/path/to/inexistent/file"
+
+		err := Validate(&cfg)
+		require.Error(t, err)
+	})
+
+	t.Run("not a path for emptyorfile", func(t *testing.T) {
+		var cfg serverConfiguration
+		Set(&cfg)
+
+		cfg.LicenseFile = "not a file"
+
+		err := Validate(&cfg)
 		require.Error(t, err)
 	})
 }
