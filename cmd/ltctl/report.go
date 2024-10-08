@@ -90,7 +90,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse output: %w", err)
 		}
-		promURL = "http://" + output.MetricsServer.PublicIP + ":9090"
+		promURL = "http://" + output.MetricsServer.PrivateIP + ":9090"
 	}
 
 	helper, err := prometheus.NewHelper(promURL)
