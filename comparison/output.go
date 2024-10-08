@@ -101,7 +101,7 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 				return
 			}
 
-			promURL := "http://" + output.MetricsServer.PublicIP + ":9090"
+			promURL := "http://" + output.MetricsServer.PrivateIP + ":9090"
 			helper, err := prometheus.NewHelper(promURL)
 			if err != nil {
 				mlog.Error("Failed to create prometheus.Helper", mlog.Err(err))
@@ -151,7 +151,7 @@ func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
 					mlog.Error("Failed to upload dashboard", mlog.Err(err))
 					return
 				}
-				res.DashboardURL = fmt.Sprintf("http://%s:3000%s", output.MetricsServer.PublicIP, url)
+				res.DashboardURL = fmt.Sprintf("http://%s:3000%s", output.MetricsServer.PrivateIP, url)
 			}
 
 			resCh <- res

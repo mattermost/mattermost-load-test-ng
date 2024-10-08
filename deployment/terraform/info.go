@@ -33,37 +33,37 @@ func displayInfo(output *Output) {
 		}
 		fmt.Println("App Server(s):")
 		for _, instance := range output.Instances {
-			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.PrivateIP)
 		}
 	}
 
 	if output.HasJobServer() {
 		fmt.Println("Job Server(s):")
 		for _, instance := range output.JobServers {
-			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.PrivateIP)
 		}
 	}
 
 	if output.HasAgents() {
 		fmt.Println("Load Agent(s):")
 		for _, agent := range output.Agents {
-			fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+			fmt.Println("- " + agent.Tags.Name + ": " + agent.PrivateIP)
 		}
 
-		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
+		fmt.Println("Coordinator: " + output.Agents[0].PrivateIP)
 	}
 
 	if output.HasProxy() {
-		fmt.Println("Proxy: " + output.Proxy.PublicIP)
+		fmt.Println("Proxy: " + output.Proxy.PrivateIP)
 	}
 
 	if output.HasMetrics() {
-		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
-		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
-		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
+		fmt.Println("Grafana URL: http://" + output.MetricsServer.PrivateIP + ":3000")
+		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PrivateIP + ":9090")
+		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PrivateIP + ":4040")
 	}
 	if output.HasKeycloak() {
-		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PublicIP)
+		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PrivateIP)
 		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PrivateDNS + ":8080/")
 		if len(output.KeycloakDatabaseCluster.Endpoints) > 0 {
 			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Endpoints[0])

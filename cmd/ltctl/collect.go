@@ -121,7 +121,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 
 	clients := make(map[string]*ssh.Client)
 	if output.HasProxy() {
-		sshc, err := extAgent.NewClient(output.Proxy.PublicIP)
+		sshc, err := extAgent.NewClient(output.Proxy.PrivateIP)
 		if err != nil {
 			return nil, fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -129,7 +129,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	}
 
 	for i, instance := range output.Instances {
-		sshc, err := extAgent.NewClient(instance.PublicIP)
+		sshc, err := extAgent.NewClient(instance.PrivateIP)
 		if err != nil {
 			return nil, fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -137,7 +137,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	}
 
 	for i, agent := range output.Agents {
-		sshc, err := extAgent.NewClient(agent.PublicIP)
+		sshc, err := extAgent.NewClient(agent.PrivateIP)
 		if err != nil {
 			return nil, fmt.Errorf("error in getting ssh connection %w", err)
 		}
