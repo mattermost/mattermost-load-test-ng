@@ -750,6 +750,7 @@ func genNginxConfig() (string, error) {
 func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
+		awsconfig.WithRegion(t.config.AWSRegion),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error loading AWS config: %v", err)
