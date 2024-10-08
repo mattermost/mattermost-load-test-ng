@@ -237,10 +237,10 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get terraform output: %w", err)
 		}
-		if terraformOutput.KeycloakServer.PublicDNS == "" {
+		if terraformOutput.KeycloakServer.PrivateDNS == "" {
 			return fmt.Errorf("keycloak database cluster not found in terraform output")
 		}
-		keycloakHost = terraformOutput.KeycloakServer.PublicDNS
+		keycloakHost = terraformOutput.KeycloakServer.PrivateDNS
 	}
 
 	keycloakRealm, err := cmd.Flags().GetString("keycloak-realm")
