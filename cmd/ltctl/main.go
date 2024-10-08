@@ -28,7 +28,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
 
-	initData := config.DBDumpURI == ""
+	initData := config.DBDumpURI == "" || config.ExternalDBSettings.DataSource != ""
 	err = t.Create(initData)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform env: %w", err)
