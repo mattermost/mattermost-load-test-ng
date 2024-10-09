@@ -573,7 +573,7 @@ resource "aws_security_group_rule" "metrics-pyroscope" {
 }
 
 resource "aws_security_group_rule" "metrics-loki" {
-  count             = length(aws_instance.metrics_server) > 0 ? 1 : 0
+  count             = length(aws_security_group.metrics) > 0 ? 1 : 0
   type              = "ingress"
   from_port         = 3100
   to_port           = 3100
