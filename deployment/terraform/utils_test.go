@@ -12,7 +12,7 @@ import (
 
 func TestFillConfigTemplate(t *testing.T) {
 	t.Run("empty template", func(t *testing.T) {
-		input := make(map[string]string)
+		input := make(map[string]any)
 		output, err := fillConfigTemplate("", input)
 		require.NoError(t, err)
 		require.Empty(t, output)
@@ -27,7 +27,7 @@ func TestFillConfigTemplate(t *testing.T) {
 
 	t.Run("valid data", func(t *testing.T) {
 		tmpl := "this is a {{.value}}"
-		data := map[string]string{"value": "template"}
+		data := map[string]any{"value": "template"}
 		output, err := fillConfigTemplate(tmpl, data)
 		require.NoError(t, err)
 		require.Equal(t, "this is a template", output)

@@ -751,7 +751,7 @@ func waitForGreenCluster(dur time.Duration, es *opensearch.Client) error {
 }
 
 func genNginxConfig() (string, error) {
-	data := map[string]string{
+	data := map[string]any{
 		"tcpNoDelay": "off",
 	}
 	if val := os.Getenv(deployment.EnvVarTCPNoDelay); strings.ToLower(val) == "on" {
@@ -832,7 +832,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		nginxSiteConfig, err := fillConfigTemplate(nginxSiteConfigTmpl, map[string]string{
+		nginxSiteConfig, err := fillConfigTemplate(nginxSiteConfigTmpl, map[string]any{
 			"backends":     backends,
 			"cacheObjects": cacheObjects,
 			"cacheSize":    cacheSize,

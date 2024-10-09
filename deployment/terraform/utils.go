@@ -204,7 +204,7 @@ func (t *Terraform) getStatePath() string {
 	return statePath
 }
 
-func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {
+func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) {
 	var buf bytes.Buffer
 	tmpl := template.New("template")
 	tmpl, err := tmpl.Parse(configTmpl)
