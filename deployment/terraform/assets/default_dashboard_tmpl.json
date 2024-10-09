@@ -3084,7 +3084,7 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=~\"agent\"} | log_file_name=\"ltcoordinator.log\" [$__auto])) by (severity_text)",
+          "expr": "sum(count_over_time({service_name=~\"coordinator\"}[$__auto])) by (severity_text)",
           "key": "Q-e1c47469-6230-414e-aa95-9e03c95cbf37-0",
           "legendFormat": "{{`{{severity_text}}`}}",
           "queryType": "range",
@@ -3328,7 +3328,7 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=~\"agent\"} | log_file_name!=\"ltcoordinator.log\" [$__auto])) by (severity_text)",
+          "expr": "sum(count_over_time({service_name=~\"agent\"}[$__auto])) by (severity_text)",
           "key": "Q-e1c47469-6230-414e-aa95-9e03c95cbf37-0",
           "legendFormat": "{{`{{severity_text}}`}}",
           "queryType": "range",
