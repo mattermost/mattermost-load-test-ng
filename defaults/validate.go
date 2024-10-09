@@ -153,14 +153,6 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		if s == "" || !isAlphanumeric(s) {
 			return fmt.Errorf("%s is not alphanumeric", fieldName)
 		}
-	case "emptyorfile":
-		s := v.String()
-		if s == "" {
-			return nil
-		}
-		if _, err := os.Stat(s); os.IsNotExist(err) {
-			return fmt.Errorf("%s: %w", fieldName, err)
-		}
 	case "file":
 		s := v.String()
 		if _, err := os.Stat(s); os.IsNotExist(err) {
