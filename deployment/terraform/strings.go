@@ -3,6 +3,8 @@
 
 package terraform
 
+import "fmt"
+
 const mattermostServiceFile = `
 [Unit]
 Description=Mattermost
@@ -547,6 +549,14 @@ const otelcolOperatorProxy = `
         severity:
           parse_from: attributes.sev`
 
+const otelcolFilelogTmpl = `
+  filelog:
+    include: [ {{.IncludeFiles}} ]
+    resource:
+      service.name: "{{.ServiceName}}"
+      service.instance.id: "{{.ServiceInstanceId}}"
+    operators:{{.Operator}}`
+
 const otelcolConfigTmpl = `
 receivers:
   otlp:
@@ -555,12 +565,7 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  filelog:
-    include: [ {{.IncludeFiles}} ]
-    resource:
-      service.name: "{{.ServiceName}}"
-      service.instance.id: "{{.ServiceInstanceId}}"
-    operators: {{.Operator}}
+{{.Receivers}}
 
 exporters:
   otlphttp/logs:
@@ -578,3 +583,79 @@ service:
       receivers: [filelog]
       exporters: [otlphttp/logs,debug]
 `
+
+func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	agentFilelog, err := fillConfigTemplate(otelcolFilelogTmpl, map[string]string{
+		"IncludeFiles":      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+		"ServiceName":       "agent",
+		"ServiceInstanceId": instanceName,
+		"Operator":          otelcolOperatorAppAgent,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcolFilelogTmpl")
+	}
+
+	coordinatorFilelog, err := fillConfigTemplate(otelcolFilelogTmpl, map[string]string{
+		"IncludeFiles":      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+		"ServiceName":       "coordinator",
+		"ServiceInstanceId": instanceName,
+		"Operator":          otelcolOperatorAppAgent,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcolFilelogTmpl")
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
+		"Receivers": agentFilelog + coordinatorFilelog,
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template")
+	}
+
+	return otelcolConfig, err
+}
+
+func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	proxyFilelog, err := fillConfigTemplate(otelcolFilelogTmpl, map[string]string{
+		"IncludeFiles":      "/var/log/nginx/error.log",
+		"ServiceName":       "proxy",
+		"ServiceInstanceId": instanceName,
+		"Operator":          otelcolOperatorProxy,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcolFilelogTempl")
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
+		"Receivers": proxyFilelog,
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template")
+	}
+
+	return otelcolConfig, nil
+}
+
+func renderAppOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	appFilelog, err := fillConfigTemplate(otelcolFilelogTmpl, map[string]string{
+		"IncludeFiles":      "/opt/mattermost/logs/mattermost.log",
+		"ServiceName":       "app",
+		"ServiceInstanceId": instanceName,
+		"Operator":          otelcolOperatorAppAgent,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcolFilelogTmpl: %w", err)
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
+		"Receivers": appFilelog,
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template: %w", err)
+	}
+
+	return otelcolConfig, nil
+}

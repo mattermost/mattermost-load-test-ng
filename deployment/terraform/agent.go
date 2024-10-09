@@ -139,18 +139,9 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
-			otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
-				"IncludeFiles": strings.Join([]string{
-					"/home/ubuntu/mattermost-load-test-ng/ltagent.log",
-					"/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
-				}, ", "),
-				"ServiceName":       "agent",
-				"ServiceInstanceId": instance.Tags.Name,
-				"MetricsIP":         t.output.MetricsServer.PrivateIP,
-				"Operator":          otelcolOperatorAppAgent,
-			})
+			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.PrivateIP)
 			if err != nil {
-				mlog.Error("unable to render otelcol config template", mlog.Int("agent", agentNumber), mlog.Err(err))
+				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
 				foundErr.Store(true)
 				return
 			}

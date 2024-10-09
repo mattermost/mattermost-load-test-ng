@@ -412,13 +412,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		}
 	}()
 
-	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
-		"IncludeFiles":      "/opt/mattermost/logs/mattermost.log",
-		"ServiceName":       "app",
-		"ServiceInstanceId": instanceName,
-		"MetricsIP":         t.output.MetricsServer.PrivateIP,
-		"Operator":          otelcolOperatorAppAgent,
-	})
+	otelcolConfig, err := renderAppOtelcolConfig(instanceName, t.output.MetricsServer.PrivateIP)
 	if err != nil {
 		return fmt.Errorf("unable to render otelcol config template: %w", err)
 	}
@@ -848,13 +842,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]string{
-			"IncludeFiles":      "/var/log/nginx/error.log",
-			"ServiceName":       "proxy",
-			"ServiceInstanceId": instance.Tags.Name,
-			"MetricsIP":         t.output.MetricsServer.PrivateIP,
-			"Operator":          otelcolOperatorProxy,
-		})
+		otelcolConfig, err := renderProxyOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.PrivateIP)
 		if err != nil {
 			mlog.Error("unable to render otelcol config template", mlog.String("proxy", instance.Tags.Name), mlog.Err(err))
 			return
