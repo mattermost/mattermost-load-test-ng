@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/wiggin77/merror"
 )
 
 var (
@@ -99,7 +97,7 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 	// Multiple validations separated by a colon (as in "empty;file") behave like an OR clause
 	if strings.Contains(validation, ";") {
 		individualValidations := strings.Split(validation, ";")
-		merr := merror.New()
+		errs := []error{}
 		for _, validation := range individualValidations {
 			err := validate(validation, fieldName, p, v)
 			// Return as soon as one is valid
@@ -107,9 +105,9 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 				return nil
 			}
 
-			merr.Append(err)
+			errs = append(errs, err)
 		}
-		return fmt.Errorf("%s failed all validations %q: %w", fieldName, individualValidations, merr)
+		return fmt.Errorf("%s failed all validations %q: %w", fieldName, individualValidations, errors.Join(errs...))
 	}
 
 	switch validation {
