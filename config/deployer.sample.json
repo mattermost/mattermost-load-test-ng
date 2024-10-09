@@ -8,6 +8,7 @@
   "ClusterSubnetID": "",
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
+  "AppAttachIAMProfile": "",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
