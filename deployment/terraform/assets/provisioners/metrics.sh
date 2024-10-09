@@ -42,11 +42,9 @@ do
       wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v0.61.2/yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz && \
       sudo tar -zxf yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz -C /opt/yace && \
       # Install Loki
-      mkdir -p /etc/apt/keyrings/ && \
-      sudo bash -c 'wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor > /etc/apt/keyrings/grafana.gpg' && \
-      sudo bash -c 'echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee /etc/apt/sources.list.d/grafana.list' && \
-      sudo apt-get -y update && \
-      sudo apt-get install -y loki && \
+      wget https://github.com/grafana/loki/releases/download/v3.2.0/loki_3.2.0_amd64.deb && \
+      sudo dpkg -i loki_3.2.0_amd64.deb && \
+      sudo systemctl start loki
       exit 0
    n=$((n+1))
    sleep 2
