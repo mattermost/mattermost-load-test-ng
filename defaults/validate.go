@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/wiggin77/merror"
 )
 
 var (
@@ -94,6 +96,22 @@ func Validate(value interface{}) error {
 }
 
 func validate(validation, fieldName string, p, v reflect.Value) error {
+	// Multiple validations separated by a colon (as in "empty;file") behave like an OR clause
+	if strings.Contains(validation, ";") {
+		individualValidations := strings.Split(validation, ";")
+		merr := merror.New()
+		for _, validation := range individualValidations {
+			err := validate(validation, fieldName, p, v)
+			// Return as soon as one is valid
+			if err == nil {
+				return nil
+			}
+
+			merr.Append(err)
+		}
+		return fmt.Errorf("%s failed all validations %q: %w", fieldName, individualValidations, merr)
+	}
+
 	switch validation {
 	case "url":
 		s := v.String()
@@ -105,6 +123,18 @@ func validate(validation, fieldName string, p, v reflect.Value) error {
 		s := v.String()
 		if !emailRegex.MatchString(s) {
 			return fmt.Errorf("%s is not a valid e-mail address", s)
+		}
+	case "empty":
+		switch v.Type().Kind() {
+		case reflect.String:
+			s := v.String()
+			if s != "" {
+				return fmt.Errorf("%s is not empty", fieldName)
+			}
+		case reflect.Slice, reflect.Map:
+			if v.Len() > 0 {
+				return fmt.Errorf("%v is not empty", fieldName)
+			}
 		}
 	case "notempty":
 		switch v.Type().Kind() {
