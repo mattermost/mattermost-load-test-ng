@@ -3840,7 +3840,7 @@
       "type": "barchart"
     }
   ],
-  "refresh": "",
+  "refresh": "10s",
   "schemaVersion": 39,
   "tags": [
     "mattermost",
@@ -3850,9 +3850,10 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "agent-0:4000",
-          "value": "agent-0:4000"
+          "text": [
+          ],
+          "value": [
+          ]
         },
         "datasource": {
           "type": "prometheus",
@@ -3909,6 +3910,6 @@
   "timezone": "browser",
   "title": "Mattermost Load-Test Performance Monitoring",
   "uid": "000000011",
-  "version": 11,
+  "version": 3,
   "weekStart": ""
 }
