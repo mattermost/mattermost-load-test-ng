@@ -8,6 +8,7 @@
   "ClusterSubnetID": "",
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
+  "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
@@ -147,6 +148,5 @@
     "BlockProfileRate": 0
   },
   "CustomTags": {
-  },
-  "MetricsInstanceType": "t3.xlarge"
+  }
 }
