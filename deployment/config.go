@@ -38,6 +38,8 @@ type Config struct {
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
+	// Type of the EC2 instance for metrics.
+	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
@@ -121,8 +123,6 @@ type Config struct {
 	// CustomTags is an optional list of key-value pairs, which will be used as default
 	// tags for all resources deployed
 	CustomTags TerraformMap
-	// Type of the EC2 instance for metrics.
-	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 }
 
 // TerraformMap is a map of string -> string that serializes to the format expected by
