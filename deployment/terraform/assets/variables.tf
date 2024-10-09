@@ -7,6 +7,9 @@ variable "cluster_vpc_id" {
 variable "cluster_subnet_id" {
 }
 
+variable "app_attach_iam_profile" {
+}
+
 variable "app_instance_count" {
 }
 

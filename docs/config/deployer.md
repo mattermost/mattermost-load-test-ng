@@ -66,6 +66,12 @@ When this value is greater than one, an S3 bucket is automatically created in th
 
 The type of the EC2 instance of the application server. See type [here](https://aws.amazon.com/ec2/instance-types/). It is recommended to use c5 instances for consistent performance.
 
+## AppAttachIAMProfile
+
+*string*
+
+The IAM profile to attach to the application server. This is useful if you need to give the application server access to other existing AWS resources.
+
 ## AgentInstanceCount
 
 *int*
@@ -335,8 +341,8 @@ Whether to use SSE or not.
 
 *string*
 
-The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.  
-The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).  
+The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.
+The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).
 Only the binary gets replaced, and the rest of the build comes from the latest stable release.
 
 ## MattermostLicenseFile

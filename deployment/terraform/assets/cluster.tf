@@ -66,6 +66,7 @@ resource "aws_instance" "app_server" {
   key_name                    = aws_key_pair.key.id
   count                       = var.app_instance_count
   availability_zone           = var.aws_az
+  iam_instance_profile        = var.app_attach_iam_profile
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
