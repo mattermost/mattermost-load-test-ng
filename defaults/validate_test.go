@@ -19,8 +19,8 @@ func TestValidate(t *testing.T) {
 		MaxUsers      int    `default:"1000" validate:"range:(0,]"`
 		LogLevel      string `default:"ERROR" validate:"oneof:{TRACE, INFO, WARN, ERROR}"`
 		S3URI         string `default:"" validate:"s3uri"`
-		LicenseFile   string `default:"" validate:"empty;file"`
-		MultiRange    int    `default:"2" validate:"range:[0,3];range:[6,7]"`
+		LicenseFile   string `default:"" validate:"empty|file"`
+		MultiRange    int    `default:"2" validate:"range:[0,3]|range:[6,7]"`
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -375,7 +375,7 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("empty empty;file", func(t *testing.T) {
+	t.Run("empty empty|file", func(t *testing.T) {
 		var cfg serverConfiguration
 		Set(&cfg)
 
@@ -385,7 +385,7 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("valid non-empty empty;file", func(t *testing.T) {
+	t.Run("valid non-empty empty|file", func(t *testing.T) {
 		var cfg serverConfiguration
 		Set(&cfg)
 
@@ -399,7 +399,7 @@ func TestValidate(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("invalid file empty;file", func(t *testing.T) {
+	t.Run("invalid file empty|file", func(t *testing.T) {
 		var cfg serverConfiguration
 		Set(&cfg)
 
@@ -409,7 +409,7 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("not a path for empty;file", func(t *testing.T) {
+	t.Run("not a path for empty|file", func(t *testing.T) {
 		var cfg serverConfiguration
 		Set(&cfg)
 

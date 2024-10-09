@@ -94,9 +94,9 @@ func Validate(value interface{}) error {
 }
 
 func validate(validation, fieldName string, p, v reflect.Value) error {
-	// Multiple validations separated by a colon (as in "empty;file") behave like an OR clause
-	if strings.Contains(validation, ";") {
-		individualValidations := strings.Split(validation, ";")
+	// Multiple validations separated by a pipe (as in "empty|file") behave like an OR clause
+	if strings.Contains(validation, "|") {
+		individualValidations := strings.Split(validation, "|")
 		errs := []error{}
 		for _, validation := range individualValidations {
 			err := validate(validation, fieldName, p, v)
