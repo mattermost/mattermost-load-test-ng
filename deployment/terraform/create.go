@@ -109,7 +109,12 @@ func (t *Terraform) Create(initData bool) error {
 	// Validate the license only if we deploy app nodes;
 	// otherwise we don't need a license at all
 	if t.config.AppInstanceCount > 0 {
-		if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
+		licenseData, err := os.ReadFile(t.config.MattermostLicenseFile)
+		if err != nil {
+			return fmt.Errorf("failed to read license file: %w", err)
+		}
+
+		if err := validateLicense(licenseData); err != nil {
 			return fmt.Errorf("license validation failed: %w", err)
 		}
 	}
