@@ -309,7 +309,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 
   count                        = var.app_instance_count > 0 ? var.db_instance_count : 0
   identifier                   = "${var.cluster_name}-db-${count.index}"
-  cluster_identifier           = var.db_cluster_identifier != "" ? var.db_cluster_identifier : aws_rds_cluster.db_cluster.id
+  cluster_identifier           = aws_rds_cluster.db_cluster.id
   instance_class               = var.db_instance_class
   engine                       = var.db_instance_engine
   apply_immediately            = true
