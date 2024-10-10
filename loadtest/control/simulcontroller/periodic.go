@@ -10,19 +10,33 @@ import (
 
 const (
 	getUsersStatusByIdsInterval = 60 * time.Second
+	submitClientMetricsInterval = 60 * time.Second
 )
 
 func (c *SimulController) periodicActions(wg *sync.WaitGroup) {
-	defer wg.Done()
+	getUserStatusTicker := time.NewTicker(getUsersStatusByIdsInterval)
+	submitMetricsTicker := time.NewTicker(submitClientMetricsInterval)
+
+	defer func() {
+		submitMetricsTicker.Stop()
+		getUserStatusTicker.Stop()
+		wg.Done()
+	}()
+
 	for {
 		select {
-		case <-time.After(getUsersStatusByIdsInterval):
+		case <-getUserStatusTicker.C:
 			if resp := c.getUsersStatuses(); resp.Err != nil {
 				c.status <- c.newErrorStatus(resp.Err)
 			} else {
 				c.status <- c.newInfoStatus(resp.Info)
 			}
-		// We can add more periodic actions here.
+		case <-submitMetricsTicker.C:
+			if resp := submitPerformanceReport(c.user); resp.Err != nil {
+				c.status <- c.newErrorStatus(resp.Err)
+			} else {
+				c.status <- c.newInfoStatus(resp.Info)
+			}
 		case <-c.disconnectChan:
 			return
 		}
