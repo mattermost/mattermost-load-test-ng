@@ -291,7 +291,6 @@ resource "aws_rds_cluster" "db_cluster" {
     Name = "${var.cluster_name}-db-cluster"
   }
 
-  database_name       = var.db_cluster_identifier != "" ? "agnivaltdb" : "${var.cluster_name}db"
   master_username     = var.db_username
   master_password     = var.db_password
   skip_final_snapshot = true
