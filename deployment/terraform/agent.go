@@ -233,7 +233,8 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 
 	if initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", t.output.Agents[0].Tags.Name)
+		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --site-url 'http://%s:8065'",
+			t.output.Agents[0].Tags.Name, t.output.Instances[0].PrivateIP)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			// TODO: make this fully atomic. See MM-23998.
 			// ltagent init should drop teams and channels before creating them.

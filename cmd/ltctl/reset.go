@@ -89,7 +89,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Restarting app server...",
+			msg:     "Restarting app servers...",
 			value:   "sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;",
 			clients: appClients,
 		},
@@ -100,8 +100,9 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 			clients: []*ssh.Client{appClients[0]},
 		},
 		{
-			msg:     "Initializing data...",
-			value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", output.Agents[0].Tags.Name),
+			msg: "Initializing data...",
+			value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --site-url 'http://%s:8065'",
+				output.Agents[0].Tags.Name, output.Instances[0].PrivateIP),
 			clients: []*ssh.Client{agentClient},
 		},
 	}
