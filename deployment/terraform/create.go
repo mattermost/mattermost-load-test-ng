@@ -187,27 +187,6 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
-	// If we are restoring from a DB backup, then we need to hook up
-	// the security group to it.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
-		if len(t.output.DBSecurityGroup) == 0 {
-			return errors.New("No DB security group created")
-		}
-
-		sgID := t.output.DBSecurityGroup[0].Id
-		args := []string{
-			"--profile=" + t.config.AWSProfile,
-			"rds",
-			"modify-db-cluster",
-			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
-			"--vpc-security-group-ids=" + sgID,
-			"--region=" + t.config.AWSRegion,
-		}
-		if err := t.runAWSCommand(nil, args, nil); err != nil {
-			return err
-		}
-	}
-
 	// Check if a policy to publish logs from OpenSearch Service to CloudWatch
 	// exists, and create it otherwise.
 	// Note that we are doing this outside of Terraform. This is because we

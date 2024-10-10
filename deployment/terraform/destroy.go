@@ -58,22 +58,6 @@ func (t *Terraform) Destroy() error {
 		return err
 	}
 
-	// If we have restored from a DB backup, we need to manually delete the cluster.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
-		args := []string{
-			"--profile=" + t.config.AWSProfile,
-			"rds",
-			"delete-db-cluster",
-			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
-			"--region=" + t.config.AWSRegion,
-			"--skip-final-snapshot",
-		}
-		// We have to ignore if the cluster was already deleted to make the command idempotent.
-		if err := t.runAWSCommand(nil, args, nil); err != nil && !strings.Contains(err.Error(), "DBClusterNotFoundFault") {
-			return err
-		}
-	}
-
 	// Make sure that the empty bucket command has finished and check for any
 	// possible errors. The check may be redundant, since if we're already
 	// here, it means that the terraform destroy has finished successfullly, so
