@@ -119,21 +119,6 @@ func (t *Terraform) Create(initData bool) error {
 		return err
 	}
 
-	// If we are using a restored cluster, first we need to import
-	// it into Terraform state.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
-		var params []string
-		params = append(params, "import")
-		params = append(params, t.getParams()...)
-		params = append(params, "-state="+t.getStatePath())
-		params = append(params, "aws_rds_cluster.db_cluster", t.config.TerraformDBSettings.ClusterIdentifier)
-
-		err = t.runCommand(nil, params...)
-		if err != nil {
-			return err
-		}
-	}
-
 	var uploadPath string
 	var uploadBinary bool
 	var uploadRelease bool
