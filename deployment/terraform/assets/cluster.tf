@@ -291,7 +291,6 @@ resource "aws_rds_cluster" "db_cluster" {
     Name = "${var.cluster_name}-db-cluster"
   }
 
-  cluster_identifier  = var.db_cluster_identifier != "" ? var.db_cluster_identifier : "${var.cluster_name}-db"
   database_name       = "${var.cluster_name}db"
   master_username     = var.db_username
   master_password     = var.db_password
