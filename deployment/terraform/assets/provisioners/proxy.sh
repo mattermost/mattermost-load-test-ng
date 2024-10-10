@@ -27,6 +27,12 @@ do
       sudo mkdir -p /etc/nginx/sites-enabled && \
       sudo rm -f /etc/nginx/sites-enabled/default && \
       sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost && \
+      # Install OpenTelemetry collector, using ubuntu user to avoid permission issues
+      wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_linux_amd64.deb && \
+      sudo dpkg -i otelcol-contrib_0.110.0_linux_amd64.deb && \
+      sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service && \
+      sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service && \
+      sudo systemctl daemon-reload && sudo systemctl restart otelcol-contrib && \
       exit 0
    n=$((n+1)) 
    sleep 2
