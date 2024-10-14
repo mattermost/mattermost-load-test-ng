@@ -41,6 +41,10 @@ do
       sudo mkdir /opt/yace && \
       wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v0.61.2/yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz && \
       sudo tar -zxf yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz -C /opt/yace && \
+      # Install Loki
+      wget https://github.com/grafana/loki/releases/download/v3.2.0/loki_3.2.0_amd64.deb && \
+      sudo dpkg -i loki_3.2.0_amd64.deb && \
+      sudo systemctl start loki
       exit 0
    n=$((n+1))
    sleep 2

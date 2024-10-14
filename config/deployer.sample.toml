@@ -25,6 +25,9 @@ AppInstanceCount = 1
 AppInstanceType = 'c5.xlarge'
 AppAttachIAMProfile = ''
 
+# Metrics instance configuration
+MetricsInstanceType = 't3.xlarge'
+
 # Cluster configuration
 ClusterName = 'loadtest'
 ClusterSubnetID = ''
@@ -143,3 +146,4 @@ Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
 
 [CustomTags]
+

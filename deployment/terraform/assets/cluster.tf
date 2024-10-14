@@ -158,7 +158,7 @@ resource "aws_instance" "metrics_server" {
   }
 
   ami               = var.aws_ami
-  instance_type     = "t3.xlarge"
+  instance_type     = var.metrics_instance_type
   count             = var.app_instance_count > 0 ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
@@ -568,6 +568,16 @@ resource "aws_security_group_rule" "metrics-pyroscope" {
   type              = "ingress"
   from_port         = 4040
   to_port           = 4040
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_security_group_rule" "metrics-loki" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 3100
+  to_port           = 3100
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.metrics[0].id

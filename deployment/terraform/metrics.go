@@ -198,7 +198,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	cloudwatchTargets = append(cloudwatchTargets, "metrics:"+yacePort)
 
 	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PublicIP))
-	yaceConfig, err := fillConfigTemplate(yaceConfigFile, map[string]string{
+	yaceConfig, err := fillConfigTemplate(yaceConfigFile, map[string]any{
 		"ClusterName": t.output.ClusterName,
 		"Period":      yaceDurationSeconds,
 		"Length":      yaceDurationSeconds,
@@ -212,7 +212,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error upload yace config: output: %s, error: %w", out, err)
 	}
 
-	yaceService, err := fillConfigTemplate(yaceServiceFile, map[string]string{
+	yaceService, err := fillConfigTemplate(yaceServiceFile, map[string]any{
 		"ScrapingInterval": yaceDurationSeconds,
 		"Port":             yacePort,
 	})
@@ -340,7 +340,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return err
 	}
-	bufStr, err := fillConfigTemplate(string(buf), map[string]string{"ClusterName": t.output.ClusterName})
+	bufStr, err := fillConfigTemplate(string(buf), map[string]any{"ClusterName": t.output.ClusterName})
 	if err != nil {
 		return err
 	}

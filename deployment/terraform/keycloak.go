@@ -94,7 +94,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]string{
+	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
 		"KeycloakLogFilePath":   filepath.Join(keycloakDir, "data/log/keycloak.log"),
@@ -110,7 +110,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Parse keycloak service file template
-	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]string{
+	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]any{
 		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
 		"Command":         command + " " + strings.Join(extraArguments, " "),
 	})

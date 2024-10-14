@@ -204,7 +204,7 @@ func (t *Terraform) getStatePath() string {
 	return statePath
 }
 
-func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {
+func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) {
 	var buf bytes.Buffer
 	tmpl := template.New("template")
 	tmpl, err := tmpl.Parse(configTmpl)
@@ -268,6 +268,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
 		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 		"-var", fmt.Sprintf("custom_tags=%s", t.config.CustomTags),
+		"-var", fmt.Sprintf("metrics_instance_type=%s", t.config.MetricsInstanceType),
 	}
 }
 

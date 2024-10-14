@@ -9,6 +9,7 @@
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
+  "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
