@@ -1032,6 +1032,12 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
+	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
+
+	return allow, UserActionResponse{}
+}
+
 // MessageExport simulates the given user performing
 // a compliance message export
 func MessageExport(u user.User) UserActionResponse {

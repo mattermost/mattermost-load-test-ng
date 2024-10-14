@@ -1,0 +1,109 @@
+package userentity
+
+import (
+	"context"
+
+	"github.com/mattermost/mattermost/server/public/model"
+)
+
+// GetChannelBookmarks fetches bookmarks for the given channel since a specific timestamp.
+func (ue *UserEntity) GetChannelBookmarks(channelId string, since int64) error {
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	bookmarks, _, err := ue.client.ListChannelBookmarksForChannel(context.Background(), channelId, since)
+	if err != nil {
+		return err
+	}
+
+	return ue.store.SetChannelBookmarks(channelId, bookmarks)
+}
+
+// AddChannelBookmark creates a bookmark on the given channel
+func (ue *UserEntity) AddChannelBookmark(channelId string, bookmark *model.ChannelBookmark) error {
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	bookmarkResp, _, err := ue.client.CreateChannelBookmark(context.Background(), bookmark)
+	if err != nil {
+		return err
+	}
+
+	// This should not be needed and should be removed once https://github.com/mattermost/mattermost/pull/28574 is merged
+	var fileInfo *model.FileInfo
+	if bookmarkResp.FileId != "" {
+		fileInfo, _, err = ue.client.GetFileInfo(context.Background(), bookmarkResp.FileId)
+		if err != nil {
+			return err
+		}
+	}
+
+	cbi := bookmarkResp.ToBookmarkWithFileInfo(fileInfo)
+	return ue.store.AddChannelBookmark(channelId, cbi)
+}
+
+// UpdateChannelBookmark updates a given bookmark.
+func (ue *UserEntity) UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	patch := &model.ChannelBookmarkPatch{
+		FileId:      &bookmark.FileId,
+		DisplayName: &bookmark.DisplayName,
+		SortOrder:   &bookmark.SortOrder,
+		LinkUrl:     &bookmark.LinkUrl,
+		ImageUrl:    &bookmark.ImageUrl,
+		Emoji:       &bookmark.Emoji,
+	}
+
+	result, _, err := ue.client.UpdateChannelBookmark(context.Background(), bookmark.ChannelId, bookmark.Id, patch)
+	if err != nil {
+		return err
+	}
+
+	if result.Deleted != nil {
+		cId := result.Deleted.ChannelId
+		bId := result.Deleted.Id
+		if err := ue.store.DeleteChannelBookmark(cId, bId); err != nil {
+			return err
+		}
+	}
+
+	return ue.store.UpdateChannelBookmark(result.Updated)
+}
+
+// DeleteChannelBookmark deletes a given bookmarkId from a given channelId.
+func (ue *UserEntity) DeleteChannelBookmark(channelId, bookmarkId string) error {
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	result, _, err := ue.client.DeleteChannelBookmark(context.Background(), channelId, bookmarkId)
+	if err != nil {
+		return err
+	}
+
+	return ue.store.DeleteChannelBookmark(result.ChannelId, result.Id)
+}
+
+// UpdateChannelBookmarkSortOrder sets the new position of a bookmark for the given channel
+func (ue *UserEntity) UpdateChannelBookmarkSortOrder(channelId, bookmarkId string, sortOrder int64) error {
+	_, err := ue.getUserFromStore()
+	if err != nil {
+		return err
+	}
+
+	result, _, err := ue.client.UpdateChannelBookmarkSortOrder(context.Background(), channelId, bookmarkId, sortOrder)
+	if err != nil {
+		return err
+	}
+
+	return ue.store.SetChannelBookmarks(channelId, result)
+}

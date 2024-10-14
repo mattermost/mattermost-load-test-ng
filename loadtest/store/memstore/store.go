@@ -50,6 +50,7 @@ type MemStore struct {
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
+	channelBookmars     map[string][]*model.ChannelBookmarkWithFileInfo
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -125,6 +126,8 @@ func (s *MemStore) Clear() {
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
 	clear(s.drafts)
 	s.drafts = map[string]map[string]*model.Draft{}
+	clear(s.channelBookmars)
+	s.channelBookmars = map[string][]*model.ChannelBookmarkWithFileInfo{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1217,6 +1220,109 @@ func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
 			rootID = d.ChannelId
 		}
 		s.drafts[teamId][rootID] = d
+	}
+
+	return nil
+}
+
+// ChannelBookmarks returns all bookmarks for the specified channel.
+func (s *MemStore) ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if bookmarks, ok := s.channelBookmars[channelId]; ok {
+		bookmarksCopy := make([]*model.ChannelBookmarkWithFileInfo, len(bookmarks))
+		copy(bookmarksCopy, bookmarks)
+		return bookmarksCopy
+	}
+
+	return []*model.ChannelBookmarkWithFileInfo{}
+}
+
+// SetChannelBookmarks stores the given bookmarks that belong to a channel.
+func (s *MemStore) SetChannelBookmarks(channelId string, bookmarks []*model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	newBookmarks := []*model.ChannelBookmarkWithFileInfo{}
+	for _, bookmark := range bookmarks {
+		if bookmark.ChannelId == channelId {
+			newBookmarks = append(newBookmarks, bookmark)
+		}
+	}
+
+	s.channelBookmars[channelId] = newBookmarks
+
+	return nil
+}
+
+// AddChannelBookmark stores the bookmark for the given channelId.
+func (s *MemStore) AddChannelBookmark(channelId string, bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	if s.channelBookmars[channelId] == nil {
+		s.channelBookmars[channelId] = []*model.ChannelBookmarkWithFileInfo{}
+	}
+
+	s.channelBookmars[channelId] = append(s.channelBookmars[channelId], bookmark)
+	return nil
+}
+
+// UpdateChannelBookmark updates a given bookmark.
+func (s *MemStore) UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	if s.channelBookmars[bookmark.ChannelId] == nil {
+		return errors.New("memstore: trying to update a bookmark on a channel that has no bookmarks")
+	}
+
+	for index, b := range s.channelBookmars[bookmark.ChannelId] {
+		if b.Id == bookmark.OriginalId {
+			bookmarksCopy := make([]*model.ChannelBookmarkWithFileInfo, len(s.channelBookmars[bookmark.ChannelId]))
+			copy(bookmarksCopy, s.channelBookmars[bookmark.ChannelId])
+			bookmarksCopy[index] = b
+			s.channelBookmars[bookmark.ChannelId] = bookmarksCopy
+		}
+	}
+
+	return nil
+}
+
+// DeleteChannelBookmark updates a given bookmark.
+func (s *MemStore) DeleteChannelBookmark(channelId, bookmarkId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmarkId == "" {
+		return errors.New("memstore: bookmarkId should not be empty")
+	}
+
+	if channelId == "" {
+		return errors.New("memstore: bookmarkId should not be empty")
+	}
+
+	if s.channelBookmars[channelId] == nil {
+		return errors.New("memstore: trying to delete a bookmark on a channel that has no bookmarks")
+	}
+
+	for index, b := range s.channelBookmars[channelId] {
+		if b.Id == bookmarkId {
+			bookmarksCopy := make([]*model.ChannelBookmarkWithFileInfo, len(s.channelBookmars[channelId])-1)
+			bookmarks := append(s.channelBookmars[channelId], s.channelBookmars[channelId][index+1:]...)
+			copy(bookmarksCopy, bookmarks)
+			s.channelBookmars[channelId] = bookmarksCopy
+			return nil
+		}
 	}
 
 	return nil

@@ -264,6 +264,30 @@ func getActionList(c *SimulController) []userAction {
 			frequency:        1.41,
 			minServerVersion: control.MinSupportedVersion, // 7.7.0
 		},
+		{
+			name:             "AddChannelBookmark",
+			run:              c.AddChannelBookmark,
+			frequency:        0.0003,
+			minServerVersion: semver.MustParse("10.0.0"),
+		},
+		{
+			name:             "UpdateOrAddChannelBookark",
+			run:              c.UpdateOrAddBookmark,
+			frequency:        0.0002,
+			minServerVersion: semver.MustParse("10.0.0"),
+		},
+		{
+			name:             "UpdateChannelBookarkSortOrder",
+			run:              c.UpdateBookmarksSortOrder,
+			frequency:        0.0002,
+			minServerVersion: semver.MustParse("10.0.0"),
+		},
+		{
+			name:             "DeleteChannelBookark",
+			run:              c.DeleteBookmark,
+			frequency:        0.0001,
+			minServerVersion: semver.MustParse("10.0.0"),
+		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than
 		//     control.MinSupportedVersion, use control.MinSupportedVersion.

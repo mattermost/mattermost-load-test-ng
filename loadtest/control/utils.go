@@ -165,10 +165,16 @@ func RandomEmoji() string {
 
 // AddLink appends a link to a string to test the LinkPreview feature.
 func AddLink(input string) string {
+	link := RandomLink()
+
+	return input + " " + link + " "
+}
+
+func RandomLink() string {
 	n := rand.Int() % len(links)
 	link := links[n]
 
-	return input + " " + link + " "
+	return link
 }
 
 // SelectWeighted does a random weighted selection on a given slice of weights.
@@ -281,6 +287,19 @@ func AttachFilesToDraft(u user.User, draft *model.Draft) error {
 		return err
 	}
 	draft.FileIds = fileIDs
+	return nil
+}
+
+func AttachFileToBookmark(u user.User, bookmark *model.ChannelBookmark) error {
+	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4", "test_upload.txt"}
+	file := filenames[rand.Intn(len(filenames))]
+	data := MustAsset(file)
+	resp, err := u.UploadFile(data, bookmark.ChannelId, file)
+	if err != nil {
+		return err
+	}
+
+	bookmark.FileId = resp.FileInfos[0].Id
 	return nil
 }
 
