@@ -38,6 +38,8 @@ type Config struct {
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
+	// IAM role to attach to the app servers
+	AppAttachIAMProfile string `default:""`
 	// Type of the EC2 instance for metrics.
 	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
