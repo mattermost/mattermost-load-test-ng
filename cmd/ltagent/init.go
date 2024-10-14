@@ -65,7 +65,7 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	siteURLOverride, err := cmd.Flags().GetString("site-url")
+	serverURLOverride, err := cmd.Flags().GetString("server-url")
 	if err != nil {
 		return err
 	}
@@ -75,8 +75,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if siteURLOverride != "" {
-		config.ConnectionConfiguration.ServerURL = siteURLOverride
+	if serverURLOverride != "" {
+		config.ConnectionConfiguration.ServerURL = serverURLOverride
 	}
 
 	if err := defaults.Validate(*config); err != nil {
@@ -224,7 +224,7 @@ func MakeInitCommand() *cobra.Command {
 		PreRun:       SetupLoadTest,
 	}
 	cmd.PersistentFlags().StringP("user-prefix", "", "testuser", "prefix used when generating usernames and emails")
-	cmd.PersistentFlags().StringP("site-url", "", "", "an optional override for ConnectionConfiguration.ServerURL")
+	cmd.PersistentFlags().StringP("server-url", "", "", "an optional override for ConnectionConfiguration.ServerURL")
 	return cmd
 }
 

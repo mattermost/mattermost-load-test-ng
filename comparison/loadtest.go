@@ -245,7 +245,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	initDataCmd := deployment.Cmd{
 		Msg: "Initializing data",
-		Value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --site-url 'http://%s:8065' > /dev/null 2>&1",
+		Value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065' > /dev/null 2>&1",
 			tfOutput.Agents[0].Tags.Name, tfOutput.Instances[0].PrivateIP),
 		Clients: []*ssh.Client{agentClient},
 	}
