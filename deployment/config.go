@@ -149,7 +149,7 @@ type StorageSizes struct {
 	// Size, in GiB, for the storage of the job server instances
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
-	ElasticSearch int `default:"20"`
+	ElasticSearch int `default:"100"`
 	// Size, in GiB, for the storage of the keycloak instances
 	KeyCloak int `default:"10"`
 }

@@ -140,7 +140,7 @@
     "App": 10,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 20
+    "ElasticSearch": 100
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,

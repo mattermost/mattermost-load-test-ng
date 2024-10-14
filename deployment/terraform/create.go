@@ -637,8 +637,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	// Wait until the snapshot is completely restored, or the user-specified
 	// timeout is triggered, whatever happens first
-	restoreTimeout := time.Duration(esSettings.RestoreTimeoutMinutes) * time.Minute
-	if err := waitForSnapshot(restoreTimeout, os, snapshotIndices); err != nil {
+	if err := t.waitForSnapshot(os, snapshotIndices); err != nil {
 		return fmt.Errorf("failed to wait for snapshot completion: %w", err)
 	}
 
@@ -663,7 +662,9 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 // waitForSnapshot blocks until the snapshot is fully restored or the provided
 // timeout is reached
-func waitForSnapshot(dur time.Duration, es *opensearch.Client, snapshotIndices []string) error {
+func (t *Terraform) waitForSnapshot(es *opensearch.Client, snapshotIndices []string) error {
+	dur := time.Duration(t.config.ElasticSearchSettings.RestoreTimeoutMinutes) * time.Minute
+	esDiskSpaceBytes := t.config.StorageSizes.ElasticSearch * 1024 * 1024 * 1024
 	timeout := time.After(dur)
 	for {
 		select {
@@ -676,13 +677,15 @@ func waitForSnapshot(dur time.Duration, es *opensearch.Client, snapshotIndices [
 			}
 
 			// Compute progress
-			var indicesDone, indicesInProgress, totalPerc int
+			var indicesDone, indicesInProgress, totalPerc, totalIndexSize int
 			for _, i := range indicesRecovery {
 				if i.Stage == "DONE" {
 					indicesDone++
 				} else {
 					indicesInProgress++
 				}
+
+				totalIndexSize += i.Size
 
 				// Remove the trailing "%" and the dot, so 75.8% is converted to 758
 				percString := strings.ReplaceAll(i.Percent[:len(i.Percent)-1], ".", "")
@@ -691,6 +694,10 @@ func waitForSnapshot(dur time.Duration, es *opensearch.Client, snapshotIndices [
 					return fmt.Errorf("percentage %q cannot be parsed: %w", i.Percent, err)
 				}
 				totalPerc += perc
+			}
+
+			if totalIndexSize > esDiskSpaceBytes {
+				return fmt.Errorf("total index size to be restored: %d bytes, greater than configured disk space %d bytes", totalIndexSize, esDiskSpaceBytes)
 			}
 
 			// Finish when all indices are marked as "DONE"
@@ -706,7 +713,9 @@ func waitForSnapshot(dur time.Duration, es *opensearch.Client, snapshotIndices [
 				mlog.String("avg % completed", fmt.Sprintf("%.2f", avgPerc)),
 				mlog.Int("indices waiting", indicesWaiting),
 				mlog.Int("indices in progress", indicesInProgress),
-				mlog.Int("indices recovered", indicesDone))
+				mlog.Int("indices recovered", indicesDone),
+				mlog.Int("total index size", totalIndexSize),
+			)
 		}
 	}
 }
