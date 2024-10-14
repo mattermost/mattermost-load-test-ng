@@ -664,7 +664,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 // timeout is reached
 func (t *Terraform) waitForSnapshot(es *opensearch.Client, snapshotIndices []string) error {
 	dur := time.Duration(t.config.ElasticSearchSettings.RestoreTimeoutMinutes) * time.Minute
-	esDiskSpaceBytes := t.config.StorageSizes.ElasticSearch*1024*1024*1024
+	esDiskSpaceBytes := t.config.StorageSizes.ElasticSearch * 1024 * 1024 * 1024
 	timeout := time.After(dur)
 	for {
 		select {
