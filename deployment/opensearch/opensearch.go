@@ -280,6 +280,7 @@ type SnapshotIndexShardRecovery struct {
 	Index   string
 	Stage   string
 	Percent string
+	Size    int
 }
 
 // SnapshotIndicesRecovery returns status information for each index shard in
@@ -305,6 +306,7 @@ func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShard
 				// We're using the percentage of bytes restored,
 				// not the percentage of files restored
 				Percent: shard.Index.Size.Percent,
+				Size:    shard.Index.Size.TotalInBytes,
 			})
 		}
 	}
