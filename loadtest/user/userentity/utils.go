@@ -126,13 +126,13 @@ func convertToTypedTeams(userID string, input []gqlTeamMember) ([]*model.Team, [
 			AllowOpenInvite:    team.AllowOpenInvite,
 		}
 		if team.GroupConstrained != nil {
-			mTeam.GroupConstrained = model.NewBool(*team.GroupConstrained)
+			mTeam.GroupConstrained = team.GroupConstrained
 		}
 		if team.SchemeId != nil {
-			mTeam.SchemeId = model.NewString(*team.SchemeId)
+			mTeam.SchemeId = team.SchemeId
 		}
 		if team.PolicyId != nil {
-			mTeam.PolicyID = model.NewString(*team.PolicyId)
+			mTeam.PolicyID = team.PolicyId
 		}
 		teams = append(teams, mTeam)
 
@@ -172,16 +172,16 @@ func convertToTypedChannels(input []gqlChannel) ([]*model.Channel, string) {
 			Props:             c.Props,
 		}
 		if c.SchemeID != nil {
-			ch.SchemeId = model.NewString(*c.SchemeID)
+			ch.SchemeId = c.SchemeID
 		}
 		if c.GroupConstrained != nil {
-			ch.GroupConstrained = model.NewBool(*c.GroupConstrained)
+			ch.GroupConstrained = c.GroupConstrained
 		}
 		if c.Shared != nil {
-			ch.Shared = model.NewBool(*c.Shared)
+			ch.Shared = c.Shared
 		}
 		if c.PolicyID != nil {
-			ch.PolicyID = model.NewString(*c.PolicyID)
+			ch.PolicyID = c.PolicyID
 		}
 		cursor = c.Cursor
 		channels = append(channels, ch)

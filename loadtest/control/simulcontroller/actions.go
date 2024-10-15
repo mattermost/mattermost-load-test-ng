@@ -800,11 +800,13 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	}
 
 	if isUrgent {
+		var urgent string = "urgent"
+		var falseValue bool = false
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
-			Priority:                model.NewString("urgent"),
-			RequestedAck:            model.NewBool(false),
-			PersistentNotifications: model.NewBool(false),
+			Priority:                &urgent,
+			RequestedAck:            &falseValue,
+			PersistentNotifications: &falseValue,
 		}
 	}
 

@@ -26,13 +26,15 @@ type Settings struct {
 // New returns a newly created and initialized logger with the given settings.
 func New(logSettings *Settings) *mlog.Logger {
 	logger, _ := mlog.NewLogger()
+	var consoleLevel string = strings.ToLower(logSettings.ConsoleLevel)
+	var fileLevel string = strings.ToLower(logSettings.FileLevel)
 	cfg, _ := config.MloggerConfigFromLoggerConfig(&model.LogSettings{
 		EnableConsole: &logSettings.EnableConsole,
 		ConsoleJson:   &logSettings.ConsoleJson,
-		ConsoleLevel:  model.NewString(strings.ToLower(logSettings.ConsoleLevel)),
+		ConsoleLevel:  &consoleLevel,
 		EnableFile:    &logSettings.EnableFile,
 		FileJson:      &logSettings.FileJson,
-		FileLevel:     model.NewString(strings.ToLower(logSettings.FileLevel)),
+		FileLevel:     &fileLevel,
 		FileLocation:  &logSettings.FileLocation,
 		EnableColor:   &logSettings.EnableColor,
 	}, nil, func(filename string) string {
@@ -45,13 +47,15 @@ func New(logSettings *Settings) *mlog.Logger {
 // Init initializes the global logger with the given settings.
 func Init(logSettings *Settings) {
 	logger, _ := mlog.NewLogger()
+	var consoleLevel string = strings.ToLower(logSettings.ConsoleLevel)
+	var fileLevel string = strings.ToLower(logSettings.FileLevel)
 	cfg, _ := config.MloggerConfigFromLoggerConfig(&model.LogSettings{
 		EnableConsole: &logSettings.EnableConsole,
 		ConsoleJson:   &logSettings.ConsoleJson,
-		ConsoleLevel:  model.NewString(strings.ToLower(logSettings.ConsoleLevel)),
+		ConsoleLevel:  &consoleLevel,
 		EnableFile:    &logSettings.EnableFile,
 		FileJson:      &logSettings.FileJson,
-		FileLevel:     model.NewString(strings.ToLower(logSettings.FileLevel)),
+		FileLevel:     &fileLevel,
 		FileLocation:  &logSettings.FileLocation,
 		EnableColor:   &logSettings.EnableColor,
 	}, nil, func(filename string) string {

@@ -257,10 +257,12 @@ func (c *GenController) createPost(u user.User) (res control.UserActionResponse)
 
 	if isUrgent {
 		post.Metadata = &model.PostMetadata{}
+		var urgent string = "urgent"
+		var falseValue bool = false
 		post.Metadata.Priority = &model.PostPriority{
-			Priority:                model.NewString("urgent"),
-			RequestedAck:            model.NewBool(false),
-			PersistentNotifications: model.NewBool(false),
+			Priority:                &urgent,
+			RequestedAck:            &falseValue,
+			PersistentNotifications: &falseValue,
 		}
 	}
 

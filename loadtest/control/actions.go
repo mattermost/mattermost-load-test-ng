@@ -249,14 +249,16 @@ func CreateAckPost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	var urgent string = model.PostPriorityUrgent
+	var ack bool = true
 	postId, err := u.CreatePost(&model.Post{
 		Message:   "Priority Post Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:     model.NewString(model.PostPriorityUrgent),
-				RequestedAck: model.NewBool(true),
+				Priority:     &urgent,
+				RequestedAck: &ack,
 			},
 		},
 	})
@@ -339,6 +341,9 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		return UserActionResponse{Info: fmt.Sprintf("user has empty username: %s", mentionedUser.Id)}
 	}
 
+	var urgent string = model.PostPriorityUrgent
+	var ack bool = false
+	var persistent bool = true
 	postId, err := u.CreatePost(&model.Post{
 		Message:   fmt.Sprintf("Persistent Notification Post mention @%s", mentionedUser.Username),
 		UserId:    postOwnerID,
@@ -346,9 +351,9 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:                model.NewString(model.PostPriorityUrgent),
-				RequestedAck:            model.NewBool(false),
-				PersistentNotifications: model.NewBool(true),
+				Priority:                &urgent,
+				RequestedAck:            &ack,
+				PersistentNotifications: &persistent,
 			},
 		},
 	})
