@@ -590,7 +590,7 @@ resource "aws_security_group" "redis" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
+    security_groups = [aws_security_group.app[count.index].id, aws_security_group.metrics[count.index].id]
   }
 
   count = var.app_instance_count > 0 && var.redis_enabled ? 1 : 0
