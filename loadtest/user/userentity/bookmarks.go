@@ -33,17 +33,7 @@ func (ue *UserEntity) AddChannelBookmark(channelId string, bookmark *model.Chann
 		return err
 	}
 
-	// This should not be needed and should be removed once https://github.com/mattermost/mattermost/pull/28574 is merged
-	var fileInfo *model.FileInfo
-	if bookmarkResp.FileId != "" {
-		fileInfo, _, err = ue.client.GetFileInfo(context.Background(), bookmarkResp.FileId)
-		if err != nil {
-			return err
-		}
-	}
-
-	cbi := bookmarkResp.ToBookmarkWithFileInfo(fileInfo)
-	return ue.store.AddChannelBookmark(channelId, cbi)
+	return ue.store.AddChannelBookmark(channelId, bookmarkResp)
 }
 
 // UpdateChannelBookmark updates a given bookmark.
