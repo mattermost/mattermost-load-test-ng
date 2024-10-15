@@ -169,7 +169,27 @@ func openBrowser(url string) (err error) {
 func validateLicense(data []byte) error {
 	validator := &utils.LicenseValidatorImpl{}
 	licenseStr, err := validator.ValidateLicense(data)
+	// If we cannot validate the license, we can test using another service
+	// environment to inform the user whether that's a possible solution
 	if err != nil {
+		currentValue := os.Getenv("MM_SERVICEENVIRONMENT")
+		defer func() { os.Setenv("MM_SERVICEENVIRONMENT", currentValue) }()
+
+		// Pick a different environment
+		newValue := model.ServiceEnvironmentTest
+		if currentValue != model.ServiceEnvironmentProduction {
+			newValue = model.ServiceEnvironmentProduction
+		}
+		os.Setenv("MM_SERVICEENVIRONMENT", newValue)
+
+		// If the error is not nil, then the user just needs to set the
+		// -service_environment flag to a different value
+		if _, newEnvErr := validator.ValidateLicense(data); newEnvErr == nil {
+			return fmt.Errorf("this license is valid only with a %q service environment, which is currently set to %q; try adding the -service_environment=%s flag to change it", newValue, currentValue, newValue)
+		}
+
+		// If not, we just return the (probably not very useful) error returned
+		// by the validator
 		return fmt.Errorf("failed to validate license: %w", err)
 	}
 
