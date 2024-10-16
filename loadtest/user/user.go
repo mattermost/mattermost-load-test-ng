@@ -329,8 +329,8 @@ type User interface {
 	// GetChannelBookmarks fetches bookmarks for the given channel since a specific timestamp.
 	GetChannelBookmarks(channelId string, since int64) error
 
-	// AddChannelBookmark creates a bookmark on the given channel
-	AddChannelBookmark(channelId string, bookmark *model.ChannelBookmark) error
+	// AddChannelBookmark creates a bookmark
+	AddChannelBookmark(bookmark *model.ChannelBookmark) error
 
 	// UpdateChannelBookmark updates a given bookmark.
 	UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error

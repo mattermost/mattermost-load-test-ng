@@ -266,26 +266,26 @@ func getActionList(c *SimulController) []userAction {
 		},
 		{
 			name:             "AddChannelBookmark",
-			run:              c.AddChannelBookmark,
-			frequency:        0.0003,
+			run:              c.addChannelBookmark,
+			frequency:        0.0003, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
 		},
 		{
 			name:             "UpdateOrAddChannelBookark",
-			run:              c.UpdateOrAddBookmark,
-			frequency:        0.0002,
+			run:              c.updateBookmark,
+			frequency:        0.0002, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
 		},
 		{
 			name:             "UpdateChannelBookarkSortOrder",
-			run:              c.UpdateBookmarksSortOrder,
-			frequency:        0.0002,
+			run:              c.updateBookmarksSortOrder,
+			frequency:        0.0002, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
 		},
 		{
 			name:             "DeleteChannelBookark",
-			run:              c.DeleteBookmark,
-			frequency:        0.0001,
+			run:              c.deleteBookmark,
+			frequency:        0.0001, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
 		},
 		// All actions are required to contain a valid minServerVersion:

@@ -17,7 +17,13 @@ var (
 	bookmarkType  = []model.ChannelBookmarkType{model.ChannelBookmarkLink, model.ChannelBookmarkFile}
 )
 
-func (c *SimulController) addBookmark(u user.User) control.UserActionResponse {
+func (c *SimulController) addChannelBookmark(u user.User) control.UserActionResponse {
+	if ok, resp := control.ChannelBookmarkEnabled(u); resp.Err != nil {
+		return resp
+	} else if !ok {
+		return control.UserActionResponse{Info: "channel bookmarks not enabled"}
+	}
+
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -25,6 +31,7 @@ func (c *SimulController) addBookmark(u user.User) control.UserActionResponse {
 
 	emoji := ""
 	// 10% of the times bookmarks will have an emoji assigned.
+	// https://mattermost.atlassian.net/browse/MM-61131
 	if rand.Float64() < 0.1 {
 		emoji = control.RandomEmoji()
 	}
@@ -42,7 +49,7 @@ func (c *SimulController) addBookmark(u user.User) control.UserActionResponse {
 		bookmark.LinkUrl = control.RandomLink()
 	}
 
-	err = u.AddChannelBookmark(channel.Id, bookmark)
+	err = u.AddChannelBookmark(bookmark)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -50,17 +57,7 @@ func (c *SimulController) addBookmark(u user.User) control.UserActionResponse {
 	return control.UserActionResponse{Info: fmt.Sprintf("bookmark created in channel id %v", channel.Id)}
 }
 
-func (c *SimulController) AddChannelBookmark(u user.User) control.UserActionResponse {
-	if ok, resp := control.ChannelBookmarkEnabled(u); resp.Err != nil {
-		return resp
-	} else if !ok {
-		return control.UserActionResponse{Info: "channel bookmarks not enabled"}
-	}
-
-	return c.addBookmark(u)
-}
-
-func (c *SimulController) UpdateOrAddBookmark(u user.User) control.UserActionResponse {
+func (c *SimulController) updateBookmark(u user.User) control.UserActionResponse {
 	if ok, resp := control.ChannelBookmarkEnabled(u); resp.Err != nil {
 		return resp
 	} else if !ok {
@@ -76,35 +73,33 @@ func (c *SimulController) UpdateOrAddBookmark(u user.User) control.UserActionRes
 	if len(currentBookmarks) > 0 {
 		// here we update
 		bookmark := currentBookmarks[rand.Intn(len(currentBookmarks))]
-		if bookmark != nil {
-			bookmarkWithFileInfo := bookmark.Clone()
-			bookmarkWithFileInfo.DisplayName = control.PickRandomString(bookmarkNames)
+		bookmarkWithFileInfo := bookmark.Clone()
+		bookmarkWithFileInfo.DisplayName = control.PickRandomString(bookmarkNames)
 
-			// 10% of the times bookmarks will have an emoji assigned.
-			if bookmarkWithFileInfo.Emoji == "" && rand.Float64() < 0.1 {
-				bookmarkWithFileInfo.Emoji = control.RandomEmoji()
-			}
-
-			if bookmarkWithFileInfo.Type == model.ChannelBookmarkFile {
-				control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark)
-			} else {
-				bookmarkWithFileInfo.LinkUrl = control.RandomLink()
-			}
-
-			err = u.UpdateChannelBookmark(bookmarkWithFileInfo)
-
-			if err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-
-			return control.UserActionResponse{Info: fmt.Sprintf("bookmark %v updated in channel id %v", bookmarkWithFileInfo.Id, channel.Id)}
+		// 10% of the times bookmarks will have an emoji assigned.
+		if bookmarkWithFileInfo.Emoji == "" && rand.Float64() < 0.1 {
+			bookmarkWithFileInfo.Emoji = control.RandomEmoji()
 		}
+
+		if bookmarkWithFileInfo.Type == model.ChannelBookmarkFile {
+			control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark)
+		} else {
+			bookmarkWithFileInfo.LinkUrl = control.RandomLink()
+		}
+
+		err = u.UpdateChannelBookmark(bookmarkWithFileInfo)
+
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		return control.UserActionResponse{Info: fmt.Sprintf("bookmark %v updated in channel id %v", bookmarkWithFileInfo.Id, channel.Id)}
 	}
 
-	return c.addBookmark(u)
+	return control.UserActionResponse{Info: fmt.Sprintf("channel id %v does not have bookmarks to update", channel.Id)}
 }
 
-func (c *SimulController) DeleteBookmark(u user.User) control.UserActionResponse {
+func (c *SimulController) deleteBookmark(u user.User) control.UserActionResponse {
 	if ok, resp := control.ChannelBookmarkEnabled(u); resp.Err != nil {
 		return resp
 	} else if !ok {
@@ -119,20 +114,18 @@ func (c *SimulController) DeleteBookmark(u user.User) control.UserActionResponse
 	currentBookmarks := u.Store().ChannelBookmarks(channel.Id)
 	if len(currentBookmarks) > 0 {
 		bookmark := currentBookmarks[rand.Intn(len(currentBookmarks))]
-		if bookmark != nil {
-			err = u.DeleteChannelBookmark(bookmark.ChannelId, bookmark.Id)
-			if err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-
-			return control.UserActionResponse{Info: fmt.Sprintf("bookmark id %v deleted in channel id %v", bookmark.Id, channel.Id)}
+		err = u.DeleteChannelBookmark(bookmark.ChannelId, bookmark.Id)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+
+		return control.UserActionResponse{Info: fmt.Sprintf("bookmark id %v deleted in channel id %v", bookmark.Id, channel.Id)}
 	}
 
-	return control.UserActionResponse{Info: "no channel bookmarks deleted"}
+	return control.UserActionResponse{Info: "no channel bookmarks found"}
 }
 
-func (c *SimulController) UpdateBookmarksSortOrder(u user.User) control.UserActionResponse {
+func (c *SimulController) updateBookmarksSortOrder(u user.User) control.UserActionResponse {
 	if ok, resp := control.ChannelBookmarkEnabled(u); resp.Err != nil {
 		return resp
 	} else if !ok {
@@ -148,14 +141,12 @@ func (c *SimulController) UpdateBookmarksSortOrder(u user.User) control.UserActi
 	if len(currentBookmarks) > 1 {
 		bookmark := currentBookmarks[rand.Intn(len(currentBookmarks))]
 		newIndex := rand.Int63n(int64(len(currentBookmarks)))
-		if bookmark != nil {
-			err = u.UpdateChannelBookmarkSortOrder(channel.Id, bookmark.Id, newIndex)
-			if err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-
-			return control.UserActionResponse{Info: fmt.Sprintf("bookmark id %v in channel id %v sorted at index %d", bookmark.Id, channel.Id, newIndex)}
+		err = u.UpdateChannelBookmarkSortOrder(channel.Id, bookmark.Id, newIndex)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+
+		return control.UserActionResponse{Info: fmt.Sprintf("bookmark id %v in channel id %v sorted at index %d", bookmark.Id, channel.Id, newIndex)}
 	}
 
 	return control.UserActionResponse{Info: "not enough channel bookmarks to sort"}
