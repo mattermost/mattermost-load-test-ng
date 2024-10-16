@@ -8,6 +8,7 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 const (
@@ -139,10 +140,9 @@ func (t *Terraform) createCloudWatchLogsPolicy() error {
 	}
 	docJsonStr := string(docJsonBytes)
 
-	policyName := "lt-cloudwatch-log-policy"
 	input := cloudwatchlogs.PutResourcePolicyInput{
-		PolicyName:     &policyName,
-		PolicyDocument: &docJsonStr,
+		PolicyName:     model.NewPointer("lt-cloudwatch-log-policy"),
+		PolicyDocument: model.NewPointer(docJsonStr),
 	}
 	if _, err := cwclient.PutResourcePolicy(context.Background(), &input); err != nil {
 		return fmt.Errorf("failed to create CloudWatchLogs policy; it can be manually created by running `aws logs put-resource-policy --policy-name lt-cloudwatch-log-policy --policy-document %q`; the next `deployment create` should work when such a policy is present in the AWS account; original error: %w", docJsonStr, err)

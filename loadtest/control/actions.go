@@ -341,9 +341,6 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		return UserActionResponse{Info: fmt.Sprintf("user has empty username: %s", mentionedUser.Id)}
 	}
 
-	var urgent string = model.PostPriorityUrgent
-	var ack bool = false
-	var persistent bool = true
 	postId, err := u.CreatePost(&model.Post{
 		Message:   fmt.Sprintf("Persistent Notification Post mention @%s", mentionedUser.Username),
 		UserId:    postOwnerID,
@@ -351,9 +348,9 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:                &urgent,
-				RequestedAck:            &ack,
-				PersistentNotifications: &persistent,
+				Priority:                model.NewPointer(model.PostPriorityUrgent),
+				RequestedAck:            model.NewPointer(false),
+				PersistentNotifications: model.NewPointer(true),
 			},
 		},
 	})

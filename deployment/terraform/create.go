@@ -1072,12 +1072,10 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	}
 
 	if t.output.HasRedis() {
-		cacheRedis := model.CacheTypeRedis
-		redisDB := 0
-		cfg.CacheSettings.CacheType = &cacheRedis
+		cfg.CacheSettings.CacheType = model.NewPointer(model.CacheTypeRedis)
 		redisEndpoint := net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port))
-		cfg.CacheSettings.RedisAddress = &redisEndpoint
-		cfg.CacheSettings.RedisDB = &redisDB
+		cfg.CacheSettings.RedisAddress = model.NewPointer(redisEndpoint)
+		cfg.CacheSettings.RedisDB = model.NewPointer(0)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {

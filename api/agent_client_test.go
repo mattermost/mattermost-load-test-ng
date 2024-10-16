@@ -33,8 +33,7 @@ func createFakeMMServer() *httptest.Server {
 		case "/api/v4/config":
 			mmCfg := model.Config{}
 			mmCfg.SetDefaults()
-			maxUsers := 10000
-			mmCfg.TeamSettings.MaxUsersPerTeam = &maxUsers
+			mmCfg.TeamSettings.MaxUsersPerTeam = model.NewPointer(10000)
 			json.NewEncoder(w).Encode(mmCfg)
 		case "/api/v4/emoji":
 			json.NewEncoder(w).Encode(&model.Emoji{})
