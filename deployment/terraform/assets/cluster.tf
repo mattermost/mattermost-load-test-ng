@@ -337,8 +337,8 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
-  name_prefix   = "${var.cluster_name}-db-pg"
-  family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
+  name_prefix = "${var.cluster_name}-db-pg"
+  family      = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
   dynamic "parameter" {
     for_each = var.db_parameters
     content {
@@ -633,7 +633,7 @@ resource "aws_security_group" "redis" {
     security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
   }
 
-  count      = var.redis_enabled ? 1 : 0
+  count = var.redis_enabled ? 1 : 0
 }
 
 resource "aws_security_group" "elastic" {
