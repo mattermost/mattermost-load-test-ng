@@ -61,12 +61,12 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.app_instance_type
-  key_name                    = aws_key_pair.key.id
-  count                       = var.app_instance_count
-  availability_zone           = var.aws_az
-  iam_instance_profile        = var.app_attach_iam_profile
+  ami                  = var.aws_ami
+  instance_type        = var.app_instance_type
+  key_name             = aws_key_pair.key.id
+  count                = var.app_instance_count
+  availability_zone    = var.aws_az
+  iam_instance_profile = var.app_attach_iam_profile
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -270,16 +270,16 @@ EOF
 }
 
 resource "aws_elasticache_cluster" "redis_server" {
-  cluster_id                   = "${var.cluster_name}-redis"
-  engine                       = "redis"
-  node_type                    = var.redis_node_type
-  count                        = var.redis_enabled ? 1 : 0
-  num_cache_nodes              = 1
-  parameter_group_name         = var.redis_param_group_name
-  engine_version               = var.redis_engine_version
-  port                         = 6379
-  security_group_ids           = [aws_security_group.redis[0].id]
-  availability_zone            = var.aws_az
+  cluster_id           = "${var.cluster_name}-redis"
+  engine               = "redis"
+  node_type            = var.redis_node_type
+  count                = var.redis_enabled ? 1 : 0
+  num_cache_nodes      = 1
+  parameter_group_name = var.redis_param_group_name
+  engine_version       = var.redis_engine_version
+  port                 = 6379
+  security_group_ids   = [aws_security_group.redis[0].id]
+  availability_zone    = var.aws_az
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -679,11 +679,11 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.job_server_instance_type
-  key_name                    = aws_key_pair.key.id
-  count                       = var.job_server_instance_count
-  availability_zone           = var.aws_az
+  ami               = var.aws_ami
+  instance_type     = var.job_server_instance_type
+  key_name          = aws_key_pair.key.id
+  count             = var.job_server_instance_count
+  availability_zone = var.aws_az
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -725,11 +725,11 @@ resource "aws_instance" "keycloak" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.keycloak_instance_type
-  count                       = var.keycloak_enabled ? 1 : 0
-  key_name                    = aws_key_pair.key.id
-  availability_zone           = var.aws_az
+  ami               = var.aws_ami
+  instance_type     = var.keycloak_instance_type
+  count             = var.keycloak_enabled ? 1 : 0
+  key_name          = aws_key_pair.key.id
+  availability_zone = var.aws_az
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,
