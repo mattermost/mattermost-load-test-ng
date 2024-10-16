@@ -32,8 +32,8 @@ type Config struct {
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetID is the id of the subnet associated to the resources.
-	ClusterSubnetID string
+	// ClusterSubnetIDs is the ids of the subnets associated to the resources.
+	ClusterSubnetIDs []string
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
@@ -271,8 +271,6 @@ type ElasticSearchSettings struct {
 	InstanceType string
 	// Elasticsearch version to be deployed.
 	Version string `default:"Elasticsearch_7.10"`
-	// Id of the VPC associated with the instance to be created.
-	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
 	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
@@ -333,6 +331,10 @@ func (p DBParameters) String() string {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if len(c.ClusterSubnetIDs) > 0 && c.ClusterVpcID == "" {
+		return errors.New("vpc_id is required when cluster_subnet_ids is set")
+	}
+
 	if !checkPrefix(c.MattermostDownloadURL) {
 		return fmt.Errorf("mattermost download url is not in correct format: %q", c.MattermostDownloadURL)
 	}
@@ -386,8 +388,8 @@ func (c *Config) validateElasticSearchConfig() error {
 	}
 
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.ElasticSearchSettings.VpcID == "" {
-			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
+		if c.ClusterVpcID == "" {
+			return errors.New("ClusterVpcID must be set in order to create an Elasticsearch instance")
 		}
 
 		domainName := c.ClusterName + "-es"

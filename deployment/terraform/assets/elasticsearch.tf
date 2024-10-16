@@ -80,11 +80,10 @@ resource "aws_opensearch_domain" "es_server" {
 
   vpc_options {
     subnet_ids = [
-      element(tolist(data.aws_subnets.selected.ids), 0)
+      (length(var.cluster_subnet_ids) > 0) ? data.aws_subnets.manual.ids : element(tolist(data.aws_subnets.selected.ids), 0)
     ]
     security_group_ids = [aws_security_group.elastic[0].id]
   }
-
 
   ebs_options {
     ebs_enabled = true
@@ -95,6 +94,12 @@ resource "aws_opensearch_domain" "es_server" {
   cluster_config {
     instance_count = var.es_instance_count
     instance_type  = var.es_instance_type
+
+    // Enable zone awareness only if we have multiple subnets manually selected
+    zone_awareness_enabled = length(var.cluster_subnet_ids) > 0
+    zone_awareness_config {
+      availability_zone_count = length(var.cluster_subnet_ids)
+    }
   }
 
   access_policies = <<CONFIG

@@ -74,13 +74,13 @@ func TestConfigIsValid(t *testing.T) {
 func TestValidateElasticSearchConfig(t *testing.T) {
 	baseValidConfig := func() Config {
 		return Config{
+			ClusterVpcID:          "vpc-01234567890abcdef",
 			ClusterName:           "clustername",
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
 			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz",
 			ElasticSearchSettings: ElasticSearchSettings{
 				InstanceCount:      1,
 				Version:            "OpenSearch_2.7",
-				VpcID:              "vpc-01234567890abcdef",
 				SnapshotRepository: "somerepo",
 				SnapshotName:       "somename",
 			},
@@ -104,7 +104,7 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 
 	t.Run("invalid VPC ID", func(t *testing.T) {
 		cfg := baseValidConfig()
-		cfg.ElasticSearchSettings.VpcID = ""
+		cfg.ClusterVpcID = ""
 		require.Error(t, cfg.validateElasticSearchConfig())
 	})
 

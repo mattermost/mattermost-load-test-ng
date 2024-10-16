@@ -217,6 +217,16 @@ func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) 
 	return buf.String(), nil
 }
 
+// parseListParam converts a list parameter to a json encoded string
+func parseListParam[T any](param T) string {
+	result, err := json.Marshal(param)
+	if err != nil {
+		return ""
+	}
+
+	return string(result)
+}
+
 func (t *Terraform) getParams() []string {
 	return []string{
 		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
@@ -225,7 +235,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
-		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
+		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, parseListParam(t.config.ClusterSubnetIDs)),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
@@ -233,7 +243,6 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
 		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
-		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
 		"-var", fmt.Sprintf("es_snapshot_repository=%s", t.config.ElasticSearchSettings.SnapshotRepository),
 		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),

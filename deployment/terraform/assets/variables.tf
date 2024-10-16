@@ -4,7 +4,8 @@ variable "cluster_name" {
 variable "cluster_vpc_id" {
 }
 
-variable "cluster_subnet_id" {
+variable "cluster_subnet_ids" {
+  type = list(string)
 }
 
 variable "app_instance_count" {
@@ -28,9 +29,6 @@ variable "es_instance_type" {
 }
 
 variable "es_version" {
-}
-
-variable "es_vpc" {
 }
 
 variable "es_create_role" {

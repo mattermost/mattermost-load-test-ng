@@ -5,7 +5,7 @@
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
-  "ClusterSubnetID": "",
+  "ClusterSubnetIDs": [],
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "MetricsInstanceType": "t3.xlarge",
