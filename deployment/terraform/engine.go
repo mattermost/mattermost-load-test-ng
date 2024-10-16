@@ -55,6 +55,10 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Wri
 		defer cancel()
 	}
 
+	if t.config.AWSProfile != "" {
+		args = append(args, "--profile="+t.config.AWSProfile)
+	}
+
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 

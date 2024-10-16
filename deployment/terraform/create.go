@@ -180,7 +180,6 @@ func (t *Terraform) Create(initData bool) error {
 
 		sgID := t.output.DBSecurityGroup[0].Id
 		args := []string{
-			"--profile=" + t.config.AWSProfile,
 			"rds",
 			"modify-db-cluster",
 			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
