@@ -1,0 +1,44 @@
+{
+  "ClusterConfig": {
+    "Agents": [
+      {
+        "Id": "lt0",
+        "ApiURL": "http://localhost:4000"
+      }
+    ],
+    "MaxActiveUsers": 8000
+  },
+  "MonitorConfig": {
+    "PrometheusURL": "http://localhost:9090",
+    "UpdateIntervalMs": 2000,
+    "Queries": [
+      {
+        "Description": "Average client request duration",
+        "Query": "sum(rate(loadtest_http_request_time_sum[1m]))/sum(rate(loadtest_http_request_time_count[1m]))",
+        "Threshold": 0.1,
+        "MinIntervalSec": 60,
+        "Alert": true
+      },
+      {
+        "Description": "99th percentile of client request duration",
+        "Query": "histogram_quantile(0.99, sum(rate(loadtest_http_request_time_bucket[1m])) by (le))",
+        "Threshold": 2,
+        "MinIntervalSec": 60,
+        "Alert": true
+      }
+    ]
+  },
+  "NumUsersInc": 8,
+  "NumUsersDec": 8,
+  "RestTimeSec": 2,
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "INFO",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileJson": true,
+    "FileLocation": "ltcoordinator.log",
+    "EnableColor": false
+  }
+}
