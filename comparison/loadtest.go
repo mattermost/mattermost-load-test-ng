@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
@@ -281,7 +280,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Value:   clearLicensesCmdValue,
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithSharedConfigProfile(t.Config().AWSProfile))
+	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return fmt.Errorf("error loading aws config: %w", err)
 	}

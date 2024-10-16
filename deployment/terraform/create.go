@@ -23,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -763,9 +762,7 @@ func genNginxConfig() (string, error) {
 }
 
 func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
-	)
+	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}
