@@ -536,7 +536,11 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
 
-	os, err := opensearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
+	awsCreds, err := t.GetAWSCreds()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS credentials")
+	}
+	os, err := opensearch.New(esEndpoint, sshc, awsCreds, t.config.AWSRegion)
 	if err != nil {
 		return fmt.Errorf("unable to create Elasticserach client: %w", err)
 	}

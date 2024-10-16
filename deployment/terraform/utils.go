@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -313,4 +316,26 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	}
 
 	return url
+}
+
+// GetAWSConfig returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	if t.config.AWSProfile == "" {
+		return awsconfig.LoadDefaultConfig(context.Background())
+	}
+
+	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+}
+
+// GetAWSCreds returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
+	cfg, err := t.GetAWSConfig()
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	return cfg.Credentials.Retrieve(context.Background())
 }
