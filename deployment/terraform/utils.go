@@ -166,7 +166,12 @@ func openBrowser(url string) (err error) {
 	return
 }
 
-func validateLicense(data []byte) error {
+func validateLicense(filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read license file: %w", err)
+	}
+
 	validator := &utils.LicenseValidatorImpl{}
 	licenseStr, err := validator.ValidateLicense(data)
 	// If we cannot validate the license, we can test using another service
