@@ -757,13 +757,15 @@ func TestPostsWithAckRequests(t *testing.T) {
 	ackPosts := make([]string, n)
 
 	for i := 0; i < n; i++ {
+		urgent := model.PostPriorityUrgent
+		ack := true
 		p := &model.Post{
 			Id:      model.NewId(),
 			Message: "ack post",
 			Metadata: &model.PostMetadata{
 				Priority: &model.PostPriority{
-					Priority:     model.NewString(model.PostPriorityUrgent),
-					RequestedAck: model.NewBool(true),
+					Priority:     &urgent,
+					RequestedAck: &ack,
 				},
 			},
 		}
