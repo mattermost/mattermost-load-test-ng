@@ -8,6 +8,9 @@ variable "cluster_subnet_ids" {
   type = list(string)
 }
 
+variable "app_attach_iam_profile" {
+}
+
 variable "app_instance_count" {
 }
 

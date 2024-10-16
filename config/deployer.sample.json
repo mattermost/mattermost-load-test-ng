@@ -8,6 +8,7 @@
   "ClusterSubnetIDs": [],
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
+  "AppAttachIAMProfile": "",
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
@@ -140,7 +141,7 @@
     "App": 10,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 20
+    "ElasticSearch": 100
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,
