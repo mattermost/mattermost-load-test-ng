@@ -1,0 +1,62 @@
+{
+  "ConnectionConfiguration": {
+    "ServerURL": "http://localhost:8065",
+    "WebSocketURL": "ws://localhost:8065",
+    "AdminEmail": "sysadmin@sample.mattermost.com",
+    "AdminPassword": "Sys@dmin-sample1"
+  },
+  "UserControllerConfiguration": {
+    "Type": "simulative",
+    "RatesDistribution": [
+      {
+        "Rate": 1,
+        "Percentage": 0.05
+      },
+      {
+        "Rate": 2,
+        "Percentage": 0.1
+      },
+      {
+        "Rate": 3,
+        "Percentage": 0.15
+      },
+      {
+        "Rate": 6,
+        "Percentage": 0.4
+      },
+      {
+        "Rate": 30,
+        "Percentage": 0.3
+      }
+    ]
+  },
+  "InstanceConfiguration": {
+    "NumTeams": 2,
+    "NumChannels": 0,
+    "NumPosts": 0,
+    "NumReactions": 0,
+    "NumAdmins": 0,
+    "PercentReplies": 0.5,
+    "PercentRepliesInLongThreads": 0.05,
+    "PercentPublicChannels": 1,
+    "PercentPrivateChannels": 0,
+    "PercentDirectChannels": 0,
+    "PercentGroupChannels": 0
+  },
+  "UsersConfiguration": {
+    "InitialActiveUsers": 0,
+    "UsersFilePath": "",
+    "MaxActiveUsers": 2000,
+    "AvgSessionsPerUser": 1
+  },
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "DEBUG",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "DEBUG",
+    "FileJson": true,
+    "FileLocation": "ltagent.log",
+    "EnableColor": true
+  }
+}

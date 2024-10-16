@@ -1,0 +1,24 @@
+{
+  "BaseBuild": {
+    "Label": "base",
+    "URL": "https://latest.mattermost.com/mattermost-enterprise-linux"
+  },
+  "NewBuild": {
+    "Label": "new",
+    "URL": "https://latest.mattermost.com/mattermost-enterprise-linux"
+  },
+  "LoadTests": [
+    {
+      "Type": "bounded",
+      "DBEngine": "postgresql",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/111K_710_psql.sql.gz",
+      "NumUsers": 3500,
+      "Duration": "2m"
+    }
+  ],
+  "Output": {
+    "UploadDashboard": true,
+    "GenerateGraphs": true,
+    "GenerateReport": true
+  }
+}
