@@ -30,7 +30,7 @@ MetricsInstanceType = 't3.xlarge'
 
 # Cluster configuration
 ClusterName = 'loadtest'
-ClusterSubnetID = ''
+ClusterSubnetIDs = []
 ClusterVpcID = ''
 
 # Database configuration
@@ -146,4 +146,3 @@ Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
 
 [CustomTags]
-
