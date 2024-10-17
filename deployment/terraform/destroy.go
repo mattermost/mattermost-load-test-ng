@@ -32,7 +32,7 @@ func (t *Terraform) Destroy() error {
 	go func() {
 		if t.output.HasS3Bucket() {
 			mlog.Info("emptying S3 bucket s3://" + t.output.S3Bucket.Id)
-			emptyS3BucketArgs := []string{"--profile", t.Config().AWSProfile,
+			emptyS3BucketArgs := []string{
 				"s3",
 				"rm",
 				"s3://" + t.output.S3Bucket.Id,
@@ -61,7 +61,6 @@ func (t *Terraform) Destroy() error {
 	// If we have restored from a DB backup, we need to manually delete the cluster.
 	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
 		args := []string{
-			"--profile=" + t.config.AWSProfile,
 			"rds",
 			"delete-db-cluster",
 			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,

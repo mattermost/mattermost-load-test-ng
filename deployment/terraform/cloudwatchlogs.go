@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -81,9 +80,7 @@ type policyDocumentStmtPrincipal struct {
 //	}
 func (t *Terraform) checkCloudWatchLogsPolicy() error {
 	// Create CloudWatchLogs client
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
-	)
+	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return err
 	}
@@ -126,9 +123,7 @@ func (t *Terraform) checkCloudWatchLogsPolicy() error {
 // permissions to the AWS OpenSearch service to publish logs to CloudWatch
 func (t *Terraform) createCloudWatchLogsPolicy() error {
 	// Create CloudWatchLogs client
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
-	)
+	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return err
 	}

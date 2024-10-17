@@ -24,7 +24,6 @@ func (t *Terraform) StopDB() error {
 	}
 
 	args := []string{
-		"--profile=" + t.config.AWSProfile,
 		"rds",
 		"stop-db-cluster",
 		"--db-cluster-identifier=" + output.DBCluster.ClusterIdentifier,
@@ -51,7 +50,6 @@ func (t *Terraform) StartDB() error {
 	}
 
 	args := []string{
-		"--profile=" + t.config.AWSProfile,
 		"rds",
 		"start-db-cluster",
 		"--db-cluster-identifier=" + output.DBCluster.ClusterIdentifier,
@@ -93,7 +91,6 @@ func (t *Terraform) DBStatus() (string, error) {
 
 	var buf bytes.Buffer
 	args := []string{
-		"--profile=" + t.config.AWSProfile,
 		"rds",
 		"describe-db-clusters",
 		"--db-cluster-identifier=" + output.DBCluster.ClusterIdentifier,
