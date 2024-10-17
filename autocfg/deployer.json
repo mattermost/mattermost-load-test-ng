@@ -1,7 +1,7 @@
 {
   "AWSProfile": "",
   "AWSRegion": "us-east-1",
-  "AWSAvailabilityZone": "us-east-1d",
+  "AWSAvailabilityZone": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "agmautolt",
   "ClusterVpcID": "",
