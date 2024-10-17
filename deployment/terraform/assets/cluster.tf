@@ -42,6 +42,11 @@ data "aws_subnets" "selected" {
     name   = "vpc-id"
     values = [var.cluster_vpc_id]
   }
+
+  filter {
+    name   = "availability-zone"
+    values = [var.aws_az]
+  }
 }
 
 // CUSTOM SUBNETS (Only applies if var.cluster_subnet_ids is set)
