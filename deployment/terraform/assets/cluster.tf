@@ -49,35 +49,6 @@ data "aws_subnets" "selected" {
   }
 }
 
-// CUSTOM SUBNETS (Only applies if var.cluster_subnet_ids is set)
-// In order to exhaust the cluster subnets selected in the configuration we select the next element each time
-// we retrieve from the list. This is done by using the `element` function which allows to retrieve an element
-// index higher than the list length:
-// > If the given index is greater than the length of the list then the index is "wrapped around"
-// > by taking the index modulo the length of the list
-// Source: https://www.terraform.io/language/functions/element
-// Here is the list of indexes used for the various resources created by the tool, for documentation purposes:
-// 0 => aws_instance.loadtest_agent
-// 1 => aws_opensearch_domain.es_server
-// 2 => aws_instance.app_server
-// 3 => aws_instance.metrics_server
-// 4 => aws_instance.proxy_server
-// 5 => aws_instance.job_server
-// 6 => aws_instance.keycloak_server
-// RDS clusters are not included in this list as they are created in a different way, using all subnets.
-//
-data "aws_subnets" "manual" {
-  filter {
-    name   = "vpc-id"
-    values = [var.cluster_vpc_id]
-  }
-
-  filter {
-    name = "subnet-id"
-    values = var.cluster_subnet_ids
-  }
-}
-
 resource "aws_key_pair" "key" {
   key_name   = "${var.cluster_name}-keypair"
   public_key = file(var.ssh_public_key)
@@ -101,7 +72,7 @@ resource "aws_instance" "app_server" {
   count                = var.app_instance_count
   availability_zone    = var.aws_az
   iam_instance_profile = var.app_attach_iam_profile
-  subnet_id            = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 2) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id            = (var.cluster_subnet_ids.app != "") ? var.cluster_subnet_ids.app : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -197,7 +168,7 @@ resource "aws_instance" "metrics_server" {
   count             = var.app_instance_count > 0 ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
-  subnet_id         = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 3) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.metrics != "") ? var.cluster_subnet_ids.metrics : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
@@ -225,7 +196,7 @@ resource "aws_instance" "proxy_server" {
   count                       = var.proxy_instance_count
   associate_public_ip_address = true
   availability_zone           = var.aws_az
-  subnet_id = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 4) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id = (var.cluster_subnet_ids.proxy != "") ? var.cluster_subnet_ids.proxy : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
@@ -308,8 +279,8 @@ EOF
 
 resource "aws_db_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-group"
-  subnet_ids = (length(var.cluster_subnet_ids) > 0) ? [for subnet in var.cluster_subnet_ids: subnet] : tolist(data.aws_subnets.selected.ids)
-  count = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? 1 : 0
+  subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
+  count = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
 }
 
 
@@ -329,8 +300,8 @@ resource "aws_elasticache_cluster" "redis_server" {
 
 resource "aws_db_subnet_group" "db" {
   name       = "${var.cluster_name}-db-group"
-  subnet_ids = (length(var.cluster_subnet_ids) > 0) ? [for subnet in var.cluster_subnet_ids: subnet] : tolist(data.aws_subnets.selected.ids)
-  count = var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? 1 : 0
+  subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
+  count = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -397,7 +368,7 @@ resource "aws_instance" "loadtest_agent" {
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
-  subnet_id                   = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 1) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id                   = (var.cluster_subnet_ids.agent != "") ? var.cluster_subnet_ids.agent : element(tolist(data.aws_subnets.selected.ids), 0)
 
   associate_public_ip_address = true
   availability_zone           = var.aws_az
@@ -744,7 +715,7 @@ resource "aws_instance" "job_server" {
   key_name          = aws_key_pair.key.id
   count             = var.job_server_instance_count
   availability_zone = var.aws_az
-  subnet_id         = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 5) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.job != "") ? var.cluster_subnet_ids.job : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -795,7 +766,7 @@ resource "aws_instance" "keycloak" {
   count             = var.keycloak_enabled ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
-  subnet_id         = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 6) : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.keycloak != "") ? var.cluster_subnet_ids.keycloak : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,

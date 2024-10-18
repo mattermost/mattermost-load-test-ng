@@ -80,7 +80,7 @@ resource "aws_opensearch_domain" "es_server" {
 
   vpc_options {
     subnet_ids = [
-      (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 1) : element(tolist(data.aws_subnets.selected.ids), 0)
+      (var.cluster_subnet_ids.elasticsearch != "") ? var.cluster_subnet_ids.elasticsearch : element(tolist(data.aws_subnets.selected.ids), 0)
     ]
     security_group_ids = [aws_security_group.elastic[0].id]
   }

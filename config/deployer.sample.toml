@@ -30,7 +30,6 @@ MetricsInstanceType = 't3.xlarge'
 
 # Cluster configuration
 ClusterName = 'loadtest'
-ClusterSubnetIDs = []
 ClusterVpcID = ''
 
 # Database configuration
@@ -44,6 +43,17 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 # Proxy server configuration
 ProxyInstanceType = 'c5.xlarge'
 ProxyInstanceCount = 1
+
+[ClusterSubnetIDs]
+App = ""
+Job = ""
+Proxy = ""
+Agent = ""
+ElasticSearch = ""
+Metrics = ""
+Keycloak = ""
+Database = []
+Redis = []
 
 [ElasticSearchSettings]
 CreateRole = false

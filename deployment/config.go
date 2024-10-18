@@ -16,6 +16,23 @@ import (
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 
+type ClusterSubnetIDs struct {
+	App           string   `json:"app"`
+	Job           string   `json:"job"`
+	Proxy         string   `json:"proxy"`
+	Agent         string   `json:"agent"`
+	ElasticSearch string   `json:"elasticsearch"`
+	Metrics       string   `json:"metrics"`
+	Keycloak      string   `json:"keycloak"`
+	Database      []string `json:"database"`
+	Redis         []string `json:"redis"`
+}
+
+// IsAnySet returns true if any of the subnet ids are set.
+func (c *ClusterSubnetIDs) IsAnySet() bool {
+	return c.App != "" || c.Job != "" || c.Proxy != "" || c.Agent != "" || c.ElasticSearch != "" || c.Metrics != "" || c.Keycloak != ""
+}
+
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
@@ -32,8 +49,8 @@ type Config struct {
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetIDs is the ids of the subnets associated to the resources.
-	ClusterSubnetIDs []string
+	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
+	ClusterSubnetIDs ClusterSubnetIDs
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
@@ -333,8 +350,8 @@ func (p DBParameters) String() string {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
-	if len(c.ClusterSubnetIDs) > 0 && c.ClusterVpcID == "" {
-		return errors.New("vpc_id is required when cluster_subnet_ids is set")
+	if c.ClusterSubnetIDs.IsAnySet() && c.ClusterVpcID == "" {
+		return errors.New("vpc_id is required when any subnet is specified")
 	}
 
 	if !checkPrefix(c.MattermostDownloadURL) {

@@ -5,7 +5,17 @@ variable "cluster_vpc_id" {
 }
 
 variable "cluster_subnet_ids" {
-  type = list(string)
+  type = object({
+    app = string
+    job = string
+    proxy = string
+    agent = string
+    elasticsearch = string
+    metrics = string
+    keycloak = string
+    database = list(string)
+    redis = list(string)
+  })
 }
 
 variable "app_attach_iam_profile" {

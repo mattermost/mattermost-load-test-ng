@@ -240,8 +240,8 @@ func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) 
 	return buf.String(), nil
 }
 
-// parseListParam converts a list parameter to a json encoded string
-func parseListParam[T any](param T) string {
+// convertToTerraformVar converts a list parameter to a json encoded string
+func convertToTerraformVar[T any](param T) string {
 	result, err := json.Marshal(param)
 	if err != nil {
 		return ""
@@ -258,7 +258,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
-		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, parseListParam(t.config.ClusterSubnetIDs)),
+		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, convertToTerraformVar(t.config.ClusterSubnetIDs)),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("app_attach_iam_profile=%s", t.config.AppAttachIAMProfile),

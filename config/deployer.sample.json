@@ -5,7 +5,17 @@
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
-  "ClusterSubnetIDs": [],
+  "ClusterSubnetIDs": {
+    "Agent": "",
+    "App": "",
+    "Database": [],
+    "ElasticSearch": "",
+    "Job": "",
+    "Keycloak": "",
+    "Metrics": "",
+    "Proxy": "",
+    "Redis": []
+  },
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
