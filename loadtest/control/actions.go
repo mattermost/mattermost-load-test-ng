@@ -249,14 +249,16 @@ func CreateAckPost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	var urgent string = model.PostPriorityUrgent
+	var ack bool = true
 	postId, err := u.CreatePost(&model.Post{
 		Message:   "Priority Post Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:     model.NewString(model.PostPriorityUrgent),
-				RequestedAck: model.NewBool(true),
+				Priority:     &urgent,
+				RequestedAck: &ack,
 			},
 		},
 	})
@@ -346,9 +348,9 @@ func CreatePersistentNotificationPost(u user.User) UserActionResponse {
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:                model.NewString(model.PostPriorityUrgent),
-				RequestedAck:            model.NewBool(false),
-				PersistentNotifications: model.NewBool(true),
+				Priority:                model.NewPointer(model.PostPriorityUrgent),
+				RequestedAck:            model.NewPointer(false),
+				PersistentNotifications: model.NewPointer(true),
 			},
 		},
 	})
@@ -1028,6 +1030,12 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	if err != nil {
 		return false, UserActionResponse{Err: NewUserError(err)}
 	}
+
+	return allow, UserActionResponse{}
+}
+
+func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
+	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
 
 	return allow, UserActionResponse{}
 }

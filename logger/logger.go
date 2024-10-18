@@ -29,10 +29,10 @@ func New(logSettings *Settings) *mlog.Logger {
 	cfg, _ := config.MloggerConfigFromLoggerConfig(&model.LogSettings{
 		EnableConsole: &logSettings.EnableConsole,
 		ConsoleJson:   &logSettings.ConsoleJson,
-		ConsoleLevel:  model.NewString(strings.ToLower(logSettings.ConsoleLevel)),
+		ConsoleLevel:  model.NewPointer(strings.ToLower(logSettings.ConsoleLevel)),
 		EnableFile:    &logSettings.EnableFile,
 		FileJson:      &logSettings.FileJson,
-		FileLevel:     model.NewString(strings.ToLower(logSettings.FileLevel)),
+		FileLevel:     model.NewPointer(strings.ToLower(logSettings.FileLevel)),
 		FileLocation:  &logSettings.FileLocation,
 		EnableColor:   &logSettings.EnableColor,
 	}, nil, func(filename string) string {
@@ -48,10 +48,10 @@ func Init(logSettings *Settings) {
 	cfg, _ := config.MloggerConfigFromLoggerConfig(&model.LogSettings{
 		EnableConsole: &logSettings.EnableConsole,
 		ConsoleJson:   &logSettings.ConsoleJson,
-		ConsoleLevel:  model.NewString(strings.ToLower(logSettings.ConsoleLevel)),
+		ConsoleLevel:  model.NewPointer(strings.ToLower(logSettings.ConsoleLevel)),
 		EnableFile:    &logSettings.EnableFile,
 		FileJson:      &logSettings.FileJson,
-		FileLevel:     model.NewString(strings.ToLower(logSettings.FileLevel)),
+		FileLevel:     model.NewPointer(strings.ToLower(logSettings.FileLevel)),
 		FileLocation:  &logSettings.FileLocation,
 		EnableColor:   &logSettings.EnableColor,
 	}, nil, func(filename string) string {
