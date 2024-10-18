@@ -5,30 +5,42 @@ set -euo pipefail
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
+system_arch=$(uname -m)
+if [ "$arch" == "x86_64" ]; then
+  arch="amd64"
+fi
+prometheus_node_exporter_version="1.8.2"
+
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      echo 'tcp_bbr' | sudo tee -a /etc/modules && \
+      echo 'tcp_bbr' | sudo tee /etc/modules-load.d/tcp_bbr.conf && \
       sudo modprobe tcp_bbr && \
-      wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg && \
-      sudo sh -c 'echo "deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list' && \
-      sudo sh -c 'echo "deb-src http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx" >> /etc/apt/sources.list.d/nginx.list' && \
-      sudo apt-get -y update && \
-      sudo apt-get install -y nginx && \
-      sudo apt-get install -y prometheus-node-exporter && \
-      sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
+      sudo rpm --import https://nginx.org/keys/nginx_signing.key && \
+      sudo sh -c 'echo "[nginx]
+name=nginx
+baseurl=https://nginx.org/packages/mainline/centos/\$releasever/\$basearch/
+gpgcheck=1
+enabled=1" > /etc/yum.repos.d/nginx.repo' && \
+      sudo yum -y update && \
+      sudo yum -y install wget && \
+      sudo yum -y install nginx && \
+      sudo yum -y install numactl kernel-tools && \
+      wget https://github.com/prometheus/node_exporter/releases/download/v${prometheus_node_exporter_version}/node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+      tar xvfz node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+      sudo cp node_exporter-${prometheus_node_exporter_version}.linux-${arch}/node_exporter /usr/local/bin && \
       sudo systemctl daemon-reload && \
       sudo systemctl enable nginx && \
       sudo mkdir -p /etc/nginx/snippets && \
-      sudo mkdir -p /etc/nginx/sites-available && \
-      sudo mkdir -p /etc/nginx/sites-enabled && \
-      sudo rm -f /etc/nginx/sites-enabled/default && \
-      sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost && \
+      sudo mkdir -p /etc/nginx/conf.d && \
+      sudo rm -f /etc/nginx/conf.d/default.conf && \
+      sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/conf.d/mattermost.conf && \
       exit 0
-   n=$((n+1)) 
+
+   n=$((n+1))
    sleep 2
 done
 
