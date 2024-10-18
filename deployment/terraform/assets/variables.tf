@@ -4,7 +4,18 @@ variable "cluster_name" {
 variable "cluster_vpc_id" {
 }
 
-variable "cluster_subnet_id" {
+variable "cluster_subnet_ids" {
+  type = object({
+    app = string
+    job = string
+    proxy = string
+    agent = string
+    elasticsearch = string
+    metrics = string
+    keycloak = string
+    database = list(string)
+    redis = list(string)
+  })
 }
 
 variable "app_attach_iam_profile" {
@@ -31,9 +42,6 @@ variable "es_instance_type" {
 }
 
 variable "es_version" {
-}
-
-variable "es_vpc" {
 }
 
 variable "es_create_role" {
