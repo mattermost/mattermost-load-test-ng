@@ -3,7 +3,7 @@
   "AWSRegion": "us-east-1",
   "AWSAvailabilityZone": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
-  "ClusterName": "agmautotest",
+  "ClusterName": "agmfinalautotest",
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
   "AppInstanceCount": 2,
