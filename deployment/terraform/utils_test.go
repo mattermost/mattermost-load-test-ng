@@ -4,9 +4,11 @@
 package terraform
 
 import (
+	"os"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,4 +110,42 @@ func TestGetServerURL(t *testing.T) {
 			require.Equal(t, tc.expected, getServerURL(tc.output, tc.config))
 		})
 	}
+}
+
+func TestValidateLicense(t *testing.T) {
+	testLicensePath := "./testdata/testlicense.mattermost-license"
+
+	t.Run("valid license with matching service environment", func(t *testing.T) {
+		oldValue := os.Getenv("MM_SERVICEENVIRONMENT")
+		defer func() { os.Setenv("MM_SERVICEENVIRONMENT", oldValue) }()
+
+		os.Setenv("MM_SERVICEENVIRONMENT", model.ServiceEnvironmentTest)
+		err := validateLicense(testLicensePath)
+		require.NoError(t, err)
+	})
+
+	t.Run("valid license with different service environment", func(t *testing.T) {
+		oldValue := os.Getenv("MM_SERVICEENVIRONMENT")
+		defer func() { os.Setenv("MM_SERVICEENVIRONMENT", oldValue) }()
+
+		os.Setenv("MM_SERVICEENVIRONMENT", model.ServiceEnvironmentProduction)
+		err := validateLicense(testLicensePath)
+		require.EqualError(t, err, "this license is valid only with a \"test\" service environment, which is currently set to \"production\"; try adding the -service_environment=test flag to change it")
+	})
+
+	t.Run("invalid license", func(t *testing.T) {
+		// Create a temp license file
+		file, err := os.CreateTemp(os.TempDir(), "license")
+		require.NoError(t, err)
+
+		// Fill it with random data and close it
+		randomData := []byte{1, 2, 3}
+		_, err = file.Write(randomData)
+		require.NoError(t, err)
+		err = file.Close()
+		require.NoError(t, err)
+
+		err = validateLicense(file.Name())
+		require.ErrorContains(t, err, "failed to validate license:")
+	})
 }

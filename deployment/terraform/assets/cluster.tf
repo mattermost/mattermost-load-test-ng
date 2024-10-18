@@ -9,7 +9,7 @@ terraform {
 
 provider "aws" {
   region  = var.aws_region
-  profile = var.aws_profile
+  profile = var.aws_profile == "" ? null : var.aws_profile
   default_tags {
     tags = merge(
       {
@@ -95,13 +95,13 @@ resource "aws_instance" "app_server" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.app_instance_type
-  key_name                    = aws_key_pair.key.id
-  count                       = var.app_instance_count
-  availability_zone           = var.aws_az
-  subnet_id                   = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 2) : element(tolist(data.aws_subnets.selected.ids), 0)
-  iam_instance_profile        = var.app_attach_iam_profile
+  ami                  = var.aws_ami
+  instance_type        = var.app_instance_type
+  key_name             = aws_key_pair.key.id
+  count                = var.app_instance_count
+  availability_zone    = var.aws_az
+  iam_instance_profile = var.app_attach_iam_profile
+  subnet_id            = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 2) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -314,17 +314,17 @@ resource "aws_db_subnet_group" "redis" {
 
 
 resource "aws_elasticache_cluster" "redis_server" {
-  cluster_id                   = "${var.cluster_name}-redis"
-  engine                       = "redis"
-  node_type                    = var.redis_node_type
-  count                        = var.redis_enabled ? 1 : 0
-  num_cache_nodes              = 1
-  parameter_group_name         = var.redis_param_group_name
-  engine_version               = var.redis_engine_version
-  port                         = 6379
-  security_group_ids           = [aws_security_group.redis[0].id]
-  availability_zone            = var.aws_az
-  subnet_group_name            = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.redis[0].name : ""
+  cluster_id           = "${var.cluster_name}-redis"
+  engine               = "redis"
+  node_type            = var.redis_node_type
+  count                = var.redis_enabled ? 1 : 0
+  num_cache_nodes      = 1
+  parameter_group_name = var.redis_param_group_name
+  engine_version       = var.redis_engine_version
+  port                 = 6379
+  security_group_ids   = [aws_security_group.redis[0].id]
+  availability_zone    = var.aws_az
+  subnet_group_name    = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.redis[0].name : ""
 }
 
 resource "aws_db_subnet_group" "db" {
@@ -739,12 +739,12 @@ resource "aws_instance" "job_server" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.job_server_instance_type
-  key_name                    = aws_key_pair.key.id
-  count                       = var.job_server_instance_count
-  availability_zone           = var.aws_az
-  subnet_id = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 5) : element(tolist(data.aws_subnets.selected.ids), 0)
+  ami               = var.aws_ami
+  instance_type     = var.job_server_instance_type
+  key_name          = aws_key_pair.key.id
+  count             = var.job_server_instance_count
+  availability_zone = var.aws_az
+  subnet_id         = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 5) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -765,11 +765,15 @@ resource "aws_instance" "job_server" {
   }
 }
 
+locals {
+  profile_flag = var.aws_profile == "" ? "" : "--profile ${var.aws_profile}"
+}
+
 resource "null_resource" "s3_dump" {
   count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "" && var.s3_external_bucket_name == "") ? 1 : 0
 
   provisioner "local-exec" {
-    command = "aws --profile ${var.aws_profile} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
+    command = "aws ${local.profile_flag} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
   }
 }
 
@@ -786,12 +790,12 @@ resource "aws_instance" "keycloak" {
     host = self.public_ip
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.keycloak_instance_type
-  count                       = var.keycloak_enabled ? 1 : 0
-  key_name                    = aws_key_pair.key.id
-  availability_zone           = var.aws_az
-  subnet_id = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 6) : element(tolist(data.aws_subnets.selected.ids), 0)
+  ami               = var.aws_ami
+  instance_type     = var.keycloak_instance_type
+  count             = var.keycloak_enabled ? 1 : 0
+  key_name          = aws_key_pair.key.id
+  availability_zone = var.aws_az
+  subnet_id         = (length(var.cluster_subnet_ids) > 0) ? element(data.aws_subnets.manual.ids, 6) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,

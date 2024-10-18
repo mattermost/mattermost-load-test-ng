@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -174,7 +177,27 @@ func validateLicense(filename string) error {
 
 	validator := &utils.LicenseValidatorImpl{}
 	licenseStr, err := validator.ValidateLicense(data)
+	// If we cannot validate the license, we can test using another service
+	// environment to inform the user whether that's a possible solution
 	if err != nil {
+		currentValue := os.Getenv("MM_SERVICEENVIRONMENT")
+		defer func() { os.Setenv("MM_SERVICEENVIRONMENT", currentValue) }()
+
+		// Pick a different environment
+		newValue := model.ServiceEnvironmentTest
+		if currentValue != model.ServiceEnvironmentProduction {
+			newValue = model.ServiceEnvironmentProduction
+		}
+		os.Setenv("MM_SERVICEENVIRONMENT", newValue)
+
+		// If the error is not nil, then the user just needs to set the
+		// -service_environment flag to a different value
+		if _, newEnvErr := validator.ValidateLicense(data); newEnvErr == nil {
+			return fmt.Errorf("this license is valid only with a %q service environment, which is currently set to %q; try adding the -service_environment=%s flag to change it", newValue, currentValue, newValue)
+		}
+
+		// If not, we just return the (probably not very useful) error returned
+		// by the validator
 		return fmt.Errorf("failed to validate license: %w", err)
 	}
 
@@ -322,4 +345,26 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	}
 
 	return url
+}
+
+// GetAWSConfig returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	if t.config.AWSProfile == "" {
+		return awsconfig.LoadDefaultConfig(context.Background())
+	}
+
+	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+}
+
+// GetAWSCreds returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
+	cfg, err := t.GetAWSConfig()
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	return cfg.Credentials.Retrieve(context.Background())
 }
