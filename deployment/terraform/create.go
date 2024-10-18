@@ -23,7 +23,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -181,7 +180,6 @@ func (t *Terraform) Create(initData bool) error {
 
 		sgID := t.output.DBSecurityGroup[0].Id
 		args := []string{
-			"--profile=" + t.config.AWSProfile,
 			"rds",
 			"modify-db-cluster",
 			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
@@ -536,7 +534,11 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
 
-	os, err := opensearch.New(esEndpoint, sshc, t.config.AWSProfile, t.config.AWSRegion)
+	awsCreds, err := t.GetAWSCreds()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS credentials")
+	}
+	os, err := opensearch.New(esEndpoint, sshc, awsCreds, t.config.AWSRegion)
 	if err != nil {
 		return fmt.Errorf("unable to create Elasticserach client: %w", err)
 	}
@@ -759,9 +761,7 @@ func genNginxConfig() (string, error) {
 }
 
 func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithSharedConfigProfile(t.config.AWSProfile),
-	)
+	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}
@@ -1116,7 +1116,7 @@ func (t *Terraform) preFlightCheck() error {
 		return fmt.Errorf("failed when checking terraform version: %w", err)
 	}
 
-	if err := checkAWSCLI(t.Config().AWSProfile); err != nil {
+	if err := t.checkAWSCLI(); err != nil {
 		return fmt.Errorf("failed when checking AWS CLI: %w", err)
 	}
 
