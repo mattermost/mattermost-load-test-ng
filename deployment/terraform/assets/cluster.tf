@@ -277,7 +277,7 @@ resource "aws_iam_user_policy" "s3userpolicy" {
 EOF
 }
 
-resource "aws_db_subnet_group" "redis" {
+resource "aws_elasticache_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
   count = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
@@ -299,7 +299,7 @@ resource "aws_elasticache_cluster" "redis_server" {
   port                 = 6379
   security_group_ids   = [aws_security_group.redis[0].id]
   availability_zone    = var.aws_az
-  subnet_group_name    = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.redis[0].name : ""
+  subnet_group_name    = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_elasticache_subnet_group.redis[0].name : ""
 }
 
 resource "aws_db_subnet_group" "db" {
