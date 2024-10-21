@@ -244,6 +244,7 @@ func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) 
 func convertToTerraformVar[T any](param T) string {
 	result, err := json.Marshal(param)
 	if err != nil {
+		mlog.Error("failed to convert parameter to terraform var", mlog.Any("param", param), mlog.Err(err))
 		return ""
 	}
 
