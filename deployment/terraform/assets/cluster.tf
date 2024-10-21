@@ -303,9 +303,13 @@ resource "aws_elasticache_cluster" "redis_server" {
 }
 
 resource "aws_db_subnet_group" "db" {
-  name       = "${var.cluster_name}-db-group"
+  name       = "${var.cluster_name}-db-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
   count = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
+
+  tags = {
+    Name = "${var.cluster_name}-db-subnet-group-${count.index}"
+  }
 }
 
 resource "aws_rds_cluster" "db_cluster" {
