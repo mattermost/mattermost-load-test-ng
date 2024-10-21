@@ -21,7 +21,7 @@ type ClusterSubnetIDs struct {
 	Job           string   `json:"job"`
 	Proxy         string   `json:"proxy"`
 	Agent         string   `json:"agent"`
-	ElasticSearch string   `json:"elasticsearch"`
+	ElasticSearch []string `json:"elasticsearch"`
 	Metrics       string   `json:"metrics"`
 	Keycloak      string   `json:"keycloak"`
 	Database      []string `json:"database"`
@@ -30,7 +30,7 @@ type ClusterSubnetIDs struct {
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return c.App != "" || c.Job != "" || c.Proxy != "" || c.Agent != "" || c.ElasticSearch != "" || c.Metrics != "" || c.Keycloak != ""
+	return c.App != "" || c.Job != "" || c.Proxy != "" || c.Agent != "" || len(c.ElasticSearch) > 0 || c.Metrics != "" || c.Keycloak != "" || len(c.Database) > 0 || len(c.Redis) > 0
 }
 
 // Config contains the necessary data
@@ -300,6 +300,10 @@ type ElasticSearchSettings struct {
 	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
 	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+	// ZoneAwarenessEnabled indicates whether to enable zone awareness or not.
+	ZoneAwarenessEnabled bool `default:"false"`
+	// ZoneAwarenessAZCount indicates the number of availability zones to use for zone awareness.
+	ZoneAwarenessAZCount int `default:"2" validate:"range:[1,3]"`
 }
 
 type RedisSettings struct {

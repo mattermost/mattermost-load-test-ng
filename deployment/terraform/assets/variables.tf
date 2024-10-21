@@ -10,7 +10,7 @@ variable "cluster_subnet_ids" {
     job = string
     proxy = string
     agent = string
-    elasticsearch = string
+    elasticsearch = list(string)
     metrics = string
     keycloak = string
     database = list(string)
@@ -49,6 +49,14 @@ variable "es_create_role" {
 
 variable "es_snapshot_repository" {
 }
+
+variable "es_zone_awareness_enabled" {
+}
+
+variable "es_zone_awarness_availability_zone_count" {
+}
+
+# Proxy server
 
 variable "proxy_instance_count" {
   type = number

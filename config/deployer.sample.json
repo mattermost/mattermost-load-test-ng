@@ -9,7 +9,7 @@
     "Agent": "",
     "App": "",
     "Database": [],
-    "ElasticSearch": "",
+    "ElasticSearch": [],
     "Job": "",
     "Keycloak": "",
     "Metrics": "",
