@@ -6,13 +6,13 @@ variable "cluster_vpc_id" {
 
 variable "cluster_subnet_ids" {
   type = object({
-    app = string
-    job = string
-    proxy = string
-    agent = string
+    app = list(string)
+    job = list(string)
+    proxy = list(string)
+    agent = list(string)
     elasticsearch = list(string)
-    metrics = string
-    keycloak = string
+    metrics = list(string)
+    keycloak = list(string)
     database = list(string)
     redis = list(string)
   })

@@ -72,9 +72,9 @@ resource "aws_instance" "app_server" {
   count                = var.app_instance_count
   availability_zone    = var.aws_az
   iam_instance_profile = var.app_attach_iam_profile
-  subnet_id            = (var.cluster_subnet_ids.app != "") ? var.cluster_subnet_ids.app : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id            = (var.cluster_subnet_ids.app != "") ? element(tolist(var.cluster_subnet_ids.app), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
-  vpc_security_group_ids = [
+vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
   ]
@@ -168,7 +168,7 @@ resource "aws_instance" "metrics_server" {
   count             = var.app_instance_count > 0 ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
-  subnet_id         = (var.cluster_subnet_ids.metrics != "") ? var.cluster_subnet_ids.metrics : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.metrics != "") ? element(tolist(var.cluster_subnet_ids.metrics), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
@@ -196,7 +196,7 @@ resource "aws_instance" "proxy_server" {
   count                       = var.proxy_instance_count
   associate_public_ip_address = true
   availability_zone           = var.aws_az
-  subnet_id = (var.cluster_subnet_ids.proxy != "") ? var.cluster_subnet_ids.proxy : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id = (var.cluster_subnet_ids.proxy != "") ? element(tolist(var.cluster_subnet_ids.proxy), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
@@ -372,7 +372,7 @@ resource "aws_instance" "loadtest_agent" {
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
-  subnet_id                   = (var.cluster_subnet_ids.agent != "") ? var.cluster_subnet_ids.agent : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id                   = (var.cluster_subnet_ids.agent != "") ? element(tolist(var.cluster_subnet_ids.agent), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   associate_public_ip_address = true
   availability_zone           = var.aws_az
@@ -719,7 +719,7 @@ resource "aws_instance" "job_server" {
   key_name          = aws_key_pair.key.id
   count             = var.job_server_instance_count
   availability_zone = var.aws_az
-  subnet_id         = (var.cluster_subnet_ids.job != "") ? var.cluster_subnet_ids.job : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.job != "") ? element(tolist(var.cluster_subnet_ids.job), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -770,7 +770,7 @@ resource "aws_instance" "keycloak" {
   count             = var.keycloak_enabled ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
-  subnet_id         = (var.cluster_subnet_ids.keycloak != "") ? var.cluster_subnet_ids.keycloak : element(tolist(data.aws_subnets.selected.ids), 0)
+  subnet_id         = (var.cluster_subnet_ids.keycloak != "") ? element(tolist(var.cluster_subnet_ids.keycloak), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,

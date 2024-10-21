@@ -88,57 +88,57 @@ The type of the EC2 instance of the loadtest agent. See type [here](https://aws.
 
 ### App
 
-*string*
+*[]string*
 
-The ID of the subnet associated to the application server.
+The list of IDs of the subnets associated to the application server.
 
 ### Job
 
-*string*
+*[]string*
 
-The ID of the subnet associated to the job server.
+The list of IDs of the subnets associated too the job server.
 
 ### Proxy
 
-*string*
+*[]string*
 
-The ID of the subnet associated to the proxy server.
+The list of IDs of the subnets associated to the proxy server.
 
 ### Agent
 
-*string*
+*[]string*
 
-The ID of the subnet associated to the load-test agent.
+The list of IDs of the subnets associated to the load-test agent.
 
 ### ElasticSearch
 
 *[]string*
 
-The list of IDS of the subnets associated to the Elasticsearch instances. If setting more than one you need to also set the `ElasticSearchSetting.ZoneAwarenessEnabled` and `ElasticSearchSetting.ZoneAwarenessAZCount` settings.
+The list of IDs of the subnets associated to the Elasticsearch instances. If setting more than one you need to also set the `ElasticSearchSetting.ZoneAwarenessEnabled` and `ElasticSearchSetting.ZoneAwarenessAZCount` settings.
 
 ### Metrics
 
-*string*
+*[]string*
 
 The ID of the subnet associated to the metrics server.
 
 ## Keycloak
 
-*string*
+*[]string*
 
-The ID of the subnet associated to the Keycloak server.
+The list of IDs of the subnets associated to the Keycloak server.
 
 ## Database
 
 *[]string*
 
-The list of IDS of the subnets associated to the database instances.
+The list of IDs of the subnets associated to the database instances.
 
 ## Redis
 
 *[]string*
 
-The list of IDS of the subnets associated to the Redis instances.
+The list of IDs of the subnets associated to the Redis instances.
 
 
 ## ElasticSearchSettings

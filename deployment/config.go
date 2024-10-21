@@ -16,23 +16,6 @@ import (
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 
-type ClusterSubnetIDs struct {
-	App           string   `json:"app"`
-	Job           string   `json:"job"`
-	Proxy         string   `json:"proxy"`
-	Agent         string   `json:"agent"`
-	ElasticSearch []string `json:"elasticsearch"`
-	Metrics       string   `json:"metrics"`
-	Keycloak      string   `json:"keycloak"`
-	Database      []string `json:"database"`
-	Redis         []string `json:"redis"`
-}
-
-// IsAnySet returns true if any of the subnet ids are set.
-func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return c.App != "" || c.Job != "" || c.Proxy != "" || c.Agent != "" || len(c.ElasticSearch) > 0 || c.Metrics != "" || c.Keycloak != "" || len(c.Database) > 0 || len(c.Redis) > 0
-}
-
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
@@ -154,6 +137,24 @@ func (t TerraformMap) String() string {
 		pairs = append(pairs, fmt.Sprintf("%s = %q", key, value))
 	}
 	return "{" + strings.Join(pairs, ", ") + "}"
+}
+
+// ClusterSubnetIDs contains the subnet ids for the different types of instances.
+type ClusterSubnetIDs struct {
+	App           []string `json:"app"`
+	Job           []string `json:"job"`
+	Proxy         []string `json:"proxy"`
+	Agent         []string `json:"agent"`
+	ElasticSearch []string `json:"elasticsearch"`
+	Metrics       []string `json:"metrics"`
+	Keycloak      []string `json:"keycloak"`
+	Database      []string `json:"database"`
+	Redis         []string `json:"redis"`
+}
+
+// IsAnySet returns true if any of the subnet ids are set.
+func (c *ClusterSubnetIDs) IsAnySet() bool {
+	return len(c.App) > 0 || len(c.Job) > 0 || len(c.Proxy) > 0 || len(c.Agent) > 0 || len(c.ElasticSearch) > 0 || len(c.Metrics) > 0 || len(c.Keycloak) > 0 || len(c.Database) > 0 || len(c.Redis) > 0
 }
 
 type StorageSizes struct {

@@ -45,13 +45,13 @@ ProxyInstanceType = 'c5.xlarge'
 ProxyInstanceCount = 1
 
 [ClusterSubnetIDs]
-App = ""
-Job = ""
-Proxy = ""
-Agent = ""
+App = []
+Job = []
+Proxy = []
+Agent = []
 ElasticSearch = []
-Metrics = ""
-Keycloak = ""
+Metrics = []
+Keycloak = []
 Database = []
 Redis = []
 
