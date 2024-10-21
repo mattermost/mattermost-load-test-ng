@@ -31,7 +31,9 @@
     "SnapshotRepository": "",
     "SnapshotName": "",
     "RestoreTimeoutMinutes": 45,
-    "ClusterTimeoutMinutes": 45
+    "ClusterTimeoutMinutes": 45,
+    "ZoneAwarenessEnabled": false,
+    "ZoneAwarenessAZCount": 2
   },
   "RedisSettings": {
     "Enabled": false,
