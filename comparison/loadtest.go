@@ -156,7 +156,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	buildFileName := filepath.Base(buildCfg.URL)
 	installCmd := deployment.Cmd{
 		Msg:     "Installing app",
-		Value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
+		Value:   fmt.Sprintf("cd /home/%s && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", dpConfig.AWSAMIUsername, buildFileName),
 		Clients: appClients,
 	}
 

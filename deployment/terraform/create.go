@@ -456,7 +456,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		mlog.Info("Uploading release from tar.gz file", mlog.String("host", ip))
 
 		filename := path.Base(uploadPath)
-		if out, err := sshc.UploadFile(uploadPath, "/home/ubuntu/"+filename, false); err != nil {
+		if out, err := sshc.UploadFile(uploadPath, fmt.Sprintf("/home/%s/%s", t.Config().AWSAMIUsername, filename), false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
 		commands = []string{
@@ -946,7 +946,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg := &model.Config{}
 	cfg.SetDefaults()
 	cfg.ServiceSettings.ListenAddress = model.NewPointer(":8065")
-	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer("/home/ubuntu/mattermost.mattermost-license")
+	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer(fmt.Sprintf("/home/%s/mattermost.mattermost-license", t.config.AWSAMIUsername))
 	cfg.ServiceSettings.SiteURL = model.NewPointer(siteURL)
 	cfg.ServiceSettings.ReadTimeout = model.NewPointer(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewPointer(60)

@@ -14,8 +14,8 @@ ExecStart=/opt/mattermost/bin/mattermost
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
@@ -260,7 +260,7 @@ net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 `
 
-const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
+const baseAPIServerCmd = `/home/ec2-user/mattermost-load-test-ng/bin/ltapi`
 
 const apiServiceFile = `
 [Unit]
@@ -274,9 +274,9 @@ Environment="BLOCK_PROFILE_RATE={{ printf "%d" .blockProfileRate}}"
 ExecStart={{ printf "%s" .execStart}}
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
-User=ubuntu
-Group=ubuntu
+WorkingDirectory=/home/ec2-user/mattermost-load-test-ng
+User=ec2-user
+Group=ec2-user
 LimitNOFILE=262144
 
 [Install]
@@ -294,8 +294,8 @@ ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 
 [Install]
 WantedBy=multi-user.target
@@ -312,8 +312,8 @@ ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/redis_exporter
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 
 [Install]
 WantedBy=multi-user.target
@@ -330,8 +330,8 @@ ExecStart=/opt/mattermost/bin/mattermost jobserver
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 LimitNOFILE=49152
 Environment=MM_SERVICEENVIRONMENT=%s
 
@@ -357,8 +357,8 @@ Description=Keycloak
 After=network.target
 
 [Service]
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 EnvironmentFile=/etc/systemd/system/keycloak.env
 ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
 

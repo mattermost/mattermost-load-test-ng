@@ -226,13 +226,13 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				return sanitizedCfg, nil
 			})
 		case strings.HasPrefix(instance, "agent"):
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltagent.log", t.Config().AWSAMIUsername), true, nil)
 		case instance == "coordinator":
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltcoordinator.log", t.Config().AWSAMIUsername), true, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUsername), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.Config().AWSAMIUsername), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUsername), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUsername), false, nil)
 			continue
 		}
 		addCmd(instance, "sudo dmesg", "dmesg.out", false, nil)

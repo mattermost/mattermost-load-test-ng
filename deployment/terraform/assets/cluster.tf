@@ -49,7 +49,7 @@ resource "aws_instance" "app_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -72,7 +72,7 @@ resource "aws_instance" "app_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.ami_username}/mattermost.mattermost-license"
   }
 
   provisioner "remote-exec" {
@@ -88,7 +88,7 @@ resource "aws_instance" "metrics_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -136,7 +136,7 @@ resource "aws_instance" "proxy_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -275,7 +275,7 @@ resource "aws_instance" "loadtest_agent" {
 
   connection {
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -593,7 +593,7 @@ resource "aws_instance" "job_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -614,7 +614,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.ami_username}/mattermost.mattermost-license"
   }
 
   provisioner "remote-exec" {
@@ -639,7 +639,7 @@ resource "aws_instance" "keycloak" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.ami_username
     host = self.private_dns
   }
 

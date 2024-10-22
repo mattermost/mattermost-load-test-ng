@@ -95,34 +95,34 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", agent.PrivateIP)), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", instance.PrivateIP)), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", instance.PrivateIP)), nil
 		}
 	}
 
 	if output.KeycloakServer.Tags.Name == resource {
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", output.KeycloakServer.PrivateIP)), nil
 	}
 
 	// Match against the proxy or metrics servers, as well as convenient aliases.
 	switch resource {
 	case "proxy", output.Proxy.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.Proxy.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", output.Proxy.PrivateIP)), nil
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ec2-user@%s", output.MetricsServer.PrivateIP)), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)
@@ -221,6 +221,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
 		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
+		"-var", fmt.Sprintf("ami_username=%s", t.config.AWSAMIUsername),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),

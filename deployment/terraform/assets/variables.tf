@@ -180,3 +180,7 @@ variable "aws_region" {
 
 variable "aws_ami" {
 }
+
+variable "ami_username" {
+  default = "ec2-user"
+}

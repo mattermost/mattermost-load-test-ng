@@ -318,7 +318,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 
 	commands := []string{
-		"tar xzf /home/ubuntu/" + fileName + " -C /tmp",
+		fmt.Sprintf("tar xzf /home/%s/%s -C /tmp", t.Config().AWSAMIUsername, fileName),
 		"sudo -iu postgres psql -d keycloak -v ON_ERROR_STOP=on -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 	}
 

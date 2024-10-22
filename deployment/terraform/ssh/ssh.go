@@ -55,9 +55,9 @@ func NewAgent() (*ExtAgent, error) {
 
 // NewClientWithPort returns a Client object by dialing
 // the ssh agent on the provided port
-func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
+func (ea *ExtAgent) NewClientWithPort(ip, port string) (*Client, error) {
 	config := &ssh.ClientConfig{
-		User: "ubuntu",
+		User: "ec2-user",
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeysCallback(ea.agent.Signers),
 		},
