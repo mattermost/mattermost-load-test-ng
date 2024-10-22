@@ -40,7 +40,12 @@ locals {
 data "aws_subnets" "selected" {
   filter {
     name   = "vpc-id"
-    values = [var.es_vpc]
+    values = [var.cluster_vpc_id]
+  }
+
+  filter {
+    name   = "availability-zone"
+    values = [var.aws_az]
   }
 }
 
@@ -67,8 +72,9 @@ resource "aws_instance" "app_server" {
   count                = var.app_instance_count
   availability_zone    = var.aws_az
   iam_instance_profile = var.app_attach_iam_profile
+  subnet_id            = (var.cluster_subnet_ids.app != "") ? element(tolist(var.cluster_subnet_ids.app), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
-  vpc_security_group_ids = [
+vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
   ]
@@ -162,6 +168,7 @@ resource "aws_instance" "metrics_server" {
   count             = var.app_instance_count > 0 ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
+  subnet_id         = (var.cluster_subnet_ids.metrics != "") ? element(tolist(var.cluster_subnet_ids.metrics), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.metrics[0].id,
@@ -189,6 +196,7 @@ resource "aws_instance" "proxy_server" {
   count                       = var.proxy_instance_count
   associate_public_ip_address = true
   availability_zone           = var.aws_az
+  subnet_id = (var.cluster_subnet_ids.proxy != "") ? element(tolist(var.cluster_subnet_ids.proxy), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
@@ -269,6 +277,17 @@ resource "aws_iam_user_policy" "s3userpolicy" {
 EOF
 }
 
+resource "aws_elasticache_subnet_group" "redis" {
+  name       = "${var.cluster_name}-redis-subnet-group"
+  subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
+  count = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
+
+  tags = {
+    Name = "${var.cluster_name}-redis-subnet-group-${count.index}"
+  }
+}
+
+
 resource "aws_elasticache_cluster" "redis_server" {
   cluster_id           = "${var.cluster_name}-redis"
   engine               = "redis"
@@ -280,6 +299,17 @@ resource "aws_elasticache_cluster" "redis_server" {
   port                 = 6379
   security_group_ids   = [aws_security_group.redis[0].id]
   availability_zone    = var.aws_az
+  subnet_group_name    = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_elasticache_subnet_group.redis[0].name : ""
+}
+
+resource "aws_db_subnet_group" "db" {
+  name       = "${var.cluster_name}-db-subnet-group"
+  subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
+  count = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
+
+  tags = {
+    Name = "${var.cluster_name}-db-subnet-group-${count.index}"
+  }
 }
 
 resource "aws_rds_cluster" "db_cluster" {
@@ -296,7 +326,7 @@ resource "aws_rds_cluster" "db_cluster" {
   apply_immediately   = true
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
-
+  db_subnet_group_name = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
 
@@ -315,6 +345,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   performance_insights_enabled = var.db_enable_performance_insights
   db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
   availability_zone            = var.aws_az
+  db_subnet_group_name         = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
@@ -345,7 +376,8 @@ resource "aws_instance" "loadtest_agent" {
   instance_type               = var.agent_instance_type
   key_name                    = aws_key_pair.key.id
   count                       = var.agent_instance_count
-  subnet_id                   = var.cluster_subnet_id
+  subnet_id                   = (var.cluster_subnet_ids.agent != "") ? element(tolist(var.cluster_subnet_ids.agent), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
+
   associate_public_ip_address = true
   availability_zone           = var.aws_az
 
@@ -365,6 +397,7 @@ resource "aws_security_group" "app" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port   = 22
@@ -411,6 +444,7 @@ resource "aws_security_group" "app_gossip" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port       = 8074
@@ -448,6 +482,7 @@ resource "aws_security_group" "app_gossip" {
 resource "aws_security_group" "db" {
   count = var.app_instance_count > 0 ? 1 : 0
   name  = "${var.cluster_name}-db-security-group"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port       = 3306
@@ -520,6 +555,7 @@ resource "aws_security_group_rule" "agent-node-exporter" {
 resource "aws_security_group" "metrics" {
   count = var.app_instance_count > 0 ? 1 : 0
   name  = "${var.cluster_name}-metrics-security-group"
+  vpc_id = var.cluster_vpc_id
 }
 
 resource "aws_security_group_rule" "metrics-ssh" {
@@ -596,6 +632,7 @@ resource "aws_security_group_rule" "metrics-egress" {
 resource "aws_security_group" "redis" {
   name        = "${var.cluster_name}-redis-security-group"
   description = "Security group for redis instance"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port       = 6379
@@ -610,6 +647,7 @@ resource "aws_security_group" "redis" {
 resource "aws_security_group" "elastic" {
   name        = "${var.cluster_name}-elastic-security-group"
   description = "Security group for elastic instance"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port       = 443
@@ -637,6 +675,7 @@ resource "aws_security_group" "proxy" {
   count       = var.proxy_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
+  vpc_id = var.cluster_vpc_id
 
   ingress {
     from_port   = 80
@@ -684,6 +723,7 @@ resource "aws_instance" "job_server" {
   key_name          = aws_key_pair.key.id
   count             = var.job_server_instance_count
   availability_zone = var.aws_az
+  subnet_id         = (var.cluster_subnet_ids.job != "") ? element(tolist(var.cluster_subnet_ids.job), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
@@ -734,6 +774,7 @@ resource "aws_instance" "keycloak" {
   count             = var.keycloak_enabled ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
+  subnet_id         = (var.cluster_subnet_ids.keycloak != "") ? element(tolist(var.cluster_subnet_ids.keycloak), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,
@@ -761,6 +802,7 @@ resource "aws_security_group" "keycloak" {
   count       = var.keycloak_enabled ? 1 : 0
   name        = "${var.cluster_name}-keycloak-security-group"
   description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
+  vpc_id = var.cluster_vpc_id
 
   egress {
     from_port   = 0

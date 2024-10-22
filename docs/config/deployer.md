@@ -84,6 +84,63 @@ The number of load-test agent instances. The first instance will also host the [
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
+## ClusterSubnetIDs
+
+### App
+
+*[]string*
+
+The list of IDs of the subnets associated to the application server.
+
+### Job
+
+*[]string*
+
+The list of IDs of the subnets associated to the job server.
+
+### Proxy
+
+*[]string*
+
+The list of IDs of the subnets associated to the proxy server.
+
+### Agent
+
+*[]string*
+
+The list of IDs of the subnets associated to the load-test agent.
+
+### ElasticSearch
+
+*[]string*
+
+The list of IDs of the subnets associated to the Elasticsearch instances. If setting more than one you need to also set the `ElasticSearchSetting.ZoneAwarenessEnabled` and `ElasticSearchSetting.ZoneAwarenessAZCount` settings.
+
+### Metrics
+
+*[]string*
+
+The ID of the subnet associated to the metrics server.
+
+## Keycloak
+
+*[]string*
+
+The list of IDs of the subnets associated to the Keycloak server.
+
+## Database
+
+*[]string*
+
+The list of IDs of the subnets associated to the database instances.
+
+## Redis
+
+*[]string*
+
+The list of IDs of the subnets associated to the Redis instances.
+
+
 ## ElasticSearchSettings
 
 ### InstanceCount
@@ -145,6 +202,22 @@ The maximum time, in minutes, that the system will wait for the Elasticsearch sn
 *int*
 
 The maximum time, in minutes, that the system will wait for the Elasticsearch cluster status to get green after having restored the snapshot. Defaults to 45 minutes.
+
+### ZoneAwarenessEnabled
+
+*bool*
+
+Whether to enable zone awareness for the Elasticsearch cluster. If set to `true`, you need to set the `ZoneAwarenessAZCount` setting.
+
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
+
+### ZoneAwarenessAZCount
+
+*int*
+
+The number of availability zones to use for the Elasticsearch cluster. This setting is only used when `ZoneAwarenessEnabled` is set to `true`.
+
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
 
 ## JobServerSettings
 

@@ -93,7 +93,7 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		scanner := bufio.NewScanner(stderr)
@@ -102,10 +102,14 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		}
 	}()
 
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		mlog.Info(scanner.Text())
-	}
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			mlog.Info(scanner.Text())
+		}
+	}()
+
 	// No need to check for scanner.Error as cmd.Wait() already does that.
 	wg.Wait()
 

@@ -30,7 +30,6 @@ MetricsInstanceType = 't3.xlarge'
 
 # Cluster configuration
 ClusterName = 'loadtest'
-ClusterSubnetID = ''
 ClusterVpcID = ''
 
 # Database configuration
@@ -45,12 +44,25 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 ProxyInstanceType = 'c5.xlarge'
 ProxyInstanceCount = 1
 
+[ClusterSubnetIDs]
+App = []
+Job = []
+Proxy = []
+Agent = []
+ElasticSearch = []
+Metrics = []
+Keycloak = []
+Database = []
+Redis = []
+
 [ElasticSearchSettings]
 CreateRole = false
 InstanceCount = 0
 InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
 VpcID = ''
+ZoneAwarenessEnabled = false
+ZoneAwarenessAZCount = 2
 
 [ExternalBucketSettings]
 AmazonS3AccessKeyId = ''
@@ -146,4 +158,3 @@ Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
 
 [CustomTags]
-
