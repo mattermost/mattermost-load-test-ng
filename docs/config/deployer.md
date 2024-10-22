@@ -96,7 +96,7 @@ The list of IDs of the subnets associated to the application server.
 
 *[]string*
 
-The list of IDs of the subnets associated too the job server.
+The list of IDs of the subnets associated to the job server.
 
 ### Proxy
 
