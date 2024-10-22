@@ -64,14 +64,14 @@ resource "aws_instance" "app_server" {
   key_name             = aws_key_pair.key.id
   count                = var.app_instance_count
   availability_zone    = var.aws_az
-  #iam_instance_profile = var.app_attach_iam_profile
+  iam_instance_profile = var.app_attach_iam_profile
   subnet_id            = (length(var.cluster_subnet_ids.app) > 0) ? element(tolist(var.cluster_subnet_ids.app), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
   ]
-  iam_instance_profile = "loadtest_mm_profile"
+  # iam_instance_profile = "loadtest_mm_profile"
 
   root_block_device {
     volume_size = var.block_device_sizes_app
