@@ -98,7 +98,6 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		}
 	}()
 
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		scanner := bufio.NewScanner(stdout)
