@@ -209,11 +209,15 @@ The maximum time, in minutes, that the system will wait for the Elasticsearch cl
 
 Whether to enable zone awareness for the Elasticsearch cluster. If set to `true`, you need to set the `ZoneAwarenessAZCount` setting.
 
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
+
 ### ZoneAwarenessAZCount
 
 *int*
 
 The number of availability zones to use for the Elasticsearch cluster. This setting is only used when `ZoneAwarenessEnabled` is set to `true`.
+
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
 
 ## JobServerSettings
 
