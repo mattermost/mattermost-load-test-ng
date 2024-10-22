@@ -311,7 +311,7 @@ func _attachFilesToObj(u user.User, channelID string, qtyToUpload int) ([]string
 	count := 0
 
 	for _, filename := range filenames {
-		upload := rand.Intn(2) == 0 && qtyToUpload > count
+		upload := rand.Intn(2) == 0
 		if upload {
 			count += 1
 		}
@@ -319,6 +319,10 @@ func _attachFilesToObj(u user.User, channelID string, qtyToUpload int) ([]string
 		files[filename] = &file{
 			data:   MustAsset(filename),
 			upload: upload,
+		}
+
+		if count == qtyToUpload {
+			break
 		}
 	}
 
