@@ -84,10 +84,21 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		return err
 	}
 
-	cmd.Stdout = &cmdLogger{}
+	// From here, we want to stream the output concurrently from stderr and stdout
+	// to mlog.
+	var cmdLogger cmdLogger
+	cmd.Stdout = &cmdLogger
 	cmd.Stderr = cmd.Stdout
 
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func checkTerraformVersion() error {

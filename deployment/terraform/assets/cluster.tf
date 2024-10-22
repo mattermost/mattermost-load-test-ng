@@ -320,7 +320,7 @@ resource "aws_rds_cluster" "db_cluster" {
   skip_final_snapshot    = true
   apply_immediately      = true
   engine                 = var.db_instance_engine
-  engine_version         = var.db_engine_version[var.db_instance_engine]
+  engine_version         = var.db_default_engine_version[var.db_instance_engine]
   db_subnet_group_name   = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? aws_db_subnet_group.db[0].name : ""
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
