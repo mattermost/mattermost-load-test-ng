@@ -155,7 +155,7 @@ type ClusterSubnetIDs struct {
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return reflect.DeepEqual(c, &ClusterSubnetIDs{})
+	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
 }
 
 type StorageSizes struct {
