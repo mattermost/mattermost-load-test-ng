@@ -89,7 +89,7 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		scanner := bufio.NewScanner(stderr)

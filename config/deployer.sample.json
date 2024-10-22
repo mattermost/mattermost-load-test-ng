@@ -4,7 +4,17 @@
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
-  "ClusterSubnetID": "",
+  "ClusterSubnetIDs": {
+    "Agent": [],
+    "App": [],
+    "Database": [],
+    "ElasticSearch": [],
+    "Job": [],
+    "Keycloak": [],
+    "Metrics": [],
+    "Proxy": [],
+    "Redis": []
+  },
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AgentInstanceCount": 2,
@@ -18,7 +28,9 @@
     "SnapshotRepository": "",
     "SnapshotName": "",
     "RestoreTimeoutMinutes": 45,
-    "ClusterTimeoutMinutes": 45
+    "ClusterTimeoutMinutes": 45,
+    "ZoneAwarenessEnabled": false,
+    "ZoneAwarenessAZCount": 2
   },
   "RedisSettings": {
     "Enabled": false,

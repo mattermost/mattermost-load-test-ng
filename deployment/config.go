@@ -4,14 +4,17 @@
 package deployment
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
@@ -29,8 +32,8 @@ type Config struct {
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetID is the id of the subnet associated to the resources.
-	ClusterSubnetID string
+	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
+	ClusterSubnetIDs ClusterSubnetIDs
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
@@ -113,6 +116,33 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+}
+
+// ClusterSubnetIDs contains the subnet ids for the different types of instances.
+type ClusterSubnetIDs struct {
+	App           []string `json:"app"`
+	Job           []string `json:"job"`
+	Proxy         []string `json:"proxy"`
+	Agent         []string `json:"agent"`
+	ElasticSearch []string `json:"elasticsearch"`
+	Metrics       []string `json:"metrics"`
+	Keycloak      []string `json:"keycloak"`
+	Database      []string `json:"database"`
+	Redis         []string `json:"redis"`
+}
+
+// IsAnySet returns true if any of the subnet ids are set.
+func (c *ClusterSubnetIDs) IsAnySet() bool {
+	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
+}
+
+func (c *ClusterSubnetIDs) String() string {
+	b, err := json.Marshal(c)
+	if err != nil {
+		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))
+		return "{}"
+	}
+	return string(b)
 }
 
 type StorageSizes struct {
@@ -251,8 +281,6 @@ type ElasticSearchSettings struct {
 	InstanceType string
 	// Elasticsearch version to be deployed.
 	Version string `default:"Elasticsearch_7.10"`
-	// Id of the VPC associated with the instance to be created.
-	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
 	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
@@ -263,6 +291,10 @@ type ElasticSearchSettings struct {
 	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
 	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+	// ZoneAwarenessEnabled indicates whether to enable zone awareness or not.
+	ZoneAwarenessEnabled bool `default:"false"`
+	// ZoneAwarenessAZCount indicates the number of availability zones to use for zone awareness.
+	ZoneAwarenessAZCount int `default:"2" validate:"range:[1,3]"`
 }
 
 type RedisSettings struct {
@@ -313,6 +345,10 @@ func (p DBParameters) String() string {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if c.ClusterSubnetIDs.IsAnySet() && c.ClusterVpcID == "" {
+		return errors.New("vpc_id is required when any subnet is specified")
+	}
+
 	if !checkPrefix(c.MattermostDownloadURL) {
 		return fmt.Errorf("mattermost download url is not in correct format: %q", c.MattermostDownloadURL)
 	}
@@ -352,8 +388,8 @@ func (c *Config) validateElasticSearchConfig() error {
 	}
 
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.ElasticSearchSettings.VpcID == "" {
-			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
+		if c.ClusterVpcID == "" {
+			return errors.New("ClusterVpcID must be set in order to create an Elasticsearch instance")
 		}
 
 		domainName := c.ClusterName + "-es"
