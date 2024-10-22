@@ -4,6 +4,7 @@
 package deployment
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -13,6 +14,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
@@ -156,6 +158,15 @@ type ClusterSubnetIDs struct {
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
 	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
+}
+
+func (c *ClusterSubnetIDs) String() string {
+	b, err := json.Marshal(c)
+	if err != nil {
+		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))
+		return "{}"
+	}
+	return string(b)
 }
 
 type StorageSizes struct {
