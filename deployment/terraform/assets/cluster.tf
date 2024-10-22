@@ -280,7 +280,7 @@ EOF
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
-  count = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
+  count = var.redis_enabled ? 1 : 0
 
   tags = {
     Name = "${var.cluster_name}-redis-subnet-group-${count.index}"
@@ -299,13 +299,13 @@ resource "aws_elasticache_cluster" "redis_server" {
   port                 = 6379
   security_group_ids   = [aws_security_group.redis[0].id]
   availability_zone    = var.aws_az
-  subnet_group_name    = var.redis_enabled && length(var.cluster_subnet_ids) > 1 ? aws_elasticache_subnet_group.redis[0].name : ""
+  subnet_group_name    = var.redis_enabled ? aws_elasticache_subnet_group.redis[0].name : ""
 }
 
 resource "aws_db_subnet_group" "db" {
   name       = "${var.cluster_name}-db-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
-  count = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
+  count = var.db_instance_count > 0 ? 1 : 0
 
   tags = {
     Name = "${var.cluster_name}-db-subnet-group-${count.index}"
@@ -326,7 +326,7 @@ resource "aws_rds_cluster" "db_cluster" {
   apply_immediately   = true
   engine              = var.db_instance_engine
   engine_version      = var.db_engine_version[var.db_instance_engine]
-  db_subnet_group_name = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
+  db_subnet_group_name = var.app_instance_count > 0 && var.db_instance_count > 0 ? aws_db_subnet_group.db[0].name : ""
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
 
@@ -345,7 +345,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   performance_insights_enabled = var.db_enable_performance_insights
   db_parameter_group_name      = length(var.db_parameters) > 0 ? "${var.cluster_name}-db-pg" : ""
   availability_zone            = var.aws_az
-  db_subnet_group_name         = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
+  db_subnet_group_name         = var.app_instance_count > 0 && var.db_instance_count > 0 ? aws_db_subnet_group.db[0].name : ""
 }
 
 resource "aws_db_parameter_group" "db_params_group" {
