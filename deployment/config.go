@@ -26,6 +26,9 @@ type Config struct {
 	AWSProfile string `default:"mm-loadtest"`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
+	// AWSAvailabilityZone defines the Availability Zone
+	// in which instances should be deployed.
+	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// ClusterName is the name of the cluster.
@@ -38,6 +41,10 @@ type Config struct {
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
+	// IAM role to attach to the app servers
+	AppAttachIAMProfile string `default:""`
+	// Type of the EC2 instance for metrics.
+	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
@@ -116,6 +123,21 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+	// CustomTags is an optional list of key-value pairs, which will be used as default
+	// tags for all resources deployed
+	CustomTags TerraformMap
+}
+
+// TerraformMap is a map of string -> string that serializes to the format expected by
+// the Terraform AWS provider when formatted as a string
+type TerraformMap map[string]string
+
+func (t TerraformMap) String() string {
+	var pairs []string
+	for key, value := range t {
+		pairs = append(pairs, fmt.Sprintf("%s = %q", key, value))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
 }
 
 // ClusterSubnetIDs contains the subnet ids for the different types of instances.
@@ -136,7 +158,7 @@ func (c *ClusterSubnetIDs) IsAnySet() bool {
 	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
 }
 
-func (c *ClusterSubnetIDs) String() string {
+func (c ClusterSubnetIDs) String() string {
 	b, err := json.Marshal(c)
 	if err != nil {
 		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))

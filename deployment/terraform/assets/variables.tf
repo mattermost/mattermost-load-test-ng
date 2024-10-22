@@ -18,6 +18,9 @@ variable "cluster_subnet_ids" {
   })
 }
 
+variable "app_attach_iam_profile" {
+}
+
 variable "app_instance_count" {
 }
 
@@ -86,9 +89,6 @@ variable "db_instance_class" {
 }
 
 variable "db_cluster_identifier" {
-}
-
-variable "db_engine_version" {
 }
 
 variable "db_default_engine_version" {
@@ -195,4 +195,14 @@ variable "aws_region" {
 }
 
 variable "aws_ami" {
+}
+
+variable "custom_tags" {
+  type = map(string)
+}
+
+variable "aws_az" {
+}
+
+variable "metrics_instance_type" {
 }
