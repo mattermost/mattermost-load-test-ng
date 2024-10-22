@@ -24,7 +24,6 @@ AppInstanceType = 'c5.xlarge'
 
 # Cluster configuration
 ClusterName = 'loadtest'
-ClusterSubnetID = ''
 ClusterVpcID = ''
 
 # Database configuration
@@ -38,12 +37,25 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 # Proxy server configuration
 ProxyInstanceType = 'c5.xlarge'
 
+[ClusterSubnetIDs]
+App = []
+Job = []
+Proxy = []
+Agent = []
+ElasticSearch = []
+Metrics = []
+Keycloak = []
+Database = []
+Redis = []
+
 [ElasticSearchSettings]
 CreateRole = false
 InstanceCount = 0
 InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
 VpcID = ''
+ZoneAwarenessEnabled = false
+ZoneAwarenessAZCount = 2
 
 [ExternalBucketSettings]
 AmazonS3AccessKeyId = ''
@@ -137,4 +149,5 @@ InstanceEngine = 'aurora-postgresql'
 InstanceType = 'db.r6g.large'
 Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
-EngineVersion = ''
+
+[CustomTags]

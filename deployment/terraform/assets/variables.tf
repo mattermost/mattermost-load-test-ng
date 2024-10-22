@@ -4,7 +4,18 @@ variable "cluster_name" {
 variable "cluster_vpc_id" {
 }
 
-variable "cluster_subnet_id" {
+variable "cluster_subnet_ids" {
+  type = object({
+    app = list(string)
+    job = list(string)
+    proxy = list(string)
+    agent = list(string)
+    elasticsearch = list(string)
+    metrics = list(string)
+    keycloak = list(string)
+    database = list(string)
+    redis = list(string)
+  })
 }
 
 variable "app_instance_count" {
@@ -30,14 +41,19 @@ variable "es_instance_type" {
 variable "es_version" {
 }
 
-variable "es_vpc" {
-}
-
 variable "es_create_role" {
 }
 
 variable "es_snapshot_repository" {
 }
+
+variable "es_zone_awareness_enabled" {
+}
+
+variable "es_zone_awarness_availability_zone_count" {
+}
+
+# Proxy server
 
 variable "proxy_instance_count" {
   type = number
