@@ -160,7 +160,7 @@ func (c *ClusterSubnetIDs) IsAnySet() bool {
 	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
 }
 
-func (c *ClusterSubnetIDs) String() string {
+func (c ClusterSubnetIDs) String() string {
 	b, err := json.Marshal(c)
 	if err != nil {
 		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))
