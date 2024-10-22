@@ -64,7 +64,7 @@ resource "aws_instance" "app_server" {
   key_name             = aws_key_pair.key.id
   count                = var.app_instance_count
   availability_zone    = var.aws_az
-  iam_instance_profile = var.app_attach_iam_profile
+  #iam_instance_profile = var.app_attach_iam_profile
   subnet_id            = (var.cluster_subnet_ids.app != "") ? element(tolist(var.cluster_subnet_ids.app), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
   vpc_security_group_ids = [
