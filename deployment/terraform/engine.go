@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 
 	"time"
 
@@ -63,7 +64,7 @@ type cmdLogger struct {
 }
 
 func (*cmdLogger) Write(in []byte) (int, error) {
-	mlog.Info(string(in))
+	mlog.Info(strings.TrimSpace(string(in)))
 	return len(in), nil
 }
 
