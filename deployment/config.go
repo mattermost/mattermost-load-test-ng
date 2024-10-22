@@ -6,6 +6,7 @@ package deployment
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -154,7 +155,7 @@ type ClusterSubnetIDs struct {
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return len(c.App) > 0 || len(c.Job) > 0 || len(c.Proxy) > 0 || len(c.Agent) > 0 || len(c.ElasticSearch) > 0 || len(c.Metrics) > 0 || len(c.Keycloak) > 0 || len(c.Database) > 0 || len(c.Redis) > 0
+	return reflect.DeepEqual(c, &ClusterSubnetIDs{})
 }
 
 type StorageSizes struct {
