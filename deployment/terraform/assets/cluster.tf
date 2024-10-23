@@ -47,9 +47,13 @@ data "aws_subnets" "selected" {
     values = var.cluster_vpc_id == "" ? [data.aws_vpc.default.id] : [var.cluster_vpc_id]
   }
 
-  filter {
-    name   = "availability-zone"
-    values = [var.aws_az]
+  // Add a filter on the availability zone only if it is explicitly set
+  dynamic "filter" {
+    for_each = var.aws_az != "" ? [1] : []
+    content {
+      name   = "availability-zone"
+      values = [var.aws_az]
+    }
   }
 }
 
