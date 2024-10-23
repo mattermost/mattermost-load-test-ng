@@ -181,12 +181,12 @@ resource "aws_instance" "proxy_server" {
     Name = "${var.cluster_name}-proxy-${count.index}"
   }
 
-  ami                         = var.aws_ami
-  instance_type               = var.proxy_instance_type
-  count                       = var.proxy_instance_count
+  ami           = var.aws_ami
+  instance_type = var.proxy_instance_type
+  count         = var.proxy_instance_count
   # associate_public_ip_address = true
-  availability_zone           = var.aws_az
-  subnet_id                   = (length(var.cluster_subnet_ids.proxy) > 0) ? element(tolist(var.cluster_subnet_ids.proxy), count.index) : null
+  availability_zone = var.aws_az
+  subnet_id         = (length(var.cluster_subnet_ids.proxy) > 0) ? element(tolist(var.cluster_subnet_ids.proxy), count.index) : null
 
   vpc_security_group_ids = [
     aws_security_group.proxy[0].id
@@ -212,13 +212,13 @@ resource "aws_instance" "proxy_server" {
 }
 
 resource "aws_iam_user" "s3user" {
-  name  = "${var.cluster_name}-s3user"
+  name = "${var.cluster_name}-s3user"
   # BRANCH: count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
   count = 0
 }
 
 resource "aws_iam_access_key" "s3key" {
-  user  = aws_iam_user.s3user[0].name
+  user = aws_iam_user.s3user[0].name
   # BRANCH: count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
   count = 0
 }
@@ -235,8 +235,8 @@ resource "aws_s3_bucket" "s3bucket" {
 }
 
 resource "aws_iam_user_policy" "s3userpolicy" {
-  name  = "${var.cluster_name}-s3userpolicy"
-  user  = aws_iam_user.s3user[0].name
+  name = "${var.cluster_name}-s3userpolicy"
+  user = aws_iam_user.s3user[0].name
   # BRANCH: count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
   count = 0
 
@@ -368,13 +368,13 @@ resource "aws_instance" "loadtest_agent" {
     host = self.private_ip
   }
 
-  ami           = var.aws_ami
-  instance_type = var.agent_instance_type
-  key_name      = aws_key_pair.key.id
-  count         = var.agent_instance_count
-  subnet_id     = (length(var.cluster_subnet_ids.agent) > 0) ? element(tolist(var.cluster_subnet_ids.agent), count.index) : null
+  ami               = var.aws_ami
+  instance_type     = var.agent_instance_type
+  key_name          = aws_key_pair.key.id
+  count             = var.agent_instance_count
+  subnet_id         = (length(var.cluster_subnet_ids.agent) > 0) ? element(tolist(var.cluster_subnet_ids.agent), count.index) : null
+  availability_zone = var.aws_az
   # associate_public_ip_address = true
-  availability_zone           = var.aws_az
 
   vpc_security_group_ids = [aws_security_group.agent.id]
 
