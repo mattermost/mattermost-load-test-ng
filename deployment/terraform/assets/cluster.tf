@@ -772,7 +772,6 @@ resource "aws_instance" "keycloak" {
   availability_zone = var.aws_az
   subnet_id         = (length(var.cluster_subnet_ids.keycloak) > 0) ? element(tolist(var.cluster_subnet_ids.keycloak), count.index) : null
 
-
   vpc_security_group_ids = [
     aws_security_group.keycloak[0].id,
   ]
