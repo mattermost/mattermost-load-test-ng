@@ -169,21 +169,21 @@ func TestTerraformMapString(t *testing.T) {
 }
 
 func TestClusterSubnetIDs(t *testing.T) {
-	t.Run("String()", func(t *testing.T) {
-		var defaultStruct ClusterSubnetIDs
-		emptyStructNilSlices := ClusterSubnetIDs{}
-		emptyStructEmptySlices := ClusterSubnetIDs{
-			App:           []string{},
-			Job:           []string{},
-			Proxy:         []string{},
-			Agent:         []string{},
-			ElasticSearch: []string{},
-			Metrics:       []string{},
-			Keycloak:      []string{},
-			Database:      []string{},
-			Redis:         []string{},
-		}
+	var defaultStruct ClusterSubnetIDs
+	emptyStructNilSlices := ClusterSubnetIDs{}
+	emptyStructEmptySlices := ClusterSubnetIDs{
+		App:           []string{},
+		Job:           []string{},
+		Proxy:         []string{},
+		Agent:         []string{},
+		ElasticSearch: []string{},
+		Metrics:       []string{},
+		Keycloak:      []string{},
+		Database:      []string{},
+		Redis:         []string{},
+	}
 
+	t.Run("String()", func(t *testing.T) {
 		testCases := []struct {
 			actual   ClusterSubnetIDs
 			expected string
@@ -247,5 +247,14 @@ func TestClusterSubnetIDs(t *testing.T) {
 		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
 		actual := fmt.Sprintf("%s", cfg.ClusterSubnetIDs)
 		require.Equal(t, expected, actual)
+	})
+
+	t.Run("IsAnySet", func(t *testing.T) {
+		require.False(t, defaultStruct.IsAnySet())
+		require.False(t, emptyStructNilSlices.IsAnySet())
+		require.False(t, emptyStructEmptySlices.IsAnySet())
+
+		someSet := ClusterSubnetIDs{App: []string{"set"}}
+		require.True(t, someSet.IsAnySet())
 	})
 }

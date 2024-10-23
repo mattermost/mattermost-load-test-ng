@@ -157,7 +157,24 @@ type ClusterSubnetIDs struct {
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
+	value := reflect.ValueOf(*c)
+
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		// Skip fields that are not slices
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		if field.IsNil() || value.Field(i).Len() == 0 {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+
 }
 
 func (c ClusterSubnetIDs) String() string {
