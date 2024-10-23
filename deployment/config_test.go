@@ -245,6 +245,7 @@ func TestClusterSubnetIDs(t *testing.T) {
 		defaults.Set(&cfg)
 
 		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
+		//nolint:gosimple
 		actual := fmt.Sprintf("%s", cfg.ClusterSubnetIDs)
 		require.Equal(t, expected, actual)
 	})
