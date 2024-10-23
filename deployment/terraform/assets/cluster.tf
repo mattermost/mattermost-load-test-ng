@@ -74,7 +74,7 @@ resource "aws_instance" "app_server" {
   iam_instance_profile = var.app_attach_iam_profile
   subnet_id            = (var.cluster_subnet_ids.app != "") ? element(tolist(var.cluster_subnet_ids.app), count.index) : element(tolist(data.aws_subnets.selected.ids), 0)
 
-vpc_security_group_ids = [
+  vpc_security_group_ids = [
     aws_security_group.app[0].id,
     aws_security_group.app_gossip[0].id
   ]
@@ -280,7 +280,7 @@ EOF
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
-  count = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
+  count      = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
 
   tags = {
     Name = "${var.cluster_name}-redis-subnet-group-${count.index}"
@@ -305,7 +305,7 @@ resource "aws_elasticache_cluster" "redis_server" {
 resource "aws_db_subnet_group" "db" {
   name       = "${var.cluster_name}-db-subnet-group"
   subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
-  count = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
+  count      = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
 
   tags = {
     Name = "${var.cluster_name}-db-subnet-group-${count.index}"
@@ -317,16 +317,16 @@ resource "aws_rds_cluster" "db_cluster" {
     Name = "${var.cluster_name}-db-cluster"
   }
 
-  count               = var.app_instance_count > 0 && var.db_instance_count > 0 && var.db_cluster_identifier == "" ? 1 : 0
-  cluster_identifier  = var.db_cluster_identifier != "" ? "" : "${var.cluster_name}-db"
-  database_name       = "${var.cluster_name}db"
-  master_username     = var.db_username
-  master_password     = var.db_password
-  skip_final_snapshot = true
-  apply_immediately   = true
-  engine              = var.db_instance_engine
-  engine_version      = var.db_engine_version[var.db_instance_engine]
-  db_subnet_group_name = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
+  count                  = var.app_instance_count > 0 && var.db_instance_count > 0 && var.db_cluster_identifier == "" ? 1 : 0
+  cluster_identifier     = var.db_cluster_identifier != "" ? "" : "${var.cluster_name}-db"
+  database_name          = "${var.cluster_name}db"
+  master_username        = var.db_username
+  master_password        = var.db_password
+  skip_final_snapshot    = true
+  apply_immediately      = true
+  engine                 = var.db_instance_engine
+  engine_version         = var.db_engine_version[var.db_instance_engine]
+  db_subnet_group_name   = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids) > 1 ? aws_db_subnet_group.db[0].name : ""
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
 
@@ -397,7 +397,7 @@ resource "aws_security_group" "app" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port   = 22
@@ -444,7 +444,7 @@ resource "aws_security_group" "app_gossip" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 8074
@@ -480,8 +480,8 @@ resource "aws_security_group" "app_gossip" {
 
 
 resource "aws_security_group" "db" {
-  count = var.app_instance_count > 0 ? 1 : 0
-  name  = "${var.cluster_name}-db-security-group"
+  count  = var.app_instance_count > 0 ? 1 : 0
+  name   = "${var.cluster_name}-db-security-group"
   vpc_id = var.cluster_vpc_id
 
   ingress {
@@ -553,8 +553,8 @@ resource "aws_security_group_rule" "agent-node-exporter" {
 }
 
 resource "aws_security_group" "metrics" {
-  count = var.app_instance_count > 0 ? 1 : 0
-  name  = "${var.cluster_name}-metrics-security-group"
+  count  = var.app_instance_count > 0 ? 1 : 0
+  name   = "${var.cluster_name}-metrics-security-group"
   vpc_id = var.cluster_vpc_id
 }
 
@@ -632,7 +632,7 @@ resource "aws_security_group_rule" "metrics-egress" {
 resource "aws_security_group" "redis" {
   name        = "${var.cluster_name}-redis-security-group"
   description = "Security group for redis instance"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 6379
@@ -647,7 +647,7 @@ resource "aws_security_group" "redis" {
 resource "aws_security_group" "elastic" {
   name        = "${var.cluster_name}-elastic-security-group"
   description = "Security group for elastic instance"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port       = 443
@@ -675,7 +675,7 @@ resource "aws_security_group" "proxy" {
   count       = var.proxy_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   ingress {
     from_port   = 80
@@ -802,7 +802,7 @@ resource "aws_security_group" "keycloak" {
   count       = var.keycloak_enabled ? 1 : 0
   name        = "${var.cluster_name}-keycloak-security-group"
   description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
-  vpc_id = var.cluster_vpc_id
+  vpc_id      = var.cluster_vpc_id
 
   egress {
     from_port   = 0
