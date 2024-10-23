@@ -37,10 +37,14 @@ locals {
   private_ip = data.external.private_ip.result.ip
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
 data "aws_subnets" "selected" {
   filter {
     name   = "vpc-id"
-    values = [var.cluster_vpc_id]
+    values = var.cluster_vpc_id == "" ? [data.aws_vpc.default.id] : [var.cluster_vpc_id]
   }
 
   filter {
