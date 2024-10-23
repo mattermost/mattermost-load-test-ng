@@ -161,14 +161,6 @@ The type of instance for the Elasticsearch service. Only AWS OpenSearch instance
 
 Version of Elasticsearch to be deployed. Deployments only support AWS OpenSearch versions compatible with ElasticSearch, up to and including ElasticSearch v7.10.0; i.e., the ones prefixed by `Elasticsearch_.`. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions and the [`aws` Terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_domain#engine_version) to learn more about the specific string used.
 
-## VpcID
-
-*string*
-
-Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
-
-This ID is mandatory is you're going to instantiate an ES service in your cluster.
-
 ### CreateRole
 
 *bool*
