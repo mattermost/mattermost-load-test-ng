@@ -144,15 +144,15 @@ func (t TerraformMap) String() string {
 
 // ClusterSubnetIDs contains the subnet ids for the different types of instances.
 type ClusterSubnetIDs struct {
-	App           []string `json:"app"`
-	Job           []string `json:"job"`
-	Proxy         []string `json:"proxy"`
-	Agent         []string `json:"agent"`
-	ElasticSearch []string `json:"elasticsearch"`
-	Metrics       []string `json:"metrics"`
-	Keycloak      []string `json:"keycloak"`
-	Database      []string `json:"database"`
-	Redis         []string `json:"redis"`
+	App           []string `default_size:"0" json:"app"`
+	Job           []string `default_size:"0" json:"job"`
+	Proxy         []string `default_size:"0" json:"proxy"`
+	Agent         []string `default_size:"0" json:"agent"`
+	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
+	Metrics       []string `default_size:"0" json:"metrics"`
+	Keycloak      []string `default_size:"0" json:"keycloak"`
+	Database      []string `default_size:"0" json:"database"`
+	Redis         []string `default_size:"0" json:"redis"`
 }
 
 // IsAnySet returns true if any of the subnet ids are set.
