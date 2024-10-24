@@ -52,3 +52,6 @@ output "jobServers" {
   value = aws_instance.job_server[*]
 }
 
+output "amiUser" {
+  value = var.aws_ami_user
+}

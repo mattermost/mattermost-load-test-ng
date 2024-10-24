@@ -44,7 +44,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 	mlog.Info("Uploading updated coordinator config file")
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	dstPath := fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.config.AWSAMIUser)
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
@@ -100,15 +100,15 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	}{
 		{
 			input:   agentConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/config.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simulConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simpleConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUser),
 		},
 	}
 

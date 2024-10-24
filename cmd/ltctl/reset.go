@@ -47,7 +47,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
 		// BRANCH: Using private ip
-		client, err := extAgent.NewClient(instance.PrivateIP)
+		client, err := extAgent.NewClient(instance.PrivateIP, t.Config().AWSAMIUser)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -56,7 +56,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	// BRANCH: Private IP
-	agentClient, err := extAgent.NewClient(output.Agents[0].PrivateIP)
+	agentClient, err := extAgent.NewClient(output.Agents[0].PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}

@@ -30,7 +30,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		command = "start-dev"
 	}
 
-	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PrivateIP)
+	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -113,6 +113,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]any{
 		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
 		"Command":         command + " " + strings.Join(extraArguments, " "),
+		"User":            t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
@@ -297,7 +298,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.KeycloakServer.PrivateIP)
+	client, err := extAgent.NewClient(output.KeycloakServer.PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -318,7 +319,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 
 	commands := []string{
-		"tar xzf /home/ubuntu/" + fileName + " -C /tmp",
+		fmt.Sprintf("tar xzf /home/%s/%s -C /tmp", t.Config().AWSAMIUser, fileName),
 		"sudo -iu postgres psql -d keycloak -v ON_ERROR_STOP=on -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 	}
 
