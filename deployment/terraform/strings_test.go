@@ -17,7 +17,7 @@ receivers:
         endpoint: 0.0.0.0:4318
 
   filelog/agent:
-    include: [ /home/ubuntu/mattermost-load-test-ng/ltagent.log ]
+    include: [ /home/{{.User}}/mattermost-load-test-ng/ltagent.log ]
     resource:
       service.name: "agent"
       service.instance.id: "instance-name"
@@ -29,7 +29,7 @@ receivers:
         severity:
           parse_from: attributes.level
   filelog/coordinator:
-    include: [ /home/ubuntu/mattermost-load-test-ng/ltcoordinator.log ]
+    include: [ /home/{{.User}}/mattermost-load-test-ng/ltcoordinator.log ]
     resource:
       service.name: "coordinator"
       service.instance.id: "instance-name"
