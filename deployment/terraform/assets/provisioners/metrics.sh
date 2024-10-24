@@ -27,8 +27,8 @@ yace_version="0.61.2"
 loki_version="3.2.0"
 
 function install_deps() {
-    sudo yum -y update && \
-    sudo yum -y install wget fontconfig
+    sudo dnf -y update && \
+    sudo dnf -y install wget fontconfig
 }
 
 function install_grafana {
@@ -44,7 +44,7 @@ gpgcheck=1
 gpgkey=https://rpm.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo' && \
-    sudo yum -y install grafana-${grafana_version} && \
+    sudo dnf -y install grafana-${grafana_version} && \
     sudo systemctl enable --now grafana-server
 }
 
@@ -73,7 +73,7 @@ function install_prometheus() {
 function install_inbucket() {
     echo "Installing Inbucket"
     wget ${wget_common_args} https://github.com/inbucket/inbucket/releases/download/v${inbucket_version}/inbucket_${inbucket_version}_linux_${arch}.rpm && \
-    sudo yum localinstall -y inbucket_${inbucket_version}_linux_${arch}.rpm && \
+    sudo dnf localinstall -y inbucket_${inbucket_version}_linux_${arch}.rpm && \
     sudo systemctl start --now inbucket
 }
 
@@ -99,7 +99,7 @@ function install_redis_exporter() {
 function install_alloy() {
     echo "Installing Alloy"
     wget ${wget_common_args} https://github.com/grafana/alloy/releases/download/v${alloy_version}/alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
-    sudo yum localinstall -y alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
+    sudo dnf localinstall -y alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
     sudo systemctl enable --now alloy
 }
 
@@ -107,7 +107,7 @@ function install_alloy() {
 function install_pyroscope() {
     echo "Installing Pyroscope"
     wget https://github.com/grafana/pyroscope/releases/download/v${pyroscope_version}/pyroscope_${pyroscope_version}_linux_${arch}.rpm && \
-    sudo yum localinstall -y pyroscope_${pyroscope_version}_linux_${arch}.rpm && \
+    sudo dnf localinstall -y pyroscope_${pyroscope_version}_linux_${arch}.rpm && \
     sudo mkdir -p /var/lib/pyroscope && \
     sudo chown pyroscope:pyroscope -R /var/lib/pyroscope && \
     sudo systemctl enable --now pyroscope

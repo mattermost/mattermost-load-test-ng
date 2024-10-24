@@ -44,10 +44,10 @@ name=nginx
 baseurl=https://nginx.org/packages/mainline/centos/\$releasever/\$basearch/
 gpgcheck=1
 enabled=1" > /etc/yum.repos.d/nginx.repo' && \
-      sudo yum -y update && \
-      sudo yum -y install wget && \
-      sudo yum -y install nginx && \
-      sudo yum -y install numactl kernel-tools && \
+      sudo dnf -y update && \
+      sudo dnf -y install wget && \
+      sudo dnf -y install nginx && \
+      sudo dnf -y install numactl kernel-tools && \
       install_prometheus_node_exporter && \
       install_otel_collector && \
       sudo systemctl daemon-reload && \

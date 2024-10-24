@@ -44,13 +44,13 @@ do
       echo "Attempt ${n}"
       echo 'tcp_bbr' | sudo tee -a /etc/modules-load.d/tcp_bbr.conf && \
       sudo modprobe tcp_bbr && \
-      sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm && \
-      sudo yum -y install postgresql${postgresql_version}-server && \
+      sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm && \
+      sudo dnf -y install postgresql${postgresql_version}-server && \
       sudo /usr/pgsql-${postgresql_version}/bin/postgresql-${postgresql_version}-setup initdb && \
       sudo systemctl enable --now postgresql-${postgresql_version} && \
-      sudo yum -y install wget && \
-      sudo yum -y install postgresql14 && \
-      sudo yum -y install numactl kernel-tools && \
+      sudo dnf -y install wget && \
+      sudo dnf -y install postgresql14 && \
+      sudo dnf -y install numactl kernel-tools && \
       install_netpeek && \
       install_prometheus_node_exporter && \
       install_otel_collector && \

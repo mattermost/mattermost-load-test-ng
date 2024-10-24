@@ -18,9 +18,9 @@ until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      sudo yum -y update && \
-      sudo yum -y install postgresql${postgresql_version} && \
-      sudo yum -y install wget && \
+      sudo dnf -y update && \
+      sudo dnf -y install postgresql${postgresql_version} && \
+      sudo dnf -y install wget && \
       wget https://github.com/prometheus/node_exporter/releases/download/v${prometheus_node_exporter_version}/node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
       tar xvfz node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
       sudo cp node_exporter-${prometheus_node_exporter_version}.linux-${arch}/node_exporter /usr/local/bin && \
