@@ -197,6 +197,9 @@ variable "aws_region" {
 variable "aws_ami" {
 }
 
+variable "aws_ami_user" {
+}
+
 variable "custom_tags" {
   type = map(string)
 }

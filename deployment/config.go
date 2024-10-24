@@ -31,6 +31,8 @@ type Config struct {
 	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
+	// AWSAMIUser is the user to use when connecting to the AMI.
+	AWSAMIUser string `default:"ec2-user"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
