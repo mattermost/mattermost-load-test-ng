@@ -98,35 +98,40 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PrivateIP)), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
 		}
 	}
 
-	// Match against proxy names
-	for _, inst := range output.Proxies {
-		if resource == inst.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
-		}
+	if output.KeycloakServer.Tags.Name == resource {
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PrivateIP)), nil
 	}
 
-	// Match against the metrics servers, as well as convenient aliases.
+	// Match against the proxy or metrics servers, as well as convenient aliases.
 	switch resource {
+	case "proxy":
+		// Match against proxy names
+		for _, inst := range output.Proxies {
+			if resource == inst.Tags.Name {
+				return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+			}
+		}
+
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PrivateIP)), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)
@@ -141,15 +146,15 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	url := "http://"
 	switch resource {
 	case "grafana":
-		url += output.MetricsServer.PublicDNS + ":3000"
+		url += output.MetricsServer.PrivateDNS + ":3000"
 	case "mattermost":
 		if output.HasProxy() {
-			url += output.Proxies[0].PublicDNS
+			url += output.Proxies[0].PrivateDNS
 		} else {
-			url += output.Instances[0].PublicDNS + ":8065"
+			url += output.Instances[0].PrivateDNS + ":8065"
 		}
 	case "prometheus":
-		url += output.MetricsServer.PublicDNS + ":9090"
+		url += output.MetricsServer.PrivateDNS + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}
@@ -343,7 +348,10 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 // deployer if present, and defaulting to the default credential chain otherwise
 func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 	if t.config.AWSProfile == "" {
-		return awsconfig.LoadDefaultConfig(context.Background())
+		return awsconfig.LoadDefaultConfig(
+			context.Background(),
+			awsconfig.WithRegion(t.Config().AWSRegion),
+		)
 	}
 
 	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)

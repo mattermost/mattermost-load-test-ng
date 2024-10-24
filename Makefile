@@ -73,6 +73,8 @@ endif
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)
+	rm -rf $(DIST_ROOT)/latest.tar.gz
+	cp $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(DIST_ROOT)/latest.tar.gz
 	rm -rf $(DIST_PATH)/$(PACKAGE_NAME)
 
 verify-gomod: ## Run go mod verify.
