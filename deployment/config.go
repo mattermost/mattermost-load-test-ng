@@ -35,7 +35,7 @@ type Config struct {
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
+	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
 	ClusterSubnetIDs ClusterSubnetIDs
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
@@ -144,23 +144,40 @@ func (t TerraformMap) String() string {
 
 // ClusterSubnetIDs contains the subnet ids for the different types of instances.
 type ClusterSubnetIDs struct {
-	App           []string `json:"app"`
-	Job           []string `json:"job"`
-	Proxy         []string `json:"proxy"`
-	Agent         []string `json:"agent"`
-	ElasticSearch []string `json:"elasticsearch"`
-	Metrics       []string `json:"metrics"`
-	Keycloak      []string `json:"keycloak"`
-	Database      []string `json:"database"`
-	Redis         []string `json:"redis"`
+	App           []string `default_size:"0" json:"app"`
+	Job           []string `default_size:"0" json:"job"`
+	Proxy         []string `default_size:"0" json:"proxy"`
+	Agent         []string `default_size:"0" json:"agent"`
+	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
+	Metrics       []string `default_size:"0" json:"metrics"`
+	Keycloak      []string `default_size:"0" json:"keycloak"`
+	Database      []string `default_size:"0" json:"database"`
+	Redis         []string `default_size:"0" json:"redis"`
 }
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
+	value := reflect.ValueOf(*c)
+
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		// Skip fields that are not slices
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		if field.IsNil() || value.Field(i).Len() == 0 {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+
 }
 
-func (c *ClusterSubnetIDs) String() string {
+func (c ClusterSubnetIDs) String() string {
 	b, err := json.Marshal(c)
 	if err != nil {
 		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))

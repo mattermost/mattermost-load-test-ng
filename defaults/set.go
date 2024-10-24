@@ -50,7 +50,7 @@ func structDefaults(value interface{}) error {
 				return fmt.Errorf("invalid size definition: %q", tag)
 			}
 			dv := field.Interface()
-			newSlice, err := createSlice(dv, size)
+			newSlice, err := createSlice(field.Type(), dv, size)
 			if err != nil {
 				return err
 			}
@@ -129,7 +129,7 @@ func setValue(t reflect.Type, data string) (reflect.Value, error) {
 }
 
 // this function creates a slice for the given slice type
-func createSlice(defaultValue interface{}, size int) (reflect.Value, error) {
+func createSlice(fieldType reflect.Type, defaultValue interface{}, size int) (reflect.Value, error) {
 	t := reflect.ValueOf(defaultValue).Type().Elem()
 	if t.Kind() == reflect.Struct {
 		values := reflect.Zero(reflect.SliceOf(t))
@@ -143,7 +143,7 @@ func createSlice(defaultValue interface{}, size int) (reflect.Value, error) {
 		}
 		return values, nil
 	}
-	return reflect.MakeSlice(t, size, size), nil
+	return reflect.MakeSlice(fieldType, size, size), nil
 }
 
 // this function creates a map for the given map type
