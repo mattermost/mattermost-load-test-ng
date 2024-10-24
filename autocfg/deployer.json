@@ -148,6 +148,8 @@
     "BlockProfileRate": 0
   },
   "CustomTags": {
-    "Origin": "test-autolt"
+    "Origin": "test-autolt",
+    "PR": "undefined",
+    "SHA": "undefined"
   }
 }
