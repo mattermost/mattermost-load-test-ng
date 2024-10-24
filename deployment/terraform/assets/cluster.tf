@@ -37,10 +37,6 @@ locals {
   private_ip = data.external.private_ip.result.ip
 }
 
-data "aws_vpc" "default" {
-  default = true
-}
-
 resource "aws_key_pair" "key" {
   key_name   = "${var.cluster_name}-keypair"
   public_key = file(var.ssh_public_key)
