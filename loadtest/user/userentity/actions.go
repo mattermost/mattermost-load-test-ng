@@ -1394,7 +1394,15 @@ func (ue *UserEntity) GetPostThreadWithOpts(threadId, etag string, opts model.Ge
 	if postList == nil || len(postList.Posts) == 0 {
 		return nil, false, nil
 	}
-	return postList.Order, postList.HasNext, ue.store.SetPosts(postListToSlice(postList))
+
+	var hasNext bool
+	if postList.HasNext != nil {
+		hasNext = *postList.HasNext
+	} else {
+		hasNext = false
+	}
+
+	return postList.Order, hasNext, ue.store.SetPosts(postListToSlice(postList))
 }
 
 // MarkAllThreadsInTeamAsRead marks all threads in the given team as read
