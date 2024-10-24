@@ -251,6 +251,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
 		"-var", fmt.Sprintf("aws_az=%s", t.config.AWSAvailabilityZone),
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
+		"-var", fmt.Sprintf("aws_ami_user=%s", t.config.AWSAMIUser),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, t.config.ClusterSubnetIDs),
