@@ -41,22 +41,6 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnets" "selected" {
-  filter {
-    name   = "vpc-id"
-    values = var.cluster_vpc_id == "" ? [data.aws_vpc.default.id] : [var.cluster_vpc_id]
-  }
-
-  // Add a filter on the availability zone only if it is explicitly set
-  dynamic "filter" {
-    for_each = var.aws_az != "" ? [1] : []
-    content {
-      name   = "availability-zone"
-      values = [var.aws_az]
-    }
-  }
-}
-
 resource "aws_key_pair" "key" {
   key_name   = "${var.cluster_name}-keypair"
   public_key = file(var.ssh_public_key)
@@ -287,7 +271,7 @@ EOF
 
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-subnet-group"
-  subnet_ids = (length(var.cluster_subnet_ids.redis) > 1) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
+  subnet_ids = tolist(var.cluster_subnet_ids.redis)
   count      = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
 
   tags = {
@@ -312,7 +296,7 @@ resource "aws_elasticache_cluster" "redis_server" {
 
 resource "aws_db_subnet_group" "db" {
   name       = "${var.cluster_name}-db-subnet-group"
-  subnet_ids = (length(var.cluster_subnet_ids.database) > 1) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
+  subnet_ids = tolist(var.cluster_subnet_ids.database)
   count      = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
 
   tags = {
