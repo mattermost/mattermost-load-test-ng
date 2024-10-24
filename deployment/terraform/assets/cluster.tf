@@ -287,7 +287,7 @@ EOF
 
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "${var.cluster_name}-redis-subnet-group"
-  subnet_ids = (length(var.cluster_subnet_ids.redis) > 0) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
+  subnet_ids = (length(var.cluster_subnet_ids.redis) > 1) ? tolist(var.cluster_subnet_ids.redis) : tolist(data.aws_subnets.selected.ids)
   count      = var.redis_enabled && length(var.cluster_subnet_ids.redis) > 1 ? 1 : 0
 
   tags = {
@@ -312,7 +312,7 @@ resource "aws_elasticache_cluster" "redis_server" {
 
 resource "aws_db_subnet_group" "db" {
   name       = "${var.cluster_name}-db-subnet-group"
-  subnet_ids = (length(var.cluster_subnet_ids.database) > 0) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
+  subnet_ids = (length(var.cluster_subnet_ids.database) > 1) ? tolist(var.cluster_subnet_ids.database) : tolist(data.aws_subnets.selected.ids)
   count      = var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? 1 : 0
 
   tags = {
