@@ -122,7 +122,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	clients := make(map[string]*ssh.Client)
 	if output.HasProxy() {
 		for i, inst := range output.Proxies {
-			sshc, err := extAgent.NewClient(inst.GetConnectionIP())
+			sshc, err := extAgent.NewClient(inst.GetConnectionIP(), output.AMIUser)
 			if err != nil {
 				return nil, fmt.Errorf("error in getting ssh connection %w", err)
 			}
@@ -131,7 +131,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	}
 
 	for i, instance := range output.Instances {
-		sshc, err := extAgent.NewClient(instance.GetConnectionIP())
+		sshc, err := extAgent.NewClient(instance.GetConnectionIP(), output.AMIUser)
 		if err != nil {
 			return nil, fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -139,7 +139,7 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	}
 
 	for i, agent := range output.Agents {
-		sshc, err := extAgent.NewClient(agent.GetConnectionIP())
+		sshc, err := extAgent.NewClient(agent.GetConnectionIP(), output.AMIUser)
 		if err != nil {
 			return nil, fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -228,13 +228,13 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				return sanitizedCfg, nil
 			})
 		case strings.HasPrefix(instance, "agent"):
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltagent.log", true, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltagent.log", t.Config().AWSAMIUser), true, nil)
 		case instance == "coordinator":
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log", true, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/config.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json", false, nil)
-			addFile(instance, "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json", false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltcoordinator.log", t.Config().AWSAMIUser), true, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.Config().AWSAMIUser), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUser), false, nil)
+			addFile(instance, fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUser), false, nil)
 			continue
 		}
 		addCmd(instance, "sudo dmesg", "dmesg.out", false, nil)
