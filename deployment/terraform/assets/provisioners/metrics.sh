@@ -5,46 +5,144 @@ set -euo pipefail
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
+
+system_arch=$(uname -m)
+if [ "$system_arch" == "x86_64" ]; then
+  arch="amd64"
+fi
+
+wget_common_args="--no-clobber"
+
+grafana_version="10.2.3"
+grafana_package="grafana"
+prometheus_version="1.8.2"
+inbucket_version="2.1.0"
+elasticsearch_exporter_version="1.1.0"
+redis_exporter_version="1.58.0"
+alloy_version="1.3.1"
+alloy_rev="1"
+pyroscope_version="1.7.1"
+pyroscope_rev="1"
+yace_version="0.61.2"
+loki_version="3.2.0"
+
+function install_deps() {
+    sudo yum -y update && \
+    sudo yum -y install wget fontconfig
+}
+
+function install_grafana {
+    echo "Installing Grafana"
+    wget ${wget_common_args} -O grafana-gpg.key https://rpm.grafana.com/gpg.key
+    sudo rpm --import grafana-gpg.key
+    sudo sh -c 'echo "[grafana]
+name=grafana
+baseurl=https://rpm.grafana.com
+repo_gpgcheck=1
+enabled=1
+gpgcheck=1
+gpgkey=https://rpm.grafana.com/gpg.key
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo' && \
+    sudo yum -y install grafana-${grafana_version} && \
+    sudo systemctl enable --now grafana-server
+}
+
+
+function install_prometheus() {
+    echo "Installing Prometheus"
+    if ! id "prometheus"; then
+        sudo adduser --quiet --no-create-home --shell /bin/false prometheus;
+    fi;
+    sudo mkdir -p /etc/prometheus /var/lib/prometheus && \
+    sudo chown prometheus:prometheus /etc/prometheus && \
+    sudo chown prometheus:prometheus /var/lib/prometheus && \
+    wget ${wget_common_args} https://github.com/prometheus/prometheus/releases/download/v${prometheus_version}/prometheus-${prometheus_version}.linux-${arch}.tar.gz && \
+    tar -xzf prometheus-${prometheus_version}.linux-${arch}.tar.gz && \
+    sudo cp prometheus-${prometheus_version}.linux-${arch}/prometheus /usr/local/bin/ && \
+    sudo chown prometheus:prometheus /usr/local/bin/prometheus && \
+    sudo cp prometheus-${prometheus_version}.linux-${arch}/promtool /usr/local/bin/ && \
+    sudo chown prometheus:prometheus /usr/local/bin/promtool && \
+    sudo cp -r prometheus-${prometheus_version}.linux-${arch}/consoles /etc/prometheus && \
+    sudo cp -r prometheus-${prometheus_version}.linux-${arch}/console_libraries /etc/prometheus && \
+    sudo chown -R prometheus:prometheus /etc/prometheus/consoles && \
+    sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
+}
+
+
+function install_inbucket() {
+    echo "Installing Inbucket"
+    wget ${wget_common_args} https://github.com/inbucket/inbucket/releases/download/v${inbucket_version}/inbucket_${inbucket_version}_linux_${arch}.rpm && \
+    sudo yum localinstall -y inbucket_${inbucket_version}_linux_${arch}.rpm && \
+    sudo systemctl start --now inbucket
+}
+
+
+
+function install_elasticsearch_exporter() {
+    echo "Installing Elasticsearch Exporter"
+    wget ${wget_common_args} https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v${elasticsearch_exporter_version}/elasticsearch_exporter-${elasticsearch_exporter_version}.linux-${arch}.tar.gz && \
+    sudo mkdir -p /opt/elasticsearch_exporter && \
+    sudo tar -zxf elasticsearch_exporter-${elasticsearch_exporter_version}.linux-${arch}.tar.gz -C /opt/elasticsearch_exporter --strip-components=1
+}
+
+
+function install_redis_exporter() {
+    echo "Installing Redis Exporter"
+    wget ${wget_common_args} https://github.com/oliver006/redis_exporter/releases/download/v${redis_exporter_version}/redis_exporter-v${redis_exporter_version}.linux-${arch}.tar.gz && \
+    sudo mkdir -p /opt/redis_exporter && \
+    sudo tar -zxf redis_exporter-v${redis_exporter_version}.linux-${arch}.tar.gz -C /opt/redis_exporter --strip-components=1
+}
+
+
+
+function install_alloy() {
+    echo "Installing Alloy"
+    wget ${wget_common_args} https://github.com/grafana/alloy/releases/download/v${alloy_version}/alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
+    sudo yum localinstall -y alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
+    sudo systemctl enable --now alloy
+}
+
+
+function install_pyroscope() {
+    echo "Installing Pyroscope"
+    wget https://github.com/grafana/pyroscope/releases/download/v${pyroscope_version}/pyroscope_${pyroscope_version}_linux_${arch}.rpm && \
+    sudo yum localinstall -y pyroscope_${pyroscope_version}_linux_${arch}.rpm && \
+    sudo mkdir -p /var/lib/pyroscope && \
+    sudo chown pyroscope:pyroscope -R /var/lib/pyroscope && \
+    sudo systemctl enable --now pyroscope
+}
+
+function install_yace() {
+    echo "Installing Yace"
+    sudo mkdir /opt/yace && \
+    wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v${yace_version}/yet-another-cloudwatch-exporter_${yace_version}_Linux_${system_arch}.tar.gz && \
+    sudo tar -zxf yet-another-cloudwatch-exporter_${yace_version}_Linux_${system_arch}.tar.gz -C /opt/yace
+}
+
+function install_loki() {
+    echo "Installing Loki"
+    wget https://github.com/grafana/loki/releases/download/v${loki_version}/loki_${loki_version}_${arch}.rpm && \
+    sudo rpm -i loki_${loki_version}_${arch}.rpm && \
+    sudo systemctl start loki
+}
+
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      sudo apt-get -y update && \
-      sudo apt-get install -y prometheus && \
-      sudo systemctl enable prometheus && \
-      sudo apt-get install -y adduser libfontconfig1 musl && \
-      wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb && \
-      sudo dpkg -i grafana_10.2.3_amd64.deb && \
-      wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb && \
-      sudo dpkg -i inbucket_2.1.0_linux_amd64.deb && \
-      wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz && \
-      sudo mkdir /opt/elasticsearch_exporter && \
-      sudo tar -zxf elasticsearch_exporter-1.1.0.linux-amd64.tar.gz -C /opt/elasticsearch_exporter --strip-components=1 && \
-      wget https://github.com/oliver006/redis_exporter/releases/download/v1.58.0/redis_exporter-v1.58.0.linux-amd64.tar.gz && \
-      sudo mkdir /opt/redis_exporter && \
-      sudo tar -zxf redis_exporter-v1.58.0.linux-amd64.tar.gz -C /opt/redis_exporter --strip-components=1 && \
-      sudo systemctl daemon-reload && \
-      sudo systemctl enable grafana-server && \
-      sudo service grafana-server start && \
-      sudo systemctl enable inbucket && \
-      sudo service inbucket start && \
-      wget https://github.com/grafana/alloy/releases/download/v1.3.1/alloy-1.3.1-1.amd64.deb && \
-      sudo dpkg -i alloy-1.3.1-1.amd64.deb && \
-      sudo systemctl enable alloy && \
-      wget https://github.com/grafana/pyroscope/releases/download/v1.7.1/pyroscope_1.7.1_linux_amd64.deb && \
-      sudo dpkg -i pyroscope_1.7.1_linux_amd64.deb && \
-      sudo mkdir -p /var/lib/pyroscope && \
-      sudo chown pyroscope:pyroscope -R /var/lib/pyroscope && \
-      sudo systemctl enable pyroscope && \
-      sudo mkdir /opt/yace && \
-      wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v0.61.2/yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz && \
-      sudo tar -zxf yet-another-cloudwatch-exporter_0.61.2_Linux_x86_64.tar.gz -C /opt/yace && \
-      # Install Loki
-      wget https://github.com/grafana/loki/releases/download/v3.2.0/loki_3.2.0_amd64.deb && \
-      sudo dpkg -i loki_3.2.0_amd64.deb && \
-      sudo systemctl start loki
+      install_deps && \
+      install_grafana && \
+      install_prometheus && \
+      install_inbucket && \
+      install_elasticsearch_exporter && \
+      install_redis_exporter && \
+      install_alloy && \
+      install_pyroscope && \
+      install_yace && \
+      install_loki && \
       exit 0
    n=$((n+1))
    sleep 2
