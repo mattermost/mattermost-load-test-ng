@@ -98,21 +98,21 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, agent.PrivateIP)), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.PrivateIP)), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.PrivateIP)), nil
 		}
 	}
 
@@ -125,13 +125,13 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 
 	// Match against the metrics servers, as well as convenient aliases.
 	if output.KeycloakServer.Tags.Name == resource {
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.KeycloakServer.PrivateIP)), nil
 	}
 
 	// Match against the proxy or metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.MetricsServer.PrivateIP)), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)

@@ -55,9 +55,9 @@ func NewAgent() (*ExtAgent, error) {
 
 // NewClientWithPort returns a Client object by dialing
 // the ssh agent on the provided port
-func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
+func (ea *ExtAgent) NewClientWithPort(ip, port, user string) (*Client, error) {
 	config := &ssh.ClientConfig{
-		User: "ubuntu",
+		User: user,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeysCallback(ea.agent.Signers),
 		},
@@ -73,8 +73,8 @@ func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
 
 // NewClient returns a Client object by dialing
 // the ssh agent on port 22
-func (ea *ExtAgent) NewClient(ip string) (*Client, error) {
-	return ea.NewClientWithPort(ip, ":22")
+func (ea *ExtAgent) NewClient(user, ip string) (*Client, error) {
+	return ea.NewClientWithPort(ip, ":22", user)
 }
 
 // RunCommand runs a given command in a new ssh session.
@@ -116,7 +116,7 @@ func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error)
 	defer sess.Close()
 	sess.Stdin = src
 
-	cmd := fmt.Sprintf("cat > '%s'", dst)
+	cmd := fmt.Sprintf(`cat > "%s"`, dst)
 	if sudo {
 		cmd = fmt.Sprintf("sudo su -c %q", cmd)
 	}

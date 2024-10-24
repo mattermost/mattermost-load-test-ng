@@ -16,12 +16,12 @@ ExecStart=/opt/mattermost/bin/mattermost
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
-Environment=MM_SERVICEENVIRONMENT=%s
+Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target
@@ -284,7 +284,7 @@ net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 `
 
-const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
+const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
 const apiServiceFile = `
 [Unit]
@@ -298,9 +298,9 @@ Environment="BLOCK_PROFILE_RATE={{ printf "%d" .blockProfileRate}}"
 ExecStart={{ printf "%s" .execStart}}
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
-User=ubuntu
-Group=ubuntu
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=262144
 
 [Install]
@@ -314,12 +314,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
+ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="{{.ESEndpoint}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -332,12 +332,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="{{.RedisAddr}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/redis_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -460,8 +460,8 @@ ExecStart=/opt/yace/yace -listen-address :{{.Port}} -config.file /opt/yace/conf.
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/yace
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -478,8 +478,8 @@ ExecStart=/opt/mattermost/bin/mattermost jobserver
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_SERVICEENVIRONMENT=%s
 
@@ -505,8 +505,8 @@ Description=Keycloak
 After=network.target
 
 [Service]
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 EnvironmentFile=/etc/systemd/system/keycloak.env
 ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
 
@@ -616,7 +616,7 @@ type otelcolReceiver struct {
 func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
 	agentReceiver := otelcolReceiver{
 		Name:              "filelog/agent",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltagent.log",
 		ServiceName:       "agent",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAppAgent,
@@ -624,7 +624,7 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 
 	coordinatorReceiver := otelcolReceiver{
 		Name:              "filelog/coordinator",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltcoordinator.log",
 		ServiceName:       "coordinator",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAppAgent,
