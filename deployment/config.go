@@ -33,6 +33,8 @@ type Config struct {
 	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// OperatingSystem
 	OperatingSystemKind string `default:"debian" validate:"oneof:{debian,rhel}"`
+	// AWSAMIUser is the user to use when connecting to the AMI.
+	AWSAMIUser string `default:"ubuntu"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.

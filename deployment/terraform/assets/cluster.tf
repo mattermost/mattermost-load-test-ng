@@ -48,10 +48,9 @@ resource "aws_instance" "app_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami                  = var.aws_ami
@@ -74,7 +73,7 @@ resource "aws_instance" "app_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
   }
 
   provisioner "file" {
@@ -159,10 +158,9 @@ resource "aws_instance" "metrics_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
@@ -226,9 +224,8 @@ resource "aws_instance" "proxy_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
@@ -404,8 +401,8 @@ resource "aws_instance" "loadtest_agent" {
 
   connection {
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami           = var.aws_ami
@@ -842,10 +839,9 @@ resource "aws_instance" "job_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
@@ -866,7 +862,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
   }
 
 
@@ -908,10 +904,9 @@ resource "aws_instance" "keycloak" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
