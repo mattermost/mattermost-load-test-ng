@@ -249,16 +249,14 @@ func CreateAckPost(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
-	var urgent string = model.PostPriorityUrgent
-	var ack bool = true
 	postId, err := u.CreatePost(&model.Post{
 		Message:   "Priority Post Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().UnixMilli(),
 		Metadata: &model.PostMetadata{
 			Priority: &model.PostPriority{
-				Priority:     &urgent,
-				RequestedAck: &ack,
+				Priority:     model.NewPointer(model.PostPriorityUrgent),
+				RequestedAck: model.NewPointer(true),
 			},
 		},
 	})

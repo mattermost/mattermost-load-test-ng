@@ -1245,6 +1245,9 @@ func (s *MemStore) SetChannelBookmarks(bookmarks []*model.ChannelBookmarkWithFil
 	defer s.lock.Unlock()
 
 	for _, bookmark := range bookmarks {
+		if bookmark == nil {
+			return errors.New("memstore: bookmark should not be nil")
+		}
 		s.channelBookmarks[bookmark.Id] = bookmark
 	}
 
@@ -1282,7 +1285,7 @@ func (s *MemStore) UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFile
 	return nil
 }
 
-// DeleteChannelBookmark updates a given bookmark.
+// DeleteChannelBookmark deletes a given bookmark.
 func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()

@@ -300,13 +300,19 @@ func AttachFileToBookmark(u user.User, bookmark *model.ChannelBookmark) error {
 	return nil
 }
 
-func _attachFilesToObj(u user.User, channelID string, qtyToUpload int) ([]string, error) {
+func _attachFilesToObj(u user.User, channelID string, maxToUpload int) ([]string, error) {
 	type file struct {
 		data   []byte
 		upload bool
 	}
 	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4", "test_upload.txt"}
 	files := make(map[string]*file, len(filenames))
+
+	// Randomly select how many files to upload, but ensure at least 1.
+	countToUpload := rand.Intn(maxToUpload)
+	if countToUpload < 1 {
+		countToUpload = 1
+	}
 
 	count := 0
 
@@ -321,7 +327,7 @@ func _attachFilesToObj(u user.User, channelID string, qtyToUpload int) ([]string
 			upload: upload,
 		}
 
-		if count == qtyToUpload {
+		if count == countToUpload {
 			break
 		}
 	}
