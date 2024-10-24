@@ -90,13 +90,13 @@ resource "aws_opensearch_domain" "es_server" {
   }
 
   cluster_config {
-    instance_count = var.es_instance_count
-    instance_type  = var.es_instance_type
+    instance_count         = var.es_instance_count
+    instance_type          = var.es_instance_type
     zone_awareness_enabled = var.es_zone_awareness_enabled
     zone_awareness_config {
       availability_zone_count = var.es_zone_awarness_availability_zone_count
     }
-}
+  }
 
   access_policies = <<CONFIG
   {
