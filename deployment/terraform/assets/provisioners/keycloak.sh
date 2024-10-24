@@ -19,8 +19,8 @@ until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      sudo yum -y update && \
-      sudo yum -y install unzip java-17-openjdk postgresql postgresql-server wget && \
+      sudo dnf -y update && \
+      sudo dnf -y install unzip java-17-openjdk postgresql postgresql-server wget && \
       sudo mkdir -p /opt/keycloak && \
       sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${keycloak_version}/keycloak-${keycloak_version}.zip && \
       sudo unzip /opt/keycloak/keycloak-${keycloak_version}.zip -d /opt/keycloak && \
