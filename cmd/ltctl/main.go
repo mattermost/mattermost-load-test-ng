@@ -48,18 +48,6 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
 
-	// If we are using a Terraform managed DB.
-	if config.ExternalDBSettings.DataSource == "" {
-		status, err := t.DBStatus()
-		if err != nil {
-			return fmt.Errorf("failed to get DB status: %w", err)
-		}
-
-		if status != dbAvailable {
-			return fmt.Errorf("The database isn't available at the moment. Its status is %q. Please check this, and then try again", status)
-		}
-	}
-
 	return t.Destroy()
 }
 
@@ -162,7 +150,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
 	}
 	if output.HasProxy() {
-		fmt.Printf(" - %s\n", output.Proxy.Tags.Name)
+		for _, inst := range output.Proxies {
+			fmt.Printf(" - %s\n", inst.Tags.Name)
+		}
 	}
 	if output.HasMetrics() {
 		fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)

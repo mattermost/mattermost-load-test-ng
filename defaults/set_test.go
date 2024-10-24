@@ -91,4 +91,25 @@ func TestSet(t *testing.T) {
 		assert.NotNil(t, cfg.Chan)
 		assert.Equal(t, 3, cap(cfg.Chan))
 	})
+
+	t.Run("should be able to set nil slices", func(t *testing.T) {
+		cfg := struct {
+			Strings []string
+		}{}
+
+		err := Set(&cfg)
+		require.NoError(t, err)
+		assert.Nil(t, cfg.Strings)
+	})
+
+	t.Run("should be able to set empty slices", func(t *testing.T) {
+		cfg := struct {
+			Strings []string `default_size:"0"`
+		}{}
+
+		err := Set(&cfg)
+		require.NoError(t, err)
+		assert.NotNil(t, cfg.Strings)
+		assert.Len(t, cfg.Strings, 0)
+	})
 }

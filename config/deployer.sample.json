@@ -1,6 +1,7 @@
 {
   "AWSProfile": "mm-loadtest",
   "AWSRegion": "us-east-1",
+  "AWSAvailabilityZone": "us-east-1c",
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
@@ -17,12 +18,13 @@
   },
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
+  "AppAttachIAMProfile": "",
+  "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "VpcID": "",
     "Version": "Elasticsearch_7.10",
     "CreateRole": false,
     "SnapshotRepository": "",
@@ -43,12 +45,14 @@
     "InstanceType": "c7i.xlarge"
   },
   "EnableAgentFullLogs": true,
+  "ProxyInstanceCount": 1,
   "ProxyInstanceType": "c7i.xlarge",
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
+  "EnableNetPeekMetrics": false,
   "TerraformDBSettings": {
     "InstanceCount": 1,
     "InstanceEngine": "aurora-postgresql",
@@ -91,7 +95,7 @@
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",
@@ -149,11 +153,13 @@
     "App": 10,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 20
+    "ElasticSearch": 100
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,
     "EnableAgentProfiling": true,
     "BlockProfileRate": 0
+  },
+  "CustomTags": {
   }
 }

@@ -1,8 +1,10 @@
 package deployment
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/stretchr/testify/require"
 )
 
@@ -10,7 +12,7 @@ func TestConfigIsValid(t *testing.T) {
 	baseConfig := func() Config {
 		return Config{
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz",
 		}
 	}
 
@@ -77,7 +79,7 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 			ClusterVpcID:          "vpc-01234567890abcdef",
 			ClusterName:           "clustername",
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz",
 			ElasticSearchSettings: ElasticSearchSettings{
 				InstanceCount:      1,
 				Version:            "OpenSearch_2.7",
@@ -121,5 +123,139 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 		cfg.ElasticSearchSettings.InstanceCount = 0
 
 		require.NoError(t, cfg.validateElasticSearchConfig())
+	})
+}
+
+func TestTerraformMapString(t *testing.T) {
+	var nilMap TerraformMap
+	emptyMap := make(TerraformMap)
+
+	testCases := []struct {
+		actual    TerraformMap
+		expected  string
+		expected2 string
+	}{
+		{
+			actual: TerraformMap{
+				"uno": "1",
+			},
+			expected: "{uno = \"1\"}",
+		},
+		{
+			actual: TerraformMap{
+				"uno": "1",
+				"dos": "2",
+			},
+			expected:  "{uno = \"1\", dos = \"2\"}",
+			expected2: "{dos = \"2\", uno = \"1\"}",
+		},
+		{
+			actual:   nilMap,
+			expected: "{}",
+		},
+		{
+			actual:   emptyMap,
+			expected: "{}",
+		},
+	}
+
+	for _, testCase := range testCases {
+		actual := testCase.actual.String()
+
+		// map order is non deterministic
+		equals := testCase.expected == actual || (testCase.expected2 != "" && testCase.expected2 == actual)
+		require.True(t, equals)
+	}
+}
+
+func TestClusterSubnetIDs(t *testing.T) {
+	var defaultStruct ClusterSubnetIDs
+	emptyStructNilSlices := ClusterSubnetIDs{}
+	emptyStructEmptySlices := ClusterSubnetIDs{
+		App:           []string{},
+		Job:           []string{},
+		Proxy:         []string{},
+		Agent:         []string{},
+		ElasticSearch: []string{},
+		Metrics:       []string{},
+		Keycloak:      []string{},
+		Database:      []string{},
+		Redis:         []string{},
+	}
+
+	t.Run("String()", func(t *testing.T) {
+		testCases := []struct {
+			actual   ClusterSubnetIDs
+			expected string
+		}{
+			{
+				actual:   defaultStruct,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+			},
+			{
+				actual:   emptyStructNilSlices,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+			},
+			{
+				actual:   emptyStructEmptySlices,
+				expected: `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`,
+			},
+		}
+
+		for _, testCase := range testCases {
+			actual := testCase.actual.String()
+			require.Equal(t, testCase.expected, actual)
+		}
+	})
+
+	t.Run("default values", func(t *testing.T) {
+		cfg := Config{}
+		defaults.Set(&cfg)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.App)
+		require.Len(t, cfg.ClusterSubnetIDs.App, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Job)
+		require.Len(t, cfg.ClusterSubnetIDs.Job, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Proxy)
+		require.Len(t, cfg.ClusterSubnetIDs.Proxy, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Agent)
+		require.Len(t, cfg.ClusterSubnetIDs.Agent, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.ElasticSearch)
+		require.Len(t, cfg.ClusterSubnetIDs.ElasticSearch, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Metrics)
+		require.Len(t, cfg.ClusterSubnetIDs.Metrics, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Keycloak)
+		require.Len(t, cfg.ClusterSubnetIDs.Keycloak, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Database)
+		require.Len(t, cfg.ClusterSubnetIDs.Database, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Redis)
+		require.Len(t, cfg.ClusterSubnetIDs.Redis, 0)
+	})
+
+	t.Run("String() of default values", func(t *testing.T) {
+		cfg := Config{}
+		defaults.Set(&cfg)
+
+		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
+		//nolint:gosimple
+		actual := fmt.Sprintf("%s", cfg.ClusterSubnetIDs)
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("IsAnySet", func(t *testing.T) {
+		require.False(t, defaultStruct.IsAnySet())
+		require.False(t, emptyStructNilSlices.IsAnySet())
+		require.False(t, emptyStructEmptySlices.IsAnySet())
+
+		someSet := ClusterSubnetIDs{App: []string{"set"}}
+		require.True(t, someSet.IsAnySet())
 	})
 }

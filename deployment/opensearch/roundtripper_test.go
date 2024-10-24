@@ -1,4 +1,4 @@
-package elasticsearch
+package opensearch
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// Build the roundtripper
-	roundtripper, err := newElasticsearchRoundTripper(dialCtxtF, awsDummyCreds, region)
+	roundtripper, err := newOpensearchRoundTripper(dialCtxtF, awsDummyCreds, region)
 	require.NoError(t, err)
 
 	// Build a dummy request with no headers

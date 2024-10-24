@@ -12,6 +12,13 @@ AWS profile to use for the deployment. Also used for all AWS CLI commands run lo
 
 AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
 
+## AWSAvailabilityZone
+
+AWS Availability Zone in which to deploy instances. See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
+
+> [!TIP]
+> Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
+
 ## AWSAMI
 
 *string*
@@ -58,6 +65,12 @@ When this value is greater than one, an S3 bucket is automatically created in th
 *string*
 
 The type of the EC2 instance of the application server. See type [here](https://aws.amazon.com/ec2/instance-types/). It is recommended to use c5 instances for consistent performance.
+
+## AppAttachIAMProfile
+
+*string*
+
+The IAM profile to attach to the application server. This is useful if you need to give the application server access to other existing AWS resources.
 
 ## AgentInstanceCount
 
@@ -148,14 +161,6 @@ The type of instance for the Elasticsearch service. Only AWS OpenSearch instance
 
 Version of Elasticsearch to be deployed. Deployments only support AWS OpenSearch versions compatible with ElasticSearch, up to and including ElasticSearch v7.10.0; i.e., the ones prefixed by `Elasticsearch_.`. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions and the [`aws` Terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_domain#engine_version) to learn more about the specific string used.
 
-## VpcID
-
-*string*
-
-Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
-
-This ID is mandatory is you're going to instantiate an ES service in your cluster.
-
 ### CreateRole
 
 *bool*
@@ -225,6 +230,12 @@ The type of EC2 instance for the Job Server. See type [here](https://aws.amazon.
 *bool*
 
 Allows to log the agent service command output (`stdout` & `stderr`) to home directory.
+
+## ProxyInstanceCount
+
+*int*
+
+Number of proxy instances to run. Right now, only values `0` and `1` are allowed. Check [this FAQ](../faq.md#can-i-use-a-custom-load-balancer-like-an-albnlb-in-front-of-the-mattermost-server) for more information.
 
 ## ProxyInstanceType
 
@@ -557,6 +568,15 @@ This config is used for tests that require an existing database dump that contai
 
 The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
 
+## EnableNetPeekMetrics
+
+*bool*
+
+If true, enables the collection of fine grained networking metrics through the [netpeek](https://github.com/streamer45/netpeek) utility.
+
+> [!WARNING]
+> These metrics can introduce a not negligible computational overhead on high traffic deployments.
+
 ## PyroscopeSettings
 
 ### EnableAppProfiling
@@ -576,3 +596,9 @@ Enable continuous profiling of all the agent instances.
 *int*
 
 Set the pprof block profile rate. This value applies to both agent and Mattermost server processes.
+
+## CustomTags
+
+*map[string]string*
+
+Optional map of key-value pairs, used to tag all deployed resources in AWS. Check [AWS documentation on tags](https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/what-are-tags.html) for more information and best practices.

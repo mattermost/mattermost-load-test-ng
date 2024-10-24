@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"strings"
 )
 
 type output struct {
@@ -21,6 +20,7 @@ type output struct {
 		Value []struct {
 			Endpoint          string `json:"endpoint"`
 			ClusterIdentifier string `json:"cluster_identifier"`
+			Writer            bool   `json:"writer"`
 		} `json:"value"`
 	} `json:"dbCluster"`
 	Agents struct {
@@ -42,6 +42,7 @@ type output struct {
 		Value []struct {
 			Endpoint          string `json:"endpoint"`
 			ClusterIdentifier string `json:"cluster_identifier"`
+			Writer            bool   `json:"writer"`
 		} `json:"value"`
 	} `json:"keycloakDatabaseCluster"`
 	JobServers struct {
@@ -67,7 +68,7 @@ type output struct {
 // created after a deployment.
 type Output struct {
 	ClusterName             string
-	Proxy                   Instance            `json:"proxy"`
+	Proxies                 []Instance          `json:"proxies"`
 	Instances               []Instance          `json:"instances"`
 	DBCluster               DBCluster           `json:"dbCluster"`
 	Agents                  []Instance          `json:"agents"`
@@ -109,10 +110,16 @@ type Tags struct {
 	Name string `json:"Name"`
 }
 
+// DBInstance defines an RDS instance resource.
+type DBInstance struct {
+	Endpoint string
+	IsWriter bool
+}
+
 // DBCluster defines a RDS cluster instance resource.
 type DBCluster struct {
-	Endpoints         []string `json:"endpoint"`
-	ClusterIdentifier string   `json:"cluster_identifier"`
+	Instances         []DBInstance `json:"instances"`
+	ClusterIdentifier string       `json:"cluster_identifier"`
 }
 
 // IAMAccess is a set of credentials that allow API requests to be made as an IAM user.
@@ -156,11 +163,15 @@ func (t *Terraform) loadOutput() error {
 	}
 
 	if len(o.Proxy.Value) > 0 {
-		outputv2.Proxy = o.Proxy.Value[0]
+		outputv2.Proxies = append(outputv2.Proxies, o.Proxy.Value...)
 	}
+
 	if len(o.DBCluster.Value) > 0 {
-		for _, ep := range o.DBCluster.Value {
-			outputv2.DBCluster.Endpoints = append(outputv2.DBCluster.Endpoints, ep.Endpoint)
+		for _, inst := range o.DBCluster.Value {
+			outputv2.DBCluster.Instances = append(outputv2.DBCluster.Instances, DBInstance{
+				Endpoint: inst.Endpoint,
+				IsWriter: inst.Writer,
+			})
 		}
 		outputv2.DBCluster.ClusterIdentifier = o.DBCluster.Value[0].ClusterIdentifier
 	}
@@ -183,8 +194,11 @@ func (t *Terraform) loadOutput() error {
 		outputv2.KeycloakServer = o.KeycloakServer.Value[0]
 	}
 	if len(o.KeycloakDatabaseCluster.Value) > 0 {
-		for _, ep := range o.KeycloakDatabaseCluster.Value {
-			outputv2.KeycloakDatabaseCluster.Endpoints = append(outputv2.KeycloakDatabaseCluster.Endpoints, ep.Endpoint)
+		for _, inst := range o.KeycloakDatabaseCluster.Value {
+			outputv2.KeycloakDatabaseCluster.Instances = append(outputv2.KeycloakDatabaseCluster.Instances, DBInstance{
+				Endpoint: inst.Endpoint,
+				IsWriter: inst.Writer,
+			})
 		}
 		outputv2.KeycloakDatabaseCluster.ClusterIdentifier = o.KeycloakDatabaseCluster.Value[0].ClusterIdentifier
 	}
@@ -223,12 +237,12 @@ func (t *Terraform) Output() (*Output, error) {
 
 // HasProxy returns whether a deployment has proxy installed in it or not.
 func (o *Output) HasProxy() bool {
-	return o.Proxy.PrivateIP != ""
+	return len(o.Proxies) > 0
 }
 
 // HasDB returns whether a deployment has database installed in it or not.
 func (o *Output) HasDB() bool {
-	return len(o.DBCluster.Endpoints) > 0
+	return len(o.DBCluster.Instances) > 0
 }
 
 // HasElasticSearch returns whether a deployment has ElasticSaearch installed in it or not.
@@ -279,10 +293,9 @@ func (o *Output) HasKeycloak() bool {
 // DBReaders returns the list of db reader endpoints.
 func (o *Output) DBReaders() []string {
 	var rds []string
-	prefix := o.ClusterName + "-rd"
-	for _, ep := range o.DBCluster.Endpoints {
-		if strings.HasPrefix(ep, prefix) {
-			rds = append(rds, ep)
+	for _, inst := range o.DBCluster.Instances {
+		if !inst.IsWriter {
+			rds = append(rds, inst.Endpoint)
 		}
 	}
 	return rds
@@ -290,13 +303,10 @@ func (o *Output) DBReaders() []string {
 
 // DBWriter returns the db writer endpoint.
 func (o *Output) DBWriter() string {
-	var wr string
-	prefix := o.ClusterName + "-wr"
-	for _, ep := range o.DBCluster.Endpoints {
-		if strings.HasPrefix(ep, prefix) {
-			wr = ep
-			break
+	for _, inst := range o.DBCluster.Instances {
+		if inst.IsWriter {
+			return inst.Endpoint
 		}
 	}
-	return wr
+	return ""
 }

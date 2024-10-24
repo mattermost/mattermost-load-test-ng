@@ -7,11 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
@@ -30,8 +32,7 @@ func (c *Comparison) getLoadTestsCount() int {
 	return count
 }
 
-func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
-	d time.Duration, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, d time.Duration) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 	mlog.Info("starting bounded load-test")
@@ -39,13 +40,8 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 		return status, err
 	}
 
-	var canceled bool
-	select {
-	case <-cancelCh:
-		mlog.Info("cancelling load-test")
-		canceled = true
-	case <-time.After(d):
-	}
+	// Wait for the specified duration
+	<-time.After(d)
 
 	mlog.Info("stopping bounded load-test")
 	status, err = t.StopCoordinator()
@@ -53,21 +49,12 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 		return status, err
 	}
 
-	if canceled {
-		return status, errors.New("canceled")
-	}
-
 	mlog.Info("bounded load-test has completed")
-
-	// TODO: remove this once MM-30326 has been merged and a new release
-	// published.
-	status.StopTime = time.Now()
 
 	return status, nil
 }
 
-func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
-	cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 
@@ -81,9 +68,6 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 			mlog.Error("stopping coordinator failed", mlog.Err(err))
 		}
 	}()
-
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
 
 	for {
 		status, err = t.GetCoordinatorStatus()
@@ -99,22 +83,85 @@ func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Confi
 		if status.State != coordinator.Running {
 			return status, errors.New("coordinator should be running")
 		}
-
-		select {
-		case <-cancelCh:
-			mlog.Info("cancelling load-test")
-			return status, errors.New("canceled")
-		case <-ticker.C:
-		}
 	}
 }
 
-type localCmd struct {
-	msg   string
-	value []string
+type s3ClientWrapper struct {
+	S3Client *s3.Client
 }
 
-func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string, cancelCh <-chan struct{}) error {
+func (s3Wrapper s3ClientWrapper) DeleteObjects(ctx context.Context, bucketName string, objectKeys []string) error {
+	if len(objectKeys) == 0 {
+		return nil
+	}
+
+	var objectIds []types.ObjectIdentifier
+	for _, key := range objectKeys {
+		objectIds = append(objectIds, types.ObjectIdentifier{Key: aws.String(key)})
+	}
+	_, err := s3Wrapper.S3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+		Bucket: aws.String(bucketName),
+		Delete: &types.Delete{Objects: objectIds},
+	})
+	if err != nil {
+		return fmt.Errorf("error deleting objects from bucket %q: %w", bucketName, err)
+	}
+	return err
+}
+
+func emptyBucket(ctx context.Context, s3Wrapper *s3ClientWrapper, bucketName string) error {
+	params := &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucketName),
+	}
+	p := s3.NewListObjectsV2Paginator(s3Wrapper.S3Client, params)
+
+	for p.HasMorePages() {
+		page, err := p.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting the page during empty bucket: %w", err)
+		}
+
+		var objKeys []string
+		for _, object := range page.Contents {
+			objKeys = append(objKeys, *object.Key)
+		}
+
+		if err := s3Wrapper.DeleteObjects(ctx, bucketName, objKeys); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func populateBucket(ctx context.Context, bucket *s3ClientWrapper, targetBucket, sourceBucket string) error {
+	params := &s3.ListObjectsV2Input{
+		Bucket: aws.String(sourceBucket),
+	}
+	p := s3.NewListObjectsV2Paginator(bucket.S3Client, params)
+
+	for p.HasMorePages() {
+		page, err := p.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("error getting the page during populate bucket: %w", err)
+		}
+
+		for _, object := range page.Contents {
+			_, err := bucket.S3Client.CopyObject(ctx, &s3.CopyObjectInput{
+				Bucket:     aws.String(targetBucket),
+				CopySource: aws.String(fmt.Sprintf("%s/%s", sourceBucket, *object.Key)),
+				Key:        object.Key})
+
+			if err != nil {
+				return fmt.Errorf("failed to copy object %q: %w", *object.Key, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename string, s3BucketURI string) error {
 	tfOutput, err := t.Output()
 	if err != nil {
 		return fmt.Errorf("failed to get terraform output: %w", err)
@@ -196,8 +243,9 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Clients: []*ssh.Client{appClients[0]},
 	}
 	initDataCmd := deployment.Cmd{
-		Msg:     "Initializing data",
-		Value:   fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' > /dev/null 2>&1", tfOutput.Agents[0].Tags.Name),
+		Msg: "Initializing data",
+		Value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065' > /dev/null 2>&1",
+			tfOutput.Agents[0].Tags.Name, tfOutput.Instances[0].PrivateIP),
 		Clients: []*ssh.Client{agentClient},
 	}
 
@@ -232,20 +280,12 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		Value:   clearLicensesCmdValue,
 	}
 
-	resetBucketCmds := []localCmd{}
-	if s3BucketURI != "" && tfOutput.HasS3Bucket() {
-		deleteBucketCmd := localCmd{
-			msg:   "Emptying S3 bucket",
-			value: []string{"--profile", t.Config().AWSProfile, "s3", "rm", "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
-		}
-
-		prepopulateBucketCmd := localCmd{
-			msg:   "Pre-populating S3 bucket",
-			value: []string{"--profile", t.Config().AWSProfile, "s3", "cp", s3BucketURI, "s3://" + tfOutput.S3Bucket.Id, "--recursive"},
-		}
-
-		resetBucketCmds = []localCmd{deleteBucketCmd, prepopulateBucketCmd}
+	cfg, err := t.GetAWSConfig()
+	if err != nil {
+		return fmt.Errorf("error loading aws config: %w", err)
 	}
+
+	s3client := s3ClientWrapper{S3Client: s3.NewFromConfig(cfg)}
 
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
@@ -253,31 +293,35 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		cmds = append(cmds, loadDBDumpCmd, clearLicensesCmd, startCmd)
 	}
 
-	// Resetting the buckets can happen concurrently with the rest of the remote commands,
-	// but we need to cancel them on return in case we return early (as when we receive from cancelCh)
-	resetBucketCtx, resetBucketCancel := context.WithCancel(context.Background())
-	defer resetBucketCancel()
+	// Resetting the buckets can happen concurrently with the rest of the remote commands
 	resetBucketErrCh := make(chan error, 1)
 	go func() {
-		for _, c := range resetBucketCmds {
-			mlog.Info(c.msg)
-			if err := exec.CommandContext(resetBucketCtx, "aws", c.value...).Run(); err != nil {
-				resetBucketErrCh <- fmt.Errorf("failed to run local cmd %q: %w", c.value, err)
+		if s3BucketURI != "" && tfOutput.HasS3Bucket() {
+			mlog.Info("Emptying S3 bucket")
+
+			ctx := context.Background()
+
+			err := emptyBucket(ctx, &s3client, tfOutput.S3Bucket.Id)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to empty s3 bucket: %w", err)
+				return
+			}
+
+			mlog.Info("Pre-populating S3 bucket")
+			srcBucketName := strings.TrimPrefix(s3BucketURI, "s3://")
+			err = populateBucket(ctx, &s3client, tfOutput.S3Bucket.Id, srcBucketName)
+			if err != nil {
+				resetBucketErrCh <- fmt.Errorf("failed to populate bucket: %w", err)
 				return
 			}
 		}
+
 		resetBucketErrCh <- nil
 	}()
 
 	for _, c := range cmds {
 		mlog.Info(c.Msg)
 		for _, client := range c.Clients {
-			select {
-			case <-cancelCh:
-				mlog.Info("cancelling load-test init")
-				return errors.New("canceled")
-			default:
-			}
 			if out, err := client.RunCommand(c.Value); err != nil {
 				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
 			}
@@ -288,7 +332,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	return <-resetBucketErrCh
 }
 
-func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan struct{}) (coordinator.Status, error) {
+func runLoadTest(t *terraform.Terraform, lt LoadTestConfig) (coordinator.Status, error) {
 	var status coordinator.Status
 	coordConfig, err := coordinator.ReadConfig("")
 	if err != nil {
@@ -308,10 +352,10 @@ func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, cancelCh <-chan stru
 		if parseErr != nil {
 			return status, parseErr
 		}
-		return runBoundedLoadTest(t, coordConfig, duration, cancelCh)
+		return runBoundedLoadTest(t, coordConfig, duration)
 	case LoadTestTypeUnbounded:
 		// TODO: cleverly set MaxActiveUsers to (numAgents * UsersConfiguration.MaxActiveUsers)
-		return runUnboundedLoadTest(t, coordConfig, cancelCh)
+		return runUnboundedLoadTest(t, coordConfig)
 	}
 
 	return status, fmt.Errorf("unimplemented LoadTestType %s", lt.Type)

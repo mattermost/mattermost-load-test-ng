@@ -22,8 +22,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	// AWSProfile is the name of the AWS profile to use for all AWS commands
-	AWSProfile string `default:"mm-loadtest"`
+	// AWSProfile is the optional name of the AWS profile to use for all AWS commands
+	AWSProfile string `default:""`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
 	// AWSAvailabilityZone defines the Availability Zone
@@ -35,7 +35,7 @@ type Config struct {
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
+	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
 	ClusterSubnetIDs ClusterSubnetIDs
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
@@ -52,7 +52,7 @@ type Config struct {
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Number of proxy instances.
-	ProxyInstanceCount int `default:"0" validate:"range:[0,1]"`
+	ProxyInstanceCount int `default:"1" validate:"range:[0,5]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
@@ -72,7 +72,7 @@ type Config struct {
 	// 3. If it is a file:// pointing to a tar.gz, use that as the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
-	MattermostLicenseFile string `default:"" validate:"file"`
+	MattermostLicenseFile string `default:"" validate:"empty|file"`
 	// Optional path to a partial Mattermost config file to be applied as patch during
 	// app server deployment.
 	MattermostConfigPatchFile string `default:""`
@@ -85,7 +85,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
@@ -123,6 +123,8 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+	// EnableNetPeekMetrics enables fine grained networking metrics collection through netpeek utility.
+	EnableNetPeekMetrics bool `default:"false"`
 	// CustomTags is an optional list of key-value pairs, which will be used as default
 	// tags for all resources deployed
 	CustomTags TerraformMap
@@ -142,20 +144,37 @@ func (t TerraformMap) String() string {
 
 // ClusterSubnetIDs contains the subnet ids for the different types of instances.
 type ClusterSubnetIDs struct {
-	App           []string `json:"app"`
-	Job           []string `json:"job"`
-	Proxy         []string `json:"proxy"`
-	Agent         []string `json:"agent"`
-	ElasticSearch []string `json:"elasticsearch"`
-	Metrics       []string `json:"metrics"`
-	Keycloak      []string `json:"keycloak"`
-	Database      []string `json:"database"`
-	Redis         []string `json:"redis"`
+	App           []string `default_size:"0" json:"app"`
+	Job           []string `default_size:"0" json:"job"`
+	Proxy         []string `default_size:"0" json:"proxy"`
+	Agent         []string `default_size:"0" json:"agent"`
+	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
+	Metrics       []string `default_size:"0" json:"metrics"`
+	Keycloak      []string `default_size:"0" json:"keycloak"`
+	Database      []string `default_size:"0" json:"database"`
+	Redis         []string `default_size:"0" json:"redis"`
 }
 
 // IsAnySet returns true if any of the subnet ids are set.
 func (c *ClusterSubnetIDs) IsAnySet() bool {
-	return !reflect.DeepEqual(c, &ClusterSubnetIDs{})
+	value := reflect.ValueOf(*c)
+
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		// Skip fields that are not slices
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		if field.IsNil() || value.Field(i).Len() == 0 {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+
 }
 
 func (c ClusterSubnetIDs) String() string {
@@ -179,7 +198,7 @@ type StorageSizes struct {
 	// Size, in GiB, for the storage of the job server instances
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
-	ElasticSearch int `default:"20"`
+	ElasticSearch int `default:"100"`
 	// Size, in GiB, for the storage of the keycloak instances
 	KeyCloak int `default:"10"`
 }
@@ -383,10 +402,24 @@ func (c *Config) IsValid() error {
 		return err
 	}
 
+	if err := c.validateProxyConfig(); err != nil {
+		return err
+	}
+
 	if err := c.validateDBName(); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (c *Config) validateProxyConfig() error {
+	if c.AppInstanceCount > 1 && c.ProxyInstanceCount < 1 && c.ServerURL == "" {
+		return fmt.Errorf("the deployment will create more than one app node, but no proxy is being deployed and no external proxy has been configured: either set ProxyInstanceCount to 1, or set ServerURL to the URL of an external proxy")
+	}
+	if c.ProxyInstanceCount > 1 && c.SiteURL == "" {
+		return fmt.Errorf("in a multi-proxy setup, the siteURL must be defined: either set the siteURL or set ProxyInstanceCount to 1")
+	}
 	return nil
 }
 
@@ -423,8 +456,16 @@ func (c *Config) validateElasticSearchConfig() error {
 
 	}
 
-	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "Elasticsearch") && !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
-		return fmt.Errorf("Incorrect engine version: %s. Must start with either %q or %q", c.ElasticSearchSettings.Version, "Elasticsearch", "OpenSearch")
+	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
+		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
+	}
+
+	if c.ElasticSearchSettings.SnapshotRepository == "" {
+		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
+	}
+
+	if c.ElasticSearchSettings.SnapshotName == "" {
+		return fmt.Errorf("Empty SnapshotName. Must supply a value")
 	}
 
 	return nil

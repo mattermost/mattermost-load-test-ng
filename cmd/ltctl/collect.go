@@ -121,11 +121,13 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 
 	clients := make(map[string]*ssh.Client)
 	if output.HasProxy() {
-		sshc, err := extAgent.NewClient(output.Proxy.PrivateIP)
-		if err != nil {
-			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+		for i, inst := range output.Proxies {
+			sshc, err := extAgent.NewClient(inst.PrivateIP)
+			if err != nil {
+				return nil, fmt.Errorf("error in getting ssh connection %w", err)
+			}
+			clients[fmt.Sprintf("proxy%d", i)] = sshc
 		}
-		clients["proxy"] = sshc
 	}
 
 	for i, instance := range output.Instances {
@@ -174,13 +176,13 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 		return err
 	}
 
-	if !output.HasAppServers() {
-		return errors.New("no active deployment found")
-	}
-
 	clients, err := createClients(output)
 	if err != nil {
 		return err
+	}
+
+	if len(clients) == 0 {
+		return errors.New("no active deployment found")
 	}
 
 	var collectFiles []collectFileInfo
@@ -207,7 +209,7 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 
 	for instance := range clients {
 		switch {
-		case instance == "proxy":
+		case strings.HasPrefix(instance, "proxy"):
 			addFile(instance, "/var/log/nginx/error.log", true, nil)
 			addFile(instance, "/etc/nginx/nginx.conf", false, nil)
 			addFile(instance, "/etc/nginx/sites-enabled/mattermost", false, nil)

@@ -2,6 +2,7 @@
 AWSAMI = 'ami-003d3d03cfe1b0468'
 AWSProfile = 'mm-loadtest'
 AWSRegion = 'us-east-1'
+AWSAvailabilityZone = 'us-east-1c'
 
 # Mattermost configuration
 AdminEmail = 'sysadmin@sample.mattermost.com'
@@ -12,6 +13,7 @@ MattermostDownloadURL = 'https://latest.mattermost.com/mattermost-enterprise-lin
 MattermostLicenseFile = ''
 S3BucketDumpURI = ''
 SiteURL = ''
+EnableNetPeekMetrics = false
 
 # Agent configuration
 AgentInstanceCount = 2
@@ -21,6 +23,10 @@ EnableAgentFullLogs = true
 # App servers configuration
 AppInstanceCount = 1
 AppInstanceType = 'c5.xlarge'
+AppAttachIAMProfile = ''
+
+# Metrics instance configuration
+MetricsInstanceType = 't3.xlarge'
 
 # Cluster configuration
 ClusterName = 'loadtest'
@@ -36,6 +42,7 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 
 # Proxy server configuration
 ProxyInstanceType = 'c5.xlarge'
+ProxyInstanceCount = 1
 
 [ClusterSubnetIDs]
 App = []
@@ -53,7 +60,6 @@ CreateRole = false
 InstanceCount = 0
 InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
-VpcID = ''
 ZoneAwarenessEnabled = false
 ZoneAwarenessAZCount = 2
 
@@ -149,4 +155,5 @@ InstanceEngine = 'aurora-postgresql'
 InstanceType = 'db.r6g.large'
 Password = 'mostest80098bigpass_'
 UserName = 'mmuser'
-EngineVersion = ''
+
+[CustomTags]
