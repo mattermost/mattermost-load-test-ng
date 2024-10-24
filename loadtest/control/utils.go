@@ -271,7 +271,7 @@ func ParseServerVersion(versionString string) (semver.Version, error) {
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
 // all uploaded files to the post.
 func AttachFilesToPost(u user.User, post *model.Post) error {
-	fileIDs, err := _attachFilesToObj(u, post.ChannelId, rand.Intn(4))
+	fileIDs, err := _attachFilesToObj(u, post.ChannelId, 4)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 // AttachFilesToDraft uploads at least one file on behalf of the user, attaching
 // all uploaded files to the draft.
 func AttachFilesToDraft(u user.User, draft *model.Draft) error {
-	fileIDs, err := _attachFilesToObj(u, draft.ChannelId, rand.Intn(4))
+	fileIDs, err := _attachFilesToObj(u, draft.ChannelId, 4)
 	if err != nil {
 		return err
 	}
