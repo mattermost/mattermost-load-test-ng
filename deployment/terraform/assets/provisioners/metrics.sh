@@ -65,7 +65,23 @@ function install_prometheus() {
     sudo cp -r prometheus-${prometheus_version}.linux-${arch}/consoles /etc/prometheus && \
     sudo cp -r prometheus-${prometheus_version}.linux-${arch}/console_libraries /etc/prometheus && \
     sudo chown -R prometheus:prometheus /etc/prometheus/consoles && \
-    sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
+    sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries && \
+    sudo sh -c 'echo "[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+--config.file /etc/prometheus/prometheus.yml \
+--storage.tsdb.path /var/lib/prometheus/ \
+--web.console.templates=/etc/prometheus/consoles \
+--web.console.libraries=/etc/prometheus/console_libraries
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service' && \
+    sudo systemctl daemon-reload
 }
 
 function install_inbucket() {
