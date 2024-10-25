@@ -245,6 +245,9 @@ func TestClusterSubnetIDs(t *testing.T) {
 		defaults.Set(&cfg)
 
 		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
+		// The bug that prompted this was that we declared String with a
+		// pointer receiver, in which case fmt never calls the String method.
+		// Hence the explicit test to use fmt, and the need to skip the linter
 		//nolint:gosimple
 		actual := fmt.Sprintf("%s", cfg.ClusterSubnetIDs)
 		require.Equal(t, expected, actual)
