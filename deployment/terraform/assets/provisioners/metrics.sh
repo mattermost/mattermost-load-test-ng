@@ -16,6 +16,7 @@ wget_common_args="--no-clobber"
 grafana_version="10.2.3"
 grafana_package="grafana"
 prometheus_version="1.8.2"
+prometheus_node_exporter_version="1.8.2"
 inbucket_version="2.1.0"
 elasticsearch_exporter_version="1.1.0"
 redis_exporter_version="1.58.0"
@@ -46,6 +47,13 @@ sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo' && \
     sudo dnf -y install grafana-${grafana_version} && \
     sudo systemctl enable --now grafana-server
+}
+
+function install_prometheus_node_exporter() {
+    echo "Installing Prometheus Node Exporter"
+    wget https://github.com/prometheus/node_exporter/releases/download/v${prometheus_node_exporter_version}/node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+    tar xvfz node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+    sudo cp node_exporter-${prometheus_node_exporter_version}.linux-${arch}/node_exporter /usr/local/bin
 }
 
 function install_prometheus() {
@@ -144,6 +152,7 @@ do
       install_deps && \
       install_grafana && \
       install_prometheus && \
+      install_prometheus_node_exporter && \
       install_inbucket && \
       install_elasticsearch_exporter && \
       install_redis_exporter && \
