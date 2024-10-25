@@ -167,7 +167,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
-		cmd = "sudo service es-exporter restart"
+		cmd = "sudo systemctl restart es-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
@@ -210,7 +210,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
-		cmd = "sudo service redis-exporter restart"
+		cmd = "sudo systemctl restart redis-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
@@ -254,7 +254,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd = "sudo service yace restart"
+	cmd = "sudo systemctl restart yace"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -316,25 +316,25 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service prometheus restart"
+	cmd = "sudo systemctl restart prometheus"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service alloy restart"
+	cmd = "sudo systemctl restart alloy"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service pyroscope restart"
+	cmd = "sudo systemctl restart pyroscope"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service pyroscope restart"
+	cmd = "sudo systemctl restart pyroscope"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -441,7 +441,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Restart grafana
-	cmd = "sudo service grafana-server restart"
+	cmd = "sudo systemctl restart grafana-server"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
