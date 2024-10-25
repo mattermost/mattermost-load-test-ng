@@ -1,0 +1,36 @@
+[BaseBuild]
+Label = 'base'
+URL = 'https://latest.mattermost.com/mattermost-enterprise-linux'
+
+[NewBuild]
+Label = 'new'
+URL = 'https://latest.mattermost.com/mattermost-enterprise-linux'
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'postgresql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_psql.sql.gz'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'postgresql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_psql.sql.gz'
+NumUsers = 3500
+Duration = '30m'
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'mysql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_mysql.sql.gz'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'mysql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_mysql.sql.gz'
+NumUsers = 3500
+Duration = '30m'
+
+[Output]
+UploadDashboard = true
+GenerateGraphs = true
+GenerateReport = true
