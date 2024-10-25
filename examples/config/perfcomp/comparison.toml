@@ -1,0 +1,36 @@
+[BaseBuild]
+Label = 'release-X.Y.Z' #TBD
+URL = 'https://releases.mattermost.com/X.Y.Z/mattermost-enterprise-X.Y.Z-linux-amd64.tar.gz' #TBD
+
+[NewBuild]
+Label = 'release-A.B.C-rcN' #TBD
+URL = 'https://releases.mattermost.com/A.B.C-rcN/mattermost-enterprise-A.B.C-rcN-linux-amd64.tar.gz' #TBD
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'postgresql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_psql.sql.gz'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'postgresql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_psql.sql.gz'
+NumUsers = 7500
+Duration = '90m'
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'mysql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_mysql.sql.gz'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'mysql'
+DBDumpURL = 'https://lt-public-data.s3.amazonaws.com/12M_610_mysql.sql.gz'
+NumUsers = 5000
+Duration = '90m'
+
+[Output]
+UploadDashboard = true
+GenerateGraphs = true
+GenerateReport = true
