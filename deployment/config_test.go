@@ -1,8 +1,10 @@
 package deployment
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/stretchr/testify/require"
 )
 
@@ -164,4 +166,99 @@ func TestTerraformMapString(t *testing.T) {
 		equals := testCase.expected == actual || (testCase.expected2 != "" && testCase.expected2 == actual)
 		require.True(t, equals)
 	}
+}
+
+func TestClusterSubnetIDs(t *testing.T) {
+	var defaultStruct ClusterSubnetIDs
+	emptyStructNilSlices := ClusterSubnetIDs{}
+	emptyStructEmptySlices := ClusterSubnetIDs{
+		App:           []string{},
+		Job:           []string{},
+		Proxy:         []string{},
+		Agent:         []string{},
+		ElasticSearch: []string{},
+		Metrics:       []string{},
+		Keycloak:      []string{},
+		Database:      []string{},
+		Redis:         []string{},
+	}
+
+	t.Run("String()", func(t *testing.T) {
+		testCases := []struct {
+			actual   ClusterSubnetIDs
+			expected string
+		}{
+			{
+				actual:   defaultStruct,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+			},
+			{
+				actual:   emptyStructNilSlices,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+			},
+			{
+				actual:   emptyStructEmptySlices,
+				expected: `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`,
+			},
+		}
+
+		for _, testCase := range testCases {
+			actual := testCase.actual.String()
+			require.Equal(t, testCase.expected, actual)
+		}
+	})
+
+	t.Run("default values", func(t *testing.T) {
+		cfg := Config{}
+		defaults.Set(&cfg)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.App)
+		require.Len(t, cfg.ClusterSubnetIDs.App, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Job)
+		require.Len(t, cfg.ClusterSubnetIDs.Job, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Proxy)
+		require.Len(t, cfg.ClusterSubnetIDs.Proxy, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Agent)
+		require.Len(t, cfg.ClusterSubnetIDs.Agent, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.ElasticSearch)
+		require.Len(t, cfg.ClusterSubnetIDs.ElasticSearch, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Metrics)
+		require.Len(t, cfg.ClusterSubnetIDs.Metrics, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Keycloak)
+		require.Len(t, cfg.ClusterSubnetIDs.Keycloak, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Database)
+		require.Len(t, cfg.ClusterSubnetIDs.Database, 0)
+
+		require.NotNil(t, cfg.ClusterSubnetIDs.Redis)
+		require.Len(t, cfg.ClusterSubnetIDs.Redis, 0)
+	})
+
+	t.Run("String() of default values", func(t *testing.T) {
+		cfg := Config{}
+		defaults.Set(&cfg)
+
+		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
+		// The bug that prompted this was that we declared String with a
+		// pointer receiver, in which case fmt never calls the String method.
+		// Hence the explicit test to use fmt, and the need to skip the linter
+		//nolint:gosimple
+		actual := fmt.Sprintf("%s", cfg.ClusterSubnetIDs)
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("IsAnySet", func(t *testing.T) {
+		require.False(t, defaultStruct.IsAnySet())
+		require.False(t, emptyStructNilSlices.IsAnySet())
+		require.False(t, emptyStructEmptySlices.IsAnySet())
+
+		someSet := ClusterSubnetIDs{App: []string{"set"}}
+		require.True(t, someSet.IsAnySet())
+	})
 }

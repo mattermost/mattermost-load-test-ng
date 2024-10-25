@@ -60,7 +60,6 @@ CreateRole = false
 InstanceCount = 0
 InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
-VpcID = ''
 ZoneAwarenessEnabled = false
 ZoneAwarenessAZCount = 2
 

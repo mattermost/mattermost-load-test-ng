@@ -25,7 +25,6 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "VpcID": "",
     "Version": "Elasticsearch_7.10",
     "CreateRole": false,
     "SnapshotRepository": "",
