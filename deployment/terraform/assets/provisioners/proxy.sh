@@ -6,11 +6,12 @@ set -euo pipefail
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
 system_arch=$(uname -m)
-if [ "$arch" == "x86_64" ]; then
+if [ "$system_arch" == "x86_64" ]; then
   arch="amd64"
 fi
 prometheus_node_exporter_version="1.8.2"
 netpeek_version="0.1.4"
+otel_collector_version="0.110.0"
 
 function install_prometheus_node_exporter() {
     echo "Installing Prometheus Node Exporter"
