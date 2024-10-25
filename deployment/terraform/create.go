@@ -515,11 +515,29 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		}
 	}
 
+	// Ensure selinux is disabled for the service file to work properly having the binary outside
+	// the default binary directories
+	mlog.Info("Disabling SELinux", mlog.String("host", ip))
+	cmd = "sudo setenforce 0"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error(string(out))
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
 	// Starting mattermost.
 	mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
 	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo systemctl restart mattermost"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
+	// Check if systemd service is running
+	mlog.Info("Checking if mattermost service is running", mlog.String("host", ip), mlog.String("instance", instanceName))
+	cmd = "sudo systemctl status mattermost"
+	out, err := sshc.RunCommand(cmd)
+	if err != nil {
+		mlog.Error(string(out))
+		return fmt.Errorf("error running ssh command %q: %q, %w", cmd, out, err)
 	}
 
 	return nil
