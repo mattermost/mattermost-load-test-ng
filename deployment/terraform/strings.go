@@ -94,7 +94,7 @@ ff02::3 ip6-allhosts
 `
 
 const nginxConfigTmpl = `
-user www-data;
+#user www-data;
 worker_processes auto;
 worker_rlimit_nofile 100000;
 pid /run/nginx.pid;
