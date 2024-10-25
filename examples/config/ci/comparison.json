@@ -1,11 +1,11 @@
 {
   "BaseBuild": {
     "Label": "base",
-    "URL": "https://latest.mattermost.com/mattermost-enterprise-linux"
+    "URL": "undefined"
   },
   "NewBuild": {
     "Label": "new",
-    "URL": "https://latest.mattermost.com/mattermost-enterprise-linux"
+    "URL": "undefined"
   },
   "LoadTests": [
     {
