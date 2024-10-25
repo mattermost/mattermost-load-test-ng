@@ -54,6 +54,8 @@ enabled=1" > /etc/yum.repos.d/nginx.repo' && \
       sudo systemctl enable nginx && \
       sudo mkdir -p /etc/nginx/snippets && \
       sudo mkdir -p /etc/nginx/conf.d && \
+      sudo mkdir -p /etc/nginx/sites-enabled && \
+      sudo mkdir -p /etc/nginx/sites-available && \
       sudo rm -f /etc/nginx/conf.d/default.conf && \
       sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/conf.d/mattermost.conf && \
       exit 0
