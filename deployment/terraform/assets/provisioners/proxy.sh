@@ -29,7 +29,6 @@ function install_otel_collector() {
     sudo systemctl restart otelcol-contrib
 }
 
-
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
