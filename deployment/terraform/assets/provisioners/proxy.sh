@@ -57,7 +57,7 @@ enabled=1" > /etc/yum.repos.d/nginx.repo' && \
       sudo mkdir -p /etc/nginx/sites-enabled && \
       sudo mkdir -p /etc/nginx/sites-available && \
       sudo rm -f /etc/nginx/conf.d/default.conf && \
-      sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/conf.d/mattermost.conf && \
+      sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost.conf && \
       exit 0
 
    n=$((n+1))
