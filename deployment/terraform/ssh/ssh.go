@@ -73,7 +73,7 @@ func (ea *ExtAgent) NewClientWithPort(ip, port, user string) (*Client, error) {
 
 // NewClient returns a Client object by dialing
 // the ssh agent on port 22
-func (ea *ExtAgent) NewClient(user, ip string) (*Client, error) {
+func (ea *ExtAgent) NewClient(ip, user string) (*Client, error) {
 	return ea.NewClientWithPort(ip, ":22", user)
 }
 
