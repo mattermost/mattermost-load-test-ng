@@ -435,6 +435,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
 	}
 
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		return fmt.Errorf("error setting up prometheus node exporter: %w", err)
+	}
+
 	// If SiteURL is set, update /etc/hosts to point to the correct IP
 	if t.config.SiteURL != "" {
 		// Here it's fine to just use the first proxy because this is
@@ -914,6 +918,10 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
 			return
+		}
+
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			mlog.Error("error setting up prometheus node exporter", mlog.Err(err), mlog.String("host", ip), mlog.String("instance", instance.Tags.Name))
 		}
 
 		cmd = "sudo systemctl restart otelcol-contrib"

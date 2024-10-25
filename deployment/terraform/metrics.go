@@ -198,6 +198,10 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
 		}
 
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			return fmt.Errorf("error setting up prometheus node exporter: %w", err)
+		}
+
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
 		rdr := strings.NewReader(serviceFileOutput.String())

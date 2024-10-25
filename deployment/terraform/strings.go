@@ -64,6 +64,19 @@ scrape_configs:
         - targets: [%s]
 `
 
+const prometheusServiceFile = ``
+
+const prometheusNodeExporterServiceFile = `[Unit]
+Description=Node Exporter
+
+[Service]
+# Fallback when environment file does not exist
+EnvironmentFile=-/etc/default/prometheus-node-exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target`
+
 const metricsHosts = `
 127.0.0.1 localhost
 
