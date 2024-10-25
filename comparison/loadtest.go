@@ -178,7 +178,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		return err
 	}
 
-	agentClient, err := extAgent.NewClient(tfOutput.Agents[0].PublicIP)
+	agentClient, err := extAgent.NewClient(tfOutput.Agents[0].PrivateIP)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -186,7 +186,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 
 	appClients := make([]*ssh.Client, len(tfOutput.Instances))
 	for i, instance := range tfOutput.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(instance.PrivateIP)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
