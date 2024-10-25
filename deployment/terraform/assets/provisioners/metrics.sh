@@ -48,7 +48,6 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo' && 
     sudo systemctl enable --now grafana-server
 }
 
-
 function install_prometheus() {
     echo "Installing Prometheus"
     if ! id "prometheus"; then
@@ -69,15 +68,12 @@ function install_prometheus() {
     sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
 }
 
-
 function install_inbucket() {
     echo "Installing Inbucket"
     wget ${wget_common_args} https://github.com/inbucket/inbucket/releases/download/v${inbucket_version}/inbucket_${inbucket_version}_linux_${arch}.rpm && \
     sudo dnf localinstall -y inbucket_${inbucket_version}_linux_${arch}.rpm && \
     sudo systemctl start --now inbucket
 }
-
-
 
 function install_elasticsearch_exporter() {
     echo "Installing Elasticsearch Exporter"
@@ -86,7 +82,6 @@ function install_elasticsearch_exporter() {
     sudo tar -zxf elasticsearch_exporter-${elasticsearch_exporter_version}.linux-${arch}.tar.gz -C /opt/elasticsearch_exporter --strip-components=1
 }
 
-
 function install_redis_exporter() {
     echo "Installing Redis Exporter"
     wget ${wget_common_args} https://github.com/oliver006/redis_exporter/releases/download/v${redis_exporter_version}/redis_exporter-v${redis_exporter_version}.linux-${arch}.tar.gz && \
@@ -94,15 +89,12 @@ function install_redis_exporter() {
     sudo tar -zxf redis_exporter-v${redis_exporter_version}.linux-${arch}.tar.gz -C /opt/redis_exporter --strip-components=1
 }
 
-
-
 function install_alloy() {
     echo "Installing Alloy"
     wget ${wget_common_args} https://github.com/grafana/alloy/releases/download/v${alloy_version}/alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
     sudo dnf localinstall -y alloy-${alloy_version}-${alloy_rev}.${arch}.rpm && \
     sudo systemctl enable --now alloy
 }
-
 
 function install_pyroscope() {
     echo "Installing Pyroscope"
