@@ -837,6 +837,14 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			}
 		}()
 
+		// Ensure selinux is disabled for the connection from nginx to the upstream servers to work
+		mlog.Info("Disabling SELinux", mlog.String("host", ip))
+		cmd := "sudo setenforce 0"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command %q, output: %q: %w", mlog.String("cmd", cmd), mlog.String("out", out), mlog.Err(err))
+			return
+		}
+
 		// Upload service file
 		mlog.Info("Uploading nginx config", mlog.String("host", ip))
 
@@ -911,7 +919,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		cmd := "sudo systemctl restart otelcol-contrib"
+		cmd = "sudo systemctl restart otelcol-contrib"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
