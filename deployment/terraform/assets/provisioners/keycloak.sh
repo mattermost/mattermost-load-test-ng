@@ -7,7 +7,7 @@ while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud
 
 # Arguments
 system_arch=$(uname -m)
-if [ "$arch" == "x86_64" ]; then
+if [ "$system_arch" == "x86_64" ]; then
   arch="amd64"
 fi
 keycloak_version=$1

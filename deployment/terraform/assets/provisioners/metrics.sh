@@ -51,7 +51,7 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo' && 
 function install_prometheus() {
     echo "Installing Prometheus"
     if ! id "prometheus"; then
-        sudo adduser --quiet --no-create-home --shell /bin/false prometheus;
+        sudo adduser --no-create-home --shell /bin/false prometheus;
     fi;
     sudo mkdir -p /etc/prometheus /var/lib/prometheus && \
     sudo chown prometheus:prometheus /etc/prometheus && \
@@ -107,21 +107,21 @@ function install_pyroscope() {
 
 function install_yace() {
     echo "Installing Yace"
-    sudo mkdir /opt/yace && \
+    sudo mkdir -p /opt/yace && \
     wget https://github.com/nerdswords/yet-another-cloudwatch-exporter/releases/download/v${yace_version}/yet-another-cloudwatch-exporter_${yace_version}_Linux_${system_arch}.tar.gz && \
     sudo tar -zxf yet-another-cloudwatch-exporter_${yace_version}_Linux_${system_arch}.tar.gz -C /opt/yace
 }
 
 function install_loki() {
     echo "Installing Loki"
-    wget https://github.com/grafana/loki/releases/download/v${loki_version}/loki_${loki_version}_${arch}.rpm && \
-    sudo rpm -i loki_${loki_version}_${arch}.rpm && \
+    wget https://github.com/grafana/loki/releases/download/v${loki_version}/loki-${loki_version}.${system_arch}.rpm && \
+    sudo rpm -i loki-${loki_version}.${system_arch}.rpm && \
     sudo systemctl start loki
 }
 
 # Retry loop (up to 3 times)
 n=0
-until [ "$n" -ge 3 ]
+until [ "$n" -ge 1 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
