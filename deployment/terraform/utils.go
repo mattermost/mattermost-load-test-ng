@@ -120,16 +120,16 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.KeycloakServer.PrivateIP)), nil
 	}
 
-	// Match against the proxy or metrics servers, as well as convenient aliases.
-	switch resource {
-	case "proxy":
-		// Match against proxy names
+	if strings.Contains(resource, "-proxy-") {
 		for _, inst := range output.Proxies {
 			if resource == inst.Tags.Name {
 				return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, inst.PublicIP)), nil
 			}
 		}
+	}
 
+	// Match against the proxy or metrics servers, as well as convenient aliases.
+	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
 		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.MetricsServer.PrivateIP)), nil
 	}
