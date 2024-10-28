@@ -113,9 +113,9 @@ http {
 
   log_format json escape=json
 	'{'
+		'"ts":"$msec",'
 		'"time_local":"$time_local",'
 		'"remote_addr":"$remote_addr",'
-		'"remote_user":"$remote_user",'
 		'"request":"$request",'
 		'"request_time":"$request_time",'
 		'"status": "$status",'
@@ -556,7 +556,7 @@ const otelcolOperatorAppAgent = `
         severity:
           parse_from: attributes.level`
 
-const otelcolOperatorProxy = `
+const otelcolOperatorProxyError = `
       - type: regex_parser
         regex: '^(?P<time>\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<sev>[a-z]*)\] (?P<msg>.*)$'
         timestamp:
@@ -564,6 +564,13 @@ const otelcolOperatorProxy = `
           layout: '%Y/%m/%d %H:%M:%S'
         severity:
           parse_from: attributes.sev`
+
+const otelcolOperatorProxyAccess = `
+      - type: json_parser
+        timestamp:
+          layout: 's.ms'
+          layout_type: epoch
+          parse_from: attributes.ts`
 
 const otelcolConfigTmpl = `
 receivers:
@@ -635,16 +642,24 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 }
 
 func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, error) {
-	proxyReceiver := otelcolReceiver{
-		Name:              "filelog/proxy",
+	proxyErrorReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_error",
 		IncludeFiles:      "/var/log/nginx/error.log",
 		ServiceName:       "proxy",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorProxy,
+		Operator:          otelcolOperatorProxyError,
+	}
+
+	proxyAccessReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_access",
+		IncludeFiles:      "/var/log/nginx/access.log",
+		ServiceName:       "proxy",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorProxyAccess,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
-		"Receivers": []otelcolReceiver{proxyReceiver},
+		"Receivers": []otelcolReceiver{proxyErrorReceiver, proxyAccessReceiver},
 		"MetricsIP": metricsIP,
 	})
 	if err != nil {
