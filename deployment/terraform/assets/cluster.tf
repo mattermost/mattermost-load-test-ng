@@ -755,7 +755,7 @@ resource "null_resource" "s3_dump" {
 }
 
 // Keycloak
-resource "aws_instance" "keycloak" {
+resource "aws_instance" "keycloak_server" {
   tags = {
     Name = "${var.cluster_name}-keycloak"
   }

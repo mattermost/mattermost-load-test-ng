@@ -15,7 +15,7 @@ output "metricsServer" {
 }
 
 output "keycloakServer" {
-  value = aws_instance.keycloak
+  value = aws_instance.keycloak_server
 }
 
 output "proxy" {
