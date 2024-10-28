@@ -128,6 +128,10 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if t.output.HasMetrics() {
+		extraArguments = append(extraArguments, "--metrics-enabled true")
+	}
+
 	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
