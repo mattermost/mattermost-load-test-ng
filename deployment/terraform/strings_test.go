@@ -105,7 +105,7 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  filelog/proxy:
+  filelog/proxy_error:
     include: [ /var/log/nginx/error.log ]
     resource:
       service.name: "proxy"
@@ -118,6 +118,17 @@ receivers:
           layout: '%Y/%m/%d %H:%M:%S'
         severity:
           parse_from: attributes.sev
+  filelog/proxy_access:
+    include: [ /var/log/nginx/access.log ]
+    resource:
+      service.name: "proxy"
+      service.instance.id: "instance-name"
+    operators:
+      - type: json_parser
+        timestamp:
+          layout: 's.ms'
+          layout_type: epoch
+          parse_from: attributes.ts
 
 exporters:
   otlphttp/logs:
@@ -132,7 +143,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog/proxy,]
+      receivers: [filelog/proxy_error,filelog/proxy_access,]
       exporters: [otlphttp/logs,debug]
 `
 )
