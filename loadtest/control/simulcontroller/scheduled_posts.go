@@ -68,7 +68,10 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 }
 
 func (c *SimulController) updateScheduledPost(u user.User) control.UserActionResponse {
-	scheduledPost := u.GetRandomScheduledPost()
+	scheduledPost, err := u.Store().GetRandomScheduledPost()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
 	if scheduledPost == nil {
 		return control.UserActionResponse{Info: "no scheduled posts found"}
 	}
@@ -91,4 +94,20 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post updated in channel id %v", channel.Id)}
+}
+
+func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionResponse {
+	scheduledPost, err := u.Store().GetRandomScheduledPost()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if scheduledPost == nil {
+		return control.UserActionResponse{Info: "no scheduled posts found"}
+	}
+
+	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post deleteted with id %v", scheduledPost.Id)}
 }

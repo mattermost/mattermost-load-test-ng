@@ -146,6 +146,8 @@ type UserStore interface {
 
 	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
 	PostsWithAckRequests() ([]string, error)
+
+	GetRandomScheduledPost() (*model.ScheduledPost, error)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing

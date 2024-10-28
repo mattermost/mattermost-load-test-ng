@@ -328,6 +328,6 @@ type User interface {
 
 	// Scheduled Posts
 	CreateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
-	GetRandomScheduledPost() *model.ScheduledPost
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
+	DeleteScheduledPost(scheduledPostId string) error
 }

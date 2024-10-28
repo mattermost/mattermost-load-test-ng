@@ -276,6 +276,12 @@ func getActionList(c *SimulController) []userAction {
 			frequency:        0.006,
 			minServerVersion: control.UnreleasedVersion,
 		},
+		{
+			name:             "DeleteScheduledPost",
+			run:              c.deleteScheduledPost,
+			frequency:        0.006,
+			minServerVersion: control.UnreleasedVersion,
+		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than
 		//     control.MinSupportedVersion, use control.MinSupportedVersion.

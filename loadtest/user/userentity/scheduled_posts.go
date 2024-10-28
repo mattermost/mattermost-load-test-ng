@@ -52,6 +52,7 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 
 }
 
-func (ue *UserEntity) GetRandomScheduledPost() *model.ScheduledPost {
-	return ue.GetRandomScheduledPost()
+func (ue *UserEntity) DeleteScheduledPost(scheduledPostId string) error {
+	_, _, err := ue.client.DeleteScheduledPost(context.Background(), scheduledPostId)
+	return err
 }
