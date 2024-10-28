@@ -183,6 +183,7 @@ type MutableUserStore interface {
 
 	// scheduled posts
 	SetScheduledPost(teamId, id string, scheduledPost *model.ScheduledPost) error
+	GetRandomScheduledPost() (*model.ScheduledPost, error)
 
 	// posts
 	// SetPost stores the given post.

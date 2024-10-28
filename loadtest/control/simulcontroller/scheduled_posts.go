@@ -66,3 +66,29 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post created in channel id %v", channel.Id)}
 }
+
+func (c *SimulController) updateScheduledPost(u user.User) control.UserActionResponse {
+	scheduledPost := u.GetRandomScheduledPost()
+	if scheduledPost == nil {
+		return control.UserActionResponse{Info: "no scheduled posts found"}
+	}
+
+	channel, err := u.Store().CurrentChannel()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	message, err := createMessage(u, channel, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	scheduledPost.Message = message
+	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(17_28_00_000, 10)
+
+	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post updated in channel id %v", channel.Id)}
+}

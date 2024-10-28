@@ -6,6 +6,7 @@ package memstore
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -1237,4 +1238,48 @@ func (s *MemStore) SetScheduledPost(teamId, id string, scheduledPost *model.Sche
 
 	s.scheduledPosts[teamId][id] = scheduledPost
 	return nil
+}
+
+func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	// Seed the random generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Check if scheduledPosts is empty
+	if len(s.scheduledPosts) == 0 {
+		return nil, errors.New("no scheduled posts available")
+	}
+
+	// Pick a random index for the outer map
+	randomOuterIndex := rand.Intn(len(s.scheduledPosts))
+	var selectedInnerMap map[string]*model.ScheduledPost
+	outerIndex := 0
+	for _, innerMap := range s.scheduledPosts {
+		if outerIndex == randomOuterIndex {
+			selectedInnerMap = innerMap
+			break
+		}
+		outerIndex++
+	}
+
+	// Check if the selected inner map is empty
+	if len(selectedInnerMap) == 0 {
+		return nil, errors.New("no posts available in selected category")
+	}
+
+	// Pick a random index for the inner map
+	randomInnerIndex := rand.Intn(len(selectedInnerMap))
+	var selectedPost *model.ScheduledPost
+	innerIndex := 0
+	for _, post := range selectedInnerMap {
+		if innerIndex == randomInnerIndex {
+			selectedPost = post
+			break
+		}
+		innerIndex++
+	}
+
+	return selectedPost, nil
 }
