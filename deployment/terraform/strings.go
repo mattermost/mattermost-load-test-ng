@@ -537,10 +537,26 @@ KC_DB_POOL_MIN_SIZE=20
 KC_DB_POOL_INITIAL_SIZE=20
 KC_DB_POOL_MAX_SIZE=200
 KC_DB=postgres
-KC_DB_URL=jdbc:psql://localhost:5433/keycloak
-KC_DB_PASSWORD=mmpass
+KC_DB_URL=jdbc:psql://keycloak:mmpass@localhost:5432/keycloak
 KC_DB_USERNAME=keycloak
+KC_DB_PASSWORD=mmpass
 KC_DATABASE=keycloak`
+
+const keycloakDatabasePgHBAContents = `
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    keycloak        keycloak        127.0.0.1/32            md5
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+# host    all             all             127.0.0.1/32            ident
+# IPv6 local connections:
+# host    all             all             ::1/128                 ident
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            ident
+host    replication     all             ::1/128                 ident
+`
 
 const prometheusNodeExporterConfig = `
 ARGS="--collector.ethtool"

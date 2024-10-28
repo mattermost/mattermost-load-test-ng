@@ -21,6 +21,8 @@ do
       echo "Attempt ${n}"
       sudo dnf -y update && \
       sudo dnf -y install unzip java-17-openjdk postgresql postgresql-server wget && \
+      sudo /usr/bin/postgresql-setup --initdb && \
+      sudo systemctl enable --now postgresql && \
       sudo mkdir -p /opt/keycloak && \
       sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${keycloak_version}/keycloak-${keycloak_version}.zip && \
       sudo unzip /opt/keycloak/keycloak-${keycloak_version}.zip -d /opt/keycloak && \
