@@ -198,10 +198,6 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
 		}
 
-		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
-			return fmt.Errorf("error setting up prometheus node exporter: %w", err)
-		}
-
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
 		rdr := strings.NewReader(serviceFileOutput.String())
@@ -218,6 +214,10 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
+	}
+
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		return fmt.Errorf("error setting up prometheus node exporter: %w", err)
 	}
 
 	yacePort := "9106"
@@ -356,8 +356,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return err
 	}
-	dataSource := fmt.Sprintf(string(buf), "http://"+t.output.MetricsServer.PrivateIP+":9090")
-	if out, err := sshc.Upload(strings.NewReader(dataSource), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
+	if out, err := sshc.Upload(bytes.NewReader(buf), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
 		return fmt.Errorf("error while uploading datasource: output: %s, error: %w", out, err)
 	}
 
