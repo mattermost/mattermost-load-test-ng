@@ -111,6 +111,22 @@ http {
     default 1;
   }
 
+  log_format json escape=json
+	'{'
+		'"time_local":"$time_local",'
+		'"remote_addr":"$remote_addr",'
+		'"remote_user":"$remote_user",'
+		'"request":"$request",'
+		'"request_time":"$request_time",'
+		'"status": "$status",'
+		'"body_bytes_sent":"$body_bytes_sent",'
+		'"upstream_addr":"$upstream_addr",'
+		'"upstream_status":"$upstream_status",'
+		'"upstream_response_time":"$upstream_response_time",'
+		'"upstream_cache_status":"$upstream_cache_status",'
+		'"http_user_agent":"$http_user_agent"'
+	'}';
+
   sendfile on;
   tcp_nopush on;
   tcp_nodelay {{.tcpNoDelay}};
@@ -120,7 +136,7 @@ http {
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
   ssl_prefer_server_ciphers on;
-  access_log /var/log/nginx/access.log combined if=$loggable;
+  access_log /var/log/nginx/access.log json if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
   include /etc/nginx/sites-enabled/*;
