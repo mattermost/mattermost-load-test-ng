@@ -111,3 +111,28 @@ func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionRes
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post deleteted with id %v", scheduledPost.Id)}
 }
+
+func (c *SimulController) sendScheduledPost(u user.User) control.UserActionResponse {
+	scheduledPost, err := u.Store().GetRandomScheduledPost()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if scheduledPost == nil {
+		return control.UserActionResponse{Info: "no scheduled posts found"}
+	}
+
+	post, err := scheduledPost.ToPost()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if _, err := u.CreatePost(post); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("scheudled post sent with id %v", scheduledPost.Id)}
+}
