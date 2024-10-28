@@ -1032,6 +1032,15 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
+	allow, err := strconv.ParseBool(u.Store().ClientConfig()["ScheduledPosts"])
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return allow, UserActionResponse{}
+}
+
 // MessageExport simulates the given user performing
 // a compliance message export
 func MessageExport(u user.User) UserActionResponse {

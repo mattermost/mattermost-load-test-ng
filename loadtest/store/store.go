@@ -181,6 +181,9 @@ type MutableUserStore interface {
 	// SetDrafts stores the given drafts.
 	SetDrafts(teamId string, drafts []*model.Draft) error
 
+	// scheduled posts
+	SetScheduledPost(teamId, id string, scheduledPost *model.ScheduledPost) error
+
 	// posts
 	// SetPost stores the given post.
 	SetPost(post *model.Post) error

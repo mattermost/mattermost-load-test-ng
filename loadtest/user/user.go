@@ -325,4 +325,7 @@ type User interface {
 	// GraphQL
 	GetInitialDataGQL() error
 	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
+
+	// Scheduled Posts
+	CreateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 }

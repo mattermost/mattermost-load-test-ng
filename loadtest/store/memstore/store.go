@@ -50,6 +50,7 @@ type MemStore struct {
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
+	scheduledPosts      map[string]map[string]*model.ScheduledPost
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -1219,5 +1220,21 @@ func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
 		s.drafts[teamId][rootID] = d
 	}
 
+	return nil
+}
+
+func (s *MemStore) SetScheduledPost(teamId, id string, scheduledPost *model.ScheduledPost) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if scheduledPost == nil {
+		return errors.New("memstore: scheduled post should not be nil")
+	}
+
+	if s.scheduledPosts[teamId] == nil {
+		s.scheduledPosts[teamId] = map[string]*model.ScheduledPost{}
+	}
+
+	s.scheduledPosts[teamId][id] = scheduledPost
 	return nil
 }
