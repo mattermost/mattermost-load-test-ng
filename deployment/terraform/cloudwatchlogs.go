@@ -136,8 +136,8 @@ func (t *Terraform) createCloudWatchLogsPolicy() error {
 	docJsonStr := string(docJsonBytes)
 
 	input := cloudwatchlogs.PutResourcePolicyInput{
-		PolicyName:     model.NewString("lt-cloudwatch-log-policy"),
-		PolicyDocument: model.NewString(docJsonStr),
+		PolicyName:     model.NewPointer("lt-cloudwatch-log-policy"),
+		PolicyDocument: model.NewPointer(docJsonStr),
 	}
 	if _, err := cwclient.PutResourcePolicy(context.Background(), &input); err != nil {
 		return fmt.Errorf("failed to create CloudWatchLogs policy; it can be manually created by running `aws logs put-resource-policy --policy-name lt-cloudwatch-log-policy --policy-document %q`; the next `deployment create` should work when such a policy is present in the AWS account; original error: %w", docJsonStr, err)

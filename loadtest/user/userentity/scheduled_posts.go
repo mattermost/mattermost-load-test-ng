@@ -36,8 +36,6 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 		return err
 	}
 
-	user.s
-
 	scheduledPost.UserId = user.Id
 	updatedScheduledPost, _, err := ue.client.UpdateScheduledPost(context.Background(), scheduledPost)
 	if err != nil {
