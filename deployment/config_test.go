@@ -10,7 +10,7 @@ func TestConfigIsValid(t *testing.T) {
 	baseConfig := func() Config {
 		return Config{
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0-rc1/mattermost-load-test-ng-v1.22.0-rc1-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0/mattermost-load-test-ng-v1.22.0-linux-amd64.tar.gz",
 		}
 	}
 
@@ -76,7 +76,7 @@ func TestValidateElasticSearchConfig(t *testing.T) {
 		return Config{
 			ClusterName:           "clustername",
 			MattermostDownloadURL: "https://latest.mattermost.com/mattermost-enterprise-linux",
-			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0-rc1/mattermost-load-test-ng-v1.22.0-rc1-linux-amd64.tar.gz",
+			LoadTestDownloadURL:   "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0/mattermost-load-test-ng-v1.22.0-linux-amd64.tar.gz",
 			ElasticSearchSettings: ElasticSearchSettings{
 				InstanceCount:      1,
 				Version:            "OpenSearch_2.7",
