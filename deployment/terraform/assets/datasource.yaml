@@ -12,8 +12,8 @@ datasources:
   isDefault: true
   version: 1
   editable: true
-  httpMethod: GET
   jsonData:
+    httpMethod: GET
     timeInterval: "5s"
 - name: Loki
   type: loki
