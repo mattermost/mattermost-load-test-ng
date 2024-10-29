@@ -36,6 +36,8 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 		return err
 	}
 
+	user.s
+
 	scheduledPost.UserId = user.Id
 	updatedScheduledPost, _, err := ue.client.UpdateScheduledPost(context.Background(), scheduledPost)
 	if err != nil {
@@ -55,4 +57,17 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 func (ue *UserEntity) DeleteScheduledPost(scheduledPostId string) error {
 	_, _, err := ue.client.DeleteScheduledPost(context.Background(), scheduledPostId)
 	return err
+}
+
+func (ue *UserEntity) GetTeamScheduledPosts(teamID string) error {
+	scheduledPosts, _, err := ue.client.GetUserScheduledPosts(context.Background(), teamID, true)
+	if err != nil {
+		return err
+	}
+
+	for _, scheduledPost := range scheduledPosts {
+		_ = ue.store.SetScheduledPost(teamID, scheduledPost.Id, scheduledPost)
+	}
+
+	return nil
 }
