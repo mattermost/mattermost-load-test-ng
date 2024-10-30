@@ -554,7 +554,7 @@ func createCustomEmoji(config *loadtest.Config) error {
 	}
 	sysadmin := createSysAdmin(adminStore, config)
 	if err := sysadmin.Login(); err != nil {
-		return fmt.Errorf("error login as sysadmin: %w", err)
+		return fmt.Errorf("error login as %s: %w", sysadmin.Store().Username(), err)
 	}
 
 	emoji := &model.Emoji{
