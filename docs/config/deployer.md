@@ -406,9 +406,10 @@ Whether to use SSE or not.
 
 *string*
 
-The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.
-The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).
-Only the binary gets replaced, and the rest of the build comes from the latest stable release.
+The URL from where to download the Mattermost release. `MattermostDownloadURL` supports the following use cases:
+1. If it is a URL, it should point to a `*.tar.gz` file containing an Enterprise build of the Mattermost release to use. You can use `https://latest.mattermost.com/mattermost-enterprise-linux` for getting the latest Mattermost release. If you want to test the changes from a PR, CI will generate such a file for you, under the URL https://pr-builds.mattermost.com/mattermost-platform/commit/$COMMIT_SHA/mattermost-enterprise-linux-amd64.tar.gz, where `$COMMIT_SHA` is the full SHA of the commit you want to test.
+2. If it is a `file://` URI pointing to a simple binary in your local filesystem, the deployer will use the latest Mattermost release and replace its binary with the binary pointed to by the file:// URI. This means that the webapp, which comes from the latest Mattermost release, may not match the binary used. This is kept mainly for backward compatibility.
+3. If it is a `file://` pointing to a `*.tar.gz` file in your local filesystem, it will behave as if it was a URL: the file is expected to contain an Enterprise build of the Mattermost release to use. This is useful for local changes that you want to test without opening a PR.
 
 ## MattermostLicenseFile
 
