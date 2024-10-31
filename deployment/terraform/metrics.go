@@ -364,6 +364,17 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error while uploading dashboard: output: %s, error: %w", out, err)
 	}
 
+	// Download dashboard v2 from and upload it
+	dashboardv2Resp, err := http.Get("https://grafana.com/api/dashboards/15582/revisions/latest/download")
+	if err != nil {
+		return fmt.Errorf("error downloading latest grafana v2 dashboard: %w", err)
+	}
+	defer dashboardv2Resp.Body.Close()
+
+	if out, err := sshc.Upload(dashboardv2Resp.Body, "/etc/grafana/provisioning/dashboards/dashboard_v2.json", true); err != nil {
+		return fmt.Errorf("error while uploading dashboard v2: output: %s, error: %w", out, err)
+	}
+
 	// Upload dashboard json
 	buf, err = os.ReadFile(t.getAsset("default_dashboard_tmpl.json"))
 	if err != nil {
