@@ -74,35 +74,37 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
 
-	status, err := t.DBStatus()
-	if err != nil {
-		return fmt.Errorf("failed to get DB status: %w", err)
-	}
-
-	if status == dbStopped {
-		if err := t.StartDB(); err != nil {
-			return err
+	if config.TerraformDBSettings.InstanceCount > 0 {
+		status, err := t.DBStatus()
+		if err != nil {
+			return fmt.Errorf("failed to get DB status: %w", err)
 		}
 
-		fmt.Println("=====================")
-		fmt.Println("Looping until the DB is fully available. You can cancel the command and start the test after some time, or don't do anything and it will automatically start the test after the DB is ready")
-		fmt.Println("=====================")
-		// Now we loop until the DB is available.
+		if status == dbStopped {
+			if err := t.StartDB(); err != nil {
+				return err
+			}
 
-		for {
-			status, err := t.DBStatus()
-			if err != nil {
-				return fmt.Errorf("failed to get DB status: %w", err)
+			fmt.Println("=====================")
+			fmt.Println("Looping until the DB is fully available. You can cancel the command and start the test after some time, or don't do anything and it will automatically start the test after the DB is ready")
+			fmt.Println("=====================")
+			// Now we loop until the DB is available.
+
+			for {
+				status, err := t.DBStatus()
+				if err != nil {
+					return fmt.Errorf("failed to get DB status: %w", err)
+				}
+				if status == dbAvailable {
+					break
+				}
+				fmt.Println("Sleeping... ")
+				time.Sleep(30 * time.Second)
 			}
-			if status == dbAvailable {
-				break
-			}
-			fmt.Println("Sleeping... ")
-			time.Sleep(30 * time.Second)
+		} else if status != dbAvailable {
+			fmt.Printf("The database isn't available at the moment. Its status is %q. Please wait until it has finished, and then try again. \n", status)
+			return nil
 		}
-	} else if status != dbAvailable {
-		fmt.Printf("The database isn't available at the moment. Its status is %q. Please wait until it has finished, and then try again. \n", status)
-		return nil
 	}
 
 	isSync, err := cmd.Flags().GetBool("sync")
