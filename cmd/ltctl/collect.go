@@ -113,7 +113,7 @@ func saveCollection(namePrefix string, files []file) error {
 	return nil
 }
 
-func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
+func createClients(config deployment.Config, output *terraform.Output) (map[string]*ssh.Client, error) {
 	extAgent, err := ssh.NewAgent()
 	if err != nil {
 		return nil, err
@@ -122,26 +122,26 @@ func createClients(output *terraform.Output) (map[string]*ssh.Client, error) {
 	clients := make(map[string]*ssh.Client)
 	if output.HasProxy() {
 		for i, inst := range output.Proxies {
-			sshc, err := extAgent.NewClient(inst.PrivateIP, output.AMIUser)
+			sshc, err := extAgent.NewClient(inst.PrivateIP, config.AWSAMIUser)
 			if err != nil {
-				return nil, fmt.Errorf("error in getting ssh connection %w", err)
+				return nil, fmt.Errorf("error in getting ssh connection for %s: %w", inst.Tags.Name, err)
 			}
 			clients[fmt.Sprintf("proxy%d", i)] = sshc
 		}
 	}
 
 	for i, instance := range output.Instances {
-		sshc, err := extAgent.NewClient(instance.PrivateIP, output.AMIUser)
+		sshc, err := extAgent.NewClient(instance.PrivateIP, config.AWSAMIUser)
 		if err != nil {
-			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+			return nil, fmt.Errorf("error in getting ssh connection for %s: %w", instance.Tags.Name, err)
 		}
 		clients[fmt.Sprintf("app%d", i)] = sshc
 	}
 
 	for i, agent := range output.Agents {
-		sshc, err := extAgent.NewClient(agent.PrivateIP, output.AMIUser)
+		sshc, err := extAgent.NewClient(agent.PrivateIP, config.AWSAMIUser)
 		if err != nil {
-			return nil, fmt.Errorf("error in getting ssh connection %w", err)
+			return nil, fmt.Errorf("error in getting ssh connection for %s: %w", agent.Tags.Name, err)
 		}
 		clients[fmt.Sprintf("agent%d", i)] = sshc
 		if i == 0 {
@@ -176,7 +176,7 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 		return err
 	}
 
-	clients, err := createClients(output)
+	clients, err := createClients(config, output)
 	if err != nil {
 		return err
 	}
