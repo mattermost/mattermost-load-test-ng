@@ -4,13 +4,12 @@
 package terraform
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
-	"sync"
+	"strings"
 
 	"time"
 
@@ -55,10 +54,22 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Wri
 		defer cancel()
 	}
 
+	if t.config.AWSProfile != "" {
+		args = append(args, "--profile="+t.config.AWSProfile)
+	}
+
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
 	return _runCommand(cmd, dst)
+}
+
+type cmdLogger struct {
+}
+
+func (*cmdLogger) Write(in []byte) (int, error) {
+	mlog.Info(strings.TrimSpace(string(in)))
+	return len(in), nil
 }
 
 func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
@@ -73,42 +84,10 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		return err
 	}
 
-	// From here, we want to stream the output concurrently from stderr and stdout
-	// to mlog.
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
+	cmd.Stdout = &cmdLogger{}
+	cmd.Stderr = cmd.Stdout
 
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			mlog.Info(scanner.Text())
-		}
-	}()
-
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		mlog.Info(scanner.Text())
-	}
-	// No need to check for scanner.Error as cmd.Wait() already does that.
-	wg.Wait()
-
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-	return nil
+	return cmd.Run()
 }
 
 func checkTerraformVersion() error {
@@ -143,11 +122,16 @@ func checkTerraformVersion() error {
 
 // checkAWSCLI checks that the aws command is available in the system, and that
 // the profile that will be used is correctly configured
-func checkAWSCLI(profile string) error {
-	cmd := exec.Command("aws", "configure", "list", "--profile", profile)
+func (t *Terraform) checkAWSCLI() error {
+	args := []string{"configure", "list"}
+	if t.config.AWSProfile != "" {
+		args = append(args, "--profile", t.Config().AWSProfile)
+	}
+
+	cmd := exec.Command("aws", args...)
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("the AWS CLI is either not installed or the configured profile %q is not stored in the credentials; error: %w", profile, err)
+		return fmt.Errorf("the AWS CLI is either not installed or not properly configured; error: %w", err)
 	}
 	return nil
 }

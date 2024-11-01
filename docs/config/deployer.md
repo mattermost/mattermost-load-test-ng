@@ -12,12 +12,18 @@ AWS profile to use for the deployment. Also used for all AWS CLI commands run lo
 
 AWS region to use for the deployment.  See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
 
+## AWSAvailabilityZone
+
+AWS Availability Zone in which to deploy instances. See the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) for more information.
+
+> [!TIP]
+> Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
+
 ## AWSAMI
 
 *string*
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
-
 
 
 ## ClusterName
@@ -60,6 +66,12 @@ When this value is greater than one, an S3 bucket is automatically created in th
 
 The type of the EC2 instance of the application server. See type [here](https://aws.amazon.com/ec2/instance-types/). It is recommended to use c5 instances for consistent performance.
 
+## AppAttachIAMProfile
+
+*string*
+
+The IAM profile to attach to the application server. This is useful if you need to give the application server access to other existing AWS resources.
+
 ## AgentInstanceCount
 
 *int*
@@ -71,6 +83,63 @@ The number of load-test agent instances. The first instance will also host the [
 *string*
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
+## ClusterSubnetIDs
+
+### App
+
+*[]string*
+
+The list of IDs of the subnets associated to the application server.
+
+### Job
+
+*[]string*
+
+The list of IDs of the subnets associated to the job server.
+
+### Proxy
+
+*[]string*
+
+The list of IDs of the subnets associated to the proxy server.
+
+### Agent
+
+*[]string*
+
+The list of IDs of the subnets associated to the load-test agent.
+
+### ElasticSearch
+
+*[]string*
+
+The list of IDs of the subnets associated to the Elasticsearch instances. If setting more than one you need to also set the `ElasticSearchSetting.ZoneAwarenessEnabled` and `ElasticSearchSetting.ZoneAwarenessAZCount` settings.
+
+### Metrics
+
+*[]string*
+
+The ID of the subnet associated to the metrics server.
+
+## Keycloak
+
+*[]string*
+
+The list of IDs of the subnets associated to the Keycloak server.
+
+## Database
+
+*[]string*
+
+The list of IDs of the subnets associated to the database instances.
+
+## Redis
+
+*[]string*
+
+The list of IDs of the subnets associated to the Redis instances.
+
 
 ## ElasticSearchSettings
 
@@ -91,14 +160,6 @@ The type of instance for the Elasticsearch service. Only AWS OpenSearch instance
 *string*
 
 Version of Elasticsearch to be deployed. Deployments only support AWS OpenSearch versions compatible with ElasticSearch, up to and including ElasticSearch v7.10.0; i.e., the ones prefixed by `Elasticsearch_.`. Check [AWS documentation](https://aws.amazon.com/opensearch-service/faqs/) to learn more about the versions and the [`aws` Terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/opensearch_domain#engine_version) to learn more about the specific string used.
-
-## VpcID
-
-*string*
-
-Id for the VPC that is going to be associated with the Elasticsearch created instance. You can get the VPC Id [here](https://console.aws.amazon.com/vpc/).
-
-This ID is mandatory is you're going to instantiate an ES service in your cluster.
 
 ### CreateRole
 
@@ -133,6 +194,22 @@ The maximum time, in minutes, that the system will wait for the Elasticsearch sn
 *int*
 
 The maximum time, in minutes, that the system will wait for the Elasticsearch cluster status to get green after having restored the snapshot. Defaults to 45 minutes.
+
+### ZoneAwarenessEnabled
+
+*bool*
+
+Whether to enable zone awareness for the Elasticsearch cluster. If set to `true`, you need to set the `ZoneAwarenessAZCount` setting.
+
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
+
+### ZoneAwarenessAZCount
+
+*int*
+
+The number of availability zones to use for the Elasticsearch cluster. This setting is only used when `ZoneAwarenessEnabled` is set to `true`.
+
+Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
 
 ## JobServerSettings
 
@@ -329,8 +406,8 @@ Whether to use SSE or not.
 
 *string*
 
-The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.  
-The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).  
+The URL from where to download Mattermost release. This can also point to a local binary path if the user wants to run a load-test on a custom server build.
+The path should be prefixed with `file://` and point to the binary of the server (e.g. `file:///home/user/go/src/github.com/mattermost/mattermost/server/bin/mattermost`).
 Only the binary gets replaced, and the rest of the build comes from the latest stable release.
 
 ## MattermostLicenseFile
@@ -485,6 +562,15 @@ This config is used for tests that require an existing database dump that contai
 
 The path to a file containing a list of credentials for the controllers to use. If present, it is used to automatically upload it to the agents and override the agent's config's own [`UsersFilePath`](config.md/#UsersFilePath).
 
+## EnableNetPeekMetrics
+
+*bool*
+
+If true, enables the collection of fine grained networking metrics through the [netpeek](https://github.com/streamer45/netpeek) utility.
+
+> [!WARNING]
+> These metrics can introduce a not negligible computational overhead on high traffic deployments.
+
 ## PyroscopeSettings
 
 ### EnableAppProfiling
@@ -504,3 +590,9 @@ Enable continuous profiling of all the agent instances.
 *int*
 
 Set the pprof block profile rate. This value applies to both agent and Mattermost server processes.
+
+## CustomTags
+
+*map[string]string*
+
+Optional map of key-value pairs, used to tag all deployed resources in AWS. Check [AWS documentation on tags](https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/what-are-tags.html) for more information and best practices.

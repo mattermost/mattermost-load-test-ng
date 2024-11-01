@@ -3,6 +3,8 @@
 
 package terraform
 
+import "fmt"
+
 const mattermostServiceFile = `
 [Unit]
 Description=Mattermost
@@ -54,6 +56,12 @@ scrape_configs:
   - job_name: redis
     static_configs:
         - targets: [%s]
+  - job_name: cloudwatch
+    static_configs:
+        - targets: [%s]
+  - job_name: netpeek
+    static_configs:
+        - targets: [%s]
 `
 
 const metricsHosts = `
@@ -103,6 +111,22 @@ http {
     default 1;
   }
 
+  log_format json escape=json
+	'{'
+		'"ts":"$msec",'
+		'"time_local":"$time_local",'
+		'"remote_addr":"$remote_addr",'
+		'"request":"$request",'
+		'"request_time":"$request_time",'
+		'"status": "$status",'
+		'"body_bytes_sent":"$body_bytes_sent",'
+		'"upstream_addr":"$upstream_addr",'
+		'"upstream_status":"$upstream_status",'
+		'"upstream_response_time":"$upstream_response_time",'
+		'"upstream_cache_status":"$upstream_cache_status",'
+		'"http_user_agent":"$http_user_agent"'
+	'}';
+
   sendfile on;
   tcp_nopush on;
   tcp_nodelay {{.tcpNoDelay}};
@@ -112,7 +136,7 @@ http {
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
   ssl_prefer_server_ciphers on;
-  access_log /var/log/nginx/access.log combined if=$loggable;
+  access_log /var/log/nginx/access.log json if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
   include /etc/nginx/sites-enabled/*;
@@ -319,6 +343,130 @@ Group=ubuntu
 WantedBy=multi-user.target
 `
 
+const yaceConfigFile = `
+apiVersion: v1alpha1
+discovery:
+  exportedTagsOnMetrics:
+    AWS/RDS:
+      - Name
+      - ClusterName
+    AWS/ES:
+      - Name
+      - ClusterName
+    AWS/EC2:
+      - Name
+      - ClusterName
+  jobs:
+    - type: AWS/RDS
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average]
+        - name: DatabaseConnections
+          statistics: [Sum]
+        - name: FreeableMemory
+          statistics: [Average]
+        - name: FreeStorageSpace
+          statistics: [Average]
+        - name: ReadThroughput
+          statistics: [Average]
+        - name: WriteThroughput
+          statistics: [Average]
+        - name: ReadLatency
+          statistics: [Maximum]
+        - name: WriteLatency
+          statistics: [Maximum]
+        - name: ReadIOPS
+          statistics: [Average]
+        - name: WriteIOPS
+          statistics: [Average]
+    - type: AWS/ES
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average]
+        - name: FreeStorageSpace
+          statistics: [Sum]
+        - name: ClusterStatus.green
+          statistics: [Maximum]
+        - name: ClusterStatus.yellow
+          statistics: [Maximum]
+        - name: ClusterStatus.red
+          statistics: [Maximum]
+        - name: Shards.active
+          statistics: [Sum]
+        - name: Shards.unassigned
+          statistics: [Sum]
+        - name: Shards.delayedUnassigned
+          statistics: [Sum]
+        - name: Shards.activePrimary
+          statistics: [Sum]
+        - name: Shards.initializing
+          statistics: [Sum]
+        - name: Shards.initializing
+          statistics: [Sum]
+        - name: Shards.relocating
+          statistics: [Sum]
+        - name: Nodes
+          statistics: [Maximum]
+        - name: SearchableDocuments
+          statistics: [Maximum]
+        - name: DeletedDocuments
+          statistics: [Maximum]
+    - type: AWS/EC2
+      regions:
+        - us-east-1
+      period: {{.Period}}
+      length: {{.Length}}
+      delay: {{.Delay}}
+      addCloudwatchTimestamp: true
+      nilToZero: true
+      searchTags:
+        - key: ClusterName
+          value: {{.ClusterName}}
+      metrics:
+        - name: StatusCheckFailed
+          statistics: [Sum]
+        - name: StatusCheckFailed_Instance
+          statistics: [Sum]
+        - name: StatusCheckFailed_System
+          statistics: [Sum]
+`
+
+const yaceServiceFile = `
+[Unit]
+Description=Cloudwatch prometheus exporter - YACE
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/yace/yace -listen-address :{{.Port}} -config.file /opt/yace/conf.yml -scraping-interval {{.ScrapingInterval}}
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/yace
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+`
+
 const jobServerServiceFile = `
 [Unit]
 Description=Mattermost Job Server
@@ -384,3 +532,159 @@ KC_DATABASE=keycloak`
 const prometheusNodeExporterConfig = `
 ARGS="--collector.ethtool"
 `
+
+const netpeekServiceFile = `
+[Unit]
+Description=netpeek
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c '/usr/local/bin/netpeek -iface "$(ip route show to default | awk \'{print $5}\')" -port %d'
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+`
+
+const otelcolOperatorAppAgent = `
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%L Z'
+        severity:
+          parse_from: attributes.level`
+
+const otelcolOperatorProxyError = `
+      - type: regex_parser
+        regex: '^(?P<time>\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<sev>[a-z]*)\] (?P<msg>.*)$'
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y/%m/%d %H:%M:%S'
+        severity:
+          parse_from: attributes.sev`
+
+const otelcolOperatorProxyAccess = `
+      - type: json_parser
+        timestamp:
+          layout: 's.ms'
+          layout_type: epoch
+          parse_from: attributes.ts`
+
+const otelcolConfigTmpl = `
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+{{range .Receivers}}
+  {{.Name}}:
+    include: [ {{.IncludeFiles}} ]
+    resource:
+      service.name: "{{.ServiceName}}"
+      service.instance.id: "{{.ServiceInstanceId}}"
+    operators:{{.Operator}}{{end}}
+
+exporters:
+  otlphttp/logs:
+    endpoint: "http://{{.MetricsIP}}:3100/otlp"
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  pipelines:
+    logs:
+      receivers: [{{range .Receivers}}{{.Name}},{{end}}]
+      exporters: [otlphttp/logs,debug]
+`
+
+type otelcolReceiver struct {
+	Name              string
+	IncludeFiles      string
+	ServiceName       string
+	ServiceInstanceId string
+	Operator          string
+}
+
+func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	agentReceiver := otelcolReceiver{
+		Name:              "filelog/agent",
+		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+		ServiceName:       "agent",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorAppAgent,
+	}
+
+	coordinatorReceiver := otelcolReceiver{
+		Name:              "filelog/coordinator",
+		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+		ServiceName:       "coordinator",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorAppAgent,
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
+		"Receivers": []otelcolReceiver{agentReceiver, coordinatorReceiver},
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template")
+	}
+
+	return otelcolConfig, err
+}
+
+func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	proxyErrorReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_error",
+		IncludeFiles:      "/var/log/nginx/error.log",
+		ServiceName:       "proxy",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorProxyError,
+	}
+
+	proxyAccessReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_access",
+		IncludeFiles:      "/var/log/nginx/access.log",
+		ServiceName:       "proxy",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorProxyAccess,
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
+		"Receivers": []otelcolReceiver{proxyErrorReceiver, proxyAccessReceiver},
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template")
+	}
+
+	return otelcolConfig, nil
+}
+
+func renderAppOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+	appReceiver := otelcolReceiver{
+		Name:              "filelog/app",
+		IncludeFiles:      "/opt/mattermost/logs/mattermost.log",
+		ServiceName:       "app",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorAppAgent,
+	}
+
+	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
+		"Receivers": []otelcolReceiver{appReceiver},
+		"MetricsIP": metricsIP,
+	})
+	if err != nil {
+		return "", fmt.Errorf("unable to render otelcol config template: %w", err)
+	}
+
+	return otelcolConfig, nil
+}

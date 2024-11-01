@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -113,10 +116,15 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
-	// Match against the proxy or metrics servers, as well as convenient aliases.
+	// Match against proxy names
+	for _, inst := range output.Proxies {
+		if resource == inst.Tags.Name {
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+		}
+	}
+
+	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
-	case "proxy", output.Proxy.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.Proxy.PublicIP)), nil
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
 		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
 	}
@@ -135,8 +143,8 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	case "grafana":
 		url += output.MetricsServer.PublicDNS + ":3000"
 	case "mattermost":
-		if output.Proxy.PublicDNS != "" {
-			url += output.Proxy.PublicDNS
+		if output.HasProxy() {
+			url += output.Proxies[0].PublicDNS
 		} else {
 			url += output.Instances[0].PublicDNS + ":8065"
 		}
@@ -169,7 +177,27 @@ func validateLicense(filename string) error {
 
 	validator := &utils.LicenseValidatorImpl{}
 	licenseStr, err := validator.ValidateLicense(data)
+	// If we cannot validate the license, we can test using another service
+	// environment to inform the user whether that's a possible solution
 	if err != nil {
+		currentValue := os.Getenv("MM_SERVICEENVIRONMENT")
+		defer func() { os.Setenv("MM_SERVICEENVIRONMENT", currentValue) }()
+
+		// Pick a different environment
+		newValue := model.ServiceEnvironmentTest
+		if currentValue != model.ServiceEnvironmentProduction {
+			newValue = model.ServiceEnvironmentProduction
+		}
+		os.Setenv("MM_SERVICEENVIRONMENT", newValue)
+
+		// If the error is not nil, then the user just needs to set the
+		// -service_environment flag to a different value
+		if _, newEnvErr := validator.ValidateLicense(data); newEnvErr == nil {
+			return fmt.Errorf("this license is valid only with a %q service environment, which is currently set to %q; try adding the -service_environment=%s flag to change it", newValue, currentValue, newValue)
+		}
+
+		// If not, we just return the (probably not very useful) error returned
+		// by the validator
 		return fmt.Errorf("failed to validate license: %w", err)
 	}
 
@@ -199,7 +227,7 @@ func (t *Terraform) getStatePath() string {
 	return statePath
 }
 
-func fillConfigTemplate(configTmpl string, data map[string]string) (string, error) {
+func fillConfigTemplate(configTmpl string, data map[string]any) (string, error) {
 	var buf bytes.Buffer
 	tmpl := template.New("template")
 	tmpl, err := tmpl.Parse(configTmpl)
@@ -216,20 +244,23 @@ func (t *Terraform) getParams() []string {
 	return []string{
 		"-var", fmt.Sprintf("aws_profile=%s", t.config.AWSProfile),
 		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
+		"-var", fmt.Sprintf("aws_az=%s", t.config.AWSAvailabilityZone),
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
-		"-var", fmt.Sprintf("cluster_subnet_id=%s", t.config.ClusterSubnetID),
+		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, t.config.ClusterSubnetIDs),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
+		"-var", fmt.Sprintf("app_attach_iam_profile=%s", t.config.AppAttachIAMProfile),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
 		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
-		"-var", fmt.Sprintf("es_vpc=%s", t.config.ElasticSearchSettings.VpcID),
 		"-var", fmt.Sprintf("es_create_role=%t", t.config.ElasticSearchSettings.CreateRole),
 		"-var", fmt.Sprintf("es_snapshot_repository=%s", t.config.ElasticSearchSettings.SnapshotRepository),
+		"-var", fmt.Sprintf("es_zone_awareness_enabled=%t", t.config.ElasticSearchSettings.ZoneAwarenessEnabled),
+		"-var", fmt.Sprintf("es_zone_awarness_availability_zone_count=%d", t.config.ElasticSearchSettings.ZoneAwarenessAZCount),
 		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
@@ -260,6 +291,8 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("redis_node_type=%s", t.config.RedisSettings.NodeType),
 		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
 		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
+		"-var", fmt.Sprintf("custom_tags=%s", t.config.CustomTags),
+		"-var", fmt.Sprintf("metrics_instance_type=%s", t.config.MetricsInstanceType),
 	}
 }
 
@@ -298,8 +331,32 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	if !output.HasProxy() {
 		url = url + ":8065"
 	} else if deploymentConfig.SiteURL == "" {
-		url = output.Proxy.PrivateIP
+		// It's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
+		// So we can safely take the IP of the first entry.
+		url = output.Proxies[0].PrivateIP
 	}
 
 	return url
+}
+
+// GetAWSConfig returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	if t.config.AWSProfile == "" {
+		return awsconfig.LoadDefaultConfig(context.Background())
+	}
+
+	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+}
+
+// GetAWSCreds returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise
+func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
+	cfg, err := t.GetAWSConfig()
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+
+	return cfg.Credentials.Retrieve(context.Background())
 }

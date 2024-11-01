@@ -139,11 +139,19 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
+			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.PrivateIP)
+			if err != nil {
+				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
+				foundErr.Store(true)
+				return
+			}
+
 			batch := []uploadInfo{
 				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
+				{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
 			}
 
 			if t.config.UsersFilePath != "" {
@@ -152,29 +160,25 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			// If SiteURL is set, update /etc/hosts to point to the correct IP
 			if t.config.SiteURL != "" {
-				output, err := t.Output()
+				appHostsFile, err := t.getAppHostsFile(agentNumber)
 				if err != nil {
 					mlog.Error("error getting output", mlog.Err(err), mlog.Int("agent", agentNumber))
 					foundErr.Store(true)
 					return
 				}
 
-				// The new entry in /etc/hosts will make SiteURL point to:
-				// - The first instance's IP if there's a single node
-				// - The proxy's IP if there's more than one node
-				ip := output.Instances[0].PrivateIP
-				if output.HasProxy() {
-					ip = output.Proxy.PrivateIP
-				}
-
-				proxyHost := fmt.Sprintf("%s %s\n", ip, t.config.SiteURL)
-				appHostsFile := fmt.Sprintf(appHosts, proxyHost)
-
 				batch = append(batch, uploadInfo{srcData: appHostsFile, dstPath: "/etc/hosts", msg: "Updating /etc/hosts to point to the correct IP"})
 			}
 
 			if err := uploadBatch(sshc, batch); err != nil {
 				mlog.Error("error uploading batch", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			cmd = "sudo systemctl restart otelcol-contrib"
+			if out, err := sshc.RunCommand(cmd); err != nil {
+				mlog.Error("error running ssh command", mlog.Int("agent", agentNumber), mlog.String("cmd", cmd), mlog.String("out", string(out)), mlog.Err(err))
 				foundErr.Store(true)
 				return
 			}
@@ -229,7 +233,8 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 
 	if initData && t.config.TerraformDBSettings.ClusterIdentifier == "" {
 		mlog.Info("Populating initial data for load-test", mlog.String("agent", ip))
-		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s'", t.output.Agents[0].Tags.Name)
+		cmd := fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065'",
+			t.output.Agents[0].Tags.Name, t.output.Instances[0].PrivateIP)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			// TODO: make this fully atomic. See MM-23998.
 			// ltagent init should drop teams and channels before creating them.
@@ -242,4 +247,28 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 	}
 
 	return nil
+}
+
+func (t *Terraform) getAppHostsFile(index int) (string, error) {
+	output, err := t.Output()
+	if err != nil {
+		return "", err
+	}
+
+	// The new entry in /etc/hosts will make SiteURL point to:
+	// - The first instance's IP if there's a single app node
+	// - The IP of one of the proxy nodes if there's more than one app node
+	proxyHost := ""
+	if output.HasProxy() {
+		// This allows a bare-bones multi-proxy setup
+		// where we simply round-robin between the proxy nodes amongst the agents.
+		// Not a perfect solution, because ideally we would have used
+		// a dedicated DNS service (like Route53), but it works for now.
+		proxyIndex := index % len(output.Proxies)
+		proxyHost += fmt.Sprintf("%s %s\n", output.Proxies[proxyIndex].PrivateIP, t.config.SiteURL)
+	} else {
+		proxyHost = fmt.Sprintf("%s %s\n", output.Instances[0].PrivateIP, t.config.SiteURL)
+	}
+
+	return fmt.Sprintf(appHosts, proxyHost), nil
 }

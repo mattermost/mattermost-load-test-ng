@@ -1433,14 +1433,6 @@ func (c *SimulController) initialJoinTeam(u user.User) control.UserActionRespons
 		return resp
 	}
 
-	team, err := c.user.Store().CurrentTeam()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		// only join a team if we are not in one already.
-		return c.joinTeam(c.user)
-	}
-
 	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
 		// Setting the active thread to empty to allow the optimization to kick in early.
 		// We don't do this in the webapp to keep the code simple, but it's okay to do this in load-test
@@ -1448,6 +1440,14 @@ func (c *SimulController) initialJoinTeam(u user.User) control.UserActionRespons
 		if err := u.UpdateActiveThread(""); err != nil {
 			mlog.Warn("Failed to update active thread", mlog.String("channel_id", ""))
 		}
+	}
+
+	team, err := c.user.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		// only join a team if we are not in one already.
+		return c.joinTeam(c.user)
 	}
 
 	return resp

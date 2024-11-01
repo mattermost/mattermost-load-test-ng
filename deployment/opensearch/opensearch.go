@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/opensearch-project/opensearch-go/v4"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -29,13 +29,9 @@ type Client struct {
 // New builds a new Client for the AWS OpenSearch Domain pointed to by
 // esEndoint, using the AWS profile to sign requests and tunneling those
 // requests through the SSH connection provided by the SSH client.
-func New(esEndpoint string, sshc *ssh.Client, awsProfile, awsRegion string) (*Client, error) {
-	creds, err := deployment.GetAWSCreds(awsProfile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS credentials")
-	}
+func New(esEndpoint string, sshc *ssh.Client, awsCreds aws.Credentials, awsRegion string) (*Client, error) {
 
-	transport, err := newOpensearchRoundTripper(sshc.DialContextF(), creds, awsRegion)
+	transport, err := newOpensearchRoundTripper(sshc.DialContextF(), awsCreds, awsRegion)
 	if err != nil {
 		return nil, err
 	}
@@ -280,6 +276,7 @@ type SnapshotIndexShardRecovery struct {
 	Index   string
 	Stage   string
 	Percent string
+	Size    int
 }
 
 // SnapshotIndicesRecovery returns status information for each index shard in
@@ -305,6 +302,7 @@ func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShard
 				// We're using the percentage of bytes restored,
 				// not the percentage of files restored
 				Percent: shard.Index.Size.Percent,
+				Size:    shard.Index.Size.TotalInBytes,
 			})
 		}
 	}

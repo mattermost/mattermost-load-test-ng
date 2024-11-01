@@ -37,22 +37,59 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 		},
 	})
 	if err != nil {
-		// Ignore already existing users
+		// Check if the error is due to the user already existing in keycloak
 		if apiErr, ok := err.(*gocloak.APIError); ok && apiErr.Code == 409 {
 			mlog.Debug("user already exists in keycloak", mlog.String("username", user.Username))
-			return nil
-		}
 
-		mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
-		worker.errorsChan <- err
-		return err
+			// Return early if we are not forcing the migration of all the users
+			if !worker.forceMigrate {
+				worker.errorsChan <- err
+				return err
+			}
+
+			// If the `--force-migrate` flag is set, we need to get the user ID of the already existing user from
+			// keycloak to set up the auth data of the mattermost user.
+			mlog.Debug("trying to fetch the user from keycloak to update the mattermost user", mlog.String("username", user.Username))
+			users, err := worker.keycloakClient.GetUsers(
+				ctx,
+				worker.keycloakToken.AccessToken,
+				worker.keycloakRealm,
+				gocloak.GetUsersParams{
+					Username: &user.Username,
+					Exact:    gocloak.BoolP(true),
+				},
+			)
+			if err != nil {
+				mlog.Error("failed to get user from keycloak", mlog.String("err", err.Error()))
+				worker.errorsChan <- err
+				return err
+			}
+
+			if len(users) != 1 {
+				err = fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
+				worker.errorsChan <- err
+				return err
+			}
+
+			// This should not happen, but just in case...
+			if users[0] == nil || users[0].ID == nil {
+				err = fmt.Errorf("somehow keycloak returned incorrect data for user %s (nil values)", user.Username)
+				worker.errorsChan <- err
+				return err
+			}
+
+			kcUserID = *users[0].ID
+		} else {
+			mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
+			worker.errorsChan <- err
+			return err
+		}
 	}
 
-	user.AuthData = model.NewPointer(kcUserID)
-	user.AuthService = model.UserAuthServiceSaml
-	user.Password = ""
-
-	_, _, err = worker.mmClient.UpdateUser(ctx, user)
+	_, _, err = worker.mmClient.UpdateUserAuth(ctx, user.Id, &model.UserAuth{
+		AuthData:    model.NewPointer(kcUserID),
+		AuthService: model.UserAuthServiceSaml,
+	})
 	if err != nil {
 		mlog.Error("failed to update user in mattermost", mlog.String("err", err.Error()))
 
@@ -110,6 +147,7 @@ type workerConfig struct {
 	userPassword     string
 	deploymentConfig *deployment.Config
 	doneChan         chan struct{}
+	forceMigrate     bool
 }
 
 func migrateMattermostUsersToKeycloak(worker *workerConfig) {
@@ -228,6 +266,11 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to refresh keycloak token: %w", err)
 	}
 
+	forceMigrate, err := cmd.Flags().GetBool("force-migrate")
+	if err != nil {
+		return fmt.Errorf("failed to read flag: %w", err)
+	}
+
 	doneChan := make(chan struct{})
 	workers := runtime.NumCPU()
 	if workers > 4 {
@@ -262,11 +305,13 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			userPassword:     userPassword,
 			deploymentConfig: deploymentConfig,
 			doneChan:         doneChan,
+			forceMigrate:     forceMigrate,
 		})
 	}
 
 	page := 0
 	perPage := 100
+
 	for {
 		mlog.Info("fetching mattermost users", mlog.Int("page", page), mlog.Int("per_page", perPage))
 		users, _, err := mmClient.GetUsers(ctx, page, perPage, "")
@@ -275,6 +320,8 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		}
 
 		for _, user := range users {
+			u := *user
+
 			// Skip bots
 			if user.IsBot {
 				continue
@@ -286,13 +333,13 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			}
 
 			// Already migrated
-			if user.AuthService == model.UserAuthServiceSaml {
+			if user.AuthService == model.UserAuthServiceSaml && !forceMigrate {
 				continue
 			}
 
 			if !dryRun {
 				operationsWg.Add(1)
-				usersChan <- user
+				usersChan <- &u
 			} else {
 				mlog.Info("dry-run: would migrate user", mlog.String("username", user.Username))
 			}

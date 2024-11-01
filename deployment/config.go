@@ -4,14 +4,17 @@
 package deployment
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
@@ -19,22 +22,29 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 // Config contains the necessary data
 // to deploy and provision a load test environment.
 type Config struct {
-	// AWSProfile is the name of the AWS profile to use for all AWS commands
-	AWSProfile string `default:"mm-loadtest"`
+	// AWSProfile is the optional name of the AWS profile to use for all AWS commands
+	AWSProfile string `default:""`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
+	// AWSAvailabilityZone defines the Availability Zone
+	// in which instances should be deployed.
+	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
-	// ClusterSubnetID is the id of the subnet associated to the resources.
-	ClusterSubnetID string
+	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
+	ClusterSubnetIDs ClusterSubnetIDs
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
+	// IAM role to attach to the app servers
+	AppAttachIAMProfile string `default:""`
+	// Type of the EC2 instance for metrics.
+	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
@@ -42,7 +52,7 @@ type Config struct {
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Number of proxy instances.
-	ProxyInstanceCount int `default:"1" validate:"range:[0,1]"`
+	ProxyInstanceCount int `default:"1" validate:"range:[0,5]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
 	// Path to the SSH public key.
@@ -62,7 +72,7 @@ type Config struct {
 	// 3. If it is a file:// pointing to a tar.gz, use that as the Mattermost release.
 	MattermostDownloadURL string `default:"https://latest.mattermost.com/mattermost-enterprise-linux" validate:"url"`
 	// Path to the Mattermost EE license file.
-	MattermostLicenseFile string `default:"" validate:"file"`
+	MattermostLicenseFile string `default:"" validate:"empty|file"`
 	// Optional path to a partial Mattermost config file to be applied as patch during
 	// app server deployment.
 	MattermostConfigPatchFile string `default:""`
@@ -75,7 +85,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.20.0/mattermost-load-test-ng-v1.20.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.21.0/mattermost-load-test-ng-v1.21.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
@@ -113,6 +123,67 @@ type Config struct {
 	PyroscopeSettings PyroscopeSettings
 	// StorageSizes specifies the sizes of the disks for each instance type
 	StorageSizes StorageSizes
+	// EnableNetPeekMetrics enables fine grained networking metrics collection through netpeek utility.
+	EnableNetPeekMetrics bool `default:"false"`
+	// CustomTags is an optional list of key-value pairs, which will be used as default
+	// tags for all resources deployed
+	CustomTags TerraformMap
+}
+
+// TerraformMap is a map of string -> string that serializes to the format expected by
+// the Terraform AWS provider when formatted as a string
+type TerraformMap map[string]string
+
+func (t TerraformMap) String() string {
+	var pairs []string
+	for key, value := range t {
+		pairs = append(pairs, fmt.Sprintf("%s = %q", key, value))
+	}
+	return "{" + strings.Join(pairs, ", ") + "}"
+}
+
+// ClusterSubnetIDs contains the subnet ids for the different types of instances.
+type ClusterSubnetIDs struct {
+	App           []string `default_size:"0" json:"app"`
+	Job           []string `default_size:"0" json:"job"`
+	Proxy         []string `default_size:"0" json:"proxy"`
+	Agent         []string `default_size:"0" json:"agent"`
+	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
+	Metrics       []string `default_size:"0" json:"metrics"`
+	Keycloak      []string `default_size:"0" json:"keycloak"`
+	Database      []string `default_size:"0" json:"database"`
+	Redis         []string `default_size:"0" json:"redis"`
+}
+
+// IsAnySet returns true if any of the subnet ids are set.
+func (c *ClusterSubnetIDs) IsAnySet() bool {
+	value := reflect.ValueOf(*c)
+
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		// Skip fields that are not slices
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		if field.IsNil() || value.Field(i).Len() == 0 {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+
+}
+
+func (c ClusterSubnetIDs) String() string {
+	b, err := json.Marshal(c)
+	if err != nil {
+		mlog.Error("Failed to marshal ClusterSubnetIDs", mlog.Err(err))
+		return "{}"
+	}
+	return string(b)
 }
 
 type StorageSizes struct {
@@ -127,7 +198,7 @@ type StorageSizes struct {
 	// Size, in GiB, for the storage of the job server instances
 	Job int `default:"50"`
 	// Size, in GiB, for the storage of the elasticsearch instances
-	ElasticSearch int `default:"20"`
+	ElasticSearch int `default:"100"`
 	// Size, in GiB, for the storage of the keycloak instances
 	KeyCloak int `default:"10"`
 }
@@ -249,8 +320,6 @@ type ElasticSearchSettings struct {
 	InstanceType string
 	// Elasticsearch version to be deployed.
 	Version string `default:"Elasticsearch_7.10"`
-	// Id of the VPC associated with the instance to be created.
-	VpcID string
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
 	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
@@ -261,6 +330,10 @@ type ElasticSearchSettings struct {
 	RestoreTimeoutMinutes int `default:"45" validate:"range:[0,)"`
 	// ClusterTimeoutMinutes is the maximum time, in minutes, that the system will wait for the cluster status to get green.
 	ClusterTimeoutMinutes int `default:"45" validate:"range:[0,)"`
+	// ZoneAwarenessEnabled indicates whether to enable zone awareness or not.
+	ZoneAwarenessEnabled bool `default:"false"`
+	// ZoneAwarenessAZCount indicates the number of availability zones to use for zone awareness.
+	ZoneAwarenessAZCount int `default:"2" validate:"range:[1,3]"`
 }
 
 type RedisSettings struct {
@@ -311,6 +384,10 @@ func (p DBParameters) String() string {
 
 // IsValid reports whether a given deployment config is valid or not.
 func (c *Config) IsValid() error {
+	if c.ClusterSubnetIDs.IsAnySet() && c.ClusterVpcID == "" {
+		return errors.New("vpc_id is required when any subnet is specified")
+	}
+
 	if !checkPrefix(c.MattermostDownloadURL) {
 		return fmt.Errorf("mattermost download url is not in correct format: %q", c.MattermostDownloadURL)
 	}
@@ -338,6 +415,9 @@ func (c *Config) validateProxyConfig() error {
 	if c.AppInstanceCount > 1 && c.ProxyInstanceCount < 1 && c.ServerURL == "" {
 		return fmt.Errorf("the deployment will create more than one app node, but no proxy is being deployed and no external proxy has been configured: either set ProxyInstanceCount to 1, or set ServerURL to the URL of an external proxy")
 	}
+	if c.ProxyInstanceCount > 1 && c.SiteURL == "" {
+		return fmt.Errorf("in a multi-proxy setup, the siteURL must be defined: either set the siteURL or set ProxyInstanceCount to 1")
+	}
 	return nil
 }
 
@@ -361,8 +441,8 @@ func (c *Config) validateElasticSearchConfig() error {
 	}
 
 	if (c.ElasticSearchSettings != ElasticSearchSettings{}) {
-		if c.ElasticSearchSettings.VpcID == "" {
-			return errors.New("VpcID must be set in order to create an Elasticsearch instance")
+		if c.ClusterVpcID == "" {
+			return errors.New("ClusterVpcID must be set in order to create an Elasticsearch instance")
 		}
 
 		domainName := c.ClusterName + "-es"

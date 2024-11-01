@@ -94,7 +94,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]string{
+	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
 		"KeycloakLogFilePath":   filepath.Join(keycloakDir, "data/log/keycloak.log"),
@@ -110,7 +110,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Parse keycloak service file template
-	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]string{
+	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]any{
 		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
 		"Command":         command + " " + strings.Join(extraArguments, " "),
 	})
@@ -354,7 +354,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080"
 
 	cfg.OpenIdSettings.Enable = model.NewPointer(true)
-	cfg.OpenIdSettings.ButtonText = model.NewPointer("Keycloak Login")
+	cfg.OpenIdSettings.ButtonText = model.NewPointer("OpenID Login")
 	cfg.OpenIdSettings.DiscoveryEndpoint = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/.well-known/openid-configuration")
 	cfg.OpenIdSettings.Id = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientID)
 	cfg.OpenIdSettings.Secret = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakClientSecret)
@@ -388,7 +388,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 	cfg.SamlSettings.NicknameAttribute = model.NewPointer("")
 	cfg.SamlSettings.LocaleAttribute = model.NewPointer("")
 	cfg.SamlSettings.PositionAttribute = model.NewPointer("")
-	cfg.SamlSettings.LoginButtonText = model.NewPointer("SAML")
+	cfg.SamlSettings.LoginButtonText = model.NewPointer("SAML Login")
 	cfg.SamlSettings.LoginButtonColor = model.NewPointer("#34a28b")
 	cfg.SamlSettings.LoginButtonBorderColor = model.NewPointer("#2389D7")
 	cfg.SamlSettings.LoginButtonTextColor = model.NewPointer("#ffffff")
