@@ -119,6 +119,8 @@ type Config struct {
 	// Mattermost servers. This is used to override the server URL in the agent's config in case there's a
 	// proxy in front of the Mattermost server.
 	ServerURL string `default:""`
+	// ServerScheme is the scheme to use when connecting to the Mattermost server.
+	ServerScheme string `default:"http" validate:"oneof:{http,https}"`
 	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.

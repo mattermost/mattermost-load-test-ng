@@ -203,7 +203,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 		siteURL = mattermostHost
 	}
 
-	mmClient := model.NewAPIv4Client("http://" + siteURL)
+	mmClient := model.NewAPIv4Client(deploymentConfig.ServerScheme + "://" + siteURL)
 
 	_, _, err = mmClient.Login(cmd.Context(), deploymentConfig.AdminEmail, deploymentConfig.AdminPassword)
 	if err != nil {
