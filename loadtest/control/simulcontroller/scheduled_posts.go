@@ -133,6 +133,8 @@ func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	u.Store().DeleteScheduledPost(scheduledPost.Id)
+
 	fmt.Println("deleteScheduledPost: end")
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post deleted with id %v", scheduledPost.Id)}
 }
@@ -165,6 +167,8 @@ func (c *SimulController) sendScheduledPost(u user.User) control.UserActionRespo
 		fmt.Println("sendScheduledPost: DeleteScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
+	u.Store().DeleteScheduledPost(scheduledPost.Id)
 
 	fmt.Println("sendScheduledPost: end")
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post sent with id %v", scheduledPost.Id)}

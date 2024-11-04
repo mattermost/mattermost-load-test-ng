@@ -1231,6 +1231,10 @@ func (s *MemStore) SetScheduledPost(teamId, id string, scheduledPost *model.Sche
 		return errors.New("memstore: scheduled post should not be nil")
 	}
 
+	if s.scheduledPosts == nil {
+		s.scheduledPosts = map[string]map[string]*model.ScheduledPost{}
+	}
+
 	if s.scheduledPosts[teamId] == nil {
 		s.scheduledPosts[teamId] = map[string]*model.ScheduledPost{}
 	}

@@ -64,6 +64,8 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 		return err
 	}
 
+	ue.Store().UpdateScheduledPost(teamId, updatedScheduledPost)
+
 	fmt.Println("UpdateScheduledPost: end")
 	return nil
 }

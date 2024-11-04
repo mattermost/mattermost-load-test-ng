@@ -148,6 +148,8 @@ type UserStore interface {
 	PostsWithAckRequests() ([]string, error)
 
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
+	DeleteScheduledPost(scheduledPostID string)
+	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
