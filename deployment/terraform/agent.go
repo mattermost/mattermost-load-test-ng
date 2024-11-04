@@ -28,8 +28,13 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 
 	url := getServerURL(t.output, t.config)
 
-	cfg.ConnectionConfiguration.ServerURL = "http://" + url
-	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
+	websocketScheme := "ws"
+	if t.config.ServerScheme == "https" {
+		websocketScheme = "wss"
+	}
+
+	cfg.ConnectionConfiguration.ServerURL = t.Config().ServerScheme + "://" + url
+	cfg.ConnectionConfiguration.WebSocketURL = websocketScheme + "://" + url
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 

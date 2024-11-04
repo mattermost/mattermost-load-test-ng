@@ -562,6 +562,18 @@ The name of a host that will be used for two purposes:
 - It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
 This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.
 
+## ServerURL
+
+*string*
+
+The URL of the Mattermost server. This is used to override the server's `SiteURL` setting for specific scenarios where a different URL is needed on deployments without the proxy server.
+
+## ServerScheme
+
+*string*
+
+The scheme of the Mattermost server. Defaults to `http`.
+
 ## UsersFilePath
 
 *string*
