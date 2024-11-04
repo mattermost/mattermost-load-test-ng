@@ -277,7 +277,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	if workers > 4 {
 		workers = 4
 	}
-	errorsChan := make(chan error, workers+1)
+	errorsChan := make(chan error, 100_000)
 	usersTxtChan := make(chan string)
 	usersChan := make(chan *model.User)
 
