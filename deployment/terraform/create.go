@@ -231,19 +231,21 @@ func (t *Terraform) Create(initData bool) error {
 		switch {
 		// SiteURL defined, multiple app nodes: we use SiteURL, since that points to the proxy itself
 		case t.config.SiteURL != "" && t.output.HasProxy():
-			siteURL = "http://" + t.config.SiteURL
+			siteURL = t.config.ServerScheme + "://" + t.config.SiteURL
 		// SiteURL defined, single app node: we use SiteURL plus the port, since SiteURL points to the app node (which is listening in 8065)
 		case t.config.SiteURL != "":
-			siteURL = "http://" + t.config.SiteURL + ":8065"
+			siteURL = t.config.ServerScheme + "://" + t.config.SiteURL + ":8065"
 		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
 			// This case will only succeed if siteURL is empty.
 			// And it's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
 			// So we can safely take the DNS of the first entry.
-			siteURL = "http://" + t.output.Proxies[0].PrivateDNS
+			siteURL = t.config.ServerScheme + "://" + t.output.Proxies[0].PrivateDNS
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
+		case t.config.ServerURL != "":
+			siteURL = t.config.ServerScheme + "://" + t.config.ServerURL
 		default:
-			siteURL = "http://" + t.output.Instances[0].PrivateDNS + ":8065"
+			siteURL = t.config.ServerScheme + "://" + t.output.Instances[0].PrivateDNS + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
@@ -263,6 +265,7 @@ func (t *Terraform) Create(initData bool) error {
 			pingURL = t.output.Proxies[0].PrivateDNS
 		}
 
+		// Non-ssl is used for pinging the server
 		if err := pingServer("http://" + pingURL); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
