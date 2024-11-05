@@ -370,6 +370,23 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error while uploading dashboard: output: %s, error: %w", out, err)
 	}
 
+	// Upload dashboard json
+	buf, err = os.ReadFile(t.getAsset("default_dashboard_tmpl.json"))
+	if err != nil {
+		return err
+	}
+	bufStr, err := fillConfigTemplate(string(buf), map[string]any{"ClusterName": t.output.ClusterName})
+	if err != nil {
+		return err
+	}
+	cmd = "sudo mkdir -p /var/lib/grafana/dashboards"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+	if out, err := sshc.Upload(strings.NewReader(bufStr), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
+		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
+	}
+
 	// Download dashboard v2 from and upload it
 	dashboardv2Resp, err := http.Get("https://grafana.com/api/dashboards/15582/revisions/latest/download")
 	if err != nil {
@@ -391,23 +408,6 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	if out, err := sshc.Upload(bytes.NewReader(result), "/var/lib/grafana/dashboards/dashboard_v2.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard v2: output: %s, error: %w", out, err)
-	}
-
-	// Upload dashboard json
-	buf, err = os.ReadFile(t.getAsset("default_dashboard_tmpl.json"))
-	if err != nil {
-		return err
-	}
-	bufStr, err := fillConfigTemplate(string(buf), map[string]any{"ClusterName": t.output.ClusterName})
-	if err != nil {
-		return err
-	}
-	cmd = "sudo mkdir -p /var/lib/grafana/dashboards"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
-	}
-	if out, err := sshc.Upload(strings.NewReader(bufStr), "/var/lib/grafana/dashboards/dashboard.json", true); err != nil {
-		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
 	// Upload coordinator metrics dashboard
