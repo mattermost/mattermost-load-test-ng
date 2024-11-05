@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -376,7 +377,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 	defer dashboardv2Resp.Body.Close()
 
-	if out, err := sshc.Upload(dashboardv2Resp.Body, "/etc/grafana/provisioning/dashboards/dashboard_v2.json", true); err != nil {
+	var dashboardV2Contents bytes.Buffer
+
+	_, err = io.Copy(&dashboardV2Contents, dashboardv2Resp.Body)
+	if err != nil {
+		return fmt.Errorf("error while reading dashboard v2: %w", err)
+	}
+
+	// Removes the DS_PROMETHEUS variable requirement to allow grafana to use the only prometheus
+	// datasource available
+	re := regexp.MustCompile(`,\r?\n\s+\"uid\":\s?\"\$\{DS_PROMETHEUS\}\"`)
+	result := re.ReplaceAll(dashboardV2Contents.Bytes(), []byte(``))
+
+	if out, err := sshc.Upload(bytes.NewReader(result), "/var/lib/grafana/dashboards/dashboard_v2.json", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard v2: output: %s, error: %w", out, err)
 	}
 
