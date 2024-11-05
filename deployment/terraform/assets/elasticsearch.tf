@@ -70,6 +70,13 @@ resource "aws_cloudwatch_log_group" "es_log_group" {
   name = "${var.cluster_name}-log-group"
 }
 
+data "aws_subnets" "selected" {
+  filter {
+    name   = "vpc-id"
+    values = [var.cluster_vpc_id]
+  }
+}
+
 resource "aws_opensearch_domain" "es_server" {
   tags = {
     Name = "${var.cluster_name}-es_server"
@@ -79,7 +86,7 @@ resource "aws_opensearch_domain" "es_server" {
   engine_version = var.es_version
 
   vpc_options {
-    subnet_ids         = (length(var.cluster_subnet_ids.elasticsearch) > 0) ? tolist(var.cluster_subnet_ids.elasticsearch) : null
+    subnet_ids         = (length(var.cluster_subnet_ids.elasticsearch) > 0) ? tolist(var.cluster_subnet_ids.elasticsearch) : [element(tolist(data.aws_subnets.selected.ids), 0)]
     security_group_ids = [aws_security_group.elastic[0].id]
   }
 
