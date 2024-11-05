@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -339,6 +340,28 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 	if out, err := sshc.Upload(bytes.NewReader(buf), "/etc/grafana/provisioning/dashboards/dashboard.yaml", true); err != nil {
 		return fmt.Errorf("error while uploading dashboard: output: %s, error: %w", out, err)
+	}
+
+	// Download dashboard v2 from and upload it
+	dashboardv2Resp, err := http.Get("https://grafana.com/api/dashboards/15582/revisions/latest/download")
+	if err != nil {
+		return fmt.Errorf("error downloading latest grafana v2 dashboard: %w", err)
+	}
+	defer dashboardv2Resp.Body.Close()
+
+	var dashboardV2Contents bytes.Buffer
+	_, err = io.Copy(&dashboardV2Contents, dashboardv2Resp.Body)
+	if err != nil {
+		return fmt.Errorf("error while reading dashboard v2: %w", err)
+	}
+
+	// Removes the DS_PROMETHEUS variable requirement to allow grafana to use the only prometheus
+	// datasource available
+	re := regexp.MustCompile(`,\r?\n\s+\"uid\":\s?\"\$\{DS_PROMETHEUS\}\"`)
+	result := re.ReplaceAll(dashboardV2Contents.Bytes(), []byte(``))
+
+	if out, err := sshc.Upload(bytes.NewReader(result), "/var/lib/grafana/dashboards/dashboard_v2.json", true); err != nil {
+		return fmt.Errorf("error while uploading dashboard v2: output: %s, error: %w", out, err)
 	}
 
 	// Upload dashboard json
