@@ -9,24 +9,8 @@
     "Type": "simulative",
     "RatesDistribution": [
       {
-        "Rate": 1,
-        "Percentage": 0.05
-      },
-      {
-        "Rate": 2,
-        "Percentage": 0.1
-      },
-      {
-        "Rate": 3,
-        "Percentage": 0.15
-      },
-      {
-        "Rate": 6,
-        "Percentage": 0.4
-      },
-      {
-        "Rate": 30,
-        "Percentage": 0.3
+        "Rate": 5.4,
+        "Percentage": 1
       }
     ]
   },
