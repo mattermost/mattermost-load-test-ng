@@ -48,18 +48,7 @@
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": true,
-    "DBParameters": [
-      {
-        "Name": "random_page_cost",
-        "Value": "1.1",
-        "ApplyMethod": "immediate"
-      },
-      {
-        "Name": "work_mem",
-        "Value": "32768",
-        "ApplyMethod": "immediate"
-      }
-    ],
+    "DBParameters": [],
     "ClusterIdentifier": ""
   },
   "ExternalDBSettings": {
