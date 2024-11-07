@@ -149,6 +149,22 @@ type UserStore interface {
 
 	// PerformanceReport returns a copy of underlying performance report
 	PerformanceReport() (*model.PerformanceReport, error)
+
+	// Channel Bookmarks
+	// ChannelBookmarks returns all bookmarks for the specified channel.
+	ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo
+
+	// SetChannelBookmarks stores the given bookmarks.
+	SetChannelBookmarks(bookmarks []*model.ChannelBookmarkWithFileInfo) error
+
+	// AddChannelBookmark stores the bookmark.
+	AddChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error
+
+	// UpdateChannelBookmark updates a given bookmark.
+	UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error
+
+	// DeleteChannelBookmark deletes a given bookmarkId.
+	DeleteChannelBookmark(bookmarkId string) error
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
