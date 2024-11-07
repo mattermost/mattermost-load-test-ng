@@ -119,7 +119,7 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// Match against proxy names
 	for _, inst := range output.Proxies {
 		if resource == inst.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PrivateIP)), nil
 		}
 	}
 

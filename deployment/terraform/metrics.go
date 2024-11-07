@@ -226,7 +226,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	cloudwatchTargets = append(cloudwatchTargets, "metrics:"+yacePort)
 
-	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PublicIP))
+	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PrivateIP))
 	yaceConfig, err := fillConfigTemplate(yaceConfigFile, map[string]any{
 		"ClusterName": t.output.ClusterName,
 		"Period":      yaceDurationSeconds,
@@ -258,7 +258,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
-	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PublicIP))
+	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PrivateIP))
 	cmd = "sudo systemctl restart yace"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
