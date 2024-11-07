@@ -50,6 +50,7 @@ type MemStore struct {
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
+	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -125,6 +126,8 @@ func (s *MemStore) Clear() {
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
 	clear(s.drafts)
 	s.drafts = map[string]map[string]*model.Draft{}
+	clear(s.channelBookmarks)
+	s.channelBookmarks = map[string]*model.ChannelBookmarkWithFileInfo{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1218,6 +1221,84 @@ func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
 		}
 		s.drafts[teamId][rootID] = d
 	}
+
+	return nil
+}
+
+// ChannelBookmarks returns all bookmarks for the specified channel.
+func (s *MemStore) ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var bookmarks []*model.ChannelBookmarkWithFileInfo
+	for _, b := range s.channelBookmarks {
+		if b.ChannelId == channelId {
+			bookmarks = append(bookmarks, b)
+		}
+	}
+	return bookmarks
+}
+
+// SetChannelBookmarks stores the given bookmarks.
+func (s *MemStore) SetChannelBookmarks(bookmarks []*model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for _, bookmark := range bookmarks {
+		if bookmark == nil {
+			return errors.New("memstore: bookmark should not be nil")
+		}
+		s.channelBookmarks[bookmark.Id] = bookmark
+	}
+
+	return nil
+}
+
+// AddChannelBookmark stores the bookmark.
+func (s *MemStore) AddChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	s.channelBookmarks[bookmark.Id] = bookmark
+	return nil
+}
+
+// UpdateChannelBookmark updates a given bookmark.
+func (s *MemStore) UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	if s.channelBookmarks[bookmark.Id] == nil {
+		return errors.New("memstore: bookmark not found")
+	}
+
+	s.channelBookmarks[bookmark.Id] = bookmark
+
+	return nil
+}
+
+// DeleteChannelBookmark deletes a given bookmark.
+func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmarkId == "" {
+		return errors.New("memstore: bookmarkId should not be empty")
+	}
+
+	if s.channelBookmarks[bookmarkId] == nil {
+		return errors.New("memstore: bookmark not found")
+	}
+
+	delete(s.channelBookmarks, bookmarkId)
 
 	return nil
 }

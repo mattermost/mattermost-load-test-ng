@@ -762,8 +762,8 @@ func TestPostsWithAckRequests(t *testing.T) {
 			Message: "ack post",
 			Metadata: &model.PostMetadata{
 				Priority: &model.PostPriority{
-					Priority:     model.NewString(model.PostPriorityUrgent),
-					RequestedAck: model.NewBool(true),
+					Priority:     model.NewPointer(model.PostPriorityUrgent),
+					RequestedAck: model.NewPointer(true),
 				},
 			},
 		}

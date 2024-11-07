@@ -541,6 +541,12 @@ func switchChannel(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if u.Store().FeatureFlags()["ChannelBookmarks"] {
+		if err := u.GetChannelBookmarks(channel.Id, 0); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
 	if u.Store().FeatureFlags()["WebSocketEventScope"] {
 		if err := u.UpdateActiveChannel(channel.Id); err != nil {
 			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
@@ -796,9 +802,9 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	if isUrgent {
 		post.Metadata = &model.PostMetadata{}
 		post.Metadata.Priority = &model.PostPriority{
-			Priority:                model.NewString("urgent"),
-			RequestedAck:            model.NewBool(false),
-			PersistentNotifications: model.NewBool(false),
+			Priority:                model.NewPointer("urgent"),
+			RequestedAck:            model.NewPointer(false),
+			PersistentNotifications: model.NewPointer(false),
 		}
 	}
 

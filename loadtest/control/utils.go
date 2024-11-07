@@ -165,10 +165,16 @@ func RandomEmoji() string {
 
 // AddLink appends a link to a string to test the LinkPreview feature.
 func AddLink(input string) string {
+	link := RandomLink()
+
+	return input + " " + link + " "
+}
+
+func RandomLink() string {
 	n := rand.Int() % len(links)
 	link := links[n]
 
-	return input + " " + link + " "
+	return link
 }
 
 // SelectWeighted does a random weighted selection on a given slice of weights.
@@ -265,7 +271,7 @@ func ParseServerVersion(versionString string) (semver.Version, error) {
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
 // all uploaded files to the post.
 func AttachFilesToPost(u user.User, post *model.Post) error {
-	fileIDs, err := _attachFilesToObj(u, post.ChannelId)
+	fileIDs, err := _attachFilesToObj(u, post.ChannelId, 4)
 	if err != nil {
 		return err
 	}
@@ -276,7 +282,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 // AttachFilesToDraft uploads at least one file on behalf of the user, attaching
 // all uploaded files to the draft.
 func AttachFilesToDraft(u user.User, draft *model.Draft) error {
-	fileIDs, err := _attachFilesToObj(u, draft.ChannelId)
+	fileIDs, err := _attachFilesToObj(u, draft.ChannelId, 4)
 	if err != nil {
 		return err
 	}
@@ -284,7 +290,17 @@ func AttachFilesToDraft(u user.User, draft *model.Draft) error {
 	return nil
 }
 
-func _attachFilesToObj(u user.User, channelID string) ([]string, error) {
+func AttachFileToBookmark(u user.User, bookmark *model.ChannelBookmark) error {
+	fileIDs, err := _attachFilesToObj(u, bookmark.ChannelId, 1)
+	if err != nil {
+		return err
+	}
+
+	bookmark.FileId = fileIDs[0]
+	return nil
+}
+
+func _attachFilesToObj(u user.User, channelID string, maxToUpload int) ([]string, error) {
 	type file struct {
 		data   []byte
 		upload bool
@@ -292,15 +308,34 @@ func _attachFilesToObj(u user.User, channelID string) ([]string, error) {
 	filenames := []string{"test_upload.png", "test_upload.jpg", "test_upload.mp4", "test_upload.txt"}
 	files := make(map[string]*file, len(filenames))
 
+	// Randomly select how many files to upload, but ensure at least 1.
+	countToUpload := rand.Intn(maxToUpload)
+	if countToUpload < 1 {
+		countToUpload = 1
+	}
+
+	count := 0
+
 	for _, filename := range filenames {
+		upload := rand.Intn(2) == 0
+		if upload {
+			count += 1
+		}
+
 		files[filename] = &file{
 			data:   MustAsset(filename),
-			upload: rand.Intn(2) == 0,
+			upload: upload,
+		}
+
+		if count == countToUpload {
+			break
 		}
 	}
 
 	// We make sure at least one file gets uploaded.
-	files[filenames[rand.Intn(len(filenames))]].upload = true
+	if count == 0 {
+		files[filenames[rand.Intn(len(filenames))]].upload = true
+	}
 
 	var wg sync.WaitGroup
 	fileIdsChan := make(chan string, len(files))
