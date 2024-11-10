@@ -90,6 +90,11 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("could not parse output: %w", err)
 		}
+
+		if !output.HasMetrics() {
+			return fmt.Errorf("the output has no metrics, no active deployment found")
+		}
+
 		promURL = "http://" + output.MetricsServer.PublicIP + ":9090"
 	}
 

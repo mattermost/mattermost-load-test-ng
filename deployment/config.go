@@ -246,7 +246,7 @@ type TerraformDBSettings struct {
 // and provisioned.
 type ExternalDBSettings struct {
 	// Mattermost database driver
-	DriverName string `default:"" validate:"oneof:{mysql, postgres, cockroach}"`
+	DriverName string `default:"postgres" validate:"oneof:{mysql, postgres, cockroach}"`
 	// DSN to connect to the database
 	DataSource string `default:""`
 	// DSN to connect to the database replicas
