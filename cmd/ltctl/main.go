@@ -429,6 +429,8 @@ func main() {
 		PersistentPostRun: func(_ *cobra.Command, _ []string) { os.Unsetenv("MM_SERVICEENVIRONMENT") },
 	}
 	comparisonCmd.Flags().StringP("comparison-config", "", "", "path to the comparison config file to use")
+	comparisonCmd.Flags().StringP("loadtest-config", "", "", "path to the loadtest config file to use")
+	comparisonCmd.Flags().StringP("coordinator-config", "", "", "path to the coordinator config file to use")
 	runComparisonCmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run fully automated load-test comparisons",
