@@ -13,7 +13,7 @@ do
         echo "Attempt ${n}"
         sudo apt-get -y update && \
         sudo apt-get install -y prometheus-node-exporter && \
-        sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
+        sudo apt-get install -y numactl linux-tools-aws && \
         # Install OpenTelemetry collector, using ubuntu user to avoid permission issues
         wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_linux_amd64.deb && \
         sudo dpkg -i otelcol-contrib_0.110.0_linux_amd64.deb && \

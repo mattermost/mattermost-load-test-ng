@@ -19,7 +19,7 @@ do
       sudo apt-get install -y mysql-client-8.0 && \
       sudo apt-get install -y postgresql-client-14 && \
       sudo apt-get install -y prometheus-node-exporter && \
-      sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
+      sudo apt-get install -y numactl linux-tools-aws && \
       wget https://github.com/streamer45/netpeek/releases/download/v0.1.4/netpeek-v0.1.4 && \
       sudo mv netpeek-v* /usr/local/bin/netpeek && sudo chmod +x /usr/local/bin/netpeek && \
       # Install OpenTelemetry collector, using ubuntu user to avoid permission issues
