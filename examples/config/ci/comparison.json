@@ -12,8 +12,8 @@
       "Type": "bounded",
       "DBEngine": "postgresql",
       "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/111K_710_psql.sql.gz",
-      "NumUsers": 3500,
-      "Duration": "8m"
+      "NumUsers": 4000,
+      "Duration": "30m"
     }
   ],
   "Output": {
