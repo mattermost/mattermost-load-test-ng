@@ -326,6 +326,10 @@ type User interface {
 	GetInitialDataGQL() error
 	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
 
+	// Client Metrics
+	ObserveClientMetric(t model.MetricType, v float64) error
+	SubmitPerformanceReport() error
+
 	// GetChannelBookmarks fetches bookmarks for the given channel since a specific timestamp.
 	GetChannelBookmarks(channelId string, since int64) error
 

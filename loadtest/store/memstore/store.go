@@ -50,6 +50,7 @@ type MemStore struct {
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
+	report              *model.PerformanceReport
 	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
 }
 
@@ -124,6 +125,7 @@ func (s *MemStore) Clear() {
 	s.threadsQueue.Reset()
 	clear(s.sidebarCategories)
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
+	s.report = &model.PerformanceReport{}
 	clear(s.drafts)
 	s.drafts = map[string]map[string]*model.Draft{}
 	clear(s.channelBookmarks)
@@ -1187,6 +1189,61 @@ func (s *MemStore) PostsWithAckRequests() ([]string, error) {
 	}
 
 	return ids, nil
+}
+
+func (s *MemStore) SetPerformanceReport(report *model.PerformanceReport) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.report = report
+}
+
+func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.report == nil {
+		return nil, nil
+	}
+
+	report := &model.PerformanceReport{
+		Version:  s.report.Version,
+		ClientID: s.report.ClientID,
+		Start:    s.report.Start,
+		End:      s.report.End,
+	}
+
+	if s.report.Labels != nil {
+		report.Labels = make(map[string]string)
+	}
+	for k, v := range s.report.Labels {
+		report.Labels[k] = v
+	}
+
+	if s.report.Histograms != nil {
+		report.Histograms = make([]*model.MetricSample, len(s.report.Histograms))
+	}
+	for i, h := range s.report.Histograms {
+		report.Histograms[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	if s.report.Counters != nil {
+		report.Counters = make([]*model.MetricSample, len(s.report.Counters))
+	}
+	for i, h := range s.report.Counters {
+		report.Counters[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	return report, nil
 }
 
 // SetDraft stores the draft for the given teamId, and channelId or rootId.
