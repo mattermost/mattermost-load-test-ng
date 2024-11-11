@@ -19,7 +19,7 @@ do
       sudo apt-get -y update && \
       sudo apt-get install -y nginx && \
       sudo apt-get install -y prometheus-node-exporter && \
-      sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
+      sudo apt-get install -y numactl linux-tools-aws && \
       sudo systemctl daemon-reload && \
       sudo systemctl enable nginx && \
       sudo mkdir -p /etc/nginx/snippets && \
