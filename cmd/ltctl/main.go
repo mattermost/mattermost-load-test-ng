@@ -192,7 +192,7 @@ func getCoordinatorConfig(cmd *cobra.Command) (*coordinator.Config, error) {
 }
 
 func getLoadtestConfig(cmd *cobra.Command) (*loadtest.Config, error) {
-	filePath, _ := cmd.Flags().GetString("coordinator-config")
+	filePath, _ := cmd.Flags().GetString("loadtest-config")
 	cfg, err := loadtest.ReadConfig(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read loadtest config: %w", err)
