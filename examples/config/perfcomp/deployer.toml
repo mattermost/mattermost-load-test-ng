@@ -1,0 +1,165 @@
+# AWS Configuration
+AWSAMI = 'ami-003d3d03cfe1b0468'
+AWSProfile = 'mm-loadtest'
+AWSRegion = 'us-east-1'
+AWSAvailabilityZone = ''
+
+# Mattermost configuration
+AdminEmail = 'sysadmin@sample.mattermost.com'
+AdminUsername = 'sysadmin'
+AdminPassword = 'Sys@dmin-sample1'
+MattermostConfigPatchFile = ''
+MattermostDownloadURL = 'https://latest.mattermost.com/mattermost-enterprise-linux'
+MattermostLicenseFile = '' #TBD
+S3BucketDumpURI = ''
+SiteURL = ''
+EnableNetPeekMetrics = false
+
+# Agent configuration
+AgentInstanceCount = 10
+AgentInstanceType = 'c7i.xlarge'
+EnableAgentFullLogs = true
+
+# App servers configuration
+AppInstanceCount = 2
+AppInstanceType = 'c7i.2xlarge'
+AppAttachIAMProfile = ''
+
+# Metrics instance configuration
+MetricsInstanceType = 't3.xlarge'
+
+# Cluster configuration
+ClusterName = '' #TBD
+ClusterVpcID = ''
+
+# Database configuration
+DBDumpURI = ''
+
+# Load test configuration
+LoadTestDownloadURL = 'https://github.com/mattermost/mattermost-load-test-ng/releases/download/<TBD>/mattermost-load-test-ng-<TBD>-linux-amd64.tar.gz' #TBD
+SSHPublicKey = '~/.ssh/id_ed25519.pub'
+TerraformStateDir = '' #TBD
+
+# Proxy server configuration
+ProxyInstanceType = 'c7i.xlarge'
+ProxyInstanceCount = 1
+
+[ClusterSubnetIDs]
+# App = []
+# Job = []
+# Proxy = []
+# Agent = []
+# ElasticSearch = []
+# Metrics = []
+# Keycloak = []
+# Database = []
+# Redis = []
+
+[ElasticSearchSettings]
+# InstanceCount = 0
+# InstanceType = 'r6g.large.search'
+# VpcID = ''
+# CreateRole = false
+# Version = 'Elasticsearch_7.10'
+# ZoneAwarenessEnabled = false
+# ZoneAwarenessAZCount = 2
+
+[ExternalBucketSettings]
+# AmazonS3AccessKeyId = ''
+# AmazonS3Bucket = ''
+# AmazonS3Endpoint = 's3.amazonaws.com'
+# AmazonS3PathPrefix = ''
+# AmazonS3Region = 'us-east-1'
+# AmazonS3SSE = false
+# AmazonS3SSL = true
+# AmazonS3SecretAccessKey = ''
+# AmazonS3SignV2 = false
+
+[ExternalDBSettings]
+# DataSource = ''
+# DataSourceReplicas = []
+# DataSourceSearchReplicas = []
+# DriverName = 'cockroach'
+
+[JobServerSettings]
+# InstanceCount = 0
+# InstanceType = 'c5.xlarge'
+
+[LogSettings]
+EnableConsole = true
+ConsoleLevel = 'DEBUG'
+ConsoleJson = false
+EnableFile = true
+FileLevel = 'DEBUG'
+FileJson = true
+FileLocation = 'deployer.log'
+EnableColor = true
+
+[PyroscopeSettings]
+EnableAgentProfiling = true
+EnableAppProfiling = true
+BlockProfileRate = 0
+
+[Report]
+Label = '{instance=~"app.*"}'
+
+    [[Report.GraphQueries]]
+    Name = 'CPU Utilization'
+    Query = 'avg(rate(mattermost_process_cpu_seconds_total{instance=~"app.*"}[1m])* 100)'
+
+    [[Report.GraphQueries]]
+    Name = 'Heap In Use'
+    Query = 'avg(go_memstats_heap_inuse_bytes{instance=~"app.*:8067"})'
+
+    [[Report.GraphQueries]]
+    Name = 'Stack In Use'
+    Query = 'avg(go_memstats_stack_inuse_bytes{instance=~"app.*:8067"})'
+
+    [[Report.GraphQueries]]
+    Name = 'Goroutines In Use'
+    Query = 'sum(go_goroutines{instance=~"app.*:8067"})'
+
+    [[Report.GraphQueries]]
+    Name = 'RPS'
+    Query = 'sum(rate(mattermost_http_requests_total{instance=~"app.*:8067"}[1m]))'
+
+    [[Report.GraphQueries]]
+    Name = 'Avg Store times'
+    Query = 'sum(rate(mattermost_db_store_time_sum{instance=~"app.*:8067"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~"app.*:8067"}[1m]))'
+
+    [[Report.GraphQueries]]
+    Name = 'P99 Store times'
+    Query = 'histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))'
+
+    [[Report.GraphQueries]]
+    Name = 'Avg API times'
+    Query = 'sum(rate(mattermost_api_time_sum[1m])) / sum(rate(mattermost_api_time_count[1m]))'
+
+    [[Report.GraphQueries]]
+    Name = 'P99 API times'
+    Query = 'histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))'
+
+    [[Report.GraphQueries]]
+    Name = 'Number of Connected Devices'
+    Query = 'sum(mattermost_http_websockets_total{instance=~"app.*:8067"})'
+
+[StorageSizes]
+Agent = 10
+App = 10
+ElasticSearch = 20
+Job = 50
+Metrics = 50
+Proxy = 10
+
+[TerraformDBSettings]
+InstanceCount = 2
+InstanceEngine = 'aurora-postgresql'
+InstanceType = 'db.r7g.xlarge'
+UserName = 'mmuser'
+Password = 'mostest80098bigpass_'
+EnablePerformanceInsights = true
+ClusterIdentifier = ''
+DBParameters = []
+
+[CustomTags]
+Origin = 'release-testing'

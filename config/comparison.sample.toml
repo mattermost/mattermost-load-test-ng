@@ -1,0 +1,32 @@
+[BaseBuild]
+Label = 'master'
+URL = 'file://master.tar.gz'
+
+[NewBuild]
+Label = 'release'
+URL = 'file://release.tar.gz'
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'mysql'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'mysql'
+NumUsers = 1000
+Duration = '1h'
+
+[[LoadTests]]
+Type = 'unbounded'
+DBEngine = 'postgresql'
+
+[[LoadTests]]
+Type = 'bounded'
+DBEngine = 'postgresql'
+NumUsers = 1000
+Duration = '1h'
+
+[Output]
+UploadDashboard = true
+GenerateGraphs = false
+GenerateReport = true
