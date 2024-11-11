@@ -25,7 +25,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 
 	if promURL == "" {
 		fmt.Printf("Flag --prometheus-url is not set. Defaulting to the deployment's Prometheus server...")
-		config, err := getConfig(cmd)
+		config, err := getDeployerConfig(cmd)
 		if err != nil {
 			return err
 		}

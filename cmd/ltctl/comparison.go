@@ -110,18 +110,28 @@ func writeReports(results []comparison.Result, outPath string) error {
 }
 
 func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
-	deployerConfig, err := getConfig(cmd)
+	deployerConfig, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
 
-	configFilePath, _ := cmd.Flags().GetString("comparison-config")
-	cfg, err := comparison.ReadConfig(configFilePath)
+	coordConfig, err := getCoordinatorConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	ltConfig, err := getLoadtestConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	comparisonConfigFilePath, _ := cmd.Flags().GetString("comparison-config")
+	comparisonCfg, err := comparison.ReadConfig(comparisonConfigFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	if cfg.Output.GenerateGraphs {
+	if comparisonCfg.Output.GenerateGraphs {
 		if _, err := exec.LookPath("gnuplot"); err != nil {
 			return fmt.Errorf("gnuplot is not installed. The comparison command with generate graph option requires it to be installed: %w", err)
 		}
@@ -129,7 +139,7 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 
 	outputPath, _ := cmd.Flags().GetString("output-dir")
 	if outputPath != "" {
-		cfg.Output.GraphsPath = outputPath
+		comparisonCfg.Output.GraphsPath = outputPath
 	}
 
 	archivePath := outputPath
@@ -140,11 +150,11 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create temp dir: %w", err)
 		}
 		defer os.RemoveAll(dir)
-		cfg.Output.GraphsPath = dir
+		comparisonCfg.Output.GraphsPath = dir
 		outputPath = dir
 	}
 
-	cmp, err := comparison.New(cfg, &deployerConfig)
+	cmp, err := comparison.New(comparisonCfg, &deployerConfig, coordConfig, ltConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
@@ -196,7 +206,17 @@ func RunComparisonCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
-	deployerConfig, err := getConfig(cmd)
+	deployerConfig, err := getDeployerConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	coordConfig, err := getCoordinatorConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	ltConfig, err := getLoadtestConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -207,7 +227,7 @@ func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	cmp, err := comparison.New(cfg, &deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig, coordConfig, ltConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
@@ -223,7 +243,17 @@ func CollectComparisonCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
-	deployerConfig, err := getConfig(cmd)
+	deployerConfig, err := getDeployerConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	coordConfig, err := getCoordinatorConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	ltConfig, err := getLoadtestConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -234,7 +264,7 @@ func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
-	cmp, err := comparison.New(cfg, &deployerConfig)
+	cmp, err := comparison.New(cfg, &deployerConfig, coordConfig, ltConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}

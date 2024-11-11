@@ -22,6 +22,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -100,7 +101,7 @@ func ensureTerraformStateDir(dir string) error {
 }
 
 // Create creates a new load test environment.
-func (t *Terraform) Create(initData bool) error {
+func (t *Terraform) Create(initData bool, ltConfig *loadtest.Config) error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -347,7 +348,7 @@ func (t *Terraform) Create(initData bool) error {
 		}
 	}
 
-	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
+	if err := t.setupLoadtestAgents(extAgent, initData, ltConfig); err != nil {
 		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
@@ -504,7 +505,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	return nil
 }
 
-func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) error {
+func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool, ltConfig *loadtest.Config) error {
 	if err := t.configureAndRunAgents(extAgent); err != nil {
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
@@ -513,7 +514,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 		return nil
 	}
 
-	if err := t.initLoadtest(extAgent, initData); err != nil {
+	if err := t.initLoadtest(extAgent, initData, ltConfig); err != nil {
 		return err
 	}
 

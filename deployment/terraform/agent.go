@@ -20,10 +20,14 @@ import (
 
 const dstUsersFilePath = "/home/ubuntu/users.txt"
 
-func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
-	cfg, err := loadtest.ReadConfig("")
-	if err != nil {
-		return nil, err
+func (t *Terraform) generateLoadtestAgentConfig(baseCfg *loadtest.Config) (*loadtest.Config, error) {
+	cfg := baseCfg
+	if baseCfg == nil {
+		var err error
+		cfg, err = loadtest.ReadConfig("")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	url := getServerURL(t.output, t.config)
@@ -207,7 +211,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	return nil
 }
 
-func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
+func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool, ltConfig *loadtest.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agents to initialize load-test")
 	}
@@ -217,7 +221,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 		return err
 	}
 	mlog.Info("Generating load-test config")
-	cfg, err := t.generateLoadtestAgentConfig()
+	cfg, err := t.generateLoadtestAgentConfig(ltConfig)
 	if err != nil {
 		return err
 	}

@@ -8,9 +8,11 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -24,19 +26,23 @@ type deploymentConfig struct {
 // load-test comparisons.
 type Comparison struct {
 	config         *Config
+	coordConfig    *coordinator.Config
+	ltConfig       *loadtest.Config
 	deploymentInfo DeploymentInfo
 	deployments    map[string]*deploymentConfig
 }
 
 // New creates and initializes a new Comparison object to be used to run
 // automated load-test comparisons. It returns an error in case of failure.
-func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
+func New(cfg *Config, deployerCfg *deployment.Config, coordConfig *coordinator.Config, ltConfig *loadtest.Config) (*Comparison, error) {
 	if err := defaults.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	cmp := &Comparison{
 		config:         cfg,
+		coordConfig:    coordConfig,
+		ltConfig:       ltConfig,
 		deploymentInfo: getDeploymentInfo(deployerCfg),
 		deployments:    map[string]*deploymentConfig{},
 	}
@@ -69,7 +75,7 @@ func (c *Comparison) Run() (Output, error) {
 	var output Output
 	// create deployments
 	err := c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
-		if err := t.Create(false); err != nil {
+		if err := t.Create(false, c.ltConfig); err != nil {
 			return err
 		}
 		return provisionFiles(t, dpConfig, c.config.BaseBuild.URL, c.config.NewBuild.URL)
@@ -107,7 +113,7 @@ func (c *Comparison) Run() (Output, error) {
 					}
 					mlog.Debug("load-test init done")
 
-					status, err := runLoadTest(t, lt)
+					status, err := runLoadTest(t, lt, c.coordConfig, c.ltConfig)
 					if err != nil {
 						res.LoadTests[i] = LoadTestResult{Failed: true}
 						errsCh <- err

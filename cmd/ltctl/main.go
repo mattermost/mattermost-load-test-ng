@@ -8,9 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"github.com/mattermost/mattermost/server/public/model"
 
@@ -18,7 +20,7 @@ import (
 )
 
 func RunCreateCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -29,7 +31,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	initData := config.DBDumpURI == ""
-	err = t.Create(initData)
+	err = t.Create(initData, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform env: %w", err)
 	}
@@ -38,7 +40,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,7 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunInfoCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -66,7 +68,7 @@ func RunInfoCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunSyncCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func RunSyncCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunStopDBCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -94,7 +96,7 @@ func RunStopDBCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunStartDBCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -108,7 +110,7 @@ func RunStartDBCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -129,7 +131,7 @@ func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -160,7 +162,7 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getConfig(cmd *cobra.Command) (deployment.Config, error) {
+func getDeployerConfig(cmd *cobra.Command) (deployment.Config, error) {
 	configFilePath, _ := cmd.Flags().GetString("config")
 	cfg, err := deployment.ReadConfig(configFilePath)
 	if err != nil {
@@ -173,6 +175,34 @@ func getConfig(cmd *cobra.Command) (deployment.Config, error) {
 
 	logger.Init(&cfg.LogSettings)
 	return *cfg, nil
+}
+
+func getCoordinatorConfig(cmd *cobra.Command) (*coordinator.Config, error) {
+	filePath, _ := cmd.Flags().GetString("coordinator-config")
+	cfg, err := coordinator.ReadConfig(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read coordinator config: %w", err)
+	}
+
+	if err := defaults.Validate(cfg); err != nil {
+		return nil, fmt.Errorf("failed to validate coordinator config: %w", err)
+	}
+
+	return cfg, nil
+}
+
+func getLoadtestConfig(cmd *cobra.Command) (*loadtest.Config, error) {
+	filePath, _ := cmd.Flags().GetString("coordinator-config")
+	cfg, err := loadtest.ReadConfig(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read loadtest config: %w", err)
+	}
+
+	if err := defaults.Validate(cfg); err != nil {
+		return nil, fmt.Errorf("failed to validate loadtest config: %w", err)
+	}
+
+	return cfg, nil
 }
 
 func setServiceEnv(cmd *cobra.Command) {
@@ -296,7 +326,7 @@ func main() {
 				return RunSSHListCmdF(cmd, args)
 			}
 
-			config, err := getConfig(cmd)
+			config, err := getDeployerConfig(cmd)
 			if err != nil {
 				return err
 			}
@@ -338,7 +368,7 @@ func main() {
 				return nil
 			}
 
-			config, err := getConfig(cmd)
+			config, err := getDeployerConfig(cmd)
 			if err != nil {
 				return err
 			}

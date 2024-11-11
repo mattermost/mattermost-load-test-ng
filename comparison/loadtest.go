@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -32,11 +33,11 @@ func (c *Comparison) getLoadTestsCount() int {
 	return count
 }
 
-func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, d time.Duration) (coordinator.Status, error) {
+func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, ltConfig *loadtest.Config, d time.Duration) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 	mlog.Info("starting bounded load-test")
-	if err := t.StartCoordinator(coordConfig); err != nil {
+	if err := t.StartCoordinator(coordConfig, ltConfig); err != nil {
 		return status, err
 	}
 
@@ -54,12 +55,12 @@ func runBoundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config,
 	return status, nil
 }
 
-func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config) (coordinator.Status, error) {
+func runUnboundedLoadTest(t *terraform.Terraform, coordConfig *coordinator.Config, ltConfig *loadtest.Config) (coordinator.Status, error) {
 	var err error
 	var status coordinator.Status
 
 	mlog.Info("starting unbounded load-test")
-	if err := t.StartCoordinator(coordConfig); err != nil {
+	if err := t.StartCoordinator(coordConfig, ltConfig); err != nil {
 		return status, err
 	}
 
@@ -332,13 +333,8 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	return <-resetBucketErrCh
 }
 
-func runLoadTest(t *terraform.Terraform, lt LoadTestConfig) (coordinator.Status, error) {
+func runLoadTest(t *terraform.Terraform, lt LoadTestConfig, coordConfig *coordinator.Config, ltConfig *loadtest.Config) (coordinator.Status, error) {
 	var status coordinator.Status
-	coordConfig, err := coordinator.ReadConfig("")
-	if err != nil {
-		return status, err
-	}
-
 	switch lt.Type {
 	case LoadTestTypeBounded:
 		coordConfig.ClusterConfig.MaxActiveUsers = lt.NumUsers
@@ -352,10 +348,10 @@ func runLoadTest(t *terraform.Terraform, lt LoadTestConfig) (coordinator.Status,
 		if parseErr != nil {
 			return status, parseErr
 		}
-		return runBoundedLoadTest(t, coordConfig, duration)
+		return runBoundedLoadTest(t, coordConfig, ltConfig, duration)
 	case LoadTestTypeUnbounded:
 		// TODO: cleverly set MaxActiveUsers to (numAgents * UsersConfiguration.MaxActiveUsers)
-		return runUnboundedLoadTest(t, coordConfig)
+		return runUnboundedLoadTest(t, coordConfig, ltConfig)
 	}
 
 	return status, fmt.Errorf("unimplemented LoadTestType %s", lt.Type)

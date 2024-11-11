@@ -20,7 +20,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		return errors.New("ssh agent not running. Please run eval \"$(ssh-agent -s)\" and then ssh-add")
 	}
 
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}

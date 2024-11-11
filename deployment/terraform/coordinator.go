@@ -18,7 +18,7 @@ import (
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
-func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
+func (t *Terraform) StartCoordinator(config *coordinator.Config, ltConfig *loadtest.Config) error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -74,14 +74,9 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 
 	mlog.Info("Uploading other load-test config files")
 
-	var agentConfig *loadtest.Config
-	if len(t.output.Instances) > 0 {
-		agentConfig, err = t.generateLoadtestAgentConfig()
-	} else {
-		agentConfig, err = loadtest.ReadConfig("")
-	}
+	agentConfig, err := t.generateLoadtestAgentConfig(ltConfig)
 	if err != nil {
-		return fmt.Errorf("failed to read config: %w", err)
+		return err
 	}
 
 	simulConfig, err := simulcontroller.ReadConfig("")

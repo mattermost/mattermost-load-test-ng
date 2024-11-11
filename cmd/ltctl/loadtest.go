@@ -64,7 +64,7 @@ func getErrorsInfo(helper *prometheus.Helper, startTime time.Time) (map[string]i
 }
 
 func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -112,10 +112,10 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 
 	// We simply return in async mode, which is the default.
 	if !isSync {
-		return t.StartCoordinator(nil)
+		return t.StartCoordinator(nil, nil)
 	}
 
-	err = t.StartCoordinator(nil)
+	err = t.StartCoordinator(nil, nil)
 	if err != nil {
 		return fmt.Errorf("error in starting coordinator: %w", err)
 	}
@@ -145,7 +145,7 @@ func RunLoadTestStartCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunLoadTestStopCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func printCoordinatorStatus(status coordinator.Status, errInfo map[string]int64,
 }
 
 func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func RunLoadTestStatusCmdF(cmd *cobra.Command, args []string) error {
 }
 
 func RunInjectActionCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
+	config, err := getDeployerConfig(cmd)
 	if err != nil {
 		return err
 	}
