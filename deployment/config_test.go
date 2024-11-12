@@ -238,6 +238,9 @@ func TestClusterSubnetIDs(t *testing.T) {
 
 		require.NotNil(t, cfg.ClusterSubnetIDs.Redis)
 		require.Len(t, cfg.ClusterSubnetIDs.Redis, 0)
+
+		require.NotNil(t, cfg.TerraformStateDir)
+		require.Equal(t, "./ltstate", cfg.TerraformStateDir)
 	})
 
 	t.Run("String() of default values", func(t *testing.T) {
