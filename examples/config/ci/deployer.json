@@ -7,7 +7,7 @@
   "ClusterVpcID": "",
   "ClusterSubnetID": "",
   "AppInstanceCount": 2,
-  "AppInstanceType": "c7i.xlarge",
+  "AppInstanceType": "c7i.large",
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
