@@ -47,9 +47,11 @@ func (ue *UserEntity) SignUp(email, username, password string) error {
 			return fmt.Errorf("error while signing up using %s: %w", ue.config.AuthenticationType, err)
 		}
 
-		newUser, _, err = ue.client.GetUserByUsername(context.Background(), username, "")
+		newUser, _, err = ue.client.GetUserByEmail(context.Background(), email, "")
+		// newUser, _, err = ue.client.GetUserByUsername(context.Background(), username, "")
 		if err != nil {
-			return fmt.Errorf("error while getting user by username: %w", err)
+			// return fmt.Errorf("error while getting user by username: %w", err)
+			return fmt.Errorf("error while getting user by email: %w", err)
 		}
 
 	default:
@@ -194,9 +196,11 @@ func (ue *UserEntity) Login() error {
 			return fmt.Errorf("error while logging in using %s: %w", ue.config.AuthenticationType, err)
 		}
 
-		loggedUser, _, err = ue.client.GetUserByUsername(context.Background(), user.Username, "")
+		loggedUser, _, err = ue.client.GetUserByEmail(context.Background(), user.Email, "")
+		// loggedUser, _, err = ue.client.GetUserByUsername(context.Background(), user.Username, "")
 		if err != nil {
-			return fmt.Errorf("error while getting user by username through %s: %w", ue.config.AuthenticationType, err)
+			// return fmt.Errorf("error while getting user by username through %s: %w", ue.config.AuthenticationType, err)
+			return fmt.Errorf("error while getting user by email through %s: %w", ue.config.AuthenticationType, err)
 		}
 	default:
 		loggedUser, _, err = ue.client.Login(context.Background(), user.Email, user.Password)
