@@ -494,8 +494,9 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 		password := split[1]
 		// Quick and dirty hack to extract username from email.
 		// This is not terribly important to be correct.
-		username := strings.Split(email, "@")[0]
-		username = strings.Replace(username, "+", "-", -1)
+		// username := strings.Split(email, "@")[0]
+		// username = strings.Replace(username, "+", "-", -1)
+		username := email
 		authService := userentity.AuthenticationTypeMattermost
 
 		// Check if the user has a custom authentication type. Custom authentication types are
