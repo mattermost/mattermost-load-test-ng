@@ -1044,7 +1044,7 @@ func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
 		return false, UserActionResponse{Err: NewUserError(err)}
 	}
 
-	fmt.Println("Scheduled posts is enabled or not: ", allow)
+	return allow, UserActionResponse{}
 }
 
 // MessageExport simulates the given user performing
