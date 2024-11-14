@@ -83,20 +83,7 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 }
 
 func ensureTerraformStateDir(dir string) error {
-	// Make sure that the state directory exists
-	_, err := os.Stat(dir)
-	if err == nil {
-		return nil
-	}
-
-	// Return any error different than the one showing
-	// that the directory does not exist
-	if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-
-	// If it does not exist, create it
-	return os.Mkdir(dir, 0700)
+	return os.MkdirAll(dir, 0700)
 }
 
 // Create creates a new load test environment.
