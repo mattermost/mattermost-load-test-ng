@@ -84,8 +84,6 @@ func (ue *UserEntity) DeleteScheduledPost(scheduledPostId string) error {
 }
 
 func (ue *UserEntity) GetTeamScheduledPosts(teamID string) error {
-	fmt.Println("GetTeamScheduledPosts: start")
-
 	scheduledPostsByTeam, _, err := ue.client.GetUserScheduledPosts(context.Background(), teamID, true)
 	if err != nil {
 		fmt.Println("GetTeamScheduledPosts: GetUserScheduledPosts error", err)
@@ -102,6 +100,5 @@ func (ue *UserEntity) GetTeamScheduledPosts(teamID string) error {
 		}
 	}
 
-	fmt.Println("GetTeamScheduledPosts: end")
 	return nil
 }
