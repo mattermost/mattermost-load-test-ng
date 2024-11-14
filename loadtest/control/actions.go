@@ -1032,6 +1032,11 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
+	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
+	return allow, UserActionResponse{}
+}
+
 func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
 	allow, err := strconv.ParseBool(u.Store().ClientConfig()["ScheduledPosts"])
 	if err != nil {
@@ -1040,7 +1045,6 @@ func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
 	}
 
 	fmt.Println("Scheduled posts is enabled or not: ", allow)
-	return allow, UserActionResponse{}
 }
 
 // MessageExport simulates the given user performing

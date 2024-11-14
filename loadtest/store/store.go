@@ -147,6 +147,25 @@ type UserStore interface {
 	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
 	PostsWithAckRequests() ([]string, error)
 
+	// PerformanceReport returns a copy of underlying performance report
+	PerformanceReport() (*model.PerformanceReport, error)
+
+	// Channel Bookmarks
+	// ChannelBookmarks returns all bookmarks for the specified channel.
+	ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo
+
+	// SetChannelBookmarks stores the given bookmarks.
+	SetChannelBookmarks(bookmarks []*model.ChannelBookmarkWithFileInfo) error
+
+	// AddChannelBookmark stores the bookmark.
+	AddChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error
+
+	// UpdateChannelBookmark updates a given bookmark.
+	UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error
+
+	// DeleteChannelBookmark deletes a given bookmarkId.
+	DeleteChannelBookmark(bookmarkId string) error
+
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
 	DeleteScheduledPost(scheduledPostID string)
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
@@ -268,4 +287,7 @@ type MutableUserStore interface {
 
 	// SidebarCategories
 	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error
+
+	// ClientPerformance
+	SetPerformanceReport(report *model.PerformanceReport)
 }

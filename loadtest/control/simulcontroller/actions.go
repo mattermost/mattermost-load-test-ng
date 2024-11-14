@@ -68,6 +68,8 @@ func (c *SimulController) disconnect() error {
 }
 
 func (c *SimulController) reload(full bool) control.UserActionResponse {
+	start := time.Now()
+
 	if full {
 		if err := c.disconnect(); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -80,6 +82,14 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 			return resp
 		}
 	}
+
+	defer func() {
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientPageLoadDuration, elapsed)
+		if err != nil {
+			mlog.Warn("Failed to store observation", mlog.Err(err))
+		}
+	}()
 
 	// A full reload always calls GET /api/v4/users?page=0&per_page=100,
 	// regardless of GraphQL enabled or not
@@ -140,11 +150,17 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 }
 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
+	start := time.Now()
 	for {
 		resp := control.Login(u)
 		if resp.Err == nil {
 			err := c.connect()
 			if err == nil {
+				elapsed := time.Since(start).Seconds()
+				err := c.user.ObserveClientMetric(model.ClientTimeToFirstByte, elapsed)
+				if err != nil {
+					mlog.Warn("Failed to store observation", mlog.Err(err))
+				}
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
@@ -285,12 +301,20 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 }
 
 func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
+	start := time.Now()
 	team, err := u.Store().RandomTeam(store.SelectMemberOf | store.SelectNotCurrent)
 	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
 		return control.UserActionResponse{Info: "no other team to switch to"}
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+	defer func() {
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientTeamSwitchDuration, elapsed)
+		if err != nil {
+			mlog.Warn("Failed to store observation", mlog.Err(err))
+		}
+	}()
 
 	c.status <- c.newInfoStatus(fmt.Sprintf("switched to team %s", team.Id))
 
@@ -439,6 +463,7 @@ func fetchPostsInfo(u user.User, postsIds []string) error {
 }
 
 func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse {
+	start := time.Now()
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
 	if resp.Err != nil {
 		return resp
@@ -482,6 +507,13 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	// frequencies are also calculated that way.
 	// This is a good enough approximation.
 	if rand.Float64() < 0.01 {
+		defer func() {
+			elapsed := time.Since(start).Seconds()
+			err := u.ObserveClientMetric(model.ClientRHSLoadDuration, elapsed)
+			if err != nil {
+				mlog.Warn("Failed to store observation", mlog.Err(err))
+			}
+		}()
 		excludeFileCount = false
 	}
 
@@ -525,6 +557,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 }
 
 func switchChannel(u user.User) control.UserActionResponse {
+	start := time.Now()
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -540,9 +573,22 @@ func switchChannel(u user.User) control.UserActionResponse {
 	if resp := viewChannel(u, &channel); resp.Err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(resp.Err)}
 	}
+	defer func() {
+		elapsed := time.Since(start).Seconds()
+		err := u.ObserveClientMetric(model.ClientChannelSwitchDuration, elapsed)
+		if err != nil {
+			mlog.Warn("Failed to store observation", mlog.Err(err))
+		}
+	}()
 
 	if err := u.SetCurrentChannel(&channel); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if u.Store().FeatureFlags()["ChannelBookmarks"] {
+		if err := u.GetChannelBookmarks(channel.Id, 0); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	if u.Store().FeatureFlags()["WebSocketEventScope"] {
@@ -1447,6 +1493,7 @@ func sendTypingEventIfEnabled(u user.User, channelId string) error {
 }
 
 func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionResponse {
+	start := time.Now()
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
 	if resp.Err != nil || !collapsedThreads {
 		return resp
@@ -1479,6 +1526,14 @@ func (c *SimulController) viewGlobalThreads(u user.User) control.UserActionRespo
 			return control.UserActionResponse{Info: "Visited Global Threads Screen, user has no threads"}
 		}
 	}
+
+	defer func() {
+		elapsed := time.Since(start).Seconds()
+		err := c.user.ObserveClientMetric(model.ClientGlobalThreadsLoadDuration, elapsed)
+		if err != nil {
+			mlog.Warn("Failed to store observation", mlog.Err(err))
+		}
+	}()
 
 	oldestThreadId := threads[len(threads)-1].PostId
 	// scrolling between 1 and 3 times
@@ -2128,4 +2183,13 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("generated user report for %d users", totalUsers)}
+}
+
+func submitPerformanceReport(u user.User) control.UserActionResponse {
+	err := u.SubmitPerformanceReport()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: "submitted client performance report"}
 }

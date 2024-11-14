@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-load-test-ng
 
-go 1.22
+go 1.22.0
 
 toolchain go1.22.8
 
@@ -32,8 +32,8 @@ require (
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.1.7-0.20240806035841-540febd866aa
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20240726090344-5547504c1d68
+	github.com/mattermost/mattermost/server/public v0.1.8-0.20241015185928-63c97f5a6d8f
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20241015185928-63c97f5a6d8f
 	github.com/opensearch-project/opensearch-go/v4 v4.1.0
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -141,7 +141,7 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240725223205-93522f1f2a9f // indirect

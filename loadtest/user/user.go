@@ -326,6 +326,25 @@ type User interface {
 	GetInitialDataGQL() error
 	GetChannelsAndChannelMembersGQL(teamID string, includeDeleted bool, channelsCursor, channelMembersCursor string) (string, string, error)
 
+	// Client Metrics
+	ObserveClientMetric(t model.MetricType, v float64) error
+	SubmitPerformanceReport() error
+
+	// GetChannelBookmarks fetches bookmarks for the given channel since a specific timestamp.
+	GetChannelBookmarks(channelId string, since int64) error
+
+	// AddChannelBookmark creates a bookmark
+	AddChannelBookmark(bookmark *model.ChannelBookmark) error
+
+	// UpdateChannelBookmark updates a given bookmark.
+	UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error
+
+	// DeleteChannelBookmark deletes a given bookmarkId from a given channelId.
+	DeleteChannelBookmark(channelId, bookmarkId string) error
+
+	// UpdateChannelBookmarkSortOrder sets the new position of a bookmark for the given channel
+	UpdateChannelBookmarkSortOrder(channelId, bookmarkId string, sortOrder int64) error
+
 	// Scheduled Posts
 	CreateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error

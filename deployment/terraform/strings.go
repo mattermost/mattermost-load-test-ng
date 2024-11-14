@@ -21,6 +21,7 @@ Group=ubuntu
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
+Environment=MM_FEATUREFLAGS_CHANNELBOOKMARKS=true
 Environment=MM_SERVICEENVIRONMENT=%s
 
 [Install]
@@ -111,6 +112,22 @@ http {
     default 1;
   }
 
+  log_format json escape=json
+	'{'
+		'"ts":"$msec",'
+		'"time_local":"$time_local",'
+		'"remote_addr":"$remote_addr",'
+		'"request":"$request",'
+		'"request_time":"$request_time",'
+		'"status": "$status",'
+		'"body_bytes_sent":"$body_bytes_sent",'
+		'"upstream_addr":"$upstream_addr",'
+		'"upstream_status":"$upstream_status",'
+		'"upstream_response_time":"$upstream_response_time",'
+		'"upstream_cache_status":"$upstream_cache_status",'
+		'"http_user_agent":"$http_user_agent"'
+	'}';
+
   sendfile on;
   tcp_nopush on;
   tcp_nodelay {{.tcpNoDelay}};
@@ -120,7 +137,7 @@ http {
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
   ssl_prefer_server_ciphers on;
-  access_log /var/log/nginx/access.log combined if=$loggable;
+  access_log /var/log/nginx/access.log json if=$loggable;
   error_log /var/log/nginx/error.log;
   gzip on;
   include /etc/nginx/sites-enabled/*;
@@ -540,7 +557,7 @@ const otelcolOperatorAppAgent = `
         severity:
           parse_from: attributes.level`
 
-const otelcolOperatorProxy = `
+const otelcolOperatorProxyError = `
       - type: regex_parser
         regex: '^(?P<time>\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<sev>[a-z]*)\] (?P<msg>.*)$'
         timestamp:
@@ -548,6 +565,13 @@ const otelcolOperatorProxy = `
           layout: '%Y/%m/%d %H:%M:%S'
         severity:
           parse_from: attributes.sev`
+
+const otelcolOperatorProxyAccess = `
+      - type: json_parser
+        timestamp:
+          layout: 's.ms'
+          layout_type: epoch
+          parse_from: attributes.ts`
 
 const otelcolConfigTmpl = `
 receivers:
@@ -619,16 +643,24 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 }
 
 func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, error) {
-	proxyReceiver := otelcolReceiver{
-		Name:              "filelog/proxy",
+	proxyErrorReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_error",
 		IncludeFiles:      "/var/log/nginx/error.log",
 		ServiceName:       "proxy",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorProxy,
+		Operator:          otelcolOperatorProxyError,
+	}
+
+	proxyAccessReceiver := otelcolReceiver{
+		Name:              "filelog/proxy_access",
+		IncludeFiles:      "/var/log/nginx/access.log",
+		ServiceName:       "proxy",
+		ServiceInstanceId: instanceName,
+		Operator:          otelcolOperatorProxyAccess,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
-		"Receivers": []otelcolReceiver{proxyReceiver},
+		"Receivers": []otelcolReceiver{proxyErrorReceiver, proxyAccessReceiver},
 		"MetricsIP": metricsIP,
 	})
 	if err != nil {

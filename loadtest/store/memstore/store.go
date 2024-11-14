@@ -50,6 +50,8 @@ type MemStore struct {
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
+	report              *model.PerformanceReport
+	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
 	scheduledPosts      map[string]map[string]*model.ScheduledPost
 }
 
@@ -124,8 +126,11 @@ func (s *MemStore) Clear() {
 	s.threadsQueue.Reset()
 	clear(s.sidebarCategories)
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
+	s.report = &model.PerformanceReport{}
 	clear(s.drafts)
 	s.drafts = map[string]map[string]*model.Draft{}
+	clear(s.channelBookmarks)
+	s.channelBookmarks = map[string]*model.ChannelBookmarkWithFileInfo{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1187,6 +1192,61 @@ func (s *MemStore) PostsWithAckRequests() ([]string, error) {
 	return ids, nil
 }
 
+func (s *MemStore) SetPerformanceReport(report *model.PerformanceReport) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.report = report
+}
+
+func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.report == nil {
+		return nil, nil
+	}
+
+	report := &model.PerformanceReport{
+		Version:  s.report.Version,
+		ClientID: s.report.ClientID,
+		Start:    s.report.Start,
+		End:      s.report.End,
+	}
+
+	if s.report.Labels != nil {
+		report.Labels = make(map[string]string)
+	}
+	for k, v := range s.report.Labels {
+		report.Labels[k] = v
+	}
+
+	if s.report.Histograms != nil {
+		report.Histograms = make([]*model.MetricSample, len(s.report.Histograms))
+	}
+	for i, h := range s.report.Histograms {
+		report.Histograms[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	if s.report.Counters != nil {
+		report.Counters = make([]*model.MetricSample, len(s.report.Counters))
+	}
+	for i, h := range s.report.Counters {
+		report.Counters[i] = &model.MetricSample{
+			Metric:    h.Metric,
+			Value:     h.Value,
+			Timestamp: h.Timestamp,
+			Labels:    h.Labels,
+		}
+	}
+
+	return report, nil
+}
+
 // SetDraft stores the draft for the given teamId, and channelId or rootId.
 func (s *MemStore) SetDraft(teamId, id string, draft *model.Draft) error {
 	s.lock.Lock()
@@ -1220,6 +1280,83 @@ func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
 		s.drafts[teamId][rootID] = d
 	}
 
+	return nil
+}
+
+// ChannelBookmarks returns all bookmarks for the specified channel.
+func (s *MemStore) ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var bookmarks []*model.ChannelBookmarkWithFileInfo
+	for _, b := range s.channelBookmarks {
+		if b.ChannelId == channelId {
+			bookmarks = append(bookmarks, b)
+		}
+	}
+	return bookmarks
+}
+
+// SetChannelBookmarks stores the given bookmarks.
+func (s *MemStore) SetChannelBookmarks(bookmarks []*model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for _, bookmark := range bookmarks {
+		if bookmark == nil {
+			return errors.New("memstore: bookmark should not be nil")
+		}
+		s.channelBookmarks[bookmark.Id] = bookmark
+	}
+
+	return nil
+}
+
+// AddChannelBookmark stores the bookmark.
+func (s *MemStore) AddChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	s.channelBookmarks[bookmark.Id] = bookmark
+	return nil
+}
+
+// UpdateChannelBookmark updates a given bookmark.
+func (s *MemStore) UpdateChannelBookmark(bookmark *model.ChannelBookmarkWithFileInfo) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmark == nil {
+		return errors.New("memstore: bookmark should not be nil")
+	}
+
+	if s.channelBookmarks[bookmark.Id] == nil {
+		return errors.New("memstore: bookmark not found")
+	}
+
+	s.channelBookmarks[bookmark.Id] = bookmark
+
+	return nil
+}
+
+// DeleteChannelBookmark deletes a given bookmark.
+func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if bookmarkId == "" {
+		return errors.New("memstore: bookmarkId should not be empty")
+	}
+
+	if s.channelBookmarks[bookmarkId] == nil {
+		return errors.New("memstore: bookmark not found")
+	}
+
+	delete(s.channelBookmarks, bookmarkId)
 	return nil
 }
 

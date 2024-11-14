@@ -47,3 +47,7 @@ Once you have familiarized yourself with the tool, and after you have successful
 - [Running an automated load-test comparison](comparison.md): a workflow specifically designed for when you need to compare two different versions of Mattermost while maintaining the rest of the variables fixed. This is what the Server team at Mattermost uses for the monthly release performance comparisons.
 - [Generating data](generating-data.md): for larger load-tests, you'll need larger datasets. This guide describes how you can use the gencontroller to create an arbitrary number of teams, channels, posts, reactions... to use as the starting point for future tests.
 
+
+## Configuration samples
+
+We know that the configuration of the load-test tool can be overwhelming, specially to newcomers. We have some sets of config templates we actively use and maintain up-to-date in the [`examples/config` directory](../examples/config). Take a look at the files there to learn from real-world config files.

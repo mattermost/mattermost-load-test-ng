@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -38,6 +39,8 @@ const (
 	AuthenticationTypeOpenID     = "openid"
 	AuthenticationTypeSAML       = "saml"
 )
+
+var stripIDsRE = regexp.MustCompile(`\b\w{26}\b`)
 
 // Config holds necessary information required by a UserEntity.
 type Config struct {
@@ -104,10 +107,10 @@ func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.transport.RoundTrip(req)
 	t.ue.observeHTTPRequestTimes(time.Since(startTime).Seconds())
 	if os.IsTimeout(err) {
-		t.ue.incHTTPTimeouts(req.URL.Path, req.Method)
+		t.ue.incHTTPTimeouts(stripIDs(req.URL.Path), req.Method)
 	}
 	if resp != nil && resp.StatusCode >= 400 {
-		t.ue.incHTTPErrors(req.URL.Path, req.Method, resp.StatusCode)
+		t.ue.incHTTPErrors(stripIDs(req.URL.Path), req.Method, resp.StatusCode)
 	}
 	return resp, err
 }
@@ -148,6 +151,15 @@ func New(setup Setup, config Config) *UserEntity {
 	if err != nil {
 		return nil
 	}
+	ue.store.SetPerformanceReport(&model.PerformanceReport{
+		Version: "0.1.0",
+		Labels: map[string]string{
+			"platform": "other",
+			"agent":    "other",
+		},
+		ClientID: model.NewId(),
+		Start:    float64(time.Now().UnixMilli()) / 1000,
+	})
 
 	return &ue
 }
@@ -244,4 +256,8 @@ func (ue *UserEntity) getUserFromStore() (*model.User, error) {
 		return nil, errors.New("user was not initialized")
 	}
 	return user, nil
+}
+
+func stripIDs(path string) string {
+	return stripIDsRE.ReplaceAllString(path, "$$ID")
 }
