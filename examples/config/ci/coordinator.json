@@ -6,7 +6,7 @@
         "ApiURL": "http://localhost:4000"
       }
     ],
-    "MaxActiveUsers": 4000
+    "MaxActiveUsers": 12000
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
@@ -86,9 +86,9 @@
       }
     ]
   },
-  "NumUsersInc": 8,
-  "NumUsersDec": 8,
-  "RestTimeSec": 2,
+  "NumUsersInc": 12,
+  "NumUsersDec": 12,
+  "RestTimeSec": 1,
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",
