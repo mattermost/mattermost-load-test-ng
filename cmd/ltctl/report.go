@@ -92,7 +92,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 		}
 
 		if !output.HasMetrics() {
-			return fmt.Errorf("no active deployment found, use the `--prometheus-url` flag.\nIf you have a local or manually deployed Prometheus server running")
+			return fmt.Errorf("no active deployment found, use the `--prometheus-url` flag. If you have a local or manually deployed Prometheus server running")
 		}
 
 		promURL = "http://" + output.MetricsServer.PublicIP + ":9090"
