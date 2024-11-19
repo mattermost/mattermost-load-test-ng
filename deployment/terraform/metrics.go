@@ -204,6 +204,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		"Period":      yaceDurationSeconds,
 		"Length":      yaceDurationSeconds,
 		"Delay":       yaceDurationSeconds,
+		"AWSRegion":   t.Config().AWSRegion,
 	})
 	if err != nil {
 		return fmt.Errorf("error rendering YACE configuration template: %w", err)
