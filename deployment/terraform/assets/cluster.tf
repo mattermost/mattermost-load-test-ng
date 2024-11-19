@@ -318,7 +318,6 @@ resource "aws_rds_cluster" "db_cluster" {
   vpc_security_group_ids = [aws_security_group.db[0].id]
 }
 
-# This resource will create (potentially immediately) after aws_db_parameter_group.db_params_group
 resource "aws_rds_cluster_instance" "cluster_instances" {
   tags = {
     Name = "${var.cluster_name}-db-${count.index}"
@@ -335,11 +334,8 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   db_parameter_group_name      = length(var.db_parameters) > 0 ? aws_db_parameter_group.db_params_group.name : ""
   availability_zone            = var.aws_az
   db_subnet_group_name         = var.app_instance_count > 0 && var.db_instance_count > 0 && length(var.cluster_subnet_ids.database) > 1 ? aws_db_subnet_group.db[0].name : ""
-
-  depends_on = [time_sleep.wait_30_seconds]
 }
 
-# This resource will destroy (at least) 30 seconds after aws_rds_cluster_instance.cluster_instances
 resource "aws_db_parameter_group" "db_params_group" {
   name_prefix   = "${var.cluster_name}-db-pg"
   family = var.db_instance_engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql14"
@@ -355,12 +351,6 @@ resource "aws_db_parameter_group" "db_params_group" {
   lifecycle {
     create_before_destroy = true
   }
-}
-
-resource "time_sleep" "wait_30_seconds" {
-  depends_on = [aws_db_parameter_group.db_params_group]
-
-  destroy_duration = "30s"
 }
 
 resource "aws_instance" "loadtest_agent" {
