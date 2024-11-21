@@ -93,7 +93,7 @@ type Config struct {
 	Report                report.Config
 	// Directory under which the .terraform directory and state files are managed.
 	// It will be created if it does not exist
-	TerraformStateDir string `default:"/var/lib/mattermost-load-test-ng" validate:"notempty"`
+	TerraformStateDir string `default:"./ltstate" validate:"notempty"`
 	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
 	// An optional URI to a MM server database dump file
@@ -246,7 +246,7 @@ type TerraformDBSettings struct {
 // and provisioned.
 type ExternalDBSettings struct {
 	// Mattermost database driver
-	DriverName string `default:"" validate:"oneof:{mysql, postgres, cockroach}"`
+	DriverName string `default:"postgres" validate:"oneof:{mysql, postgres, cockroach}"`
 	// DSN to connect to the database
 	DataSource string `default:""`
 	// DSN to connect to the database replicas
