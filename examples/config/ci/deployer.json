@@ -137,7 +137,7 @@
   "StorageSizes": {
     "Agent": 10,
     "Proxy": 10,
-    "App": 10,
+    "App": 15,
     "Metrics": 50,
     "Job": 50,
     "ElasticSearch": 20
