@@ -5,7 +5,6 @@
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "undefined",
   "ClusterVpcID": "",
-  "ClusterSubnetID": "",
   "AppInstanceCount": 2,
   "AppInstanceType": "c7i.large",
   "MetricsInstanceType": "t3.xlarge",
@@ -14,7 +13,6 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "VpcID": "",
     "Version": "Elasticsearch_7.10",
     "CreateRole": false,
     "SnapshotRepository": "",
