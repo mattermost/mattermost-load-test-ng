@@ -270,16 +270,6 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	}
 	loadDBDumpCmd.Value = dbCmd
 
-	clearLicensesCmdValue, err := deployment.ClearLicensesCmd(dbInfo)
-	if err != nil {
-		return fmt.Errorf("error building command for clearing licenses data: %w", err)
-	}
-	clearLicensesCmd := deployment.Cmd{
-		Msg:     "Clearing old licenses data",
-		Clients: []*ssh.Client{appClients[0]},
-		Value:   clearLicensesCmdValue,
-	}
-
 	cfg, err := t.GetAWSConfig()
 	if err != nil {
 		return fmt.Errorf("error loading aws config: %w", err)
@@ -290,7 +280,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	if dumpFilename == "" {
 		cmds = append(cmds, startCmd, createAdminCmd, initDataCmd)
 	} else {
-		cmds = append(cmds, loadDBDumpCmd, clearLicensesCmd, startCmd)
+		cmds = append(cmds, loadDBDumpCmd, startCmd)
 	}
 
 	// Resetting the buckets can happen concurrently with the rest of the remote commands
@@ -326,6 +316,10 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
 			}
 		}
+	}
+
+	if err := t.PostProcessDatabase(extAgent); err != nil {
+		return fmt.Errorf("failed to post-process database: %w", err)
 	}
 
 	// Make sure that the S3 bucket reset routine is finished and return its error, if any
