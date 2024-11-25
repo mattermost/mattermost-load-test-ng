@@ -32,7 +32,8 @@
     "RestoreTimeoutMinutes": 45,
     "ClusterTimeoutMinutes": 45,
     "ZoneAwarenessEnabled": false,
-    "ZoneAwarenessAZCount": 2
+    "ZoneAwarenessAZCount": 2,
+    "EnableCloudwatchLogs": true
   },
   "RedisSettings": {
     "Enabled": false,
