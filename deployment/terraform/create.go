@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/v8/config"
@@ -340,7 +341,101 @@ func (t *Terraform) PostProcessDatabase(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
-	return nil
+	return t.RebootDBInstances(extAgent)
+}
+
+func (t *Terraform) RebootDBInstances(extAgent *ssh.ExtAgent) error {
+	// Build the RDS client
+	cfg, err := t.GetAWSConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS config: %w", err)
+	}
+	rdsClient := rds.NewFromConfig(cfg)
+
+	errChan := make(chan error, len(t.output.DBCluster.Instances))
+	var wg sync.WaitGroup
+	for _, instance := range t.output.DBCluster.Instances {
+		wg.Add(1)
+		go func(dbId string) {
+			defer wg.Done()
+			mlog.Debug("Starting goroutine to reboot DB instance...", mlog.String("id", dbId))
+			errChan <- rebootDBInstance(rdsClient, dbId)
+			mlog.Debug("Finished goroutine to reboot DB instance...", mlog.String("id", dbId))
+		}(instance.DBIdentifier)
+	}
+
+	mlog.Debug("Waiting for rebooting goroutines to finish...")
+	wg.Wait()
+	mlog.Debug("All rebooting goroutines finished")
+	close(errChan)
+	mlog.Debug("Error channel closed")
+
+	mlog.Debug("Looping over error channel")
+	var finalErr error
+	for err := range errChan {
+		mlog.Debug("Joining error in error channel to finalErr", mlog.Err(err))
+		finalErr = errors.Join(finalErr, err)
+	}
+	mlog.Debug("Error channel consumed", mlog.Err(finalErr))
+
+	return finalErr
+}
+
+func rebootDBInstance(rdsClient *rds.Client, dbId string) error {
+	mlog.Debug("Rebooting DB instance...", mlog.String("id", dbId))
+	defer mlog.Debug("Rebooting DB instance method finished...", mlog.String("id", dbId))
+
+	params := &rds.RebootDBInstanceInput{
+		DBInstanceIdentifier: model.NewPointer(dbId),
+	}
+
+	out, err := rdsClient.RebootDBInstance(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("failed to reboot DB instance: %w", err)
+	}
+
+	mlog.Info("DB instance was rebooted",
+		mlog.String("id", dbId),
+		mlog.String("status", *out.DBInstance.DBInstanceStatus))
+
+	timeout := time.After(15 * time.Minute)
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout reached, instance is not available yet")
+		case <-time.After(30 * time.Second):
+			mlog.Debug("Describing DB instances", mlog.String("id", dbId))
+			describeParams := &rds.DescribeDBInstancesInput{
+				DBInstanceIdentifier: model.NewPointer(dbId),
+			}
+			describeOut, err := rdsClient.DescribeDBInstances(context.Background(), describeParams)
+			if err != nil {
+				return fmt.Errorf("error describing DB instance %q: %w", dbId, err)
+			}
+
+			if len(describeOut.DBInstances) < 1 {
+				return fmt.Errorf("describe instances returned no instances")
+			}
+
+			if describeOut.DBInstances[0].DBInstanceStatus == nil {
+				return fmt.Errorf("describe instances returned no status")
+			}
+
+			status := *describeOut.DBInstances[0].DBInstanceStatus
+			mlog.Debug("Received DB description",
+				mlog.String("id", dbId),
+				mlog.String("status", status))
+
+			// Finish when the DB is completely rebooted
+			if status == "available" {
+				return nil
+			}
+
+			mlog.Info("DB instance is not available yet. Waiting 30 seconds...",
+				mlog.String("id", dbId),
+				mlog.String("status", status))
+		}
+	}
 }
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
