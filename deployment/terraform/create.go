@@ -419,7 +419,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("batch upload failed: %w", err)
 	}
 
-	cmd := "sudo systemctl restart otelcol-contrib"
+	cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
@@ -848,7 +848,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		cmd := "sudo systemctl restart otelcol-contrib"
+		cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
