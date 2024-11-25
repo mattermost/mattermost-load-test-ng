@@ -46,7 +46,33 @@
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": true,
-    "DBParameters": [],
+    "DBParameters": [
+      {
+        "Name": "shared_preload_libraries",
+        "Value": "pg_stat_statements,auto_explain",
+        "ApplyMethod": "pending-reboot"
+      },
+      {
+        "Name": "auto_explain.log_min_duration",
+        "Value": "5000",
+        "ApplyMethod": "immediate"
+      },
+      {
+        "Name": "auto_explain.log_analyze",
+        "Value": "on",
+        "ApplyMethod": "immediate"
+      },
+      {
+        "Name": "log_statement",
+        "Value": "all",
+        "ApplyMethod": "immediate"
+      },
+      {
+        "Name": "log_min_duration_statement",
+        "Value": "5000",
+        "ApplyMethod": "immediate"
+      }
+    ],
     "ClusterIdentifier": ""
   },
   "ExternalDBSettings": {
