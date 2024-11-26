@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"github.com/mattermost/mattermost/server/public/model"
 
@@ -28,10 +29,18 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
 	}
 
-	initData := config.DBDumpURI == ""
-	err = t.Create(initData)
+	extAgent, err := ssh.NewAgent()
 	if err != nil {
+		return fmt.Errorf("failed to create SSH agent: %w", err)
+	}
+
+	initData := config.DBDumpURI == ""
+	if err = t.Create(extAgent, initData); err != nil {
 		return fmt.Errorf("failed to create terraform env: %w", err)
+	}
+
+	if err := t.PostProcessDatabase(extAgent); err != nil {
+		return fmt.Errorf("failed to post-process database: %w", err)
 	}
 
 	return nil
