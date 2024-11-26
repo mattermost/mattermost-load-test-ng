@@ -54,7 +54,7 @@
       },
       {
         "Name": "auto_explain.log_min_duration",
-        "Value": "5000",
+        "Value": "50",
         "ApplyMethod": "immediate"
       },
       {
@@ -69,7 +69,7 @@
       },
       {
         "Name": "log_min_duration_statement",
-        "Value": "5000",
+        "Value": "50",
         "ApplyMethod": "immediate"
       }
     ],
