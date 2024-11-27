@@ -5,11 +5,9 @@ package memstore
 
 import (
 	"errors"
-	"math/rand"
-	"time"
-
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
+	"math/rand"
 )
 
 var (
@@ -454,30 +452,23 @@ func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	// Seed the random generator
-	rand.Seed(time.Now().UnixNano())
-
 	// Check if scheduledPosts is empty
 	if len(s.scheduledPosts) == 0 {
 		return nil, errors.New("no scheduled posts available")
 	}
 
-	// Pick a random index for the outer map
-	randomOuterIndex := rand.Intn(len(s.scheduledPosts))
-	var selectedInnerMap map[string]*model.ScheduledPost
-	outerIndex := 0
-	for _, innerMap := range s.scheduledPosts {
-		if outerIndex == randomOuterIndex {
-			selectedInnerMap = innerMap
-			break
+	var keys []string
+	for key, innerMap := range s.scheduledPosts {
+		if len(innerMap) > 0 {
+			keys = append(keys, key)
 		}
-		outerIndex++
 	}
 
-	// Check if the selected inner map is empty
-	if len(selectedInnerMap) == 0 {
-		return nil, errors.New("no posts available in selected category")
+	if len(keys) == 0 {
+		return nil, errors.New("no scheduled posts available")
 	}
+
+	selectedInnerMap := s.scheduledPosts[keys[rand.Intn(len(keys))]]
 
 	// Pick a random index for the inner map
 	randomInnerIndex := rand.Intn(len(selectedInnerMap))
@@ -485,34 +476,11 @@ func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
 	innerIndex := 0
 	for _, post := range selectedInnerMap {
 		if innerIndex == randomInnerIndex {
-			selectedPost = post
+			selectedPost = post[rand.Intn(len(post))]
 			break
 		}
 		innerIndex++
 	}
 
 	return selectedPost, nil
-}
-
-func (s *MemStore) DeleteScheduledPost(scheduledPostID string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	for teamId := range s.scheduledPosts {
-		if _, ok := s.scheduledPosts[teamId][scheduledPostID]; ok {
-			delete(s.scheduledPosts[teamId], scheduledPostID)
-			break
-		}
-	}
-}
-
-func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	if _, ok := s.scheduledPosts[teamId]; !ok {
-		s.scheduledPosts[teamId] = make(map[string]*model.ScheduledPost)
-	}
-
-	s.scheduledPosts[teamId][scheduledPost.Id] = scheduledPost
 }

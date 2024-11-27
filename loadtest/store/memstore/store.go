@@ -52,7 +52,7 @@ type MemStore struct {
 	featureFlags        map[string]bool
 	report              *model.PerformanceReport
 	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
-	scheduledPosts      map[string]map[string]*model.ScheduledPost
+	scheduledPosts      map[string]map[string][]*model.ScheduledPost
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -131,6 +131,8 @@ func (s *MemStore) Clear() {
 	s.drafts = map[string]map[string]*model.Draft{}
 	clear(s.channelBookmarks)
 	s.channelBookmarks = map[string]*model.ChannelBookmarkWithFileInfo{}
+	clear(s.scheduledPosts)
+	s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -1360,7 +1362,7 @@ func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
 	return nil
 }
 
-func (s *MemStore) SetScheduledPost(teamId, id string, scheduledPost *model.ScheduledPost) error {
+func (s *MemStore) SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -1369,13 +1371,41 @@ func (s *MemStore) SetScheduledPost(teamId, id string, scheduledPost *model.Sche
 	}
 
 	if s.scheduledPosts == nil {
-		s.scheduledPosts = map[string]map[string]*model.ScheduledPost{}
+		s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
 	}
 
 	if s.scheduledPosts[teamId] == nil {
-		s.scheduledPosts[teamId] = map[string]*model.ScheduledPost{}
+		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{}
 	}
 
-	s.scheduledPosts[teamId][id] = scheduledPost
+	channelOrThreadId := scheduledPost.ChannelId
+	if scheduledPost.RootId != "" {
+		channelOrThreadId = scheduledPost.RootId
+	}
+
+	s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId], scheduledPost)
 	return nil
+}
+
+func (s *MemStore) DeleteScheduledPost(scheduledPostID string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for teamId := range s.scheduledPosts {
+		if _, ok := s.scheduledPosts[teamId][scheduledPostID]; ok {
+			delete(s.scheduledPosts[teamId], scheduledPostID)
+			break
+		}
+	}
+}
+
+func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if _, ok := s.scheduledPosts[teamId]; !ok {
+		s.scheduledPosts[teamId] = make(map[string][]*model.ScheduledPost)
+	}
+
+	s.scheduledPosts[teamId][scheduledPost.Id] = append(s.scheduledPosts[teamId][scheduledPost.Id], scheduledPost)
 }

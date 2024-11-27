@@ -9,22 +9,20 @@ import (
 	"math/rand"
 )
 
+const twoDaysInMilliseconds = 17_28_00_000
+
 func (c *SimulController) createScheduledPost(u user.User) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
-		fmt.Println("createScheduledPost: ScheduledPostsEnabled error", resp.Err)
 		return resp
 	} else if !ok {
-		fmt.Println("createScheduledPost: ScheduledPosts not enabled")
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
 	}
 
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
-		fmt.Println("createScheduledPost: CurrentChannel error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	fmt.Println("createScheduledPost: got the channel", channel.Id)
 	var rootId = ""
 	if rand.Float64() < 0.25 {
 		post, err := u.Store().RandomPostForChannel(channel.Id)
@@ -38,13 +36,11 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 	}
 
 	if err := sendTypingEventIfEnabled(u, channel.Id); err != nil {
-		fmt.Println("createScheduledPost: sendTypingEventIfEnabled error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	message, err := createMessage(u, channel, false)
 	if err != nil {
-		fmt.Println("createScheduledPost: createMessage error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -55,18 +51,16 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 			RootId:    rootId,
 			CreateAt:  model.GetMillis(),
 		},
-		ScheduledAt: loadtest.RandomFutureTime(17_28_00_000, 10),
+		ScheduledAt: loadtest.RandomFutureTime(twoDaysInMilliseconds, 10),
 	}
 
 	if rand.Float64() < 0.02 {
 		if err := control.AttachFilesToDraft(u, &scheduledPost.Draft); err != nil {
-			fmt.Println("createScheduledPost: AttachFilesToDraft error", err)
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
 	if err := u.CreateScheduledPost(channel.TeamId, scheduledPost); err != nil {
-		fmt.Println("createScheduledPost: CreateScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -75,40 +69,33 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 
 func (c *SimulController) updateScheduledPost(u user.User) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
-		fmt.Println("updateScheduledPost: ScheduledPostsEnabled error", resp.Err)
 		return resp
 	} else if !ok {
-		fmt.Println("updateScheduledPost: ScheduledPosts not enabled")
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
 	if err != nil {
-		fmt.Println("updateScheduledPost: GetRandomScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	if scheduledPost == nil {
-		fmt.Println("updateScheduledPost: no scheduled posts found")
 		return control.UserActionResponse{Info: "no scheduled posts found"}
 	}
 
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
-		fmt.Println("updateScheduledPost: CurrentChannel error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	message, err := createMessage(u, channel, false)
 	if err != nil {
-		fmt.Println("updateScheduledPost: createMessage error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	scheduledPost.Message = message
-	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(17_28_00_000, 10)
+	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(twoDaysInMilliseconds, 10)
 
 	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
-		fmt.Println("updateScheduledPost: UpdateScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
@@ -117,68 +104,53 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 
 func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
-		fmt.Println("deleteScheduledPost: ScheduledPostsEnabled error", resp.Err)
 		return resp
 	} else if !ok {
-		fmt.Println("deleteScheduledPost: ScheduledPosts not enabled")
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
 	if err != nil {
-		fmt.Println("deleteScheduledPost: GetRandomScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	if scheduledPost == nil {
-		fmt.Println("deleteScheduledPost: no scheduled posts found")
 		return control.UserActionResponse{Info: "no scheduled posts found"}
 	}
 
 	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
-		fmt.Println("deleteScheduledPost: DeleteScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	u.Store().DeleteScheduledPost(scheduledPost.Id)
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post deleted with id %v", scheduledPost.Id)}
 }
 
-func (c *SimulController) sendScheduledPost(u user.User) control.UserActionResponse {
+func (c *SimulController) sendScheduledPostNow(u user.User) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
-		fmt.Println("sendScheduledPost: ScheduledPostsEnabled error", resp.Err)
 		return resp
 	} else if !ok {
-		fmt.Println("sendScheduledPost: ScheduledPosts not enabled")
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
 	if err != nil {
-		fmt.Println("sendScheduledPost: GetRandomScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 	if scheduledPost == nil {
-		fmt.Println("sendScheduledPost: no scheduled posts found")
 		return control.UserActionResponse{Info: "no scheduled posts found"}
 	}
 
 	post, err := scheduledPost.ToPost()
 	if err != nil {
-		fmt.Println("sendScheduledPost: ToPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if _, err := u.CreatePost(post); err != nil {
-		fmt.Println("sendScheduledPost: CreatePost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
-		fmt.Println("sendScheduledPost: DeleteScheduledPost error", err)
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	u.Store().DeleteScheduledPost(scheduledPost.Id)
-
-	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post sent with id %v", scheduledPost.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post with id %v manually sent now", scheduledPost.Id)}
 }

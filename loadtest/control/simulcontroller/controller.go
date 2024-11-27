@@ -308,7 +308,7 @@ func getActionList(c *SimulController) []userAction {
 		},
 		{
 			name:             "SendScheduledPost",
-			run:              c.sendScheduledPost,
+			run:              c.sendScheduledPostNow,
 			frequency:        0.1,
 			minServerVersion: semver.MustParse("10.3.0"),
 		},

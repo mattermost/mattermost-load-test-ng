@@ -205,7 +205,7 @@ type MutableUserStore interface {
 	SetDrafts(teamId string, drafts []*model.Draft) error
 
 	// scheduled posts
-	SetScheduledPost(teamId, id string, scheduledPost *model.ScheduledPost) error
+	SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
 
 	// posts

@@ -90,7 +90,7 @@ func nextPowerOf2(val int) int {
 	return val
 }
 
-// RandomFutureTime generates a random time between (now + xMilliseconds) to (now + xDays) in Unix milliseconds.
+// RandomFutureTime generates a random time between (now + millisecondsFromNow) to (now + uptoDaysFromNow) in Unix milliseconds.
 func RandomFutureTime(millisecondsFromNow int64, uptoDaysFromNow int) int64 {
 	now := time.Now()
 	minOffset := millisecondsFromNow                                   // Minimum offset in milliseconds
