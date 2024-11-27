@@ -176,7 +176,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				return
 			}
 
-			cmd = "sudo systemctl restart otelcol-contrib"
+			cmd = "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.Int("agent", agentNumber), mlog.String("cmd", cmd), mlog.String("out", string(out)), mlog.Err(err))
 				foundErr.Store(true)

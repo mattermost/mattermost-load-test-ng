@@ -11,6 +11,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
+	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -67,9 +68,15 @@ func New(cfg *Config, deployerCfg *deployment.Config) (*Comparison, error) {
 // It returns a list of results or an error in case of failure.
 func (c *Comparison) Run() (Output, error) {
 	var output Output
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return output, fmt.Errorf("failed to create ssh agent: %w", err)
+	}
+
 	// create deployments
-	err := c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
-		if err := t.Create(false); err != nil {
+	err = c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
+		if err := t.Create(extAgent, false); err != nil {
 			return err
 		}
 		return provisionFiles(t, dpConfig, c.config.BaseBuild.URL, c.config.NewBuild.URL)

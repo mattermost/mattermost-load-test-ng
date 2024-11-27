@@ -87,7 +87,7 @@ func ensureTerraformStateDir(dir string) error {
 }
 
 // Create creates a new load test environment.
-func (t *Terraform) Create(initData bool) error {
+func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -98,11 +98,6 @@ func (t *Terraform) Create(initData bool) error {
 		if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
 			return fmt.Errorf("license validation failed: %w", err)
 		}
-	}
-
-	extAgent, err := ssh.NewAgent()
-	if err != nil {
-		return err
 	}
 
 	var uploadPath string
@@ -149,7 +144,7 @@ func (t *Terraform) Create(initData bool) error {
 		"-input=false",
 		"-state="+t.getStatePath())
 
-	err = t.runCommand(nil, params...)
+	err := t.runCommand(nil, params...)
 	if err != nil {
 		return err
 	}
@@ -275,49 +270,20 @@ func (t *Terraform) Create(initData bool) error {
 		errorsChan <- nil
 	}()
 
-	// Ingest DB dump
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// Note: This MUST be done after app servers have been set up.
-		// Otherwise, the vacuuming command will fail because no tables would
-		// have been created by then.
-		if t.output.HasDB() {
-			// Load the dump if specified
-			if !initData && t.config.DBDumpURI != "" {
-				err = t.IngestDump()
-				if err != nil {
-					errorsChan <- fmt.Errorf("failed to create ingest dump: %w", err)
-					return
-				}
-			}
-
-			if len(t.config.DBExtraSQL) > 0 {
-				// Run extra SQL commands if specified
-				if err := t.ExecuteCustomSQL(); err != nil {
-					errorsChan <- fmt.Errorf("failed to execute custom SQL: %w", err)
-					return
-				}
-			}
-
-			// Clear licenses data
-			if err := t.ClearLicensesData(); err != nil {
-				errorsChan <- fmt.Errorf("failed to clear old licenses data: %w", err)
+	// Ingest DB dump if specified
+	if t.output.HasDB() && !initData && t.config.DBDumpURI != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err = t.IngestDump()
+			if err != nil {
+				errorsChan <- fmt.Errorf("failed to create ingest dump: %w", err)
 				return
 			}
 
-			if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
-				// updatePostgresSettings does some housekeeping stuff like setting
-				// default_search_config and vacuuming tables.
-				if err := t.updatePostgresSettings(extAgent); err != nil {
-					errorsChan <- fmt.Errorf("could not modify default_search_text_config: %w", err)
-					return
-				}
-			}
-		}
-
-		errorsChan <- nil
-	}()
+			errorsChan <- nil
+		}()
+	}
 
 	// Fail on any errors from the two goroutines above
 	wg.Wait()
@@ -345,6 +311,35 @@ func (t *Terraform) Create(initData bool) error {
 		runcmd = "ltctl"
 	}
 	fmt.Printf("To start coordinator, you can use %q command.\n", runcmd+" loadtest start")
+	return nil
+}
+
+func (t *Terraform) PostProcessDatabase(extAgent *ssh.ExtAgent) error {
+	// If the deployment has no DB, do nothing
+	if !t.output.HasDB() {
+		return nil
+	}
+
+	if len(t.config.DBExtraSQL) > 0 {
+		// Run extra SQL commands if specified
+		if err := t.ExecuteCustomSQL(); err != nil {
+			return fmt.Errorf("failed to execute custom SQL: %w", err)
+		}
+	}
+
+	// Clear licenses data
+	if err := t.ClearLicensesData(); err != nil {
+		return fmt.Errorf("failed to clear old licenses data: %w", err)
+	}
+
+	if t.config.TerraformDBSettings.InstanceEngine == "aurora-postgresql" {
+		// updatePostgresSettings does some housekeeping stuff like setting
+		// default_search_config and vacuuming tables.
+		if err := t.updatePostgresSettings(extAgent); err != nil {
+			return fmt.Errorf("could not modify default_search_text_config: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -419,7 +414,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("batch upload failed: %w", err)
 	}
 
-	cmd := "sudo systemctl restart otelcol-contrib"
+	cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
@@ -848,7 +843,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		cmd := "sudo systemctl restart otelcol-contrib"
+		cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
