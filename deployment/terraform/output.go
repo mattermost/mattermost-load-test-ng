@@ -21,7 +21,6 @@ type output struct {
 			Endpoint          string `json:"endpoint"`
 			ClusterIdentifier string `json:"cluster_identifier"`
 			Writer            bool   `json:"writer"`
-			DBIdentifier      string `json:"identifier"`
 		} `json:"value"`
 	} `json:"dbCluster"`
 	Agents struct {
@@ -113,9 +112,8 @@ type Tags struct {
 
 // DBInstance defines an RDS instance resource.
 type DBInstance struct {
-	DBIdentifier string
-	Endpoint     string
-	IsWriter     bool
+	Endpoint string
+	IsWriter bool
 }
 
 // DBCluster defines a RDS cluster instance resource.
@@ -171,9 +169,8 @@ func (t *Terraform) loadOutput() error {
 	if len(o.DBCluster.Value) > 0 {
 		for _, inst := range o.DBCluster.Value {
 			outputv2.DBCluster.Instances = append(outputv2.DBCluster.Instances, DBInstance{
-				DBIdentifier: inst.DBIdentifier,
-				Endpoint:     inst.Endpoint,
-				IsWriter:     inst.Writer,
+				Endpoint: inst.Endpoint,
+				IsWriter: inst.Writer,
 			})
 		}
 		outputv2.DBCluster.ClusterIdentifier = o.DBCluster.Value[0].ClusterIdentifier
