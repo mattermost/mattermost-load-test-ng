@@ -109,6 +109,11 @@ func (c *Config) IsValid() error {
 			return err
 		}
 	}
+
+	if c.BaseBuild.Label == c.NewBuild.Label {
+		return fmt.Errorf("the labels for the base and new build must be unique")
+	}
+
 	return nil
 }
 
