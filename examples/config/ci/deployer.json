@@ -1,0 +1,153 @@
+{
+  "AWSProfile": "",
+  "AWSRegion": "us-east-1",
+  "AWSAvailabilityZone": "",
+  "AWSAMI": "ami-003d3d03cfe1b0468",
+  "ClusterName": "undefined",
+  "ClusterVpcID": "",
+  "AppInstanceCount": 2,
+  "AppInstanceType": "c7i.large",
+  "MetricsInstanceType": "t3.xlarge",
+  "AgentInstanceCount": 6,
+  "AgentInstanceType": "c7i.xlarge",
+  "ElasticSearchSettings": {
+    "InstanceCount": 0,
+    "InstanceType": "r6g.large.search",
+    "Version": "Elasticsearch_7.10",
+    "CreateRole": false,
+    "SnapshotRepository": "",
+    "SnapshotName": "",
+    "RestoreTimeoutMinutes": 45,
+    "ClusterTimeoutMinutes": 45
+  },
+  "RedisSettings": {
+    "Enabled": false,
+    "NodeType": "cache.m7g.2xlarge",
+    "ParameterGroupName": "default.redis7",
+    "EngineVersion": "7.1"
+  },
+  "JobServerSettings":{
+    "InstanceCount": 0,
+    "InstanceType": "c7i.xlarge"
+  },
+  "EnableAgentFullLogs": true,
+  "ProxyInstanceCount": 1,
+  "ProxyInstanceType": "c7i.xlarge",
+  "SSHPublicKey": "/home/runner/.ssh/mattermost-load-test.pub",
+  "TerraformStateDir" : "/home/runner/ltstatus",
+  "S3BucketDumpURI" : "",
+  "DBDumpURI": "",
+  "SiteURL": "",
+  "EnableNetPeekMetrics": false,
+  "TerraformDBSettings": {
+    "InstanceCount": 2,
+    "InstanceEngine": "aurora-postgresql",
+    "InstanceType": "db.r7g.xlarge",
+    "UserName": "mmuser",
+    "Password": "mostest80098bigpass_",
+    "EnablePerformanceInsights": true,
+    "DBParameters": [],
+    "ClusterIdentifier": ""
+  },
+  "ExternalDBSettings": {
+    "DriverName": "cockroach",
+    "DataSource": "",
+    "DataSourceReplicas": [],
+    "DataSourceSearchReplicas": []
+  },
+  "ExternalBucketSettings": {
+    "AmazonS3AccessKeyId": "",
+    "AmazonS3SecretAccessKey": "",
+    "AmazonS3Bucket": "",
+    "AmazonS3PathPrefix": "",
+    "AmazonS3Region": "us-east-1",
+    "AmazonS3Endpoint": "s3.amazonaws.com",
+    "AmazonS3SSL": true,
+    "AmazonS3SignV2": false,
+    "AmazonS3SSE": false
+  },
+  "ExternalAuthProviderSettings": {
+    "Enabled": false,
+    "KeycloakAdminUser": "mmadmin",
+    "KeycloakAdminPassword": "mmpass",
+    "KeycloakRealmFilePath": "",
+    "KeycloakDBDumpURI": "",
+    "GenerateUsersCount": 0
+  },
+  "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
+  "MattermostLicenseFile": "/home/runner/mattermost-load-test",
+  "MattermostConfigPatchFile": "",
+  "AdminEmail": "sysadmin@sample.mattermost.com",
+  "AdminUsername": "sysadmin",
+  "AdminPassword": "Sys@dmin-sample1",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.23.0-rc1/mattermost-load-test-ng-v1.23.0-rc1-linux-amd64.tar.gz",
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "INFO",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileJson": true,
+    "FileLocation": "deployer.log",
+    "EnableColor": true
+  },
+  "Report": {
+    "Label": "{instance=~\"app.*\"}",
+    "GraphQueries": [
+      {
+        "Name":  "CPU Utilization",
+        "Query": "avg(rate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
+      },
+      {
+        "Name":  "Heap In Use",
+        "Query": "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name":  "Stack In Use",
+        "Query": "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "Goroutines In Use",
+        "Query": "sum(go_goroutines{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name":  "RPS",
+        "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name":  "Avg Store times",
+        "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name":  "P99 Store times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name":  "Avg API times",
+        "Query": "sum(rate(mattermost_api_time_sum[1m])) / sum(rate(mattermost_api_time_count[1m]))"
+      },
+      {
+        "Name":  "P99 API times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
+      }
+    ]
+  },
+  "StorageSizes": {
+    "Agent": 10,
+    "Proxy": 10,
+    "App": 15,
+    "Metrics": 50,
+    "Job": 50,
+    "ElasticSearch": 20
+  },
+  "PyroscopeSettings": {
+    "EnableAppProfiling": true,
+    "EnableAgentProfiling": true,
+    "BlockProfileRate": 0
+  },
+  "CustomTags": {
+    "Origin": "ci-automated-loadtests",
+    "PR": "undefined",
+    "SHA": "undefined"
+  }
+}

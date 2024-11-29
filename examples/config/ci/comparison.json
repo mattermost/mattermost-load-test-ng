@@ -1,0 +1,22 @@
+{
+  "BaseBuild": {
+    "Label": "base",
+    "URL": "undefined"
+  },
+  "NewBuild": {
+    "Label": "new",
+    "URL": "undefined"
+  },
+  "LoadTests": [
+    {
+      "Type": "unbounded",
+      "DBEngine": "postgresql",
+      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz"
+    }
+  ],
+  "Output": {
+    "UploadDashboard": true,
+    "GenerateGraphs": true,
+    "GenerateReport": true
+  }
+}
