@@ -260,9 +260,9 @@ func (t *Terraform) executeCommands(commands []deployment.Cmd) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
+				mlog.Debug("Running cmd", mlog.String("cmd", c.Value), mlog.String("ip", client.IP))
 				if out, err := client.RunCommand(c.Value); err != nil {
-					errors <- fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
+					errors <- fmt.Errorf("failed to run cmd %q on %s: %w %s", c.Value, client.IP, err, out)
 				}
 			}()
 		}

@@ -29,6 +29,7 @@ type ExtAgent struct {
 // commands in a single method.
 type Client struct {
 	client *ssh.Client
+	IP     string
 }
 
 // NewAgent connects to the local ssh agent and validates
@@ -68,7 +69,7 @@ func (ea *ExtAgent) NewClientWithPort(ip string, port string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{client: sshc}, nil
+	return &Client{client: sshc, IP: ip}, nil
 }
 
 // NewClient returns a Client object by dialing
