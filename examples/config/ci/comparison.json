@@ -1,11 +1,11 @@
 {
   "BaseBuild": {
     "Label": "base",
-    "URL": "undefined"
+    "URL": ""
   },
   "NewBuild": {
     "Label": "new",
-    "URL": "undefined"
+    "URL": ""
   },
   "LoadTests": [
     {

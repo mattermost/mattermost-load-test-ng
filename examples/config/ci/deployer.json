@@ -3,7 +3,7 @@
   "AWSRegion": "us-east-1",
   "AWSAvailabilityZone": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
-  "ClusterName": "undefined",
+  "ClusterName": "",
   "ClusterVpcID": "",
   "AppInstanceCount": 2,
   "AppInstanceType": "c7i.large",
@@ -147,7 +147,7 @@
   },
   "CustomTags": {
     "Origin": "ci-automated-loadtests",
-    "PR": "undefined",
-    "SHA": "undefined"
+    "PR": "",
+    "SHA": ""
   }
 }
