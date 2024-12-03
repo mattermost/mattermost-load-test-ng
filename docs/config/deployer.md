@@ -215,7 +215,7 @@ Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availab
 
 *bool* (Default: `true`)
 
-Wheter to enable Cloudwatch logs for the Elasticsearch cluster.
+Whether to enable Cloudwatch logs for the Elasticsearch cluster.
 
 Check the [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html).
 
