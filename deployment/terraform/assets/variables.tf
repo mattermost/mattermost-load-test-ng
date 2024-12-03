@@ -56,6 +56,9 @@ variable "es_zone_awareness_enabled" {
 variable "es_zone_awarness_availability_zone_count" {
 }
 
+variable "es_enable_cloudwatch_logs" {
+}
+
 # Proxy server
 
 variable "proxy_instance_count" {

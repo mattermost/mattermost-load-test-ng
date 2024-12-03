@@ -334,6 +334,8 @@ type ElasticSearchSettings struct {
 	ZoneAwarenessEnabled bool `default:"false"`
 	// ZoneAwarenessAZCount indicates the number of availability zones to use for zone awareness.
 	ZoneAwarenessAZCount int `default:"2" validate:"range:[1,3]"`
+	// EnableCloudwatchLogs indicates whether to enable Cloudwatch logs or not.
+	EnableCloudwatchLogs bool `default:"true"`
 }
 
 type RedisSettings struct {

@@ -67,7 +67,15 @@ resource "aws_iam_role_policy_attachment" "es_attach" {
    }
 */
 resource "aws_cloudwatch_log_group" "es_log_group" {
+  count = var.es_enable_cloudwatch_logs ? 1 : 0
   name = "${var.cluster_name}-log-group"
+}
+
+data "aws_subnets" "selected" {
+  filter {
+    name   = "vpc-id"
+    values = [var.cluster_vpc_id]
+  }
 }
 
 resource "aws_opensearch_domain" "es_server" {
@@ -79,7 +87,7 @@ resource "aws_opensearch_domain" "es_server" {
   engine_version = var.es_version
 
   vpc_options {
-    subnet_ids         = (length(var.cluster_subnet_ids.elasticsearch) > 0) ? tolist(var.cluster_subnet_ids.elasticsearch) : null
+    subnet_ids         = (length(var.cluster_subnet_ids.elasticsearch) > 0) ? tolist(var.cluster_subnet_ids.elasticsearch) : [element(tolist(data.aws_subnets.selected.ids), 0)]
     security_group_ids = [aws_security_group.elastic[0].id]
   }
 
@@ -116,9 +124,12 @@ resource "aws_opensearch_domain" "es_server" {
     aws_iam_service_linked_role.es,
   ]
 
-  log_publishing_options {
-    cloudwatch_log_group_arn = aws_cloudwatch_log_group.es_log_group.arn
-    log_type                 = "ES_APPLICATION_LOGS"
+  dynamic "log_publishing_options" {
+    for_each = var.es_enable_cloudwatch_logs ? [true] : []
+    content {
+      cloudwatch_log_group_arn = aws_cloudwatch_log_group.es_log_group.arn
+      log_type                 = "ES_APPLICATION_LOGS"
+    }
   }
 
   advanced_security_options {

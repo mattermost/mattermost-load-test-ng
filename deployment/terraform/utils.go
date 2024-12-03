@@ -261,6 +261,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("es_snapshot_repository=%s", t.config.ElasticSearchSettings.SnapshotRepository),
 		"-var", fmt.Sprintf("es_zone_awareness_enabled=%t", t.config.ElasticSearchSettings.ZoneAwarenessEnabled),
 		"-var", fmt.Sprintf("es_zone_awarness_availability_zone_count=%d", t.config.ElasticSearchSettings.ZoneAwarenessAZCount),
+		"-var", fmt.Sprintf("es_enable_cloudwatch_logs=%t", t.config.ElasticSearchSettings.EnableCloudwatchLogs),
 		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
