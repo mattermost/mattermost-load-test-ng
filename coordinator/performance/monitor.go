@@ -47,7 +47,7 @@ func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
 // Run will start the performance monitoring process.
 func (m *Monitor) Run() <-chan Status {
 	go func() {
-		ticker := time.NewTicker(time.Duration(m.config.UpdateIntervalMs))
+		ticker := time.NewTicker(time.Duration(m.config.UpdateIntervalMs) * time.Millisecond)
 		defer ticker.Stop()
 
 		m.log.Info("monitor: started")
