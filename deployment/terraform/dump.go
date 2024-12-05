@@ -268,9 +268,7 @@ func (t *Terraform) executeCommands(commands []deployment.Cmd) error {
 		}
 
 		wg.Wait()
-		go func() {
-			close(errors)
-		}()
+		close(errors)
 
 		errorsFound := false
 		for e := range errors {
