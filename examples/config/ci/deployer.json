@@ -1,26 +1,14 @@
 {
-  "AWSProfile": "mm-loadtest",
+  "AWSProfile": "",
   "AWSRegion": "us-east-1",
-  "AWSAvailabilityZone": "us-east-1c",
+  "AWSAvailabilityZone": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
-  "ClusterName": "loadtest",
+  "ClusterName": "",
   "ClusterVpcID": "",
-  "ClusterSubnetIDs": {
-    "Agent": [],
-    "App": [],
-    "Database": [],
-    "ElasticSearch": [],
-    "Job": [],
-    "Keycloak": [],
-    "Metrics": [],
-    "Proxy": [],
-    "Redis": []
-  },
-  "AppInstanceCount": 1,
-  "AppInstanceType": "c7i.xlarge",
-  "AppAttachIAMProfile": "",
+  "AppInstanceCount": 2,
+  "AppInstanceType": "c7i.large",
   "MetricsInstanceType": "t3.xlarge",
-  "AgentInstanceCount": 2,
+  "AgentInstanceCount": 6,
   "AgentInstanceType": "c7i.xlarge",
   "ElasticSearchSettings": {
     "InstanceCount": 0,
@@ -30,10 +18,7 @@
     "SnapshotRepository": "",
     "SnapshotName": "",
     "RestoreTimeoutMinutes": 45,
-    "ClusterTimeoutMinutes": 45,
-    "ZoneAwarenessEnabled": false,
-    "ZoneAwarenessAZCount": 2,
-    "EnableCloudwatchLogs": true
+    "ClusterTimeoutMinutes": 45
   },
   "RedisSettings": {
     "Enabled": false,
@@ -48,16 +33,16 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceCount": 1,
   "ProxyInstanceType": "c7i.xlarge",
-  "SSHPublicKey": "~/.ssh/id_rsa.pub",
-  "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
+  "SSHPublicKey": "/home/runner/.ssh/mattermost-load-test.pub",
+  "TerraformStateDir" : "/home/runner/ltstatus",
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
   "EnableNetPeekMetrics": false,
   "TerraformDBSettings": {
-    "InstanceCount": 1,
+    "InstanceCount": 2,
     "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r7g.large",
+    "InstanceType": "db.r7g.xlarge",
     "UserName": "mmuser",
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": true,
@@ -90,12 +75,12 @@
     "GenerateUsersCount": 0
   },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
-  "MattermostLicenseFile": "",
+  "MattermostLicenseFile": "/home/runner/mattermost-load-test",
   "MattermostConfigPatchFile": "",
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0/mattermost-load-test-ng-v1.22.0-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.23.0/mattermost-load-test-ng-v1.23.0-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",
@@ -150,10 +135,10 @@
   "StorageSizes": {
     "Agent": 10,
     "Proxy": 10,
-    "App": 10,
+    "App": 15,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 100
+    "ElasticSearch": 20
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,
@@ -161,5 +146,8 @@
     "BlockProfileRate": 0
   },
   "CustomTags": {
+    "Origin": "ci-automated-loadtests",
+    "PR": "",
+    "SHA": ""
   }
 }

@@ -283,7 +283,7 @@ type ExternalAuthProviderSettings struct {
 	// KeycloakAdminUser is the username of the keycloak admin interface (admin on the master realm)
 	KeycloakAdminUser string `default:"mmuser" validate:"notempty"`
 	// KeycloakAdminPassword is the password of the keycloak admin interface (admin on the master realm)
-	KeycloakAdminPassword string `default:"mmpass" validate:"notempty"`
+	KeycloakAdminPassword string `default:"mmpass" validate:"alpha"`
 	// KeycloakRealmFilePath is the path to the realm file to be uploaded to the keycloak instance.
 	// If empty, a default realm file will be used.
 	KeycloakRealmFilePath string `default:""`
@@ -334,6 +334,8 @@ type ElasticSearchSettings struct {
 	ZoneAwarenessEnabled bool `default:"false"`
 	// ZoneAwarenessAZCount indicates the number of availability zones to use for zone awareness.
 	ZoneAwarenessAZCount int `default:"2" validate:"range:[1,3]"`
+	// EnableCloudwatchLogs indicates whether to enable Cloudwatch logs or not.
+	EnableCloudwatchLogs bool `default:"true"`
 }
 
 type RedisSettings struct {

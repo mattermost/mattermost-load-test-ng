@@ -79,7 +79,7 @@ func (c *Comparison) Run() (Output, error) {
 		if err := t.Create(extAgent, false); err != nil {
 			return err
 		}
-		return provisionFiles(t, dpConfig, c.config.BaseBuild.URL, c.config.NewBuild.URL)
+		return provisionFiles(t, dpConfig, c.config.BaseBuild, c.config.NewBuild)
 	})
 	if err != nil {
 		return output, err
