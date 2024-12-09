@@ -53,7 +53,7 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 		ScheduledAt: loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10),
 	}
 
-	if rand.Float64() < 0.02 {
+	if rand.Float64() < probabilityAttachFileToPost {
 		if err := control.AttachFilesToDraft(u, &scheduledPost.Draft); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

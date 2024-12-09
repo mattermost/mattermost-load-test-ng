@@ -16,6 +16,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const (
+	probabilityAttachFileToPost = 0.02
+)
+
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
