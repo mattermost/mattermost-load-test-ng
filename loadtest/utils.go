@@ -90,18 +90,10 @@ func nextPowerOf2(val int) int {
 	return val
 }
 
-// RandomFutureTime generates a random time between (now + millisecondsFromNow) to (now + uptoDaysFromNow) in Unix milliseconds.
-func RandomFutureTime(millisecondsFromNow int64, uptoDaysFromNow int) int64 {
+func RandomFutureTime(deltaStart, maxUntil time.Duration) int64 {
 	now := time.Now()
-	minOffset := millisecondsFromNow                                   // Minimum offset in milliseconds
-	maxOffset := millisecondsFromNow + int64(uptoDaysFromNow)*86400000 // Max offset in milliseconds (1 day = 86400000 ms)
-
-	// Generate a random offset between minOffset and maxOffset
-	randomOffset := minOffset + rand.Int63n(maxOffset-minOffset)
-
-	// Add the random offset to the current time
-	randomFutureTime := now.Add(time.Duration(randomOffset) * time.Millisecond)
-
-	// Return the Unix timestamp in milliseconds
+	diff := maxUntil - deltaStart
+	offset := deltaStart.Milliseconds() + rand.Int63n(diff.Milliseconds())
+	randomFutureTime := now.Add(time.Duration(offset) * time.Millisecond)
 	return randomFutureTime.UnixMilli()
 }

@@ -7,9 +7,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 	"math/rand"
+	"time"
 )
-
-const twoDaysInMilliseconds = 17_28_00_000
 
 func (c *SimulController) createScheduledPost(u user.User) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
@@ -51,7 +50,7 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 			RootId:    rootId,
 			CreateAt:  model.GetMillis(),
 		},
-		ScheduledAt: loadtest.RandomFutureTime(twoDaysInMilliseconds, 10),
+		ScheduledAt: loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10),
 	}
 
 	if rand.Float64() < 0.02 {
@@ -93,7 +92,7 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost.Message = message
-	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(twoDaysInMilliseconds, 10)
+	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10)
 
 	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
