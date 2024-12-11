@@ -43,8 +43,7 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 
 			// Return early if we are not forcing the migration of all the users
 			if !worker.forceMigrate {
-				worker.errorsChan <- err
-				return err
+				return nil
 			}
 
 			// If the `--force-migrate` flag is set, we need to get the user ID of the already existing user from
@@ -61,28 +60,22 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 			)
 			if err != nil {
 				mlog.Error("failed to get user from keycloak", mlog.String("err", err.Error()))
-				worker.errorsChan <- err
-				return err
+				return fmt.Errorf("failed to get user from keycloak: %w", err)
 			}
 
 			if len(users) != 1 {
-				err = fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
-				worker.errorsChan <- err
-				return err
+				return fmt.Errorf("got %d users in keycloak for user %s", len(users), user.Username)
 			}
 
 			// This should not happen, but just in case...
 			if users[0] == nil || users[0].ID == nil {
-				err = fmt.Errorf("somehow keycloak returned incorrect data for user %s (nil values)", user.Username)
-				worker.errorsChan <- err
-				return err
+				return fmt.Errorf("somehow keycloak returned incorrect data for user %s (nil values)", user.Username)
 			}
 
 			kcUserID = *users[0].ID
 		} else {
 			mlog.Error("failed to create user in keycloak", mlog.String("err", err.Error()))
-			worker.errorsChan <- err
-			return err
+			return fmt.Errorf("failed to create user in keycloak: %w", err)
 		}
 	}
 
@@ -98,7 +91,6 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 			mlog.Error("failed to delete user in keycloak", mlog.String("err", deleteErr.Error()))
 		}
 
-		worker.errorsChan <- err
 		return err
 	}
 	mlog.Info("migrated user", mlog.String("username", user.Username))
@@ -106,14 +98,13 @@ func migrateUser(worker *workerConfig, user *model.User) error {
 	return nil
 }
 
-func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, errorsChan chan error, workersWg *sync.WaitGroup, userPassword string) {
+func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, workersWg *sync.WaitGroup, userPassword string) {
 	workersWg.Add(1)
 	defer workersWg.Done()
 
 	usersTxtFile, err := os.OpenFile("users.txt", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		mlog.Error("failed to open users.txt file")
-		errorsChan <- err
 		return
 	}
 	defer usersTxtFile.Close()
@@ -124,7 +115,6 @@ func userTxtWriter(usersTxtChan chan string, doneChan chan struct{}, errorsChan 
 			_, err := usersTxtFile.Write([]byte(model.UserAuthServiceSaml + ":" + email + " " + userPassword + "\n"))
 			if err != nil {
 				mlog.Error("failed to write to users.txt", mlog.String("err", err.Error()))
-				errorsChan <- err
 				return
 			}
 
@@ -139,7 +129,6 @@ type workerConfig struct {
 	usersChan        chan *model.User
 	operationsWg     *sync.WaitGroup
 	workersWg        *sync.WaitGroup
-	errorsChan       chan error
 	mmClient         *model.Client4
 	keycloakClient   *gocloak.GoCloak
 	keycloakToken    *gocloak.JWT
@@ -276,7 +265,6 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	if workers > 4 {
 		workers = 4
 	}
-	errorsChan := make(chan error, workers+1)
 	usersTxtChan := make(chan string)
 	usersChan := make(chan *model.User)
 
@@ -284,7 +272,7 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 	workersWg := &sync.WaitGroup{}
 
 	// Worker to write to the users.txt file
-	go userTxtWriter(usersTxtChan, doneChan, errorsChan, workersWg, userPassword)
+	go userTxtWriter(usersTxtChan, doneChan, workersWg, userPassword)
 
 	// Workers to run the sync and call the MM and Keycloak APIs
 	for i := 0; i < workers; i++ {
@@ -297,7 +285,6 @@ func RunSyncFromMattermostCommandF(cmd *cobra.Command, _ []string) error {
 			usersChan:        usersChan,
 			workersWg:        workersWg,
 			operationsWg:     operationsWg,
-			errorsChan:       errorsChan,
 			mmClient:         mmClient,
 			keycloakClient:   keycloakClient,
 			keycloakToken:    keycloakToken,
