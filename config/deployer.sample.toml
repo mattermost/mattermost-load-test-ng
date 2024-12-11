@@ -62,6 +62,7 @@ InstanceType = 'r6g.large.search'
 Version = 'Elasticsearch_7.10'
 ZoneAwarenessEnabled = false
 ZoneAwarenessAZCount = 2
+EnableCloudwatchLogs = true
 
 [ExternalBucketSettings]
 AmazonS3AccessKeyId = ''

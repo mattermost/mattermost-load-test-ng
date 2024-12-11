@@ -47,7 +47,7 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 // If the URL is an HTTP URL then the file is directly downloaded into the
 // servers. If the URL is prefixed by `file://` then the file is uploaded
 // from the local filesystem.
-func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuildURL, newBuildURL string) error {
+func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuildCfg, newBuildCfg BuildConfig) error {
 	output, err := t.Output()
 	if err != nil {
 		return err
@@ -78,12 +78,16 @@ func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuil
 				}
 			}
 		}
-		for _, url := range []string{baseBuildURL, newBuildURL} {
-			if err := deployment.ProvisionURL(client, url, filepath.Base(url)); err != nil {
+		for _, cfg := range []BuildConfig{baseBuildCfg, newBuildCfg} {
+			if err := deployment.ProvisionURL(client, cfg.URL, getBuildFilename(cfg)); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+func getBuildFilename(buildCfg BuildConfig) string {
+	return buildCfg.Label + "_" + filepath.Base(buildCfg.URL)
 }
