@@ -217,6 +217,14 @@ The number of availability zones to use for the Elasticsearch cluster. This sett
 
 Check the [documentation](https://aws.amazon.com/blogs/big-data/increase-availability-for-amazon-opensearch-service-by-deploying-in-three-availability-zones/).
 
+### EnableCloudwatchLogs
+
+*bool* (Default: `true`)
+
+Whether to enable Cloudwatch logs for the Elasticsearch cluster.
+
+Check the [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html).
+
 ## JobServerSettings
 
 ### InstanceCount

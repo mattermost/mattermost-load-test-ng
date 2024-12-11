@@ -171,7 +171,12 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Authenticate as admin to execute keycloak commands
-	_, err = sshc.RunCommand(fmt.Sprintf("%s/kcadm.sh config credentials --server http://127.0.0.1:8080 --user %s --password %s --realm master", keycloakBinPath, t.config.ExternalAuthProviderSettings.KeycloakAdminUser, t.config.ExternalAuthProviderSettings.KeycloakAdminPassword))
+	_, err = sshc.RunCommand(
+		fmt.Sprintf(`%s/kcadm.sh config credentials --server http://127.0.0.1:8080 --user %q --password %q --realm master`,
+			keycloakBinPath,
+			t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
+			t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
+		))
 	if err != nil {
 		return fmt.Errorf("failed to authenticate keycloak admin: %w", err)
 	}

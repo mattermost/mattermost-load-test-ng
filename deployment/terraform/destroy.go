@@ -5,7 +5,6 @@ package terraform
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -28,7 +27,6 @@ func (t *Terraform) Destroy() error {
 	// See https://mattermost.atlassian.net/browse/MM-47263
 	emptyBucketCtx, emptyBucketCancel := context.WithCancel(context.Background())
 	defer emptyBucketCancel()
-	emptyBucketErrCh := make(chan error, 1)
 	go func() {
 		if t.output.HasS3Bucket() {
 			mlog.Info("emptying S3 bucket s3://" + t.output.S3Bucket.Id)
@@ -38,13 +36,13 @@ func (t *Terraform) Destroy() error {
 				"s3://" + t.output.S3Bucket.Id,
 				"--recursive",
 			}
-			if err := t.runAWSCommand(emptyBucketCtx, emptyS3BucketArgs, nil); err != nil {
-				emptyBucketErrCh <- fmt.Errorf("failed to run local cmd \"aws %s\": %w", strings.Join(emptyS3BucketArgs, " "), err)
-				return
-			}
+			// We intentionally ignore potential errors from this command,
+			// since it introduces spurious failures when the bucket is
+			// destroyed before the command finishes.
+			// See https://mattermost.atlassian.net/browse/MM-62075
+			_ = t.runAWSCommand(emptyBucketCtx, emptyS3BucketArgs, nil)
 			mlog.Info("emptied S3 bucket s3://" + t.output.S3Bucket.Id)
 		}
-		emptyBucketErrCh <- nil
 	}()
 
 	var params []string
@@ -71,15 +69,6 @@ func (t *Terraform) Destroy() error {
 		if err := t.runAWSCommand(nil, args, nil); err != nil && !strings.Contains(err.Error(), "DBClusterNotFoundFault") {
 			return err
 		}
-	}
-
-	// Make sure that the empty bucket command has finished and check for any
-	// possible errors. The check may be redundant, since if we're already
-	// here, it means that the terraform destroy has finished successfullly, so
-	// the S3 command should have finished as well. Better safe than sorry, though.
-	err := <-emptyBucketErrCh
-	if err != nil {
-		return fmt.Errorf("failed to empty s3://%s: %w", t.output.S3Bucket.Id, err)
 	}
 
 	return t.loadOutput()
