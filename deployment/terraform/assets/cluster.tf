@@ -182,7 +182,7 @@ resource "aws_instance" "proxy_server" {
   ami                         = var.aws_ami
   instance_type               = var.proxy_instance_type
   count                       = var.proxy_instance_count
-  associate_public_ip_address = true
+  associate_public_ip_address = var.proxy_allocate_public_ip_address
   availability_zone           = var.aws_az
   subnet_id                   = (length(var.cluster_subnet_ids.proxy) > 0) ? element(tolist(var.cluster_subnet_ids.proxy), count.index) : null
 
@@ -370,7 +370,7 @@ resource "aws_instance" "loadtest_agent" {
   count         = var.agent_instance_count
   subnet_id     = (length(var.cluster_subnet_ids.agent) > 0) ? element(tolist(var.cluster_subnet_ids.agent), count.index) : null
 
-  associate_public_ip_address = true
+  associate_public_ip_address = var.agent_allocate_public_ip_address
   availability_zone           = var.aws_az
 
   vpc_security_group_ids = [aws_security_group.agent.id]

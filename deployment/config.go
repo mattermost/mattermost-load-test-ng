@@ -51,10 +51,14 @@ type Config struct {
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
+	// Should a pubic IP be allocated for the agent instance.
+	AgentAllocatePublicIPAddress bool `default:"true"`
 	// Number of proxy instances.
 	ProxyInstanceCount int `default:"1" validate:"range:[0,5]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
+	// Should a pubic IP be allocated for the proxy instance.
+	ProxyAllocatePublicIPAddress bool `default:"true"`
 	// Path to the SSH public key.
 	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
 	// Terraform database connection and provision settings.
