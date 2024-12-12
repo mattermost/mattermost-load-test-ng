@@ -19,6 +19,7 @@ EnableNetPeekMetrics = false
 AgentInstanceCount = 2
 AgentInstanceType = 'c5.xlarge'
 EnableAgentFullLogs = true
+AgentAllocatePublicIPAddress = true
 
 # App servers configuration
 AppInstanceCount = 1
@@ -43,6 +44,7 @@ TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 # Proxy server configuration
 ProxyInstanceType = 'c5.xlarge'
 ProxyInstanceCount = 1
+ProxyAllocatePublicIPAddress = true
 
 [ClusterSubnetIDs]
 App = []

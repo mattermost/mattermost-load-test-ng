@@ -22,6 +22,7 @@
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
+  "AgentAllocatePublicIPAddress": true,
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
@@ -48,6 +49,7 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceCount": 1,
   "ProxyInstanceType": "c7i.xlarge",
+  "ProxyAllocatePublicIPAddress": true,
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
