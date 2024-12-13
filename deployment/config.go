@@ -399,7 +399,7 @@ func (c *Config) IsValid() error {
 	}
 
 	if c.ExternalDBSettings.DataSource != "" && c.DBDumpURI != "" {
-		return errors.New("both ExternalDBSettings.DataSource and DbdumpURI are set, only one can be set")
+		return fmt.Errorf("both ExternalDBSettings.DataSource and DBDumpURI are set, only one can be set")
 	}
 
 	if err := c.validateElasticSearchConfig(); err != nil {
