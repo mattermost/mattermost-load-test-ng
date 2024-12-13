@@ -370,10 +370,10 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Removes the DS_PROMETHEUS variable requirement to allow grafana to use the only prometheus
 	// datasource available in the load-test envionment.
 	re := regexp.MustCompile(`,\r?\n\s+\"uid\":\s?\"\$\{DS_PROMETHEUS\}\"`)
-	result := re.ReplaceAll(dashboardV2Contents.Bytes(), []byte(``))
+	result := re.ReplaceAllString(dashboardV2Contents.String(), "")
 
-	if out, err := sshc.Upload(bytes.NewReader(result), "/var/lib/grafana/dashboards/dashboard_v2.json", true); err != nil {
-		return fmt.Errorf("error while uploading dashboard v2: output: %s, error: %w", out, err)
+	if _, err := t.UploadDashboard(result); err != nil {
+		return fmt.Errorf("error while uploading dashboard: %w", err)
 	}
 
 	// Upload coordinator metrics dashboard
