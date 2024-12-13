@@ -540,6 +540,11 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	mlog.Debug("Repositories registered", mlog.Array("repositories", repositories))
 
 	repo := esSettings.SnapshotRepository
+	snapshotName := esSettings.SnapshotName
+	if snapshotName == "" {
+		mlog.Debug("No Opensearch snapshot name given. Not restoring to any snapshot.")
+		return nil
+	}
 
 	// Check if the registered repositories already include the one configured
 	repoFound := false
@@ -568,7 +573,6 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	// Look for the configured snapshot
 	var snapshot opensearch.Snapshot
-	snapshotName := esSettings.SnapshotName
 	for _, s := range snapshots {
 		if s.Name == snapshotName {
 			snapshot = s
