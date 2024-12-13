@@ -398,6 +398,10 @@ func (c *Config) IsValid() error {
 		return fmt.Errorf("load-test download url is not in correct format: %q", c.LoadTestDownloadURL)
 	}
 
+	if c.ExternalDBSettings.DataSource != "" && c.DBDumpURI != "" {
+		return errors.New("both ExternalDBSettings.DataSource and DbdumpURI are set, only one can be set")
+	}
+
 	if err := c.validateElasticSearchConfig(); err != nil {
 		return err
 	}
