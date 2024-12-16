@@ -115,7 +115,7 @@ else
 	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	git checkout -b $(BRANCH_NAME) $(CURR_BRANCH)
 	@echo "Applying changes"
-	@for file in $(shell grep -rPl --include="*.go" --include="*.json" $(MATCH)); do \
+	@for file in $(shell grep -rPl --include="*.go" --include="*.json" --include="*.toml" $(MATCH)); do \
 		sed -r -i 's/$(MATCH)/$(REPLACE)/g' $$file; \
 	done
 	git commit -a -m "Bump version to $(NEXT_VER)"
