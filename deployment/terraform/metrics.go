@@ -353,7 +353,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error while uploading dashboard_json: output: %s, error: %w", out, err)
 	}
 
-	// Download dashboard v2 from grafama.com and upload it
+	// Download dashboard v2 from grafana.com and upload it
 	dashboardv2Resp, err := http.Get("https://grafana.com/api/dashboards/15582/revisions/latest/download")
 	if err != nil {
 		return fmt.Errorf("error downloading latest grafana v2 dashboard: %w", err)
