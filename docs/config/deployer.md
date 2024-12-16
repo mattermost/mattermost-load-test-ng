@@ -568,6 +568,10 @@ The file is expected to be gzip compressed.
 This can also point to a local file if prefixed with "file://".
 In such case, the dump file will be uploaded to the app servers.
 
+Loading a dump into a database only work for terraform created databases.
+If you are using an existing database by relying on [`ExternalDBSettings`](#ExternalDBSettings)
+you need to load the dump manually.
+
 ## SiteURL
 
 *string*
