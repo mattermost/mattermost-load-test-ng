@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -20,6 +19,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Possible actions for the IDP authentication
@@ -156,12 +156,12 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 			queryParams.Add(string(matches[1]), string(matches[2]))
 		}
 
-		slog.Warn(
+		mlog.Warn(
 			"SAML form info",
-			slog.String("formURL", formURL),
-			slog.String("redirectURLMatcher_0", string(redirectURLMatcher[0])),
-			slog.String("redirectURLMatcher_1", string(redirectURLMatcher[1])),
-			slog.String("samlResponseBody", string(samlResponseBody)),
+			mlog.String("formURL", formURL),
+			mlog.String("redirectURLMatcher_0", string(redirectURLMatcher[0])),
+			mlog.String("redirectURLMatcher_1", string(redirectURLMatcher[1])),
+			mlog.String("samlResponseBody", string(samlResponseBody)),
 		)
 
 		samlForm, err := client.PostForm(formURL, queryParams)
