@@ -157,7 +157,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 
 		samlForm, err := client.PostForm(formURL, queryParams)
 		if err != nil {
-			return fmt.Errorf("error while posting SAML form: %w", err)
+			return fmt.Errorf("error while posting SAML form using client URL %s: %w", ue.client.URL, err)
 		}
 		samlForm.Body.Close()
 		if samlForm.StatusCode != http.StatusOK {
