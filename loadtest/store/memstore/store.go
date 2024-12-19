@@ -52,7 +52,7 @@ type MemStore struct {
 	featureFlags        map[string]bool
 	report              *model.PerformanceReport
 	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
-	scheduledPosts      map[string]map[string][]*model.ScheduledPost
+	scheduledPosts      map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -1387,14 +1387,22 @@ func (s *MemStore) SetScheduledPost(teamId string, scheduledPost *model.Schedule
 	return nil
 }
 
-func (s *MemStore) DeleteScheduledPost(scheduledPostID string) {
+func (s *MemStore) DeleteScheduledPost(scheduledPost *model.ScheduledPost) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	for teamId := range s.scheduledPosts {
-		if _, ok := s.scheduledPosts[teamId][scheduledPostID]; ok {
-			delete(s.scheduledPosts[teamId], scheduledPostID)
-			break
+		channelOrThreadId := scheduledPost.ChannelId
+		if scheduledPost.RootId != "" {
+			channelOrThreadId = scheduledPost.RootId
+		}
+
+		// find index of scheduledPost in s.scheduledPosts[teamId][channelOrThreadId] and if found, delete it
+		for i, sp := range s.scheduledPosts[teamId][channelOrThreadId] {
+			if sp.Id == scheduledPost.Id {
+				s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId][:i], s.scheduledPosts[teamId][channelOrThreadId][i+1:]...)
+				break
+			}
 		}
 	}
 }
@@ -1403,9 +1411,22 @@ func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.Sched
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if _, ok := s.scheduledPosts[teamId]; !ok {
-		s.scheduledPosts[teamId] = make(map[string][]*model.ScheduledPost)
+	channelOrThreadId := scheduledPost.ChannelId
+	if scheduledPost.RootId != "" {
+		channelOrThreadId = scheduledPost.RootId
 	}
 
-	s.scheduledPosts[teamId][scheduledPost.Id] = append(s.scheduledPosts[teamId][scheduledPost.Id], scheduledPost)
+	if _, ok := s.scheduledPosts[teamId]; !ok {
+		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{
+			channelOrThreadId: {scheduledPost},
+		}
+		return
+	}
+
+	for i := range s.scheduledPosts[teamId][channelOrThreadId] {
+		if s.scheduledPosts[teamId][channelOrThreadId][i].Id == scheduledPost.Id {
+			s.scheduledPosts[teamId][channelOrThreadId][i] = scheduledPost
+			break
+		}
+	}
 }

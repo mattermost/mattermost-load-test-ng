@@ -90,6 +90,8 @@ func nextPowerOf2(val int) int {
 	return val
 }
 
+// RandomFutureTime returns a random Unix timestamp, in milliseconds, in the interval
+// [now+deltaStart, now+maxUntil]
 func RandomFutureTime(deltaStart, maxUntil time.Duration) int64 {
 	now := time.Now()
 	diff := maxUntil - deltaStart

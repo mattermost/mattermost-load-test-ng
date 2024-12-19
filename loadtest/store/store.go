@@ -167,7 +167,7 @@ type UserStore interface {
 	DeleteChannelBookmark(bookmarkId string) error
 
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
-	DeleteScheduledPost(scheduledPostID string)
+	DeleteScheduledPost(scheduledPost *model.ScheduledPost)
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
 }
 

@@ -37,23 +37,18 @@ func (ue *UserEntity) UpdateScheduledPost(teamId string, scheduledPost *model.Sc
 		return err
 	}
 
-	err = ue.store.SetScheduledPost(teamId, updatedScheduledPost)
-	if err != nil {
-		return err
-	}
-
 	ue.Store().UpdateScheduledPost(teamId, updatedScheduledPost)
 
 	return nil
 }
 
-func (ue *UserEntity) DeleteScheduledPost(scheduledPostId string) error {
-	_, _, err := ue.client.DeleteScheduledPost(context.Background(), scheduledPostId)
+func (ue *UserEntity) DeleteScheduledPost(scheduledPost *model.ScheduledPost) error {
+	_, _, err := ue.client.DeleteScheduledPost(context.Background(), scheduledPost.Id)
 	if err != nil {
 		return err
 	}
 
-	ue.Store().DeleteScheduledPost(scheduledPostId)
+	ue.Store().DeleteScheduledPost(scheduledPost)
 	return nil
 }
 
@@ -63,8 +58,8 @@ func (ue *UserEntity) GetTeamScheduledPosts(teamID string) error {
 		return err
 	}
 
-	for teamIdInResponse := range scheduledPostsByTeam {
-		for _, scheduledPost := range scheduledPostsByTeam[teamIdInResponse] {
+	for _, scheduledPostByTeamId := range scheduledPostsByTeam {
+		for _, scheduledPost := range scheduledPostByTeamId {
 			err := ue.store.SetScheduledPost(teamID, scheduledPost)
 			if err != nil {
 				return err

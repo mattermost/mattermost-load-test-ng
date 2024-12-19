@@ -348,6 +348,6 @@ type User interface {
 	// Scheduled Posts
 	CreateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
-	DeleteScheduledPost(scheduledPostId string) error
+	DeleteScheduledPost(scheduledPost *model.ScheduledPost) error
 	GetTeamScheduledPosts(teamID string) error
 }

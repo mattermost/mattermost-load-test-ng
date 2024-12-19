@@ -63,7 +63,7 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post created in channel id %v", channel.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post created in channel with id %s", channel.Id)}
 }
 
 func (c *SimulController) updateScheduledPost(u user.User) control.UserActionResponse {
@@ -98,7 +98,7 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated in channel id %v", channel.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated in channel with id %s", channel.Id)}
 }
 
 func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionResponse {
@@ -116,11 +116,11 @@ func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Info: "no scheduled posts found"}
 	}
 
-	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
+	if err := u.DeleteScheduledPost(scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post deleted with id %v", scheduledPost.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post with id %s deleted", scheduledPost.Id)}
 }
 
 func (c *SimulController) sendScheduledPostNow(u user.User) control.UserActionResponse {
@@ -147,9 +147,9 @@ func (c *SimulController) sendScheduledPostNow(u user.User) control.UserActionRe
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.DeleteScheduledPost(scheduledPost.Id); err != nil {
+	if err := u.DeleteScheduledPost(scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post with id %v manually sent now", scheduledPost.Id)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post with id %s manually sent now", scheduledPost.Id)}
 }
