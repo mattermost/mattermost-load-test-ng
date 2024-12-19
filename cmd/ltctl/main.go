@@ -34,7 +34,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create SSH agent: %w", err)
 	}
 
-	initData := config.DBDumpURI == ""
+	initData := config.DBDumpURI == "" && config.ExternalDBSettings.DataSource == ""
 	if err = t.Create(extAgent, initData); err != nil {
 		return fmt.Errorf("failed to create terraform env: %w", err)
 	}
@@ -165,6 +165,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	}
 	if output.HasMetrics() {
 		fmt.Printf(" - %s\n", output.MetricsServer.Tags.Name)
+	}
+	if output.HasKeycloak() {
+		fmt.Printf(" - %s\n", output.KeycloakServer.Tags.Name)
 	}
 	return nil
 }

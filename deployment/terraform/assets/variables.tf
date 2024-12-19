@@ -27,10 +27,15 @@ variable "app_instance_count" {
 variable "app_instance_type" {
 }
 
+# Agent variables
+
 variable "agent_instance_count" {
 }
 
 variable "agent_instance_type" {
+}
+
+variable "agent_allocate_public_ip_address" {
 }
 
 # Elasticsearch variables
@@ -80,6 +85,9 @@ variable "redis_engine_version" {
 }
 
 variable "proxy_instance_type" {
+}
+
+variable "proxy_allocate_public_ip_address" {
 }
 
 variable "db_instance_count" {

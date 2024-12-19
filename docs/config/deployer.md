@@ -84,6 +84,12 @@ The number of load-test agent instances. The first instance will also host the [
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
+## AgentAllocatePublicIPAddress
+
+*bool*
+
+Whether to allocate a public IP address to the agent instances.
+
 ## ClusterSubnetIDs
 
 ### App
@@ -250,6 +256,12 @@ Number of proxy instances to run. Right now, only values `0` and `1` are allowed
 *string*
 
 The type of the EC2 instance of the proxy server. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
+## ProxyAllocatePublicIPAddress
+
+*bool*
+
+Whether to allocate a public IP address to the proxy instances.
 
 ## SSHPublicKey
 
@@ -555,6 +567,10 @@ to be loaded before running the load-test.
 The file is expected to be gzip compressed.
 This can also point to a local file if prefixed with "file://".
 In such case, the dump file will be uploaded to the app servers.
+
+Loading a dump into a database only work for terraform created databases.
+If you are using an existing database by relying on [`ExternalDBSettings`](#ExternalDBSettings)
+you need to load the dump manually.
 
 ## SiteURL
 

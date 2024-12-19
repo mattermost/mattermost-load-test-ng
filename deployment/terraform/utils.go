@@ -123,6 +123,11 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
+	// Match against the keycloak server
+	if output.KeycloakServer.Tags.Name == resource {
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PublicIP)), nil
+	}
+
 	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
@@ -254,6 +259,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("app_attach_iam_profile=%s", t.config.AppAttachIAMProfile),
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
+		"-var", fmt.Sprintf("agent_allocate_public_ip_address=%t", t.config.AgentAllocatePublicIPAddress),
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
 		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),
@@ -264,6 +270,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("es_enable_cloudwatch_logs=%t", t.config.ElasticSearchSettings.EnableCloudwatchLogs),
 		"-var", fmt.Sprintf("proxy_instance_count=%d", t.config.ProxyInstanceCount),
 		"-var", fmt.Sprintf("proxy_instance_type=%s", t.config.ProxyInstanceType),
+		"-var", fmt.Sprintf("proxy_allocate_public_ip_address=%t", t.config.ProxyAllocatePublicIPAddress),
 		"-var", fmt.Sprintf("ssh_public_key=%s", t.config.SSHPublicKey),
 		"-var", fmt.Sprintf("db_instance_count=%d", t.config.TerraformDBSettings.InstanceCount),
 		"-var", fmt.Sprintf("db_instance_engine=%s", t.config.TerraformDBSettings.InstanceEngine),
@@ -343,12 +350,17 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 // GetAWSConfig returns the AWS config, using the profile configured in the
 // deployer if present, and defaulting to the default credential chain otherwise
 func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
+
 	if t.config.AWSProfile == "" {
-		return awsconfig.LoadDefaultConfig(context.Background())
+		return awsconfig.LoadDefaultConfig(
+			context.Background(),
+			regionOpt,
+		)
 	}
 
-	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
-	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+	profileOpt := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profileOpt, regionOpt)
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the

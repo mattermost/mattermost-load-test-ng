@@ -51,10 +51,14 @@ type Config struct {
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
+	// Should a pubic IP be allocated for the agent instance.
+	AgentAllocatePublicIPAddress bool `default:"true"`
 	// Number of proxy instances.
 	ProxyInstanceCount int `default:"1" validate:"range:[0,5]"`
 	// Type of the EC2 instance for proxy.
 	ProxyInstanceType string `default:"m4.xlarge" validate:"notempty"`
+	// Should a pubic IP be allocated for the proxy instance.
+	ProxyAllocatePublicIPAddress bool `default:"true"`
 	// Path to the SSH public key.
 	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
 	// Terraform database connection and provision settings.
@@ -85,7 +89,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0/mattermost-load-test-ng-v1.22.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.24.0/mattermost-load-test-ng-v1.24.0-linux-amd64.tar.gz" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
@@ -396,6 +400,10 @@ func (c *Config) IsValid() error {
 
 	if !checkPrefix(c.LoadTestDownloadURL) {
 		return fmt.Errorf("load-test download url is not in correct format: %q", c.LoadTestDownloadURL)
+	}
+
+	if c.ExternalDBSettings.DataSource != "" && c.DBDumpURI != "" {
+		return fmt.Errorf("both ExternalDBSettings.DataSource and DBDumpURI are set, only one can be set")
 	}
 
 	if err := c.validateElasticSearchConfig(); err != nil {

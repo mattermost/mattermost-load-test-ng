@@ -22,6 +22,7 @@
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
+  "AgentAllocatePublicIPAddress": true,
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
@@ -48,6 +49,7 @@
   "EnableAgentFullLogs": true,
   "ProxyInstanceCount": 1,
   "ProxyInstanceType": "c7i.xlarge",
+  "ProxyAllocatePublicIPAddress": true,
   "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
@@ -95,7 +97,7 @@
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.22.0/mattermost-load-test-ng-v1.22.0-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.24.0/mattermost-load-test-ng-v1.24.0-linux-amd64.tar.gz",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",
