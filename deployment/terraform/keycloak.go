@@ -23,7 +23,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakDir := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion
 	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
-	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PrivateIP))
+	mlog.Info("Configuring keycloak server", mlog.String("host", t.output.KeycloakServer.PrivateIP))
 	extraArguments := []string{}
 
 	command := "start"
@@ -129,6 +129,10 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	if t.output.HasMetrics() {
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			return fmt.Errorf("error setting up prometheus node exporter: %w", err)
+		}
+
 		extraArguments = append(extraArguments, "--metrics-enabled true")
 	}
 

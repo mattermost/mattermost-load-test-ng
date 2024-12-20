@@ -176,7 +176,11 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	if t.output.HasKeycloak() {
 		host := "keycloak"
-		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
+		keycloakTargets = append(
+			keycloakTargets,
+			fmt.Sprintf("%s:8080", host), // keycloak service
+			fmt.Sprintf("%s:9100", host), // node exporter
+		)
 		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
@@ -279,7 +283,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(mmTargets), ","),
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
-		strings.Join(quoteAll(keycloakTargets), ""),
+		strings.Join(quoteAll(keycloakTargets), ","),
 		strings.Join(quoteAll(redisTargets), ","),
 		strings.Join(quoteAll(cloudwatchTargets), ","),
 		strings.Join(quoteAll(netpeekTargets), ","),
