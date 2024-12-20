@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/logger"
 	"github.com/wiggin77/merror"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -128,6 +129,7 @@ func (lt *LoadTester) addUser() error {
 
 	lt.wg.Add(1)
 	go func() {
+		logger.Init(&lt.config.LogSettings)
 		controller.Run()
 	}()
 	return nil

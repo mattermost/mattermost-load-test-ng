@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -33,7 +34,7 @@ func (t *Terraform) ClearLicensesData() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PrivateIP)
+		client, err := extAgent.NewClient(instance.PrivateIP, t.Config().AWSAMIUser)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -70,14 +71,8 @@ func (t *Terraform) ClearLicensesData() error {
 		Clients: appClients,
 	}
 
-	for _, c := range []deployment.Cmd{stopCmd, clearCmd, startCmd} {
-		mlog.Info(c.Msg)
-		for _, client := range c.Clients {
-			mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
-			if out, err := client.RunCommand(c.Value); err != nil {
-				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
-			}
-		}
+	if err := t.executeCommands([]deployment.Cmd{stopCmd, clearCmd, startCmd}); err != nil {
+		return fmt.Errorf("error executing database commands: %w", err)
 	}
 
 	return nil
@@ -103,7 +98,7 @@ func (t *Terraform) IngestDump() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PrivateIP)
+		client, err := extAgent.NewClient(instance.PrivateIP, t.Config().AWSAMIUser)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -163,7 +158,7 @@ func (t *Terraform) ExecuteCustomSQL() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.Instances[0].PrivateIP)
+	client, err := extAgent.NewClient(output.Instances[0].PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -224,7 +219,7 @@ func (t *Terraform) executeDatabaseCommands(extraCommands []deployment.Cmd) erro
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PrivateIP)
+		client, err := extAgent.NewClient(instance.PrivateIP, t.Config().AWSAMIUser)
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -257,12 +252,36 @@ func (t *Terraform) executeDatabaseCommands(extraCommands []deployment.Cmd) erro
 func (t *Terraform) executeCommands(commands []deployment.Cmd) error {
 	for _, c := range commands {
 		mlog.Info(c.Msg)
+
+		errors := make(chan error, len(c.Clients))
+		wg := sync.WaitGroup{}
+
 		for _, client := range c.Clients {
-			mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
-			if out, err := client.RunCommand(c.Value); err != nil {
-				return fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				mlog.Debug("Running cmd", mlog.String("cmd", c.Value))
+				if out, err := client.RunCommand(c.Value); err != nil {
+					errors <- fmt.Errorf("failed to run cmd %q: %w %s", c.Value, err, out)
+				}
+			}()
 		}
+
+		wg.Wait()
+		go func() {
+			close(errors)
+		}()
+
+		errorsFound := false
+		for e := range errors {
+			errorsFound = true
+			mlog.Error(e.Error())
+		}
+
+		if errorsFound {
+			return fmt.Errorf("errors found during command execution")
+		}
+
 	}
 
 	return nil

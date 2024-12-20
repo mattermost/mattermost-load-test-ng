@@ -50,7 +50,7 @@ resource "aws_instance" "app_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -75,7 +75,7 @@ resource "aws_instance" "app_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
   }
 
   provisioner "remote-exec" {
@@ -148,7 +148,7 @@ resource "aws_instance" "metrics_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -201,7 +201,7 @@ resource "aws_instance" "proxy_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -363,7 +363,7 @@ resource "aws_instance" "loadtest_agent" {
 
   connection {
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -709,7 +709,7 @@ resource "aws_instance" "job_server" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     # BRANCH: Use private IP (using private subnet)
     host = self.private_ip
   }
@@ -732,7 +732,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
   }
 
   provisioner "remote-exec" {
@@ -753,7 +753,7 @@ resource "null_resource" "s3_dump" {
 }
 
 // Keycloak
-resource "aws_instance" "keycloak" {
+resource "aws_instance" "keycloak_server" {
   tags = {
     Name = "${var.cluster_name}-keycloak"
   }
@@ -761,7 +761,7 @@ resource "aws_instance" "keycloak" {
   connection {
     # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     host = self.private_dns
   }
 

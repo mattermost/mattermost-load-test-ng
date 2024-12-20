@@ -15,7 +15,7 @@ output "metricsServer" {
 }
 
 output "keycloakServer" {
-  value = aws_instance.keycloak
+  value = aws_instance.keycloak_server
 }
 
 output "proxy" {
@@ -51,4 +51,3 @@ output "dbSecurityGroup" {
 output "jobServers" {
   value = aws_instance.job_server[*]
 }
-

@@ -5,20 +5,27 @@ set -euo pipefail
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
+system_arch=$(uname -m)
+if [ "$system_arch" == "x86_64" ]; then
+  arch="amd64"
+fi
+postgresql_version="14"
+prometheus_node_exporter_version="1.8.2"
+
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgres-archive-keyring.gpg && \
-      sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
-      sudo apt-get -y update && \
-      sudo apt-get install -y mysql-client-8.0 && \
-      sudo apt-get install -y postgresql-client-14 && \
-      sudo apt-get install -y prometheus-node-exporter && \
+      sudo dnf -y update && \
+      sudo dnf -y install postgresql${postgresql_version} && \
+      sudo dnf -y install wget && \
+      wget https://github.com/prometheus/node_exporter/releases/download/v${prometheus_node_exporter_version}/node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+      tar xvfz node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+      sudo cp node_exporter-${prometheus_node_exporter_version}.linux-${arch}/node_exporter /usr/local/bin && \
       exit 0
-   n=$((n+1)) 
+   n=$((n+1))
    sleep 2
 done
 

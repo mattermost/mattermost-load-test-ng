@@ -19,6 +19,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // Possible actions for the IDP authentication
@@ -123,6 +124,18 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 	}
 
 	if loginResponse.StatusCode != http.StatusOK {
+		samlResponseBody, err := io.ReadAll(loginResponse.Body)
+		if err != nil {
+			return fmt.Errorf("error while reading saml response body: %w", err)
+		}
+		loginResponse.Body.Close()
+
+		mlog.Debug(
+			"Login response",
+			mlog.String("body", string(samlResponseBody)),
+			mlog.Int("status", loginResponse.StatusCode),
+		)
+
 		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
@@ -155,9 +168,17 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 			queryParams.Add(string(matches[1]), string(matches[2]))
 		}
 
+		mlog.Debug(
+			"SAML form info",
+			mlog.String("formURL", formURL),
+			mlog.String("redirectURLMatcher_0", string(redirectURLMatcher[0])),
+			mlog.String("redirectURLMatcher_1", string(redirectURLMatcher[1])),
+			mlog.String("samlResponseBody", string(samlResponseBody)),
+		)
+
 		samlForm, err := client.PostForm(formURL, queryParams)
 		if err != nil {
-			return fmt.Errorf("error while posting SAML form: %w", err)
+			return fmt.Errorf("error while posting SAML form using client URL %s: %w", ue.client.URL, err)
 		}
 		samlForm.Body.Close()
 		if samlForm.StatusCode != http.StatusOK {

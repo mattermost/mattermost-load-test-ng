@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,7 +23,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakDir := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion
 	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
-	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PrivateIP))
+	mlog.Info("Configuring keycloak server", mlog.String("host", t.output.KeycloakServer.PrivateIP))
 	extraArguments := []string{}
 
 	command := "start"
@@ -30,7 +31,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		command = "start-dev"
 	}
 
-	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PrivateIP)
+	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -45,20 +46,53 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	if strings.TrimSpace(string(result)) == "0" {
 		mlog.Info("keycloak database not found, creating it and associated role")
 
+		// Get postgres home directory
+		output, err := sshc.RunCommand("sudo -iu postgres pwd")
+		if err != nil {
+			return fmt.Errorf("failed to get postgres home directory: %w", err)
+		}
+		postgresHome := bytes.TrimSpace(output)
+
+		// Upload the pg_hba.conf file
+		postgresPgHba, err := fillConfigTemplate(keycloakDatabasePgHBAContents, nil)
+		if err != nil {
+			return fmt.Errorf("failed to execute keycloak service file template: %w", err)
+		}
+
+		_, err = sshc.Upload(strings.NewReader(postgresPgHba), filepath.Join(string(postgresHome), "data/pg_hba.conf"), true)
+		if err != nil {
+			return fmt.Errorf("failed to upload keycloak service file: %w", err)
+		}
+
+		// Set postgres:postgres ownership
+		_, err = sshc.RunCommand(fmt.Sprintf("sudo chown postgres:postgres %s/data/pg_hba.conf", string(postgresHome)))
+		if err != nil {
+			return fmt.Errorf("failed to change permissions on keycloak database pg_hba.conf file: %w", err)
+		}
+
+		// Reload postgres to apply changes
+		_, err = sshc.RunCommand("sudo systemctl restart postgresql")
+		if err != nil {
+			return fmt.Errorf("failed to restart postgresql: %w", err)
+		}
+
+		sqlRemoteFilePath := filepath.Join(strings.TrimSpace(string(postgresHome)), "/keycloak-database.sql")
+
 		// Upload and import keycloak initial SQL file``
-		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
+		_, err = sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), sqlRemoteFilePath, true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak base database sql file: %w", err)
 		}
 
 		// Allow postgres user to read the file
-		_, err = sshc.RunCommand("sudo chown postgres:postgres /var/lib/postgresql/keycloak-database.sql")
+		_, err = sshc.RunCommand(fmt.Sprintf("sudo chown postgres:postgres %s", sqlRemoteFilePath))
 		if err != nil {
 			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
 		}
 
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /var/lib/postgresql/keycloak-database.sql`)
+		out, err := sshc.RunCommand(fmt.Sprintf(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f %s`, sqlRemoteFilePath))
 		if err != nil {
+			mlog.Error("Error running command", mlog.String("command", fmt.Sprintf(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f %s`, sqlRemoteFilePath)), mlog.String("result", string(out)), mlog.Err(err))
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
 
@@ -94,6 +128,14 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if t.output.HasMetrics() {
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			return fmt.Errorf("error setting up prometheus node exporter: %w", err)
+		}
+
+		extraArguments = append(extraArguments, "--metrics-enabled true")
+	}
+
 	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
@@ -113,6 +155,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]any{
 		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
 		"Command":         command + " " + strings.Join(extraArguments, " "),
+		"User":            t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
@@ -297,7 +340,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.KeycloakServer.PrivateIP)
+	client, err := extAgent.NewClient(output.KeycloakServer.PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -318,7 +361,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 
 	commands := []string{
-		"tar xzf /home/ubuntu/" + fileName + " -C /tmp",
+		fmt.Sprintf("tar xzf /home/%s/%s -C /tmp", t.Config().AWSAMIUser, fileName),
 		"sudo -iu postgres psql -d keycloak -v ON_ERROR_STOP=on -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 	}
 

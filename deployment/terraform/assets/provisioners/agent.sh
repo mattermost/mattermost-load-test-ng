@@ -5,22 +5,41 @@ set -euo pipefail
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
+system_arch=$(uname -m)
+if [ "$system_arch" == "x86_64" ]; then
+  arch="amd64"
+fi
+prometheus_node_exporter_version="1.8.2"
+otel_collector_version="0.110.0"
+
+function install_prometheus_node_exporter() {
+    echo "Installing Prometheus Node Exporter"
+    wget https://github.com/prometheus/node_exporter/releases/download/v${prometheus_node_exporter_version}/node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+    tar xvfz node_exporter-${prometheus_node_exporter_version}.linux-${arch}.tar.gz && \
+    sudo cp node_exporter-${prometheus_node_exporter_version}.linux-${arch}/node_exporter /usr/local/bin
+}
+
+function install_otel_collector() {
+    echo "Installing OpenTelemetry Collector"
+    wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${otel_collector_version}/otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm && \
+    sudo rpm -i otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm && \
+    sudo sed -i "s/User=.*/User=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo sed -i "s/Group=.*/Group=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo systemctl daemon-reload && \
+    sudo systemctl restart otelcol-contrib
+}
+
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
 do
         # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
         echo "Attempt ${n}"
-        sudo apt-get -y update && \
-        sudo apt-get install -y prometheus-node-exporter && \
-        sudo apt-get install -y numactl linux-tools-aws linux-tools-aws-lts-22.04 && \
-        # Install OpenTelemetry collector, using ubuntu user to avoid permission issues
-        wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/otelcol-contrib_0.110.0_linux_amd64.deb && \
-        sudo dpkg -i otelcol-contrib_0.110.0_linux_amd64.deb && \
-        sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service && \
-        sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service && \
-        sudo mkdir -p /etc/otelcol-contrib && \
-        sudo systemctl daemon-reload && sudo systemctl restart otelcol-contrib && \
+        sudo dnf -y update && \
+        sudo dnf -y install numactl kernel-tools && \
+        sudo dnf -y install wget && \
+        install_prometheus_node_exporter && \
+        install_otel_collector && \
         exit 0
    n=$((n+1))
    sleep 2

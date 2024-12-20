@@ -98,40 +98,40 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, agent.PrivateIP)), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.PrivateIP)), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PrivateIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.PrivateIP)), nil
 		}
 	}
 
 	// Match against proxy names
 	for _, inst := range output.Proxies {
 		if resource == inst.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PrivateIP)), nil
 		}
 	}
 
 	// Match against the metrics servers, as well as convenient aliases.
 	if output.KeycloakServer.Tags.Name == resource {
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.KeycloakServer.PrivateIP)), nil
 	}
 
 	// Match against the proxy or metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PrivateIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.MetricsServer.PrivateIP)), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)
@@ -251,6 +251,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
 		"-var", fmt.Sprintf("aws_az=%s", t.config.AWSAvailabilityZone),
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
+		"-var", fmt.Sprintf("aws_ami_user=%s", t.config.AWSAMIUser),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, t.config.ClusterSubnetIDs),
@@ -352,7 +353,7 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 	}
 
 	profile := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
-	return awsconfig.LoadDefaultConfig(context.Background(), profile)
+	return awsconfig.LoadDefaultConfig(context.Background(), profile, awsconfig.WithRegion(t.config.AWSRegion))
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the

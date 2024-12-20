@@ -112,7 +112,7 @@ type DashboardData struct {
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Updating Prometheus config
-	sshc, err := extAgent.NewClient(t.output.MetricsServer.PrivateIP)
+	sshc, err := extAgent.NewClient(t.output.MetricsServer.PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return err
 	}
@@ -144,9 +144,21 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		esEndpoint := fmt.Sprintf("https://%s", t.output.ElasticSearchServer.Endpoint)
 		esTargets = append(esTargets, "metrics:9114")
 
+		serviceFileTmpl, err := template.New("es-exporter-service").Parse(esExporterServiceFile)
+		if err != nil {
+			return fmt.Errorf("error parsing elasticsearch exporter service file: %w", err)
+		}
+
+		var serviceFileOutput bytes.Buffer
+		if err := serviceFileTmpl.Execute(&serviceFileOutput, map[string]string{
+			"ESEndpoint": esEndpoint,
+			"User":       t.Config().AWSAMIUser,
+		}); err != nil {
+			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
+		}
+
 		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
-		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
-		rdr := strings.NewReader(esExporterService)
+		rdr := strings.NewReader(serviceFileOutput.String())
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/es-exporter.service", true); err != nil {
 			return fmt.Errorf("error upload elasticsearch exporter service file: output: %s, error: %w", out, err)
 		}
@@ -156,7 +168,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
-		cmd = "sudo service es-exporter restart"
+		cmd = "sudo systemctl restart es-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
@@ -164,7 +176,11 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	if t.output.HasKeycloak() {
 		host := "keycloak"
-		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
+		keycloakTargets = append(
+			keycloakTargets,
+			fmt.Sprintf("%s:8080", host), // keycloak service
+			fmt.Sprintf("%s:9100", host), // node exporter
+		)
 		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
@@ -174,10 +190,22 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
 
+		serviceFileTmpl, err := template.New("es-exporter-service").Parse(esExporterServiceFile)
+		if err != nil {
+			return fmt.Errorf("error parsing elasticsearch exporter service file: %w", err)
+		}
+
+		var serviceFileOutput bytes.Buffer
+		if err := serviceFileTmpl.Execute(&serviceFileOutput, map[string]string{
+			"RedisAddr": redisEndpoint,
+			"User":      t.Config().AWSAMIUser,
+		}); err != nil {
+			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
+		}
+
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
-		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
-		rdr := strings.NewReader(redisExporterService)
+		rdr := strings.NewReader(serviceFileOutput.String())
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
 			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
 		}
@@ -187,10 +215,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
-		cmd = "sudo service redis-exporter restart"
+		cmd = "sudo systemctl restart redis-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
+	}
+
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		return fmt.Errorf("error setting up prometheus node exporter: %w", err)
 	}
 
 	yacePort := "9106"
@@ -198,12 +230,13 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	cloudwatchTargets = append(cloudwatchTargets, "metrics:"+yacePort)
 
-	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PublicIP))
+	mlog.Info("Updating YACE config", mlog.String("host", t.output.MetricsServer.PrivateIP))
 	yaceConfig, err := fillConfigTemplate(yaceConfigFile, map[string]any{
 		"ClusterName": t.output.ClusterName,
 		"Period":      yaceDurationSeconds,
 		"Length":      yaceDurationSeconds,
 		"Delay":       yaceDurationSeconds,
+		"AWSRegion":   t.Config().AWSRegion,
 	})
 	if err != nil {
 		return fmt.Errorf("error rendering YACE configuration template: %w", err)
@@ -216,6 +249,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	yaceService, err := fillConfigTemplate(yaceServiceFile, map[string]any{
 		"ScrapingInterval": yaceDurationSeconds,
 		"Port":             yacePort,
+		"User":             t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("error rendering YACE service template: %w", err)
@@ -229,8 +263,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
-	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PublicIP))
-	cmd = "sudo service yace restart"
+	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.PrivateIP))
+	cmd = "sudo systemctl restart yace"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -249,7 +283,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		strings.Join(quoteAll(mmTargets), ","),
 		strings.Join(quoteAll(esTargets), ","),
 		strings.Join(quoteAll(ltTargets), ","),
-		strings.Join(quoteAll(keycloakTargets), ""),
+		strings.Join(quoteAll(keycloakTargets), ","),
 		strings.Join(quoteAll(redisTargets), ","),
 		strings.Join(quoteAll(cloudwatchTargets), ","),
 		strings.Join(quoteAll(netpeekTargets), ","),
@@ -292,25 +326,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service prometheus restart"
+	cmd = "sudo systemctl restart prometheus"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service alloy restart"
-	if out, err := sshc.RunCommand(cmd); err != nil {
-		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
-	}
-
-	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service alloy restart"
+	cmd = "sudo systemctl restart alloy"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.PrivateIP))
-	cmd = "sudo service pyroscope restart"
+	cmd = "sudo systemctl restart pyroscope"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -328,8 +356,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if err != nil {
 		return err
 	}
-	dataSource := fmt.Sprintf(string(buf), "http://"+t.output.MetricsServer.PrivateIP+":9090")
-	if out, err := sshc.Upload(strings.NewReader(dataSource), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
+	if out, err := sshc.Upload(bytes.NewReader(buf), "/etc/grafana/provisioning/datasources/datasource.yaml", true); err != nil {
 		return fmt.Errorf("error while uploading datasource: output: %s, error: %w", out, err)
 	}
 
@@ -439,7 +466,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Restart grafana
-	cmd = "sudo service grafana-server restart"
+	cmd = "sudo systemctl restart grafana-server"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}

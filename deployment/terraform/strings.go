@@ -16,12 +16,12 @@ ExecStart=/opt/mattermost/bin/mattermost
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
-Environment=MM_SERVICEENVIRONMENT=%s
+Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target
@@ -64,6 +64,19 @@ scrape_configs:
         - targets: [%s]
 `
 
+const prometheusServiceFile = ``
+
+const prometheusNodeExporterServiceFile = `[Unit]
+Description=Node Exporter
+
+[Service]
+# Fallback when environment file does not exist
+EnvironmentFile=-/etc/default/prometheus-node-exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target`
+
 const metricsHosts = `
 127.0.0.1 localhost
 
@@ -94,7 +107,7 @@ ff02::3 ip6-allhosts
 `
 
 const nginxConfigTmpl = `
-user www-data;
+#user www-data;
 worker_processes auto;
 worker_rlimit_nofile 100000;
 pid /run/nginx.pid;
@@ -284,7 +297,7 @@ net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 `
 
-const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
+const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
 const apiServiceFile = `
 [Unit]
@@ -298,9 +311,9 @@ Environment="BLOCK_PROFILE_RATE={{ printf "%d" .blockProfileRate}}"
 ExecStart={{ printf "%s" .execStart}}
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
-User=ubuntu
-Group=ubuntu
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=262144
 
 [Install]
@@ -314,12 +327,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
+ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="{{.ESEndpoint}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -332,12 +345,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="{{.RedisAddr}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/redis_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -359,7 +372,7 @@ discovery:
   jobs:
     - type: AWS/RDS
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -390,7 +403,7 @@ discovery:
           statistics: [Average]
     - type: AWS/ES
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -431,7 +444,7 @@ discovery:
           statistics: [Maximum]
     - type: AWS/EC2
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -460,8 +473,8 @@ ExecStart=/opt/yace/yace -listen-address :{{.Port}} -config.file /opt/yace/conf.
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/yace
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -478,8 +491,8 @@ ExecStart=/opt/mattermost/bin/mattermost jobserver
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_SERVICEENVIRONMENT=%s
 
@@ -505,8 +518,8 @@ Description=Keycloak
 After=network.target
 
 [Service]
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 EnvironmentFile=/etc/systemd/system/keycloak.env
 ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
 
@@ -524,10 +537,26 @@ KC_DB_POOL_MIN_SIZE=20
 KC_DB_POOL_INITIAL_SIZE=20
 KC_DB_POOL_MAX_SIZE=200
 KC_DB=postgres
-KC_DB_URL=jdbc:psql://localhost:5433/keycloak
-KC_DB_PASSWORD=mmpass
+KC_DB_URL=jdbc:psql://keycloak:mmpass@localhost:5432/keycloak
 KC_DB_USERNAME=keycloak
+KC_DB_PASSWORD=mmpass
 KC_DATABASE=keycloak`
+
+const keycloakDatabasePgHBAContents = `
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    keycloak        keycloak        127.0.0.1/32            md5
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+# host    all             all             127.0.0.1/32            ident
+# IPv6 local connections:
+# host    all             all             ::1/128                 ident
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            ident
+host    replication     all             ::1/128                 ident
+`
 
 const prometheusNodeExporterConfig = `
 ARGS="--collector.ethtool"
@@ -616,7 +645,7 @@ type otelcolReceiver struct {
 func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
 	agentReceiver := otelcolReceiver{
 		Name:              "filelog/agent",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltagent.log",
 		ServiceName:       "agent",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAppAgent,
@@ -624,7 +653,7 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 
 	coordinatorReceiver := otelcolReceiver{
 		Name:              "filelog/coordinator",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltcoordinator.log",
 		ServiceName:       "coordinator",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAppAgent,

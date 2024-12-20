@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/blang/semver"
@@ -372,14 +373,14 @@ func (t *Terraform) Create(initData bool) error {
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupMMServer(extAgent, val.PrivateIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupJobServer(extAgent, val.PrivateIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
@@ -397,7 +398,7 @@ func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, u
 }
 
 func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool, instanceName string) error {
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
 	}
@@ -413,14 +414,32 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("unable to render otelcol config template: %w", err)
 	}
 
+	serviceFileTemplate, err := template.New("serviceFile").Parse(serviceFile)
+	if err != nil {
+		return fmt.Errorf("error parsing service file template: %w", err)
+	}
+
+	var serviceFileTemplateOutput bytes.Buffer
+	err = serviceFileTemplate.Execute(&serviceFileTemplateOutput, map[string]string{
+		"ServiceEnvironment": os.Getenv("MM_SERVICEENVIRONMENT"),
+		"User":               t.Config().AWSAMIUser,
+	})
+	if err != nil {
+		return fmt.Errorf("error executing service file template: %w", err)
+	}
+
 	// Upload files
 	batch := []uploadInfo{
 		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
-		{srcData: strings.TrimSpace(fmt.Sprintf(serviceFile, os.Getenv("MM_SERVICEENVIRONMENT"))), dstPath: "/lib/systemd/system/mattermost.service"},
+		{srcData: strings.TrimSpace(serviceFileTemplateOutput.String()), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 		{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 		{srcData: strings.TrimSpace(fmt.Sprintf(netpeekServiceFile, gossipPort)), dstPath: "/lib/systemd/system/netpeek.service"},
 		{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
+	}
+
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		return fmt.Errorf("error setting up prometheus node exporter: %w", err)
 	}
 
 	// If SiteURL is set, update /etc/hosts to point to the correct IP
@@ -446,7 +465,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
 
-	cmd = "sudo systemctl daemon-reload && sudo service mattermost stop"
+	cmd = "sudo systemctl daemon-reload && sudo systemctl stop mattermost"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
@@ -457,7 +476,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		mlog.Info("Uploading release from tar.gz file", mlog.String("host", ip))
 
 		filename := path.Base(uploadPath)
-		if out, err := sshc.UploadFile(uploadPath, "/home/ubuntu/"+filename, false); err != nil {
+		if out, err := sshc.UploadFile(uploadPath, fmt.Sprintf("/home/%s/%s", t.Config().AWSAMIUser, filename), false); err != nil {
 			return fmt.Errorf("error uploading file %q, output: %q: %w", uploadPath, string(out), err)
 		}
 		commands = []string{
@@ -497,17 +516,35 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 
 	if t.config.EnableNetPeekMetrics {
 		mlog.Info("Starting netpeek service", mlog.String("host", ip))
-		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo service netpeek restart"
+		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo systemctl restart netpeek"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 		}
 	}
 
+	// Ensure selinux is disabled for the service file to work properly having the binary outside
+	// the default binary directories
+	mlog.Info("Disabling SELinux", mlog.String("host", ip))
+	cmd = "sudo setenforce 0"
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		mlog.Error(string(out))
+		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
 	// Starting mattermost.
 	mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
+	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo systemctl restart mattermost"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+	}
+
+	// Check if systemd service is running
+	mlog.Info("Checking if mattermost service is running", mlog.String("host", ip), mlog.String("instance", instanceName))
+	cmd = "sudo systemctl status mattermost"
+	out, err := sshc.RunCommand(cmd)
+	if err != nil {
+		mlog.Error(string(out))
+		return fmt.Errorf("error running ssh command %q: %q, %w", cmd, out, err)
 	}
 
 	return nil
@@ -538,7 +575,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 	esEndpoint := output.ElasticSearchServer.Endpoint
 
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
 	if err != nil {
 		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
@@ -788,9 +825,9 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 }
 
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) {
-	ip := instance.PublicDNS
+	ip := instance.PrivateDNS
 
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 		return
@@ -803,6 +840,14 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 				mlog.Error("error closing ssh connection", mlog.Err(err))
 			}
 		}()
+
+		// Ensure selinux is disabled for the connection from nginx to the upstream servers to work
+		mlog.Info("Disabling SELinux", mlog.String("host", ip))
+		cmd := "sudo setenforce 0"
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			mlog.Error("error running ssh command %q, output: %q: %w", mlog.String("cmd", cmd), mlog.String("out", out), mlog.Err(err))
+			return
+		}
 
 		// Upload service file
 		mlog.Info("Uploading nginx config", mlog.String("host", ip))
@@ -855,6 +900,14 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
+		otelcolConfigFile, err := fillConfigTemplate(otelcolConfig, map[string]any{
+			"User": t.Config().AWSAMIUser,
+		})
+		if err != nil {
+			mlog.Error("Failed to generate otelcol config", mlog.Err(err))
+			return
+		}
+
 		batch := []uploadInfo{
 			{srcData: strings.TrimLeft(nginxProxyCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/proxy.conf"},
 			{srcData: strings.TrimLeft(nginxCacheCommonConfig, "\n"), dstPath: "/etc/nginx/snippets/cache.conf"},
@@ -863,21 +916,25 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
-			{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
+			{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
 			return
 		}
 
-		cmd := "sudo systemctl restart otelcol-contrib"
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			mlog.Error("error setting up prometheus node exporter", mlog.Err(err), mlog.String("host", ip), mlog.String("instance", instance.Tags.Name))
+		}
+
+		cmd = "sudo systemctl restart otelcol-contrib"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
 		}
 
 		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
-		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
+		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo systemctl restart nginx", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
@@ -892,7 +949,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return err
 	}
@@ -918,7 +975,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return errors.New("no instances found in Terraform output")
 	}
 
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].PrivateIP, t.Config().AWSAMIUser)
 	if err != nil {
 		return err
 	}
@@ -978,7 +1035,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg := &model.Config{}
 	cfg.SetDefaults()
 	cfg.ServiceSettings.ListenAddress = model.NewPointer(":8065")
-	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer("/home/ubuntu/mattermost.mattermost-license")
+	cfg.ServiceSettings.LicenseFileLocation = model.NewPointer(fmt.Sprintf("/home/%s/mattermost.mattermost-license", t.config.AWSAMIUser))
 	cfg.ServiceSettings.SiteURL = model.NewPointer(siteURL)
 	cfg.ServiceSettings.ReadTimeout = model.NewPointer(60)
 	cfg.ServiceSettings.WriteTimeout = model.NewPointer(60)

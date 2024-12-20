@@ -8,11 +8,12 @@ datasources:
   type: prometheus
   access: proxy
   orgId: 1
-  url: %s
+  url: http://localhost:9090
   isDefault: true
   version: 1
   editable: true
   jsonData:
+    httpMethod: GET
     timeInterval: "5s"
 - name: Loki
   type: loki

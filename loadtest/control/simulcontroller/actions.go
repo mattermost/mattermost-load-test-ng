@@ -148,6 +148,7 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
+			return control.UserActionResponse{Err: err}
 		}
 
 		appErr, ok := resp.Err.(*control.UserError).Err.(*model.AppError)
