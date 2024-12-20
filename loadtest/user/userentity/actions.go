@@ -124,6 +124,18 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 	}
 
 	if loginResponse.StatusCode != http.StatusOK {
+		samlResponseBody, err := io.ReadAll(loginResponse.Body)
+		if err != nil {
+			return fmt.Errorf("error while reading saml response body: %w", err)
+		}
+		loginResponse.Body.Close()
+
+		mlog.Debug(
+			"Login response",
+			mlog.String("body", string(samlResponseBody)),
+			mlog.Int("status", loginResponse.StatusCode),
+		)
+
 		return fmt.Errorf("%s failed with status code %d", action, loginResponse.StatusCode)
 	}
 
