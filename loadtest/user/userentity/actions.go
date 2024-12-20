@@ -156,7 +156,7 @@ func (ue *UserEntity) authIDP(action authIDPAction, provider string) error {
 			queryParams.Add(string(matches[1]), string(matches[2]))
 		}
 
-		mlog.Error(
+		mlog.Debug(
 			"SAML form info",
 			mlog.String("formURL", formURL),
 			mlog.String("redirectURLMatcher_0", string(redirectURLMatcher[0])),
