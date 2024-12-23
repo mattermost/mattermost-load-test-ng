@@ -342,6 +342,15 @@ func (t *Terraform) PostProcessDatabase(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	needsReboot, err := t.HasPendingRebootDBParams()
+	if err != nil {
+		return fmt.Errorf("failed to check whether the DB has pending-reboot parameters: %w", err)
+	}
+
+	if needsReboot {
+		return t.RebootDBInstances(extAgent)
+	}
+
 	return nil
 }
 
