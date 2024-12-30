@@ -468,14 +468,6 @@ func (c *Config) validateElasticSearchConfig() error {
 		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
 	}
 
-	if c.ElasticSearchSettings.SnapshotRepository == "" {
-		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
-	}
-
-	if c.ElasticSearchSettings.SnapshotName == "" {
-		return fmt.Errorf("Empty SnapshotName. Must supply a value")
-	}
-
 	return nil
 }
 
