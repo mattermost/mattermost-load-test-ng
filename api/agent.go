@@ -492,8 +492,6 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 		}
 		email := split[0]
 		password := split[1]
-		// Quick and dirty hack to extract username from email.
-		// This is not terribly important to be correct.
 		authService := userentity.AuthenticationTypeMattermost
 
 		// Check if the user has a custom authentication type. Custom authentication types are
@@ -521,6 +519,8 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 			return nil, fmt.Errorf("invalid email %q", email)
 		}
 
+		// Quick and dirty hack to extract username from email.
+		// This is not terribly important to be correct.
 		username := emailParts[0]
 
 		users = append(users, user{
