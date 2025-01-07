@@ -522,6 +522,7 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 		// Quick and dirty hack to extract username from email.
 		// This is not terribly important to be correct.
 		username := emailParts[0]
+		username = strings.Replace(username, "+", "-", -1)
 
 		users = append(users, user{
 			email:       email,
