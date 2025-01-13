@@ -153,18 +153,24 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		return err
 	}
 
-	// If we are restoring from a DB backup, then we need to hook up
+	// If we are restoring from a DB backup, or using an external database, then we need to hook up
 	// the security group to it.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" || t.config.ExternalDBSettings.ClusterIdentifier != "" {
 		if len(t.output.DBSecurityGroup) == 0 {
 			return errors.New("No DB security group created")
+		}
+		var identifier string
+		if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+			identifier = t.config.TerraformDBSettings.ClusterIdentifier
+		} else {
+			identifier = t.config.ExternalDBSettings.ClusterIdentifier
 		}
 
 		sgID := t.output.DBSecurityGroup[0].Id
 		args := []string{
 			"rds",
 			"modify-db-cluster",
-			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+			"--db-cluster-identifier=" + identifier,
 			"--vpc-security-group-ids=" + sgID,
 			"--region=" + t.config.AWSRegion,
 		}

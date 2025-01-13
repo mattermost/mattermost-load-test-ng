@@ -257,6 +257,8 @@ type ExternalDBSettings struct {
 	DataSourceReplicas []string `default:""`
 	// DSN to connect to the database search replicas
 	DataSourceSearchReplicas []string `default:""`
+	// ClusterIdentifier of the existing DB cluster.
+	ClusterIdentifier string `default:""`
 }
 
 // ExternalBucketSettings contains the necessary data

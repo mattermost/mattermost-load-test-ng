@@ -366,6 +366,12 @@ The list of dsn for external database read replicas
 
 The list of dsn for external database search replicas
 
+### ClusterIdentifier
+
+*string*
+
+ClusterIdentifier of the existing DB cluster.
+
 ## ExternalBucketSettings
 
 ### AmazonS3AccessKeyId

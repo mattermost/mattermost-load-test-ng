@@ -82,6 +82,7 @@ DataSource = ''
 DataSourceReplicas = []
 DataSourceSearchReplicas = []
 DriverName = 'cockroach'
+ClusterIdentifier = ''
 
 [JobServerSettings]
 InstanceCount = 0
