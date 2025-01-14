@@ -360,7 +360,7 @@ discovery:
   jobs:
     - type: AWS/RDS
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -391,7 +391,7 @@ discovery:
           statistics: [Average]
     - type: AWS/ES
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -432,7 +432,7 @@ discovery:
           statistics: [Maximum]
     - type: AWS/EC2
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
