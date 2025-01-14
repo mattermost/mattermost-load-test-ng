@@ -33,8 +33,8 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 		websocketScheme = "wss"
 	}
 
-	cfg.ConnectionConfiguration.ServerURL = t.Config().ServerScheme + "://" + url
-	cfg.ConnectionConfiguration.WebSocketURL = websocketScheme + "://" + url
+	cfg.ConnectionConfiguration.ServerURL = url
+	cfg.ConnectionConfiguration.WebSocketURL = strings.Replace(url, t.config.ServerScheme+"://", websocketScheme+"://", 1)
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
