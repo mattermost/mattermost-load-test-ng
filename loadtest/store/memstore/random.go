@@ -5,10 +5,9 @@ package memstore
 
 import (
 	"errors"
-	"math/rand"
-
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
+	"math/rand"
 )
 
 var (
@@ -447,4 +446,41 @@ func (s *MemStore) RandomDraftForTeam(teamId string) (string, error) {
 	}
 
 	return draftIDs[rand.Intn(len(draftIDs))], nil
+}
+
+func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	// Check if scheduledPosts is empty
+	if len(s.scheduledPosts) == 0 {
+		return nil, errors.New("no scheduled posts available")
+	}
+
+	var keys []string
+	for key, innerMap := range s.scheduledPosts {
+		if len(innerMap) > 0 {
+			keys = append(keys, key)
+		}
+	}
+
+	if len(keys) == 0 {
+		return nil, errors.New("no scheduled posts available")
+	}
+
+	selectedInnerMap := s.scheduledPosts[keys[rand.Intn(len(keys))]]
+
+	// Pick a random index for the inner map
+	randomInnerIndex := rand.Intn(len(selectedInnerMap))
+	var selectedPost *model.ScheduledPost
+	innerIndex := 0
+	for _, post := range selectedInnerMap {
+		if innerIndex == randomInnerIndex {
+			selectedPost = post[rand.Intn(len(post))]
+			break
+		}
+		innerIndex++
+	}
+
+	return selectedPost, nil
 }
