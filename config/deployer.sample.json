@@ -70,7 +70,8 @@
     "DriverName": "cockroach",
     "DataSource": "",
     "DataSourceReplicas": [],
-    "DataSourceSearchReplicas": []
+    "DataSourceSearchReplicas": [],
+    "ClusterIdentifier": "",
   },
   "ExternalBucketSettings": {
     "AmazonS3AccessKeyId": "",
