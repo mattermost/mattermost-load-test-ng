@@ -94,6 +94,14 @@ type Instance struct {
 	Tags       Tags   `json:"tags"`
 }
 
+func (i Instance) GetConnectionIP() string {
+	return i.PublicIP
+}
+
+func (i Instance) GetConnectionDNS() string {
+	return i.PublicDNS
+}
+
 // ElasticSearchDomain is an AWS Elasticsearch domain.
 type ElasticSearchDomain struct {
 	Endpoint string `json:"endpoint"`

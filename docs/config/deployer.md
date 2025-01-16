@@ -621,3 +621,9 @@ Set the pprof block profile rate. This value applies to both agent and Mattermos
 *map[string]string*
 
 Optional map of key-value pairs, used to tag all deployed resources in AWS. Check [AWS documentation on tags](https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/what-are-tags.html) for more information and best practices.
+
+## ConnectionType
+
+*string*
+
+Defines how instances should be accessed. Can be either "public" (default) or "private". When set to "private", instances will only be accessible through private IP addresses within the VPC.

@@ -37,6 +37,8 @@ type Config struct {
 	ClusterVpcID string
 	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
 	ClusterSubnetIDs ClusterSubnetIDs
+	// ConnectionType defines how instances should be accessed, either "public" or "private"
+	ConnectionType string `default:"public" validate:"oneof:{public,private}"`
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
