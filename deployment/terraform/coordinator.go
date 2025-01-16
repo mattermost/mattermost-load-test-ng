@@ -30,7 +30,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.Agents {
@@ -159,7 +159,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
 
@@ -190,7 +190,7 @@ func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
@@ -216,7 +216,7 @@ func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to inject the action")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
