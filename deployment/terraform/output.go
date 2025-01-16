@@ -96,6 +96,9 @@ type Instance struct {
 }
 
 func (i *Instance) SetConnectionType(connType string) {
+	if connType != "private" && connType != "public" {
+		connType = ""
+	}
 	i.connectionType = connType
 }
 
