@@ -193,6 +193,19 @@ func (t *Terraform) loadOutput() error {
 		JobServers:  o.JobServers.Value,
 	}
 
+	if t.config != nil {
+		// Set connection type for all instances
+		for i := range outputv2.Instances {
+			outputv2.Instances[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.Agents {
+			outputv2.Agents[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.JobServers {
+			outputv2.JobServers[i].SetConnectionType(t.config.ConnectionType)
+		}
+	}
+
 	if len(o.Proxy.Value) > 0 {
 		outputv2.Proxies = append(outputv2.Proxies, o.Proxy.Value...)
 	}
