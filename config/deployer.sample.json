@@ -16,6 +16,7 @@
     "Proxy": [],
     "Redis": []
   },
+  "ConnectionType": "public",
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",

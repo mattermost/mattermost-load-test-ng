@@ -87,11 +87,40 @@ type Output struct {
 
 // Instance is an AWS EC2 instance resource.
 type Instance struct {
-	PrivateIP  string `json:"private_ip"`
-	PublicIP   string `json:"public_ip"`
-	PublicDNS  string `json:"public_dns"`
-	PrivateDNS string `json:"private_dns"`
-	Tags       Tags   `json:"tags"`
+	PrivateIP      string `json:"private_ip"`
+	PublicIP       string `json:"public_ip"`
+	PublicDNS      string `json:"public_dns"`
+	PrivateDNS     string `json:"private_dns"`
+	Tags           Tags   `json:"tags"`
+	connectionType string
+}
+
+func (i *Instance) SetConnectionType(connType string) {
+	if connType != "private" && connType != "public" {
+		connType = ""
+	}
+	i.connectionType = connType
+}
+
+func (i Instance) GetConnectionType() string {
+	if i.connectionType == "" {
+		return "public"
+	}
+	return i.connectionType
+}
+
+func (i Instance) GetConnectionIP() string {
+	if i.GetConnectionType() == "private" {
+		return i.PrivateIP
+	}
+	return i.GetConnectionIP()
+}
+
+func (i Instance) GetConnectionDNS() string {
+	if i.GetConnectionType() == "private" {
+		return i.PrivateDNS
+	}
+	return i.GetConnectionDNS()
 }
 
 // ElasticSearchDomain is an AWS Elasticsearch domain.
@@ -162,6 +191,19 @@ func (t *Terraform) loadOutput() error {
 		Instances:   o.Instances.Value,
 		Agents:      o.Agents.Value,
 		JobServers:  o.JobServers.Value,
+	}
+
+	if t.config != nil {
+		// Set connection type for all instances
+		for i := range outputv2.Instances {
+			outputv2.Instances[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.Agents {
+			outputv2.Agents[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.JobServers {
+			outputv2.JobServers[i].SetConnectionType(t.config.ConnectionType)
+		}
 	}
 
 	if len(o.Proxy.Value) > 0 {
