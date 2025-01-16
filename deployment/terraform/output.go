@@ -87,18 +87,36 @@ type Output struct {
 
 // Instance is an AWS EC2 instance resource.
 type Instance struct {
-	PrivateIP  string `json:"private_ip"`
-	PublicIP   string `json:"public_ip"`
-	PublicDNS  string `json:"public_dns"`
-	PrivateDNS string `json:"private_dns"`
-	Tags       Tags   `json:"tags"`
+	PrivateIP      string `json:"private_ip"`
+	PublicIP       string `json:"public_ip"`
+	PublicDNS      string `json:"public_dns"`
+	PrivateDNS     string `json:"private_dns"`
+	Tags           Tags   `json:"tags"`
+	connectionType string
+}
+
+func (i *Instance) SetConnectionType(connType string) {
+	i.connectionType = connType
+}
+
+func (i Instance) GetConnectionType() string {
+	if i.connectionType == "" {
+		return "public"
+	}
+	return i.connectionType
 }
 
 func (i Instance) GetConnectionIP() string {
+	if i.GetConnectionType() == "private" {
+		return i.PrivateIP
+	}
 	return i.PublicIP
 }
 
 func (i Instance) GetConnectionDNS() string {
+	if i.GetConnectionType() == "private" {
+		return i.PrivateDNS
+	}
 	return i.PublicDNS
 }
 
