@@ -25,7 +25,6 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
 
-
 ## ClusterName
 
 *string*
@@ -51,6 +50,12 @@ The ID of the subnet associated to the resources.
 **Note**
 
 This setting only affects load-test agent instances. It is meant for pre-deployed environments.
+
+## ConnectionType
+
+*string*
+
+Defines how instances should be accessed. Can be either "public" (default) or "private". When set to "private", connection to instances will be made using their private IPs or DNSs, use this if you are deploying in private subnets.
 
 ## AppInstanceCount
 
@@ -621,9 +626,3 @@ Set the pprof block profile rate. This value applies to both agent and Mattermos
 *map[string]string*
 
 Optional map of key-value pairs, used to tag all deployed resources in AWS. Check [AWS documentation on tags](https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/what-are-tags.html) for more information and best practices.
-
-## ConnectionType
-
-*string*
-
-Defines how instances should be accessed. Can be either "public" (default) or "private". When set to "private", instances will only be accessible through private IP addresses within the VPC.
