@@ -115,6 +115,14 @@ resource "aws_opensearch_domain" "es_server" {
               "Principal": "*",
               "Effect": "Allow",
               "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.cluster_name}-es/*"
+          },
+          {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "es:ESCrossClusterGet",
+              "Resource": "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain"
           }
       ]
   }
