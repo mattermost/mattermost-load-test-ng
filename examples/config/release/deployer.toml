@@ -60,7 +60,7 @@ ProxyInstanceCount = 1
 # InstanceType = 'r6g.large.search'
 # VpcID = ''
 # CreateRole = false
-# Version = 'Elasticsearch_7.10'
+# Version = 'OpenSearch_2.7'
 # ZoneAwarenessEnabled = false
 # ZoneAwarenessAZCount = 2
 
