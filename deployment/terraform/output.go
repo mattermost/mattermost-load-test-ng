@@ -113,14 +113,14 @@ func (i Instance) GetConnectionIP() string {
 	if i.GetConnectionType() == "private" {
 		return i.PrivateIP
 	}
-	return i.GetConnectionIP()
+	return i.PublicIP
 }
 
 func (i Instance) GetConnectionDNS() string {
 	if i.GetConnectionType() == "private" {
 		return i.PrivateDNS
 	}
-	return i.GetConnectionDNS()
+	return i.PublicDNS
 }
 
 // ElasticSearchDomain is an AWS Elasticsearch domain.
