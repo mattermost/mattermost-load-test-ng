@@ -27,7 +27,7 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "Version": "Elasticsearch_7.10",
+    "Version": "OpenSearch_2.7",
     "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": "",
@@ -71,7 +71,8 @@
     "DriverName": "cockroach",
     "DataSource": "",
     "DataSourceReplicas": [],
-    "DataSourceSearchReplicas": []
+    "DataSourceSearchReplicas": [],
+    "ClusterIdentifier": "",
   },
   "ExternalBucketSettings": {
     "AmazonS3AccessKeyId": "",
