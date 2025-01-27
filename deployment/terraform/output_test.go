@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestInstanceConnectionMethods(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -79,4 +78,24 @@ func TestInstanceConnectionMethods(t *testing.T) {
 			require.Equal(t, tc.expectedDNS, tc.instance.GetConnectionDNS())
 		})
 	}
+}
+
+func TestSetConnectionType(t *testing.T) {
+	t.Run("set public connection type", func(t *testing.T) {
+		var i Instance
+		i.SetConnectionType("public")
+		require.Equal(t, "public", i.GetConnectionType())
+	})
+
+	t.Run("set private connection type", func(t *testing.T) {
+		var i Instance
+		i.SetConnectionType("private")
+		require.Equal(t, "private", i.GetConnectionType())
+	})
+
+	t.Run("set invalid connection type", func(t *testing.T) {
+		var i Instance
+		i.SetConnectionType("invalid")
+		require.Equal(t, "public", i.GetConnectionType())
+	})
 }
