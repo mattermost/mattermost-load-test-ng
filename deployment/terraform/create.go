@@ -398,7 +398,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		}
 	}()
 
-	otelcolConfig, err := renderAppOtelcolConfig(instanceName, t.output.MetricsServer.PrivateIP)
+	otelcolConfig, err := renderAppOtelcolConfig(instanceName, t.output.MetricsServer.GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("unable to render otelcol config template: %w", err)
 	}
@@ -803,7 +803,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 
 		backends := ""
 		for _, addr := range t.output.Instances {
-			backends += "server " + addr.PrivateIP + ":8065 max_fails=0;\n"
+			backends += "server " + addr.GetConnectionIP() + ":8065 max_fails=0;\n"
 		}
 
 		cacheObjects := "10m"
@@ -843,7 +843,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		otelcolConfig, err := renderProxyOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.PrivateIP)
+		otelcolConfig, err := renderProxyOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP())
 		if err != nil {
 			mlog.Error("unable to render otelcol config template", mlog.String("proxy", instance.Tags.Name), mlog.Err(err))
 			return
@@ -991,7 +991,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)       // Makes manual testing easier
 	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false) // Makes manual testing easier
 
-	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.PrivateIP)
+	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.GetConnectionIP())
 	cfg.EmailSettings.SMTPPort = model.NewPointer("2500")
 
 	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {

@@ -312,7 +312,7 @@ func (o *Output) HasAgents() bool {
 
 // HasMetrics returns whether a deployment includes the metrics instance.
 func (o *Output) HasMetrics() bool {
-	return o.MetricsServer.PrivateIP != ""
+	return o.MetricsServer.GetConnectionIP() != ""
 }
 
 // HasS3Bucket returns whether a deployment includes the S3 Bucket.
@@ -332,7 +332,7 @@ func (o *Output) HasJobServer() bool {
 
 // HasKeycloak returns whether a deployment has Keycloak installed in it or not.
 func (o *Output) HasKeycloak() bool {
-	return o.KeycloakServer.PrivateIP != ""
+	return o.KeycloakServer.GetConnectionIP() != ""
 }
 
 // DBReaders returns the list of db reader endpoints.

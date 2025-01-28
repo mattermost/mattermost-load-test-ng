@@ -102,7 +102,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		{
 			msg: "Initializing data...",
 			value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065'",
-				output.Agents[0].Tags.Name, output.Instances[0].PrivateIP),
+				output.Agents[0].Tags.Name, output.Instances[0].GetConnectionIP()),
 			clients: []*ssh.Client{agentClient},
 		},
 	}

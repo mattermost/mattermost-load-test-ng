@@ -298,7 +298,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return err
 	}
 
-	if output.KeycloakServer.PrivateIP == "" {
+	if output.KeycloakServer.GetConnectionIP() == "" {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 

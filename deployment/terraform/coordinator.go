@@ -36,7 +36,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.PrivateIP + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
 		})
 	}
 
@@ -58,7 +58,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
-	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.PrivateIP + ":9090"
+	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating
 	// a coordinator resource through the API.
