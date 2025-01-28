@@ -342,7 +342,7 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	} else if deploymentConfig.SiteURL == "" {
 		// It's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
 		// So we can safely take the IP of the first entry.
-		url = output.Proxies[0].GetConnectionIP()
+		url = output.Proxies[0].PrivateIP
 	}
 
 	return url

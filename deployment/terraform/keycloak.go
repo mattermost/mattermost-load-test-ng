@@ -356,7 +356,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 		return fmt.Errorf("error uploading saml-idp.crt: %s - %w", out, err)
 	}
 
-	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.GetConnectionDNS() + ":8080"
+	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PrivateDNS + ":8080"
 
 	cfg.OpenIdSettings.Enable = model.NewPointer(true)
 	cfg.OpenIdSettings.ButtonText = model.NewPointer("OpenID Login")
