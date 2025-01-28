@@ -98,6 +98,8 @@ type Config struct {
 	// Directory under which the .terraform directory and state files are managed.
 	// It will be created if it does not exist
 	TerraformStateDir string `default:"./ltstate" validate:"notempty"`
+	// Enables EFS to act as local file system and disables S3 file store
+	EnableEFS bool `default:"false"`
 	// URI of an S3 bucket whose contents are copied to the bucket created in the deployment
 	S3BucketDumpURI string `default:"" validate:"s3uri"`
 	// An optional URI to a MM server database dump file

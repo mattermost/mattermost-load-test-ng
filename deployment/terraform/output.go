@@ -63,6 +63,9 @@ type output struct {
 			CacheNodes []RedisInstance `json:"cache_nodes"`
 		} `json:"value"`
 	} `json:"redisServer"`
+	EFSaccessPoint struct {
+		Value []EFSAccessPoint `json:"value"`
+	} `json:"EFSaccessPoint"`
 }
 
 // Output contains the output variables which are
@@ -83,6 +86,7 @@ type Output struct {
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 	RedisServer             RedisInstance       `json:"redisServer"`
+	EFSAccessPoint          EFSAccessPoint      `json:"EFSaccessPoint"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -104,6 +108,11 @@ type RedisInstance struct {
 	Address string `json:"address"`
 	Id      string `json:"id"`
 	Port    int    `json:"port"`
+}
+
+type EFSAccessPoint struct {
+	Id           string `json:"id"`
+	FileSystemId string `json:"file_system_id"`
 }
 
 // Tags are the values attached to resource.
@@ -217,6 +226,10 @@ func (t *Terraform) loadOutput() error {
 		outputv2.RedisServer = o.RedisServer.Value[0].CacheNodes[0]
 	}
 
+	if len(o.EFSaccessPoint.Value) > 0 {
+		outputv2.EFSAccessPoint = o.EFSaccessPoint.Value[0]
+	}
+
 	t.output = outputv2
 
 	return nil
@@ -291,6 +304,10 @@ func (o *Output) HasJobServer() bool {
 // HasKeycloak returns whether a deployment has Keycloak installed in it or not.
 func (o *Output) HasKeycloak() bool {
 	return o.KeycloakServer.PrivateIP != ""
+}
+
+func (o *Output) HasEFS() bool {
+	return o.EFSAccessPoint.Id != "" && o.EFSAccessPoint.FileSystemId != ""
 }
 
 // DBReaders returns the list of db reader endpoints.
