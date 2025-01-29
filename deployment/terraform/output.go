@@ -193,6 +193,10 @@ func (t *Terraform) loadOutput() error {
 		JobServers:  o.JobServers.Value,
 	}
 
+	if len(o.Proxy.Value) > 0 {
+		outputv2.Proxies = append(outputv2.Proxies, o.Proxy.Value...)
+	}
+
 	if t.config != nil {
 		// Set connection type for all instances
 		for i := range outputv2.Instances {
@@ -204,10 +208,9 @@ func (t *Terraform) loadOutput() error {
 		for i := range outputv2.JobServers {
 			outputv2.JobServers[i].SetConnectionType(t.config.ConnectionType)
 		}
-	}
-
-	if len(o.Proxy.Value) > 0 {
-		outputv2.Proxies = append(outputv2.Proxies, o.Proxy.Value...)
+		for i := range outputv2.Proxies {
+			outputv2.Proxies[i].SetConnectionType(t.config.ConnectionType)
+		}
 	}
 
 	if len(o.DBCluster.Value) > 0 {
@@ -222,6 +225,7 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.MetricsServer.Value) > 0 {
 		outputv2.MetricsServer = o.MetricsServer.Value[0]
+		outputv2.MetricsServer.SetConnectionType(t.config.ConnectionType)
 	}
 	if len(o.ElasticServer.Value) > 0 {
 		outputv2.ElasticSearchServer = o.ElasticServer.Value[0]
@@ -237,6 +241,7 @@ func (t *Terraform) loadOutput() error {
 	}
 	if len(o.KeycloakServer.Value) > 0 {
 		outputv2.KeycloakServer = o.KeycloakServer.Value[0]
+		outputv2.KeycloakServer.SetConnectionType(t.config.ConnectionType)
 	}
 	if len(o.KeycloakDatabaseCluster.Value) > 0 {
 		for _, inst := range o.KeycloakDatabaseCluster.Value {
