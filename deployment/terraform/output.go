@@ -96,6 +96,7 @@ type Instance struct {
 }
 
 func (i *Instance) SetConnectionType(connType string) {
+	// Default to public if not set or unknown
 	if connType != "private" && connType != "public" {
 		connType = "public"
 	}
@@ -103,9 +104,6 @@ func (i *Instance) SetConnectionType(connType string) {
 }
 
 func (i Instance) GetConnectionType() string {
-	if i.connectionType == "" {
-		return "public"
-	}
 	return i.connectionType
 }
 
