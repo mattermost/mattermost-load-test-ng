@@ -30,13 +30,13 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.PrivateIP + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
 		})
 	}
 
@@ -58,7 +58,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
-	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.PrivateIP + ":9090"
+	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating
 	// a coordinator resource through the API.
@@ -159,7 +159,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
 
@@ -190,7 +190,7 @@ func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
@@ -216,7 +216,7 @@ func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to inject the action")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)

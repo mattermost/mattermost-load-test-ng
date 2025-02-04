@@ -18,6 +18,9 @@ variable "cluster_subnet_ids" {
   })
 }
 
+variable "connection_type" {
+}
+
 variable "app_attach_iam_profile" {
 }
 
