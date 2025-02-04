@@ -7,6 +7,12 @@ import (
 )
 
 func TestInstanceConnectionMethods(t *testing.T) {
+	instance := Instance{
+		PrivateIP:  "10.0.0.1",
+		PublicIP:   "203.0.113.1",
+		PrivateDNS: "ip-10-0-0-1.internal",
+		PublicDNS:  "ec2-203-0-113-1.compute-1.amazonaws.com",
+	}
 	testCases := []struct {
 		name           string
 		instance       Instance
@@ -16,56 +22,36 @@ func TestInstanceConnectionMethods(t *testing.T) {
 		expectedDNS    string
 	}{
 		{
-			name: "public connection type",
-			instance: Instance{
-				PrivateIP:  "10.0.0.1",
-				PublicIP:   "203.0.113.1",
-				PrivateDNS: "ip-10-0-0-1.internal",
-				PublicDNS:  "ec2-203-0-113-1.compute-1.amazonaws.com",
-			},
+			name:           "public connection type",
+			instance:       instance,
 			connectionType: "public",
 			expectedType:   "public",
-			expectedIP:     "203.0.113.1",
-			expectedDNS:    "ec2-203-0-113-1.compute-1.amazonaws.com",
+			expectedIP:     instance.PublicIP,
+			expectedDNS:    instance.PublicDNS,
 		},
 		{
-			name: "private connection type",
-			instance: Instance{
-				PrivateIP:  "10.0.0.2",
-				PublicIP:   "203.0.113.2",
-				PrivateDNS: "ip-10-0-0-2.internal",
-				PublicDNS:  "ec2-203-0-113-2.compute-1.amazonaws.com",
-			},
+			name:           "private connection type",
+			instance:       instance,
 			connectionType: "private",
 			expectedType:   "private",
-			expectedIP:     "10.0.0.2",
-			expectedDNS:    "ip-10-0-0-2.internal",
+			expectedIP:     instance.PrivateIP,
+			expectedDNS:    instance.PrivateDNS,
 		},
 		{
-			name: "invalid connection type defaults to public",
-			instance: Instance{
-				PrivateIP:  "10.0.0.3",
-				PublicIP:   "203.0.113.3",
-				PrivateDNS: "ip-10-0-0-3.internal",
-				PublicDNS:  "ec2-203-0-113-3.compute-1.amazonaws.com",
-			},
+			name:           "invalid connection type defaults to public",
+			instance:       instance,
 			connectionType: "invalid",
 			expectedType:   "public",
-			expectedIP:     "203.0.113.3",
-			expectedDNS:    "ec2-203-0-113-3.compute-1.amazonaws.com",
+			expectedIP:     instance.PublicIP,
+			expectedDNS:    instance.PublicDNS,
 		},
 		{
-			name: "empty connection type defaults to public",
-			instance: Instance{
-				PrivateIP:  "10.0.0.4",
-				PublicIP:   "203.0.113.4",
-				PrivateDNS: "ip-10-0-0-4.internal",
-				PublicDNS:  "ec2-203-0-113-4.compute-1.amazonaws.com",
-			},
+			name:           "empty connection type defaults to public",
+			instance:       instance,
 			connectionType: "",
 			expectedType:   "public",
-			expectedIP:     "203.0.113.4",
-			expectedDNS:    "ec2-203-0-113-4.compute-1.amazonaws.com",
+			expectedIP:     instance.PublicIP,
+			expectedDNS:    instance.PublicDNS,
 		},
 	}
 
