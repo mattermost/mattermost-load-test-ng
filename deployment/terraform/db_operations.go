@@ -91,7 +91,7 @@ func (t *Terraform) DBStatus() (string, error) {
 		return "", err
 	}
 
-	if output.DBCluster.ClusterIdentifier == "" {
+	if output.DBCluster.ClusterIdentifier == "" && t.config.ExternalDBSettings.ClusterIdentifier == "" {
 		return "", errors.New("DB cluster identifier not found")
 	}
 
