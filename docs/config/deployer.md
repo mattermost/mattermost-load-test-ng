@@ -58,7 +58,7 @@ This setting only affects load-test agent instances. It is meant for pre-deploye
 Defines how instances should be accessed. Can be either `public` (default) or `private`. 
 
 This defines how the deployer connects to the servers and the connection IPs exposed to the user of the load-test tool in the different CLI utilities:
-- When set to `private` the deployer will connect to the servers using their private IP addresses, which means the **user must be connected to the same network as the servers via jumpshost/VPN**.
+- When set to `private` the deployer will connect to the servers using their private IP addresses, which means the **user must be connected to the same network as the servers via jump host/VPN**.
 - If set to `public` the deployer will connect using public IP addresses, which means the user must have access to the internet and **the servers must be on a VPC and subnet with internet access**.
 
 ## AppInstanceCount
