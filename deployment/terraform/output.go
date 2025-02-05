@@ -65,7 +65,7 @@ type output struct {
 	} `json:"redisServer"`
 	EFSaccessPoint struct {
 		Value []EFSAccessPoint `json:"value"`
-	} `json:"EFSaccessPoint"`
+	} `json:"efsAccessPoint"`
 }
 
 // Output contains the output variables which are
@@ -86,7 +86,7 @@ type Output struct {
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 	RedisServer             RedisInstance       `json:"redisServer"`
-	EFSAccessPoint          EFSAccessPoint      `json:"EFSaccessPoint"`
+	EFSAccessPoint          EFSAccessPoint      `json:"efsAccessPoint"`
 }
 
 // Instance is an AWS EC2 instance resource.

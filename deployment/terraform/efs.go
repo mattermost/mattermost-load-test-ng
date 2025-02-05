@@ -18,8 +18,8 @@ After=local-fs.target
 
 [Service]
 Type=simple
+ExecStartPre=chown -R ubuntu:ubuntu /mnt/mattermost-data
 ExecStart=/bin/bash -c "/opt/mount.sh"
-
 
 [Install]
 WantedBy=multi-user.target
@@ -42,8 +42,11 @@ func (t *Terraform) setupEFS(extAgent *ssh.ExtAgent) error {
 
 		mlog.Info("Updating /etc/fstab to mount EFS", mlog.String("fsid", t.output.EFSAccessPoint.FileSystemId))
 		// setting uid and gid to ubuntu user
-		fstabEntry := fmt.Sprintf("%s.efs.%s.amazonaws.com:/ %s nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0", t.output.EFSAccessPoint.FileSystemId, t.config.AWSRegion, efsDirectory)
-		cmd = fmt.Sprintf("grep -q %q /etc/fstab || echo %q | sudo tee -a /etc/fstab > /dev/null", efsDirectory, fstabEntry)
+		fstabEntry := fmt.Sprintf("%s.efs.%s.amazonaws.com:/ %s nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0",
+			t.output.EFSAccessPoint.FileSystemId,
+			t.config.AWSRegion,
+			efsDirectory)
+		cmd = fmt.Sprintf("grep -q %q /etc/fstab || sudo sh -c 'echo %q >> /etc/fstab'", efsDirectory, fstabEntry)
 		_, err = sshc.RunCommand(cmd)
 		if err != nil {
 			return fmt.Errorf("error modifying /etc/fstab: %w", err)
@@ -52,12 +55,6 @@ func (t *Terraform) setupEFS(extAgent *ssh.ExtAgent) error {
 		_, err = sshc.RunCommand("sudo mount -a")
 		if err != nil {
 			return fmt.Errorf("error mounting the fstab entry: %w", err)
-		}
-
-		cmd = fmt.Sprintf("sudo chown -R ubuntu:ubuntu %s", efsDirectory)
-		_, err = sshc.RunCommand(cmd)
-		if err != nil {
-			return fmt.Errorf("error changing the ownership of EFS directory: %w", err)
 		}
 
 		rdr := strings.NewReader(fmt.Sprintf("sudo chown -R ubuntu:ubuntu %s", efsDirectory))

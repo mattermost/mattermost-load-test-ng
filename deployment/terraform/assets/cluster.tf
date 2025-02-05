@@ -103,7 +103,7 @@ resource "aws_efs_file_system" "efs_shared" {
   count = var.create_efs ? 1 : 0
 
   tags = {
-   Name = "Shared-fs-${var.cluster_name}"
+   Name = "${var.cluster_name}-shared-fs"
   }
 }
 
@@ -111,13 +111,16 @@ resource "aws_efs_mount_target" "efs_mount" {
   for_each = (var.create_efs ? toset(data.aws_subnets.loadtest_subnets.ids) : toset({}))
   file_system_id = aws_efs_file_system.efs_shared.0.id
   subnet_id      = each.value
-  security_groups = [aws_security_group.app[0].id]
+  security_groups = [aws_security_group.efs[0].id]
 }
 
 resource "aws_efs_access_point" "shared_dir" {
   count = var.create_efs ? 1 : 0
 
   file_system_id = aws_efs_file_system.efs_shared.0.id
+  tags = {
+   Name = "${var.cluster_name}-shared-dir"
+  }
 
   root_directory {
     path = "/"
@@ -466,10 +469,10 @@ resource "aws_security_group" "app" {
     security_groups = [aws_security_group.metrics[0].id]
   }
   ingress {
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow NFS traffic within VPC
+    from_port       = 2049
+    to_port         = 2049
+    protocol        = "tcp"
+    security_groups = [aws_security_group.efs[0].id] # Allow NFS traffic within VPC
   }
   egress {
     from_port   = 0
@@ -870,5 +873,30 @@ resource "aws_security_group" "keycloak" {
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "efs" {
+  count       = var.create_efs ? 1 : 0
+  name        = "${var.cluster_name}-efs-security-group"
+  description = "EFS security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
+
+  ingress {
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1" # Allow all outbound traffic
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "efs-sg"
   }
 }

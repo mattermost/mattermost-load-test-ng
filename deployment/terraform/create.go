@@ -1002,7 +1002,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 	if t.output.HasEFS() {
 		cfg.FileSettings.DriverName = model.NewPointer("local")
-		cfg.FileSettings.Directory = model.NewPointer("/mnt/mattermost-data")
+		cfg.FileSettings.Directory = model.NewPointer(efsDirectory)
 	} else if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
 		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
 		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.output.S3Key.Id)

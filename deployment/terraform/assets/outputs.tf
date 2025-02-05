@@ -52,10 +52,9 @@ output "jobServers" {
   value = aws_instance.job_server[*]
 }
 
-output "EFSaccessPoint" {
+output "efsAccessPoint" {
   value = aws_efs_access_point.shared_dir
 }
-
-output "EFSfileSystem" {
+output "efsFileSystem" {
   value = aws_efs_file_system.efs_shared[*]
 }
