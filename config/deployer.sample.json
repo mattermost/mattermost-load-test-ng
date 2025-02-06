@@ -55,6 +55,7 @@
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
+  "UsersFilePath": "",
   "EnableNetPeekMetrics": false,
   "TerraformDBSettings": {
     "InstanceCount": 1,
