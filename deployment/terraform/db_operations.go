@@ -93,7 +93,7 @@ func (t *Terraform) DBStatus() (string, error) {
 
 	// Neither Terraform DB exists, nor any External DB is used.
 	if output.DBCluster.ClusterIdentifier == "" && t.config.ExternalDBSettings.DataSource == "" {
-		return "", errors.New("DB cluster identifier not found or no external DB is used.")
+		return "", errors.New("DB cluster identifier not found and no external DB is used.")
 	}
 
 	// If an external non-AWS DB is used.
