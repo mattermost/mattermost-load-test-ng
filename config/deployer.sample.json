@@ -90,7 +90,8 @@
     "KeycloakAdminPassword": "mmpass",
     "KeycloakRealmFilePath": "",
     "KeycloakDBDumpURI": "",
-    "GenerateUsersCount": 0
+    "GenerateUsersCount": 0,
+    "InstanceType": "t3.medium"
   },
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
   "MattermostLicenseFile": "",
