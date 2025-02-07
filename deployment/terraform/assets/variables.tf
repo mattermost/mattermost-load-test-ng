@@ -217,3 +217,7 @@ variable "aws_az" {
 
 variable "metrics_instance_type" {
 }
+
+variable "create_efs" {
+  type        = bool
+}
