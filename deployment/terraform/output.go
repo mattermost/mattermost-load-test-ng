@@ -107,6 +107,12 @@ func (i Instance) GetConnectionType() string {
 	return i.connectionType
 }
 
+// GetConnectionIP returns the IP address to connect to the instance from the load-test runner which
+// is either the public or private IP address depending on the connection type set with `Instance.SetConnectionType`.
+// Use this in pieces of the code the load-test deployer connects to the instance to perform deployment operations
+// to ensure the correct one is used for both public and private deployments.
+// For other usages where we know the kind of connection between the instance and other elements please use
+// the specific IP address needed (`PublicIP`/`PrivateIP`).
 func (i Instance) GetConnectionIP() string {
 	if i.GetConnectionType() == "private" {
 		return i.PrivateIP
@@ -114,6 +120,12 @@ func (i Instance) GetConnectionIP() string {
 	return i.PublicIP
 }
 
+// GetConnectionDNS returns the DNS name to connect to the instance from the load-test runner which
+// is either the public or private DNS name depending on the connection type set with `Instance.SetConnectionType`.
+// Use this in pieces of the code the load-test deployer connects to the instance to perform deployment operations
+// to ensure the correct one is used for both public and private deployments.
+// For other usages where we know the kind of connection between the instance and other elements please use
+// the specific DNS name needed (`PublicDNS`/`PrivateDNS`).
 func (i Instance) GetConnectionDNS() string {
 	if i.GetConnectionType() == "private" {
 		return i.PrivateDNS
