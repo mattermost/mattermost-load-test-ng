@@ -163,3 +163,11 @@ require (
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
 
 replace github.com/codegangsta/cli v1.22.1 => github.com/urfave/cli v1.22.1
+
+// goquery requires go >= 1.23. Remove this once we upgrade to 1.23
+exclude (
+	github.com/PuerkitoBio/goquery v1.9.3
+	github.com/PuerkitoBio/goquery v1.10.0
+	github.com/PuerkitoBio/goquery v1.10.1
+	github.com/PuerkitoBio/goquery v1.10.2
+)
