@@ -24,6 +24,10 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  create_s3_bucket = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+}
+
 data "http" "my_public_ip" {
   url = "https://checkip.amazonaws.com"
 }
@@ -254,17 +258,17 @@ resource "aws_instance" "proxy_server" {
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+  count = local.create_s3_bucket
 }
 
 resource "aws_iam_access_key" "s3key" {
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+  count = local.create_s3_bucket
 }
 
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
-  count  = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+  count  = local.create_s3_bucket
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }
@@ -275,7 +279,7 @@ resource "aws_s3_bucket" "s3bucket" {
 resource "aws_iam_user_policy" "s3userpolicy" {
   name  = "${var.cluster_name}-s3userpolicy"
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+  count = local.create_s3_bucket
 
   policy = <<EOF
 {
