@@ -16,6 +16,7 @@
     "Proxy": [],
     "Redis": []
   },
+  "ConnectionType": "public",
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
@@ -26,7 +27,7 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "Version": "Elasticsearch_7.10",
+    "Version": "OpenSearch_2.7",
     "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": "",

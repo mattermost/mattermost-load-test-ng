@@ -98,40 +98,40 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against proxy names
 	for _, inst := range output.Proxies {
 		if resource == inst.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the keycloak server
 	if output.KeycloakServer.Tags.Name == resource {
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PublicIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.GetConnectionIP())), nil
 	}
 
 	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.GetConnectionIP())), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)
@@ -146,15 +146,15 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	url := "http://"
 	switch resource {
 	case "grafana":
-		url += output.MetricsServer.PublicDNS + ":3000"
+		url += output.MetricsServer.GetConnectionDNS() + ":3000"
 	case "mattermost":
 		if output.HasProxy() {
-			url += output.Proxies[0].PublicDNS
+			url += output.Proxies[0].GetConnectionDNS()
 		} else {
-			url += output.Instances[0].PublicDNS + ":8065"
+			url += output.Instances[0].GetConnectionDNS() + ":8065"
 		}
 	case "prometheus":
-		url += output.MetricsServer.PublicDNS + ":9090"
+		url += output.MetricsServer.GetConnectionDNS() + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}
@@ -254,6 +254,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, t.config.ClusterSubnetIDs),
+		"-var", fmt.Sprintf("connection_type=%s", t.config.ConnectionType),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("app_attach_iam_profile=%s", t.config.AppAttachIAMProfile),
@@ -332,7 +333,7 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 		return deploymentConfig.ServerURL
 	}
 
-	url := output.Instances[0].PrivateIP
+	url := output.Instances[0].GetConnectionIP()
 	if deploymentConfig.SiteURL != "" {
 		url = deploymentConfig.SiteURL
 	}

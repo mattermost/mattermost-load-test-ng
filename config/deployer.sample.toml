@@ -3,6 +3,7 @@ AWSAMI = 'ami-003d3d03cfe1b0468'
 AWSProfile = 'mm-loadtest'
 AWSRegion = 'us-east-1'
 AWSAvailabilityZone = 'us-east-1c'
+ConnectionType = 'public'
 
 # Mattermost configuration
 AdminEmail = 'sysadmin@sample.mattermost.com'
@@ -61,7 +62,7 @@ Redis = []
 CreateRole = false
 InstanceCount = 0
 InstanceType = 'r6g.large.search'
-Version = 'Elasticsearch_7.10'
+Version = 'OpenSearch_2.7'
 ZoneAwarenessEnabled = false
 ZoneAwarenessAZCount = 2
 EnableCloudwatchLogs = true

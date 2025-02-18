@@ -46,7 +46,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -54,7 +54,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		appClients[i] = client
 	}
 
-	agentClient, err := extAgent.NewClient(output.Agents[0].PublicIP)
+	agentClient, err := extAgent.NewClient(output.Agents[0].GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -102,7 +102,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 		{
 			msg: "Initializing data...",
 			value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065'",
-				output.Agents[0].Tags.Name, output.Instances[0].PrivateIP),
+				output.Agents[0].Tags.Name, output.Instances[0].GetConnectionIP()),
 			clients: []*ssh.Client{agentClient},
 		},
 	}

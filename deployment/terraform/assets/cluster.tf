@@ -51,7 +51,7 @@ resource "aws_instance" "app_server" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   ami                  = var.aws_ami
@@ -192,7 +192,7 @@ resource "aws_instance" "metrics_server" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   ami               = var.aws_ami
@@ -244,7 +244,7 @@ resource "aws_instance" "proxy_server" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   provisioner "remote-exec" {
@@ -405,7 +405,7 @@ resource "aws_instance" "loadtest_agent" {
   connection {
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   ami           = var.aws_ami
@@ -757,7 +757,7 @@ resource "aws_instance" "job_server" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   ami               = var.aws_ami
@@ -808,7 +808,7 @@ resource "aws_instance" "keycloak" {
     # The default username for our AMI
     type = "ssh"
     user = "ubuntu"
-    host = self.public_ip
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   ami               = var.aws_ami
