@@ -85,7 +85,7 @@ func (c *SimulController) upsertDraft(u user.User) control.UserActionResponse {
 	}
 
 	// 2% of the times post will have files attached.
-	if rand.Float64() < 0.02 {
+	if rand.Float64() < probabilityAttachFileToPost {
 		if err := control.AttachFilesToDraft(u, draft); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
