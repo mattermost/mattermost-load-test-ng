@@ -108,5 +108,5 @@ func RandomFutureTime(deltaStart, maxUntil time.Duration) int64 {
 	// Add the random duration to the start time
 	randomTime := start.Add(randomDuration)
 
-	return randomTime.Unix()
+	return randomTime.UnixMilli()
 }

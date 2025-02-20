@@ -27,8 +27,8 @@ func TestRandomFutureTimeSuite(t *testing.T) {
 			name:        "Zero Durations",
 			deltaStart:  0 * time.Second,
 			maxUntil:    0 * time.Second,
-			expectedMin: time.Now().Unix(),
-			expectedMax: time.Now().Unix(),
+			expectedMin: time.Now().UnixMilli(),
+			expectedMax: time.Now().UnixMilli(),
 		},
 		{
 			name:       "Negative Durations",
@@ -64,9 +64,9 @@ func TestRandomFutureTimeSuite(t *testing.T) {
 				require.Equal(t, randomTime, tt.expectedMin)
 			} else {
 				// checking both ways to allow for negative values
-				isBetweenBounds := (randomTime >= start.Unix() && randomTime <= end.Unix()) || (randomTime <= start.Unix() && randomTime >= end.Unix())
+				isBetweenBounds := (randomTime >= start.UnixMilli() && randomTime <= end.UnixMilli()) || (randomTime <= start.UnixMilli() && randomTime >= end.UnixMilli())
 
-				require.True(t, isBetweenBounds, fmt.Sprintf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.Unix(), end.Unix()))
+				require.True(t, isBetweenBounds, fmt.Sprintf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.UnixMilli(), end.UnixMilli()))
 			}
 		})
 	}
