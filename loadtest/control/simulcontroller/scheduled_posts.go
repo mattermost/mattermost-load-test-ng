@@ -1,9 +1,11 @@
 package simulcontroller
 
 import (
+	"errors"
 	"fmt"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 	"math/rand"
@@ -25,12 +27,16 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 	var rootId = ""
 	if rand.Float64() < 0.25 {
 		post, err := u.Store().RandomPostForChannel(channel.Id)
-		if err == nil {
-			if post.RootId != "" {
-				rootId = post.RootId
-			} else {
-				rootId = post.Id
-			}
+		if errors.Is(err, memstore.ErrPostNotFound) {
+			return control.UserActionResponse{Info: fmt.Sprintf("no posts found in channel %v", channel.Id)}
+		} else if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		if post.RootId != "" {
+			rootId = post.RootId
+		} else {
+			rootId = post.Id
 		}
 	}
 
@@ -38,7 +44,7 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	message, err := createMessage(u, channel, false)
+	message, err := createMessage(u, channel, rootId != "")
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -74,11 +80,10 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if scheduledPost == nil {
+	if errors.Is(err, memstore.ErrScheduledPostStoreEmpty) {
 		return control.UserActionResponse{Info: "no scheduled posts found"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	channel, err := u.Store().CurrentChannel()
@@ -109,11 +114,10 @@ func (c *SimulController) deleteScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if scheduledPost == nil {
+	if errors.Is(err, memstore.ErrScheduledPostStoreEmpty) {
 		return control.UserActionResponse{Info: "no scheduled posts found"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if err := u.DeleteScheduledPost(scheduledPost); err != nil {
@@ -131,11 +135,10 @@ func (c *SimulController) sendScheduledPostNow(u user.User) control.UserActionRe
 	}
 
 	scheduledPost, err := u.Store().GetRandomScheduledPost()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	if scheduledPost == nil {
+	if errors.Is(err, memstore.ErrScheduledPostStoreEmpty) {
 		return control.UserActionResponse{Info: "no scheduled posts found"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	post, err := scheduledPost.ToPost()

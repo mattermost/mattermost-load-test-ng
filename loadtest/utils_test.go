@@ -4,94 +4,70 @@
 package loadtest
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func TestRandomFutureTime(t *testing.T) {
-	deltaStart := 10 * time.Second
-	maxUntil := 5 * time.Minute
-
-	now := time.Now()
-	start := now.Add(deltaStart)
-	end := start.Add(maxUntil)
-
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
-
-	if randomTime < start.Unix() || randomTime > end.Unix() {
-		t.Errorf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.Unix(), end.Unix())
+func TestRandomFutureTimeSuite(t *testing.T) {
+	tests := []struct {
+		name        string
+		deltaStart  time.Duration
+		maxUntil    time.Duration
+		expectedMin int64
+		expectedMax int64
+	}{
+		{
+			name:       "Positive Durations",
+			deltaStart: 10 * time.Second,
+			maxUntil:   5 * time.Minute,
+		},
+		{
+			name:        "Zero Durations",
+			deltaStart:  0 * time.Second,
+			maxUntil:    0 * time.Second,
+			expectedMin: time.Now().Unix(),
+			expectedMax: time.Now().Unix(),
+		},
+		{
+			name:       "Negative Durations",
+			deltaStart: -10 * time.Second,
+			maxUntil:   -5 * time.Minute,
+		},
+		{
+			name:       "MaxUntil Zero",
+			deltaStart: 10 * time.Second,
+			maxUntil:   0 * time.Second,
+		},
+		{
+			name:       "DeltaStart Zero",
+			deltaStart: 0 * time.Second,
+			maxUntil:   5 * time.Minute,
+		},
+		{
+			name:       "Large Durations",
+			deltaStart: 100 * time.Hour,
+			maxUntil:   1000 * time.Hour,
+		},
 	}
-}
 
-func TestRandomFutureTimeZeroDuration(t *testing.T) {
-	deltaStart := 0 * time.Second
-	maxUntil := 0 * time.Second
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			now := time.Now()
+			start := now.Add(tt.deltaStart)
+			end := start.Add(tt.maxUntil)
 
-	now := time.Now()
-	expectedTime := now.Unix()
+			randomTime := RandomFutureTime(tt.deltaStart, tt.maxUntil)
 
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
+			if tt.expectedMin != 0 && tt.expectedMax != 0 {
+				require.Equal(t, randomTime, tt.expectedMin)
+			} else {
+				// checking both ways to allow for negative values
+				isBetweenBounds := (randomTime >= start.Unix() && randomTime <= end.Unix()) || (randomTime <= start.Unix() && randomTime >= end.Unix())
 
-	if randomTime != expectedTime {
-		t.Errorf("RandomFutureTime() = %v, want %v", randomTime, expectedTime)
-	}
-}
-
-func TestRandomFutureTimeNegativeDuration(t *testing.T) {
-	deltaStart := -10 * time.Second
-	maxUntil := -5 * time.Minute
-
-	now := time.Now()
-	start := now.Add(deltaStart)
-	end := start.Add(maxUntil)
-
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
-
-	if randomTime < end.Unix() || randomTime > start.Unix() {
-		t.Errorf("RandomFutureTime() = %v, want between %v and %v", randomTime, end.Unix(), start.Unix())
-	}
-}
-
-func TestRandomFutureTimeMaxUntilZero(t *testing.T) {
-	deltaStart := 10 * time.Second
-	maxUntil := 0 * time.Second
-
-	now := time.Now()
-	expectedTime := now.Add(deltaStart).Unix()
-
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
-
-	if randomTime != expectedTime {
-		t.Errorf("RandomFutureTime() = %v, want %v", randomTime, expectedTime)
-	}
-}
-
-func TestRandomFutureTimeDeltaStartZero(t *testing.T) {
-	deltaStart := 0 * time.Second
-	maxUntil := 5 * time.Minute
-
-	now := time.Now()
-	start := now
-	end := start.Add(maxUntil)
-
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
-
-	if randomTime < start.Unix() || randomTime > end.Unix() {
-		t.Errorf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.Unix(), end.Unix())
-	}
-}
-
-func TestRandomFutureTimeLargeDurations(t *testing.T) {
-	deltaStart := 100 * time.Hour
-	maxUntil := 1000 * time.Hour
-
-	now := time.Now()
-	start := now.Add(deltaStart)
-	end := start.Add(maxUntil)
-
-	randomTime := RandomFutureTime(deltaStart, maxUntil)
-
-	if randomTime < start.Unix() || randomTime > end.Unix() {
-		t.Errorf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.Unix(), end.Unix())
+				require.True(t, isBetweenBounds, fmt.Sprintf("RandomFutureTime() = %v, want between %v and %v", randomTime, start.Unix(), end.Unix()))
+			}
+		})
 	}
 }

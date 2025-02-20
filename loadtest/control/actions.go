@@ -1040,7 +1040,6 @@ func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
 func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
 	allow, err := strconv.ParseBool(u.Store().ClientConfig()["ScheduledPosts"])
 	if err != nil {
-		fmt.Println("Error parsing ScheduledPosts config", err)
 		return false, UserActionResponse{Err: NewUserError(err)}
 	}
 
