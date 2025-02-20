@@ -20,8 +20,8 @@ do
       sudo apt-get -y update && \
       sudo apt-get install -y mysql-client-8.0 && \
       sudo apt-get remove -y needrestart && \
-      sudo apt-get install -y -o Dpkg::Options::="--force-confold" binutils git cargo libssl-dev make pkg-config && \
-      git clone https://github.com/aws/efs-utils && cd efs-utils && make deb && sudo sudo apt-get install -y -o Dpkg::Options::="--force-confold" ./build/amazon-efs-utils-*.deb && cd - && \
+      sudo apt-get install -y nfs-common stunnel4 && \
+      wget https://github.com/mattermost/efs-utils/releases/download/v2.2.0/amazon-efs-utils-2.2.0-1_amd64.deb.tar.gz && tar -xvzf amazon-efs-utils-2.2.0-1_amd64.deb.tar.gz && sudo dpkg -i amazon-efs-utils-2.2.0-1_amd64.deb && \
       sudo apt-get install -y postgresql-client-14 && \
       sudo apt-get install -y prometheus-node-exporter && \
       sudo apt-get install -y numactl linux-tools-aws && \

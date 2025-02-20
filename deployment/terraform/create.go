@@ -514,7 +514,7 @@ func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) e
 		return fmt.Errorf("error while setting up an agents: %w", err)
 	}
 
-	if !t.output.HasAppServers() || !t.output.HasAgents() {
+	if !t.output.HasAppServers() {
 		return nil
 	}
 
