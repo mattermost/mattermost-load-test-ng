@@ -62,7 +62,7 @@ func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuil
 	}
 	clients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}

@@ -18,6 +18,9 @@ variable "cluster_subnet_ids" {
   })
 }
 
+variable "connection_type" {
+}
+
 variable "app_attach_iam_profile" {
 }
 
@@ -106,7 +109,7 @@ variable "db_engine_version" {
   type = map(any)
   default = {
     "aurora-mysql"      = "8.0.mysql_aurora.3.05.2"
-    "aurora-postgresql" = "14.7"
+    "aurora-postgresql" = "14.9"
   }
 }
 

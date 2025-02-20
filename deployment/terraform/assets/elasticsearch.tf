@@ -127,7 +127,10 @@ resource "aws_opensearch_domain" "es_server" {
   dynamic "log_publishing_options" {
     for_each = var.es_enable_cloudwatch_logs ? [true] : []
     content {
-      cloudwatch_log_group_arn = aws_cloudwatch_log_group.es_log_group.arn
+      # Just using index 0 because the count is mainly used to control one or none.
+      # We don't have a need for multiple log groups.
+      # https://github.com/mattermost/mattermost-load-test-ng/pull/874#issuecomment-2544984861
+      cloudwatch_log_group_arn = aws_cloudwatch_log_group.es_log_group[0].arn
       log_type                 = "ES_APPLICATION_LOGS"
     }
   }

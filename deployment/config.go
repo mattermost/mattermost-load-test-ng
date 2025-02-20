@@ -37,6 +37,8 @@ type Config struct {
 	ClusterVpcID string
 	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
 	ClusterSubnetIDs ClusterSubnetIDs
+	// ConnectionType defines how instances should be accessed, either "public" or "private"
+	ConnectionType string `default:"public" validate:"oneof:{public,private}"`
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
@@ -257,6 +259,8 @@ type ExternalDBSettings struct {
 	DataSourceReplicas []string `default:""`
 	// DSN to connect to the database search replicas
 	DataSourceSearchReplicas []string `default:""`
+	// ClusterIdentifier of the existing DB cluster.
+	ClusterIdentifier string `default:""`
 }
 
 // ExternalBucketSettings contains the necessary data
@@ -323,7 +327,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string `default:"Elasticsearch_7.10"`
+	Version string `default:"OpenSearch_2.7"`
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
 	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
@@ -466,14 +470,6 @@ func (c *Config) validateElasticSearchConfig() error {
 
 	if !strings.HasPrefix(c.ElasticSearchSettings.Version, "OpenSearch") {
 		return fmt.Errorf("Incorrect engine version: %s. Must start with %q", c.ElasticSearchSettings.Version, "OpenSearch")
-	}
-
-	if c.ElasticSearchSettings.SnapshotRepository == "" {
-		return fmt.Errorf("Empty SnapshotRepository. Must supply a value")
-	}
-
-	if c.ElasticSearchSettings.SnapshotName == "" {
-		return fmt.Errorf("Empty SnapshotName. Must supply a value")
 	}
 
 	return nil

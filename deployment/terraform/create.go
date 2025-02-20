@@ -153,18 +153,24 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		return err
 	}
 
-	// If we are restoring from a DB backup, then we need to hook up
+	// If we are restoring from a DB backup, or using an external database, then we need to hook up
 	// the security group to it.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" || t.config.ExternalDBSettings.ClusterIdentifier != "" {
 		if len(t.output.DBSecurityGroup) == 0 {
 			return errors.New("No DB security group created")
+		}
+		var identifier string
+		if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+			identifier = t.config.TerraformDBSettings.ClusterIdentifier
+		} else {
+			identifier = t.config.ExternalDBSettings.ClusterIdentifier
 		}
 
 		sgID := t.output.DBSecurityGroup[0].Id
 		args := []string{
 			"rds",
 			"modify-db-cluster",
-			"--db-cluster-identifier=" + t.config.TerraformDBSettings.ClusterIdentifier,
+			"--db-cluster-identifier=" + identifier,
 			"--vpc-security-group-ids=" + sgID,
 			"--region=" + t.config.AWSRegion,
 		}
@@ -222,10 +228,10 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 			// This case will only succeed if siteURL is empty.
 			// And it's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
 			// So we can safely take the DNS of the first entry.
-			siteURL = "http://" + t.output.Proxies[0].PublicDNS
+			siteURL = "http://" + t.output.Proxies[0].GetConnectionDNS()
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
 		default:
-			siteURL = "http://" + t.output.Instances[0].PublicDNS + ":8065"
+			siteURL = "http://" + t.output.Instances[0].GetConnectionDNS() + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
@@ -235,14 +241,14 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 
 		// The URL to ping cannot be the same as the site URL, since that one could contain a
 		// hostname that only instances know how to resolve
-		pingURL := t.output.Instances[0].PublicDNS + ":8065"
+		pingURL := t.output.Instances[0].GetConnectionDNS() + ":8065"
 		if t.output.HasProxy() {
 			for _, inst := range t.output.Proxies {
 				// Updating the nginx config on proxy server
 				t.setupProxyServer(extAgent, inst)
 			}
 			// We can ping the server through any of the proxies, doesn't matter here.
-			pingURL = t.output.Proxies[0].PublicDNS
+			pingURL = t.output.Proxies[0].GetConnectionDNS()
 		}
 
 		if err := pingServer("http://" + pingURL); err != nil {
@@ -261,7 +267,7 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		defer wg.Done()
 		if t.output.HasElasticSearch() {
 			mlog.Info("Setting up Elasticsearch")
-			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].PublicIP)
+			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].GetConnectionIP())
 
 			if err != nil {
 				errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
@@ -356,14 +362,14 @@ func (t *Terraform) PostProcessDatabase(extAgent *ssh.ExtAgent) error {
 
 func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, uploadRelease bool, uploadPath string, siteURL string) error {
 	for _, val := range t.output.Instances {
-		err := t.setupMMServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupMMServer(extAgent, val.GetConnectionIP(), siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, val := range t.output.JobServers {
-		err := t.setupJobServer(extAgent, val.PublicIP, siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
+		err := t.setupJobServer(extAgent, val.GetConnectionIP(), siteURL, uploadBinary, uploadRelease, uploadPath, val.Tags.Name)
 		if err != nil {
 			return err
 		}
@@ -549,6 +555,11 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	mlog.Debug("Repositories registered", mlog.Array("repositories", repositories))
 
 	repo := esSettings.SnapshotRepository
+	snapshotName := esSettings.SnapshotName
+	if snapshotName == "" {
+		mlog.Debug("No Opensearch snapshot name given. Not restoring to any snapshot.")
+		return nil
+	}
 
 	// Check if the registered repositories already include the one configured
 	repoFound := false
@@ -577,7 +588,6 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 
 	// Look for the configured snapshot
 	var snapshot opensearch.Snapshot
-	snapshotName := esSettings.SnapshotName
 	for _, s := range snapshots {
 		if s.Name == snapshotName {
 			snapshot = s
@@ -772,7 +782,7 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 }
 
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) {
-	ip := instance.PublicDNS
+	ip := instance.GetConnectionDNS()
 
 	sshc, err := extAgent.NewClient(ip)
 	if err != nil {
@@ -876,7 +886,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return err
 	}
@@ -902,7 +912,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return errors.New("no instances found in Terraform output")
 	}
 
-	sshc, err := extAgent.NewClient(t.output.Instances[0].PublicIP)
+	sshc, err := extAgent.NewClient(t.output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return err
 	}

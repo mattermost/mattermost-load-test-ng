@@ -95,7 +95,7 @@ func RunGenerateReportCmdF(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no active deployment found, use the `--prometheus-url` flag if you have a local or manually deployed Prometheus server running")
 		}
 
-		promURL = "http://" + output.MetricsServer.PublicIP + ":9090"
+		promURL = "http://" + output.MetricsServer.GetConnectionIP() + ":9090"
 	}
 
 	helper, err := prometheus.NewHelper(promURL)

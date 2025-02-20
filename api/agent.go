@@ -492,17 +492,13 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 		}
 		email := split[0]
 		password := split[1]
-		// Quick and dirty hack to extract username from email.
-		// This is not terribly important to be correct.
-		username := strings.Split(email, "@")[0]
-		username = strings.Replace(username, "+", "-", -1)
 		authService := userentity.AuthenticationTypeMattermost
 
 		// Check if the user has a custom authentication type. Custom authentication types are
 		// specified by prepending the email with the authentication type followed by a colon.
 		// Example: "openid:email1@xample.com"
-		if strings.Contains(username, ":") {
-			split := strings.Split(username, ":")
+		if strings.Contains(email, ":") {
+			split := strings.Split(email, ":")
 			if len(split) != 2 {
 				return nil, fmt.Errorf("invalid custom authentication found in %q", email)
 			}
@@ -515,9 +511,18 @@ func getUserCredentials(usersFilePath string, _ *loadtest.Config) ([]user, error
 				return nil, fmt.Errorf("invalid custom authentication type %q", authService)
 			}
 
-			username = split[1]
 			email = strings.Replace(email, authService+":", "", 1)
 		}
+
+		emailParts := strings.Split(email, "@")
+		if len(emailParts) != 2 {
+			return nil, fmt.Errorf("invalid email %q", email)
+		}
+
+		// Quick and dirty hack to extract username from email.
+		// This is not terribly important to be correct.
+		username := emailParts[0]
+		username = strings.Replace(username, "+", "-", -1)
 
 		users = append(users, user{
 			email:       email,

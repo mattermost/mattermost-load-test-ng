@@ -91,15 +91,27 @@ func (t *Terraform) DBStatus() (string, error) {
 		return "", err
 	}
 
-	if output.DBCluster.ClusterIdentifier == "" {
-		return "", errors.New("DB cluster identifier not found")
+	// Neither Terraform DB exists, nor any External DB is used.
+	if output.DBCluster.ClusterIdentifier == "" && t.config.ExternalDBSettings.DataSource == "" {
+		return "", errors.New("DB cluster identifier not found and no external DB is used.")
 	}
 
+	// If an external non-AWS DB is used.
+	if t.config.ExternalDBSettings.DataSource != "" && t.config.ExternalDBSettings.ClusterIdentifier == "" {
+		return "available", nil
+	}
+
+	var identifier string
+	if t.config.TerraformDBSettings.ClusterIdentifier != "" {
+		identifier = t.config.TerraformDBSettings.ClusterIdentifier
+	} else {
+		identifier = t.config.ExternalDBSettings.ClusterIdentifier
+	}
 	var buf bytes.Buffer
 	args := []string{
 		"rds",
 		"describe-db-clusters",
-		"--db-cluster-identifier=" + output.DBCluster.ClusterIdentifier,
+		"--db-cluster-identifier=" + identifier,
 		"--region=" + t.config.AWSRegion,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
