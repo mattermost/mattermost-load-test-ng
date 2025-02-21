@@ -19,6 +19,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -353,19 +354,25 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 }
 
 // GetAWSConfig returns the AWS config, using the profile configured in the
-// deployer if present, and defaulting to the default credential chain otherwise
+// deployer if present, and defaulting to the default credential chain otherwise.
+// If a role ARN is provided, it will assume that role.
 func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
+	var opts []func(*awsconfig.LoadOptions) error
 
-	if t.config.AWSProfile == "" {
-		return awsconfig.LoadDefaultConfig(
-			context.Background(),
-			regionOpt,
-		)
+	opts = append(opts, regionOpt)
+
+	if t.config.AWSProfile != "" {
+		opts = append(opts, awsconfig.WithSharedConfigProfile(t.config.AWSProfile))
 	}
 
-	profileOpt := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
-	return awsconfig.LoadDefaultConfig(context.Background(), profileOpt, regionOpt)
+	if t.config.AWSRoleARN != "" {
+		opts = append(opts, awsconfig.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
+			options.RoleARN = t.config.AWSRoleARN
+		}))
+	}
+
+	return awsconfig.LoadDefaultConfig(context.Background(), opts...)
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the

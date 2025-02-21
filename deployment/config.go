@@ -24,6 +24,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// AWSProfile is the optional name of the AWS profile to use for all AWS commands
 	AWSProfile string `default:""`
+	// AWSRoleARN is the optional ARN of an IAM role to assume for AWS operations
+	AWSRoleARN string `default:""`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
 	// AWSAvailabilityZone defines the Availability Zone
