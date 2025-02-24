@@ -5,6 +5,8 @@ set -euo pipefail
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
+export DEBIAN_FRONTEND=noninteractive
+
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]
@@ -17,6 +19,9 @@ do
       sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/postgres-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
       sudo apt-get -y update && \
       sudo apt-get install -y mysql-client-8.0 && \
+      sudo apt-get remove -y needrestart && \
+      sudo apt-get install -y nfs-common stunnel4 && \
+      wget https://github.com/mattermost/efs-utils/releases/download/v2.2.0/amazon-efs-utils-2.2.0-1_amd64.deb.tar.gz && tar -xvzf amazon-efs-utils-2.2.0-1_amd64.deb.tar.gz && sudo dpkg -i amazon-efs-utils-2.2.0-1_amd64.deb && \
       sudo apt-get install -y postgresql-client-14 && \
       sudo apt-get install -y prometheus-node-exporter && \
       sudo apt-get install -y numactl linux-tools-aws && \
