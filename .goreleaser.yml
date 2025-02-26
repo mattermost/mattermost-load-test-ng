@@ -44,5 +44,6 @@ release:
   github:
     owner: mattermost
     name: mattermost-load-test-ng
+  prerelease: auto
   name_template: "{{ .ProjectName }}-v{{ .Version }}"
   disable: false
