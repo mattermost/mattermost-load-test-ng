@@ -2,6 +2,7 @@
   "AWSProfile": "",
   "AWSRegion": "us-east-1",
   "AWSAvailabilityZone": "",
+  "AWSRoleARN": "arn:aws:iam::729462591288:role/load-test-github-actions-access",
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "",
   "ClusterVpcID": "",
