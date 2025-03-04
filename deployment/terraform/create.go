@@ -268,7 +268,6 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		if t.output.HasElasticSearch() {
 			mlog.Info("Setting up Elasticsearch")
 			err := t.setupElasticSearchServer(extAgent, t.output.Instances[0].GetConnectionIP())
-
 			if err != nil {
 				errorsChan <- fmt.Errorf("unable to setup Elasticsearch server: %w", err)
 				return
@@ -604,7 +603,6 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 		if !strings.HasPrefix(i, ".") {
 			snapshotIndices = append(snapshotIndices, i)
 		}
-
 	}
 	mlog.Debug("Indices in the snapshot to be restored", mlog.Array("snapshot indices", snapshotIndices))
 
@@ -1014,13 +1012,13 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	}
 
 	cfg.LogSettings.EnableConsole = model.NewPointer(true)
-	cfg.LogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.LogSettings.ConsoleLevel = model.NewPointer("WARN")
 	cfg.LogSettings.EnableFile = model.NewPointer(true)
 	cfg.LogSettings.FileLevel = model.NewPointer("WARN")
 	cfg.LogSettings.EnableSentry = model.NewPointer(false)
 
 	cfg.NotificationLogSettings.EnableConsole = model.NewPointer(true)
-	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("ERROR")
+	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("WARN")
 	cfg.NotificationLogSettings.EnableFile = model.NewPointer(true)
 	cfg.NotificationLogSettings.FileLevel = model.NewPointer("WARN")
 
