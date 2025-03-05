@@ -84,3 +84,4 @@ mattermost-load-test.iml
 .terraform.tfstate.lock.info
 
 *.tar
+.aider*
