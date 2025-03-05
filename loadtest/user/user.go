@@ -344,4 +344,10 @@ type User interface {
 
 	// UpdateChannelBookmarkSortOrder sets the new position of a bookmark for the given channel
 	UpdateChannelBookmarkSortOrder(channelId, bookmarkId string, sortOrder int64) error
+
+	// Scheduled Posts
+	CreateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
+	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
+	DeleteScheduledPost(scheduledPost *model.ScheduledPost) error
+	GetTeamScheduledPosts(teamID string) error
 }

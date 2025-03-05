@@ -33,7 +33,7 @@ require (
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.5.1-0.20230110080634-edea822f558a
-	github.com/mattermost/mattermost/server/public v0.1.8-0.20241015185928-63c97f5a6d8f
+	github.com/mattermost/mattermost/server/public v0.1.9
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20241015185928-63c97f5a6d8f
 	github.com/opensearch-project/opensearch-go/v4 v4.1.0
 	github.com/pelletier/go-toml/v2 v2.2.2
