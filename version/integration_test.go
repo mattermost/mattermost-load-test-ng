@@ -76,4 +76,7 @@ func TestVersionInfoIntegration(t *testing.T) {
 
 	// Verify the build time is not zero
 	require.False(t, info.BuildTime.IsZero(), "BuildTime should not be zero")
+
+	// Verify the Go version is not empty
+	require.NotEmpty(t, info.GoVersion, "GoVersion should not be empty")
 }

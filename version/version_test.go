@@ -17,6 +17,7 @@ func TestGetInfo(t *testing.T) {
 	require.Equal(t, "unknown", info.Commit, "Commit should be 'unknown' in test environment")
 	require.False(t, info.Modified, "Modified should be false in test environment")
 	require.True(t, info.BuildTime.IsZero(), "BuildTime should be zero in test environment")
+	require.NotEmpty(t, info.GoVersion, "GoVersion should not be empty")
 }
 
 func TestVersionInfoString(t *testing.T) {
@@ -26,6 +27,7 @@ func TestVersionInfoString(t *testing.T) {
 		Commit:    "abc123",
 		BuildTime: now,
 		Modified:  false,
+		GoVersion: "go1.20.4",
 	}
 
 	str := info.String()
@@ -33,6 +35,7 @@ func TestVersionInfoString(t *testing.T) {
 	// Check that the string contains the expected information
 	require.Contains(t, str, "Commit: abc123")
 	require.Contains(t, str, "Build Time: "+now.Format("2006-01-02 15:04:05"))
+	require.Contains(t, str, "Go Version: "+info.GoVersion)
 	require.NotContains(t, str, "(modified)")
 
 	// Test with modified flag set to true

@@ -14,6 +14,7 @@ type VersionInfo struct {
 	Commit    string    `json:"commit"`
 	BuildTime time.Time `json:"build_time"`
 	Modified  bool      `json:"modified"`
+	GoVersion string    `json:"go_version"`
 }
 
 // GetInfo retrieves version information from the binary
@@ -21,8 +22,11 @@ func GetInfo() VersionInfo {
 	var buildTime time.Time
 	var modified bool
 	commit := "unknown"
+	goVersion := "unknown"
 
 	if info, ok := debug.ReadBuildInfo(); ok {
+		goVersion = info.GoVersion
+
 		for _, setting := range info.Settings {
 			switch setting.Key {
 			case "vcs.revision":
@@ -50,6 +54,7 @@ func GetInfo() VersionInfo {
 		Commit:    commit,
 		BuildTime: buildTime,
 		Modified:  modified,
+		GoVersion: goVersion,
 	}
 }
 
@@ -65,5 +70,5 @@ func (v VersionInfo) String() string {
 		modifiedStr = " (modified)"
 	}
 
-	return fmt.Sprintf("Commit: %s%s\nBuild Time: %s", v.Commit, modifiedStr, buildTimeStr)
+	return fmt.Sprintf("Commit: %s%s\nBuild Time: %s\nGo Version: %s", v.Commit, modifiedStr, buildTimeStr, v.GoVersion)
 }

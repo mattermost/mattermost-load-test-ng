@@ -56,7 +56,8 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 		mlog.Int("port", port),
 		mlog.String("commit", versionInfo.Commit),
 		mlog.String("buildTime", versionInfo.BuildTime.Format(time.RFC3339)),
-		mlog.Bool("modified", versionInfo.Modified))
+		mlog.Bool("modified", versionInfo.Modified),
+		mlog.String("goVersion", versionInfo.GoVersion))
 
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter(clog, alog))
 }
