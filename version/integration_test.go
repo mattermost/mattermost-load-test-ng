@@ -28,6 +28,12 @@ func TestVersionInfoIntegration(t *testing.T) {
 		t.Skip("go not found in PATH, skipping integration test")
 	}
 
+	// Check if git is available
+	_, err = exec.LookPath("git")
+	if err != nil {
+		t.Skip("git not found in PATH, skipping integration test")
+	}
+
 	// Create a temporary directory for our test binary
 	tempDir, err := os.MkdirTemp("", "ltapi-test")
 	require.NoError(t, err, "Failed to create temp directory")
@@ -35,6 +41,23 @@ func TestVersionInfoIntegration(t *testing.T) {
 
 	// Build the ltapi binary in the temp directory
 	apiServerPath := filepath.Join(tempDir, "ltapi")
+
+	// Get the current commit hash
+	gitCmd := exec.Command("git", "rev-parse", "HEAD")
+	gitOutput, err := gitCmd.Output()
+	require.NoError(t, err, "Failed to get current git commit")
+	expectedCommit := string(gitOutput)
+	expectedCommit = expectedCommit[:len(expectedCommit)-1] // Remove trailing newline
+
+	// Get the current Go version
+	goCmd := exec.Command("go", "version")
+	goOutput, err := goCmd.Output()
+	require.NoError(t, err, "Failed to get current go version")
+
+	// Extract just the version part (e.g., "go1.20.4") using regex
+	re := regexp.MustCompile(`go\d+\.\d+(\.\d+)?`)
+	expectedGoVersion := re.FindString(string(goOutput))
+	require.NotEmpty(t, expectedGoVersion, "Failed to parse Go version from output")
 
 	// Build the binary directly with go build
 	buildCmd := exec.Command("go", "build", "-o", apiServerPath, "../cmd/ltapi")
@@ -70,13 +93,12 @@ func TestVersionInfoIntegration(t *testing.T) {
 	err = json.Unmarshal(body, &info)
 	require.NoError(t, err, "Failed to unmarshal response body")
 
-	// Verify the commit is a valid SHA (40 hex characters)
-	require.NotEqual(t, "unknown", info.Commit, "Commit should not be 'unknown'")
-	require.Regexp(t, regexp.MustCompile(`^[0-9a-f]{40}$`), info.Commit, "Commit should be a 40-character hex SHA")
+	// Verify the commit matches the one we got from git
+	require.Equal(t, expectedCommit, info.Commit, "Commit should match the current git commit")
 
 	// Verify the build time is not zero
 	require.False(t, info.BuildTime.IsZero(), "BuildTime should not be zero")
 
-	// Verify the Go version is not empty
-	require.NotEmpty(t, info.GoVersion, "GoVersion should not be empty")
+	// Verify the Go version matches the one we got from go version
+	require.Equal(t, expectedGoVersion, info.GoVersion, "GoVersion should match the current go version")
 }
