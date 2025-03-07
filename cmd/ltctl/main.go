@@ -4,7 +4,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost-load-test-ng/version"
 	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/spf13/cobra"
@@ -137,6 +140,56 @@ func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func RunVersionCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	output, err := t.Output()
+	if err != nil {
+		return fmt.Errorf("could not parse output: %w", err)
+	}
+
+	if len(output.Agents) == 0 {
+		return fmt.Errorf("no agents found in deployment")
+	}
+
+	// Get the first agent's IP
+	agentIP := output.Agents[0].PublicIP
+	if agentIP == "" {
+		return fmt.Errorf("agent has no public IP")
+	}
+
+	// Query the agent's API for version info
+	url := fmt.Sprintf("http://%s:4000/version", agentIP)
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to query agent version: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received non-OK response: %d", resp.StatusCode)
+	}
+
+	var versionInfo version.VersionInfo
+
+	if err := json.NewDecoder(resp.Body).Decode(&versionInfo); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	fmt.Println("Agent Version Information:")
+	fmt.Println(versionInfo.String())
+
+	return nil
+}
+
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
@@ -247,6 +300,11 @@ func main() {
 			Use:   "db-info",
 			Short: "Display info about the DB cluster.",
 			RunE:  RunDBStatusCmdF,
+		},
+		{
+			Use:   "version",
+			Short: "Display version information of the deployed binaries",
+			RunE:  RunVersionCmdF,
 		},
 	}
 
