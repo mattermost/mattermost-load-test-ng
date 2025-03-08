@@ -985,7 +985,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
 	// node or the proxy and set that.
 	cfg.ServiceSettings.AllowCorsFrom = model.NewPointer("*")
-	cfg.ServiceSettings.EnableOpenTracing = model.NewPointer(false)    // Large overhead, better to disable
 	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)       // Makes manual testing easier
 	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false) // Makes manual testing easier
 
