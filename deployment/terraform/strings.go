@@ -596,16 +596,12 @@ exporters:
     endpoint: "http://{{.MetricsIP}}:3100/otlp"
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 service:
   pipelines:
     logs:
       receivers: [{{range .Receivers}}{{.Name}},{{end}}]
-      exporters: [otlphttp/logs,debug]
+      exporters: [otlphttp/logs]
 `
 
 type otelcolReceiver struct {
