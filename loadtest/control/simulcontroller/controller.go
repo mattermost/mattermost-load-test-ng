@@ -429,7 +429,7 @@ func (c *SimulController) Run() {
 		return
 	}
 
-	var action *userAction
+	// var action *userAction
 
 	// Filter only actions that are available for the current server
 	var supportedActions []userAction
@@ -440,17 +440,17 @@ func (c *SimulController) Run() {
 	}
 
 	for {
-		select {
-		case ia := <-c.injectedActionChan: // injected actions are run first
-			action = &ia
-		default:
-			action, err = pickAction(supportedActions)
-			if err != nil {
-				panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
-			}
-		}
+		//select {
+		//case ia := <-c.injectedActionChan: // injected actions are run first
+		//action = &ia
+		//default:
+		//action, err = pickAction(supportedActions)
+		//if err != nil {
+		//	panic(fmt.Sprintf("simulcontroller: failed to pick action %s", err.Error()))
+		//}
+		//}
 
-		c.runAction(action)
+		// c.runAction(action)
 
 		select {
 		case <-c.stopChan:

@@ -14,31 +14,6 @@ const (
 )
 
 func (c *SimulController) periodicActions(wg *sync.WaitGroup) {
-	getUserStatusTicker := time.NewTicker(getUsersStatusByIdsInterval)
-	submitMetricsTicker := time.NewTicker(submitClientMetricsInterval)
-
-	defer func() {
-		submitMetricsTicker.Stop()
-		getUserStatusTicker.Stop()
-		wg.Done()
-	}()
-
-	for {
-		select {
-		case <-getUserStatusTicker.C:
-			if resp := c.getUsersStatuses(); resp.Err != nil {
-				c.status <- c.newErrorStatus(resp.Err)
-			} else {
-				c.status <- c.newInfoStatus(resp.Info)
-			}
-		case <-submitMetricsTicker.C:
-			if resp := submitPerformanceReport(c.user); resp.Err != nil {
-				c.status <- c.newErrorStatus(resp.Err)
-			} else {
-				c.status <- c.newInfoStatus(resp.Info)
-			}
-		case <-c.disconnectChan:
-			return
-		}
-	}
+	<-c.disconnectChan
+	wg.Done()
 }
