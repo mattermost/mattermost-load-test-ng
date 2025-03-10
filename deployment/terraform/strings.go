@@ -65,6 +65,8 @@ scrape_configs:
         - targets: [%s]
 `
 
+const prometheusArgs = `ARGS="--storage.tsdb.retention.time=10y"`
+
 const metricsHosts = `
 127.0.0.1 localhost
 

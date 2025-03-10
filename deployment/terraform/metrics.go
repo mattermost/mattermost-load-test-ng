@@ -292,6 +292,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error upload metrics hosts file: output: %s, error: %w", out, err)
 	}
 
+	rdr = strings.NewReader(prometheusArgs)
+	if out, err := sshc.Upload(rdr, "/etc/default/prometheus", true); err != nil {
+		return fmt.Errorf("error uploading Prometheus environment configuration file: output: %s, error: %w", out, err)
+	}
+
+
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.PublicIP))
 	cmd = "sudo service prometheus restart"
 	if out, err := sshc.RunCommand(cmd); err != nil {
