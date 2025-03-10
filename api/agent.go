@@ -410,7 +410,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          250,
 			MaxStoredUsers:          500,
-			MaxStoredChannelMembers: 500,
+			MaxStoredChannelMembers: 10000,
 			MaxStoredStatuses:       500,
 			MaxStoredThreads:        250,
 			MaxStoredReactions:      10,
