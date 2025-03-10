@@ -31,8 +31,8 @@ all: install ## Default: alias for 'install'.
 
 build-linux: ## Build the binary (only for Linux on AMD64).
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(AGENT) $(AGENT_ARGS)
-	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -gcflags="all=-N -l" -o $(AGENT) $(AGENT_ARGS)
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -gcflags="all=-N -l" -o $(API_SERVER) $(API_SERVER_ARGS)
 
 build-osx: ## Build the binary (only for OSX on AMD64).
 	@echo Build OSX amd64
