@@ -68,7 +68,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 	decValue := c.config.NumUsersDec
 	// The timespan to wait after a performance degradation alert before
 	// incrementing or decrementing users again.
-	restTime := time.Duration(c.config.RestTimeSec) * time.Second
+	restTime := time.Duration(c.config.RestTimeSec) * time.Millisecond
 
 	// TODO: considering making the following values configurable.
 
@@ -159,7 +159,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 					} else {
 						lastActionTime = time.Now()
 					}
-				} else if lastAlertTime.IsZero() || hasPassed(lastAlertTime, restTime) {
+				} else if hasPassed(lastActionTime, restTime) {
 					if status.ActiveUsers < c.config.ClusterConfig.MaxActiveUsers {
 						inc := min(incValue, c.config.ClusterConfig.MaxActiveUsers-status.ActiveUsers)
 						c.log.Info("coordinator: incrementing active users", mlog.Int("num_users", inc))
