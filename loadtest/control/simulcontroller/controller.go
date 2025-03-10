@@ -416,7 +416,8 @@ func (c *SimulController) Run() {
 		}
 
 		if resp := initActions[i].run(c.user); resp.Err != nil {
-			c.status <- c.newErrorStatus(resp.Err)
+			err := fmt.Errorf("init action %q failed: %w", initActions[i].name, resp.Err)
+			c.status <- c.newErrorStatus(err)
 			i--
 		} else if resp.Info != "" {
 			c.status <- c.newInfoStatus(resp.Info)
