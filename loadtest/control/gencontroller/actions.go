@@ -238,7 +238,7 @@ func (c *GenController) createPost(u user.User) (res control.UserActionResponse)
 	// Select the post characteristics
 	shouldLongThread := shouldMakeLongRunningThread(channel.Id)
 	isUrgent := rand.Float64() < c.config.PercentUrgentPosts
-	hasFilesAttached := rand.Float64() < 0.02
+	hasFilesAttached := rand.Float64() < c.config.PercentAttachments
 
 	channelMention := ""
 	if shouldLongThread {

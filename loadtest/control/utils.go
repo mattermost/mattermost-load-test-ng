@@ -36,8 +36,9 @@ func init() {
 }
 
 const (
-	pkgPath = "github.com/mattermost/mattermost-load-test-ng/loadtest/"
-	letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	pkgPath         = "github.com/mattermost/mattermost-load-test-ng/loadtest/"
+	letters         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	maxFilesPerPost = 10 // This is also our client-side limit.
 )
 
 var (
@@ -271,7 +272,7 @@ func ParseServerVersion(versionString string) (semver.Version, error) {
 // AttachFilesToPost uploads at least one file on behalf of the user, attaching
 // all uploaded files to the post.
 func AttachFilesToPost(u user.User, post *model.Post) error {
-	fileIDs, err := _attachFilesToObj(u, post.ChannelId, 4)
+	fileIDs, err := _attachFilesToObj(u, post.ChannelId, maxFilesPerPost)
 	if err != nil {
 		return err
 	}
@@ -282,7 +283,7 @@ func AttachFilesToPost(u user.User, post *model.Post) error {
 // AttachFilesToDraft uploads at least one file on behalf of the user, attaching
 // all uploaded files to the draft.
 func AttachFilesToDraft(u user.User, draft *model.Draft) error {
-	fileIDs, err := _attachFilesToObj(u, draft.ChannelId, 4)
+	fileIDs, err := _attachFilesToObj(u, draft.ChannelId, maxFilesPerPost)
 	if err != nil {
 		return err
 	}

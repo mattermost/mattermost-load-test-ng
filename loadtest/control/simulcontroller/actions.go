@@ -800,7 +800,7 @@ func (c *SimulController) createPost(u user.User) control.UserActionResponse {
 	// Select the post characteristics
 	isReply := rand.Float64() < c.config.PercentReplies
 	isUrgent := !isReply && (rand.Float64() < c.config.PercentUrgentPosts)
-	hasFilesAttached := rand.Float64() < 0.02
+	hasFilesAttached := rand.Float64() < c.config.PercentAttachments
 
 	message, err := createMessage(u, channel, isReply)
 	if err != nil {
@@ -2164,7 +2164,6 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 				FromId:          lastId,
 			},
 		})
-
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

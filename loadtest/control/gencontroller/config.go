@@ -38,6 +38,8 @@ type Config struct {
 	PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
 	// The percentage of post that are marked as urgent.
 	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
+	// The percentage of posts that have file attachments
+	PercentAttachments float64 `default:"0.02" validate:"range:[0,1]"`
 
 	// Indicates the distribution of chanel members within channels.
 	ChannelMembersDistribution []ChannelMemberDistribution
