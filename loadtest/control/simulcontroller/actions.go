@@ -293,6 +293,10 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if err := u.GetTeamScheduledPosts(team.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("loaded team %s", team.Id)}
 }
 

@@ -5,26 +5,26 @@ package memstore
 
 import (
 	"errors"
-	"math/rand"
-
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
+	"math/rand"
 )
 
 var (
-	ErrEmptyMap          = errors.New("memstore: cannot select from an empty map")
-	ErrEmptySlice        = errors.New("memstore: cannot select from an empty slice")
-	ErrLenMismatch       = errors.New("memstore: cannot select from a map, not enough elements")
-	ErrTeamNotFound      = errors.New("memstore: team not found")
-	ErrUserNotSet        = errors.New("memstore: user is not set")
-	ErrTeamStoreEmpty    = errors.New("memstore: team store is empty")
-	ErrChannelStoreEmpty = errors.New("memstore: channel store is empty")
-	ErrChannelNotFound   = errors.New("memstore: channel not found")
-	ErrPostNotFound      = errors.New("memstore: post not found")
-	ErrInvalidData       = errors.New("memstore: invalid data found")
-	ErrThreadNotFound    = errors.New("memstore: thread not found")
-	ErrMaxAttempts       = errors.New("memstore: maximum number of attempts tried")
-	ErrDraftNotFound     = errors.New("memstore: draft not found")
+	ErrEmptyMap                = errors.New("memstore: cannot select from an empty map")
+	ErrEmptySlice              = errors.New("memstore: cannot select from an empty slice")
+	ErrLenMismatch             = errors.New("memstore: cannot select from a map, not enough elements")
+	ErrTeamNotFound            = errors.New("memstore: team not found")
+	ErrUserNotSet              = errors.New("memstore: user is not set")
+	ErrTeamStoreEmpty          = errors.New("memstore: team store is empty")
+	ErrChannelStoreEmpty       = errors.New("memstore: channel store is empty")
+	ErrChannelNotFound         = errors.New("memstore: channel not found")
+	ErrPostNotFound            = errors.New("memstore: post not found")
+	ErrInvalidData             = errors.New("memstore: invalid data found")
+	ErrThreadNotFound          = errors.New("memstore: thread not found")
+	ErrMaxAttempts             = errors.New("memstore: maximum number of attempts tried")
+	ErrDraftNotFound           = errors.New("memstore: draft not found")
+	ErrScheduledPostStoreEmpty = errors.New("memstore: scheduled post store is empty")
 )
 
 func isSelectionType(st, t store.SelectionType) bool {
@@ -447,4 +447,41 @@ func (s *MemStore) RandomDraftForTeam(teamId string) (string, error) {
 	}
 
 	return draftIDs[rand.Intn(len(draftIDs))], nil
+}
+
+func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	// Check if scheduledPosts is empty
+	if len(s.scheduledPosts) == 0 {
+		return &model.ScheduledPost{}, errors.New("no scheduled posts available")
+	}
+
+	var keys []string
+	for key, innerMap := range s.scheduledPosts {
+		if len(innerMap) > 0 {
+			keys = append(keys, key)
+		}
+	}
+
+	if len(keys) == 0 {
+		return &model.ScheduledPost{}, ErrScheduledPostStoreEmpty
+	}
+
+	selectedInnerMap := s.scheduledPosts[keys[rand.Intn(len(keys))]]
+
+	// Pick a random index for the inner map
+	randomInnerIndex := rand.Intn(len(selectedInnerMap))
+	var selectedPost *model.ScheduledPost
+	innerIndex := 0
+	for _, post := range selectedInnerMap {
+		if innerIndex == randomInnerIndex {
+			selectedPost = post[rand.Intn(len(post))]
+			break
+		}
+		innerIndex++
+	}
+
+	return selectedPost, nil
 }
