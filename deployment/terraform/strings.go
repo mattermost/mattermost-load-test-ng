@@ -549,7 +549,12 @@ RestartSec=1
 WantedBy=multi-user.target
 `
 
-const otelcolOperatorAppAgent = `
+const otelcolOperatorApp = `
+      - type: move
+        from: body.MESSAGE
+        to: body`
+
+const otelcolOperatorAgent = `
       - type: json_parser
         timestamp:
           parse_from: attributes.timestamp
@@ -583,7 +588,9 @@ receivers:
         endpoint: 0.0.0.0:4318
 {{range .Receivers}}
   {{.Name}}:
+    {{- if .IncludeFiles }}
     include: [ {{.IncludeFiles}} ]
+    {{- end }}
     resource:
       service.name: "{{.ServiceName}}"
       service.instance.id: "{{.ServiceInstanceId}}"
@@ -616,7 +623,7 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
 		ServiceName:       "agent",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorAgent,
 	}
 
 	coordinatorReceiver := otelcolReceiver{
@@ -624,7 +631,7 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
 		ServiceName:       "coordinator",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorAgent,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
@@ -668,11 +675,10 @@ func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, er
 
 func renderAppOtelcolConfig(instanceName string, metricsIP string) (string, error) {
 	appReceiver := otelcolReceiver{
-		Name:              "filelog/app",
-		IncludeFiles:      "/opt/mattermost/logs/mattermost.log",
+		Name:              "journald/app",
 		ServiceName:       "app",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorApp,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
