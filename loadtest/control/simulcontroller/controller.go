@@ -295,25 +295,25 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:             "CreateScheduledPost",
 			run:              c.createScheduledPost,
-			frequency:        0.2,
+			frequency:        0.001,
 			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		{
 			name:             "UpdateScheduledPost",
 			run:              c.updateScheduledPost,
-			frequency:        0.1,
+			frequency:        0.001,
 			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		{
 			name:             "DeleteScheduledPost",
 			run:              c.deleteScheduledPost,
-			frequency:        0.1,
+			frequency:        0.001,
 			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		{
 			name:             "SendScheduledPost",
 			run:              c.sendScheduledPostNow,
-			frequency:        0.1,
+			frequency:        0.001,
 			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		// All actions are required to contain a valid minServerVersion:
