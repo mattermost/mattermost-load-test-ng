@@ -41,4 +41,4 @@ linters:
     - ineffassign   # Detects when assignments to existing variables are not used
     - unconvert     # Removes unnecessary type conversions
     - unused        # Checks Go code for unused constants, variables, functions and types
-    - exportloopref # Checks for pointers to enclosing loop variables
+    - copyloopvar   # Detects places where loop variables are copied
