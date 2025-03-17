@@ -16,6 +16,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const (
+	probabilityAttachFileToPost = 0.02
+)
+
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
@@ -287,6 +291,30 @@ func getActionList(c *SimulController) []userAction {
 			run:              c.deleteBookmark,
 			frequency:        0.0001, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
+		},
+		{
+			name:             "CreateScheduledPost",
+			run:              c.createScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "UpdateScheduledPost",
+			run:              c.updateScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "DeleteScheduledPost",
+			run:              c.deleteScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "SendScheduledPost",
+			run:              c.sendScheduledPostNow,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than

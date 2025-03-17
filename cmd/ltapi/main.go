@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost-load-test-ng/version"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/spf13/cobra"
@@ -49,7 +51,14 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 		FileLocation:  "ltagent.log",
 	})
 
-	mlog.Info("API server started, listening on", mlog.Int("port", port))
+	versionInfo := version.GetInfo()
+	mlog.Info("API server starting",
+		mlog.Int("port", port),
+		mlog.String("commit", versionInfo.Commit),
+		mlog.String("buildTime", versionInfo.BuildTime.Format(time.RFC3339)),
+		mlog.Bool("modified", versionInfo.Modified),
+		mlog.String("goVersion", versionInfo.GoVersion))
+
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), api.SetupAPIRouter(clog, alog))
 }
 

@@ -4,6 +4,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/performance"
+	"github.com/mattermost/mattermost-load-test-ng/version"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -51,6 +53,13 @@ func (a *api) deleteResource(id string) bool {
 		return true
 	}
 	return false
+}
+
+func handleVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(version.GetInfo()); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 func (a *api) pprofIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +129,9 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 
 	// Metrics endpoint.
 	router.Handle("/metrics", a.metrics.Handler())
+
+	// Version endpoint
+	router.HandleFunc("/version", handleVersion).Methods("GET")
 
 	return router
 }

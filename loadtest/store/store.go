@@ -165,6 +165,10 @@ type UserStore interface {
 
 	// DeleteChannelBookmark deletes a given bookmarkId.
 	DeleteChannelBookmark(bookmarkId string) error
+
+	GetRandomScheduledPost() (*model.ScheduledPost, error)
+	DeleteScheduledPost(scheduledPost *model.ScheduledPost)
+	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -199,6 +203,9 @@ type MutableUserStore interface {
 	SetDraft(teamId, id string, draft *model.Draft) error
 	// SetDrafts stores the given drafts.
 	SetDrafts(teamId string, drafts []*model.Draft) error
+
+	// scheduled posts
+	SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 
 	// posts
 	// SetPost stores the given post.

@@ -6,6 +6,8 @@ package loadtest
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
@@ -86,4 +88,25 @@ func nextPowerOf2(val int) int {
 	val |= val >> 16
 	val++
 	return val
+}
+
+// RandomFutureTime returns a random Unix timestamp, in milliseconds, in the interval
+// [now+deltaStart, now+deltaStart+maxUntil]
+func RandomFutureTime(deltaStart, maxUntil time.Duration) int64 {
+	now := time.Now()
+	start := now.Add(deltaStart)
+	start.Add(maxUntil)
+
+	// Generate a random duration between 0 and maxUntil
+	var randomDuration time.Duration
+	if maxUntil > 0 {
+		randomDuration = time.Duration(rand.Int63n(int64(maxUntil)))
+	} else {
+		randomDuration = time.Duration(0)
+	}
+
+	// Add the random duration to the start time
+	randomTime := start.Add(randomDuration)
+
+	return randomTime.UnixMilli()
 }
