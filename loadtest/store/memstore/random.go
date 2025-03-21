@@ -455,7 +455,7 @@ func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
 
 	// Check if scheduledPosts is empty
 	if len(s.scheduledPosts) == 0 {
-		return &model.ScheduledPost{}, errors.New("no scheduled posts available")
+		return &model.ScheduledPost{}, ErrScheduledPostStoreEmpty
 	}
 
 	var keys []string
