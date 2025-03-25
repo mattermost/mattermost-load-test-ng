@@ -85,14 +85,13 @@ resource "aws_instance" "app_server" {
     script = "provisioners/app.sh"
   }
 }
-
 data "aws_vpc" "selected" {
   tags = {
     Name = "Default VPC"
   }
 }
 
-data "aws_subnets" "loadtest_subnets" {
+data "aws_subnets" "lt_selected" {
   filter {
     name = "vpc-id"
     values = [data.aws_vpc.selected.id]
@@ -112,7 +111,7 @@ resource "aws_efs_file_system" "efs_shared" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each = (var.create_efs ? toset(data.aws_subnets.loadtest_subnets.ids) : toset({}))
+  for_each = (var.create_efs ? toset(data.aws_subnets.lt_selected.ids) : toset({}))
   file_system_id = aws_efs_file_system.efs_shared.0.id
   subnet_id      = each.value
   security_groups = [aws_security_group.efs[0].id]
@@ -471,12 +470,6 @@ resource "aws_security_group" "app" {
     to_port         = 9045
     protocol        = "tcp"
     security_groups = [aws_security_group.metrics[0].id]
-  }
-  ingress {
-    from_port       = 2049
-    to_port         = 2049
-    protocol        = "tcp"
-    security_groups = [aws_security_group.efs[0].id] # Allow NFS traffic within VPC
   }
   egress {
     from_port   = 0
@@ -886,11 +879,12 @@ resource "aws_security_group" "efs" {
   description = "EFS security group for loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
 
+  # Remove the app security group reference from here
   ingress {
     from_port   = 2049
     to_port     = 2049
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  # Or use a more restricted CIDR range for your VPC
   }
 
   egress {
@@ -903,4 +897,24 @@ resource "aws_security_group" "efs" {
   tags = {
     Name = "efs-sg"
   }
+}
+
+resource "aws_security_group_rule" "efs-from-app" {
+  count                    = var.create_efs && var.app_instance_count > 0 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 2049
+  to_port                  = 2049
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.efs[0].id
+  source_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_security_group_rule" "app-to-efs" {
+  count                    = var.create_efs && var.app_instance_count > 0 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 2049
+  to_port                  = 2049
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.app[0].id
+  source_security_group_id = aws_security_group.efs[0].id
 }
