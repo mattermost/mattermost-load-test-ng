@@ -257,7 +257,7 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 			}
 		}
 	} else {
-		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
+		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), false); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
