@@ -1034,6 +1034,14 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 
 func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
 	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
+	return allow, UserActionResponse{}
+}
+
+func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
+	allow, err := strconv.ParseBool(u.Store().ClientConfig()["ScheduledPosts"])
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
 
 	return allow, UserActionResponse{}
 }

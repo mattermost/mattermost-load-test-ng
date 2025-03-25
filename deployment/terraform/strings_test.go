@@ -62,18 +62,14 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  filelog/app:
-    include: [ /opt/mattermost/logs/mattermost.log ]
+  journald/app:
     resource:
       service.name: "app"
       service.instance.id: "instance-name"
     operators:
-      - type: json_parser
-        timestamp:
-          parse_from: attributes.timestamp
-          layout: '%Y-%m-%d %H:%M:%S.%L Z'
-        severity:
-          parse_from: attributes.level
+      - type: move
+        from: body.MESSAGE
+        to: body
 
 exporters:
   otlphttp/logs:
@@ -84,7 +80,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog/app,]
+      receivers: [journald/app,]
       exporters: [otlphttp/logs]
 `
 

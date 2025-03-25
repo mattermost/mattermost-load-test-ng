@@ -417,7 +417,6 @@ func TestPrintSummary(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			err := os.Truncate(f.Name(), 0)
 			require.Nil(t, err)

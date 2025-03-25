@@ -1,3 +1,6 @@
+git:
+  # If there are more than one tag in the same commit, pick the newest one
+  tag_sort: -version:creatordate
 before:
   hooks:
     - go mod download
@@ -44,5 +47,6 @@ release:
   github:
     owner: mattermost
     name: mattermost-load-test-ng
+  prerelease: auto
   name_template: "{{ .ProjectName }}-v{{ .Version }}"
   disable: false
