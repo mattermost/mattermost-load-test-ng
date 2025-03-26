@@ -1729,63 +1729,81 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		thread = *threads[0]
 	}
 
-	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+	// Get the lastUpdateAt
+	opts := model.GetPostsOptions{
 		CollapsedThreads: true,
 		Direction:        "down",
-		PerPage:          25,
-	})
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
-	if len(postIds) == 0 {
-		return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
-	}
-	newestPostId := postIds[len(postIds)-1]
-	newestPost, err := u.Store().Post(newestPostId)
-	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	var newestCreateAt int64
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		newestCreateAt = thread.Post.CreateAt
-	} else {
-		newestCreateAt = newestPost.CreateAt
+	if thread.LastUpdateAt != 0 {
+		opts.UpdatesOnly = true
+		opts.FromUpdateAt = thread.LastUpdateAt
 	}
 
-	// scrolling between 1 and 3 times
-	numScrolls := rand.Intn(3) + 1
-	for i := 0; i < numScrolls && hasNext; i++ {
-		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
-			CollapsedThreads: true,
-			Direction:        "down",
-			PerPage:          25,
-			FromPost:         newestPostId,
-			FromCreateAt:     newestCreateAt,
-		})
+	// We always load the entire thread the first time.
+	// For subsequent loads, we only load the next updated posts.
+	hasNext := true
+	var allPostIds []string
+	for hasNext {
+		var postIds []string
+		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", opts)
 		if err != nil {
+			// We are not checking for memstore.ErrPostNotFound because
+			// u.GetPostThreadWithOpts already stores the returned posts in the store.
+			// So the only case where an error might come is if list.Order doesn't
+			// have posts in list.Posts which is an error anyways.
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if !hasNext {
-			break
-		}
-		newestPostId = postIds[len(postIds)-1]
-		newestPost, err = u.Store().Post(newestPostId)
-		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			newestCreateAt = thread.Post.CreateAt
-		} else {
-			newestCreateAt = newestPost.CreateAt
+		if len(postIds) == 0 {
+			return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
 		}
 
-		// idle time between scrolls, between 1 and 10 seconds.
-		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		newestPostId := postIds[len(postIds)-1]
+		newestPost, err := u.Store().Post(newestPostId)
+		if err != nil {
+			// We are not checking for memstore.ErrPostNotFound because
+			// u.GetPostThreadWithOpts already stores the returned posts in the store.
+			// So the only case where an error might come is if list.Order doesn't
+			// have posts in list.Posts which is an error anyways.
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// if updatesOnly, then use UpdateAt and updatesOnly options
+		if opts.UpdatesOnly {
+			opts.FromUpdateAt = newestPost.UpdateAt
+		} else {
+			opts.FromCreateAt = newestPost.CreateAt
+		}
+
+		opts.FromPost = newestPostId
+
+		if len(postIds) > 0 {
+			allPostIds = append(allPostIds, postIds...)
+		}
+
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "action canceled"}
-		case <-time.After(idleTime):
+		default:
 		}
+	}
+
+	// Find latest UpdateAt
+	var latestUpdateAt int64 = -1
+	for _, postId := range allPostIds {
+		p, err := u.Store().Post(postId)
+		if err != nil {
+			// We are not checking for memstore.ErrPostNotFound because
+			// u.GetPostThreadWithOpts already stores the returned posts in the store.
+			// So the only case where an error might come is if list.Order doesn't
+			// have posts in list.Posts which is an error anyways.
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if latestUpdateAt < p.UpdateAt {
+			latestUpdateAt = p.UpdateAt
+		}
+	}
+	if err := u.UpdateThreadLastUpdateAt(thread.PostId, latestUpdateAt); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
@@ -1794,7 +1812,7 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed thread %s", thread.PostId)}
 }
 
 func (c *SimulController) markAllThreadsInTeamAsRead(u user.User) control.UserActionResponse {

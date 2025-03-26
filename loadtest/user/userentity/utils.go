@@ -32,6 +32,9 @@ func postsMapToSlice(postsMap map[string]*model.Post) []*model.Post {
 func postListToSlice(list *model.PostList) []*model.Post {
 	posts := make([]*model.Post, len(list.Order))
 	for i, id := range list.Order {
+		// This assumes that list.Posts will always contain
+		// posts in list.Order. Need to improve. Otherwise, there is a
+		// possibility of nil pointers getting inserted.
 		posts[i] = list.Posts[id]
 	}
 	return posts
