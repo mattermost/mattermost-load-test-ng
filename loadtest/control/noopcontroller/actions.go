@@ -60,7 +60,7 @@ func (c *NoopController) disconnect() error {
 
 func (c *NoopController) login(u user.User) control.UserActionResponse {
 	for {
-		resp := control.Login(u)
+		resp, _ := control.Login(u)
 		if resp.Err == nil {
 			err := c.connect()
 			if err == nil {

@@ -44,7 +44,9 @@ func (c *GenController) login(u user.User) (res control.UserActionResponse) {
 		}
 	}()
 
-	return control.Login(u)
+	resp, _ := control.Login(u)
+
+	return resp
 }
 
 func (c *GenController) createTeam(u user.User) (res control.UserActionResponse) {

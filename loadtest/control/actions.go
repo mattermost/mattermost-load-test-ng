@@ -55,37 +55,45 @@ func SignUp(u user.User) UserActionResponse {
 	return UserActionResponse{Info: fmt.Sprintf("signed up as %s", username)}
 }
 
+type DebugInfo struct {
+	TeamIds      []string
+	IsTeamMember map[string]bool
+}
+
 // Login authenticates the user with the server and fetches teams, users and
 // channels that are related with the user.
-func Login(u user.User) UserActionResponse {
+func Login(u user.User) (UserActionResponse, *DebugInfo) {
 	err := u.Login()
 	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+		return UserActionResponse{Err: NewUserError(err)}, &DebugInfo{}
 	}
 
 	// Populate user config
 	if err := u.GetClientConfig(); err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+		return UserActionResponse{Err: NewUserError(err)}, &DebugInfo{}
 	}
 
 	// Populate teams and channels.
 	teamIds, err := u.GetAllTeams(0, 100)
 	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+		return UserActionResponse{Err: NewUserError(err)}, &DebugInfo{}
 	}
 	err = u.GetTeamMembersForUser(u.Store().Id())
 	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+		return UserActionResponse{Err: NewUserError(err)}, &DebugInfo{teamIds, nil}
 	}
+	isTeamMember := make(map[string]bool)
 	for _, teamId := range teamIds {
-		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
+		tm, err := u.Store().TeamMember(teamId, u.Store().Id())
+		if err == nil && tm.UserId != "" {
 			if err := u.GetChannelsForTeam(teamId, true); err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
+				return UserActionResponse{Err: NewUserError(err)}, &DebugInfo{teamIds, isTeamMember}
 			}
 		}
+		isTeamMember[teamId] = tm.UserId != ""
 	}
 
-	return UserActionResponse{Info: "logged in"}
+	return UserActionResponse{Info: "logged in"}, &DebugInfo{teamIds, isTeamMember}
 }
 
 func GetPreferences(u user.User) UserActionResponse {

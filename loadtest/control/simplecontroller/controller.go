@@ -83,7 +83,7 @@ func (c *SimpleController) Run() {
 		},
 		{
 			run: func(u user.User) control.UserActionResponse {
-				resp := control.Login(u)
+				resp, _ := control.Login(u)
 				if resp.Err != nil {
 					return resp
 				}
@@ -196,7 +196,7 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"JoinTeam":             control.JoinTeam,
 		"LeaveChannel":         control.LeaveChannel,
 		"Login": func(u user.User) control.UserActionResponse {
-			resp := control.Login(u)
+			resp, _ := control.Login(u)
 			if resp.Err != nil {
 				return resp
 			}

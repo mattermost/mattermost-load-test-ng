@@ -152,7 +152,8 @@ func (c *SimulController) loginOrSignUp(u user.User) control.UserActionResponse 
 func (c *SimulController) login(u user.User) control.UserActionResponse {
 	start := time.Now()
 	for {
-		resp := control.Login(u)
+		resp, debugInfo := control.Login(u)
+		c.status <- c.newInfoStatus(fmt.Sprintf("login debug info: %#v", debugInfo))
 		if resp.Err == nil {
 			err := c.connect()
 			if err == nil {

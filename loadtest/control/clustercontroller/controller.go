@@ -50,7 +50,7 @@ func (c *ClusterController) Run() {
 		close(c.stopped)
 	}()
 
-	if resp := control.Login(c.user); resp.Err != nil {
+	if resp, _ := control.Login(c.user); resp.Err != nil {
 		c.status <- c.newErrorStatus(resp.Err)
 	} else {
 		c.status <- c.newInfoStatus(resp.Info)
