@@ -1733,8 +1733,9 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 	opts := model.GetPostsOptions{
 		CollapsedThreads: true,
 		Direction:        "down",
+		PerPage:          60, // Matching with webapp's PER_PAGE_DEFAULT
 	}
-	if thread.LastUpdateAt != 0 {
+	if thread.LastUpdateAt != 0 && c.serverVersion.GTE(semver.MustParse("10.8.0")) { // Use the new logic only from v10.8 onwards.
 		opts.UpdatesOnly = true
 		opts.FromUpdateAt = thread.LastUpdateAt
 	}
@@ -1788,20 +1789,15 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 	}
 
 	// Find latest UpdateAt
-	var latestUpdateAt int64 = -1
-	for _, postId := range allPostIds {
-		p, err := u.Store().Post(postId)
-		if err != nil {
-			// We are not checking for memstore.ErrPostNotFound because
-			// u.GetPostThreadWithOpts already stores the returned posts in the store.
-			// So the only case where an error might come is if list.Order doesn't
-			// have posts in list.Posts which is an error anyways.
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if latestUpdateAt < p.UpdateAt {
-			latestUpdateAt = p.UpdateAt
-		}
+	latestUpdateAt, err := getLatestUpdateAt(allPostIds, u.Store().Post)
+	// We are not checking for memstore.ErrPostNotFound because
+	// u.GetPostThreadWithOpts already stores the returned posts in the store.
+	// So the only case where an error might come is if list.Order doesn't
+	// have posts in list.Posts which is an error anyways.
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
 	if err := u.UpdateThreadLastUpdateAt(thread.PostId, latestUpdateAt); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

@@ -301,6 +301,8 @@ type User interface {
 	// UpdateThreadFollow updates the follow state of the thread
 	UpdateThreadFollow(teamId, threadId string, state bool) error
 	// UpdateThreadLastUpdateAt updates the lastUpdateAt of the given thread
+	// This simply forwards the call to the store, but we use the User interface
+	// because direct access to the store is via the UserStore interface, not MutableUserStore.
 	UpdateThreadLastUpdateAt(threadId string, lastUpdateAt int64) error
 	// GetPostThread gets a post with all the other posts in the same thread.
 	GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error)
