@@ -69,20 +69,13 @@ func Login(u user.User) UserActionResponse {
 	}
 
 	// Populate teams and channels.
-	teamIds, err := u.GetAllTeams(0, 100)
+	_, err = u.GetAllTeams(0, 100)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 	err = u.GetTeamMembersForUser(u.Store().Id())
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	}
-	for _, teamId := range teamIds {
-		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(teamId, true); err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
-		}
 	}
 
 	return UserActionResponse{Info: "logged in"}
