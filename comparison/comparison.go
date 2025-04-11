@@ -156,11 +156,23 @@ func (c *Comparison) Run() (Output, error) {
 
 // Destroy destroys all resources associated with the deployments for the
 // current automated load-test comparisons.
-func (c *Comparison) Destroy() error {
+func (c *Comparison) Destroy(maintainMetrics bool) error {
+	resourcesToMaintain := []string{
+		"aws_instance.metrics_server[0]",
+		"aws_security_group.metrics[0]",
+		"aws_security_group_rule.metrics-egress[0]",
+		"aws_security_group_rule.metrics-grafana[0]",
+	}
+
 	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
 		if err := t.Sync(); err != nil {
 			return err
 		}
+
+		if maintainMetrics {
+			return t.Destroy(resourcesToMaintain...)
+		}
+
 		return t.Destroy()
 	})
 }
