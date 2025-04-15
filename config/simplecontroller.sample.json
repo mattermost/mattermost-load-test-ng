@@ -21,7 +21,7 @@
       "RunPeriod": 1
     },
     {
-      "ActionId:": "SearchPostsAllTeams",
+      "ActionId": "SearchPostsAllTeams",
       "WaitAfterMs": 1000,
       "RunPeriod": 1
     },
