@@ -1231,7 +1231,7 @@ func searchPosts(u user.User) control.UserActionResponse {
 		opts.IsPhrase = true
 	}
 
-	for i := 0; i < count; i++ {
+	for range count {
 		words = append(words, control.PickRandomWord())
 	}
 
@@ -1242,6 +1242,48 @@ func searchPosts(u user.User) control.UserActionResponse {
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+func searchPostsAllTeams(u user.User) control.UserActionResponse {
+	var words []string
+	var opts control.PostsSearchOpts
+	// This is an arbitrary limit on the number of words to search for.
+	// TODO: possibly use user analytics data to improve this.
+	count := 1 + rand.Intn(4)
+
+	if rand.Float64() < 0.2 {
+		// We limit the search to 7 days.
+		t := time.Now().Add(-time.Duration(rand.Intn(7)) * time.Hour * 24)
+		switch rand.Intn(3) {
+		case 0:
+			opts.On = t
+		case 1:
+			opts.Before = t
+		case 2:
+			opts.After = t
+		}
+	}
+
+	if rand.Float64() < 0.2 {
+		opts.Excluded = []string{control.PickRandomWord()}
+	}
+
+	if rand.Float64() < 0.2 {
+		opts.IsPhrase = true
+	}
+
+	for range count {
+		words = append(words, control.PickRandomWord())
+	}
+
+	term := control.GeneratePostsSearchTerm(words, opts)
+
+	list, err := u.SearchPosts("", term, false)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("found %d posts in all teams", len(list.Posts))}
 }
 
 func searchUsers(u user.User) control.UserActionResponse {
@@ -2168,7 +2210,6 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 				FromId:          lastId,
 			},
 		})
-
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
