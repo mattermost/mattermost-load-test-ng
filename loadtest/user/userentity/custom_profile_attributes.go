@@ -8,8 +8,8 @@ import (
 )
 
 // CreateCPAField creates a new custom profile attribute field.
-func (ue *UserEntity) CreateCPAField(field model.PropertyField) (*model.PropertyField, error) {
-	new_field, _, err := ue.client.CreateCPAField(context.Background(), &field)
+func (ue *UserEntity) CreateCPAField(field *model.PropertyField) (*model.PropertyField, error) {
+	new_field, _, err := ue.client.CreateCPAField(context.Background(), field)
 	if err != nil {
 		return nil, err
 	}

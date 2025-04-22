@@ -79,12 +79,12 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 
 // Create CPA Fields
 func CreateCustomAttributeFields(admin *userentity.UserEntity) error {
-	fields := []model.PropertyField{
-		model.PropertyField{
+	fields := []*model.PropertyField{
+		{
 			Name: "TestCPAFieldOne",
 			Type: "text",
 		},
-		model.PropertyField{
+		{
 			Name: "TestCPAFieldTwo",
 			Type: "text",
 		},
