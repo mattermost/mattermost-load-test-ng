@@ -4,6 +4,7 @@
 package user
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -350,4 +351,9 @@ type User interface {
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 	DeleteScheduledPost(scheduledPost *model.ScheduledPost) error
 	GetTeamScheduledPosts(teamID string) error
+
+	// Custom Profile Attributes
+	GetCPAValues(userId string) (map[string]json.RawMessage, error)
+	PatchCPAValues(userId string, values map[string]json.RawMessage) error
+	GetCPAFields() error
 }
