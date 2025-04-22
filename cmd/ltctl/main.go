@@ -60,6 +60,7 @@ func destroyAllButMetrics(config deployment.Config) error {
 	config.ElasticSearchSettings.InstanceCount = 0
 	config.RedisSettings.Enabled = false
 	config.JobServerSettings.InstanceCount = 0
+	config.ExternalAuthProviderSettings.Enabled = false
 
 	t, err := terraform.New("", config)
 	if err != nil {
