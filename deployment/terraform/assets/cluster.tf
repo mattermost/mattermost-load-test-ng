@@ -153,7 +153,7 @@ resource "aws_instance" "metrics_server" {
 
   ami               = var.aws_ami
   instance_type     = var.metrics_instance_type
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
   subnet_id         = (length(var.cluster_subnet_ids.metrics) > 0) ? element(tolist(var.cluster_subnet_ids.metrics), count.index) : null
@@ -525,7 +525,7 @@ resource "aws_security_group_rule" "agent-egress" {
 }
 
 resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
-  count                    = var.app_instance_count > 0 ? 1 : 0
+  count                    = var.enable_metrics_instance ? 1 : 0
   type                     = "ingress"
   from_port                = 4000
   to_port                  = 4000
@@ -545,13 +545,13 @@ resource "aws_security_group_rule" "agent-node-exporter" {
 }
 
 resource "aws_security_group" "metrics" {
-  count  = var.app_instance_count > 0 ? 1 : 0
+  count  = var.enable_metrics_instance ? 1 : 0
   name   = "${var.cluster_name}-metrics-security-group"
   vpc_id = var.cluster_vpc_id
 }
 
 resource "aws_security_group_rule" "metrics-ssh" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 22
   to_port           = 22
@@ -561,7 +561,7 @@ resource "aws_security_group_rule" "metrics-ssh" {
 }
 
 resource "aws_security_group_rule" "metrics-prometheus" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 9090
   to_port           = 9090
@@ -572,7 +572,7 @@ resource "aws_security_group_rule" "metrics-prometheus" {
 
 
 resource "aws_security_group_rule" "metrics-cloudwatchexporter" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 9106
   to_port           = 9106
@@ -582,7 +582,7 @@ resource "aws_security_group_rule" "metrics-cloudwatchexporter" {
 }
 
 resource "aws_security_group_rule" "metrics-grafana" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 3000
   to_port           = 3000
@@ -592,7 +592,7 @@ resource "aws_security_group_rule" "metrics-grafana" {
 }
 
 resource "aws_security_group_rule" "metrics-pyroscope" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 4040
   to_port           = 4040
@@ -602,7 +602,7 @@ resource "aws_security_group_rule" "metrics-pyroscope" {
 }
 
 resource "aws_security_group_rule" "metrics-loki" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "ingress"
   from_port         = 3100
   to_port           = 3100
@@ -612,7 +612,7 @@ resource "aws_security_group_rule" "metrics-loki" {
 }
 
 resource "aws_security_group_rule" "metrics-egress" {
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   type              = "egress"
   from_port         = 0
   to_port           = 0
