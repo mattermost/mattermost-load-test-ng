@@ -218,5 +218,8 @@ variable "custom_tags" {
 variable "aws_az" {
 }
 
+variable "enable_metrics_instance" {
+}
+
 variable "metrics_instance_type" {
 }
