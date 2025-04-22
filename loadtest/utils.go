@@ -85,7 +85,7 @@ func CreateCustomAttributeFields(admin *userentity.UserEntity) error {
 			Type: "text",
 		},
 		model.PropertyField{
-			Name: "TestCPAFieldOne",
+			Name: "TestCPAFieldTwo",
 			Type: "text",
 		},
 	}
