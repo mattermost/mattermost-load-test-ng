@@ -103,6 +103,15 @@ func (c *GenController) Run() {
 		c.createTeam,
 	}
 
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
+	if resp.Err != nil {
+		c.sendFailStatus("Failed to retreive CustomProfileAttributesEnabled")
+		return
+	}
+	if cpaEnabled {
+		initActions = append(initActions, c.createCPAValues)
+	}
+
 	for i := 0; i < len(initActions); i++ {
 		if done() {
 			return

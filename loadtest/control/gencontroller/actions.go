@@ -4,6 +4,7 @@
 package gencontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -69,6 +70,19 @@ func (c *GenController) createTeam(u user.User) (res control.UserActionResponse)
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created team %s", id)}
+}
+
+func (c *GenController) createCPAValues(u user.User) (res control.UserActionResponse) {
+
+	fields := u.Store().GetCPAFields()
+	values := make(map[string]json.RawMessage)
+	for _, field := range fields {
+		value, _ := json.Marshal(field.Name + " value")
+		values[field.ID] = value
+	}
+	u.PatchCPAValues(u.Store().Id(), values)
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created cpaValues for user", u.Store().Id())}
 }
 
 func (c *GenController) createPublicChannel(u user.User) (res control.UserActionResponse) {

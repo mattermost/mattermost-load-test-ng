@@ -202,6 +202,11 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 			Store: userStore,
 		}
 
+		err = loadtest.CreateCustomAttributeFields(sysadmin)
+		if err != nil {
+			return err
+		}
+
 		err = loadtest.PromoteToAdmin(sysadmin, userentity.New(userSetup, ueConfig))
 		if err != nil {
 			return err

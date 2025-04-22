@@ -4,6 +4,8 @@
 package store
 
 import (
+	"encoding/json"
+
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -169,6 +171,11 @@ type UserStore interface {
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
 	DeleteScheduledPost(scheduledPost *model.ScheduledPost)
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
+
+	GetCPAValues(userID string) map[string]json.RawMessage
+	SetCPAValues(userID string, values map[string]json.RawMessage) error
+	SetCPAFields([]*model.PropertyField) error
+	GetCPAFields() []*model.PropertyField
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing

@@ -4,6 +4,7 @@
 package memstore
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -18,41 +19,43 @@ import (
 // MemStore is a simple implementation of MutableUserStore
 // which holds all data in memory.
 type MemStore struct {
-	lock                sync.RWMutex
-	user                *model.User
-	preferences         model.Preferences
-	config              *model.Config
-	clientConfig        map[string]string
-	emojis              []*model.Emoji
-	posts               map[string]*model.Post
-	postsQueue          *CQueue[model.Post]
-	teams               map[string]*model.Team
-	channels            map[string]*model.Channel
-	channelStats        map[string]*model.ChannelStats
-	channelMembers      map[string]map[string]*model.ChannelMember
-	channelMembersQueue *CQueue[model.ChannelMember]
-	teamMembers         map[string]map[string]*model.TeamMember
-	users               map[string]*model.User
-	usersQueue          *CQueue[model.User]
-	statuses            map[string]*model.Status
-	statusesQueue       *CQueue[model.Status]
-	reactions           map[string][]*model.Reaction
-	reactionsQueue      *CQueue[model.Reaction]
-	roles               map[string]*model.Role
-	license             map[string]string
-	currentChannel      *model.Channel
-	currentTeam         *model.Team
-	channelViews        map[string]int64
-	profileImages       map[string]int
-	serverVersion       string
-	threads             map[string]*model.ThreadResponse
-	threadsQueue        *CQueue[model.ThreadResponse]
-	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
-	drafts              map[string]map[string]*model.Draft
-	featureFlags        map[string]bool
-	report              *model.PerformanceReport
-	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
-	scheduledPosts      map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
+	lock                  sync.RWMutex
+	user                  *model.User
+	preferences           model.Preferences
+	config                *model.Config
+	clientConfig          map[string]string
+	emojis                []*model.Emoji
+	posts                 map[string]*model.Post
+	postsQueue            *CQueue[model.Post]
+	teams                 map[string]*model.Team
+	channels              map[string]*model.Channel
+	channelStats          map[string]*model.ChannelStats
+	channelMembers        map[string]map[string]*model.ChannelMember
+	channelMembersQueue   *CQueue[model.ChannelMember]
+	teamMembers           map[string]map[string]*model.TeamMember
+	users                 map[string]*model.User
+	usersQueue            *CQueue[model.User]
+	statuses              map[string]*model.Status
+	statusesQueue         *CQueue[model.Status]
+	reactions             map[string][]*model.Reaction
+	reactionsQueue        *CQueue[model.Reaction]
+	roles                 map[string]*model.Role
+	license               map[string]string
+	currentChannel        *model.Channel
+	currentTeam           *model.Team
+	channelViews          map[string]int64
+	profileImages         map[string]int
+	serverVersion         string
+	threads               map[string]*model.ThreadResponse
+	threadsQueue          *CQueue[model.ThreadResponse]
+	sidebarCategories     map[string]map[string]*model.SidebarCategoryWithChannels
+	drafts                map[string]map[string]*model.Draft
+	featureFlags          map[string]bool
+	report                *model.PerformanceReport
+	channelBookmarks      map[string]*model.ChannelBookmarkWithFileInfo
+	customAttributeFields []*model.PropertyField
+	scheduledPosts        map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
+	customAttributeValues map[string]map[string]json.RawMessage
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -1429,4 +1432,34 @@ func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.Sched
 			break
 		}
 	}
+}
+
+func (s *MemStore) SetCPAFields(fields []*model.PropertyField) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.customAttributeFields = fields
+	return nil
+}
+
+func (s *MemStore) GetCPAFields() []*model.PropertyField {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return s.customAttributeFields
+}
+
+func (s *MemStore) SetCPAValues(userID string, values map[string]json.RawMessage) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.customAttributeValues[userID] = values
+	return nil
+}
+
+func (s *MemStore) GetCPAValues(userID string) map[string]json.RawMessage {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.customAttributeValues[userID]
 }
