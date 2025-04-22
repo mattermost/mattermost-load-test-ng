@@ -53,8 +53,8 @@ type MemStore struct {
 	featureFlags          map[string]bool
 	report                *model.PerformanceReport
 	channelBookmarks      map[string]*model.ChannelBookmarkWithFileInfo
-	customAttributeFields []*model.PropertyField
 	scheduledPosts        map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
+	customAttributeFields []*model.PropertyField
 	customAttributeValues map[string]map[string]json.RawMessage
 }
 

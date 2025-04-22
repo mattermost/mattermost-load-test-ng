@@ -2008,14 +2008,15 @@ func (c *SimulController) openUserProfile(u user.User) control.UserActionRespons
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// Retrieve custom profile attribute values for the user.
 	cpaEnabled, resp := control.CustomProfileAttributesEnabled(u)
 	if resp.Err != nil {
 		return resp
 	}
 	if cpaEnabled {
+		// attempt to retrieve from store
 		attributes := u.Store().GetCPAValues(post.UserId)
 		if len(attributes) == 0 {
+			// Retrieve custom profile attribute values for the user.
 			if attributes, err = u.GetCPAValues(post.UserId); err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}

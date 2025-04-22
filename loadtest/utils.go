@@ -77,15 +77,24 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 	return nil
 }
 
-// PromoteToAdmin promotes user to a sysadmin role
+// Create CPA Fields
 func CreateCustomAttributeFields(admin *userentity.UserEntity) error {
-	field := &model.PropertyField{
-		Name: "TestCPAFeildOne",
-		Type: "text",
+	fields := []model.PropertyField{
+		model.PropertyField{
+			Name: "TestCPAFieldOne",
+			Type: "text",
+		},
+		model.PropertyField{
+			Name: "TestCPAFieldOne",
+			Type: "text",
+		},
 	}
-	_, err := admin.CreateCPAField(field)
-	if err != nil {
-		return err
+
+	for _, field := range fields {
+		_, err := admin.CreateCPAField(field)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
