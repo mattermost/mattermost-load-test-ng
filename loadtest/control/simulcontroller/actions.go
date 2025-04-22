@@ -2017,7 +2017,7 @@ func (c *SimulController) openUserProfile(u user.User) control.UserActionRespons
 		attributes := u.Store().GetCPAValues(post.UserId)
 		if len(attributes) == 0 {
 			// Retrieve custom profile attribute values for the user.
-			if attributes, err = u.GetCPAValues(post.UserId); err != nil {
+			if _, err = u.GetCPAValues(post.UserId); err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
 		}
