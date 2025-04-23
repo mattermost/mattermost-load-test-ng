@@ -696,6 +696,38 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 	return ue.store.SetChannelMembers(channelMembers)
 }
 
+// GetAllChannelMembersForUser gets all channel memberships for the
+// specified user regardless of the team the channels are part of
+func (ue *UserEntity) GetAllChannelMembersForUser(userId string) error {
+	perPage := 200
+	page := 0
+	for {
+		// Get perPage members from /users/$user_id/channel_members
+		membersWithTeamData, _, err := ue.client.GetChannelMembersWithTeamData(context.Background(), userId, page, perPage)
+		if err != nil {
+			return err
+		}
+
+		// Retrieve the embedded ChannelMember struct, we don't store the team data
+		plainMembers := make(model.ChannelMembers, len(membersWithTeamData))
+		for i, memberWithTeamData := range membersWithTeamData {
+			plainMembers[i] = memberWithTeamData.ChannelMember
+		}
+
+		// Set the slice of members we got
+		if err := ue.store.SetChannelMembers(plainMembers); err != nil {
+			return err
+		}
+
+		// Stop when we get to the last page
+		if len(membersWithTeamData) < 200 {
+			return nil
+		}
+
+		page++
+	}
+}
+
 // GetChannelMembersForUser gets the channel members for the specified user in
 // the specified team.
 func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {

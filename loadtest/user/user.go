@@ -195,6 +195,9 @@ type User interface {
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 	// GetChannelMembers fetches and stores channel members for the specified channel.
 	GetChannelMembers(channelId string, page, perPage int) error
+	// GetAllChannelMembersForUser gets all channel memberships for the
+	// specified user regardless of the team the channels are part of
+	GetAllChannelMembersForUser(userId string) error
 	// GetChannelMembersForUser gets the channel members for the specified user in
 	// the specified team.
 	GetChannelMembersForUser(userId, teamId string) error
