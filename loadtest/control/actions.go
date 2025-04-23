@@ -807,12 +807,12 @@ func Reload(u user.User) UserActionResponse {
 		teamId = team.Id
 	}
 
-	if teamId != "" {
-		err = u.GetTeamMembersForUser(u.Store().Id())
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
+	err = u.GetTeamMembersForUser(u.Store().Id())
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
 
+	if teamId != "" {
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
 			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
@@ -822,12 +822,11 @@ func Reload(u user.User) UserActionResponse {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
+	}
 
-		_, err = u.GetChannelsForUser(userId)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-
-		}
+	_, err = u.GetChannelsForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	err = u.GetAllChannelMembersForUser(userId)
