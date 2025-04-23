@@ -830,6 +830,11 @@ func Reload(u user.User) UserActionResponse {
 		}
 	}
 
+	err = u.GetAllChannelMembersForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
 	// Getting unread teams.
 	_, err = u.GetTeamsUnread("", false)
 	if err != nil {
