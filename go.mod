@@ -33,7 +33,7 @@ require (
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.6.0
-	github.com/mattermost/mattermost/server/public v0.1.11-0.20250317155315-c95968c380be
+	github.com/mattermost/mattermost/server/public v0.1.12-0.20250424064128-131cf039bbd5
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20250317155315-c95968c380be
 	github.com/opensearch-project/opensearch-go/v4 v4.4.0
 	github.com/pelletier/go-toml/v2 v2.2.3
@@ -139,6 +139,7 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
+	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
