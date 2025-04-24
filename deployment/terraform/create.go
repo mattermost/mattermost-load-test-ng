@@ -304,8 +304,10 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
-	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
-		return fmt.Errorf("error setting up loadtest agents: %w", err)
+	if t.config.AgentInstanceCount > 0 {
+		if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
+			return fmt.Errorf("error setting up loadtest agents: %w", err)
+		}
 	}
 
 	mlog.Info("Deployment complete.")
