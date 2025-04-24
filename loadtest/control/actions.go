@@ -228,7 +228,6 @@ func CreatePost(u user.User) UserActionResponse {
 		ChannelId: channel.Id,
 		CreateAt:  time.Now().Unix() * 1000,
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -260,7 +259,6 @@ func CreateAckPost(u user.User) UserActionResponse {
 			},
 		},
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -413,7 +411,6 @@ func CreatePostReply(u user.User) UserActionResponse {
 		CreateAt:  time.Now().Unix() * 1000,
 		RootId:    post.Id,
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -439,7 +436,6 @@ func AddReaction(u user.User) UserActionResponse {
 		PostId:    postId,
 		EmojiName: "grinning",
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -516,7 +512,6 @@ func CreatePublicChannel(u user.User) UserActionResponse {
 		TeamId:      team.Id,
 		Type:        "O",
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -536,7 +531,6 @@ func CreatePrivateChannel(u user.User) UserActionResponse {
 		TeamId: team.Id,
 		Type:   model.ChannelTypePrivate,
 	})
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -563,7 +557,6 @@ func CreateDirectChannel(u user.User) UserActionResponse {
 	}
 
 	channelId, err := u.CreateDirectChannel(cm.UserId)
-
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
@@ -657,6 +650,15 @@ func SearchPosts(u user.User) UserActionResponse {
 	}
 
 	return UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+func SearchPostsAllTeams(u user.User) UserActionResponse {
+	list, err := u.SearchPosts("", "test search", false)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
+
+	return UserActionResponse{Info: fmt.Sprintf("found %d posts in all teams", len(list.Posts))}
 }
 
 // FetchStaticAssets parses index.html and fetches static assets mentioned in it
@@ -833,7 +835,6 @@ func Reload(u user.User) UserActionResponse {
 		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-
 		}
 	}
 
