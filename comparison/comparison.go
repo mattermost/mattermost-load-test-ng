@@ -157,22 +157,32 @@ func (c *Comparison) Run() (Output, error) {
 // Destroy destroys all resources associated with the deployments for the
 // current automated load-test comparisons.
 func (c *Comparison) Destroy(maintainMetrics bool) error {
-	resourcesToMaintain := []string{
-		"aws_instance.metrics_server[0]",
-		"aws_security_group.metrics[0]",
-		"aws_security_group_rule.metrics-egress[0]",
-		"aws_security_group_rule.metrics-grafana[0]",
+	if maintainMetrics {
+		for _, dp := range c.deployments {
+			dp.config.AppInstanceCount = 0
+			dp.config.ProxyInstanceCount = 0
+			dp.config.AgentInstanceCount = 0
+			dp.config.TerraformDBSettings.InstanceCount = 0
+			dp.config.ElasticSearchSettings.InstanceCount = 0
+			dp.config.RedisSettings.Enabled = false
+			dp.config.JobServerSettings.InstanceCount = 0
+			dp.config.ExternalAuthProviderSettings.Enabled = false
+		}
+
+		extAgent, err := ssh.NewAgent()
+		if err != nil {
+			return fmt.Errorf("failed to create ssh agent: %w", err)
+		}
+
+		return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+			return t.Create(extAgent, false)
+		})
 	}
 
 	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
 		if err := t.Sync(); err != nil {
 			return err
 		}
-
-		if maintainMetrics {
-			return t.Destroy(resourcesToMaintain...)
-		}
-
 		return t.Destroy()
 	})
 }
