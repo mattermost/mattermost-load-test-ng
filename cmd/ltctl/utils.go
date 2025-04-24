@@ -29,7 +29,7 @@ func checkDoNotDestroyMetricsInstanceFlag(cmd *cobra.Command, args []string) err
 	}
 
 	if maintainMetrics {
-		confirmed, err := askForConfirmation("CAUTION! The --do-not-destroy-metrics-instance flag will keep the metrics instance alive by removing it from Terraform state. This means that you will need to manually clean it up when you are done with it. Do you want to continue? [y/n] ")
+		confirmed, err := askForConfirmation("CAUTION! The --do-not-destroy-metrics-instance flag will keep the metrics instance and associated resources alive. This means that you will need to run the destroy command without this flag afterwards to clean up everything. Do you want to continue? [y/n] ")
 		if err != nil {
 			return err
 		}
