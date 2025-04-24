@@ -159,14 +159,7 @@ func (c *Comparison) Run() (Output, error) {
 func (c *Comparison) Destroy(maintainMetrics bool) error {
 	if maintainMetrics {
 		for _, dp := range c.deployments {
-			dp.config.AppInstanceCount = 0
-			dp.config.ProxyInstanceCount = 0
-			dp.config.AgentInstanceCount = 0
-			dp.config.TerraformDBSettings.InstanceCount = 0
-			dp.config.ElasticSearchSettings.InstanceCount = 0
-			dp.config.RedisSettings.Enabled = false
-			dp.config.JobServerSettings.InstanceCount = 0
-			dp.config.ExternalAuthProviderSettings.Enabled = false
+			dp.config.DestroyAllButMetrics()
 		}
 
 		extAgent, err := ssh.NewAgent()

@@ -52,16 +52,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 func destroyAllButMetrics(config deployment.Config) error {
 	// Override all created resources so we destroy everything but the metrics
 	// instance.
-	// This list should be kept up-to-date when new resources are added to the
-	// Terraform files
-	config.AppInstanceCount = 0
-	config.ProxyInstanceCount = 0
-	config.AgentInstanceCount = 0
-	config.TerraformDBSettings.InstanceCount = 0
-	config.ElasticSearchSettings.InstanceCount = 0
-	config.RedisSettings.Enabled = false
-	config.JobServerSettings.InstanceCount = 0
-	config.ExternalAuthProviderSettings.Enabled = false
+	config.DestroyAllButMetrics()
 
 	t, err := terraform.New("", config)
 	if err != nil {
