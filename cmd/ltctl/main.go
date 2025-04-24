@@ -49,15 +49,37 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
-	config, err := getConfig(cmd)
-	if err != nil {
-		return err
-	}
+func destroyAllButMetrics(config deployment.Config) error {
+	// Override all created resources so we destroy everything but the metrics
+	// instance.
+	// This list should be kept up-to-date when new resources are added to the
+	// Terraform files
+	config.AppInstanceCount = 0
+	config.ProxyInstanceCount = 0
+	config.AgentInstanceCount = 0
+	config.TerraformDBSettings.InstanceCount = 0
+	config.ElasticSearchSettings.InstanceCount = 0
+	config.RedisSettings.Enabled = false
+	config.JobServerSettings.InstanceCount = 0
+	config.ExternalAuthProviderSettings.Enabled = false
 
 	t, err := terraform.New("", config)
 	if err != nil {
 		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return fmt.Errorf("failed to create SSH agent: %w", err)
+	}
+
+	return t.Create(extAgent, false)
+}
+
+func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
 	}
 
 	maintainMetrics, err := cmd.Flags().GetBool("do-not-destroy-metrics-instance")
@@ -65,15 +87,16 @@ func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed getting the --do-not-destroy-metrics-instance flag: %w", err)
 	}
 
-	resourcesToMaintain := []string{}
 	if maintainMetrics {
-		resourcesToMaintain = append(resourcesToMaintain, "aws_instance.metrics_server[0]")
-		resourcesToMaintain = append(resourcesToMaintain, "aws_security_group.metrics[0]")
-		resourcesToMaintain = append(resourcesToMaintain, "aws_security_group_rule.metrics-egress[0]")
-		resourcesToMaintain = append(resourcesToMaintain, "aws_security_group_rule.metrics-grafana[0]")
+		return destroyAllButMetrics(config)
 	}
 
-	return t.Destroy(resourcesToMaintain...)
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	return t.Destroy()
 }
 
 func RunInfoCmdF(cmd *cobra.Command, args []string) error {
