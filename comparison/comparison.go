@@ -158,16 +158,13 @@ func (c *Comparison) Run() (Output, error) {
 // current automated load-test comparisons.
 func (c *Comparison) Destroy(maintainMetrics bool) error {
 	if maintainMetrics {
-		for _, dp := range c.deployments {
-			dp.config.DestroyAllButMetrics()
-		}
-
 		extAgent, err := ssh.NewAgent()
 		if err != nil {
 			return fmt.Errorf("failed to create ssh agent: %w", err)
 		}
 
-		return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+		return c.deploymentAction(func(t *terraform.Terraform, dpCfg *deploymentConfig) error {
+			dpCfg.config.DestroyAllButMetrics()
 			return t.Create(extAgent, false)
 		})
 	}
