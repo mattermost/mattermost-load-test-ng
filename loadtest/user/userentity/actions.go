@@ -18,6 +18,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/graph-gophers/graphql-go"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -1417,7 +1418,7 @@ func (ue *UserEntity) MessageExport() error {
 
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
 // a given postId.
-func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error) {
+func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*store.ThreadResponseWrapped, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return nil, err
@@ -1427,10 +1428,17 @@ func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThread
 		return nil, err
 	}
 
-	return threads.Threads, ue.store.SetThreads(threads.Threads)
+	tWrapped := make([]*store.ThreadResponseWrapped, len(threads.Threads))
+	for i := range threads.Threads {
+		tWrapped[i] = &store.ThreadResponseWrapped{
+			ThreadResponse: *threads.Threads[i],
+		}
+	}
+
+	return tWrapped, ue.store.SetThreads(tWrapped)
 }
 
-// UpdateThreadFollow updates the follow state of the the given thread
+// UpdateThreadFollow updates the follow state of the given thread
 func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -1438,6 +1446,11 @@ func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) er
 	}
 	_, err = ue.client.UpdateThreadFollowForUser(context.Background(), user.Id, teamId, threadId, state)
 	return err
+}
+
+// UpdateThreadLastUpdateAt updates the lastUpdateAt of the given thread
+func (ue *UserEntity) UpdateThreadLastUpdateAt(threadId string, lastUpdateAt int64) error {
+	return ue.store.SetThreadLastUpdateAt(threadId, lastUpdateAt)
 }
 
 // GetPostThread gets a post with all the other posts in the same thread.
@@ -1484,7 +1497,13 @@ func (ue *UserEntity) UpdateThreadRead(teamId, threadId string, timestamp int64)
 	if err != nil {
 		return err
 	}
-	return ue.store.SetThreads([]*model.ThreadResponse{thread})
+
+	tWrapped := make([]*store.ThreadResponseWrapped, 1)
+	tWrapped[0] = &store.ThreadResponseWrapped{
+		ThreadResponse: *thread,
+	}
+
+	return ue.store.SetThreads(tWrapped)
 }
 
 // GetSidebarCategories fetches and stores the sidebar categories for an user.
