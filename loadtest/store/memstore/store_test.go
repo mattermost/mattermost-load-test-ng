@@ -666,7 +666,7 @@ func TestThreads(t *testing.T) {
 		require.Equal(t, *thread, *th)
 	})
 
-	t.Run("SetThreads", func(t *testing.T) {
+	t.Run("SetThreadLastUpdateAt", func(t *testing.T) {
 		s := newStore(t)
 		id := model.NewId()
 		thread := &store.ThreadResponseWrapped{
