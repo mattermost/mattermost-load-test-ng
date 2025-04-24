@@ -4,6 +4,7 @@
 package store
 
 import (
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -136,8 +137,8 @@ type UserStore interface {
 	// after a specified timestamp in milliseconds.
 	PostsIdsSince(ts int64) ([]string, error)
 
-	// ServerVersion returns the server version string.
-	ServerVersion() (string, error)
+	// ServerVersion returns the server version
+	ServerVersion() semver.Version
 
 	// Threads
 	Thread(threadId string) (*model.ThreadResponse, error)
@@ -276,7 +277,7 @@ type MutableUserStore interface {
 	SetProfileImage(userId string, lastPictureUpdate int) error
 
 	// SetServerVersion sets the server version string.
-	SetServerVersion(version string) error
+	SetServerVersion(version semver.Version) error
 
 	// Threads
 	// SetThreads stores the given posts.

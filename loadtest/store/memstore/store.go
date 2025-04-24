@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -44,7 +45,7 @@ type MemStore struct {
 	currentTeam         *model.Team
 	channelViews        map[string]int64
 	profileImages       map[string]int
-	serverVersion       string
+	serverVersion       semver.Version
 	threads             map[string]*model.ThreadResponse
 	threadsQueue        *CQueue[model.ThreadResponse]
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
@@ -1033,14 +1034,14 @@ func (s *MemStore) SetProfileImage(userId string, lastPictureUpdate int) error {
 }
 
 // ServerVersion returns the server version string.
-func (s *MemStore) ServerVersion() (string, error) {
+func (s *MemStore) ServerVersion() semver.Version {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	return s.serverVersion, nil
+	return s.serverVersion
 }
 
 // SetServerVersion stores the given server version.
-func (s *MemStore) SetServerVersion(version string) error {
+func (s *MemStore) SetServerVersion(version semver.Version) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.serverVersion = version
