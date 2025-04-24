@@ -45,6 +45,8 @@ type Config struct {
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// IAM role to attach to the app servers
 	AppAttachIAMProfile string `default:""`
+	// EnableMetricsInstance enables deploying a metrics instance
+	EnableMetricsInstance bool `default:"true"`
 	// Type of the EC2 instance for metrics.
 	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
