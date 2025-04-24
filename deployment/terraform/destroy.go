@@ -11,10 +11,7 @@ import (
 )
 
 // Destroy destroys the created load-test environment.
-// If the resourcesToMaintain variadic argument has at least one element, the
-// specified resources are removed from the state, meaning that they will not
-// be destroyed, and that Terraform will ignore them from now on.
-func (t *Terraform) Destroy(resourcesToMaintain ...string) error {
+func (t *Terraform) Destroy() error {
 	if err := t.preFlightCheck(); err != nil {
 		return err
 	}
@@ -23,18 +20,6 @@ func (t *Terraform) Destroy(resourcesToMaintain ...string) error {
 	// bucket to destroy
 	if err := t.loadOutput(); err != nil {
 		return err
-	}
-
-	if len(resourcesToMaintain) > 0 {
-		mlog.Info("Removing resources from state; these resources will *not* be destroyed, and they will no longer be under Terraform control. You will have to manually clean them up when needed.", mlog.Array("list of resource addresses", resourcesToMaintain))
-		var params []string
-		params = append(params, "state")
-		params = append(params, "rm")
-		params = append(params, resourcesToMaintain...)
-
-		if err := t.runCommand(nil, params...); err != nil {
-			return err
-		}
 	}
 
 	// Empty the S3 bucket concurrently with the main terraform destroy command
