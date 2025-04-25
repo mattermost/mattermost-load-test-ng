@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 )
 
 // Info displays information about the current load-test deployment.
@@ -16,12 +18,12 @@ func (t *Terraform) Info() error {
 		return err
 	}
 
-	displayInfo(output)
+	displayInfo(t.config, output)
 
 	return nil
 }
 
-func displayInfo(output *Output) {
+func displayInfo(cfg *deployment.Config, output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
@@ -66,6 +68,7 @@ func displayInfo(output *Output) {
 
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.GetConnectionIP() + ":3000")
+		fmt.Println("    Credentials: admin / " + cfg.GeneratedValues.GrafanaAdminPassword)
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.GetConnectionIP() + ":9090")
 		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.GetConnectionIP() + ":4040")
 	}
