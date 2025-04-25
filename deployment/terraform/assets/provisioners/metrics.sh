@@ -15,8 +15,8 @@ do
       sudo apt-get install -y prometheus && \
       sudo systemctl enable prometheus && \
       sudo apt-get install -y adduser libfontconfig1 musl && \
-      wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb && \
-      sudo dpkg -i grafana_10.2.3_amd64.deb && \
+      wget https://dl.grafana.com/oss/release/grafana_11.6.1_amd64.deb && \
+      sudo dpkg -i grafana_11.6.1_amd64.deb && \
       wget https://github.com/inbucket/inbucket/releases/download/v2.1.0/inbucket_2.1.0_linux_amd64.deb && \
       sudo dpkg -i inbucket_2.1.0_linux_amd64.deb && \
       wget https://github.com/justwatchcom/elasticsearch_exporter/releases/download/v1.1.0/elasticsearch_exporter-1.1.0.linux-amd64.tar.gz && \
