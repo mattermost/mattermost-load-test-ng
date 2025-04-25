@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -312,6 +313,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	mlog.Info("Setting up Grafana", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
 
+	// Change Grafana admin password
+	// No need to be cryptographically secure here, we just need a new password
+	passLen := 32
+	chars := []rune("abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789")
+	s := make([]rune, passLen)
+	for j := 0; j < passLen; j++ {
+		s[j] = chars[rand.Intn(len(chars))]
+	}
+	password := string(s)
+	cmd = fmt.Sprintf("sudo grafana-cli --homepath \"/usr/share/grafana\" admin reset-admin-password %q", password)
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
 	// Upload config file
 	rdr = strings.NewReader(grafanaConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/grafana/grafana.ini", true); err != nil {
@@ -441,7 +455,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Waiting for Grafana to be back up.
-	url := fmt.Sprintf("http://%s@%s:3000/api/user/preferences", defaultGrafanaUsernamePass, t.output.MetricsServer.GetConnectionIP())
+	url := fmt.Sprintf("http://%s:%s@%s:3000/api/user/preferences", "admin", password, t.output.MetricsServer.GetConnectionIP())
 	timeout := time.After(10 * time.Second)
 	for {
 		resp, err := http.Get(url)
