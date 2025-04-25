@@ -134,6 +134,13 @@ type Config struct {
 	// CustomTags is an optional list of key-value pairs, which will be used as default
 	// tags for all resources deployed
 	CustomTags TerraformMap
+
+	// GeneratedValues is a struct containing generated values that are not user-defined
+	GeneratedValues GeneratedValues
+}
+
+type GeneratedValues struct {
+	GrafanaAdminPassword string
 }
 
 // TerraformMap is a map of string -> string that serializes to the format expected by
