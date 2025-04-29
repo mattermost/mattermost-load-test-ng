@@ -743,7 +743,7 @@ func (ue *UserEntity) GetAllChannelMembersForUser(userId string) error {
 		}
 
 		// Stop when we get to the last page
-		if len(membersWithTeamData) < 200 {
+		if len(membersWithTeamData) < perPage {
 			return nil
 		}
 
