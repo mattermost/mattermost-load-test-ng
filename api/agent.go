@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
@@ -352,12 +353,16 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	}
 
 	var err error
-	serverVersion := config.UserControllerConfiguration.ServerVersion
-	if serverVersion == "" {
-		serverVersion, err = getServerVersion(config.ConnectionConfiguration.ServerURL)
+	serverVersionStr := config.UserControllerConfiguration.ServerVersion
+	if serverVersionStr == "" {
+		serverVersionStr, err = getServerVersion(config.ConnectionConfiguration.ServerURL)
 		if err != nil {
 			mlog.Error("Failed to get server version", mlog.Err(err))
 		}
+	}
+	serverVersion, err := semver.Parse(serverVersionStr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse server version %q: %w", serverVersionStr, err)
 	}
 
 	creds, err := getUserCredentials(config.UsersConfiguration.UsersFilePath, config)

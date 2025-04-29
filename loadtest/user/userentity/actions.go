@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/blang/semver"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -695,6 +696,60 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 	}
 
 	return ue.store.SetChannelMembers(channelMembers)
+}
+
+// GetAllChannelMembersForUser gets all channel memberships for the
+// specified user regardless of the team the channels are part of
+func (ue *UserEntity) GetAllChannelMembersForUser(userId string) error {
+	serverVersion := ue.Store().ServerVersion()
+	// Versions 10.9.0 and later support streaming all the members by setting
+	// page to -1, so there is no need to paginate
+	if serverVersion.GTE(semver.MustParse("10.9.0")) {
+		membersWithTeamData, _, err := ue.client.GetChannelMembersWithTeamData(context.Background(), userId, -1, 0)
+		if err != nil {
+			return err
+		}
+
+		// Retrieve the embedded ChannelMember struct, we don't store the team data
+		plainMembers := make(model.ChannelMembers, len(membersWithTeamData))
+		for i, memberWithTeamData := range membersWithTeamData {
+			plainMembers[i] = memberWithTeamData.ChannelMember
+		}
+
+		// Set the slice of members we got
+		return ue.store.SetChannelMembers(plainMembers)
+	}
+
+	// Fallback logic for older servers.
+	// Remove this differentiation when 10.8.0 goes out of support.
+	page := 0
+	perPage := 200
+	for {
+		// Get perPage members from /users/$user_id/channel_members
+		membersWithTeamData, _, err := ue.client.GetChannelMembersWithTeamData(context.Background(), userId, page, perPage)
+		if err != nil {
+			return err
+		}
+
+		// Retrieve the embedded ChannelMember struct, we don't store the team data
+		plainMembers := make(model.ChannelMembers, len(membersWithTeamData))
+		for i, memberWithTeamData := range membersWithTeamData {
+			plainMembers[i] = memberWithTeamData.ChannelMember
+		}
+
+		// Set the slice of members we got
+		if err := ue.store.SetChannelMembers(plainMembers); err != nil {
+			return err
+		}
+
+		// Stop when we get to the last page
+		if len(membersWithTeamData) < perPage {
+			return nil
+		}
+
+		page++
+	}
+
 }
 
 // GetChannelMembersForUser gets the channel members for the specified user in

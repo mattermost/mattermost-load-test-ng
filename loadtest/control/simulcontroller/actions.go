@@ -256,14 +256,6 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 				break
 			}
 		}
-	} else {
-		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
 	}
 
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
