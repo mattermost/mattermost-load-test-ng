@@ -326,7 +326,7 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 	}
 
 	mlog.Info("Deployment complete.")
-	displayInfo(t.output)
+	displayInfo(*t.GeneratedValues(), t.output)
 	runcmd := "go run ./cmd/ltctl"
 	if strings.HasPrefix(os.Args[0], "ltctl") {
 		runcmd = "ltctl"
