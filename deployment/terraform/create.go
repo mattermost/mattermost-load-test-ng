@@ -60,6 +60,7 @@ type Terraform struct {
 	config      *deployment.Config
 	output      *Output
 	initialized bool
+	genValues   *GeneratedValues
 }
 
 // New returns a new Terraform instance.
@@ -76,14 +77,28 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
 	}
 
+	genValues, err := readGenValues(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get generated values: %w", err)
+	}
+
 	return &Terraform{
-		id:     id,
-		config: &cfg,
+		id:        id,
+		config:    &cfg,
+		genValues: genValues,
 	}, nil
 }
 
 func ensureTerraformStateDir(dir string) error {
 	return os.MkdirAll(dir, 0700)
+}
+
+func (t *Terraform) GeneratedValues() *GeneratedValues {
+	return t.genValues
+}
+
+func (t *Terraform) PersistGeneratedValues() error {
+	return persistGeneratedValues(*t.config, t.genValues)
 }
 
 // Create creates a new load test environment.
