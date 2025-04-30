@@ -501,12 +501,12 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	return &cfg, nil
 }
 
-// DestroyAllButMetrics overrides all created resources setting their instance
+// MarkForDestroyAllButMetrics overrides all created resources setting their instance
 // counts to 0 or their enable flags to false, so that everything is destroyed
 // in the next Create except for the metrics instance and related resources.
 // Note that this list should be kept up-to-date when new resources are added
 // to the Terraform files.
-func (c *Config) DestroyAllButMetrics() {
+func (c *Config) MarkForDestroyAllButMetrics() {
 	c.AppInstanceCount = 0
 	c.ProxyInstanceCount = 0
 	c.AgentInstanceCount = 0

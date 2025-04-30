@@ -159,7 +159,7 @@ func (c *Comparison) Run() (Output, error) {
 func (c *Comparison) Destroy(maintainMetrics bool) error {
 	if maintainMetrics {
 		for _, dp := range c.deployments {
-			dp.config.DestroyAllButMetrics()
+			dp.config.MarkForDestroyAllButMetrics()
 		}
 
 		extAgent, err := ssh.NewAgent()

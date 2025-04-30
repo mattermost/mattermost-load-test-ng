@@ -52,7 +52,7 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 func destroyAllButMetrics(config deployment.Config) error {
 	// Override all created resources so we destroy everything but the metrics
 	// instance.
-	config.DestroyAllButMetrics()
+	config.MarkForDestroyAllButMetrics()
 
 	t, err := terraform.New("", config)
 	if err != nil {
