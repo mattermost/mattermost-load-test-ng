@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
@@ -62,10 +61,12 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 
 	confirmFlag, _ := cmd.Flags().GetBool("confirm")
 	if !confirmFlag {
-		fmt.Print("Are you sure you want to delete everything? All data will be permanently deleted? [y/N] ")
-		var confirm string
-		fmt.Scanln(&confirm)
-		if !regexp.MustCompile(`(?i)^(y|yes){1}?$`).MatchString(confirm) {
+		confirmed, err := askForConfirmation("Are you sure you want to delete everything? All data will be permanently deleted.")
+		if err != nil {
+			return err
+		}
+
+		if !confirmed {
 			return nil
 		}
 	}

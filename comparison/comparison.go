@@ -156,7 +156,22 @@ func (c *Comparison) Run() (Output, error) {
 
 // Destroy destroys all resources associated with the deployments for the
 // current automated load-test comparisons.
-func (c *Comparison) Destroy() error {
+func (c *Comparison) Destroy(maintainMetrics bool) error {
+	if maintainMetrics {
+		for _, dp := range c.deployments {
+			dp.config.MarkForDestroyAllButMetrics()
+		}
+
+		extAgent, err := ssh.NewAgent()
+		if err != nil {
+			return fmt.Errorf("failed to create ssh agent: %w", err)
+		}
+
+		return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+			return t.Create(extAgent, false)
+		})
+	}
+
 	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
 		if err := t.Sync(); err != nil {
 			return err

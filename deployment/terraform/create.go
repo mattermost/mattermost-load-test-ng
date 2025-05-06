@@ -154,11 +154,8 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 	}
 
 	// If we are restoring from a DB backup, or using an external database, then we need to hook up
-	// the security group to it.
-	if t.config.TerraformDBSettings.ClusterIdentifier != "" || t.config.ExternalDBSettings.ClusterIdentifier != "" {
-		if len(t.output.DBSecurityGroup) == 0 {
-			return errors.New("No DB security group created")
-		}
+	// the created security group to it.
+	if (t.config.TerraformDBSettings.ClusterIdentifier != "" && len(t.output.DBSecurityGroup) > 0) || t.config.ExternalDBSettings.ClusterIdentifier != "" {
 		var identifier string
 		if t.config.TerraformDBSettings.ClusterIdentifier != "" {
 			identifier = t.config.TerraformDBSettings.ClusterIdentifier
@@ -307,8 +304,10 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
-	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
-		return fmt.Errorf("error setting up loadtest agents: %w", err)
+	if t.config.AgentInstanceCount > 0 {
+		if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
+			return fmt.Errorf("error setting up loadtest agents: %w", err)
+		}
 	}
 
 	mlog.Info("Deployment complete.")

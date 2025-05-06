@@ -20,6 +20,7 @@
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
+  "EnableMetricsInstance": true,
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",

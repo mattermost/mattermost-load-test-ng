@@ -45,6 +45,8 @@ type Config struct {
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// IAM role to attach to the app servers
 	AppAttachIAMProfile string `default:""`
+	// EnableMetricsInstance enables deploying a metrics instance
+	EnableMetricsInstance bool `default:"true"`
 	// Type of the EC2 instance for metrics.
 	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
@@ -497,4 +499,20 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// MarkForDestroyAllButMetrics overrides all created resources setting their instance
+// counts to 0 or their enable flags to false, so that everything is destroyed
+// in the next Create except for the metrics instance and related resources.
+// Note that this list should be kept up-to-date when new resources are added
+// to the Terraform files.
+func (c *Config) MarkForDestroyAllButMetrics() {
+	c.AppInstanceCount = 0
+	c.ProxyInstanceCount = 0
+	c.AgentInstanceCount = 0
+	c.TerraformDBSettings.InstanceCount = 0
+	c.ElasticSearchSettings.InstanceCount = 0
+	c.RedisSettings.Enabled = false
+	c.JobServerSettings.InstanceCount = 0
+	c.ExternalAuthProviderSettings.Enabled = false
 }
