@@ -97,7 +97,7 @@ Yes, you can do so by using the feature to [publish a snapshot to Raintank](http
 
 Two considerations:
 
-- Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporal instances, you can still do so for this purpose with the credentials `admin`/`admin`.
+- Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporary instances, you can still do so for this purpose with the credentials for the `admin` user, that are listed under the Grafana URL when running `deployment info`.
 - Note that a snapshot, although very useful for reference, is not a fully-functioning dashboard, so you will not be able to query new data using it. Take a look at the example above to understand how it works.
 
 ### Can I stress test the ElasticSearch jobs?
