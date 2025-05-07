@@ -22,6 +22,11 @@ type GeneratedValues struct {
 	GrafanaAdminPassword string `json:"GrafanaAdminPassword"`
 }
 
+func (v GeneratedValues) Sanitize() GeneratedValues {
+	v.GrafanaAdminPassword = "********"
+	return v
+}
+
 func openValuesFile(cfg deployment.Config) (*os.File, error) {
 	path := path.Join(cfg.TerraformStateDir, genValuesFileName)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
