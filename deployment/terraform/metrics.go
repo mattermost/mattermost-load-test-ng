@@ -124,19 +124,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		mmTargets = append(mmTargets, fmt.Sprintf("%s:8067", host))
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		netpeekTargets = append(netpeekTargets, fmt.Sprintf("%s:9045", host))
-		hosts += fmt.Sprintf("%s %s\n", val.GetConnectionIP(), host)
+		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	for i, val := range t.output.Agents {
 		host := fmt.Sprintf("agent-%d", i)
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
 		ltTargets = append(ltTargets, fmt.Sprintf("%s:4000", host))
-		hosts += fmt.Sprintf("%s %s\n", val.GetConnectionIP(), host)
+		hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 	}
 	if t.output.HasProxy() {
 		for i, val := range t.output.Proxies {
 			host := fmt.Sprintf("proxy-%d", i)
 			nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
-			hosts += fmt.Sprintf("%s %s\n", val.GetConnectionIP(), host)
+			hosts += fmt.Sprintf("%s %s\n", val.PrivateIP, host)
 		}
 	}
 
@@ -165,7 +165,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	if t.output.HasKeycloak() {
 		host := "keycloak"
 		keycloakTargets = append(keycloakTargets, fmt.Sprintf("%s:8080", host))
-		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.GetConnectionIP(), host)
+		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
 	if t.output.HasRedis() {
