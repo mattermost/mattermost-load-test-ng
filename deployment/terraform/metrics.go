@@ -26,8 +26,7 @@ import (
 )
 
 const (
-	defaultGrafanaUsernamePass = "admin:admin"
-	defaultRequestTimeout      = 10 * time.Second
+	defaultRequestTimeout = 10 * time.Second
 )
 
 func doAPIRequest(url, method string, payload io.Reader) (string, error) {
@@ -65,7 +64,7 @@ func (t *Terraform) UploadDashboard(dashboard string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url := fmt.Sprintf("http://%s@%s:3000/api/dashboards/db", defaultGrafanaUsernamePass, output.MetricsServer.GetConnectionIP())
+	url := fmt.Sprintf("http://%s:%s@%s:3000/api/dashboards/db", "admin", t.GeneratedValues().GrafanaAdminPassword, output.MetricsServer.GetConnectionIP())
 	data := fmt.Sprintf(`{"dashboard":%s,"folderId":0,"overwrite":true}`, dashboard)
 	data, err = doAPIRequest(url, http.MethodPost, strings.NewReader(data))
 	if err != nil {
@@ -312,6 +311,17 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 	mlog.Info("Setting up Grafana", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
 
+	// Change Grafana admin password
+	password := generatePseudoRandomPassword(32)
+	cmd = fmt.Sprintf("sudo grafana-cli --homepath \"/usr/share/grafana\" admin reset-admin-password %q", password)
+	if out, err := sshc.RunCommand(cmd); err != nil {
+		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
+	}
+	t.GeneratedValues().GrafanaAdminPassword = password
+	if err := t.PersistGeneratedValues(); err != nil {
+		return fmt.Errorf("unable to persist generated values after setting the Grafana admin password: %w", err)
+	}
+
 	// Upload config file
 	rdr = strings.NewReader(grafanaConfigFile)
 	if out, err := sshc.Upload(rdr, "/etc/grafana/grafana.ini", true); err != nil {
@@ -441,7 +451,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Waiting for Grafana to be back up.
-	url := fmt.Sprintf("http://%s@%s:3000/api/user/preferences", defaultGrafanaUsernamePass, t.output.MetricsServer.GetConnectionIP())
+	url := fmt.Sprintf("http://%s:%s@%s:3000/api/user/preferences", "admin", password, t.output.MetricsServer.GetConnectionIP())
 	timeout := time.After(10 * time.Second)
 	for {
 		resp, err := http.Get(url)
