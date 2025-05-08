@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -313,14 +312,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	mlog.Info("Setting up Grafana", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
 
 	// Change Grafana admin password
-	// No need to be cryptographically secure here, we just need a new password
-	passLen := 32
-	chars := []rune("abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789")
-	s := make([]rune, passLen)
-	for j := 0; j < passLen; j++ {
-		s[j] = chars[rand.Intn(len(chars))]
-	}
-	password := string(s)
+	password := generatePseudoRandomPassword(32)
 	cmd = fmt.Sprintf("sudo grafana-cli --homepath \"/usr/share/grafana\" admin reset-admin-password %q", password)
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
