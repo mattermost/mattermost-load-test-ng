@@ -23,7 +23,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
 	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.GetConnectionIP()))
-	extraArguments := []string{}
+	extraArguments := []string{"--metrics-enabled=true"}
 
 	command := "start"
 	if t.config.ExternalAuthProviderSettings.DevelopmentMode {
