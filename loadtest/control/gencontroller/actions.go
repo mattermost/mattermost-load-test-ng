@@ -87,7 +87,7 @@ func (c *GenController) createCPAValues(u user.User) (res control.UserActionResp
 		values[field.ID] = value
 	}
 
-	err := u.PatchCPAValues(u.Store().Id(), values)
+	err := u.PatchCPAValues(values)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

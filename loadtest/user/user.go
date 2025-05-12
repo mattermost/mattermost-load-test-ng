@@ -361,6 +361,6 @@ type User interface {
 
 	// Custom Profile Attributes
 	GetCPAValues(userId string) (map[string]json.RawMessage, error)
-	PatchCPAValues(userId string, values map[string]json.RawMessage) error
+	PatchCPAValues(values map[string]json.RawMessage) error
 	GetCPAFields() error
 }

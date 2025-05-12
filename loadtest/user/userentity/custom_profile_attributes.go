@@ -16,18 +16,13 @@ func (ue *UserEntity) CreateCPAField(field *model.PropertyField) (*model.Propert
 	return new_field, nil
 }
 
-// GetCPAFeidlds retrieves all the cpa field values available.
+// GetCPAFields retrieves all the cpa field values available.
 func (ue *UserEntity) GetCPAFields() error {
 	fields, _, err := ue.client.ListCPAFields(context.Background())
 	if err != nil {
 		return err
 	}
-	err = ue.store.SetCPAFields(fields)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ue.store.SetCPAFields(fields)
 }
 
 // GetCPAValues returns all the custom profile attributes for a user
@@ -44,8 +39,8 @@ func (ue *UserEntity) GetCPAValues(userId string) (map[string]json.RawMessage, e
 	return values, nil
 }
 
-// PatchUserCPA patches (or creates) a given users custom profile attributes.
-func (ue *UserEntity) PatchCPAValues(userId string, values map[string]json.RawMessage) error {
+// PatchCPAValues patches (or creates) a given user's custom profile attributes.
+func (ue *UserEntity) PatchCPAValues(values map[string]json.RawMessage) error {
 	_, _, err := ue.client.PatchCPAValues(context.Background(), values)
 	if err != nil {
 		return err

@@ -1460,8 +1460,8 @@ func (s *MemStore) SetCPAFields(fields []*model.PropertyField) error {
 }
 
 func (s *MemStore) GetCPAFields() []*model.PropertyField {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	return s.customAttributeFields
 }
