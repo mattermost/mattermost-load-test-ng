@@ -28,6 +28,7 @@ AppInstanceType = 'c5.xlarge'
 AppAttachIAMProfile = ''
 
 # Metrics instance configuration
+EnableMetricsInstance = true
 MetricsInstanceType = 't3.xlarge'
 
 # Cluster configuration

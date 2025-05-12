@@ -69,20 +69,13 @@ func Login(u user.User) UserActionResponse {
 	}
 
 	// Populate teams and channels.
-	teamIds, err := u.GetAllTeams(0, 100)
+	_, err = u.GetAllTeams(0, 100)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 	err = u.GetTeamMembersForUser(u.Store().Id())
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	}
-	for _, teamId := range teamIds {
-		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(teamId, true); err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
-		}
 	}
 
 	cpaEnabled, resp := CustomProfileAttributesEnabled(u)
@@ -825,12 +818,12 @@ func Reload(u user.User) UserActionResponse {
 		teamId = team.Id
 	}
 
-	if teamId != "" {
-		err = u.GetTeamMembersForUser(u.Store().Id())
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
+	err = u.GetTeamMembersForUser(u.Store().Id())
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
 
+	if teamId != "" {
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
 			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
@@ -840,12 +833,16 @@ func Reload(u user.User) UserActionResponse {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
+	}
 
-		_, err = u.GetChannelsForUser(userId)
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
+	_, err = u.GetChannelsForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
 
-		}
+	err = u.GetAllChannelMembersForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	// Getting unread teams.

@@ -495,7 +495,7 @@ disable_login_form = false
 
 [auth.anonymous]
 enabled = true
-org_role = Editor
+org_role = Viewer
 
 [dashboards]
 default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json

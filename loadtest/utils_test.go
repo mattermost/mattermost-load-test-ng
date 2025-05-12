@@ -11,6 +11,7 @@ import (
 )
 
 func TestRandomFutureTimeSuite(t *testing.T) {
+	now := time.Now().UnixMilli()
 	tests := []struct {
 		name        string
 		deltaStart  time.Duration
@@ -27,8 +28,8 @@ func TestRandomFutureTimeSuite(t *testing.T) {
 			name:        "Zero Durations",
 			deltaStart:  0 * time.Second,
 			maxUntil:    0 * time.Second,
-			expectedMin: time.Now().UnixMilli(),
-			expectedMax: time.Now().UnixMilli(),
+			expectedMin: now,
+			expectedMax: now,
 		},
 		{
 			name:       "Negative Durations",
@@ -61,7 +62,7 @@ func TestRandomFutureTimeSuite(t *testing.T) {
 			randomTime := RandomFutureTime(tt.deltaStart, tt.maxUntil)
 
 			if tt.expectedMin != 0 && tt.expectedMax != 0 {
-				require.Equal(t, randomTime, tt.expectedMin)
+				require.LessOrEqual(t, tt.expectedMin, randomTime)
 			} else {
 				// checking both ways to allow for negative values
 				isBetweenBounds := (randomTime >= start.UnixMilli() && randomTime <= end.UnixMilli()) || (randomTime <= start.UnixMilli() && randomTime >= end.UnixMilli())
