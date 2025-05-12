@@ -47,9 +47,9 @@ type MemStore struct {
 	currentTeam           *model.Team
 	channelViews          map[string]int64
 	profileImages         map[string]int
-	serverVersion         string
-	threads               map[string]*model.ThreadResponse
-	threadsQueue          *CQueue[model.ThreadResponse]
+	serverVersion         semver.Version
+	threads               map[string]*store.ThreadResponseWrapped
+	threadsQueue          *CQueue[store.ThreadResponseWrapped]
 	sidebarCategories     map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts                map[string]map[string]*model.Draft
 	featureFlags          map[string]bool
