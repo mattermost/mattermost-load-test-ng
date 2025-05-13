@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -374,4 +375,15 @@ func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
 	}
 
 	return cfg.Credentials.Retrieve(context.Background())
+}
+
+// generatePseudoRandomPassword returns a pseudo-random string containing
+// lower-case letters, upper-case letter and numbers
+func generatePseudoRandomPassword(length int) string {
+	chars := []rune("abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789")
+	s := make([]rune, length)
+	for j := 0; j < length; j++ {
+		s[j] = chars[rand.Intn(len(chars))]
+	}
+	return string(s)
 }
