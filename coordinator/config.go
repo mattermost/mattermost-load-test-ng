@@ -4,6 +4,8 @@
 package coordinator
 
 import (
+	"errors"
+
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -29,6 +31,23 @@ type Config struct {
 	// incrementing or decrementing users again.
 	RestTimeSec int `default:"2" validate:"range:(0,]"`
 	LogSettings logger.Settings
+}
+
+func (c Config) IsValid() error {
+	if c.NumUsersInc <= 0 {
+		return errors.New("NumUsersInc should be greater than 0")
+	}
+	if c.NumUsersDec <= 0 {
+		return errors.New("NumUsersDec should be greater than 0")
+	}
+	if c.RestTimeSec <= 0 {
+		return errors.New("RestTimeSec should be greater than 0")
+	}
+	if c.MonitorConfig.UpdateIntervalMs > (c.RestTimeSec / 2 * 1000) {
+		return errors.New("MonitorConfig.UpdateIntervalMs should be less than RestTimeSec/2*1000")
+	}
+
+	return nil
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

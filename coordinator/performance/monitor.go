@@ -101,7 +101,6 @@ func (m *Monitor) runQueries() Status {
 				mlog.String("query_threshold", fmt.Sprintf("%2.8f", query.Threshold)),
 			)
 			status = Status{Alert: true}
-			break
 		}
 	}
 	return status
