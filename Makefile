@@ -81,13 +81,22 @@ verify-gomod: ## Run go mod verify.
 	$(GO) mod download
 	$(GO) mod verify
 
-check-style: golangci-lint ## Check the style of the code.
+check-style: golangci-lint validate-json-configs ## Check the style of the code.
 
 golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64
 
 	@echo Running golangci-lint
 	$(GOBIN)/golangci-lint run ./...
+
+validate-json-configs:
+	$(GO) run ./scripts/json_validator.go config/config.sample.json
+	$(GO) run ./scripts/json_validator.go config/coordinator.sample.json
+	$(GO) run ./scripts/json_validator.go config/deployer.sample.json
+	$(GO) run ./scripts/json_validator.go config/comparison.sample.json
+	$(GO) run ./scripts/json_validator.go config/gencontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...
