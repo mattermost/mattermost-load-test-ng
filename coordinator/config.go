@@ -59,5 +59,9 @@ func ReadConfig(configFilePath string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.IsValid(); err != nil {
+		return nil, err
+	}
+
 	return &cfg, nil
 }
