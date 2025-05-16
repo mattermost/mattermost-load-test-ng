@@ -5,6 +5,7 @@ package coordinator
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
@@ -44,7 +45,7 @@ func (c Config) IsValid() error {
 		return errors.New("RestTimeSec should be greater than 0")
 	}
 	if c.MonitorConfig.UpdateIntervalMs > (c.RestTimeSec / 2 * 1000) {
-		return errors.New("MonitorConfig.UpdateIntervalMs should be less than RestTimeSec/2*1000")
+		return fmt.Errorf("MonitorConfig.UpdateIntervalMs should be less or equal to %d", c.RestTimeSec*1000/2)
 	}
 
 	return nil
