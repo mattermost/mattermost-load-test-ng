@@ -2013,6 +2013,22 @@ func (c *SimulController) openUserProfile(u user.User) control.UserActionRespons
 	if err := u.GetChannelMember(ch.Id, post.UserId); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+	if cpaEnabled {
+		// attempt to retrieve from store
+		attributes := u.Store().GetCPAValues(post.UserId)
+		if len(attributes) == 0 {
+			// Retrieve custom profile attribute values for the user.
+			if _, err = u.GetCPAValues(post.UserId); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+		}
+	}
+
 	// If it's a DM/GM channel, the webapp still sends the current team
 	// the user is part of
 	if ch.TeamId == "" {
