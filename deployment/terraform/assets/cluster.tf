@@ -77,9 +77,24 @@ resource "aws_instance" "app_server" {
     destination = "/home/ubuntu/mattermost.mattermost-license"
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/app.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/app.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 
@@ -132,7 +147,6 @@ data "aws_iam_policy_document" "metrics_policy_document" {
   }
 }
 
-
 resource "aws_iam_role_policy" "metrics_policy" {
   name   = "${var.cluster_name}-metrics-policy"
   role   = aws_iam_role.metrics_role.name
@@ -169,9 +183,24 @@ resource "aws_instance" "metrics_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/metrics.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/metrics.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_instance" "proxy_server" {
@@ -203,9 +232,24 @@ resource "aws_instance" "proxy_server" {
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/proxy.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/proxy.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_iam_user" "s3user" {
@@ -380,9 +424,24 @@ resource "aws_instance" "loadtest_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/agent.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/agent.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_security_group" "app" {
@@ -810,8 +869,23 @@ resource "aws_instance" "job_server" {
     destination = "/home/ubuntu/mattermost.mattermost-license"
   }
 
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/job.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
   provisioner "remote-exec" {
-    script = "provisioners/job.sh"
+    inline = [
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
   }
 }
 
@@ -857,14 +931,20 @@ resource "aws_instance" "keycloak" {
   }
 
   provisioner "file" {
-    source      = "provisioners/keycloak.sh"
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/keycloak.sh"
     destination = "/tmp/provisioner.sh"
   }
 
   provisioner "remote-exec" {
     inline = [
+      "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh ${var.keycloak_version}",
+      "/tmp/provisioner.sh",
     ]
   }
 }
