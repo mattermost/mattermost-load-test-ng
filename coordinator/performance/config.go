@@ -14,7 +14,7 @@ type MonitorConfig struct {
 	// The URL of the Prometheus server to query.
 	PrometheusURL string `default:"http://localhost:9090" validate:"url"`
 	// The time interval in milliseconds to wait before querying again.
-	UpdateIntervalMs int `default:"2000" validate:"range:[1000,]"`
+	UpdateIntervalMs int `default:"1000" validate:"range:[1000,]"`
 	// The slice of queries to run.
 	Queries []prometheus.Query `default_size:"0"`
 }

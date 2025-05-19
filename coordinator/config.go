@@ -4,6 +4,9 @@
 package coordinator
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/cluster"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -31,12 +34,33 @@ type Config struct {
 	LogSettings logger.Settings
 }
 
+func (c Config) IsValid() error {
+	if c.NumUsersInc <= 0 {
+		return errors.New("NumUsersInc should be greater than 0")
+	}
+	if c.NumUsersDec <= 0 {
+		return errors.New("NumUsersDec should be greater than 0")
+	}
+	if c.RestTimeSec <= 0 {
+		return errors.New("RestTimeSec should be greater than 0")
+	}
+	if c.RestTimeSec*1000 < c.MonitorConfig.UpdateIntervalMs {
+		return fmt.Errorf("RestTimerSec should greater than MonitorConfig.UpdateIntervalMs/1000 (%d)", c.MonitorConfig.UpdateIntervalMs/1000)
+	}
+
+	return nil
+}
+
 // ReadConfig reads the configuration file from the given string. If the string
 // is empty, it will return a config with default values.
 func ReadConfig(configFilePath string) (*Config, error) {
 	var cfg Config
 
 	if err := defaults.ReadFrom(configFilePath, defaultConfigLocation, &cfg); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.IsValid(); err != nil {
 		return nil, err
 	}
 

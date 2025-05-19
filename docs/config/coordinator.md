@@ -40,7 +40,11 @@ The URL to the [Prometheus](https://prometheus.io/docs/introduction/overview/) A
 
 *int*
 
-The amount of time (in milliseconds) to wait before each query update.
+The delay (in milliseconds) between each query update.
+This value also indirectly controls how often new users are added during the ramp-up phase, assuming there is no performance degradation (i.e., no query has exceeded its threshold).
+If performance degradation is detected, `coordinator.Config.RestTimeSec` determines the rate at which users are added or removed.
+
+**Note**: This value cannot exceed `coordinator.Config.RestTimeSec * 1000`.
 
 ### Queries
 
@@ -95,6 +99,8 @@ It should be proportional to the maximum number of users expected to test.
 *int*
 
 The number of seconds to wait after a performance degradation event before starting to increment or decrement users again.
+
+**Note**: The actual time waited before an increment or decrement action can be up to (`RestTimeSec + MonitorConfig.UpdateIntervalMs/1000`) seconds.
 
 ## LogSettings
 
