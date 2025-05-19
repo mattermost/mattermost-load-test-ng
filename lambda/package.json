@@ -1,0 +1,23 @@
+{
+  "name": "lambda-chromium-example",
+  "version": "1.0.0",
+  "description": "AWS Lambda function using chrome-aws-lambda and puppeteer-core",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "chromium",
+    "puppeteer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.7.2"
+  }
+}
