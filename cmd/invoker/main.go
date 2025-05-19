@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -152,14 +153,13 @@ func invokeSync(client *lambda.Client, functionName string, event LambdaEvent, o
 	}
 
 	// Print the response
-	fmt.Printf("Status code: %d, Message: %s\n", response.StatusCode, responseBody.Message)
-	if responseBody.Error != "" {
-		fmt.Printf("Error for %s: %s\n", event.Username, responseBody.Error)
-		return
+	if response.StatusCode == http.StatusOK {
+		fmt.Printf("[%s] Message: %s\n", event.Username, responseBody.Message)
+	} else {
+		fmt.Printf("[%s] Error: %s\n", event.Username, responseBody.Error)
 	}
 
-	// Save screenshot if debug is enabled and output file is specified
-	if event.Debug && outputFile != "" && responseBody.Screenshot != "" {
+	if outputFile != "" && responseBody.Screenshot != "" {
 		fmt.Printf("Saving screenshot to %s\n", outputFile)
 		// Decode base64 screenshot and save to file
 		err := saveScreenshot(outputFile, responseBody.Screenshot)
@@ -201,7 +201,7 @@ func invokeConcurrent(client *lambda.Client, functionName string, baseEvent Lamb
 
 			// Generate unique filename for this invocation if needed
 			var outputFile string
-			if baseEvent.Debug && outputFileTemplate != "" {
+			if outputFileTemplate != "" {
 				ext := filepath.Ext(outputFileTemplate)
 				base := strings.TrimSuffix(outputFileTemplate, ext)
 				outputFile = fmt.Sprintf("%s-%s%s", base, username, ext)

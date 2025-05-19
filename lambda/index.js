@@ -27,6 +27,7 @@ function delay(time) {
 
 exports.handler = async (event, context) => {
   let browser = null;
+  let page = null;
   let result = null;
 
   try {
@@ -42,7 +43,7 @@ exports.handler = async (event, context) => {
     });
 
     // Create a new page
-    const page = await browser.newPage();
+    page = await browser.newPage();
 
     // Extract username and password from event
     const username = event.username || '';
@@ -120,10 +121,17 @@ exports.handler = async (event, context) => {
       }
     };
   } catch (error) {
+    let screenshot = null;
+    // Only try to take a screenshot if page exists
+    if (page) {
+      screenshot = await page.screenshot({ encoding: 'base64' });
+    }
+
     return {
       statusCode: 500,
       body: JSON.stringify({
-        error: error.message
+        error: error.message,
+        screenshot: screenshot
       }),
       headers: {
         'Content-Type': 'application/json'
