@@ -128,6 +128,8 @@ type UserStore interface {
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 	// RandomDraftForTeam returns a random draft id for a team for the current user
 	RandomDraftForTeam(teamId string) (string, error)
+	// RandomProperty returns a random property field
+	RandomProperty() *model.PropertyField
 
 	// profile
 	// ProfileImageLastUpdated returns the etag returned by the server when first

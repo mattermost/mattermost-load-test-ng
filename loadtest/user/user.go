@@ -363,4 +363,5 @@ type User interface {
 	GetCPAValues(userId string) (map[string]json.RawMessage, error)
 	PatchCPAValues(values map[string]json.RawMessage) error
 	GetCPAFields() error
+	CreateCPAField(field *model.PropertyField) (*model.PropertyField, error)
 }

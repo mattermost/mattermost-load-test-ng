@@ -72,13 +72,35 @@ func (c *GenController) createTeam(u user.User) (res control.UserActionResponse)
 	return control.UserActionResponse{Info: fmt.Sprintf("created team %s", id)}
 }
 
+func (c *GenController) createCPAField(u user.User) (res control.UserActionResponse) {
+	if !st.inc(StateTargetCPAFields, c.config.NumCPAFields) {
+		return control.UserActionResponse{Info: "target number of custom profile fields reached"}
+	}
+	defer func() {
+		if res.Err != nil || res.Warn != "" {
+			st.dec(StateTargetCPAFields)
+		}
+	}()
+
+	cpaField := &model.PropertyField{
+		Name: control.PickRandomWord() + "_" + control.PickRandomWord(),
+		Type: model.PropertyFieldTypeText,
+	}
+	// Only sysadmin can create CPA fields
+	field, err := c.sysadmin.CreateCPAField(cpaField)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created CPA fields %s", field.ID)}
+}
+
 func (c *GenController) createCPAValues(u user.User) (res control.UserActionResponse) {
 	fields := u.Store().GetCPAFields()
 	values := make(map[string]json.RawMessage)
 
 	for _, field := range fields {
-		wordCount := rand.Intn(3) + 1
-		randomText := control.GenerateRandomSentences(wordCount)
+		randomText := control.PickRandomWord()
 		value, err := json.Marshal(randomText)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}

@@ -96,6 +96,26 @@ func (c *GenController) Run() {
 
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user started", Code: control.USER_STATUS_STARTED}
 
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
+	if resp.Err != nil {
+		c.sendFailStatus("Failed to retreive CustomProfileAttributesEnabled")
+		return
+	}
+
+	// Create CPA fields
+	if cpaEnabled {
+		actions := map[string]userAction{
+			"createCPAField": {
+				run:        c.createCPAField,
+				frequency:  int(c.config.NumCPAFields),
+				idleTimeMs: 1000,
+			},
+		}
+		c.runActions(actions, func() bool {
+			return st.get(StateTargetCPAFields) >= c.config.NumCPAFields
+		})
+	}
+
 	initActions := []control.UserAction{
 		control.SignUp,
 		c.login,
@@ -103,11 +123,6 @@ func (c *GenController) Run() {
 		c.createTeam,
 	}
 
-	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
-	if resp.Err != nil {
-		c.sendFailStatus("Failed to retreive CustomProfileAttributesEnabled")
-		return
-	}
 	if cpaEnabled {
 		initActions = append(initActions, c.createCPAValues)
 	}
@@ -301,6 +316,10 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 
 		if st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM {
 			delete(actions, "createGroupChannel")
+		}
+
+		if st.get(StateTargetCPAFields) >= c.config.NumCPAFields {
+			delete(actions, "createCPAField")
 		}
 
 		if st.get(StateTargetPosts) >= c.config.NumPosts {

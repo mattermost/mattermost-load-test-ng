@@ -4,6 +4,7 @@
 package simulcontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -752,6 +753,28 @@ func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionR
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated sidebar categories, ids [%s, %s]", cat1.Id, cat2.Id)}
+}
+
+func (c *SimulController) updateCustomAttribute(u user.User) control.UserActionResponse {
+	field := u.Store().RandomProperty()
+	if field == nil {
+		return control.UserActionResponse{Info: "no custom profile attributes to update"}
+	}
+
+	randomText := control.PickRandomWord()
+	value, err := json.Marshal(randomText)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	values := make(map[string]json.RawMessage)
+	values[field.ID] = value
+
+	err = u.PatchCPAValues(values)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created randomized CPA values for user %s", u.Store().Id())}
 }
 
 func editPost(u user.User) control.UserActionResponse {
