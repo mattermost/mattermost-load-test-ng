@@ -34,7 +34,7 @@ The number of public channels to be created.
 
 *int64*
 
-The number of Custom Profile Attribute fieldsto be created.
+The number of Custom Profile Attribute fields to be created.
 
 ## NumPosts
 

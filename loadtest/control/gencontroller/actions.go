@@ -92,11 +92,14 @@ func (c *GenController) createCPAField(u user.User) (res control.UserActionRespo
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("created CPA fields %s", field.ID)}
+	return control.UserActionResponse{Info: fmt.Sprintf("created CPA field %s", field.ID)}
 }
 
 func (c *GenController) createCPAValues(u user.User) (res control.UserActionResponse) {
 	fields := u.Store().GetCPAFields()
+	if len(fields) == 0 {
+		return control.UserActionResponse{Info: fmt.Sprintf("no CPA Fields returned")}
+	}
 	values := make(map[string]json.RawMessage)
 
 	for _, field := range fields {
@@ -114,7 +117,7 @@ func (c *GenController) createCPAValues(u user.User) (res control.UserActionResp
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("created randomized CPA values for user %s", u.Store().Id())}
+	return control.UserActionResponse{Info: fmt.Sprintf("created CPA values for user %s", u.Store().Id())}
 }
 
 func (c *GenController) createPublicChannel(u user.User) (res control.UserActionResponse) {

@@ -77,28 +77,6 @@ func PromoteToAdmin(admin, userForPromotion *userentity.UserEntity) error {
 	return nil
 }
 
-// Create CPA Fields
-func CreateCustomAttributeFields(admin *userentity.UserEntity) error {
-	fields := []*model.PropertyField{
-		{
-			Name: "TestCPAFieldOne",
-			Type: "text",
-		},
-		{
-			Name: "TestCPAFieldTwo",
-			Type: "text",
-		},
-	}
-
-	for _, field := range fields {
-		_, err := admin.CreateCPAField(field)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // nextPowerOf2 rounds its input value to the next power of 2 and returns it.
 // courtesy of https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2.
 func nextPowerOf2(val int) int {

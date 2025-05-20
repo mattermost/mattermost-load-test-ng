@@ -9,14 +9,14 @@ import (
 
 // CreateCPAField creates a new custom profile attribute field.
 func (ue *UserEntity) CreateCPAField(field *model.PropertyField) (*model.PropertyField, error) {
-	new_field, _, err := ue.client.CreateCPAField(context.Background(), field)
+	newField, _, err := ue.client.CreateCPAField(context.Background(), field)
 	if err != nil {
 		return nil, err
 	}
-	return new_field, nil
+	return newField, nil
 }
 
-// GetCPAFields retrieves all the cpa field values available.
+// GetCPAFields retrieves all the cpa fields available.
 func (ue *UserEntity) GetCPAFields() error {
 	fields, _, err := ue.client.ListCPAFields(context.Background())
 	if err != nil {
@@ -42,8 +42,5 @@ func (ue *UserEntity) GetCPAValues(userId string) (map[string]json.RawMessage, e
 // PatchCPAValues patches (or creates) a given user's custom profile attributes.
 func (ue *UserEntity) PatchCPAValues(values map[string]json.RawMessage) error {
 	_, _, err := ue.client.PatchCPAValues(context.Background(), values)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

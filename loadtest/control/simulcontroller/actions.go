@@ -774,7 +774,7 @@ func (c *SimulController) updateCustomAttribute(u user.User) control.UserActionR
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("created randomized CPA values for user %s", u.Store().Id())}
+	return control.UserActionResponse{Info: fmt.Sprintf("updated CPA field for user %s", u.Store().Id())}
 }
 
 func editPost(u user.User) control.UserActionResponse {
