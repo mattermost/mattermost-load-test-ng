@@ -98,7 +98,7 @@ func (c *GenController) createCPAField(u user.User) (res control.UserActionRespo
 func (c *GenController) createCPAValues(u user.User) (res control.UserActionResponse) {
 	fields := u.Store().GetCPAFields()
 	if len(fields) == 0 {
-		return control.UserActionResponse{Info: fmt.Sprintf("no CPA Fields returned")}
+		return control.UserActionResponse{Info: "no CPA Fields returned"}
 	}
 	values := make(map[string]json.RawMessage)
 
