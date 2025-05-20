@@ -88,14 +88,13 @@ resource "aws_instance" "app_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
     ]
   }
-
 }
-
 
 data "aws_iam_policy_document" "metrics_assume_role" {
   statement {
@@ -193,6 +192,7 @@ resource "aws_instance" "metrics_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
@@ -241,6 +241,7 @@ resource "aws_instance" "proxy_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
@@ -433,6 +434,7 @@ resource "aws_instance" "loadtest_agent" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
@@ -878,6 +880,7 @@ resource "aws_instance" "job_server" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
@@ -937,6 +940,7 @@ resource "aws_instance" "keycloak" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
       "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
