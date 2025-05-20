@@ -29,8 +29,6 @@ until [ "$n" -ge 3 ]; do
 		sudo dpkg -i otelcol-contrib_0.120.0_linux_amd64.deb &&
 		sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
 		sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
-		sudo mkdir -p /etc/otelcol-contrib &&
-		sudo touch /etc/otelcol-contrib/config.yaml &&
 		sudo systemctl daemon-reload &&
 		sudo systemctl restart otelcol-contrib &&
 		exit 0
