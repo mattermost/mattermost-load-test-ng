@@ -14,7 +14,6 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/api"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/userentity"
@@ -204,17 +203,6 @@ func genAdmins(config *loadtest.Config, userPrefix string) error {
 		}
 
 		err = loadtest.PromoteToAdmin(sysadmin, userentity.New(userSetup, ueConfig))
-		if err != nil {
-			return err
-		}
-	}
-
-	cpaEnabled, resp := control.CustomProfileAttributesEnabled(sysadmin)
-	if resp.Err != nil {
-		return resp.Err
-	}
-	if cpaEnabled {
-		err = loadtest.CreateCustomAttributeFields(sysadmin)
 		if err != nil {
 			return err
 		}
