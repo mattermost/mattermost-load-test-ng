@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/mattermost/ldap v3.0.4+incompatible // indirect
 	github.com/prometheus/client_golang v1.22.0
-	github.com/prometheus/common v0.63.0
+	github.com/prometheus/common v0.64.0
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
@@ -26,15 +26,15 @@ require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.49.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.218.0
-	github.com/aws/aws-sdk-go-v2/service/rds v1.95.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.50.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.220.0
+	github.com/aws/aws-sdk-go-v2/service/rds v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.3
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.6.0
-	github.com/mattermost/mattermost/server/public v0.1.13-0.20250513104535-6ab6a008e60c
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20250513104535-6ab6a008e60c
+	github.com/mattermost/mattermost/server/public v0.1.14-0.20250521083701-1cb244e8760d
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20250521083701-1cb244e8760d
 	github.com/opensearch-project/opensearch-go/v4 v4.4.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -129,7 +129,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
-	github.com/tinylib/msgp v1.2.5 // indirect
+	github.com/tinylib/msgp v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/wiggin77/srslog v1.0.1 // indirect
@@ -140,21 +140,21 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	github.com/yuin/goldmark v1.7.11 // indirect
+	github.com/yuin/goldmark v1.7.12 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
-	google.golang.org/grpc v1.72.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
+	google.golang.org/grpc v1.72.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	modernc.org/libc v1.65.6 // indirect
+	modernc.org/libc v1.65.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.10.0 // indirect
-	modernc.org/sqlite v1.37.0 // indirect
+	modernc.org/memory v1.11.0 // indirect
+	modernc.org/sqlite v1.37.1 // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
