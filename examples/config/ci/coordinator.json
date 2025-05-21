@@ -87,7 +87,7 @@
   },
   "NumUsersInc": 8,
   "NumUsersDec": 8,
-  "RestTimeSec": 2,
+  "RestTimeSec": 1,
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",
