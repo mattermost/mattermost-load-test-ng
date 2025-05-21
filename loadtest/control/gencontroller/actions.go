@@ -82,12 +82,20 @@ func (c *GenController) createCPAField(u user.User) (res control.UserActionRespo
 		}
 	}()
 
+	// Only sysadmin can create CPA fields
+	isSysAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !isSysAdmin {
+		return control.UserActionResponse{Warn: "not an admin user, unable to create a CPA field"}
+	}
+
 	cpaField := &model.PropertyField{
 		Name: control.PickRandomWord() + "_" + control.PickRandomWord(),
 		Type: model.PropertyFieldTypeText,
 	}
-	// Only sysadmin can create CPA fields
-	field, err := c.sysadmin.CreateCPAField(cpaField)
+	field, err := u.CreateCPAField(cpaField)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
