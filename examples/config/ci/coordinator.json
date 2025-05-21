@@ -10,7 +10,6 @@
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
-    "UpdateIntervalMs": 2000,
     "Queries": [
       {
         "Description": "Percentage of HTTP 5xx server errors",
@@ -88,7 +87,7 @@
   },
   "NumUsersInc": 8,
   "NumUsersDec": 8,
-  "RestTimeSec": 1,
+  "RestTimeSec": 2,
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",

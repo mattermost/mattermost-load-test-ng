@@ -44,7 +44,8 @@ The delay (in milliseconds) between each query update.
 This value also indirectly controls how often new users are added during the ramp-up phase, assuming there is no performance degradation (i.e., no query has exceeded its threshold).
 If performance degradation is detected, `coordinator.Config.RestTimeSec` determines the rate at which users are added or removed.
 
-**Note**: This value cannot exceed `coordinator.Config.RestTimeSec * 1000`.
+> [!NOTE]
+> As of [MM-61922](https://mattermost.atlassian.net/browse/MM-61922) this setting has been fully deprecated and its value always defaults to 1000 (i.e. one second).
 
 ### Queries
 
