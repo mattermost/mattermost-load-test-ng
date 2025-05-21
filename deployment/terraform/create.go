@@ -401,7 +401,7 @@ func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, u
 }
 
 func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool, instanceName string) error {
-	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection to %q: %w", ip, err)
 	}
@@ -556,7 +556,7 @@ func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) 
 	}
 	esEndpoint := output.ElasticSearchServer.Endpoint
 
-	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return fmt.Errorf("unable to create SSH client with IP %q: %w", ip, err)
 	}
@@ -811,7 +811,7 @@ func (t *Terraform) getProxyInstanceInfo() (*types.InstanceTypeInfo, error) {
 func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) {
 	ip := instance.GetConnectionDNS()
 
-	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		mlog.Error("error in getting ssh connection", mlog.String("ip", ip), mlog.Err(err))
 		return
@@ -921,7 +921,7 @@ func (t *Terraform) createAdminUser(extAgent *ssh.ExtAgent) error {
 		t.config.AdminPassword,
 	)
 	mlog.Info("Creating admin user:", mlog.String("cmd", cmd))
-	sshc, err := extAgent.NewClient(t.output.Instances[0].GetConnectionIP(), t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return err
 	}
@@ -947,7 +947,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return errors.New("no instances found in Terraform output")
 	}
 
-	sshc, err := extAgent.NewClient(t.output.Instances[0].GetConnectionIP(), t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return err
 	}

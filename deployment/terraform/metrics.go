@@ -111,7 +111,7 @@ type DashboardData struct {
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Updating Prometheus config
-	sshc, err := extAgent.NewClient(t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.MetricsServer.GetConnectionIP())
 	if err != nil {
 		return err
 	}

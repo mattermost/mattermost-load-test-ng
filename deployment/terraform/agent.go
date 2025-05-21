@@ -98,7 +98,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		go func() {
 			defer wg.Done()
 
-			sshc, err := extAgent.NewClient(instance.GetConnectionIP(), t.Config().AWSAMIUser)
+			sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 			if err != nil {
 				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
@@ -222,7 +222,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 		return errors.New("there are no agents to initialize load-test")
 	}
 	ip := t.output.Agents[0].GetConnectionIP()
-	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return err
 	}

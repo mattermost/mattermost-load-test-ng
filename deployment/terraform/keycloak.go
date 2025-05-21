@@ -30,7 +30,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		command = "start-dev"
 	}
 
-	sshc, err := extAgent.NewClient(t.output.KeycloakServer.GetConnectionIP(), t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.KeycloakServer.GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -303,7 +303,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.KeycloakServer.GetConnectionIP(), t.Config().AWSAMIUser)
+	client, err := extAgent.NewClient(t.Config().AWSAMIUser, output.KeycloakServer.GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}

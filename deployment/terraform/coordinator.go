@@ -44,7 +44,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	sshc, err := extAgent.NewClient(ip, t.Config().AWSAMIUser)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return err
 	}
