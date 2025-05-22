@@ -52,7 +52,7 @@ func main() {
 	joinTeam := flag.String("join_team", "", "Team name to join")
 	functionName := flag.String("function", "mattermost-login", "Name of the Lambda function")
 	region := flag.String("region", "us-east-1", "AWS region")
-	outputFile := flag.String("output", "", "File to save screenshot (if debug is enabled)")
+	outputFile := flag.String("output", "screenshot.png", "File to save screenshot. If there is an error, it will take a screenshot automatically. But you can also force it to take a screenshot at the end by passing the debug flag.")
 	count := flag.Int("count", 1, "Number of concurrent Lambda invocations")
 
 	flag.Parse()
@@ -61,7 +61,7 @@ func main() {
 	if *username == "" || *password == "" || *url == "" {
 		fmt.Println("Error: username, password, and url are required")
 		flag.Usage()
-		return
+		os.Exit(2)
 	}
 
 	// Load AWS configuration
@@ -110,14 +110,13 @@ func parseUsername(username string) (string, int, error) {
 }
 
 // invokeSync performs a synchronous Lambda invocation
-func invokeSync(client *lambda.Client, functionName string, event LambdaEvent, outputFile string) {
+func invokeSync(client *lambda.Client, functionName string, event LambdaEvent, outputFile string) error {
 	fmt.Printf("Invoking Lambda function for %s...\n", event.Username)
 
 	// Convert event to JSON
 	payload, err := json.Marshal(event)
 	if err != nil {
-		fmt.Printf("Error marshaling event: %v\n", err)
-		return
+		return fmt.Errorf("Error marshaling event: %v\n", err)
 	}
 
 	// Invoke Lambda function
@@ -128,28 +127,24 @@ func invokeSync(client *lambda.Client, functionName string, event LambdaEvent, o
 		Payload:      payload,
 	})
 	if err != nil {
-		fmt.Printf("Error invoking Lambda function: %v\n", err)
-		return
+		return fmt.Errorf("Error invoking Lambda function: %v\n", err)
 	}
 
 	// Check for Lambda execution errors
 	if result.FunctionError != nil {
-		fmt.Printf("Lambda execution error for %s: %s, %s\n", event.Username, *result.FunctionError, string(result.Payload))
-		return
+		return fmt.Errorf("Lambda execution error for %s: %s, %s\n", event.Username, *result.FunctionError, string(result.Payload))
 	}
 
 	// Parse the Lambda response
 	var response LambdaResponse
 	if err := json.Unmarshal(result.Payload, &response); err != nil {
-		fmt.Printf("Error parsing Lambda response: %v\n", err)
-		return
+		return fmt.Errorf("Error parsing Lambda response: %v\n", err)
 	}
 
 	// Parse the response body
 	var responseBody ResponseBody
 	if err := json.Unmarshal([]byte(response.Body), &responseBody); err != nil {
-		fmt.Printf("Error parsing response body (%q): %v\n", response.Body, err)
-		return
+		return fmt.Errorf("Error parsing response body (%q): %v\n", response.Body, err)
 	}
 
 	// Print the response
@@ -167,6 +162,8 @@ func invokeSync(client *lambda.Client, functionName string, event LambdaEvent, o
 			fmt.Printf("Error saving screenshot: %v\n", err)
 		}
 	}
+
+	return nil
 }
 
 // invokeConcurrent performs multiple concurrent Lambda invocations
@@ -207,7 +204,10 @@ func invokeConcurrent(client *lambda.Client, functionName string, baseEvent Lamb
 				outputFile = fmt.Sprintf("%s-%s%s", base, username, ext)
 			}
 
-			invokeSync(client, functionName, event, outputFile)
+			err := invokeSync(client, functionName, event, outputFile)
+			if err != nil {
+				fmt.Printf("[%s]: %v\n", event.Username, err)
+			}
 		}(i, baseEvent)
 	}
 
