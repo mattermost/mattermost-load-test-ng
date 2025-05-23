@@ -28,6 +28,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.220.0
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.71.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.3
 	github.com/gliderlabs/ssh v0.1.1
