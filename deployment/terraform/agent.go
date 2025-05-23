@@ -135,7 +135,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				"User":             t.Config().AWSAMIUser,
 			}
 			if t.config.EnableAgentFullLogs {
-				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> /home/%s/ltapi.log'", t.Config().AWSAMIUser, baseAPIServerCmd)
+				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> /home/%s/ltapi.log'", fmt.Sprintf(baseAPIServerCmd, t.Config().AWSAMIUser), t.Config().AWSAMIUser)
 			}
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
