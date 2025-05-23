@@ -217,6 +217,10 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
+	}
+
 	yacePort := "9106"
 	yaceDurationSeconds := "300" // Used for period, length, delay and scraping interval
 

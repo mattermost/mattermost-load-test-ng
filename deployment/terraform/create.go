@@ -459,6 +459,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("batch upload failed: %w", err)
 	}
 
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
+	}
+
 	cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
@@ -914,6 +918,10 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 		if err := uploadBatch(sshc, batch); err != nil {
 			mlog.Error("batch upload failed", mlog.Err(err))
 			return
+		}
+
+		if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+			mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
 		}
 
 		cmd := "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"

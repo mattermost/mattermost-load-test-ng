@@ -94,6 +94,10 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
+	}
+
 	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,

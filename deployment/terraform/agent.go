@@ -186,6 +186,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				return
 			}
 
+			if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+				mlog.Error("error setting up prometheus node exporter", mlog.Err(err), mlog.Int("agent", agentNumber))
+			}
+
 			cmd = "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
 			if out, err := sshc.RunCommand(cmd); err != nil {
 				mlog.Error("error running ssh command", mlog.Int("agent", agentNumber), mlog.String("cmd", cmd), mlog.String("out", string(out)), mlog.Err(err))
