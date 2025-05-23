@@ -499,6 +499,12 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("error running ssh command %q, ourput: %q: %w", cmd, string(out), err)
 	}
 
+	// Ensure selinux is disabled for the service file to work properly having the binary outside
+	// the default binary directories, execution permission and network access.
+	if err := t.disableSELinux(sshc); err != nil {
+		return fmt.Errorf("error disabling SELinux: %w", err)
+	}
+
 	mlog.Info("Updating config", mlog.String("host", ip))
 	if err := t.updateAppConfig(siteURL, sshc, jobServerEnabled); err != nil {
 		return fmt.Errorf("error updating config: %w", err)
@@ -828,6 +834,13 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 				mlog.Error("error closing ssh connection", mlog.Err(err))
 			}
 		}()
+
+		// Ensure selinux is disabled for the connection from nginx to the upstream servers to work
+		mlog.Info("Disabling SELinux", mlog.String("host", ip))
+		if err := t.disableSELinux(sshc); err != nil {
+			mlog.Error("error disabling SELinux", mlog.Err(err))
+			return
+		}
 
 		// Upload service file
 		mlog.Info("Uploading nginx config", mlog.String("host", ip))
