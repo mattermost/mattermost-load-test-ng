@@ -1,10 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
-
 # Load common
 source common.sh
 
@@ -14,8 +9,8 @@ until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      sudo dnf -y update && \
-      sudo dnf -y install postgresql${postgresql_version}-server && \
+      update_system && \
+      install_postgresql_client && \
       sudo dnf -y install wget && \
       install_netpeek && \
       install_prometheus_node_exporter && \

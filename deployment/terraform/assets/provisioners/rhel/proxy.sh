@@ -1,10 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
-
 # Import common
 source common.sh
 
@@ -17,15 +12,15 @@ do
       echo 'tcp_bbr' | sudo tee /etc/modules-load.d/tcp_bbr.conf && \
       sudo modprobe tcp_bbr && \
       sudo rpm --import https://nginx.org/keys/nginx_signing.key && \
+      uname -r && \
       sudo sh -c 'echo "[nginx]
-name=nginx
-baseurl=https://nginx.org/packages/mainline/centos/\$releasever/\$basearch/
+baseurl=http://nginx.org/packages/centos/\$releasever/\$basearch/
 gpgcheck=1
-enabled=1" > /etc/yum.repos.d/nginx.repo' && \
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true" > /etc/yum.repos.d/nginx.repo' && \
       sudo dnf -y update && \
-      sudo dnf -y install wget && \
-      sudo dnf -y install nginx && \
-      sudo dnf -y install numactl kernel-tools && \
+      sudo dnf -y install numactl kernel-tools wget nginx && \
       install_prometheus_node_exporter && \
       install_otel_collector && \
       sudo systemctl daemon-reload && \
@@ -35,9 +30,8 @@ enabled=1" > /etc/yum.repos.d/nginx.repo' && \
       sudo mkdir -p /etc/nginx/sites-enabled && \
       sudo mkdir -p /etc/nginx/sites-available && \
       sudo rm -f /etc/nginx/conf.d/default.conf && \
-      sudo ln -fs /etc/nginx/sites-available/mattermost.conf /etc/nginx/sites-enabled/mattermost.conf && \
+      sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost && \
       exit 0
-
    n=$((n+1))
    sleep 2
 done

@@ -1,10 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
-
 # Import common
 source common.sh
 

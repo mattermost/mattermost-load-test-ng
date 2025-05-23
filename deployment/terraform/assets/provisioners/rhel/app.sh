@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 # Wait for boot to be finished (e.g. networking to be up).
 while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
 
@@ -16,12 +14,8 @@ do
       echo "Attempt ${n}"
       echo 'tcp_bbr' | sudo tee -a /etc/modules-load.d/tcp_bbr.conf && \
       sudo modprobe tcp_bbr && \
-      sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm && \
-      sudo dnf -y install postgresql${postgresql_version}-server && \
-      sudo /usr/pgsql-${postgresql_version}/bin/postgresql-${postgresql_version}-setup initdb && \
-      sudo systemctl enable --now postgresql-${postgresql_version} && \
+      install_postgresql_server && \
       sudo dnf -y install wget && \
-      sudo dnf -y install postgresql14 && \
       sudo dnf -y install numactl kernel-tools && \
       install_netpeek && \
       install_prometheus_node_exporter && \
