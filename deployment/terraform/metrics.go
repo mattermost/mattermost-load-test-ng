@@ -201,7 +201,8 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
-		rdr := strings.NewReader(serviceFileOutput.String())
+		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
+		rdr := strings.NewReader(redisExporterService)
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
 			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
 		}
