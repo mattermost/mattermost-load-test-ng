@@ -204,7 +204,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
-			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
+			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltapi"); err != nil {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return

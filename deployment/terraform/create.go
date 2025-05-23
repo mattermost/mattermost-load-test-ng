@@ -468,7 +468,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
 
-	cmd = "sudo systemctl daemon-reload && sudo service mattermost stop"
+	cmd = "sudo systemctl daemon-reload && sudo systemctl stop mattermost"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
@@ -525,7 +525,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 
 	if t.config.EnableNetPeekMetrics {
 		mlog.Info("Starting netpeek service", mlog.String("host", ip))
-		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo service netpeek restart"
+		cmd = "sudo systemctl daemon-reload && sudo chmod +x /usr/local/bin/netpeek && sudo systemctl restart netpeek"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 		}
@@ -533,7 +533,7 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 
 	// Starting mattermost.
 	mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
-	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo service mattermost restart"
+	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo systemctl restart mattermost"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
 	}
@@ -875,7 +875,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			rxQueueSize = 8192
 		}
 
-		nginxConfig, err := genNginxConfig()
+		nginxConfig, err := genNginxConfig(t.config)
 		if err != nil {
 			mlog.Error("Failed to generate nginx config", mlog.Err(err))
 			return
@@ -931,7 +931,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 		}
 
 		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
-		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
+		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo systemctl restart nginx", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
 			return
