@@ -549,6 +549,17 @@ RestartSec=1
 WantedBy=multi-user.target
 `
 
+const prometheusNodeExporterServiceFile = `[Unit]
+Description=Node Exporter
+
+[Service]
+# Fallback when environment file does not exist
+EnvironmentFile=-/etc/default/prometheus-node-exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target`
+
 const otelcolOperatorApp = `
       - type: move
         from: body.MESSAGE
