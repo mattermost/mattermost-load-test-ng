@@ -21,6 +21,12 @@ variable "cluster_subnet_ids" {
 variable "connection_type" {
 }
 
+# Provisioner variables
+variable "operating_system_kind" {
+}
+
+# App variables
+
 variable "app_attach_iam_profile" {
 }
 
@@ -209,6 +215,9 @@ variable "aws_region" {
 }
 
 variable "aws_ami" {
+}
+
+variable "aws_ami_user" {
 }
 
 variable "custom_tags" {

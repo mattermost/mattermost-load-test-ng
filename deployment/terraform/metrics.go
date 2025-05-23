@@ -111,7 +111,7 @@ type DashboardData struct {
 
 func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	// Updating Prometheus config
-	sshc, err := extAgent.NewClient(t.output.MetricsServer.GetConnectionIP())
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.MetricsServer.GetConnectionIP())
 	if err != nil {
 		return err
 	}
@@ -143,9 +143,22 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		esEndpoint := fmt.Sprintf("https://%s", t.output.ElasticSearchServer.Endpoint)
 		esTargets = append(esTargets, "metrics:9114")
 
+		serviceFileTmpl, err := template.New("es-exporter-service").Parse(esExporterServiceFile)
+		if err != nil {
+			return fmt.Errorf("error parsing elasticsearch exporter service file: %w", err)
+		}
+
+		var serviceFileOutput bytes.Buffer
+		if err := serviceFileTmpl.Execute(&serviceFileOutput, map[string]string{
+			"ESEndpoint": esEndpoint,
+			"User":       t.Config().AWSAMIUser,
+		}); err != nil {
+			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
+		}
+
 		mlog.Info("Enabling Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-		esExporterService := fmt.Sprintf(esExporterServiceFile, esEndpoint)
-		rdr := strings.NewReader(esExporterService)
+		rdr := strings.NewReader(serviceFileOutput.String())
+
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/es-exporter.service", true); err != nil {
 			return fmt.Errorf("error upload elasticsearch exporter service file: output: %s, error: %w", out, err)
 		}
@@ -155,7 +168,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Elasticsearch exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-		cmd = "sudo service es-exporter restart"
+		cmd = "sudo systemctl restart es-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
@@ -173,6 +186,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
 
+		serviceFileTmpl, err := template.New("es-exporter-service").Parse(esExporterServiceFile)
+		if err != nil {
+			return fmt.Errorf("error parsing elasticsearch exporter service file: %w", err)
+		}
+
+		var serviceFileOutput bytes.Buffer
+		if err := serviceFileTmpl.Execute(&serviceFileOutput, map[string]string{
+			"RedisAddr": redisEndpoint,
+			"User":      t.Config().AWSAMIUser,
+		}); err != nil {
+			return fmt.Errorf("error executing elasticsearch exporter service file: %w", err)
+		}
+
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
 		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
@@ -186,10 +212,14 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		}
 
 		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-		cmd = "sudo service redis-exporter restart"
+		cmd = "sudo systemctl restart redis-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
+	}
+
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
 	}
 
 	yacePort := "9106"
@@ -216,6 +246,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	yaceService, err := fillConfigTemplate(yaceServiceFile, map[string]any{
 		"ScrapingInterval": yaceDurationSeconds,
 		"Port":             yacePort,
+		"User":             t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("error rendering YACE service template: %w", err)
@@ -230,7 +261,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Cloudwatch exporter: YACE", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-	cmd = "sudo service yace restart"
+	cmd = "sudo systemctl restart yace"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -292,19 +323,19 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	mlog.Info("Starting Prometheus", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-	cmd = "sudo service prometheus restart"
+	cmd = "sudo systemctl restart prometheus"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Alloy", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-	cmd = "sudo service alloy restart"
+	cmd = "sudo systemctl restart alloy"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
 
 	mlog.Info("Starting Pyroscope", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
-	cmd = "sudo service pyroscope restart"
+	cmd = "sudo systemctl restart pyroscope"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
@@ -445,7 +476,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Restart grafana
-	cmd = "sudo service grafana-server restart"
+	cmd = "sudo systemctl restart grafana-server"
 	if out, err := sshc.RunCommand(cmd); err != nil {
 		return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 	}
