@@ -393,11 +393,17 @@ func (t *Terraform) setupAppServers(extAgent *ssh.ExtAgent, uploadBinary bool, u
 }
 
 func (t *Terraform) setupMMServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string, instanceName string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, uploadRelease, uploadPath, !t.output.HasJobServer(), instanceName)
+	if err := t.setupAppServer(extAgent, ip, siteURL, mattermostServiceFile, uploadBinary, uploadRelease, uploadPath, !t.output.HasJobServer(), instanceName); err != nil {
+		return fmt.Errorf("error setting up app server: %w", err)
+	}
+	return nil
 }
 
 func (t *Terraform) setupJobServer(extAgent *ssh.ExtAgent, ip, siteURL string, uploadBinary bool, uploadRelease bool, uploadPath string, instanceName string) error {
-	return t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, uploadRelease, uploadPath, true, instanceName)
+	if err := t.setupAppServer(extAgent, ip, siteURL, jobServerServiceFile, uploadBinary, uploadRelease, uploadPath, true, instanceName); err != nil {
+		return fmt.Errorf("error setting up job server: %w", err)
+	}
+	return nil
 }
 
 func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceFile string, uploadBinary bool, uploadRelease bool, uploadPath string, jobServerEnabled bool, instanceName string) error {
