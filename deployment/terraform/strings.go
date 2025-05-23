@@ -95,7 +95,7 @@ ff02::3 ip6-allhosts
 `
 
 const nginxConfigTmpl = `
-user www-data;
+user {{.user}};
 worker_processes auto;
 worker_rlimit_nofile 100000;
 pid /run/nginx.pid;
@@ -479,7 +479,7 @@ ExecStart=/opt/mattermost/bin/mattermost jobserver
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User={{User}}
+User={{.User}}
 Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_SERVICEENVIRONMENT=%s

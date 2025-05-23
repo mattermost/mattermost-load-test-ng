@@ -780,9 +780,13 @@ func waitForGreenCluster(dur time.Duration, es *opensearch.Client) error {
 	}
 }
 
-func genNginxConfig() (string, error) {
+func genNginxConfig(deploymentConfig *deployment.Config) (string, error) {
 	data := map[string]any{
+		"user":       "www-data",
 		"tcpNoDelay": "off",
+	}
+	if deploymentConfig.OperatingSystemKind == deployment.OperatingSystemKindRHEL {
+		data["user"] = "nginx"
 	}
 	if val := os.Getenv(deployment.EnvVarTCPNoDelay); strings.ToLower(val) == "on" {
 		data["tcpNoDelay"] = "on"
