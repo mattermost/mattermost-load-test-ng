@@ -34,7 +34,7 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
 	if t.config.UsersFilePath != "" {
-		cfg.UsersConfiguration.UsersFilePath = fmt.Sprintf(dstUsersFilePath, t.Config().AWSAMIUser)
+		cfg.UsersConfiguration.UsersFilePath = fmt.Sprintf(dstUsersFilePath, t.config.AWSAMIUser)
 	}
 
 	return cfg, nil
