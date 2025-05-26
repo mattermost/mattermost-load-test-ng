@@ -25,6 +25,23 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
 
+## AWSAMIUser
+
+*string*
+
+Username to use when connecting to the AWS AMI. (default: `ubuntu`)
+
+## OperatingSystemKind
+
+*string*
+
+Operating system kind to use for the deployment. This is the operating system used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. Right now we support `debian` (default) and `rhel`.
+
+Even though we support `debian` and `rhel`, we recommend using `debian` with Ubuntu 22.04 LTS as it is more widely used and supported and even if you can use Debian/RHEL for other systems it may end un breaking depending on the target system.
+
+> [!NOTE]
+> The `rhel` operating system kind have been tested ony with CentOS Stream 9.
+
 ## ClusterName
 
 *string*
