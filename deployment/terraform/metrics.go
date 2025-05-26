@@ -184,9 +184,9 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		redisEndpoint := fmt.Sprintf("redis://%s", net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port)))
 		redisTargets = append(redisTargets, "metrics:9121")
 
-		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
+		mlog.Info("Enabling Redis exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
 
-		serviceFileTmpl, err := template.New("es-exporter-service").Parse(esExporterServiceFile)
+		serviceFileTmpl, err := template.New("es-exporter-service").Parse(redisExporterServiceFile)
 		if err != nil {
 			return fmt.Errorf("error parsing elasticsearch exporter service file: %w", err)
 		}
@@ -201,8 +201,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 
 		// TODO: Pass username/pass later if we ever start using them internally.
 		// It's possible to configure them on the server, but there is no need to set them up for internal load tests.
-		redisExporterService := fmt.Sprintf(redisExporterServiceFile, redisEndpoint)
-		rdr := strings.NewReader(redisExporterService)
+		rdr := strings.NewReader(serviceFileOutput.String())
 		if out, err := sshc.Upload(rdr, "/lib/systemd/system/redis-exporter.service", true); err != nil {
 			return fmt.Errorf("error uploading redis exporter service file: output: %s, error: %w", out, err)
 		}
@@ -211,7 +210,7 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
 		}
 
-		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.GetConnectionIP()))
+		mlog.Info("Starting Redis exporter", mlog.String("host", t.output.MetricsServer.PrivateIP))
 		cmd = "sudo systemctl restart redis-exporter"
 		if out, err := sshc.RunCommand(cmd); err != nil {
 			return fmt.Errorf("error running ssh command: cmd: %s, output: %s, err: %v", cmd, out, err)
