@@ -27,8 +27,13 @@ func (v GeneratedValues) Sanitize() GeneratedValues {
 	return v
 }
 
+func getValuesPath(cfg deployment.Config) string {
+	fileName := genValuesFileName
+	return path.Join(cfg.TerraformStateDir, fileName)
+}
+
 func openValuesFile(cfg deployment.Config) (*os.File, error) {
-	path := path.Join(cfg.TerraformStateDir, genValuesFileName)
+	path := getValuesPath(cfg)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file %q: %w", path, err)
