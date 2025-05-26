@@ -33,7 +33,7 @@ func TestOpenValuesFile(t *testing.T) {
 
 	// Test successful file opening
 	t.Run("Open values file successfully", func(t *testing.T) {
-		file, err := openValuesFile(cfg)
+		file, err := openValuesFile("", cfg)
 		require.NoError(t, err)
 		defer file.Close()
 		assert.NotNil(t, file)
@@ -44,7 +44,7 @@ func TestOpenValuesFile(t *testing.T) {
 		invalidCfg := deployment.Config{
 			TerraformStateDir: "/path/that/does/not/exist",
 		}
-		_, err := openValuesFile(invalidCfg)
+		_, err := openValuesFile("", invalidCfg)
 		assert.Error(t, err)
 	})
 }
@@ -55,7 +55,7 @@ func TestReadGenValues(t *testing.T) {
 
 	// Test reading from an empty/non-existent file
 	t.Run("Read empty file", func(t *testing.T) {
-		values, err := readGenValues(cfg)
+		values, err := readGenValues("", cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, values)
 		assert.Empty(t, values.GrafanaAdminPassword)
@@ -69,7 +69,7 @@ func TestReadGenValues(t *testing.T) {
 		require.NoError(t, err)
 
 		// Try to read the values
-		_, err = readGenValues(cfg)
+		_, err = readGenValues("", cfg)
 		assert.Error(t, err)
 	})
 
@@ -85,7 +85,7 @@ func TestReadGenValues(t *testing.T) {
 		require.NoError(t, os.WriteFile(filePath, jsonData, 0644))
 
 		// Read the values
-		readValues, err := readGenValues(cfg)
+		readValues, err := readGenValues("", cfg)
 		require.NoError(t, err)
 		assert.Equal(t, testValues.GrafanaAdminPassword, readValues.GrafanaAdminPassword)
 	})
@@ -103,7 +103,7 @@ func TestPersistGeneratedValues(t *testing.T) {
 		}
 
 		// Persist the values
-		err := persistGeneratedValues(cfg, testValues)
+		err := persistGeneratedValues("", cfg, testValues)
 		require.NoError(t, err)
 
 		// Verify the file exists
@@ -129,7 +129,7 @@ func TestPersistGeneratedValues(t *testing.T) {
 		}
 
 		// Persist the initial values
-		err := persistGeneratedValues(cfg, initialValues)
+		err := persistGeneratedValues("", cfg, initialValues)
 		require.NoError(t, err)
 
 		// Update with new values
@@ -138,11 +138,11 @@ func TestPersistGeneratedValues(t *testing.T) {
 		}
 
 		// Persist the updated values
-		err = persistGeneratedValues(cfg, updatedValues)
+		err = persistGeneratedValues("", cfg, updatedValues)
 		require.NoError(t, err)
 
 		// Read the values back
-		readValues, err := readGenValues(cfg)
+		readValues, err := readGenValues("", cfg)
 		require.NoError(t, err)
 		assert.Equal(t, updatedValues.GrafanaAdminPassword, readValues.GrafanaAdminPassword)
 	})
@@ -157,11 +157,11 @@ func TestIntegration(t *testing.T) {
 		initialValues := &GeneratedValues{
 			GrafanaAdminPassword: "initial-password",
 		}
-		err := persistGeneratedValues(cfg, initialValues)
+		err := persistGeneratedValues("", cfg, initialValues)
 		require.NoError(t, err)
 
 		// Read the values back
-		readValues, err := readGenValues(cfg)
+		readValues, err := readGenValues("", cfg)
 		require.NoError(t, err)
 		assert.Equal(t, initialValues.GrafanaAdminPassword, readValues.GrafanaAdminPassword)
 
@@ -169,11 +169,11 @@ func TestIntegration(t *testing.T) {
 		updatedValues := &GeneratedValues{
 			GrafanaAdminPassword: "updated-password",
 		}
-		err = persistGeneratedValues(cfg, updatedValues)
+		err = persistGeneratedValues("", cfg, updatedValues)
 		require.NoError(t, err)
 
 		// Read the updated values
-		readUpdatedValues, err := readGenValues(cfg)
+		readUpdatedValues, err := readGenValues("", cfg)
 		require.NoError(t, err)
 		assert.Equal(t, updatedValues.GrafanaAdminPassword, readUpdatedValues.GrafanaAdminPassword)
 	})

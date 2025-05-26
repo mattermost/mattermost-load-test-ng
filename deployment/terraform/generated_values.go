@@ -27,13 +27,16 @@ func (v GeneratedValues) Sanitize() GeneratedValues {
 	return v
 }
 
-func getValuesPath(cfg deployment.Config) string {
+func getValuesPath(id string, cfg deployment.Config) string {
 	fileName := genValuesFileName
+	if id != "" {
+		fileName = id + "_" + genValuesFileName
+	}
 	return path.Join(cfg.TerraformStateDir, fileName)
 }
 
-func openValuesFile(cfg deployment.Config) (*os.File, error) {
-	path := getValuesPath(cfg)
+func openValuesFile(id string, cfg deployment.Config) (*os.File, error) {
+	path := getValuesPath(id, cfg)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file %q: %w", path, err)
@@ -42,8 +45,8 @@ func openValuesFile(cfg deployment.Config) (*os.File, error) {
 	return file, nil
 }
 
-func readGenValues(cfg deployment.Config) (*GeneratedValues, error) {
-	file, err := openValuesFile(cfg)
+func readGenValues(id string, cfg deployment.Config) (*GeneratedValues, error) {
+	file, err := openValuesFile(id, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +69,8 @@ func readGenValues(cfg deployment.Config) (*GeneratedValues, error) {
 	return &values, nil
 }
 
-func persistGeneratedValues(cfg deployment.Config, genValues *GeneratedValues) error {
-	file, err := openValuesFile(cfg)
+func persistGeneratedValues(id string, cfg deployment.Config, genValues *GeneratedValues) error {
+	file, err := openValuesFile(id, cfg)
 	if err != nil {
 		return fmt.Errorf("unable to open file: %w", err)
 	}
