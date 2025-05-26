@@ -77,7 +77,7 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
 	}
 
-	genValues, err := readGenValues(cfg)
+	genValues, err := readGenValues(id, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get generated values: %w", err)
 	}
@@ -98,7 +98,7 @@ func (t *Terraform) GeneratedValues() *GeneratedValues {
 }
 
 func (t *Terraform) PersistGeneratedValues() error {
-	return persistGeneratedValues(*t.config, t.genValues)
+	return persistGeneratedValues(t.id, *t.config, t.genValues)
 }
 
 // Create creates a new load test environment.
