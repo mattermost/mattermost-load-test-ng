@@ -628,10 +628,10 @@ type otelcolReceiver struct {
 	Operator          string
 }
 
-func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+func renderAgentOtelcolConfig(instanceName, metricsIP, awsAMIUser string) (string, error) {
 	agentReceiver := otelcolReceiver{
 		Name:              "filelog/agent",
-		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltagent.log",
+		IncludeFiles:      fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltagent.log", awsAMIUser),
 		ServiceName:       "agent",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAgent,
@@ -639,7 +639,7 @@ func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, er
 
 	coordinatorReceiver := otelcolReceiver{
 		Name:              "filelog/coordinator",
-		IncludeFiles:      "/home/{{.User}}/mattermost-load-test-ng/ltcoordinator.log",
+		IncludeFiles:      fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltcoordinator.log", awsAMIUser),
 		ServiceName:       "coordinator",
 		ServiceInstanceId: instanceName,
 		Operator:          otelcolOperatorAgent,

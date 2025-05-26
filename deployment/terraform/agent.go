@@ -140,7 +140,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
-			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP())
+			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
 			if err != nil {
 				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
 				foundErr.Store(true)
