@@ -822,11 +822,11 @@ func Reload(u user.User) UserActionResponse {
 				return UserActionResponse{Err: NewUserError(err)}
 			}
 		}
-	}
 
-	_, err = u.GetChannelsForUser(userId)
-	if err != nil {
-		return UserActionResponse{Err: NewUserError(err)}
+		_, err = u.GetChannelsForUser(userId)
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
 	}
 
 	err = u.GetAllChannelMembersForUser(userId)
