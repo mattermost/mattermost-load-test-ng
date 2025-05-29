@@ -9,7 +9,7 @@ import (
 )
 
 // setupPrometheusNodeExporter sets up prometheus-node-exporter on the given host.
-// For now, this only set ups the service file, enables and starts he service.
+// For now, this only set ups the service file, enables and starts the service.
 func (t *Terraform) setupPrometheusNodeExporter(sshClient *ssh.Client) error {
 	mlog.Info("Setting up prometheus-node-exporter")
 
