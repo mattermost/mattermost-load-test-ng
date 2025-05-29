@@ -13,7 +13,7 @@ until [ "$n" -ge 3 ]
 do
       # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
       echo "Attempt ${n}"
-      sudo apt-get -y update && \d
+      sudo apt-get -y update && \
       sudo apt-get install unzip openjdk-17-jre postgresql postgresql-contrib -y && \
       sudo /usr/bin/postgresql-setup --initdb && \
       sudo mkdir -p /opt/keycloak && \
