@@ -4,6 +4,8 @@
 package store
 
 import (
+	"encoding/json"
+
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -126,6 +128,8 @@ type UserStore interface {
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 	// RandomDraftForTeam returns a random draft id for a team for the current user
 	RandomDraftForTeam(teamId string) (string, error)
+	// RandomProperty returns a random property field
+	RandomProperty() *model.PropertyField
 
 	// profile
 	// ProfileImageLastUpdated returns the etag returned by the server when first
@@ -177,6 +181,11 @@ type UserStore interface {
 	GetRandomScheduledPost() (*model.ScheduledPost, error)
 	DeleteScheduledPost(scheduledPost *model.ScheduledPost)
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
+
+	GetCPAValues(userID string) map[string]json.RawMessage
+	SetCPAValues(userID string, values map[string]json.RawMessage) error
+	SetCPAFields([]*model.PropertyField) error
+	GetCPAFields() []*model.PropertyField
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
