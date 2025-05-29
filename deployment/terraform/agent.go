@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"text/template"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 
@@ -186,8 +187,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				return
 			}
 
-			if err := t.setupPrometheusNodeExporter(sshc); err != nil {
-				mlog.Error("error setting up prometheus node exporter", mlog.Err(err), mlog.Int("agent", agentNumber))
+			if t.config.OperatingSystemKind == deployment.OperatingSystemKindRHEL {
+				if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+					mlog.Error("error setting up prometheus node exporter", mlog.Err(err), mlog.Int("agent", agentNumber))
+				}
 			}
 
 			cmd = "sudo systemctl restart otelcol-contrib && sudo systemctl restart prometheus-node-exporter"
