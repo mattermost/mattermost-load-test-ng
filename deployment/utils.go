@@ -40,7 +40,7 @@ func ProvisionURL(client *ssh.Client, url, filename string) error {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("build file %s has to be a regular file", path)
 		}
-		if out, err := client.UploadFile(path, "/home/ubuntu/"+filename, false); err != nil {
+		if out, err := client.UploadFile(path, fmt.Sprintf("$HOME/%s", filename), false); err != nil {
 			return fmt.Errorf("error uploading build: %w %s", err, out)
 		}
 	} else {
