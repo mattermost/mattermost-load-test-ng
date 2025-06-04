@@ -360,6 +360,15 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			mlog.Error("Failed to get server version", mlog.Err(err))
 		}
 	}
+
+	// The server version string looks something like
+	// 10.8.0.-14635315842.c5915cb6b6a40c3468ba242e5742cf35.true
+	// but we are only interested in the first part, 10.8.0, which is semver-compatible
+	serverVersionParts := strings.Split(serverVersionStr, ".")
+	if len(serverVersionParts) < 3 {
+		return nil, fmt.Errorf("unable to extract the semver-compatible version from the string %q; expecting something like 10.5.3.someotherstuff", serverVersionStr)
+	}
+	serverVersionStr = strings.Join(serverVersionParts[:3], ".")
 	serverVersion, err := semver.Parse(serverVersionStr)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse server version %q: %w", serverVersionStr, err)
