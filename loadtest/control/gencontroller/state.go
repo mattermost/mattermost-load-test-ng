@@ -46,6 +46,7 @@ const (
 	StateTargetSidebarCategories = "sidebarcategories"
 	StateTargetFollowedThreads   = "followedthreads"
 	StateTargetUsers             = "users"
+	StateTargetCPAFields         = "cpaFields"
 )
 
 func init() {
@@ -62,6 +63,7 @@ func init() {
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
 			StateTargetUsers:             0,
+			StateTargetCPAFields:         0,
 		},
 		longRunningThreads:    make(map[string]*ThreadInfo),
 		channels:              []string{},
