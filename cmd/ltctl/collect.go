@@ -228,13 +228,13 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				return sanitizedCfg, nil
 			})
 		case strings.HasPrefix(instance, "agent"):
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/ltagent.log", t.Config().AWSAMIUser), true, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/ltagent.log"), true, nil)
 		case instance == "coordinator":
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/ltcoordinator.log", t.Config().AWSAMIUser), true, nil)
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser), false, nil)
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/coordinator.json", t.Config().AWSAMIUser), false, nil)
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUser), false, nil)
-			addFile(instance, terraform.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUser), false, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/ltcoordinator.log"), true, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/config.json"), false, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/coordinator.json"), false, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/simplecontroller.json"), false, nil)
+			addFile(instance, t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/simulcontroller.json"), false, nil)
 			continue
 		}
 		addCmd(instance, "sudo dmesg", "dmesg.out", false, nil)

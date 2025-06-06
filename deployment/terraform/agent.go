@@ -35,7 +35,7 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
 	if t.config.UsersFilePath != "" {
-		cfg.UsersConfiguration.UsersFilePath = ExpandWithUser(dstUsersFilePath, t.config.AWSAMIUser)
+		cfg.UsersConfiguration.UsersFilePath = t.ExpandWithUser(dstUsersFilePath)
 	}
 
 	return cfg, nil
@@ -107,7 +107,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 			mlog.Info("Configuring agent", mlog.String("ip", instance.GetConnectionIP()), mlog.Int("agent", agentNumber))
 			if uploadBinary {
-				dstFilePath := ExpandWithUser("/home/{{.Username}}/tmp.tar.gz", t.Config().AWSAMIUser)
+				dstFilePath := t.ExpandWithUser("/home/{{.Username}}/tmp.tar.gz")
 				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
 				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 					mlog.Error("error uploading file", mlog.String("path", packagePath), mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
@@ -136,7 +136,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				"User":             t.Config().AWSAMIUser,
 			}
 			if t.config.EnableAgentFullLogs {
-				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> %s'", fmt.Sprintf(baseAPIServerCmd, t.Config().AWSAMIUser), ExpandWithUser("/home/{{.Username}}/ltapi.log", t.Config().AWSAMIUser))
+				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> %s'", fmt.Sprintf(baseAPIServerCmd, t.Config().AWSAMIUser), t.ExpandWithUser("/home/{{.Username}}/ltapi.log"))
 			}
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
@@ -166,7 +166,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			if t.config.UsersFilePath != "" {
-				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: ExpandWithUser(dstUsersFilePath, t.Config().AWSAMIUser), msg: "Uploading list of users credentials"})
+				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: t.ExpandWithUser(dstUsersFilePath), msg: "Uploading list of users credentials"})
 			}
 
 			// If SiteURL is set, update /etc/hosts to point to the correct IP
@@ -242,7 +242,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 	if err != nil {
 		return err
 	}
-	dstPath := ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser)
+	dstPath := t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/config.json")
 	mlog.Info("Uploading updated config file")
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error uploading file, output: %q: %w", out, err)

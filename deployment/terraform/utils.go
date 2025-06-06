@@ -379,6 +379,19 @@ func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
 	return cfg.Credentials.Retrieve(context.Background())
 }
 
+// ExpandWithUser replaces {{.Username}} in a path template with the provided username
+func (t *Terraform) ExpandWithUser(path string) string {
+	data := map[string]any{
+		"Username": t.config.AWSAMIUser,
+	}
+	result, err := fillConfigTemplate(path, data)
+	if err != nil {
+		// If there's an error with the template, return the original path
+		return path
+	}
+	return result
+}
+
 // generatePseudoRandomPassword returns a pseudo-random string containing
 // lower-case letters, upper-case letter and numbers
 func generatePseudoRandomPassword(length int) string {
@@ -388,17 +401,4 @@ func generatePseudoRandomPassword(length int) string {
 		s[j] = chars[rand.Intn(len(chars))]
 	}
 	return string(s)
-}
-
-// ExpandWithUser replaces {{.Username}} in a path template with the provided username
-func ExpandWithUser(path, username string) string {
-	data := map[string]any{
-		"Username": username,
-	}
-	result, err := fillConfigTemplate(path, data)
-	if err != nil {
-		// If there's an error with the template, return the original path
-		return path
-	}
-	return result
 }
