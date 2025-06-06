@@ -389,3 +389,16 @@ func generatePseudoRandomPassword(length int) string {
 	}
 	return string(s)
 }
+
+// ExpandWithUser replaces {{.Username}} in a path template with the provided username
+func ExpandWithUser(path, username string) string {
+	data := map[string]any{
+		"Username": username,
+	}
+	result, err := fillConfigTemplate(path, data)
+	if err != nil {
+		// If there's an error with the template, return the original path
+		return path
+	}
+	return result
+}
