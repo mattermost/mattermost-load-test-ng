@@ -111,4 +111,6 @@ async function postInChannel(page: Page): Promise<void> {
   await page.waitForSelector("#post_textbox");
   await page.type("#post_textbox", LONG_MESSAGE, { delay: 40 });
   await page.keyboard.press("Enter");
+
+  console.log("[k6-browser-log] Posted message");
 }
