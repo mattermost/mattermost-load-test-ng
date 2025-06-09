@@ -14,8 +14,8 @@ export const options = {
     typingScenario: {
       executor: "constant-vus",
       exec: "typingScenario",
-      vus: 5,
-      duration: "1m",
+      vus: 20,
+      duration: "10m",
       options: {
         browser: {
           type: "chromium",
