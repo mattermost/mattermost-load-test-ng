@@ -1,0 +1,17 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/k6": "^1.0.2",
+    "@types/node": "^22.15.29"
+  },
+  "scripts": {
+    "test": "playwright test tests/playwright.spec.ts --headed"
+  }
+}
