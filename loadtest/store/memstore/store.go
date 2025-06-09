@@ -1247,10 +1247,9 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 	}
 	for i, h := range s.report.Histograms {
 		report.Histograms[i] = &model.MetricSample{
-			Metric:    h.Metric,
-			Value:     h.Value,
-			Timestamp: h.Timestamp,
-			Labels:    h.Labels,
+			Metric: h.Metric,
+			Value:  h.Value,
+			Labels: h.Labels,
 		}
 	}
 
@@ -1259,10 +1258,9 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 	}
 	for i, h := range s.report.Counters {
 		report.Counters[i] = &model.MetricSample{
-			Metric:    h.Metric,
-			Value:     h.Value,
-			Timestamp: h.Timestamp,
-			Labels:    h.Labels,
+			Metric: h.Metric,
+			Value:  h.Value,
+			Labels: h.Labels,
 		}
 	}
 

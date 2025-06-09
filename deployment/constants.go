@@ -5,4 +5,7 @@ package deployment
 
 const (
 	EnvVarTCPNoDelay = "MM_LOADTEST_TCPNODELAY"
+
+	OperatingSystemKindDebian = "debian"
+	OperatingSystemKindRHEL   = "rhel"
 )

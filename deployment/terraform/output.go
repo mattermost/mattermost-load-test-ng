@@ -83,6 +83,7 @@ type Output struct {
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 	RedisServer             RedisInstance       `json:"redisServer"`
+	AMIUser                 string              `json:"amiUser"`
 }
 
 // Instance is an AWS EC2 instance resource.

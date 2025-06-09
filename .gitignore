@@ -85,3 +85,9 @@ mattermost-load-test.iml
 
 *.tar
 .aider*
+
+# lambda function
+lambda/node_modules
+lambda/screenshot*
+lambda/response*
+lambda/deployment.zip

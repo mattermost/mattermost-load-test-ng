@@ -101,7 +101,7 @@ func setupSSHClient(t *testing.T) *ltssh.Client {
 	// Wait for the SSH server to start
 	var sshc *ltssh.Client
 	require.Eventually(t, func() bool {
-		sshc, err = extAgent.NewClientWithPort(sshIP, sshPort)
+		sshc, err = extAgent.NewClientWithPort(sshIP, sshPort, "ubuntu")
 		return err == nil
 	}, 5*time.Second, 100*time.Millisecond)
 
