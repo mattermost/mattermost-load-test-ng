@@ -1,0 +1,51 @@
+# Node.js dependencies
+node_modules/
+
+# Playwright test results and reports
+test-results/
+playwright-report/
+html-report.html
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Build outputs (if applicable)
+dist/
+build/
+server_build/
+
+# npm debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MacOS files
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows files
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux files
+*~
+
+# Docker files (if applicable)
+docker-compose.override.yml
+docker-compose.*.yml

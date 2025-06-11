@@ -1,0 +1,31 @@
+{
+  "name": "mattermost-load-test-ng/browser",
+  "author": "Mattermost, Inc.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "@types/node": "^24.0.0",
+    "dotenv": "^16.5.0",
+    "prettier": "^3.5.3",
+    "tslib": "^2.8.1",
+    "tsx": "^4.20.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "fastify": "^5.3.3",
+    "playwright": "^1.53.0"
+  },
+  "scripts": {
+    "postinstall": "node scripts/post_install.js",
+    "lint:fix": "prettier . --write --config configs/prettier.config.js",
+    "test": "playwright test -c configs/playwright.config.ts",
+    "test:ui": "playwright test --ui -c configs/playwright.config.ts",
+    "test:debug": "playwright test --debug -c configs/playwright.config.ts",
+    "server:dev": "tsx --tsconfig configs/tsconfig.json server/index.ts",
+    "server:watch": "tsx watch --tsconfig configs/tsconfig.json server/index.ts",
+    "server:build": "tsc -p configs/tsconfig.json",
+    "server:start": "node server_build/index.js",
+    "clean": "rm -rf node_modules test-results"
+  }
+}

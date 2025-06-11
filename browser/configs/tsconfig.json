@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
+    "module": "NodeNext",
+    "rootDir": "../server",
+    "moduleResolution": "node16",
+    "resolveJsonModule": true,
+    "noUncheckedSideEffectImports": true,
+    "esModuleInterop": true,
+    "moduleDetection": "force",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "isolatedModules": true,
+    "importHelpers": true,
+    "allowJs": true,
+    "outDir": "../server_build",
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
+  },
+  "include": ["../server/**/*.ts"],
+  "exclude": ["../node_modules", "../server_build", "../tests", "../configs", "../scripts"]
+}
