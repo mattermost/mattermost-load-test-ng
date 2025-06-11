@@ -18,7 +18,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/post_install.js",
-    "lint:fix": "prettier . --write --config configs/prettier.config.js",
+    "lint:fix": "prettier --write 'server/**/*.ts' 'tests/**/*.ts' 'scripts/**/*.js' --config configs/prettier.config.cjs",
     "test": "playwright test -c configs/playwright.config.ts",
     "test:ui": "playwright test --ui -c configs/playwright.config.ts",
     "test:debug": "playwright test --debug -c configs/playwright.config.ts",
