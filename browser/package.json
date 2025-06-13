@@ -8,11 +8,14 @@
     "@types/node": "^24.0.0",
     "dotenv": "^16.5.0",
     "prettier": "^3.5.3",
+    "tsconfig-paths": "^4.2.0",
     "tslib": "^2.8.1",
     "tsx": "^4.20.1",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@fastify/rate-limit": "^10.3.0",
     "fastify": "^5.3.3",
     "playwright": "^1.53.0"
   },
@@ -26,6 +29,7 @@
     "server:watch": "tsx watch --tsconfig configs/tsconfig.json server/index.ts",
     "server:build": "tsc -p configs/tsconfig.json",
     "server:start": "node server_build/index.js",
+    "check-types": "tsc --noEmit -p configs/tsconfig.json",
     "clean": "rm -rf node_modules test-results"
   }
 }

@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
  */
 export default function loadEnv() {
   const dirname = path.dirname(fileURLToPath(import.meta.url));
-  const envPath = path.resolve(dirname, '../.env');
+  const envPath = path.resolve(dirname, '../../.env');
   const dotenvConfig = dotenv.config({path: envPath});
 
   if (dotenvConfig.error) {

@@ -5,6 +5,12 @@
     "module": "NodeNext",
     "rootDir": "../server",
     "moduleResolution": "node16",
+    "baseUrl": "../",
+    "paths": {
+      "@routes/*": ["server/routes/*"],
+      "@lib/*": ["server/lib/*"],
+      "@utils/*": ["server/utils/*"]
+    },
     "resolveJsonModule": true,
     "noUncheckedSideEffectImports": true,
     "esModuleInterop": true,

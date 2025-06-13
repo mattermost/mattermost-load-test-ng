@@ -1,18 +1,32 @@
 import fastify from 'fastify';
-import userRoutes from './routes/user';
-import healthRoutes from './routes/health';
-import loadEnv from './utils/env';
+import cors from '@fastify/cors';
+import ratelimit from '@fastify/rate-limit';
+
+import browserRoutes from './routes/browser.js';
+import healthRoutes from './routes/health.js';
+import loadEnv from './utils/env.js';
 
 loadEnv();
 
 const serverOptions = {
-  logger: true,
+  logger: process.env.LOG_LEVEL === 'debug' ? true : false,
+  trustProxy: true,
 };
 
 const server = fastify(serverOptions);
 
+await server.register(cors, {
+  origin: false,
+});
+
+await server.register(ratelimit, {
+  global: true,
+  max: Number(process.env.RATE_LIMIT_MAX) || 100,
+  timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || '2 minutes',
+});
+
 server.register(healthRoutes);
-server.register(userRoutes);
+server.register(browserRoutes);
 
 async function startServer() {
   try {
