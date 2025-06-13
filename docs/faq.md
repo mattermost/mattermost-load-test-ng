@@ -176,6 +176,6 @@ You will have to run this for every loadtest agent you have. These will be appen
 
 ### What's the purpose of the `ServerURL` and `ServerScheme` settings?
 
-This are intended for users that need to override the connection URL to their Mattermost server in their load tests environments, in most cases because there's a custom reverse proxy in front of the load-test deployment.
+These are intended for users that need to override the connection URL to their Mattermost server in their load tests environments, in most cases because there's a custom reverse proxy in front of the load-test deployment.
 
 This **should not be used in most cases** as the loadtest agent will automatically detect the server URL and scheme from the configuration and deployed services.
