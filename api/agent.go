@@ -360,6 +360,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			mlog.Error("Failed to get server version", mlog.Err(err))
 		}
 	}
+	serverVersionStr = strings.Join(strings.Split(serverVersionStr, ".")[:3], ".")
 	serverVersion, err := semver.Parse(serverVersionStr)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse server version %q: %w", serverVersionStr, err)
