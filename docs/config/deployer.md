@@ -615,15 +615,21 @@ This config is used for tests that require an existing database dump that contai
 
 ## ServerURL
 
-*string*
+_string_
 
-The URL of the Mattermost server. This is used to override the server's `SiteURL` setting for specific scenarios where a different URL is needed on deployments without the proxy server.
+The URL of the Mattermost server that the agent client will use to connect to the Mattermost servers. This is used to override the server URL in the agent's config in case there's a proxy in front of the Mattermost server.
+
+> [!WARNING] 
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
 
 ## ServerScheme
 
-*string*
+_string_ (default `http`)
 
-The scheme of the Mattermost server. Defaults to `http`.
+The URL scheme (http/https) that the agent client will use to connect to the Mattermost servers. This is used to override the server scheme in the agent's config.
+
+> [!WARNING]
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
 
 ## UsersFilePath
 
