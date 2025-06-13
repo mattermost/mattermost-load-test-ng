@@ -832,11 +832,6 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			cacheObjects = "50m"
 			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
 			// from my tests. So there's no point stretching it further.
-
-			// MM-58179
-			// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
-			// (and retransmissions) on particularly bursty connections (e.g. websockets).
-			rxQueueSize = 8192
 		}
 
 		nginxConfig, err := genNginxConfig()
@@ -882,6 +877,10 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
+		// MM-58179
+		// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
+		// (and retransmissions) on particularly bursty connections (e.g. websockets).
+		rxQueueSize = 8192
 		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
 		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo service nginx restart", incRXSizeCmd)
 		if out, err := sshc.RunCommand(cmd); err != nil {
