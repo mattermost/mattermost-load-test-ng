@@ -22,15 +22,15 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakDir := "/opt/keycloak/keycloak-" + t.config.ExternalAuthProviderSettings.KeycloakVersion
 	keycloakBinPath := filepath.Join(keycloakDir, "bin")
 
-	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.PublicIP))
-	extraArguments := []string{}
+	mlog.Info("Configuring keycloak", mlog.String("host", t.output.KeycloakServer.GetConnectionIP()))
+	extraArguments := []string{"--metrics-enabled=true"}
 
 	command := "start"
 	if t.config.ExternalAuthProviderSettings.DevelopmentMode {
 		command = "start-dev"
 	}
 
-	sshc, err := extAgent.NewClient(t.output.KeycloakServer.PublicIP)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, t.output.KeycloakServer.GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -94,6 +94,10 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	if err := t.setupPrometheusNodeExporter(sshc); err != nil {
+		mlog.Error("error setting up prometheus node exporter", mlog.Err(err))
+	}
+
 	keycloakEnvFileContents, err := fillConfigTemplate(keycloakEnvFileContents, map[string]any{
 		"KeycloakAdminUser":     t.config.ExternalAuthProviderSettings.KeycloakAdminUser,
 		"KeycloakAdminPassword": t.config.ExternalAuthProviderSettings.KeycloakAdminPassword,
@@ -113,6 +117,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	keycloakServiceFileContents, err := fillConfigTemplate(keycloakServiceFileContents, map[string]any{
 		"KeycloakVersion": t.config.ExternalAuthProviderSettings.KeycloakVersion,
 		"Command":         command + " " + strings.Join(extraArguments, " "),
+		"User":            t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute keycloak service file template: %w", err)
@@ -142,7 +147,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	}
 
 	// Wait for keycloak to start
-	url := fmt.Sprintf("http://%s:8080/health", t.output.KeycloakServer.PublicDNS)
+	url := fmt.Sprintf("http://%s:8080/health", t.output.KeycloakServer.GetConnectionDNS())
 	timeout := time.After(120 * time.Second) // yes, is **that** slow
 	for {
 		resp, err := http.Get(url)
@@ -298,11 +303,11 @@ func (t *Terraform) IngestKeycloakDump() error {
 		return err
 	}
 
-	if output.KeycloakServer.PrivateIP == "" {
+	if output.KeycloakServer.GetConnectionIP() == "" {
 		return fmt.Errorf("no keycloak instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.KeycloakServer.PublicIP)
+	client, err := extAgent.NewClient(t.Config().AWSAMIUser, output.KeycloakServer.GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -323,7 +328,7 @@ func (t *Terraform) IngestKeycloakDump() error {
 	}
 
 	commands := []string{
-		"tar xzf /home/ubuntu/" + fileName + " -C /tmp",
+		fmt.Sprintf("tar xzf /home/%s/%s -C /tmp", t.Config().AWSAMIUser, fileName),
 		"sudo -iu postgres psql -d keycloak -v ON_ERROR_STOP=on -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 	}
 
@@ -356,7 +361,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 		return fmt.Errorf("error uploading saml-idp.crt: %s - %w", out, err)
 	}
 
-	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PublicDNS + ":8080"
+	keycloakUrl := keycloakScheme + "://" + t.output.KeycloakServer.PrivateDNS + ":8080"
 
 	cfg.OpenIdSettings.Enable = model.NewPointer(true)
 	cfg.OpenIdSettings.ButtonText = model.NewPointer("OpenID Login")

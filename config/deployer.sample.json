@@ -16,9 +16,11 @@
     "Proxy": [],
     "Redis": []
   },
+  "ConnectionType": "public",
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
+  "EnableMetricsInstance": true,
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
@@ -26,7 +28,7 @@
   "ElasticSearchSettings": {
     "InstanceCount": 0,
     "InstanceType": "r6g.large.search",
-    "Version": "Elasticsearch_7.10",
+    "Version": "OpenSearch_2.7",
     "CreateRole": false,
     "SnapshotRepository": "",
     "SnapshotName": "",
@@ -72,7 +74,8 @@
     "DriverName": "cockroach",
     "DataSource": "",
     "DataSourceReplicas": [],
-    "DataSourceSearchReplicas": []
+    "DataSourceSearchReplicas": [],
+    "ClusterIdentifier": ""
   },
   "ExternalBucketSettings": {
     "AmazonS3AccessKeyId": "",
@@ -99,7 +102,7 @@
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",
-  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.24.0/mattermost-load-test-ng-v1.24.0-linux-amd64.tar.gz",
+  "LoadTestDownloadURL": "https://latest.mattermost.com/mattermost-load-test-ng-linux",
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "INFO",

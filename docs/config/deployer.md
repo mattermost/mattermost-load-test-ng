@@ -25,6 +25,22 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
 
+## AWSAMIUser
+
+*string*
+
+Username to use when connecting to the AWS AMI. (default: `ubuntu`)
+
+## OperatingSystemKind
+
+*string*
+
+Operating system kind to use for the deployment. This is the operating system used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. Right now we support `debian` (default) and `rhel`.
+
+Even though we support `debian` and `rhel`, we recommend using `debian` with Ubuntu 22.04 LTS as it is more widely used and supported and even if you can use Debian/RHEL for other systems it may end un breaking depending on the target system.
+
+> [!NOTE]
+> The `rhel` operating system kind have been tested ony with CentOS Stream 9.
 
 ## ClusterName
 
@@ -51,6 +67,16 @@ The ID of the subnet associated to the resources.
 **Note**
 
 This setting only affects load-test agent instances. It is meant for pre-deployed environments.
+
+## ConnectionType
+
+*string*
+
+Defines how instances should be accessed. Can be either `public` (default) or `private`. 
+
+This defines how the deployer connects to the servers and the connection IPs exposed to the user of the load-test tool in the different CLI utilities:
+- When set to `private` the deployer will connect to the servers using their private IP addresses, which means the **user must be connected to the same network as the servers via jump host/VPN**.
+- If set to `public` the deployer will connect using public IP addresses, which means the user must have access to the internet and **the servers must be on a VPC and subnet with internet access**.
 
 ## AppInstanceCount
 
@@ -365,6 +391,12 @@ The list of dsn for external database read replicas
 *[]string*
 
 The list of dsn for external database search replicas
+
+### ClusterIdentifier
+
+*string*
+
+ClusterIdentifier of the existing DB cluster.
 
 ## ExternalBucketSettings
 

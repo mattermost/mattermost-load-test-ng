@@ -30,13 +30,13 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.PrivateIP + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
 		})
 	}
 
@@ -44,7 +44,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
-	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.PrivateIP + ":9090"
+	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating
 	// a coordinator resource through the API.
@@ -67,7 +67,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 	mlog.Info("Uploading updated coordinator config file")
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
+	dstPath := fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.config.AWSAMIUser)
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
@@ -100,15 +100,15 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	}{
 		{
 			input:   agentConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/config.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simulConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simpleConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUser),
 		},
 	}
 
@@ -159,7 +159,7 @@ func (t *Terraform) StopCoordinator() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	mlog.Info("Stopping the coordinator", mlog.String("ip", ip))
 
@@ -190,7 +190,7 @@ func (t *Terraform) GetCoordinatorStatus() (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to initialize load-test")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)
@@ -216,7 +216,7 @@ func (t *Terraform) InjectAction(actionID string) (coordinator.Status, error) {
 	if len(t.output.Agents) == 0 {
 		return status, errors.New("there are no agents to inject the action")
 	}
-	ip := t.output.Agents[0].PublicIP
+	ip := t.output.Agents[0].GetConnectionIP()
 
 	id := t.config.ClusterName + "-coordinator-0"
 	coord, err := client.New(id, "http://"+ip+":4000", nil)

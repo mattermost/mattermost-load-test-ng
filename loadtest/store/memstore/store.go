@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -44,14 +46,15 @@ type MemStore struct {
 	currentTeam         *model.Team
 	channelViews        map[string]int64
 	profileImages       map[string]int
-	serverVersion       string
-	threads             map[string]*model.ThreadResponse
-	threadsQueue        *CQueue[model.ThreadResponse]
+	serverVersion       semver.Version
+	threads             map[string]*store.ThreadResponseWrapped
+	threadsQueue        *CQueue[store.ThreadResponseWrapped]
 	sidebarCategories   map[string]map[string]*model.SidebarCategoryWithChannels
 	drafts              map[string]map[string]*model.Draft
 	featureFlags        map[string]bool
 	report              *model.PerformanceReport
 	channelBookmarks    map[string]*model.ChannelBookmarkWithFileInfo
+	scheduledPosts      map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -121,7 +124,7 @@ func (s *MemStore) Clear() {
 	clear(s.channelViews)
 	s.channelViews = map[string]int64{}
 	clear(s.threads)
-	s.threads = map[string]*model.ThreadResponse{}
+	s.threads = map[string]*store.ThreadResponseWrapped{}
 	s.threadsQueue.Reset()
 	clear(s.sidebarCategories)
 	s.sidebarCategories = map[string]map[string]*model.SidebarCategoryWithChannels{}
@@ -130,6 +133,8 @@ func (s *MemStore) Clear() {
 	s.drafts = map[string]map[string]*model.Draft{}
 	clear(s.channelBookmarks)
 	s.channelBookmarks = map[string]*model.ChannelBookmarkWithFileInfo{}
+	clear(s.scheduledPosts)
+	s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
@@ -154,7 +159,7 @@ func (s *MemStore) setupQueues(config *Config) error {
 		return fmt.Errorf("memstore: status queue creation failed %w", err)
 	}
 
-	s.threadsQueue, err = NewCQueue[model.ThreadResponse](config.MaxStoredThreads)
+	s.threadsQueue, err = NewCQueue[store.ThreadResponseWrapped](config.MaxStoredThreads)
 	if err != nil {
 		return fmt.Errorf("memstore: threads queue creation failed %w", err)
 	}
@@ -1030,14 +1035,14 @@ func (s *MemStore) SetProfileImage(userId string, lastPictureUpdate int) error {
 }
 
 // ServerVersion returns the server version string.
-func (s *MemStore) ServerVersion() (string, error) {
+func (s *MemStore) ServerVersion() semver.Version {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	return s.serverVersion, nil
+	return s.serverVersion
 }
 
 // SetServerVersion stores the given server version.
-func (s *MemStore) SetServerVersion(version string) error {
+func (s *MemStore) SetServerVersion(version semver.Version) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.serverVersion = version
@@ -1045,7 +1050,7 @@ func (s *MemStore) SetServerVersion(version string) error {
 }
 
 // SetThread stores the given thread reponse.
-func (s *MemStore) SetThread(thread *model.ThreadResponse) error {
+func (s *MemStore) SetThread(thread *store.ThreadResponseWrapped) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if thread == nil {
@@ -1065,8 +1070,22 @@ func (s *MemStore) SetThread(thread *model.ThreadResponse) error {
 	return nil
 }
 
+// SetThreadLastUpdateAt stores the lastUpdateAt value of the given root post.
+func (s *MemStore) SetThreadLastUpdateAt(threadID string, lastUpdateAt int64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if s.threads[threadID] == nil {
+		return ErrThreadNotFound
+	}
+
+	s.threads[threadID].LastUpdateAt = lastUpdateAt
+
+	return nil
+}
+
 // SetThreads stores the given thread response as a thread.
-func (s *MemStore) SetThreads(trs []*model.ThreadResponse) error {
+func (s *MemStore) SetThreads(trs []*store.ThreadResponseWrapped) error {
 	if len(trs) == 0 {
 		return nil
 	}
@@ -1090,19 +1109,19 @@ func (s *MemStore) SetCategories(teamID string, sidebarCategories *model.Ordered
 	return nil
 }
 
-func (s *MemStore) getThreads(unreadOnly bool) ([]*model.ThreadResponse, error) {
-	var threads []*model.ThreadResponse
+func (s *MemStore) getThreads(unreadOnly bool) ([]*store.ThreadResponseWrapped, error) {
+	var threads []*store.ThreadResponseWrapped
 	for _, thread := range s.threads {
 		if unreadOnly && thread.UnreadReplies == 0 {
 			continue
 		}
-		threads = append(threads, cloneThreadResponse(thread, &model.ThreadResponse{}))
+		threads = append(threads, cloneThreadResponse(thread, &store.ThreadResponseWrapped{}))
 	}
 	return threads, nil
 }
 
 // ThreadsSorted returns all threads, sorted by LastReplyAt
-func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error) {
+func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*store.ThreadResponseWrapped, error) {
 	s.lock.RLock()
 	threads, err := s.getThreads(unreadOnly)
 	s.lock.RUnlock()
@@ -1124,7 +1143,7 @@ func (s *MemStore) ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse,
 // 1. directly call this function in the parent's return statement, i.e. return cloneThreadResponse(...)
 // 2. use inplace, e.g. append(threads, cloneThreadResponse(thread, &model.ThreadResponse{}))
 // 3. pass the threadResponse object in the case where we need to update an existing object
-func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *model.ThreadResponse {
+func cloneThreadResponse(src *store.ThreadResponseWrapped, dst *store.ThreadResponseWrapped) *store.ThreadResponseWrapped {
 	dst.PostId = src.PostId
 	dst.ReplyCount = src.ReplyCount
 	dst.LastReplyAt = src.LastReplyAt
@@ -1138,6 +1157,7 @@ func cloneThreadResponse(src *model.ThreadResponse, dst *model.ThreadResponse) *
 	}
 	dst.UnreadReplies = src.UnreadReplies
 	dst.UnreadMentions = src.UnreadMentions
+	dst.LastUpdateAt = src.LastUpdateAt
 	return dst
 }
 
@@ -1167,11 +1187,11 @@ func (s *MemStore) MarkAllThreadsInTeamAsRead(teamId string) error {
 }
 
 // Thread returns the thread for the given the threadId.
-func (s *MemStore) Thread(threadId string) (*model.ThreadResponse, error) {
+func (s *MemStore) Thread(threadId string) (*store.ThreadResponseWrapped, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if thread, ok := s.threads[threadId]; ok {
-		return cloneThreadResponse(thread, &model.ThreadResponse{}), nil
+		return cloneThreadResponse(thread, &store.ThreadResponseWrapped{}), nil
 	}
 	return nil, ErrThreadNotFound
 }
@@ -1224,10 +1244,9 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 	}
 	for i, h := range s.report.Histograms {
 		report.Histograms[i] = &model.MetricSample{
-			Metric:    h.Metric,
-			Value:     h.Value,
-			Timestamp: h.Timestamp,
-			Labels:    h.Labels,
+			Metric: h.Metric,
+			Value:  h.Value,
+			Labels: h.Labels,
 		}
 	}
 
@@ -1236,10 +1255,9 @@ func (s *MemStore) PerformanceReport() (*model.PerformanceReport, error) {
 	}
 	for i, h := range s.report.Counters {
 		report.Counters[i] = &model.MetricSample{
-			Metric:    h.Metric,
-			Value:     h.Value,
-			Timestamp: h.Timestamp,
-			Labels:    h.Labels,
+			Metric: h.Metric,
+			Value:  h.Value,
+			Labels: h.Labels,
 		}
 	}
 
@@ -1356,6 +1374,74 @@ func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
 	}
 
 	delete(s.channelBookmarks, bookmarkId)
-
 	return nil
+}
+
+func (s *MemStore) SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if scheduledPost == nil {
+		return errors.New("memstore: scheduled post should not be nil")
+	}
+
+	if s.scheduledPosts == nil {
+		s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
+	}
+
+	if s.scheduledPosts[teamId] == nil {
+		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{}
+	}
+
+	channelOrThreadId := scheduledPost.ChannelId
+	if scheduledPost.RootId != "" {
+		channelOrThreadId = scheduledPost.RootId
+	}
+
+	s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId], scheduledPost)
+	return nil
+}
+
+func (s *MemStore) DeleteScheduledPost(scheduledPost *model.ScheduledPost) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for teamId := range s.scheduledPosts {
+		channelOrThreadId := scheduledPost.ChannelId
+		if scheduledPost.RootId != "" {
+			channelOrThreadId = scheduledPost.RootId
+		}
+
+		// find index of scheduledPost in s.scheduledPosts[teamId][channelOrThreadId] and if found, delete it
+		for i, sp := range s.scheduledPosts[teamId][channelOrThreadId] {
+			if sp.Id == scheduledPost.Id {
+				s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId][:i], s.scheduledPosts[teamId][channelOrThreadId][i+1:]...)
+				break
+			}
+		}
+	}
+}
+
+func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	channelOrThreadId := scheduledPost.ChannelId
+	if scheduledPost.RootId != "" {
+		channelOrThreadId = scheduledPost.RootId
+	}
+
+	if _, ok := s.scheduledPosts[teamId]; !ok {
+		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{
+			channelOrThreadId: {scheduledPost},
+		}
+		return
+	}
+
+	for i := range s.scheduledPosts[teamId][channelOrThreadId] {
+		if s.scheduledPosts[teamId][channelOrThreadId][i].Id == scheduledPost.Id {
+			s.scheduledPosts[teamId][channelOrThreadId][i] = scheduledPost
+			break
+		}
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,40 +99,40 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 	// first agent.
 	for i, agent := range output.Agents {
 		if resource == agent.Tags.Name || (i == 0 && resource == "coordinator") {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", agent.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, agent.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the job server names.
 	for _, instance := range output.JobServers {
 		if resource == instance.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", instance.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, instance.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against proxy names
 	for _, inst := range output.Proxies {
 		if resource == inst.Tags.Name {
-			return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", inst.PublicIP)), nil
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, inst.GetConnectionIP())), nil
 		}
 	}
 
 	// Match against the keycloak server
 	if output.KeycloakServer.Tags.Name == resource {
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.KeycloakServer.PublicIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.KeycloakServer.GetConnectionIP())), nil
 	}
 
 	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
-		return exec.Command("ssh", fmt.Sprintf("ubuntu@%s", output.MetricsServer.PublicIP)), nil
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.MetricsServer.GetConnectionIP())), nil
 	}
 
 	return nil, fmt.Errorf("could not find any resource with name %q", resource)
@@ -146,15 +147,15 @@ func (t *Terraform) OpenBrowserFor(resource string) error {
 	url := "http://"
 	switch resource {
 	case "grafana":
-		url += output.MetricsServer.PublicDNS + ":3000"
+		url += output.MetricsServer.GetConnectionDNS() + ":3000"
 	case "mattermost":
 		if output.HasProxy() {
-			url += output.Proxies[0].PublicDNS
+			url += output.Proxies[0].GetConnectionDNS()
 		} else {
-			url += output.Instances[0].PublicDNS + ":8065"
+			url += output.Instances[0].GetConnectionDNS() + ":8065"
 		}
 	case "prometheus":
-		url += output.MetricsServer.PublicDNS + ":9090"
+		url += output.MetricsServer.GetConnectionDNS() + ":9090"
 	default:
 		return fmt.Errorf("undefined resource :%q", resource)
 	}
@@ -251,9 +252,12 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("aws_region=%s", t.config.AWSRegion),
 		"-var", fmt.Sprintf("aws_az=%s", t.config.AWSAvailabilityZone),
 		"-var", fmt.Sprintf("aws_ami=%s", t.config.AWSAMI),
+		"-var", fmt.Sprintf("aws_ami_user=%s", t.config.AWSAMIUser),
+		"-var", fmt.Sprintf("operating_system_kind=%s", t.config.OperatingSystemKind),
 		"-var", fmt.Sprintf("cluster_name=%s", t.config.ClusterName),
 		"-var", fmt.Sprintf("cluster_vpc_id=%s", t.config.ClusterVpcID),
 		"-var", fmt.Sprintf(`cluster_subnet_ids=%s`, t.config.ClusterSubnetIDs),
+		"-var", fmt.Sprintf("connection_type=%s", t.config.ConnectionType),
 		"-var", fmt.Sprintf("app_instance_count=%d", t.config.AppInstanceCount),
 		"-var", fmt.Sprintf("app_instance_type=%s", t.config.AppInstanceType),
 		"-var", fmt.Sprintf("app_attach_iam_profile=%s", t.config.AppAttachIAMProfile),
@@ -300,6 +304,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),
 		"-var", fmt.Sprintf("redis_engine_version=%s", t.config.RedisSettings.EngineVersion),
 		"-var", fmt.Sprintf("custom_tags=%s", t.config.CustomTags),
+		"-var", fmt.Sprintf("enable_metrics_instance=%t", t.config.EnableMetricsInstance),
 		"-var", fmt.Sprintf("metrics_instance_type=%s", t.config.MetricsInstanceType),
 	}
 }
@@ -331,7 +336,7 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 		return deploymentConfig.ServerScheme + "://" + deploymentConfig.ServerURL
 	}
 
-	url := output.Instances[0].PrivateIP
+	url := output.Instances[0].GetConnectionIP()
 	if deploymentConfig.SiteURL != "" {
 		url = deploymentConfig.SiteURL
 	}
@@ -372,4 +377,28 @@ func (t *Terraform) GetAWSCreds() (aws.Credentials, error) {
 	}
 
 	return cfg.Credentials.Retrieve(context.Background())
+}
+
+// ExpandWithUser replaces {{.Username}} in a path template with the provided username
+func (t *Terraform) ExpandWithUser(path string) string {
+	data := map[string]any{
+		"Username": t.config.AWSAMIUser,
+	}
+	result, err := fillConfigTemplate(path, data)
+	if err != nil {
+		// If there's an error with the template, return the original path
+		return path
+	}
+	return result
+}
+
+// generatePseudoRandomPassword returns a pseudo-random string containing
+// lower-case letters, upper-case letter and numbers
+func generatePseudoRandomPassword(length int) string {
+	chars := []rune("abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789")
+	s := make([]rune, length)
+	for j := 0; j < length; j++ {
+		s[j] = chars[rand.Intn(len(chars))]
+	}
+	return string(s)
 }

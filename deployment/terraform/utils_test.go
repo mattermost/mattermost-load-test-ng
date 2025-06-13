@@ -47,7 +47,7 @@ func TestGetServerURL(t *testing.T) {
 			name: "no proxy, no siteurl",
 			output: &Output{
 				Instances: []Instance{{
-					PrivateIP: "localhost",
+					PublicIP: "localhost",
 				}},
 			},
 			config: &deployment.Config{

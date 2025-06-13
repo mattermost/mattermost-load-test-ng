@@ -34,7 +34,7 @@ func (t *Terraform) ClearLicensesData() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -98,7 +98,7 @@ func (t *Terraform) IngestDump() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -158,7 +158,7 @@ func (t *Terraform) ExecuteCustomSQL() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.Instances[0].PublicIP)
+	client, err := extAgent.NewClient(t.Config().AWSAMIUser, output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -219,7 +219,7 @@ func (t *Terraform) executeDatabaseCommands(extraCommands []deployment.Cmd) erro
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}

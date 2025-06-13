@@ -18,6 +18,15 @@ variable "cluster_subnet_ids" {
   })
 }
 
+variable "connection_type" {
+}
+
+# Provisioner variables
+variable "operating_system_kind" {
+}
+
+# App variables
+
 variable "app_attach_iam_profile" {
 }
 
@@ -106,7 +115,7 @@ variable "db_engine_version" {
   type = map(any)
   default = {
     "aurora-mysql"      = "8.0.mysql_aurora.3.05.2"
-    "aurora-postgresql" = "14.7"
+    "aurora-postgresql" = "14.9"
   }
 }
 
@@ -208,11 +217,18 @@ variable "aws_region" {
 variable "aws_ami" {
 }
 
+variable "aws_ami_user" {
+}
+
 variable "custom_tags" {
   type = map(string)
 }
 
 variable "aws_az" {
+}
+
+variable "enable_metrics_instance" {
+  type = bool
 }
 
 variable "metrics_instance_type" {

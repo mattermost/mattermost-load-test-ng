@@ -16,6 +16,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const (
+	probabilityAttachFileToPost = 0.02
+)
+
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
@@ -288,6 +292,30 @@ func getActionList(c *SimulController) []userAction {
 			frequency:        0.0001, // https://mattermost.atlassian.net/browse/MM-61131
 			minServerVersion: semver.MustParse("10.0.0"),
 		},
+		{
+			name:             "CreateScheduledPost",
+			run:              c.createScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "UpdateScheduledPost",
+			run:              c.updateScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "DeleteScheduledPost",
+			run:              c.deleteScheduledPost,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "SendScheduledPost",
+			run:              c.sendScheduledPostNow,
+			frequency:        0.001,
+			minServerVersion: semver.MustParse("10.3.0"),
+		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than
 		//     control.MinSupportedVersion, use control.MinSupportedVersion.
@@ -377,23 +405,13 @@ func (c *SimulController) Run() {
 	}()
 
 	// Init controller's server version
-	serverVersionString, err := c.user.Store().ServerVersion()
-	if err != nil {
-		c.sendFailStatus("server version could not be retrieved")
-		return
-	}
-	serverVersion, err := control.ParseServerVersion(serverVersionString)
-	if err != nil {
-		c.sendFailStatus("server version could not be parsed")
-		return
-	}
-	c.serverVersion = serverVersion
+	c.serverVersion = c.user.Store().ServerVersion()
 
 	// Early check that the server version is greater or equal than the initialVersion
 	if !c.isVersionSupported(control.MinSupportedVersion) {
 		c.sendFailStatus(fmt.Sprintf(
 			"server version %q is lower than the minimum supported version %q",
-			serverVersion.String(),
+			c.serverVersion.String(),
 			control.MinSupportedVersion.String(),
 		))
 		return
@@ -430,6 +448,7 @@ func (c *SimulController) Run() {
 	}
 
 	var action *userAction
+	var err error
 
 	// Filter only actions that are available for the current server
 	var supportedActions []userAction

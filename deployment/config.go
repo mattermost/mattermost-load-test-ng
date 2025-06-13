@@ -31,18 +31,26 @@ type Config struct {
 	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
+	// OperatingSystem
+	OperatingSystemKind string `default:"debian" validate:"oneof:{debian,rhel}"`
+	// AWSAMIUser is the user to use when connecting to the AMI.
+	AWSAMIUser string `default:"ubuntu"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
 	ClusterVpcID string
 	// ClusterSubnetIDs is the ids of the subnets associated to each resource type.
 	ClusterSubnetIDs ClusterSubnetIDs
+	// ConnectionType defines how instances should be accessed, either "public" or "private"
+	ConnectionType string `default:"public" validate:"oneof:{public,private}"`
 	// Number of application instances.
 	AppInstanceCount int `default:"1" validate:"range:[0,)"`
 	// Type of the EC2 instance for app.
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// IAM role to attach to the app servers
 	AppAttachIAMProfile string `default:""`
+	// EnableMetricsInstance enables deploying a metrics instance
+	EnableMetricsInstance bool `default:"true"`
 	// Type of the EC2 instance for metrics.
 	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
@@ -89,7 +97,7 @@ type Config struct {
 	// URL from where to download load-test-ng binaries and configuration files.
 	// The configuration files provided in the package will be overridden in
 	// the deployment process.
-	LoadTestDownloadURL   string `default:"https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.24.0/mattermost-load-test-ng-v1.24.0-linux-amd64.tar.gz" validate:"url"`
+	LoadTestDownloadURL   string `default:"https://latest.mattermost.com/mattermost-load-test-ng-linux" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
 	JobServerSettings     JobServerSettings
@@ -259,6 +267,8 @@ type ExternalDBSettings struct {
 	DataSourceReplicas []string `default:""`
 	// DSN to connect to the database search replicas
 	DataSourceSearchReplicas []string `default:""`
+	// ClusterIdentifier of the existing DB cluster.
+	ClusterIdentifier string `default:""`
 }
 
 // ExternalBucketSettings contains the necessary data
@@ -325,7 +335,7 @@ type ElasticSearchSettings struct {
 	// Elasticsearch instance type to be created.
 	InstanceType string
 	// Elasticsearch version to be deployed.
-	Version string `default:"Elasticsearch_7.10"`
+	Version string `default:"OpenSearch_2.7"`
 	// Set to true if the AWSServiceRoleForAmazonElasticsearchService role should be created.
 	CreateRole bool
 	// SnapshotRepository is the name of the S3 bucket where the snapshot to restore lives.
@@ -495,4 +505,20 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// MarkForDestroyAllButMetrics overrides all created resources setting their instance
+// counts to 0 or their enable flags to false, so that everything is destroyed
+// in the next Create except for the metrics instance and related resources.
+// Note that this list should be kept up-to-date when new resources are added
+// to the Terraform files.
+func (c *Config) MarkForDestroyAllButMetrics() {
+	c.AppInstanceCount = 0
+	c.ProxyInstanceCount = 0
+	c.AgentInstanceCount = 0
+	c.TerraformDBSettings.InstanceCount = 0
+	c.ElasticSearchSettings.InstanceCount = 0
+	c.RedisSettings.Enabled = false
+	c.JobServerSettings.InstanceCount = 0
+	c.ExternalAuthProviderSettings.Enabled = false
 }

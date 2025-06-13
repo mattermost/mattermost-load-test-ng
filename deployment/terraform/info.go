@@ -16,41 +16,41 @@ func (t *Terraform) Info() error {
 		return err
 	}
 
-	displayInfo(output)
+	displayInfo(*t.GeneratedValues(), output)
 
 	return nil
 }
 
-func displayInfo(output *Output) {
+func displayInfo(genValues GeneratedValues, output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
 	if output.HasAppServers() {
 		if output.HasProxy() {
-			fmt.Println("Mattermost URL: http://" + output.Proxies[0].PublicDNS)
+			fmt.Println("Mattermost URL: http://" + output.Proxies[0].GetConnectionDNS())
 		} else {
-			fmt.Println("Mattermost URL: http://" + output.Instances[0].PublicDNS + ":8065")
+			fmt.Println("Mattermost URL: http://" + output.Instances[0].GetConnectionDNS() + ":8065")
 		}
 		fmt.Println("App Server(s):")
 		for _, instance := range output.Instances {
-			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.GetConnectionIP())
 		}
 	}
 
 	if output.HasJobServer() {
 		fmt.Println("Job Server(s):")
 		for _, instance := range output.JobServers {
-			fmt.Println("- " + instance.Tags.Name + ": " + instance.PublicIP)
+			fmt.Println("- " + instance.Tags.Name + ": " + instance.GetConnectionIP())
 		}
 	}
 
 	if output.HasAgents() {
 		fmt.Println("Load Agent(s):")
 		for _, agent := range output.Agents {
-			fmt.Println("- " + agent.Tags.Name + ": " + agent.PublicIP)
+			fmt.Println("- " + agent.Tags.Name + ": " + agent.GetConnectionIP())
 		}
 
-		fmt.Println("Coordinator: " + output.Agents[0].PublicIP)
+		fmt.Println("Coordinator: " + output.Agents[0].GetConnectionIP())
 	}
 
 	if output.HasProxy() {
@@ -60,18 +60,21 @@ func displayInfo(output *Output) {
 			fmt.Println("Proxy:")
 		}
 		for _, inst := range output.Proxies {
-			fmt.Println("- " + inst.Tags.Name + ": " + inst.PublicIP)
+			fmt.Println("- " + inst.Tags.Name + ": " + inst.GetConnectionIP())
 		}
 	}
 
 	if output.HasMetrics() {
-		fmt.Println("Grafana URL: http://" + output.MetricsServer.PublicIP + ":3000")
-		fmt.Println("Prometheus URL: http://" + output.MetricsServer.PublicIP + ":9090")
-		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.PublicIP + ":4040")
+		fmt.Println("Grafana URL: http://" + output.MetricsServer.GetConnectionIP() + ":3000")
+		fmt.Println("Grafana credentials:")
+		fmt.Println("  - User: admin")
+		fmt.Println("  - Pass: " + genValues.GrafanaAdminPassword)
+		fmt.Println("Prometheus URL: http://" + output.MetricsServer.GetConnectionIP() + ":9090")
+		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.GetConnectionIP() + ":4040")
 	}
 	if output.HasKeycloak() {
-		fmt.Println("Keycloak server IP: " + output.KeycloakServer.PublicIP)
-		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.PublicDNS + ":8080/")
+		fmt.Println("Keycloak server IP: " + output.KeycloakServer.GetConnectionIP())
+		fmt.Println("Keycloak URL: http://" + output.KeycloakServer.GetConnectionDNS() + ":8080/")
 		if len(output.KeycloakDatabaseCluster.Instances) > 0 {
 			fmt.Printf("Keycloak DB Cluster: %v\n", output.KeycloakDatabaseCluster.Instances[0].Endpoint)
 		}

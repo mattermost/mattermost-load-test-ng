@@ -16,13 +16,13 @@ ExecStart=/opt/mattermost/bin/mattermost
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
 Environment=MM_FEATUREFLAGS_CHANNELBOOKMARKS=true
-Environment=MM_SERVICEENVIRONMENT=%s
+Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target
@@ -95,7 +95,7 @@ ff02::3 ip6-allhosts
 `
 
 const nginxConfigTmpl = `
-user www-data;
+user {{.user}};
 worker_processes auto;
 worker_rlimit_nofile 100000;
 pid /run/nginx.pid;
@@ -285,7 +285,7 @@ net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
 `
 
-const baseAPIServerCmd = `/home/ubuntu/mattermost-load-test-ng/bin/ltapi`
+const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
 const apiServiceFile = `
 [Unit]
@@ -299,9 +299,9 @@ Environment="BLOCK_PROFILE_RATE={{ printf "%d" .blockProfileRate}}"
 ExecStart={{ printf "%s" .execStart}}
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/ubuntu/mattermost-load-test-ng
-User=ubuntu
-Group=ubuntu
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=262144
 
 [Install]
@@ -315,12 +315,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="%s"
+ExecStart=/opt/elasticsearch_exporter/elasticsearch_exporter --es.uri="{{.ESEndpoint}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/elasticsearch_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -333,12 +333,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="%s"
+ExecStart=/opt/redis_exporter/redis_exporter --redis.addr="{{.RedisAddr}}"
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/redis_exporter
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -360,7 +360,7 @@ discovery:
   jobs:
     - type: AWS/RDS
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -391,7 +391,7 @@ discovery:
           statistics: [Average]
     - type: AWS/ES
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -432,7 +432,7 @@ discovery:
           statistics: [Maximum]
     - type: AWS/EC2
       regions:
-        - us-east-1
+        - {{.AWSRegion}}
       period: {{.Period}}
       length: {{.Length}}
       delay: {{.Delay}}
@@ -461,8 +461,8 @@ ExecStart=/opt/yace/yace -listen-address :{{.Port}} -config.file /opt/yace/conf.
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/yace
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 
 [Install]
 WantedBy=multi-user.target
@@ -479,8 +479,8 @@ ExecStart=/opt/mattermost/bin/mattermost jobserver
 Restart=always
 RestartSec=10
 WorkingDirectory=/opt/mattermost
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 LimitNOFILE=49152
 Environment=MM_SERVICEENVIRONMENT=%s
 
@@ -494,7 +494,7 @@ disable_login_form = false
 
 [auth.anonymous]
 enabled = true
-org_role = Editor
+org_role = Viewer
 
 [dashboards]
 default_home_dashboard_path = /var/lib/grafana/dashboards/dashboard.json
@@ -506,8 +506,8 @@ Description=Keycloak
 After=network.target
 
 [Service]
-User=ubuntu
-Group=ubuntu
+User={{.User}}
+Group={{.User}}
 EnvironmentFile=/etc/systemd/system/keycloak.env
 ExecStart=/opt/keycloak/keycloak-{{ .KeycloakVersion }}/bin/kc.sh {{ .Command }}
 
@@ -549,7 +549,23 @@ RestartSec=1
 WantedBy=multi-user.target
 `
 
-const otelcolOperatorAppAgent = `
+const prometheusNodeExporterServiceFile = `[Unit]
+Description=Node Exporter
+
+[Service]
+# Fallback when environment file does not exist
+EnvironmentFile=-/etc/default/prometheus-node-exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target`
+
+const otelcolOperatorApp = `
+      - type: move
+        from: body.MESSAGE
+        to: body`
+
+const otelcolOperatorAgent = `
       - type: json_parser
         timestamp:
           parse_from: attributes.timestamp
@@ -583,7 +599,9 @@ receivers:
         endpoint: 0.0.0.0:4318
 {{range .Receivers}}
   {{.Name}}:
+    {{- if .IncludeFiles }}
     include: [ {{.IncludeFiles}} ]
+    {{- end }}
     resource:
       service.name: "{{.ServiceName}}"
       service.instance.id: "{{.ServiceInstanceId}}"
@@ -594,16 +612,12 @@ exporters:
     endpoint: "http://{{.MetricsIP}}:3100/otlp"
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 service:
   pipelines:
     logs:
       receivers: [{{range .Receivers}}{{.Name}},{{end}}]
-      exporters: [otlphttp/logs,debug]
+      exporters: [otlphttp/logs]
 `
 
 type otelcolReceiver struct {
@@ -614,21 +628,21 @@ type otelcolReceiver struct {
 	Operator          string
 }
 
-func renderAgentOtelcolConfig(instanceName string, metricsIP string) (string, error) {
+func renderAgentOtelcolConfig(instanceName, metricsIP, awsAMIUser string) (string, error) {
 	agentReceiver := otelcolReceiver{
 		Name:              "filelog/agent",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltagent.log",
+		IncludeFiles:      fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltagent.log", awsAMIUser),
 		ServiceName:       "agent",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorAgent,
 	}
 
 	coordinatorReceiver := otelcolReceiver{
 		Name:              "filelog/coordinator",
-		IncludeFiles:      "/home/ubuntu/mattermost-load-test-ng/ltcoordinator.log",
+		IncludeFiles:      fmt.Sprintf("/home/%s/mattermost-load-test-ng/ltcoordinator.log", awsAMIUser),
 		ServiceName:       "coordinator",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorAgent,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{
@@ -672,11 +686,10 @@ func renderProxyOtelcolConfig(instanceName string, metricsIP string) (string, er
 
 func renderAppOtelcolConfig(instanceName string, metricsIP string) (string, error) {
 	appReceiver := otelcolReceiver{
-		Name:              "filelog/app",
-		IncludeFiles:      "/opt/mattermost/logs/mattermost.log",
+		Name:              "journald/app",
 		ServiceName:       "app",
 		ServiceInstanceId: instanceName,
-		Operator:          otelcolOperatorAppAgent,
+		Operator:          otelcolOperatorApp,
 	}
 
 	otelcolConfig, err := fillConfigTemplate(otelcolConfigTmpl, map[string]any{

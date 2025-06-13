@@ -46,16 +46,12 @@ exporters:
     endpoint: "http://127.0.0.1:3100/otlp"
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 service:
   pipelines:
     logs:
       receivers: [filelog/agent,filelog/coordinator,]
-      exporters: [otlphttp/logs,debug]
+      exporters: [otlphttp/logs]
 `
 	expectedAppConfg = `
 receivers:
@@ -66,34 +62,26 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  filelog/app:
-    include: [ /opt/mattermost/logs/mattermost.log ]
+  journald/app:
     resource:
       service.name: "app"
       service.instance.id: "instance-name"
     operators:
-      - type: json_parser
-        timestamp:
-          parse_from: attributes.timestamp
-          layout: '%Y-%m-%d %H:%M:%S.%L Z'
-        severity:
-          parse_from: attributes.level
+      - type: move
+        from: body.MESSAGE
+        to: body
 
 exporters:
   otlphttp/logs:
     endpoint: "http://127.0.0.1:3100/otlp"
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 service:
   pipelines:
     logs:
-      receivers: [filelog/app,]
-      exporters: [otlphttp/logs,debug]
+      receivers: [journald/app,]
+      exporters: [otlphttp/logs]
 `
 
 	expectedProxyConf = `
@@ -135,23 +123,19 @@ exporters:
     endpoint: "http://127.0.0.1:3100/otlp"
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 service:
   pipelines:
     logs:
       receivers: [filelog/proxy_error,filelog/proxy_access,]
-      exporters: [otlphttp/logs,debug]
+      exporters: [otlphttp/logs]
 `
 )
 
 func TestRenderAgentOtelcolConfig(t *testing.T) {
 	instanceName := "instance-name"
 	metricsIP := "127.0.0.1"
-	cfg, err := renderAgentOtelcolConfig(instanceName, metricsIP)
+	cfg, err := renderAgentOtelcolConfig(instanceName, metricsIP, "ubuntu")
 	require.NoError(t, err)
 
 	require.Equal(t, expectedAgentConf, cfg)

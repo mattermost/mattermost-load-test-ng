@@ -84,3 +84,10 @@ mattermost-load-test.iml
 .terraform.tfstate.lock.info
 
 *.tar
+.aider*
+
+# lambda function
+lambda/node_modules
+lambda/screenshot*
+lambda/response*
+lambda/deployment.zip

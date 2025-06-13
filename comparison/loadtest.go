@@ -177,7 +177,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 		return err
 	}
 
-	agentClient, err := extAgent.NewClient(tfOutput.Agents[0].PublicIP)
+	agentClient, err := extAgent.NewClient(t.Config().AWSAMIUser, tfOutput.Agents[0].GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -185,7 +185,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 
 	appClients := make([]*ssh.Client, len(tfOutput.Instances))
 	for i, instance := range tfOutput.Instances {
-		client, err := extAgent.NewClient(instance.PublicIP)
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -202,7 +202,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	buildFileName := getBuildFilename(buildCfg)
 	installCmd := deployment.Cmd{
 		Msg:     "Installing app",
-		Value:   fmt.Sprintf("cd /home/ubuntu && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
+		Value:   fmt.Sprintf("cd ~ && tar xzf %s && cp /opt/mattermost/config/config.json . && sudo rm -rf /opt/mattermost && sudo mv mattermost /opt/ && mv config.json /opt/mattermost/config/", buildFileName),
 		Clients: appClients,
 	}
 
@@ -244,7 +244,7 @@ func initLoadTest(t *terraform.Terraform, buildCfg BuildConfig, dumpFilename str
 	initDataCmd := deployment.Cmd{
 		Msg: "Initializing data",
 		Value: fmt.Sprintf("cd mattermost-load-test-ng && ./bin/ltagent init --user-prefix '%s' --server-url 'http://%s:8065' > /dev/null 2>&1",
-			tfOutput.Agents[0].Tags.Name, tfOutput.Instances[0].PrivateIP),
+			tfOutput.Agents[0].Tags.Name, tfOutput.Instances[0].GetConnectionIP()),
 		Clients: []*ssh.Client{agentClient},
 	}
 

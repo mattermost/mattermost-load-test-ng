@@ -23,9 +23,8 @@ func (ue *UserEntity) ObserveClientMetric(t model.MetricType, v float64) error {
 		}
 
 		report.Histograms = append(report.Histograms, &model.MetricSample{
-			Metric:    t,
-			Value:     v,
-			Timestamp: float64(time.Now().UnixMilli()) / 1000,
+			Metric: t,
+			Value:  v,
 		})
 	default:
 		// server also ignores the unkown typed metrics
@@ -38,14 +37,15 @@ func (ue *UserEntity) SubmitPerformanceReport() error {
 	if err != nil {
 		return err
 	}
-	report.End = float64(time.Now().UnixMilli()) / 1000
+	report.End = float64(time.Now().UnixMilli())
+	report.Version = "0.1.0"
 
 	_, err = ue.client.SubmitClientMetrics(context.Background(), report)
 	if err != nil {
 		return err
 	}
 	ue.store.SetPerformanceReport(&model.PerformanceReport{
-		Start: float64(time.Now().UnixMilli()) / 1000,
+		Start: report.End,
 	})
 
 	return nil

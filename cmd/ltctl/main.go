@@ -4,7 +4,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
+	"github.com/mattermost/mattermost-load-test-ng/version"
 	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/spf13/cobra"
@@ -46,10 +49,37 @@ func RunCreateCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func destroyAllButMetrics(config deployment.Config) error {
+	// Override all created resources so we destroy everything but the metrics
+	// instance.
+	config.MarkForDestroyAllButMetrics()
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	extAgent, err := ssh.NewAgent()
+	if err != nil {
+		return fmt.Errorf("failed to create SSH agent: %w", err)
+	}
+
+	return t.Create(extAgent, false)
+}
+
 func RunDestroyCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
 		return err
+	}
+
+	maintainMetrics, err := cmd.Flags().GetBool("do-not-destroy-metrics-instance")
+	if err != nil {
+		return fmt.Errorf("failed getting the --do-not-destroy-metrics-instance flag: %w", err)
+	}
+
+	if maintainMetrics {
+		return destroyAllButMetrics(config)
 	}
 
 	t, err := terraform.New("", config)
@@ -137,6 +167,56 @@ func RunDBStatusCmdF(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func RunVersionCmdF(cmd *cobra.Command, args []string) error {
+	config, err := getConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	t, err := terraform.New("", config)
+	if err != nil {
+		return fmt.Errorf("failed to create terraform engine: %w", err)
+	}
+
+	output, err := t.Output()
+	if err != nil {
+		return fmt.Errorf("could not parse output: %w", err)
+	}
+
+	if len(output.Agents) == 0 {
+		return fmt.Errorf("no agents found in deployment")
+	}
+
+	// Get the first agent's IP
+	agentIP := output.Agents[0].PublicIP
+	if agentIP == "" {
+		return fmt.Errorf("agent has no public IP")
+	}
+
+	// Query the agent's API for version info
+	url := fmt.Sprintf("http://%s:4000/version", agentIP)
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to query agent version: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("received non-OK response: %d", resp.StatusCode)
+	}
+
+	var versionInfo version.VersionInfo
+
+	if err := json.NewDecoder(resp.Body).Decode(&versionInfo); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	fmt.Println("Agent Version Information:")
+	fmt.Println(versionInfo.String())
+
+	return nil
+}
+
 func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	config, err := getConfig(cmd)
 	if err != nil {
@@ -219,11 +299,6 @@ func main() {
 			RunE:  RunCreateCmdF,
 		},
 		{
-			Use:   "destroy",
-			Short: "Destroy the current load-test deployment",
-			RunE:  RunDestroyCmdF,
-		},
-		{
 			Use:   "info",
 			Short: "Display information about the current load-test deployment",
 			RunE:  RunInfoCmdF,
@@ -248,7 +323,21 @@ func main() {
 			Short: "Display info about the DB cluster.",
 			RunE:  RunDBStatusCmdF,
 		},
+		{
+			Use:   "version",
+			Short: "Display version information of the deployed binaries",
+			RunE:  RunVersionCmdF,
+		},
 	}
+
+	destroyCmd := &cobra.Command{
+		Use:     "destroy",
+		Short:   "Destroy the current load-test deployment",
+		PreRunE: checkDoNotDestroyMetricsInstanceFlag,
+		RunE:    RunDestroyCmdF,
+	}
+	destroyCmd.Flags().Bool("do-not-destroy-metrics-instance", false, "Destroy everything but the metrics instance, so you can still analyze already stored data.")
+	deploymentCommands = append(deploymentCommands, destroyCmd)
 
 	deploymentCmd.AddCommand(deploymentCommands...)
 	rootCmd.AddCommand(deploymentCmd)
@@ -427,10 +516,12 @@ func main() {
 	}
 
 	destroyComparisonCmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "Destroy the current load-test comparison environment",
-		RunE:  DestroyComparisonCmdF,
+		Use:     "destroy",
+		Short:   "Destroy the current load-test comparison environment",
+		PreRunE: checkDoNotDestroyMetricsInstanceFlag,
+		RunE:    DestroyComparisonCmdF,
 	}
+	destroyComparisonCmd.Flags().Bool("do-not-destroy-metrics-instance", false, "Destroy everything but the metrics instance, so you can still analyze already stored data.")
 
 	comparisonCmd.AddCommand(runComparisonCmd, destroyComparisonCmd, collectComparisonCmd)
 	rootCmd.AddCommand(comparisonCmd)

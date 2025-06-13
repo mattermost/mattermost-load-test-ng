@@ -4,6 +4,7 @@
 package store
 
 import (
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -22,6 +23,13 @@ const (
 
 	SelectAny = SelectMemberOf | SelectNotMemberOf
 )
+
+// ThreadResponseWrapped is a client side struct which adds a new computed field
+// to store the lastUpdateAt value of all posts in the thread.
+type ThreadResponseWrapped struct {
+	model.ThreadResponse
+	LastUpdateAt int64
+}
 
 // UserStore is a read-only interface which provides access to various
 // data belonging to a user.
@@ -113,7 +121,7 @@ type UserStore interface {
 	// RandomTeamMember returns a random team member for a team.
 	RandomTeamMember(teamId string) (model.TeamMember, error)
 	// RandomThread returns a random thread.
-	RandomThread() (model.ThreadResponse, error)
+	RandomThread() (ThreadResponseWrapped, error)
 	// RandomCategory returns a random category from a team
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
 	// RandomDraftForTeam returns a random draft id for a team for the current user
@@ -136,13 +144,13 @@ type UserStore interface {
 	// after a specified timestamp in milliseconds.
 	PostsIdsSince(ts int64) ([]string, error)
 
-	// ServerVersion returns the server version string.
-	ServerVersion() (string, error)
+	// ServerVersion returns the server version
+	ServerVersion() semver.Version
 
 	// Threads
-	Thread(threadId string) (*model.ThreadResponse, error)
+	Thread(threadId string) (*ThreadResponseWrapped, error)
 	// ThreadsSorted returns all threads, sorted by LastReplyAt
-	ThreadsSorted(unreadOnly, asc bool) ([]*model.ThreadResponse, error)
+	ThreadsSorted(unreadOnly, asc bool) ([]*ThreadResponseWrapped, error)
 
 	// PostsWithAckRequests returns IDs of the posts that asked for acknowledgment.
 	PostsWithAckRequests() ([]string, error)
@@ -165,6 +173,10 @@ type UserStore interface {
 
 	// DeleteChannelBookmark deletes a given bookmarkId.
 	DeleteChannelBookmark(bookmarkId string) error
+
+	GetRandomScheduledPost() (*model.ScheduledPost, error)
+	DeleteScheduledPost(scheduledPost *model.ScheduledPost)
+	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost)
 }
 
 // MutableUserStore is a super-set of UserStore which, apart from providing
@@ -199,6 +211,9 @@ type MutableUserStore interface {
 	SetDraft(teamId, id string, draft *model.Draft) error
 	// SetDrafts stores the given drafts.
 	SetDrafts(teamId string, drafts []*model.Draft) error
+
+	// scheduled posts
+	SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 
 	// posts
 	// SetPost stores the given post.
@@ -269,13 +284,15 @@ type MutableUserStore interface {
 	SetProfileImage(userId string, lastPictureUpdate int) error
 
 	// SetServerVersion sets the server version string.
-	SetServerVersion(version string) error
+	SetServerVersion(version semver.Version) error
 
 	// Threads
 	// SetThreads stores the given posts.
-	SetThreads(threads []*model.ThreadResponse) error
+	SetThreads(threads []*ThreadResponseWrapped) error
 	// MarkAllThreadsInTeamAsRead marks all threads in the given team as read
 	MarkAllThreadsInTeamAsRead(teamId string) error
+	// SetThreadLastUpdateAt sets the lastUpdateAt of a given thread.
+	SetThreadLastUpdateAt(threadID string, lastUpdateAt int64) error
 
 	// SidebarCategories
 	SetCategories(teamID string, sidebarCategories *model.OrderedSidebarCategories) error

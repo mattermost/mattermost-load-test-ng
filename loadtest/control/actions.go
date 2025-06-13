@@ -69,20 +69,13 @@ func Login(u user.User) UserActionResponse {
 	}
 
 	// Populate teams and channels.
-	teamIds, err := u.GetAllTeams(0, 100)
+	_, err = u.GetAllTeams(0, 100)
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 	err = u.GetTeamMembersForUser(u.Store().Id())
 	if err != nil {
 		return UserActionResponse{Err: NewUserError(err)}
-	}
-	for _, teamId := range teamIds {
-		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
-			if err := u.GetChannelsForTeam(teamId, true); err != nil {
-				return UserActionResponse{Err: NewUserError(err)}
-			}
-		}
 	}
 
 	return UserActionResponse{Info: "logged in"}
@@ -814,12 +807,12 @@ func Reload(u user.User) UserActionResponse {
 		teamId = team.Id
 	}
 
-	if teamId != "" {
-		err = u.GetTeamMembersForUser(u.Store().Id())
-		if err != nil {
-			return UserActionResponse{Err: NewUserError(err)}
-		}
+	err = u.GetTeamMembersForUser(u.Store().Id())
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
+	}
 
+	if teamId != "" {
 		if tm, err := u.Store().TeamMember(teamId, u.Store().Id()); err == nil && tm.UserId != "" {
 			if err := u.GetChannelsForTeam(teamId, true); err != nil {
 				return UserActionResponse{Err: NewUserError(err)}
@@ -833,8 +826,12 @@ func Reload(u user.User) UserActionResponse {
 		_, err = u.GetChannelsForUser(userId)
 		if err != nil {
 			return UserActionResponse{Err: NewUserError(err)}
-
 		}
+	}
+
+	err = u.GetAllChannelMembersForUser(userId)
+	if err != nil {
+		return UserActionResponse{Err: NewUserError(err)}
 	}
 
 	// Getting unread teams.
@@ -1034,6 +1031,14 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 
 func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
 	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
+	return allow, UserActionResponse{}
+}
+
+func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
+	allow, err := strconv.ParseBool(u.Store().ClientConfig()["ScheduledPosts"])
+	if err != nil {
+		return false, UserActionResponse{Err: NewUserError(err)}
+	}
 
 	return allow, UserActionResponse{}
 }
