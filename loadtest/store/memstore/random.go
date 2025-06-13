@@ -401,9 +401,6 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 }
 
 func (s *MemStore) RandomProperty() *model.PropertyField {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
 	fields := s.GetCPAFields()
 	if len(fields) > 0 {
 		index := rand.Intn(len(fields))
