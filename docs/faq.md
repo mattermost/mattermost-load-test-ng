@@ -20,6 +20,7 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 The nature of the test is controlled by how the [`coordinator`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md) controls the [feedback loop](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md#the-feedback-loop). If the coordinator is configured to decrease the users when some metrics surpass a threshold (e.g. the P99 latency in the server is over 2 seconds), then the test will be unbounded. If the coordinator does not monitor these metrics and just let all users connect freely, then the test will be bounded.
 
 To configure this, you need to take a look at the [`MonitorConfig.Queries` configuration in the `coordinator.json` file](coordinator_config.md#queries):
+
 - If the array of queries is empty, or all of them are disabled (by setting `Alert` to `false`), the test is **bounded**.
 - If there is at least one query that is enabled, the test is **unbounded**.
 
@@ -101,6 +102,7 @@ Two considerations:
 - Note that a snapshot, although very useful for reference, is not a fully-functioning dashboard, so you will not be able to query new data using it. Take a look at the example above to understand how it works.
 
 ### Can I stress test the ElasticSearch jobs?
+
 ElasticSearch schedules a daily job for aggregating posts. For configuring this, one needs to modify the Mattermost server's setting `ElasticsearchSettings.PostsAggregatorJobStartTime`, which accepts a hard-coded time (local to the machine running the server) formatted as a string like `"15:04"`.
 If you want to stress test this specific job during a load-test, you can use the [config patch](config/deployer.md#mattermost-config-patch-file) setting in the deployer config to change it to a time where the test will be running, using a partial Mattermost config like the following one:
 
@@ -124,7 +126,9 @@ Yes, it's possible by disabling the proxy server and setting up the `ServerURL` 
 ### Increase debugging level
 
 For troubleshooting purposes, the first step should be increasing the debugging level of both the Mattermost server and the agents:
+
 - For the Mattermost server, a [config patch](config/deployer.md#mattermost-config-patch-file) can be used, with a partial config that can contain the following:
+
 ```json
 {
     "LogSettings": {
@@ -132,6 +136,7 @@ For troubleshooting purposes, the first step should be increasing the debugging 
     }
 }
 ```
+
 - For the agents, the [`LogSettings.FileLevel` setting of the config.json file](config/config.md#file-level) should be set to `"DEBUG"` as well.
 
 ### Users are not connecting
@@ -155,6 +160,7 @@ ulimit -n VALUE
 ```
 
 #### Note
+
 For Terraform deployments, this value is hard coded in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value.
 
 1. ssh into your loadtest agents. You can see the agents available by running `go run ./cmd/ltctl ssh`.
@@ -167,3 +173,9 @@ sudo systemctl restart ltapi
 ```
 
 You will have to run this for every loadtest agent you have. These will be appended by `agent-` when you run the `ltctl ssh` command above.
+
+### What's the purpose of the `ServerURL` and `ServerScheme` settings?
+
+These are intended for users that need to override the connection URL to their Mattermost server in their load tests environments, in most cases because there's a custom reverse proxy in front of the load-test deployment.
+
+This **should not be used in most cases** as the loadtest agent will automatically detect the server URL and scheme from the configuration and deployed services.
