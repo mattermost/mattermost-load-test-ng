@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 import path from 'path';
 import {fileURLToPath} from 'url';
 import dotenv from 'dotenv';
@@ -5,7 +8,7 @@ import dotenv from 'dotenv';
 /**
  * Load environment variables from .env file
  */
-export default function loadEnv() {
+export function loadEnvironmentVariables() {
   const dirname = path.dirname(fileURLToPath(import.meta.url));
   const envPath = path.resolve(dirname, '../../.env');
   const dotenvConfig = dotenv.config({path: envPath});

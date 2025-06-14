@@ -1,5 +1,9 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 import {FastifyInstance} from 'fastify';
 import os from 'os';
+import ms from 'ms';
 
 // Server metadata
 const serverStartTime = new Date();
@@ -9,13 +13,13 @@ export default async function healthRoutes(fastify: FastifyInstance) {
 }
 
 async function getHealth() {
-  const uptime = Math.floor((Date.now() - serverStartTime.getTime()) / 1000);
+  const uptime = Math.floor((Date.now() - serverStartTime.getTime()));
 
   return {
-    status: 'ok',
-    serverInfo: {
+    success: true,
+    data: {
       startTime: serverStartTime.toISOString(),
-      uptime: `${uptime} seconds`,
+      uptime: ms(uptime),
       hostname: os.hostname(),
       platform: process.platform,
     },

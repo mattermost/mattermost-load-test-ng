@@ -1,16 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
+    "lib": ["es2024", "dom", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
     "module": "NodeNext",
-    "rootDir": "../server",
+    "rootDir": "./src",
     "moduleResolution": "node16",
-    "baseUrl": "../",
-    "paths": {
-      "@routes/*": ["server/routes/*"],
-      "@lib/*": ["server/lib/*"],
-      "@utils/*": ["server/utils/*"]
-    },
+    "baseUrl": "./",
     "resolveJsonModule": true,
     "noUncheckedSideEffectImports": true,
     "esModuleInterop": true,
@@ -20,13 +15,13 @@
     "isolatedModules": true,
     "importHelpers": true,
     "allowJs": true,
-    "outDir": "../server_build",
+    "outDir": "./build",
     "noImplicitAny": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "skipLibCheck": true
   },
-  "include": ["../server/**/*.ts"],
-  "exclude": ["../node_modules", "../server_build", "../tests", "../configs", "../scripts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "build", "tests", "configs", "scripts"]
 }

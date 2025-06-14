@@ -1,15 +1,18 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import ratelimit from '@fastify/rate-limit';
 
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
-import loadEnv from './utils/env.js';
+import {loadEnvironmentVariables} from './utils/env.js';
 
-loadEnv();
+loadEnvironmentVariables();
 
 const serverOptions = {
-  logger: process.env.LOG_LEVEL === 'debug' ? true : false,
+  logger: process.env.DEBUG_LOGS === 'true',
   trustProxy: true,
 };
 
@@ -39,7 +42,7 @@ async function startServer() {
 
     console.log(`Server started at ${host}:${port}`);
   } catch (err) {
-    server.log.error('Error starting server', err);
+    console.error('Error starting server', err);
     process.exit(1);
   }
 }
