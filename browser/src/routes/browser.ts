@@ -3,6 +3,9 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
+  // Register shutdown hook when routes are loaded
+  fastify.addHook('onClose', closeBrowser);
+
   fastify.post('/browsers', addBrowser);
   fastify.delete('/browsers', removeBrowser);
   fastify.get('/browsers', getBrowsers);
@@ -99,4 +102,8 @@ async function getBrowsers(_: FastifyRequest, reply: FastifyReply) {
       count: activeSessions.length,
     },
   });
+}
+
+async function closeBrowser() {
+  await browserTestSessionManager.shutdown();
 }

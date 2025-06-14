@@ -40,11 +40,39 @@ async function startServer() {
     const address = server.server.address();
     const port = typeof address === 'string' ? address : address?.port;
 
-    console.log(`Server started at ${host}:${port}`);
+    console.log(`[server] Server started at ${host}:${port}`);
   } catch (err) {
-    console.error('Error starting server', err);
+    console.error('[server] Error starting server', err);
     process.exit(1);
   }
 }
+
+async function stopServer(signal: string) {
+  console.log(`\n[server] Received ${signal}, Server stopping`);
+
+  try {
+    await server.close();
+    console.log('[server] Server stopped');
+    process.exit(0);
+  } catch (err) {
+    console.error('[server] Error during shutdown:', err);
+    process.exit(1);
+  }
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => stopServer('SIGTERM'));
+process.on('SIGINT', () => stopServer('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception:', err);
+  stopServer('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[server] Unhandled rejection at:', promise, 'reason:', reason);
+  stopServer('unhandledRejection');
+});
 
 startServer();

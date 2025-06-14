@@ -1,15 +1,10 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import chalk from 'chalk';
 import type {Page} from '@playwright/test';
-import ora from 'ora';
 
 export async function handlePreferenceCheckbox(page: Page) {
-  const spinner = ora({
-    text: chalk.blue('[test-log][handlePreferenceCheckbox]-Running'),
-    color: 'blue',
-  }).start();
+  console.log('[test-log][handlePreferenceCheckbox]-start');
 
   try {
     // Try to find the checkbox with a short timeout
@@ -27,10 +22,10 @@ export async function handlePreferenceCheckbox(page: Page) {
       }
     });
 
-    spinner.succeed(chalk.green('[test-log][handlePreferenceCheckbox]-OK'));
+    console.log('[test-log][handlePreferenceCheckbox]-ok');
   } catch (error) {
     // If checkbox not found, log and skip
-    spinner.info(chalk.yellow('[test-log][handlePreferenceCheckbox]-Skipped'));
+    console.log('[test-log][handlePreferenceCheckbox]-skipped');
   }
 }
 
@@ -43,10 +38,7 @@ export async function performLogin({
   userId: string;
   password: string;
 }): Promise<void> {
-  const spinner = ora({
-    text: chalk.blue('[test-log][performLogin]-Running'),
-    color: 'blue',
-  }).start();
+  console.log('[test-log][performLogin]-start');
 
   try {
     await page.waitForSelector('#input_loginId');
@@ -55,9 +47,8 @@ export async function performLogin({
     await page.keyboard.press('Enter');
 
     // Ensure the spinner has time to render before succeeding
-    spinner.succeed(chalk.green('[test-log][performLogin]-OK'));
+    console.log('[test-log][performLogin]-OK');
   } catch (error) {
-    spinner.fail(chalk.red('[test-log][performLogin]-Failed'));
-    console.error(error);
+    throw error;
   }
 }

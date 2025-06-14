@@ -13,7 +13,7 @@ export default async function healthRoutes(fastify: FastifyInstance) {
 }
 
 async function getHealth() {
-  const uptime = Math.floor((Date.now() - serverStartTime.getTime()));
+  const uptime = Math.floor(Date.now() - serverStartTime.getTime());
 
   return {
     success: true,
