@@ -1,48 +1,24 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import fastify from 'fastify';
-import cors from '@fastify/cors';
-import ratelimit from '@fastify/rate-limit';
+import {loadEnvironmentVariables} from './config/env.js';
 
-import browserRoutes from './routes/browser.js';
-import healthRoutes from './routes/health.js';
-import {loadEnvironmentVariables} from './utils/env.js';
+import {app} from './app.js';
 
 loadEnvironmentVariables();
-
-const serverOptions = {
-  logger: process.env.DEBUG_LOGS === 'true',
-  trustProxy: true,
-};
-
-const server = fastify(serverOptions);
-
-await server.register(cors, {
-  origin: false,
-});
-
-await server.register(ratelimit, {
-  global: true,
-  max: Number(process.env.RATE_LIMIT_MAX) || 100,
-  timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || '2 minutes',
-});
-
-server.register(healthRoutes);
-server.register(browserRoutes);
 
 async function startServer() {
   try {
     const portNumber = Number(process.env.PORT) || 8080;
     const host = process.env.HOST || '127.0.0.1';
-    await server.listen({port: portNumber, host});
+    await app.listen({port: portNumber, host});
 
-    const address = server.server.address();
+    const address = app.server.address();
     const port = typeof address === 'string' ? address : address?.port;
 
-    console.log(`[server] Server started at ${host}:${port}`);
+    console.log(`[server] Server successfully started at ${host}:${port}`);
   } catch (err) {
-    console.error('[server] Error starting server', err);
+    console.error('[server] Server failed to start', err);
     process.exit(1);
   }
 }
@@ -51,7 +27,7 @@ async function stopServer(signal: string) {
   console.log(`\n[server] Received ${signal}, Server stopping`);
 
   try {
-    await server.close();
+    await app.close();
     console.log('[server] Server stopped');
     process.exit(0);
   } catch (err) {
@@ -70,6 +46,7 @@ process.on('uncaughtException', (err) => {
   stopServer('uncaughtException');
 });
 
+// Handle unhandled rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[server] Unhandled rejection at:', promise, 'reason:', reason);
   stopServer('unhandledRejection');

@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
 
 import * as tests from '../tests/scenario.js';

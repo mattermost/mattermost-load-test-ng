@@ -7,6 +7,7 @@
     "@playwright/test": "^1.53.0",
     "@types/ms": "^2.1.0",
     "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
     "@vitest/ui": "^3.2.3",
     "dotenv": "^16.5.0",
     "prettier": "^3.5.3",
@@ -35,8 +36,8 @@
     "unittest:run": "vitest run",
     "unittest:ui": "vitest --ui",
     "unittest:watch": "vitest",
-    "server:dev": "tsx src/index.ts",
-    "server:watch": "tsx watch src/index.ts",
+    "server:dev": "tsx src/server.ts",
+    "server:watch": "tsx watch src/server.ts",
     "server:build": "tsc",
     "server:start": "node scripts/start_server.mjs",
     "clean": "rm -rf node_modules test-results"
