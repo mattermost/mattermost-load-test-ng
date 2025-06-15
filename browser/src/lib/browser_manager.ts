@@ -30,7 +30,7 @@ export type BrowserInstance = {
 
 type BrowserInstanceAsResponse = Pick<BrowserInstance, 'userId' | 'createdAt'>;
 
-class BrowserTestSessionManager {
+export class BrowserTestSessionManager {
   private static instance: BrowserTestSessionManager;
 
   private activeBrowserSessions: Map<string, BrowserInstance> = new Map();
