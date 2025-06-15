@@ -1,14 +1,12 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {describe, test, expect, vi, beforeEach, afterEach, afterAll} from 'vitest';
-import os from 'os';
-import ms from 'ms';
+import {describe, test, expect, vi, beforeEach, afterEach} from 'vitest';
 import supertest from 'supertest';
-import { FastifyInstance } from 'fastify';
+import {FastifyInstance} from 'fastify';
 
-import { app, createApp } from '../app.js';
-import { getRandomPort } from 'src/utils/tests.js';
+import {createApp} from '../app.js';
+import {getRandomPort} from 'src/utils/tests.js';
 
 vi.mock('os', () => {
   return {
@@ -48,7 +46,7 @@ describe('API /health', () => {
   let port: number;
 
   beforeEach(async () => {
-    appInstance = createApp({ logger: false });
+    appInstance = createApp({logger: false});
     port = getRandomPort();
   });
 

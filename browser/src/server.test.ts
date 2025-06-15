@@ -18,7 +18,7 @@ vi.mock('./app.js', () => {
   };
   return {
     app: mockApp,
-    createApp: vi.fn().mockReturnValue(mockApp)
+    createApp: vi.fn().mockReturnValue(mockApp),
   };
 });
 

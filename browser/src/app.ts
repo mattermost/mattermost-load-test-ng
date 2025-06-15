@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import fastify, { FastifyInstance } from 'fastify';
+import fastify, {FastifyInstance} from 'fastify';
 import cors from '@fastify/cors';
 import ratelimit from '@fastify/rate-limit';
 
@@ -12,7 +12,7 @@ export function createApp(options = {}): FastifyInstance {
   const serverOptions = {
     logger: process.env.DEBUG_LOGS === 'true',
     trustProxy: true,
-    ...options
+    ...options,
   };
 
   const app = fastify(serverOptions);
