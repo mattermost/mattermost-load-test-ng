@@ -7,6 +7,8 @@ import ms from 'ms';
 
 // Server metadata
 const serverStartTime = new Date();
+const hostname = os.hostname();
+const platform = process.platform;
 
 export default async function healthRoutes(fastify: FastifyInstance) {
   fastify.get('/health', getHealth);
@@ -20,8 +22,8 @@ export async function getHealth() {
     data: {
       startTime: serverStartTime.toISOString(),
       uptime: ms(uptime),
-      hostname: os.hostname(),
-      platform: process.platform,
+      hostname,
+      platform,
     },
   };
 }
