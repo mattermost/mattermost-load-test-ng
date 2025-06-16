@@ -3,11 +3,11 @@
 
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
 
-import * as tests from '../tests/scenario.js';
+import * as tests from '../tests/scenario1.js';
 
 const CLEANUP_TIMEOUT = 4 * 1000; // 2 seconds
 
-enum SessionState {
+export enum SessionState {
   CREATING = 'creating', // The browser and other instances are being created
   CREATION_FAILED = 'creation_failed', // The browser or any other instances failed to be created
   CREATED = 'created', // The browser and other instances were created successfully
@@ -28,7 +28,7 @@ export type BrowserInstance = {
   state: SessionState;
 };
 
-type BrowserInstanceAsResponse = Pick<BrowserInstance, 'userId' | 'createdAt'>;
+type BrowserInstanceAsResponse = Pick<BrowserInstance, 'userId' | 'createdAt' | 'state'>;
 
 export class BrowserTestSessionManager {
   private static instance: BrowserTestSessionManager;
@@ -64,6 +64,7 @@ export class BrowserTestSessionManager {
       instancesAsResponse.push({
         userId,
         createdAt: value.createdAt,
+        state: value.state,
       });
     }
 
