@@ -3,6 +3,11 @@
   "author": "Mattermost, Inc.",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": "22.16.x",
+    "npm": ">=10.9.2"
+  },
+  "engine-strict": true,
   "devDependencies": {
     "@playwright/test": "^1.53.0",
     "@types/ms": "^2.1.0",
