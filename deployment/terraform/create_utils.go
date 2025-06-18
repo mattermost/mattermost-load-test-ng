@@ -76,7 +76,7 @@ type ethtoolOutput struct {
 
 // getEthtoolRxSizes runs the ethtool command and parses its output.
 func getEthtoolRxSizes(sshc *ssh.Client) (ethtoolOutput, error) {
-	getRXCmd := "sudo ethtool -g ens3"
+	getRXCmd := "sudo ethtool -g $(ip route show to default | awk '{print $5}')"
 	out, err := sshc.RunCommand(getRXCmd)
 	if err != nil {
 		return ethtoolOutput{}, fmt.Errorf("error running ssh command; output: %q; cmd: %q, err: %w", string(out), getRXCmd, err)
