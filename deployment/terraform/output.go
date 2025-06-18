@@ -27,6 +27,9 @@ type output struct {
 	Agents struct {
 		Value []Instance `json:"value"`
 	} `json:"agents"`
+	BrowserAgents struct {
+		Value []Instance `json:"value"`
+	} `json:"browserAgents"`
 	MetricsServer struct {
 		Value []Instance `json:"value"`
 	} `json:"metricsServer"`
@@ -199,10 +202,11 @@ func (t *Terraform) loadOutput() error {
 		clusterName = t.config.ClusterName
 	}
 	outputv2 := &Output{
-		ClusterName: clusterName,
-		Instances:   o.Instances.Value,
-		Agents:      o.Agents.Value,
-		JobServers:  o.JobServers.Value,
+		ClusterName:   clusterName,
+		Instances:     o.Instances.Value,
+		Agents:        o.Agents.Value,
+		BrowserAgents: o.BrowserAgents.Value,
+		JobServers:    o.JobServers.Value,
 	}
 
 	if len(o.Proxy.Value) > 0 {
@@ -216,6 +220,9 @@ func (t *Terraform) loadOutput() error {
 		}
 		for i := range outputv2.Agents {
 			outputv2.Agents[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.BrowserAgents {
+			outputv2.BrowserAgents[i].SetConnectionType(t.config.ConnectionType)
 		}
 		for i := range outputv2.JobServers {
 			outputv2.JobServers[i].SetConnectionType(t.config.ConnectionType)
@@ -325,6 +332,11 @@ func (o *Output) HasAppServers() bool {
 // HasAgents returns whether a deployment includes agent instances.
 func (o *Output) HasAgents() bool {
 	return len(o.Agents) > 0
+}
+
+// HasBrowserAgents returns whether a deployment includes browser agent instances.
+func (o *Output) HasBrowserAgents() bool {
+	return len(o.BrowserAgents) > 0
 }
 
 // HasMetrics returns whether a deployment includes the metrics instance.

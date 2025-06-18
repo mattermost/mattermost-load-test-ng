@@ -287,7 +287,7 @@ net.core.wmem_max = 16777216
 
 const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
-const baseBrowserAPIServerCmd = `node /home/%s/mattermost-load-test-ng/build/server.js`
+const baseBrowserAPIServerCmd = `node /home/%s/mattermost-load-test-ng/browser/server.js`
 
 const apiServiceFile = `
 [Unit]
@@ -328,7 +328,6 @@ LimitNOFILE=262144
 [Install]
 WantedBy=multi-user.target
 `
-
 
 const esExporterServiceFile = `
 [Unit]

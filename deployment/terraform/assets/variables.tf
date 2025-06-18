@@ -47,6 +47,14 @@ variable "agent_instance_type" {
 variable "agent_allocate_public_ip_address" {
 }
 
+# Browser Agent variables
+
+variable "browser_agent_instance_count" {
+}
+
+variable "browser_agent_instance_type" {
+}
+
 # Elasticsearch variables
 
 variable "es_instance_count" {
