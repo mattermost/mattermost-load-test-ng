@@ -117,9 +117,9 @@ func parseEthtoolOutputRXSizes(out string) (ethtoolOutput, error) {
 
 	rxValues := make([]int, 2)
 	for i, line := range rxLines {
-		val, err := strconv.Atoi(strings.TrimSpace(string(line)))
+		val, err := strconv.Atoi(strings.TrimSpace(line))
 		if err != nil {
-			return ethtoolOutput{}, fmt.Errorf("unable to parse integer in line %d: %q; err: %w", i, string(line), err)
+			return ethtoolOutput{}, fmt.Errorf("unable to parse integer in line %d: %q; err: %w", i, line, err)
 		}
 
 		rxValues[i] = val
