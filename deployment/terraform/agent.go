@@ -141,6 +141,19 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
+			tpl, err = template.New("").Parse(browserAPIServiceFile)
+			if err != nil {
+				mlog.Error("could not parse agent service template", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			tplVars = map[string]any{
+				"execStart": fmt.Sprintf(baseBrowserAPIServerCmd, t.Config().AWSAMIUser),
+			}
+			browserBuf := bytes.NewBufferString("")
+			tpl.Execute(browserBuf, tplVars)
+
 			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
 			if err != nil {
 				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
@@ -159,6 +172,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			batch := []uploadInfo{
 				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
+				{srcData: strings.TrimPrefix(browserBuf.String(), "\n"), dstPath: "/lib/systemd/system/ltbrowserapi.service", msg: "Uploading load-test browser api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
@@ -208,6 +222,13 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
 			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltapi"); err != nil {
+				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			mlog.Info("Starting load-test browser api server", mlog.Int("agent", agentNumber))
+			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltbrowserapi"); err != nil {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return

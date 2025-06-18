@@ -58,6 +58,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
+	// config.ClusterConfig.BrowserAgents = loadAgentConfigs
 	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating

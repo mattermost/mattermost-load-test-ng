@@ -287,6 +287,8 @@ net.core.wmem_max = 16777216
 
 const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
+const baseBrowserAPIServerCmd = `node /home/%s/mattermost-load-test-ng/build/server.js`
+
 const apiServiceFile = `
 [Unit]
 Description=Mattermost load-test API Server
@@ -307,6 +309,26 @@ LimitNOFILE=262144
 [Install]
 WantedBy=multi-user.target
 `
+
+const browserAPIServiceFile = `
+[Unit]
+Description=Mattermost load-test Browser API Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ printf "%s" .execStart}}
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
+LimitNOFILE=262144
+
+[Install]
+WantedBy=multi-user.target
+`
+
 
 const esExporterServiceFile = `
 [Unit]

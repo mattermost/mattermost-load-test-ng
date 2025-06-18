@@ -22,11 +22,12 @@ import (
 // LoadAgentCluster is the object holding information about all the load-test
 // agents available in the cluster.
 type LoadAgentCluster struct {
-	config   LoadAgentClusterConfig
-	ltConfig loadtest.Config
-	agents   []*client.Agent
-	errMap   map[*client.Agent]*errorTrack
-	log      *mlog.Logger
+	config        LoadAgentClusterConfig
+	ltConfig      loadtest.Config
+	agents        []*client.Agent
+	browserAgents []*client.Agent
+	errMap        map[*client.Agent]*errorTrack
+	log           *mlog.Logger
 }
 
 type errorTrack struct {
@@ -85,12 +86,33 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 		}
 	}
 
+	browserAgents := make([]*client.Agent, len(config.BrowserAgents))
+	// browserAgentErrMap := make(map[*client.Agent]*errorTrack)
+	for i := 0; i < len(agents); i++ {
+		agent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
+		}
+		agents[i] = agent
+		errMap[agent] = &errorTrack{}
+
+		// We check if the agent has already been created.
+		if _, err := agent.Status(); err == nil {
+			continue
+		}
+
+		if err := createAgent(agent, ltConfig); err != nil {
+			return nil, err
+		}
+	}
+
 	return &LoadAgentCluster{
-		agents:   agents,
-		config:   config,
-		ltConfig: ltConfig,
-		errMap:   errMap,
-		log:      log,
+		agents:        agents,
+		browserAgents: browserAgents,
+		config:        config,
+		ltConfig:      ltConfig,
+		errMap:        errMap,
+		log:           log,
 	}, nil
 }
 
@@ -145,6 +167,10 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	if err != nil {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
+
+	// Additional logic to check how many users to add to
+	// server agents, and how many to add in browser agents.
+
 	for i, inc := range dist {
 		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
 		if _, err := c.agents[i].AddUsers(inc); err != nil {
@@ -156,6 +182,9 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 			}
 		}
 	}
+
+	// Additional loop here to add to browser agents.
+
 	return nil
 }
 
