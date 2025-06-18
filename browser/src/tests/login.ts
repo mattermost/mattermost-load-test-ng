@@ -1,10 +1,12 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from '@playwright/test';
+import {Locator, Page} from 'playwright';
 
-export async function handlePreferenceCheckbox(page: Page) {
-  console.log('[test-log][handlePreferenceCheckbox]-start');
+import {log} from '../app.js';
+
+export async function handlePreferenceCheckbox(page: Page): Promise<boolean> {
+  log.info('[test-log][handlePreferenceCheckbox]-start');
 
   try {
     // Try to find the checkbox with a short timeout
@@ -22,10 +24,12 @@ export async function handlePreferenceCheckbox(page: Page) {
       }
     });
 
-    console.log('[test-log][handlePreferenceCheckbox]-ok');
+    log.info('[test-log][handlePreferenceCheckbox]-ok');
+    return true;
   } catch (error) {
     // If checkbox not found, log and skip
-    console.log('[test-log][handlePreferenceCheckbox]-skipped');
+    log.info('[test-log][handlePreferenceCheckbox]-skipped');
+    return false;
   }
 }
 
@@ -38,7 +42,7 @@ export async function performLogin({
   userId: string;
   password: string;
 }): Promise<void> {
-  console.log('[test-log][performLogin]-start');
+  log.info('[test-log][performLogin]-start');
 
   try {
     await page.waitForSelector('#input_loginId');
@@ -47,7 +51,7 @@ export async function performLogin({
     await page.keyboard.press('Enter');
 
     // Ensure the spinner has time to render before succeeding
-    console.log('[test-log][performLogin]-OK');
+    log.info('[test-log][performLogin]-OK');
   } catch (error) {
     throw error;
   }

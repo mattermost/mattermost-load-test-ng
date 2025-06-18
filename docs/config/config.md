@@ -177,3 +177,38 @@ The location of the log file.
 *bool*
 
 When true enables colored output.
+
+## BrowserLogSetting
+
+### EnableConsole
+
+*bool*
+
+When true, the browser server outputs log messages to the console based on ConsoleLevel option.
+
+### ConsoleLevel
+
+*string*
+
+Level of detail at which log events are written to the console.
+
+Possible values:
+- `trace`
+- `debug`
+- `info`
+- `warn`
+- `error`
+- `fatal`
+- `silent`
+
+### EnableFile
+
+*bool*
+
+When true, the browser server outputs log messages to the file specified by the `FileLocation` setting.
+
+### FileLocation
+
+*string*
+
+The location of the log file.

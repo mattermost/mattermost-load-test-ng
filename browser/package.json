@@ -1,7 +1,6 @@
 {
   "name": "mattermost-load-test-ng/browser",
   "author": "Mattermost, Inc.",
-  "license": "Apache-2.0",
   "type": "module",
   "engines": {
     "node": "22.16.x",
@@ -14,7 +13,6 @@
     "@types/node": "24.0.3",
     "@types/supertest": "6.0.3",
     "@vitest/ui": "3.2.3",
-    "dotenv": "16.5.0",
     "prettier": "3.5.3",
     "supertest": "7.1.1",
     "tsconfig-paths": "4.2.0",
@@ -24,8 +22,6 @@
     "vitest": "3.2.3"
   },
   "dependencies": {
-    "@fastify/cors": "11.0.1",
-    "@fastify/rate-limit": "10.3.0",
     "fastify": "5.4.0",
     "ms": "2.1.3",
     "playwright": "1.53.0"

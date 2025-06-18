@@ -65,12 +65,14 @@ describe('API /health', () => {
       .expect('Content-Type', /json/);
 
     expect(response.body).toEqual({
-      success: true,
-      data: {
+      200: {
+        success: true,
+        data: {
         startTime: expect.any(String),
         uptime: expect.any(String),
-        hostname: expect.any(String),
-        platform: expect.any(String),
+          hostname: expect.any(String),
+          platform: expect.any(String),
+        },
       },
     });
   });

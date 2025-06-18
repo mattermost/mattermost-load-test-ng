@@ -4,31 +4,20 @@
 import {execSync} from 'child_process';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import dotenv from 'dotenv';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-try {
-  const envPath = path.resolve(dirname, '../.env');
-  const dotenvConfig = dotenv.config({path: envPath});
-
-  if (dotenvConfig.error) {
-    throw new Error(dotenvConfig.error);
-  }
-
-  console.log('Successfully loaded .env file');
-} catch (error) {
-  console.error('Failed to load .env file:', error);
-  process.exit(1);
-}
+const withHermitInstallation = 'PLAYWRIGHT_BROWSERS_PATH=0';
 
 try {
   const playwrightCli = path.resolve(dirname, '../node_modules/.bin/playwright');
 
-  console.log(`Installing Playwright Chromium browser with BROWSERS_PATH=${process.env.PLAYWRIGHT_BROWSERS_PATH}`);
-  execSync(`${playwrightCli} install --with-deps chromium`, {stdio: 'inherit', env: process.env});
+  console.log('Installing Playwright Chromium browser');
+  execSync(`${withHermitInstallation} ${playwrightCli} install --with-deps chromium`, {stdio: 'inherit'});
 
-  console.log('Successfully installed Playwright Chromium browser');
+  console.log(
+    'Successfully installed Playwright Chromium browser binaries in node_modules/playwright-core/.local-browsers',
+  );
 } catch (error) {
   console.error('Failed to install Playwright Chromium browser:', error);
   process.exit(1);

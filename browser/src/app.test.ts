@@ -14,14 +14,6 @@ vi.mock('fastify', () => {
   return {default: mockFastify};
 });
 
-vi.mock('@fastify/cors', () => ({
-  default: 'cors-plugin',
-}));
-
-vi.mock('@fastify/rate-limit', () => ({
-  default: 'rate-limit-plugin',
-}));
-
 vi.mock('./routes/browser.js', () => ({
   default: 'browser-routes',
 }));
