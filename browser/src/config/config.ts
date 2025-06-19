@@ -23,6 +23,22 @@ export function loadConfigJson() {
 
 export const configJson = loadConfigJson();
 
+export function isConsoleLoggingEnabled(): boolean {
+  return configJson.BrowserLogSettings.EnableConsole;
+}
+
+export function getConsoleLoggingLevel(): string {
+  return configJson.BrowserLogSettings.ConsoleLevel;
+}
+
+export function isFileLoggingEnabled(): boolean {
+  return configJson.BrowserLogSettings.EnableFile;
+}
+
+export function getFileLoggingLocation(): string {
+  return configJson.BrowserLogSettings.FileLocation;
+}
+
 /**
  * Generates a random port in the specified range
  * Useful when you want to avoid sequential ports for parallel tests

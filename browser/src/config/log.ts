@@ -2,29 +2,33 @@
 // See LICENSE.txt for license information.
 
 import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
-import {configJson} from './config.js';
-
-// Use functions to get config values to make testing easier
-export function isConsoleLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings.EnableConsole;
-}
-
-export function getConsoleLoggingLevel(): string {
-  return configJson.BrowserLogSettings.ConsoleLevel;
-}
-
-export const serverLoggerConfig: FastifyLoggerOptions = {
-  level: isConsoleLoggingEnabled() ? getConsoleLoggingLevel() : 'silent',
-};
+import {
+  isConsoleLoggingEnabled,
+  getConsoleLoggingLevel,
+  getFileLoggingLocation,
+  isFileLoggingEnabled,
+} from './config.js';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
 export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
   if (!isConsoleLoggingEnabled()) {
     return false;
   }
 
-  return {
+  const loggerConfig: FastifyLoggerOptions = {
     level: getConsoleLoggingLevel(),
   };
+
+  if (isFileLoggingEnabled()) {
+    const dirname = path.dirname(fileURLToPath(import.meta.url));
+    const rootDir = path.resolve(dirname, '../../..');
+    const filePath = path.join(rootDir, getFileLoggingLocation());
+
+    loggerConfig.file = filePath;
+  }
+
+  return loggerConfig;
 }
 
 export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {

@@ -66,6 +66,6 @@
     "EnableConsole": true,
     "ConsoleLevel": "debug",
     "EnableFile": true,
-    "FileLocation": "browser.log"
+    "FileLocation": "browseragent.log"
   }
 }
