@@ -17,7 +17,7 @@ export async function scenario1({page, userId, password}: BrowserInstance, serve
     await handlePreferenceCheckbox(page);
     await performLogin({page, userId, password});
 
-    for (let i = 0; i < 10; i++) {
+    while (true) {
       await postInChannel({page});
       await scrollInChannel(page, 'sidebarItem_off-topic', 40, 400, 500);
       await scrollInChannel(page, 'sidebarItem_town-square', 40, 400, 500);
