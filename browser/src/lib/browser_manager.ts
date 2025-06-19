@@ -72,7 +72,11 @@ export class BrowserTestSessionManager {
     return instancesAsResponse;
   }
 
-  public async createBrowserSession(userId: string, password: string): Promise<{isCreated: boolean; message: string}> {
+  public async createBrowserSession(
+    userId: string,
+    password: string,
+    serverURL: string,
+  ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
       return {
         isCreated: false,
@@ -94,7 +98,7 @@ export class BrowserTestSessionManager {
     // Try to create the browser instance first
     try {
       const browser = await chromium.launch({
-        headless: true,
+        headless: false,
       });
 
       instance = {...instance, browser};
@@ -159,7 +163,7 @@ export class BrowserTestSessionManager {
     };
     this.activeBrowserSessions.set(userId, instance);
 
-    this.startTestsInBrowserSession(userId, instance);
+    this.startTestsInBrowserSession(userId, instance, serverURL);
 
     return {
       isCreated: true,
@@ -190,12 +194,12 @@ export class BrowserTestSessionManager {
    * It infroms if the test failed or was stopped.
    * Also cleans up the browser session regardless of test success or failure
    */
-  private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance) {
+  private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance, serverURL: string) {
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 
     try {
-      await tests.scenario1(browserInstance);
+      await tests.scenario1(browserInstance, serverURL);
 
       const stoppedInstance: BrowserInstance = {
         ...browserInstance,
@@ -217,7 +221,7 @@ export class BrowserTestSessionManager {
         };
         this.activeBrowserSessions.set(userId, failedInstance);
 
-        log.error(`[browser_manager] Failed test for user "${userId}"`);
+        log.error(`[browser_manager] Failed test for user "${userId}" - ${error}`);
       }
     }
   }

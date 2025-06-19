@@ -124,7 +124,11 @@ describe('BrowserManager', () => {
   });
 
   test('createBrowserSession should successfully create a user"s browser session', async () => {
-    const {isCreated, message} = await browserTestSessionManager.createBrowserSession('user1', 'password');
+    const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+    );
 
     expect(isCreated).toBe(true);
     expect(message).toContain('Browser instance created for user user1');
@@ -136,10 +140,14 @@ describe('BrowserManager', () => {
   });
 
   test('createBrowserSession should fail when user"s session already exists', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password');
+    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
 
     // Try to create another session with same userId
-    const {isCreated, message} = await browserTestSessionManager.createBrowserSession('user1', 'password');
+    const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+    );
 
     expect(isCreated).toBe(false);
     expect(message).toContain('Browser instance already exists for user');
@@ -153,7 +161,7 @@ describe('BrowserManager', () => {
   });
 
   test('removeBrowserSession should mark user"s session for removal', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password');
+    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
 
     const {isRemoved, message} = await browserTestSessionManager.removeBrowserSession('user1');
 
@@ -170,7 +178,11 @@ describe('BrowserManager', () => {
     // Mock browser launch to fail
     globalThis.playwrightMocks.mockChromiumLaunch.mockRejectedValueOnce(new Error('Launch failed'));
 
-    const {isCreated, message} = await browserTestSessionManager.createBrowserSession('failuser', 'password');
+    const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
+      'failuser',
+      'password',
+      'http://localhost:8065',
+    );
 
     expect(isCreated).toBe(false);
     expect(message).toContain('Failed to create browser instance');
@@ -185,7 +197,11 @@ describe('BrowserManager', () => {
     // Set up browser success but context failure
     globalThis.playwrightMocks.mockBrowserNewContext.mockRejectedValueOnce(new Error('Context creation failed'));
 
-    const {isCreated, message} = await browserTestSessionManager.createBrowserSession('contextfailuser', 'password');
+    const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
+      'contextfailuser',
+      'password',
+      'http://localhost:8065',
+    );
 
     expect(isCreated).toBe(false);
     expect(message).toContain('Failed to create context');
@@ -200,7 +216,11 @@ describe('BrowserManager', () => {
     // Set up browser & context success but page failure
     globalThis.playwrightMocks.mockContextNewPage.mockRejectedValueOnce(new Error('Page creation failed'));
 
-    const {isCreated, message} = await browserTestSessionManager.createBrowserSession('pagefailuser', 'password');
+    const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
+      'pagefailuser',
+      'password',
+      'http://localhost:8065',
+    );
 
     expect(isCreated).toBe(false);
     expect(message).toContain('Failed to create page');
@@ -215,7 +235,7 @@ describe('BrowserManager', () => {
     // Set up test scenario to fail
     globalThis.testScenarioMocks.scenario1.mockRejectedValueOnce(new Error('Test scenario failed'));
 
-    await browserTestSessionManager.createBrowserSession('testfailuser', 'password');
+    await browserTestSessionManager.createBrowserSession('testfailuser', 'password', 'http://localhost:8065');
 
     await vi.runAllTimersAsync();
 
@@ -226,7 +246,7 @@ describe('BrowserManager', () => {
   });
 
   test('should mark user"s session as completed when tests complete successfully', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password');
+    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
 
     await vi.runAllTimersAsync();
 
@@ -237,8 +257,8 @@ describe('BrowserManager', () => {
   });
 
   test('shutdown should clean up all sessions', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password');
-    await browserTestSessionManager.createBrowserSession('user2', 'password');
+    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession('user2', 'password', 'http://localhost:8065');
 
     await browserTestSessionManager.shutdown();
 
@@ -249,7 +269,7 @@ describe('BrowserManager', () => {
   });
 
   test('should mark user"s session as cleanup_failed when cleanup fails', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password');
+    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
 
     await vi.runAllTimersAsync();
 

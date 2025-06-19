@@ -5,6 +5,7 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
+import {getMattermostServerURL} from 'src/config/config.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
@@ -46,7 +47,18 @@ async function addBrowser(
     });
   }
 
-  const createInstanceResult = await browserTestSessionManager.createBrowserSession(userId, password);
+  const serverURL = getMattermostServerURL();
+  if (!serverURL) {
+    return reply.code(400).send({
+      success: false,
+      error: {
+        code: 'SERVER_URL_MISSING',
+        message: 'serverURL is missing in config.json',
+      },
+    });
+  }
+
+  const createInstanceResult = await browserTestSessionManager.createBrowserSession(userId, password, serverURL);
 
   if (!createInstanceResult.isCreated) {
     return reply.code(400).send({

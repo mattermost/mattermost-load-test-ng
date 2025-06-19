@@ -23,6 +23,10 @@ export function loadConfigJson() {
 
 export const configJson = loadConfigJson();
 
+export function getMattermostServerURL(): string {
+  return configJson.ConnectionConfiguration.ServerURL;
+}
+
 export function isConsoleLoggingEnabled(): boolean {
   return configJson.BrowserLogSettings.EnableConsole;
 }
