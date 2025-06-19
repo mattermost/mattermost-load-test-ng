@@ -285,8 +285,11 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetTeamScheduledPosts(team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	// Get team scheduled posts from 10.3.0 onwards
+	if u.Store().ServerVersion().GTE(semver.MustParse("10.3.0")) {
+		if err := u.GetTeamScheduledPosts(team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("loaded team %s", team.Id)}
