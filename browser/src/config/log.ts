@@ -4,29 +4,43 @@
 import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
 import {configJson} from './config.js';
 
-const isConsoleLoggingEnabled = configJson.BrowserLogSettings.EnableConsole;
-const consoleLoggingLevel = configJson.BrowserLogSettings.ConsoleLevel;
+// Use functions to get config values to make testing easier
+export function isConsoleLoggingEnabled(): boolean {
+  return configJson.BrowserLogSettings.EnableConsole;
+}
+
+export function getConsoleLoggingLevel(): string {
+  return configJson.BrowserLogSettings.ConsoleLevel;
+}
 
 export const serverLoggerConfig: FastifyLoggerOptions = {
-  level: isConsoleLoggingEnabled ? consoleLoggingLevel : 'silent',
+  level: isConsoleLoggingEnabled() ? getConsoleLoggingLevel() : 'silent',
 };
 
 export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
-  if (!isConsoleLoggingEnabled) {
+  if (!isConsoleLoggingEnabled()) {
     return false;
   }
 
   return {
-    level: consoleLoggingLevel,
+    level: getConsoleLoggingLevel(),
   };
 }
 
-export function createLoggerFunctions(logger: FastifyBaseLogger) {
-  if (!isConsoleLoggingEnabled) {
+export function createLogger(logger: FastifyBaseLogger) {
+  if (!isConsoleLoggingEnabled()) {
     return {
       error: () => {},
       warn: () => {},
       info: () => {},
+    };
+  }
+
+  if (!logger) {
+    return {
+      error: console.error,
+      warn: console.warn,
+      info: console.info,
     };
   }
 

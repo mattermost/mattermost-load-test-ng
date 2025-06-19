@@ -1,11 +1,11 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {Locator, Page} from 'playwright';
+import type {Page} from '@playwright/test';
 
 import {log} from '../app.js';
 
-export async function handlePreferenceCheckbox(page: Page): Promise<boolean> {
+export async function handlePreferenceCheckbox(page: Page) {
   log.info('[test-log][handlePreferenceCheckbox]-start');
 
   try {
@@ -25,11 +25,9 @@ export async function handlePreferenceCheckbox(page: Page): Promise<boolean> {
     });
 
     log.info('[test-log][handlePreferenceCheckbox]-ok');
-    return true;
   } catch (error) {
     // If checkbox not found, log and skip
     log.info('[test-log][handlePreferenceCheckbox]-skipped');
-    return false;
   }
 }
 
