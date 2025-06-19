@@ -27,8 +27,8 @@ export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
   };
 }
 
-export function createLogger(logger: FastifyBaseLogger) {
-  if (!isConsoleLoggingEnabled()) {
+export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
+  if (!isEnabled) {
     return {
       error: () => {},
       warn: () => {},

@@ -10,8 +10,8 @@ export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
   fastify.addHook('onClose', closeBrowser);
 
-  fastify.post<{Reply: IReply, Body: AddBrowserRequestBody}>('/browsers', addBrowser);
-  fastify.delete<{Reply: IReply, Body: RemoveBrowserRequestBody}>('/browsers', removeBrowser);
+  fastify.post<{Reply: IReply; Body: AddBrowserRequestBody}>('/browsers', addBrowser);
+  fastify.delete<{Reply: IReply; Body: RemoveBrowserRequestBody}>('/browsers', removeBrowser);
   fastify.get<{Reply: IReply}>('/browsers', getBrowsers);
 }
 
@@ -20,7 +20,10 @@ interface AddBrowserRequestBody {
   password: string;
 }
 
-async function addBrowser(request: FastifyRequest<{Body: AddBrowserRequestBody}>, reply: FastifyReply): Promise<IReply> {
+async function addBrowser(
+  request: FastifyRequest<{Body: AddBrowserRequestBody}>,
+  reply: FastifyReply,
+): Promise<IReply> {
   const {userId, password} = request.body;
 
   if (!userId) {
@@ -65,7 +68,10 @@ interface RemoveBrowserRequestBody {
   userId: string;
 }
 
-async function removeBrowser(request: FastifyRequest<{Body: RemoveBrowserRequestBody}>, reply: FastifyReply): Promise<IReply> {
+async function removeBrowser(
+  request: FastifyRequest<{Body: RemoveBrowserRequestBody}>,
+  reply: FastifyReply,
+): Promise<IReply> {
   const {userId} = request.body;
 
   if (!userId) {

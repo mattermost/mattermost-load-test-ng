@@ -5,7 +5,7 @@ import fastify, {FastifyInstance} from 'fastify';
 
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
-import {getServerLoggerConfig, createLogger} from './config/log.js';
+import {getServerLoggerConfig, createLogger, isConsoleLoggingEnabled} from './config/log.js';
 
 export function createApp(options = {}): FastifyInstance {
   const serverOptions = {
@@ -24,4 +24,4 @@ export function createApp(options = {}): FastifyInstance {
 
 export const app = createApp();
 
-export const log = createLogger(app.log);
+export const log = createLogger(app.log, isConsoleLoggingEnabled());

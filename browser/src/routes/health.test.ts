@@ -6,7 +6,7 @@ import supertest from 'supertest';
 import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
-import {getRandomPort} from 'src/utils/tests.js';
+import {getRandomPortForTests} from '../config/config.js';
 
 vi.mock('os', () => {
   return {
@@ -47,7 +47,7 @@ describe('API /health', () => {
 
   beforeEach(async () => {
     appInstance = createApp({logger: false});
-    port = getRandomPort();
+    port = getRandomPortForTests();
   });
 
   afterEach(async () => {
@@ -68,8 +68,8 @@ describe('API /health', () => {
       200: {
         success: true,
         data: {
-        startTime: expect.any(String),
-        uptime: expect.any(String),
+          startTime: expect.any(String),
+          uptime: expect.any(String),
           hostname: expect.any(String),
           platform: expect.any(String),
         },

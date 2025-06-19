@@ -2,15 +2,15 @@
 // See LICENSE.txt for license information.
 
 export interface IReply {
-    200: {
-      success: boolean;
+  200: {
+    success: boolean;
+    message: string;
+  };
+  400: {
+    success: boolean;
+    error: {
+      code: string;
       message: string;
     };
-    400: {
-      success: boolean;
-      error: {
-        code: string;
-        message: string;
-      };
-    };
-  }
+  };
+}
