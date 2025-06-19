@@ -94,7 +94,7 @@ export class BrowserTestSessionManager {
     // Try to create the browser instance first
     try {
       const browser = await chromium.launch({
-        headless: false,
+        headless: true,
       });
 
       instance = {...instance, browser};
@@ -203,13 +203,13 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, stoppedInstance);
 
-      log.info(`[browser_manager] Test completed for user "${userId}"`);
+      log.info(`[browser_manager] Successfully test completion for user "${userId}"`);
     } catch (error) {
       // This is a race condition, where as soon as we force stop the test, page instance is already closed
       // and tests still runs for a bit but fails due to page being closed and its going to be catched by this block
       // so we check if instance was purposely stopped by the user here
       if (this.activeBrowserSessions.get(userId)?.state === SessionState.STOPPING) {
-        log.info(`[browser_manager] Test stopped for user "${userId}"`);
+        log.info(`[browser_manager] Stopped test for user "${userId}"`);
       } else {
         const failedInstance: BrowserInstance = {
           ...browserInstance,

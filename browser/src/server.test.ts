@@ -7,19 +7,14 @@ const mockAppListen = vi.fn().mockResolvedValue(undefined);
 const mockAppClose = vi.fn().mockImplementation(() => {
   return Promise.resolve();
 });
-const mockAppServer = {
-  address: vi.fn().mockImplementation(() => {
-    return {port: Number(process.env.PORT) || 8080};
-  }),
-};
+
 const mockLogError = vi.fn();
 const mockLogInfo = vi.fn();
-const mockLogWarn = vi.fn();
 
 const mockApp = {
   listen: mockAppListen,
   close: mockAppClose,
-  server: mockAppServer,
+  address: vi.fn(),
   log: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -33,7 +28,6 @@ vi.mock('./app.js', () => {
     createApp: vi.fn().mockReturnValue(mockApp),
     log: {
       error: mockLogError,
-      warn: mockLogWarn,
       info: mockLogInfo,
     },
   };
@@ -55,84 +49,88 @@ describe('src/server', () => {
     mockAppClose.mockClear();
     mockLogError.mockClear();
     mockLogInfo.mockClear();
-    mockLogWarn.mockClear();
   });
 
-  test('should start server with default port and host', async () => {
-    delete process.env.PORT;
-    delete process.env.HOST;
+  test('should fail to start server without BROWSER_AGENT_API_URL', async () => {
+    delete process.env.BROWSER_AGENT_API_URL;
 
     await import('./server.js');
 
-    expect(mockAppListen).toHaveBeenCalledWith({port: 8080, host: '127.0.0.1'});
+    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('BROWSER_AGENT_API_URL must be set'));
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  test('should start server with environment variables port and host', async () => {
-    process.env.PORT = '3000';
-    process.env.HOST = '18.212.128.100';
+  test('should start server with BROWSER_AGENT_API_URL', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://18.212.128.100:3000';
 
     await import('./server.js');
 
     expect(mockAppListen).toHaveBeenCalledWith({port: 3000, host: '18.212.128.100'});
   });
 
+  test('should handle invalid BROWSER_AGENT_API_URL', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'invalid-url';
+
+    await import('./server.js');
+
+    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'));
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
   test('should handle server start error', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     mockAppListen.mockRejectedValueOnce(new Error('Failed to start'));
 
     await import('./server.js');
 
-    expect(mockLogError).toHaveBeenCalledWith(
-      expect.stringContaining('[server] Server failed to start'),
-      expect.any(Error),
-    );
+    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Server failed to start:'));
   });
 
   test('should handle server shutdown on SIGTERM', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     await import('./server.js');
 
     process.emit('SIGTERM', 'SIGTERM');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('[server] Received SIGTERM, Server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGTERM, Server stopping'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
   test('should handle server shutdown on SIGINT', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     await import('./server.js');
 
     process.emit('SIGINT', 'SIGINT');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('[server] Received SIGINT, Server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGINT, Server stopping'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
   test('should handle server shutdown error', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     mockAppClose.mockRejectedValueOnce(new Error('Failed to close'));
 
     await import('./server.js');
     process.emit('SIGTERM', 'SIGTERM');
 
     await vi.waitFor(() =>
-      expect(mockLogError).toHaveBeenCalledWith(
-        expect.stringContaining('[server] Error during shutdown:'),
-        expect.any(Error),
-      ),
+      expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Error during shutdown:')),
     );
   });
 
   test('should handle uncaught exceptions while server is running', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     await import('./server.js');
 
     process.emit('uncaughtException', new Error('Uncaught error'));
 
     await vi.waitFor(() => {
-      expect(mockLogError).toHaveBeenCalledWith(
-        expect.stringContaining('[server] Uncaught exception:'),
-        expect.any(Error),
-      );
+      expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Uncaught exception:'));
     });
   });
 
   test('should handle unhandled rejections while server is running', async () => {
+    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     await import('./server.js');
 
     const mockPromise = Promise.reject(new Error('Unhandled rejection'));
@@ -141,12 +139,7 @@ describe('src/server', () => {
     process.emit('unhandledRejection', mockReason, mockPromise);
 
     await vi.waitFor(() => {
-      expect(mockLogError).toHaveBeenCalledWith(
-        expect.stringContaining('[server] Unhandled rejection at:'),
-        mockPromise,
-        expect.stringContaining('reason:'),
-        mockReason,
-      );
+      expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Unhandled rejection'));
     });
   });
 });

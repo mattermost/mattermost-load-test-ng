@@ -37,8 +37,8 @@
     "unittest:run": "vitest run",
     "unittest:ui": "vitest --ui",
     "unittest:watch": "vitest",
-    "server:dev": "tsx src/server.ts",
-    "server:watch": "tsx watch src/server.ts",
+    "server:dev": "node scripts/start_server.mjs --dev",
+    "server:watch": "node scripts/start_server.mjs --watch",
     "server:build": "tsc",
     "server:start": "node scripts/start_server.mjs",
     "clean": "rm -rf node_modules test-results"
