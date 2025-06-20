@@ -5,15 +5,15 @@ import type {Page} from '@playwright/test';
 import {log} from '../app.js';
 
 export async function postInChannel({page}: {page: Page}): Promise<void> {
-  log.info('[simulation][postInChannel]-start');
+  log.info('[simulation][run][postInChannel]');
 
   try {
     await page.waitForSelector('#post_textbox');
     await page.type('#post_textbox', `Hello, world! ${new Date().toISOString()}`, {delay: 100});
     await page.keyboard.press('Enter');
 
-    log.info('[simulation][postInChannel]-ok');
+    log.info('[simulation][pass][postInChannel]');
   } catch (error) {
-    throw error;
+    throw {error, testId: 'postInChannel'};
   }
 }

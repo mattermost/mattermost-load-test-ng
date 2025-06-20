@@ -3,8 +3,8 @@
 
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
 
-import * as tests from '../tests/scenario1.js';
-import {log} from '../app.js';
+import {log} from 'src/app.js';
+import {startTest} from 'src/lib/test_manager.js';
 
 const CLEANUP_TIMEOUT = 4 * 1000; // 2 seconds
 
@@ -29,12 +29,14 @@ export type BrowserInstance = {
   state: SessionState;
 };
 
+export type ActiveBrowserSessions = Map<string, BrowserInstance>;
+
 type BrowserInstanceAsResponse = Pick<BrowserInstance, 'userId' | 'createdAt' | 'state'>;
 
 export class BrowserTestSessionManager {
   private static instance: BrowserTestSessionManager;
 
-  private activeBrowserSessions: Map<string, BrowserInstance> = new Map();
+  private activeBrowserSessions: ActiveBrowserSessions = new Map();
   private cleanupBrowserSessionTimeout: NodeJS.Timeout | null = null;
 
   private constructor() {
@@ -198,31 +200,17 @@ export class BrowserTestSessionManager {
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 
-    try {
-      await tests.scenario1(browserInstance, serverURL);
+    const scenarioId = 'scenario1';
+    const updatedBrowserInstance = await startTest(
+      browserInstance,
+      this.activeBrowserSessions,
+      serverURL,
+      userId,
+      scenarioId,
+    );
 
-      const stoppedInstance: BrowserInstance = {
-        ...browserInstance,
-        state: SessionState.COMPLETED,
-      };
-      this.activeBrowserSessions.set(userId, stoppedInstance);
-
-      log.info(`[browser_manager] Successfully test completion for user "${userId}"`);
-    } catch (error) {
-      // This is a race condition, where as soon as we force stop the test, page instance is already closed
-      // and tests still runs for a bit but fails due to page being closed and its going to be catched by this block
-      // so we check if instance was purposely stopped by the user here
-      if (this.activeBrowserSessions.get(userId)?.state === SessionState.STOPPING) {
-        log.info(`[browser_manager] Stopped test for user "${userId}"`);
-      } else {
-        const failedInstance: BrowserInstance = {
-          ...browserInstance,
-          state: SessionState.FAILED,
-        };
-        this.activeBrowserSessions.set(userId, failedInstance);
-
-        log.error(`[browser_manager] Failed test for user "${userId}" - ${error}`);
-      }
+    if (updatedBrowserInstance) {
+      this.activeBrowserSessions.set(userId, updatedBrowserInstance);
     }
   }
 

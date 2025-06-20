@@ -22,7 +22,7 @@ export async function scenario1({page, userId, password}: BrowserInstance, serve
       await scrollInChannel(page, 'sidebarItem_off-topic', 40, 400, 500);
       await scrollInChannel(page, 'sidebarItem_town-square', 40, 400, 500);
     }
-  } catch (error) {
-    throw error;
+  } catch (error: any) {
+    throw {error: error?.error, testId: error?.testId};
   }
 }
