@@ -128,6 +128,14 @@ The maximum amount of concurrently active users the load-test agent will run.
 
 The percentage of users generated that will be system admins.
 
+## BrowserConfiguration
+
+### Headless
+
+*bool*
+
+When true, the browser server will run the simulation tests in headless mode.
+
 ## LogSettings
 
 ### EnableConsole

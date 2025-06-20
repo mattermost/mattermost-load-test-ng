@@ -2,14 +2,15 @@
 // See LICENSE.txt for license information.
 
 import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
+import path from 'path';
+import {fileURLToPath} from 'url';
+
 import {
   isConsoleLoggingEnabled,
   getConsoleLoggingLevel,
   getFileLoggingLocation,
   isFileLoggingEnabled,
 } from './config.js';
-import path from 'path';
-import {fileURLToPath} from 'url';
 
 export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
   if (!isConsoleLoggingEnabled()) {

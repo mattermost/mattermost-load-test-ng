@@ -27,6 +27,10 @@ export function getMattermostServerURL(): string {
   return configJson.ConnectionConfiguration.ServerURL;
 }
 
+export function isBrowserHeadless(): boolean {
+  return configJson.BrowserConfiguration.Headless;
+}
+
 export function isConsoleLoggingEnabled(): boolean {
   return configJson.BrowserLogSettings.EnableConsole;
 }

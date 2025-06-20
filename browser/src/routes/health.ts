@@ -5,7 +5,7 @@ import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import os from 'os';
 import ms from 'ms';
 
-import {IReply} from './types.js';
+import {type IReply} from './types.js';
 
 interface HealthDataResponse {
   startTime: string;

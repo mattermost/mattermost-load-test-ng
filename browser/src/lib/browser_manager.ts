@@ -3,8 +3,9 @@
 
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
 
-import {log} from 'src/app.js';
-import {startTest} from 'src/lib/test_manager.js';
+import {log} from '../app.js';
+import {testManager} from '../lib/test_manager.js';
+import {isBrowserHeadless} from '../utils/config.js';
 
 const CLEANUP_TIMEOUT = 4 * 1000; // 2 seconds
 
@@ -100,7 +101,7 @@ export class BrowserTestSessionManager {
     // Try to create the browser instance first
     try {
       const browser = await chromium.launch({
-        headless: false,
+        headless: isBrowserHeadless(),
       });
 
       instance = {...instance, browser};
@@ -201,7 +202,7 @@ export class BrowserTestSessionManager {
     this.activeBrowserSessions.set(userId, instance);
 
     const scenarioId = 'scenario1';
-    const updatedBrowserInstance = await startTest(
+    const updatedBrowserInstance = await testManager.startTest(
       browserInstance,
       this.activeBrowserSessions,
       serverURL,

@@ -5,7 +5,7 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
-import {getMattermostServerURL} from 'src/config/config.js';
+import {getMattermostServerURL} from '../utils/config.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
@@ -26,6 +26,7 @@ async function addBrowser(
   reply: FastifyReply,
 ): Promise<IReply> {
   const {userId, password} = request.body;
+  console.log('addBrowser', userId, password);
 
   if (!userId) {
     return reply.code(400).send({

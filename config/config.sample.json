@@ -52,6 +52,9 @@
     "AvgSessionsPerUser": 1,
     "PercentOfUsersAreAdmin": 0.0005
   },
+  "BrowserConfiguration": {
+    "Headless": true
+  },
   "LogSettings": {
     "EnableConsole": true,
     "ConsoleLevel": "ERROR",

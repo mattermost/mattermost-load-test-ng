@@ -6,7 +6,7 @@ import supertest from 'supertest';
 import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
-import {getRandomPortForTests} from '../config/config.js';
+import {getRandomPortForTests} from '../utils/config.js';
 
 vi.mock('os', () => {
   return {

@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 
 import type {Page} from '@playwright/test';
+
 import {log} from '../app.js';
 
 export async function postInChannel({page}: {page: Page}): Promise<void> {

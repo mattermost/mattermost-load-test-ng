@@ -3,6 +3,15 @@
 
 import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
+// Mock the app logger
+vi.mock('src/app.js', () => ({
+  log: {
+    info: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock playwright
 vi.mock('playwright', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPage = {close: mockPageClose};
@@ -23,64 +32,39 @@ vi.mock('playwright', () => {
 
   const mockChromiumLaunch = vi.fn().mockResolvedValue(mockBrowser);
 
-  // Store mocks on a global object so tests can access them
-  vi.stubGlobal('playwrightMocks', {
-    mockPageClose,
-    mockContextNewPage,
-    mockContextClose,
-    mockBrowserNewContext,
-    mockBrowserClose,
-    mockChromiumLaunch,
-    mockPage,
-    mockContext,
-    mockBrowser,
-  });
-
   return {
     chromium: {
       launch: mockChromiumLaunch,
     },
+    // Export mocks for test access
+    __mocks: {
+      mockPageClose,
+      mockContextNewPage,
+      mockContextClose,
+      mockBrowserNewContext,
+      mockBrowserClose,
+      mockChromiumLaunch,
+      mockPage,
+      mockContext,
+      mockBrowser,
+    },
   };
 });
 
-// We mock the test scenario to simulate a test running in the browser
-vi.mock('../tests/scenario1.js', () => {
-  const scenario1 = vi.fn().mockImplementation(async () => {
+vi.mock('src/tests/scenario1.js', () => ({
+  scenario1: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
     return undefined;
-  });
+  }),
+}));
 
-  vi.stubGlobal('testScenarioMocks', {
-    scenario1,
-  });
-
-  return {
-    scenario1,
-  };
-});
-
-// Import after mocks are set up
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
+import * as playwright from 'playwright';
+import * as scenario1Module from 'src/simulations/scenario1.js';
 
-// Type for our mocks to be used in the tests
-declare global {
-  var playwrightMocks: {
-    mockPageClose: ReturnType<typeof vi.fn>;
-    mockContextNewPage: ReturnType<typeof vi.fn>;
-    mockContextClose: ReturnType<typeof vi.fn>;
-    mockBrowserNewContext: ReturnType<typeof vi.fn>;
-    mockBrowserClose: ReturnType<typeof vi.fn>;
-    mockChromiumLaunch: ReturnType<typeof vi.fn>;
-    mockPage: any;
-    mockContext: any;
-    mockBrowser: any;
-  };
-
-  var testScenarioMocks: {
-    scenario1: ReturnType<typeof vi.fn>;
-  };
-}
+const mocks = (playwright as any).__mocks;
+const scenario1Mock = vi.mocked(scenario1Module.scenario1);
 
 describe('BrowserManager', () => {
   beforeEach(() => {
@@ -88,18 +72,18 @@ describe('BrowserManager', () => {
     vi.useFakeTimers();
 
     // Reset mocks
-    globalThis.playwrightMocks.mockChromiumLaunch.mockClear();
-    globalThis.playwrightMocks.mockBrowserNewContext.mockClear();
-    globalThis.playwrightMocks.mockContextNewPage.mockClear();
-    globalThis.playwrightMocks.mockPageClose.mockClear();
-    globalThis.playwrightMocks.mockContextClose.mockClear();
-    globalThis.playwrightMocks.mockBrowserClose.mockClear();
-    globalThis.testScenarioMocks.scenario1.mockClear();
+    mocks.mockChromiumLaunch.mockClear();
+    mocks.mockBrowserNewContext.mockClear();
+    mocks.mockContextNewPage.mockClear();
+    mocks.mockPageClose.mockClear();
+    mocks.mockContextClose.mockClear();
+    mocks.mockBrowserClose.mockClear();
+    scenario1Mock.mockClear();
 
     // Reset default return values
-    globalThis.playwrightMocks.mockChromiumLaunch.mockResolvedValue(globalThis.playwrightMocks.mockBrowser);
-    globalThis.playwrightMocks.mockBrowserNewContext.mockResolvedValue(globalThis.playwrightMocks.mockContext);
-    globalThis.playwrightMocks.mockContextNewPage.mockResolvedValue(globalThis.playwrightMocks.mockPage);
+    mocks.mockChromiumLaunch.mockResolvedValue(mocks.mockBrowser);
+    mocks.mockBrowserNewContext.mockResolvedValue(mocks.mockContext);
+    mocks.mockContextNewPage.mockResolvedValue(mocks.mockPage);
   });
 
   afterEach(async () => {
@@ -176,7 +160,7 @@ describe('BrowserManager', () => {
 
   test('should mark user"s session as creation_failed when browser creation fails', async () => {
     // Mock browser launch to fail
-    globalThis.playwrightMocks.mockChromiumLaunch.mockRejectedValueOnce(new Error('Launch failed'));
+    mocks.mockChromiumLaunch.mockRejectedValueOnce(new Error('Launch failed'));
 
     const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
       'failuser',
@@ -195,7 +179,7 @@ describe('BrowserManager', () => {
 
   test('should mark user"s session as creation_failed when context creation fails', async () => {
     // Set up browser success but context failure
-    globalThis.playwrightMocks.mockBrowserNewContext.mockRejectedValueOnce(new Error('Context creation failed'));
+    mocks.mockBrowserNewContext.mockRejectedValueOnce(new Error('Context creation failed'));
 
     const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
       'contextfailuser',
@@ -214,7 +198,7 @@ describe('BrowserManager', () => {
 
   test('should mark user"s session as creation_failed when page creation fails', async () => {
     // Set up browser & context success but page failure
-    globalThis.playwrightMocks.mockContextNewPage.mockRejectedValueOnce(new Error('Page creation failed'));
+    mocks.mockContextNewPage.mockRejectedValueOnce(new Error('Page creation failed'));
 
     const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
       'pagefailuser',
@@ -233,7 +217,7 @@ describe('BrowserManager', () => {
 
   test('should mark user"s session as failed when tests fail', async () => {
     // Set up test scenario to fail
-    globalThis.testScenarioMocks.scenario1.mockRejectedValueOnce(new Error('Test scenario failed'));
+    scenario1Mock.mockRejectedValueOnce(new Error('Test scenario failed'));
 
     await browserTestSessionManager.createBrowserSession('testfailuser', 'password', 'http://localhost:8065');
 
@@ -262,7 +246,7 @@ describe('BrowserManager', () => {
 
     await browserTestSessionManager.shutdown();
 
-    expect(globalThis.playwrightMocks.mockBrowserClose).toHaveBeenCalled();
+    expect(mocks.mockBrowserClose).toHaveBeenCalled();
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     expect(sessions).toEqual([]);
@@ -274,7 +258,7 @@ describe('BrowserManager', () => {
     await vi.runAllTimersAsync();
 
     // Mock browser close to fail
-    globalThis.playwrightMocks.mockBrowserClose.mockRejectedValueOnce(new Error('Cleanup failed'));
+    mocks.mockBrowserClose.mockRejectedValueOnce(new Error('Cleanup failed'));
 
     await browserTestSessionManager.shutdown();
 
