@@ -22,6 +22,8 @@ type Config struct {
 	NumChannelsPrivate int64 `default:"20" validate:"range:[0,]"`
 	// The target number of public channels to be created.
 	NumChannelsPublic int64 `default:"20" validate:"range:[0,]"`
+	// The target number of custom profile fields to be created.
+	NumCPAFields int64 `default:"2" validate:"range:[0,20]"`
 	// The target number of posts to be created.
 	NumPosts int64 `default:"1000" validate:"range:[0,]"`
 	// The target number of reactions to be created.
