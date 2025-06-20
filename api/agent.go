@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -473,6 +474,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 			admin := userentity.New(ueSetup, ueConfig)
 			return clustercontroller.New(id, admin, status)
+		case loadtest.UserControllerBrowser:
+			return browsercontroller.New(id, ue, status)
 		default:
 			panic("controller type must be valid")
 		}
