@@ -52,6 +52,9 @@ type config struct {
 		AvgSessionsPerUser     int     `default:"1" validate:"range:[1,]"`
 		PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 	}
+	BrowserConfiguration struct {
+		Headless bool `default:"true"`
+	}
 	LogSettings        logger.Settings
 	BrowserLogSettings struct {
 		EnableConsole bool   `default:"true"`
