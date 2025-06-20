@@ -33,6 +33,7 @@ const (
 	UserControllerNoop                          = "noop"
 	UserControllerGenerative                    = "generative"
 	UserControllerCluster                       = "cluster"
+	UserControllerBrowser                       = "browser"
 )
 
 // RatesDistribution maps a rate to a percentage of controllers that should run
@@ -51,7 +52,7 @@ type UserControllerConfiguration struct {
 	//   UserControllerSimulative - A more realistic controller.
 	//   UserControllerNoop
 	//   UserControllerGenerative - A controller used to generate data.
-	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
+	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative,browser}"`
 	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
@@ -133,6 +134,8 @@ type UsersConfiguration struct {
 	// The maximum number of users that can be simulated by a single load-test
 	// agent.
 	MaxActiveUsers int `default:"2000" validate:"range:(0,]"`
+	// The maximum number of browser users that can be simulated by a single load-test agent
+	MaxActiveBrowserUsers int `default:"10" validate:"range:(0,]"`
 	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 	// The percentage of users generated that will be system admins

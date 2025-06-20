@@ -12,7 +12,8 @@
             "Id": "br0",
             "ApiURL": "http://localhost:5000"
         }
-    ]
+    ],
+    "MaxActiveBrowserUsers": 1000
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",

@@ -82,10 +82,12 @@ func (s State) String() string {
 
 // Status contains various information about Coordinator.
 type Status struct {
-	State          State     // State of Coordinator.
-	StartTime      time.Time // Time when Coordinator has started.
-	StopTime       time.Time // Time when Coordinator has stopped.
-	ActiveUsers    int       // Total number of currently active users across the load-test agents cluster.
-	NumErrors      int64     // Total number of errors received from the load-test agents cluster.
-	SupportedUsers int       // Number of supported users.
+	State              State     // State of Coordinator.
+	StartTime          time.Time // Time when Coordinator has started.
+	StopTime           time.Time // Time when Coordinator has stopped.
+	ActiveUsers        int       // Total number of currently active users across the load-test agents cluster.
+	NumErrors          int64     // Total number of errors received from the load-test agents cluster.
+	SupportedUsers     int       // Number of supported users.
+	ActiveBrowserUsers int       // Total browser users
+	NumBrowserErrors   int64     // Total browser errors
 }

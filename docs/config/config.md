@@ -122,6 +122,12 @@ The path to the file which contains a list of user email and passwords that will
 
 The maximum amount of concurrently active users the load-test agent will run.
 
+### MaxActiveBrowserUsers
+
+*int*
+
+The maximum amount of concurrently active browser users per instance the load-test agent will run.
+
 ### PercentOfUsersAreAdmin
 
 *float*
