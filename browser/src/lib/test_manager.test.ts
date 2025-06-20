@@ -6,7 +6,7 @@ import {describe, expect, test, beforeEach, vi} from 'vitest';
 import {SessionState} from './browser_manager.js';
 import {TestManager, testManager} from './test_manager.js';
 
-vi.mock('src/app.js', () => {
+vi.mock('../app.js', () => {
   const mockLog = {
     info: vi.fn(),
     error: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('src/app.js', () => {
   };
 });
 
-vi.mock('src/tests/scenario1.js', () => ({
+vi.mock('../simulations/scenario1.js', () => ({
   scenario1: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -26,7 +26,7 @@ vi.mock('src/tests/scenario1.js', () => ({
   }),
 }));
 
-import * as appModule from 'src/app.js';
+import * as appModule from '../app.js';
 
 const mockLog = (appModule as any).__mockLog;
 
@@ -88,7 +88,7 @@ describe('TestManager', () => {
 
     test('should handle test failure', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('src/simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
+      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
@@ -115,7 +115,9 @@ describe('TestManager', () => {
       });
 
       // Mock scenario to throw error to simulate interruption
-      vi.mocked(await import('src/simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test interrupted'));
+      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(
+        new Error('Test interrupted'),
+      );
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
@@ -139,7 +141,7 @@ describe('TestManager', () => {
         error: new Error('Test step failed'),
         testId: 'login',
       };
-      vi.mocked(await import('src/simulations/scenario1.js')).scenario1.mockRejectedValueOnce(testError);
+      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(testError);
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
@@ -161,7 +163,7 @@ describe('TestManager', () => {
 
     test('should handle test error without testId', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('src/simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
+      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,

@@ -3,14 +3,6 @@
 
 import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
-// Mock the app logger
-vi.mock('src/app.js', () => ({
-  log: {
-    info: vi.fn(),
-    error: vi.fn(),
-  },
-}));
-
 // Mock playwright
 vi.mock('playwright', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
@@ -51,7 +43,7 @@ vi.mock('playwright', () => {
   };
 });
 
-vi.mock('src/tests/scenario1.js', () => ({
+vi.mock('../simulations/scenario1.js', () => ({
   scenario1: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -61,7 +53,7 @@ vi.mock('src/tests/scenario1.js', () => ({
 
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
 import * as playwright from 'playwright';
-import * as scenario1Module from 'src/simulations/scenario1.js';
+import * as scenario1Module from '../simulations/scenario1.js';
 
 const mocks = (playwright as any).__mocks;
 const scenario1Mock = vi.mocked(scenario1Module.scenario1);
