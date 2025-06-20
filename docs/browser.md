@@ -77,22 +77,102 @@ npm run start:watch
 
 ## Test Scenarios
 
-### Current Implementations
+The browser agent includes both programmatic test scenarios for load testing and standalone test specifications for manual testing and development.
 
-1. **Login Simulation**
-   - Handles user authentication
-   - Manages preference checkboxes
-   - Supports custom credentials
+### Test Structure
 
-2. **Channel Interaction**
-   - Posts messages in channels
-   - Simulates channel switching
-   - Implements scrolling through message history
+Each test scenario consists of two main files:
 
-3. **Continuous Load Testing**
-   - Supports long-running test scenarios
-   - Implements realistic user behavior patterns
-   - Configurable delays and interaction patterns
+1. **Scenario Implementation** (`scenario1.ts`) - Used by the browser server API for automated load testing
+2. **Test Specification** (`scenario1.spec.ts`) - Used for manual testing with Playwright
+
+#### Key Differences:
+- **Implementation file**: Runs in infinite loop for continuous load testing, accepts dynamic user credentials
+- **Spec file**: Runs once with hardcoded credentials for manual testing and validation
+
+### Running Manual Tests
+
+#### Prerequisites
+```bash
+cd browser
+npm install
+```
+
+#### Running Individual Test Scenarios
+
+1. **Run all E2E tests**:
+   ```bash
+   npm run e2etest:run
+   ```
+
+2. **Run tests with UI (interactive mode)**:
+   ```bash
+   npm run e2etest:ui
+   ```
+
+3. **Debug tests step by step**:
+   ```bash
+   npm run e2etest:debug
+   ```
+
+4. **Run specific test file**:
+   ```bash
+   npx playwright test src/simulations/scenario1.spec.ts
+   ```
+
+5. **Run tests in headed mode (visible browser)**:
+   ```bash
+   npx playwright test --headed
+   ```
+
+#### Test Configuration
+
+Tests are configured in `playwright.config.ts`:
+```typescript
+export default defineConfig({
+  testDir: './src/simulations',
+  outputDir: './e2etest-results',
+  fullyParallel: true,
+  use: {
+    trace: 'off',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: {...devices['Desktop Chrome']},
+    },
+  ],
+});
+```
+
+#### Creating New Test Scenarios
+
+To create a new test scenario:
+
+1. **Create the implementation file** (`src/simulations/scenarioN.ts`):
+   ```typescript
+   export async function scenarioN({page, userId, password}: BrowserInstance, serverURL: string) {
+     // Implementation for load testing (infinite loop)
+   }
+   ```
+
+2. **Create the test specification file** (`src/simulations/scenarioN.spec.ts`):
+   ```typescript
+   import {test} from '@playwright/test';
+   
+   test('Scenario N', async ({page}) => {
+     // Single-run test for manual validation
+   });
+   ```
+
+3. **Update the browser manager** to include the new scenario in the test execution.
+
+### Test Results and Reports
+
+- Test results are stored in `e2etest-results/`
+- Playwright generates detailed HTML reports
+- Screenshots and videos are captured on failures
+- Trace files can be generated for debugging
 
 ## Development
 
