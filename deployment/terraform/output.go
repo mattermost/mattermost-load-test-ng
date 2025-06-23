@@ -73,6 +73,7 @@ type Output struct {
 	Instances               []Instance          `json:"instances"`
 	DBCluster               DBCluster           `json:"dbCluster"`
 	Agents                  []Instance          `json:"agents"`
+	BrowserAgents           []Instance          `json:"browserAgents"`
 	MetricsServer           Instance            `json:"metricsServer"`
 	ElasticSearchServer     ElasticSearchDomain `json:"elasticServer"`
 	ElasticSearchRoleARN    string              `json:"elasticRoleARN"`
