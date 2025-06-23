@@ -123,6 +123,28 @@ func (c *GenController) Run() {
 
 	c.status <- c.newInfoStatus("user init done")
 
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
+	if resp.Err != nil {
+		c.sendFailStatus("Failed to retreive CustomProfileAttributesEnabled")
+		return
+	}
+
+	// Create CPA fields
+	if cpaEnabled {
+		actions := map[string]userAction{
+			"createCPAField": {
+				run:        c.createCPAField,
+				frequency:  int(c.config.NumCPAFields),
+				idleTimeMs: 1000,
+			},
+		}
+		c.runActions(actions, func() bool {
+			return st.get(StateTargetCPAFields) >= c.config.NumCPAFields
+		})
+
+		c.runAction(c.createCPAValues)
+	}
+
 	// Wait for all users to be logged in.
 	// This also means now users can join all teams.
 	for st.get(StateTargetUsers) != int64(c.numUsers) {
@@ -292,6 +314,10 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 
 		if st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM {
 			delete(actions, "createGroupChannel")
+		}
+
+		if st.get(StateTargetCPAFields) >= c.config.NumCPAFields {
+			delete(actions, "createCPAField")
 		}
 
 		if st.get(StateTargetPosts) >= c.config.NumPosts {
