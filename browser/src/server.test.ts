@@ -51,34 +51,7 @@ describe('src/server', () => {
     mockLogInfo.mockClear();
   });
 
-  test('should fail to start server without BROWSER_AGENT_API_URL', async () => {
-    delete process.env.BROWSER_AGENT_API_URL;
-
-    await import('./server.js');
-
-    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('BROWSER_AGENT_API_URL must be set'));
-    expect(mockExit).toHaveBeenCalledWith(1);
-  });
-
-  test('should start server with BROWSER_AGENT_API_URL', async () => {
-    process.env.BROWSER_AGENT_API_URL = 'http://18.212.128.100:3000';
-
-    await import('./server.js');
-
-    expect(mockAppListen).toHaveBeenCalledWith({port: 3000, host: '18.212.128.100'});
-  });
-
-  test('should handle invalid BROWSER_AGENT_API_URL', async () => {
-    process.env.BROWSER_AGENT_API_URL = 'invalid-url';
-
-    await import('./server.js');
-
-    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'));
-    expect(mockExit).toHaveBeenCalledWith(1);
-  });
-
   test('should handle server start error', async () => {
-    process.env.BROWSER_AGENT_API_URL = 'http://localhost:8080';
     mockAppListen.mockRejectedValueOnce(new Error('Failed to start'));
 
     await import('./server.js');

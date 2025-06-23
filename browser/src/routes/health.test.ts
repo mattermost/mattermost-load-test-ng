@@ -22,7 +22,7 @@ vi.mock('ms', () => {
   };
 });
 
-describe('src/routes/health', () => {
+describe('API /health', () => {
   const mockFastify = {
     get: vi.fn(),
   };
