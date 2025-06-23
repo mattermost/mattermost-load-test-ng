@@ -57,6 +57,8 @@
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
+  "ServerURL": "",
+  "ServerScheme": "http",
   "EnableNetPeekMetrics": false,
   "TerraformDBSettings": {
     "InstanceCount": 1,
