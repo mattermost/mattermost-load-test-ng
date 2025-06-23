@@ -3,19 +3,15 @@
 
 import {app, log} from './app.js';
 
+const BROWSER_AGENT_API_URL = 'http://localhost:5000';
+
 async function startServer() {
   try {
-    const browserAgentApiURL = process.env.BROWSER_AGENT_API_URL;
-
-    if (!browserAgentApiURL) {
-      throw new Error('BROWSER_AGENT_API_URL must be set');
-    }
-
-    const apiURL = new URL(browserAgentApiURL);
-    const port = Number(apiURL.port);
+    const apiURL = new URL(BROWSER_AGENT_API_URL);
     const host = apiURL.hostname;
+    const port = Number(apiURL.port);
 
-    await app.listen({port, host});
+    await app.listen({host, port});
   } catch (err) {
     log.error(`[server] Server failed to start: ${err}`);
     process.exit(1);

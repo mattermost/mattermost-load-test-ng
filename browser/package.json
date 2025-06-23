@@ -8,7 +8,6 @@
   },
   "engine-strict": true,
   "devDependencies": {
-    "@playwright/test": "1.53.0",
     "@types/ms": "2.1.0",
     "@types/node": "24.0.3",
     "@types/supertest": "6.0.3",
@@ -22,12 +21,12 @@
     "vitest": "3.2.3"
   },
   "dependencies": {
+    "@playwright/test": "^1.53.1",
     "fastify": "5.4.0",
     "ms": "2.1.3",
     "playwright": "1.53.0"
   },
   "scripts": {
-    "postinstall": "node scripts/post_install.mjs",
     "lint:check": "prettier --check 'src/**/*.ts' 'scripts/**/*.mjs'",
     "lint:fix": "prettier --write 'src/**/*.ts' 'scripts/**/*.mjs'",
     "types:check": "tsc --noEmit",
@@ -36,11 +35,6 @@
     "e2etest:debug": "playwright test --debug",
     "unittest:run": "vitest run",
     "unittest:ui": "vitest --ui",
-    "unittest:watch": "vitest",
-    "server:dev": "node scripts/start_server.mjs --dev",
-    "server:watch": "node scripts/start_server.mjs --watch",
-    "server:build": "tsc",
-    "server:start": "node scripts/start_server.mjs",
-    "clean": "rm -rf node_modules test-results"
+    "unittest:watch": "vitest"
   }
 }

@@ -51,24 +51,38 @@ The project uses TypeScript and is configured with:
 
 ```bash
 cd browser
-npm install
+make install
+```
+
+This will:
+- Install Node.js dependencies
+- Install Playwright Chromium browser with dependencies
+
+For dependencies only (without Playwright):
+```bash
+make install-dependencies
 ```
 
 ### Running the Server
 
-Development mode:
-```bash
-npm run start:dev
-```
-
 Production mode:
 ```bash
-npm run start
+make start
+```
+
+Development mode:
+```bash
+make start-dev
 ```
 
 Watch mode (for development):
 ```bash
-npm run start:watch
+make start-watch
+```
+
+Build only:
+```bash
+make build
 ```
 
 ### Environment Variables
@@ -95,7 +109,7 @@ Each test scenario consists of two main files:
 #### Prerequisites
 ```bash
 cd browser
-npm install
+make install
 ```
 
 #### Running Individual Test Scenarios
@@ -123,6 +137,13 @@ npm install
 5. **Run tests in headed mode (visible browser)**:
    ```bash
    npx playwright test --headed
+   ```
+
+6. **Run unit tests**:
+   ```bash
+   npm run unittest:run      # Run once
+   npm run unittest:watch    # Run in watch mode
+   npm run unittest:ui       # Run with UI
    ```
 
 #### Test Configuration
@@ -176,6 +197,22 @@ To create a new test scenario:
 
 ## Development
 
+### Available Make Commands
+
+The project uses a Makefile for build and development operations:
+
+```bash
+make help                 # Show all available commands
+make install             # Install dependencies and Playwright browser
+make install-dependencies # Install only Node.js dependencies
+make install-playwright  # Install Playwright Chromium browser
+make build              # Build the TypeScript server
+make start              # Start server in production mode
+make start-dev          # Start server in development mode
+make start-watch        # Start server in watch mode (auto-restart)
+make clean              # Clean build artifacts and dependencies
+```
+
 ### Project Structure
 
 ```
@@ -193,9 +230,9 @@ browser/
 
 ### Testing
 
-- Unit tests: `npm run test`
-- E2E tests: `npm run test:e2e`
-- Test results are stored in `e2etest-results/`
+- Unit tests: `npm run unittest:run` or `npm run unittest:watch`
+- E2E tests: `npm run e2etest:run` or `npm run e2etest:ui`
+- Test results are stored in `test-results/` and `e2etest-results/`
 
 ### Best Practices
 
