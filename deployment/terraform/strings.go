@@ -287,7 +287,7 @@ net.core.wmem_max = 16777216
 
 const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
-const baseBrowserAPIServerCmd = `node /home/%s/mattermost-load-test-ng/browser/server.js`
+const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && node /home/%s/mattermost-load-test-ng/browser/server.js"`
 
 const apiServiceFile = `
 [Unit]

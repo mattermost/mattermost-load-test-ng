@@ -77,6 +77,9 @@ endif
 	# Copy browser build directory if it exists
 	if [ -d "browser/build" ]; then \
 		cp -r browser/build $(PLATFORM_DIST_PATH)/browser; \
+		cp -r browser/node_modules $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/.env $(PLATFORM_DIST_PATH)/; \
 	fi
 
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
