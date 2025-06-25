@@ -227,6 +227,13 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
+	if t.output.HasOpenLDAP() {
+		// Setting up OpenLDAP.
+		if err := t.setupOpenLDAP(extAgent); err != nil {
+			return fmt.Errorf("error setting up OpenLDAP server: %w", err)
+		}
+	}
+
 	if t.output.HasAppServers() {
 		var siteURL string
 		switch {
@@ -1161,6 +1168,32 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		}
 	}
 
+	if t.output.HasOpenLDAP() {
+		cfg.LdapSettings.Enable = model.NewPointer(true)
+		cfg.LdapSettings.EnableSync = model.NewPointer(false) // Keeping it false for now,
+		// otherwise it keeps running syncs unnecessarily when we don't want it to.
+		cfg.LdapSettings.LdapServer = model.NewPointer(t.output.OpenLDAPServer.PrivateIP)
+		cfg.LdapSettings.LdapPort = model.NewPointer(389)
+		cfg.LdapSettings.BaseDN = model.NewPointer(t.config.OpenLDAPSettings.BaseDN)
+		cfg.LdapSettings.BindUsername = model.NewPointer(t.config.OpenLDAPSettings.BindUsername)
+		cfg.LdapSettings.BindPassword = model.NewPointer(t.config.OpenLDAPSettings.BindPassword)
+		cfg.LdapSettings.UserFilter = model.NewPointer(t.config.OpenLDAPSettings.UserFilter)
+		cfg.LdapSettings.GroupFilter = model.NewPointer(t.config.OpenLDAPSettings.GroupFilter)
+		cfg.LdapSettings.GroupDisplayNameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.GroupIdAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.FirstNameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.LastNameAttribute = model.NewPointer("sn")
+		cfg.LdapSettings.EmailAttribute = model.NewPointer("mail")
+		cfg.LdapSettings.UsernameAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.NicknameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.IdAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.PositionAttribute = model.NewPointer("")
+		cfg.LdapSettings.LoginIdAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.QueryTimeout = model.NewPointer(60)
+		cfg.LdapSettings.MaxPageSize = model.NewPointer(500)
+		cfg.LdapSettings.ReAddRemovedMembers = model.NewPointer(true)
+	}
+
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in marshalling config: %w", err)
@@ -1205,6 +1238,7 @@ func (t *Terraform) init() error {
 	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
+	assets.RestoreAssets(t.config.TerraformStateDir, "ldap.tf")
 	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	assets.RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")

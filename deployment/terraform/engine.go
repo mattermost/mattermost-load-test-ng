@@ -39,7 +39,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
-	return _runCommand(cmd, dst)
+	return RunCommand(cmd, dst)
 }
 
 func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Writer) error {
@@ -61,18 +61,21 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Wri
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
-	return _runCommand(cmd, dst)
+	return RunCommand(cmd, dst)
 }
 
-type cmdLogger struct {
-}
+// CmdLogger implements io.Writer to log command output through mlog
+type CmdLogger struct{}
 
-func (*cmdLogger) Write(in []byte) (int, error) {
+// Write logs the input to mlog and returns the length of the input
+func (*CmdLogger) Write(in []byte) (int, error) {
 	mlog.Info(strings.TrimSpace(string(in)))
 	return len(in), nil
 }
 
-func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
+// RunCommand executes a command with proper logging
+// If dst is set, it captures output to dst. Otherwise, it logs output through mlog.
+func RunCommand(cmd *exec.Cmd, dst io.Writer) error {
 	// If dst is set, that means we want to capture the output.
 	// We write a simple case to handle that using CombinedOutput.
 	if dst != nil {
@@ -84,7 +87,7 @@ func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
 		return err
 	}
 
-	cmd.Stdout = &cmdLogger{}
+	cmd.Stdout = &CmdLogger{}
 	cmd.Stderr = cmd.Stdout
 
 	return cmd.Run()

@@ -18,6 +18,10 @@ output "keycloakServer" {
   value = aws_instance.keycloak
 }
 
+output "openldapServer" {
+  value = aws_instance.openldap
+}
+
 output "proxy" {
   value = aws_instance.proxy_server
 }
