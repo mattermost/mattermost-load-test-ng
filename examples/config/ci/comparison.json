@@ -9,9 +9,11 @@
   },
   "LoadTests": [
     {
-      "Type": "unbounded",
+      "Type": "bounded",
       "DBEngine": "postgresql",
-      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz"
+      "NumUsers": 1000,
+      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz",
+      "Duration": "65m"
     }
   ],
   "Output": {
