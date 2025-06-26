@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -362,13 +363,21 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 		opts = append(opts, awsconfig.WithSharedConfigProfile(t.config.AWSProfile))
 	}
 
-	if t.config.AWSRoleARN != "" {
-		opts = append(opts, awsconfig.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
-			options.RoleARN = t.config.AWSRoleARN
-		}))
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(), opts...)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("unable to load default config: %w", err)
 	}
 
-	return awsconfig.LoadDefaultConfig(context.Background(), opts...)
+	if t.config.AWSRoleARN != "" {
+		// See https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/stscreds#hdr-Assume_Role
+		// Create the credentials from AssumeRoleProvider to assume the role
+		// identified by AWSRoleARN, and use them in the loaded config
+		stsSvc := sts.NewFromConfig(cfg)
+		creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
+		cfg.Credentials = aws.NewCredentialsCache(creds)
+	}
+
+	return cfg, nil
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the
