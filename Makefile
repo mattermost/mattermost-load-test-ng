@@ -40,8 +40,7 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 
-build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
-
+build: build-linux build-osx ## Build the binary for all platforms.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
@@ -95,7 +94,7 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 
 test: ## Run all tests.
-	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...
+	$(GO) test -v -mod=readonly -failfast -race -tags=integration -json ./... | gotestfmt -hide=all
 
 MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
 REPLACE=$(NEXT_VER)\/mattermost-load-test-ng-$(NEXT_VER)-linux-amd64.tar.gz
