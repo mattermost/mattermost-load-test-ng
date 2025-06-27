@@ -1,4 +1,3 @@
-//go:generate go-bindata -nometadata -mode 0644 -pkg control -o ./bindata.go -prefix "../../testdata/" ../../testdata/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
@@ -18,6 +17,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	"github.com/mattermost/mattermost-load-test-ng/testdata"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
@@ -29,6 +29,21 @@ type PostsSearchOpts struct {
 	After    time.Time
 	Excluded []string
 	IsPhrase bool
+}
+
+// Asset returns the content of the embedded file
+func Asset(name string) ([]byte, error) {
+	return testdata.TestDataFS.ReadFile(name)
+}
+
+// MustAsset returns the content of the embedded file and panics on error
+func MustAsset(name string) []byte {
+	return testdata.MustAsset(name)
+}
+
+// MustAssetString returns the content of the embedded file as string and panics on error
+func MustAssetString(name string) string {
+	return testdata.MustAssetString(name)
 }
 
 func init() {
