@@ -94,7 +94,7 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 
 test: ## Run all tests.
-	$(GO) test -v -mod=readonly -failfast -race -tags=integration -json ./... | gotestfmt -hide=all
+	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...
 
 MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
 REPLACE=$(NEXT_VER)\/mattermost-load-test-ng-$(NEXT_VER)-linux-amd64.tar.gz
