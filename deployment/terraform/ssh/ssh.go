@@ -126,9 +126,9 @@ func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temp file '%s': %w", tempDst, err)
 		}
+		defer dstFile.Close()
 
 		_, err = io.Copy(dstFile, src)
-		dstFile.Close()
 		if err != nil {
 			sftpClient.Remove(tempDst)
 			return nil, fmt.Errorf("failed to upload file: %w", err)
