@@ -46,18 +46,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		mlog.Info("keycloak database not found, creating it and associated role")
 
 		// Upload and import keycloak initial SQL file``
-		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
+		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/tmp/keycloak-database.sql", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak base database sql file: %w", err)
 		}
 
 		// Allow postgres user to read the file
-		_, err = sshc.RunCommand("sudo chown postgres:postgres /var/lib/postgresql/keycloak-database.sql")
+		_, err = sshc.RunCommand("sudo chown postgres:postgres /tmp/keycloak-database.sql")
 		if err != nil {
 			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
 		}
 
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /var/lib/postgresql/keycloak-database.sql`)
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /tmp/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
