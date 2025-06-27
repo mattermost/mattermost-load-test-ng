@@ -13,7 +13,7 @@
       "DBEngine": "postgresql",
       "NumUsers": 1000,
       "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz",
-      "Duration": "65m"
+      "Duration": "10s"
     }
   ],
   "Output": {
