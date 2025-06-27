@@ -12,7 +12,7 @@
       "Type": "bounded",
       "DBEngine": "postgresql",
       "NumUsers": 1000,
-      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz",
+      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/111K_710_psql.sql.gz",
       "Duration": "10s"
     }
   ],
