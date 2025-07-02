@@ -5,9 +5,10 @@ package memstore
 
 import (
 	"errors"
+	"math/rand"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
-	"math/rand"
 )
 
 var (
@@ -397,6 +398,15 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 	copy(tmp, category.Channels)
 	category.Channels = tmp
 	return category, nil
+}
+
+func (s *MemStore) RandomProperty() *model.PropertyField {
+	fields := s.GetCPAFields()
+	if len(fields) > 0 {
+		index := rand.Intn(len(fields))
+		return fields[index]
+	}
+	return nil
 }
 
 func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
