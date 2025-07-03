@@ -6,7 +6,7 @@ import supertest from 'supertest';
 import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
-import {getRandomPort} from 'src/utils/tests.js';
+import {getRandomPortForTests} from '../utils/config.js';
 
 vi.mock('os', () => {
   return {
@@ -22,7 +22,7 @@ vi.mock('ms', () => {
   };
 });
 
-describe('src/routes/health', () => {
+describe('API /health', () => {
   const mockFastify = {
     get: vi.fn(),
   };
@@ -47,7 +47,7 @@ describe('API /health', () => {
 
   beforeEach(async () => {
     appInstance = createApp({logger: false});
-    port = getRandomPort();
+    port = getRandomPortForTests();
   });
 
   afterEach(async () => {
@@ -65,12 +65,14 @@ describe('API /health', () => {
       .expect('Content-Type', /json/);
 
     expect(response.body).toEqual({
-      success: true,
-      data: {
-        startTime: expect.any(String),
-        uptime: expect.any(String),
-        hostname: expect.any(String),
-        platform: expect.any(String),
+      200: {
+        success: true,
+        data: {
+          startTime: expect.any(String),
+          uptime: expect.any(String),
+          hostname: expect.any(String),
+          platform: expect.any(String),
+        },
       },
     });
   });

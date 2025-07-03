@@ -68,10 +68,10 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 	agents := make([]*client.Agent, len(config.Agents))
 	errMap := make(map[*client.Agent]*errorTrack)
-	for i := 0; i < len(agents); i++ {
+	for i := range len(agents) {
 		agent, err := client.New(config.Agents[i].Id, config.Agents[i].ApiURL, nil)
 		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
+			return nil, fmt.Errorf("cluster: failed to create api client for agent: %w", err)
 		}
 		agents[i] = agent
 		errMap[agent] = &errorTrack{}
@@ -87,21 +87,21 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 
 	browserAgents := make([]*client.Agent, len(config.BrowserAgents))
-	// browserAgentErrMap := make(map[*client.Agent]*errorTrack)
-	for i := 0; i < len(agents); i++ {
-		agent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
-		}
-		agents[i] = agent
-		errMap[agent] = &errorTrack{}
 
-		// We check if the agent has already been created.
-		if _, err := agent.Status(); err == nil {
+	for i := range len(browserAgents) {
+		// we dont need browseragents url
+		browserAgent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("cluster: failed to create api client for browser agent: %w", err)
+		}
+		browserAgents[i] = browserAgent
+		errMap[browserAgent] = &errorTrack{}
+
+		if _, err := browserAgent.Status(); err == nil {
 			continue
 		}
 
-		if err := createAgent(agent, ltConfig); err != nil {
+		if err := createAgent(browserAgent, ltConfig); err != nil {
 			return nil, err
 		}
 	}
@@ -123,6 +123,13 @@ func (c *LoadAgentCluster) Run() error {
 			return fmt.Errorf("cluster: failed to start agent: %w", err)
 		}
 	}
+
+	for _, browserAgent := range c.browserAgents {
+		if _, err := browserAgent.Run(); err != nil {
+			return fmt.Errorf("cluster: failed to start browser agent: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -133,6 +140,13 @@ func (c *LoadAgentCluster) Stop() error {
 			return fmt.Errorf("cluster: failed to stop agent: %w", err)
 		}
 	}
+
+	for _, browserAgent := range c.browserAgents {
+		if _, err := browserAgent.Stop(); err != nil {
+			return fmt.Errorf("cluster: failed to stop browser agent: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -140,7 +154,8 @@ func (c *LoadAgentCluster) Stop() error {
 // It makes sure agent.Destroy() is called once for every agent in the cluster.
 func (c *LoadAgentCluster) Shutdown() {
 	var wg sync.WaitGroup
-	wg.Add(len(c.agents))
+	wg.Add(len(c.agents) + len(c.browserAgents))
+
 	for _, ag := range c.agents {
 		go func(ag *client.Agent) {
 			defer wg.Done()
@@ -149,6 +164,13 @@ func (c *LoadAgentCluster) Shutdown() {
 			}
 		}(ag)
 	}
+
+	for _, browserAgent := range c.browserAgents {
+		if _, err := browserAgent.Destroy(); err != nil {
+			c.log.Error("cluster: failed to stop browser agent", mlog.Err(err))
+		}
+	}
+
 	wg.Wait()
 }
 
@@ -247,6 +269,34 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 		// Total errors = current errors + past accumulated errors from restarts.
 		status.NumErrors += currentError + totalErrors
 	}
+
+	for _, browserAgent := range c.browserAgents {
+		st, err := browserAgent.Status()
+		// Agent probably crashed. We create it again.
+		if errors.Is(err, client.ErrAgentNotFound) {
+			if err := createAgent(browserAgent, c.ltConfig); err != nil {
+				c.log.Error("browser agent create failed", mlog.Err(err))
+			}
+		} else if err != nil {
+			c.log.Error("cluster: failed to get status for browser agent:", mlog.Err(err))
+		}
+
+		status.ActiveBrowserUsers += int(st.NumUsers)
+		currentError := st.NumErrors
+		errInfo := c.errMap[browserAgent]
+		lastError := atomic.LoadInt64(&errInfo.lastError)
+		totalErrors := atomic.LoadInt64(&errInfo.totalErrors)
+		if currentError < lastError {
+			// crash
+			atomic.AddInt64(&errInfo.totalErrors, lastError)
+			totalErrors += lastError
+		}
+		atomic.StoreInt64(&errInfo.lastError, currentError)
+
+		// Total errors = current errors + past accumulated errors from restarts.
+		status.NumBrowserErrors += currentError + totalErrors
+	}
+
 	return status, nil
 }
 

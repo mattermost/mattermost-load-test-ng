@@ -28,11 +28,23 @@ type LoadAgentClusterConfig struct {
 	// MaxActiveUsers defines the upper limit of concurrently active users to run across
 	// the whole cluster.
 	MaxActiveUsers int `default:"1000" validate:"range:(0,]"`
+	// BrowserAgents is a list of the browser agents API endpoints to be used during
+	// the load-test. It's length defines the number of browser agents instances
+	// used during a load-test.
+	BrowserAgents []LoadAgentConfig `default_size:"5"`
+	// MaxActiveBrowserUsers defines the upper limit of concurrently active browser users to run across
+	// the whole cluster.
+	MaxActiveBrowserUsers int `default:"1000" validate:"range:(0,]"`
 }
 
 func (c *LoadAgentClusterConfig) IsValid(ltConfig loadtest.Config) error {
 	if ltConfig.UsersConfiguration.MaxActiveUsers*len(c.Agents) < c.MaxActiveUsers {
 		return errors.New("coordinator: total MaxActiveUsers in loadTest should not be less than clusterConfig.MaxActiveUsers")
 	}
+
+	if ltConfig.UsersConfiguration.MaxActiveBrowserUsers*len(c.BrowserAgents) < c.MaxActiveBrowserUsers {
+		return errors.New("coordinator: total MaxActiveBrowserUsers in loadTest should not be less than clusterConfig.MaxActiveBrowserUsers")
+	}
+
 	return nil
 }

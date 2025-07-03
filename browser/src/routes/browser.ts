@@ -4,14 +4,16 @@
 import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 
 import {browserTestSessionManager} from '../lib/browser_manager.js';
+import {IReply} from './types.js';
+import {getMattermostServerURL} from '../utils/config.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
   fastify.addHook('onClose', closeBrowser);
 
-  fastify.post('/browsers', addBrowser);
-  fastify.delete('/browsers', removeBrowser);
-  fastify.get('/browsers', getBrowsers);
+  fastify.post<{Reply: IReply; Body: AddBrowserRequestBody}>('/browsers', addBrowser);
+  fastify.delete<{Reply: IReply; Body: RemoveBrowserRequestBody}>('/browsers', removeBrowser);
+  fastify.get<{Reply: IReply}>('/browsers', getBrowsers);
 }
 
 interface AddBrowserRequestBody {
@@ -19,10 +21,14 @@ interface AddBrowserRequestBody {
   password: string;
 }
 
-async function addBrowser(request: FastifyRequest<{Body: AddBrowserRequestBody}>, reply: FastifyReply) {
+async function addBrowser(
+  request: FastifyRequest<{Body: AddBrowserRequestBody}>,
+  reply: FastifyReply,
+): Promise<IReply> {
   const {userId, password} = request.body;
+  console.log('addBrowser', userId, password);
 
-  if (!userId) {
+  if (!userId || userId.length === 0) {
     return reply.code(400).send({
       success: false,
       error: {
@@ -32,7 +38,7 @@ async function addBrowser(request: FastifyRequest<{Body: AddBrowserRequestBody}>
     });
   }
 
-  if (!password) {
+  if (!password || password.length === 0) {
     return reply.code(400).send({
       success: false,
       error: {
@@ -42,7 +48,18 @@ async function addBrowser(request: FastifyRequest<{Body: AddBrowserRequestBody}>
     });
   }
 
-  const createInstanceResult = await browserTestSessionManager.createBrowserSession(userId, password);
+  const serverURL = getMattermostServerURL();
+  if (!serverURL) {
+    return reply.code(400).send({
+      success: false,
+      error: {
+        code: 'SERVER_URL_MISSING',
+        message: 'serverURL is missing in config.json',
+      },
+    });
+  }
+
+  const createInstanceResult = await browserTestSessionManager.createBrowserSession(userId, password, serverURL);
 
   if (!createInstanceResult.isCreated) {
     return reply.code(400).send({
@@ -64,7 +81,10 @@ interface RemoveBrowserRequestBody {
   userId: string;
 }
 
-async function removeBrowser(request: FastifyRequest<{Body: RemoveBrowserRequestBody}>, reply: FastifyReply) {
+async function removeBrowser(
+  request: FastifyRequest<{Body: RemoveBrowserRequestBody}>,
+  reply: FastifyReply,
+): Promise<IReply> {
   const {userId} = request.body;
 
   if (!userId) {
@@ -95,7 +115,7 @@ async function removeBrowser(request: FastifyRequest<{Body: RemoveBrowserRequest
   });
 }
 
-async function getBrowsers(_: FastifyRequest, reply: FastifyReply) {
+async function getBrowsers(_: FastifyRequest, reply: FastifyReply): Promise<IReply> {
   const activeSessions = browserTestSessionManager.getActiveBrowserSessions();
 
   return reply.code(200).send({

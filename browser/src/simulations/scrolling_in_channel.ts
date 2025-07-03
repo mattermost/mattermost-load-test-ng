@@ -1,7 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from '@playwright/test';
+import type {Page} from 'playwright';
+
+import {log} from '../app.js';
 
 export async function scrollInChannel(
   page: Page,
@@ -10,7 +12,7 @@ export async function scrollInChannel(
   scrollStep: number,
   pauseBetweenScrolls: number,
 ): Promise<void> {
-  console.log(`[test-log][scrollInChannel]-start`);
+  log.info(`[simulation][run][scrollInChannel]`);
 
   try {
     // Navigate to the specified channel
@@ -39,8 +41,8 @@ export async function scrollInChannel(
       await page.waitForTimeout(pauseBetweenScrolls);
     }
 
-    console.log('[test-log][scrollInChannel]-ok');
+    log.info('[simulation][pass][scrollInChannel]');
   } catch (error) {
-    throw error;
+    throw {error, testId: 'scrollInChannel'};
   }
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -446,6 +447,11 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
 		ue := userentity.New(ueSetup, ueConfig)
+		// Read the text file which will be created in home directory by terraform to check if this is browser node or agent node
+		// Check here if and return earyly if browser node. return early BrowserController.New(id, ue, status)
+		if true {
+			return browsercontroller.New(id, ue, status)
+		}
 
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
@@ -473,6 +479,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 			admin := userentity.New(ueSetup, ueConfig)
 			return clustercontroller.New(id, admin, status)
+		case loadtest.UserControllerBrowser:
+			// Check which type of node we are running on. if this is browser node or agent node
+			return browsercontroller.New(id, ue, status)
 		default:
 			panic("controller type must be valid")
 		}
@@ -590,4 +599,18 @@ func createCustomEmoji(config *loadtest.Config) error {
 		}
 	}
 	return err
+}
+
+func (a *api) runBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+	lt, err := a.getLoadAgentById(w, r)
+	if err != nil {
+		return
+	}
+}
+
+func (a *api) stopBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
+	lt, err := a.getLoadAgentById(w, r)
+	if err != nil {
+		return
+	}
 }

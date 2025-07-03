@@ -17,6 +17,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const (
+	BrowserAgentPort = "5000"
+)
+
 // StartCoordinator starts the coordinator in the current load-test deployment.
 func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err := t.preFlightCheck(); err != nil {
@@ -40,6 +44,14 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		})
 	}
 
+	var browserAgentConfigs []cluster.LoadAgentConfig
+	for _, val := range t.output.BrowserAgents {
+		browserAgentConfigs = append(browserAgentConfigs, cluster.LoadAgentConfig{
+			Id:     val.Tags.Name,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + BrowserAgentPort,
+		})
+	}
+
 	extAgent, err := ssh.NewAgent()
 	if err != nil {
 		return err
@@ -58,7 +70,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
-	// config.ClusterConfig.BrowserAgents = loadAgentConfigs
+	config.ClusterConfig.BrowserAgents = browserAgentConfigs
 	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating

@@ -1,37 +1,32 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {loadEnvironmentVariables} from './config/env.js';
+import {app, log} from './app.js';
 
-import {app} from './app.js';
-
-loadEnvironmentVariables();
+const BROWSER_AGENT_API_URL = 'http://localhost:5000';
 
 async function startServer() {
   try {
-    const portNumber = Number(process.env.PORT) || 8080;
-    const host = process.env.HOST || '127.0.0.1';
-    await app.listen({port: portNumber, host});
+    const apiURL = new URL(BROWSER_AGENT_API_URL);
+    const host = apiURL.hostname;
+    const port = Number(apiURL.port);
 
-    const address = app.server.address();
-    const port = typeof address === 'string' ? address : address?.port;
-
-    console.log(`[server] Server successfully started at ${host}:${port}`);
+    await app.listen({host, port});
   } catch (err) {
-    console.error('[server] Server failed to start', err);
+    log.error(`[server] Server failed to start: ${err}`);
     process.exit(1);
   }
 }
 
 async function stopServer(signal: string) {
-  console.log(`\n[server] Received ${signal}, Server stopping`);
+  log.info(`[server] Received ${signal}, Server stopping`);
 
   try {
     await app.close();
-    console.log('[server] Server stopped');
+    log.info('[server] Server stopped');
     process.exit(0);
   } catch (err) {
-    console.error('[server] Error during shutdown:', err);
+    log.error(`[server] Error during shutdown: ${err}`);
     process.exit(1);
   }
 }
@@ -42,13 +37,13 @@ process.on('SIGINT', () => stopServer('SIGINT'));
 
 // Handle uncaught errors
 process.on('uncaughtException', (err) => {
-  console.error('[server] Uncaught exception:', err);
+  log.error(`[server] Uncaught exception: ${err}`);
   stopServer('uncaughtException');
 });
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[server] Unhandled rejection at:', promise, 'reason:', reason);
+  log.error(`[server] Unhandled rejection at: ${promise}, reason: ${reason}`);
   stopServer('unhandledRejection');
 });
 

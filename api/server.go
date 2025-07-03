@@ -95,6 +95,8 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	r := router.PathPrefix("/loadagent").Subrouter()
 	r.HandleFunc("/create", a.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
 	r.HandleFunc("/{id}/run", a.runLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}/runbrowser", a.runBrowserLoadAgentHandler).Methods("POST")
+	r.HandleFunc("/{id}/stopbrowser", a.stopBrowserLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}/stop", a.stopLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}", a.destroyLoadAgentHandler).Methods("DELETE")
 	r.HandleFunc("/{id}", a.getLoadAgentStatusHandler).Methods("GET")

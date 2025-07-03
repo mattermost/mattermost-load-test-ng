@@ -1,18 +1,20 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from '@playwright/test';
+import type {Page} from 'playwright';
+
+import {log} from '../app.js';
 
 export async function postInChannel({page}: {page: Page}): Promise<void> {
-  console.log('[test-log][postInChannel]-start');
+  log.info('[simulation][run][postInChannel]');
 
   try {
     await page.waitForSelector('#post_textbox');
-    await page.type('#post_textbox', 'Hello, world!', {delay: 100});
+    await page.type('#post_textbox', `Hello, world! ${new Date().toISOString()}`, {delay: 100});
     await page.keyboard.press('Enter');
 
-    console.log('[test-log][postInChannel]-ok');
+    log.info('[simulation][pass][postInChannel]');
   } catch (error) {
-    throw error;
+    throw {error, testId: 'postInChannel'};
   }
 }

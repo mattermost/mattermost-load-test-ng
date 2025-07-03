@@ -1,25 +1,32 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {describe, test, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, test, expect, vi, beforeEach} from 'vitest';
 
-vi.mock('fastify', () => {
-  const mockRegister = vi.fn();
-  const mockFastify = vi.fn(() => ({
-    register: mockRegister,
-    server: {},
-  }));
-  mockFastify.mockReturnValue = mockRegister;
+const mockFastifyRegister = vi.fn();
+const mockFastifyInstance = {
+  register: mockFastifyRegister,
+  server: {},
+  log: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+};
+const mockFastify = vi.fn(() => mockFastifyInstance);
 
-  return {default: mockFastify};
-});
-
-vi.mock('@fastify/cors', () => ({
-  default: 'cors-plugin',
+vi.mock('fastify', () => ({
+  default: mockFastify,
 }));
 
-vi.mock('@fastify/rate-limit', () => ({
-  default: 'rate-limit-plugin',
+vi.mock('./config/log.js', () => ({
+  getServerLoggerConfig: vi.fn().mockReturnValue({}),
+  createLogger: vi.fn().mockReturnValue({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  }),
+  isConsoleLoggingEnabled: vi.fn().mockReturnValue(true),
 }));
 
 vi.mock('./routes/browser.js', () => ({
@@ -31,35 +38,30 @@ vi.mock('./routes/health.js', () => ({
 }));
 
 describe('src/app', () => {
-  const originalEnv = {...process.env};
-
   beforeEach(() => {
     vi.resetModules();
-    process.env = {...originalEnv};
-  });
 
-  afterEach(() => {
-    process.env = originalEnv;
+    mockFastify.mockClear();
+    mockFastifyRegister.mockClear();
   });
 
   test('should create app instance', async () => {
-    const {default: fastify} = await import('fastify');
     await import('./app.js');
 
-    expect(fastify).toHaveBeenCalled();
+    expect(mockFastify).toHaveBeenCalled();
   });
 
   test('should register health routes', async () => {
-    const {app} = await import('./app.js');
+    await import('./app.js');
     const {default: healthRoutes} = await import('./routes/health.js');
 
-    expect(app.register).toHaveBeenCalledWith(healthRoutes);
+    expect(mockFastifyRegister).toHaveBeenCalledWith(healthRoutes);
   });
 
   test('should register browser routes', async () => {
-    const {app} = await import('./app.js');
+    await import('./app.js');
     const {default: browserRoutes} = await import('./routes/browser.js');
 
-    expect(app.register).toHaveBeenCalledWith(browserRoutes);
+    expect(mockFastifyRegister).toHaveBeenCalledWith(browserRoutes);
   });
 });

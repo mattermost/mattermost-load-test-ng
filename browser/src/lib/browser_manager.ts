@@ -3,7 +3,9 @@
 
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
 
-import * as tests from '../tests/scenario1.js';
+import {log} from '../app.js';
+import {testManager} from '../lib/test_manager.js';
+import {isBrowserHeadless} from '../utils/config.js';
 
 const CLEANUP_TIMEOUT = 4 * 1000; // 2 seconds
 
@@ -28,12 +30,14 @@ export type BrowserInstance = {
   state: SessionState;
 };
 
+export type ActiveBrowserSessions = Map<string, BrowserInstance>;
+
 type BrowserInstanceAsResponse = Pick<BrowserInstance, 'userId' | 'createdAt' | 'state'>;
 
 export class BrowserTestSessionManager {
   private static instance: BrowserTestSessionManager;
 
-  private activeBrowserSessions: Map<string, BrowserInstance> = new Map();
+  private activeBrowserSessions: ActiveBrowserSessions = new Map();
   private cleanupBrowserSessionTimeout: NodeJS.Timeout | null = null;
 
   private constructor() {
@@ -71,7 +75,11 @@ export class BrowserTestSessionManager {
     return instancesAsResponse;
   }
 
-  public async createBrowserSession(userId: string, password: string): Promise<{isCreated: boolean; message: string}> {
+  public async createBrowserSession(
+    userId: string,
+    password: string,
+    serverURL: string,
+  ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
       return {
         isCreated: false,
@@ -93,7 +101,7 @@ export class BrowserTestSessionManager {
     // Try to create the browser instance first
     try {
       const browser = await chromium.launch({
-        headless: false,
+        headless: isBrowserHeadless(),
       });
 
       instance = {...instance, browser};
@@ -105,7 +113,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      console.error(`[browser_manager] Failed to create browser instance for "${userId}"`, error);
+      log.error(`[browser_manager] Failed to create browser instance for "${userId}"`);
       return {
         isCreated: false,
         message: `Failed to create browser instance for user "${userId}"`,
@@ -125,7 +133,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      console.error(`[browser_manager] Failed to create context for "${userId}"`, error);
+      log.error(`[browser_manager] Failed to create context for "${userId}"`);
       return {
         isCreated: false,
         message: `Failed to create context for user "${userId}"`,
@@ -145,7 +153,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      console.error(`[browser_manager] Failed to create page for "${userId}"`, error);
+      log.error(`[browser_manager] Failed to create page for "${userId}"`);
       return {
         isCreated: false,
         message: `Failed to create page for user "${userId}"`,
@@ -158,7 +166,7 @@ export class BrowserTestSessionManager {
     };
     this.activeBrowserSessions.set(userId, instance);
 
-    this.startTestsInBrowserSession(userId, instance);
+    this.startTestsInBrowserSession(userId, instance, serverURL);
 
     return {
       isCreated: true,
@@ -189,35 +197,21 @@ export class BrowserTestSessionManager {
    * It infroms if the test failed or was stopped.
    * Also cleans up the browser session regardless of test success or failure
    */
-  private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance) {
+  private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance, serverURL: string) {
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 
-    try {
-      await tests.scenario1(browserInstance);
+    const scenarioId = 'scenario1';
+    const updatedBrowserInstance = await testManager.startTest(
+      browserInstance,
+      this.activeBrowserSessions,
+      serverURL,
+      userId,
+      scenarioId,
+    );
 
-      const stoppedInstance: BrowserInstance = {
-        ...browserInstance,
-        state: SessionState.COMPLETED,
-      };
-      this.activeBrowserSessions.set(userId, stoppedInstance);
-
-      console.log(`[browser_manager] Test completed for user "${userId}"`);
-    } catch (error) {
-      // This is a race condition, where as soon as we force stop the test, page instance is already closed
-      // and tests still runs for a bit but fails due to page being closed and its going to be catched by this block
-      // so we check if instance was purposely stopped by the user here
-      if (this.activeBrowserSessions.get(userId)?.state === SessionState.STOPPING) {
-        console.log(`[browser_manager] Test stopped for user "${userId}"`);
-      } else {
-        const failedInstance: BrowserInstance = {
-          ...browserInstance,
-          state: SessionState.FAILED,
-        };
-        this.activeBrowserSessions.set(userId, failedInstance);
-
-        console.error(`[browser_manager] Failed test for user "${userId}"`, error);
-      }
+    if (updatedBrowserInstance) {
+      this.activeBrowserSessions.set(userId, updatedBrowserInstance);
     }
   }
 
@@ -297,11 +291,11 @@ export class BrowserTestSessionManager {
     const cleanupPromisesResults = await Promise.allSettled(cleanupPromises);
 
     if (cleanupPromisesResults.length === 0) {
-      console.log('[browser_manager] No active browser sessions to clean up');
+      log.info('[browser_manager] No active browser sessions to clean up');
     } else if (cleanupPromisesResults.every((result) => result.status === 'fulfilled')) {
-      console.log('[browser_manager] Successfully cleaned up all browser sessions');
+      log.info('[browser_manager] Successfully cleaned up all browser sessions');
     } else {
-      console.error('[browser_manager] Failed to clean up some browser sessions');
+      log.error('[browser_manager] Failed to clean up some browser sessions');
     }
   }
 }
