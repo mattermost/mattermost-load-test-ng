@@ -602,14 +602,14 @@ func createCustomEmoji(config *loadtest.Config) error {
 }
 
 func (a *api) runBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
+	_, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
 	}
 }
 
 func (a *api) stopBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	lt, err := a.getLoadAgentById(w, r)
+	_, err := a.getLoadAgentById(w, r)
 	if err != nil {
 		return
 	}
