@@ -88,24 +88,40 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		}
 	}
 
+	// Create combined list of all agents with type information
+	type agentInfo struct {
+		instance  Instance
+		agentType string
+		index     int
+	}
+
+	allAgents := make([]agentInfo, 0, len(t.output.Agents)+len(t.output.BrowserAgents))
+	for i, agent := range t.output.Agents {
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: "server_agent", index: i})
+	}
+	for i, agent := range t.output.BrowserAgents {
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: "browser_agent", index: i})
+	}
+
 	wg := sync.WaitGroup{}
 	var foundErr atomic.Bool
 
-	for i, val := range t.output.Agents {
+	for _, agentInfo := range allAgents {
 		wg.Add(1)
-		agentNumber := i
-		instance := val
+		agentNumber := agentInfo.index
+		instance := agentInfo.instance
+		agentType := agentInfo.agentType
 
 		go func() {
 			defer wg.Done()
 
 			sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 			if err != nil {
-				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber))
+				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber), mlog.String("agent_type", agentType))
 				foundErr.Store(true)
 				return
 			}
-			mlog.Info("Configuring agent", mlog.String("ip", instance.GetConnectionIP()), mlog.Int("agent", agentNumber))
+			mlog.Info("Configuring agent", mlog.String("ip", instance.GetConnectionIP()), mlog.Int("agent", agentNumber), mlog.String("agent_type", agentType))
 			if uploadBinary {
 				dstFilePath := t.ExpandWithUser("/home/{{.Username}}/tmp.tar.gz")
 				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
@@ -141,6 +157,20 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
+			tpl, err = template.New("").Parse(browserAPIServiceFile)
+			if err != nil {
+				mlog.Error("could not parse agent service template", mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			tplVars = map[string]any{
+				"execStart": fmt.Sprintf(baseBrowserAPIServerCmd, t.Config().AWSAMIUser, t.Config().AWSAMIUser),
+				"User":      t.Config().AWSAMIUser,
+			}
+			browserBuf := bytes.NewBufferString("")
+			tpl.Execute(browserBuf, tplVars)
+
 			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
 			if err != nil {
 				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
@@ -159,10 +189,12 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			batch := []uploadInfo{
 				{srcData: strings.TrimPrefix(buf.String(), "\n"), dstPath: "/lib/systemd/system/ltapi.service", msg: "Uploading load-test api service file"},
+				{srcData: strings.TrimPrefix(browserBuf.String(), "\n"), dstPath: "/lib/systemd/system/ltbrowserapi.service", msg: "Uploading load-test browser api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
+				{srcData: agentType, dstPath: t.ExpandWithUser("/home/{{.Username}}/agent_type.txt"), msg: "Uploading agent type file"},
 			}
 
 			if t.config.UsersFilePath != "" {
@@ -208,6 +240,13 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
 			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltapi"); err != nil {
+				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+				foundErr.Store(true)
+				return
+			}
+
+			mlog.Info("Starting load-test browser api server", mlog.Int("agent", agentNumber))
+			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltbrowserapi"); err != nil {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return

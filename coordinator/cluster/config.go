@@ -23,7 +23,8 @@ type LoadAgentClusterConfig struct {
 	// Agents is a list of the load-test agents API endpoints to be used during
 	// the load-test. It's length defines the number of load-test instances
 	// used during a load-test.
-	Agents []LoadAgentConfig `default_size:"1"`
+	Agents        []LoadAgentConfig `default_size:"1"`
+	BrowserAgents []LoadAgentConfig `default_size:"1"`
 	// MaxActiveUsers defines the upper limit of concurrently active users to run across
 	// the whole cluster.
 	MaxActiveUsers int `default:"1000" validate:"range:(0,]"`

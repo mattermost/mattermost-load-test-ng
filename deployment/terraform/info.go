@@ -53,6 +53,13 @@ func displayInfo(genValues GeneratedValues, output *Output) {
 		fmt.Println("Coordinator: " + output.Agents[0].GetConnectionIP())
 	}
 
+	if output.HasBrowserAgents() {
+		fmt.Println("Browser Agent(s):")
+		for _, agent := range output.BrowserAgents {
+			fmt.Println("- " + agent.Tags.Name + ": " + agent.GetConnectionIP())
+		}
+	}
+
 	if output.HasProxy() {
 		if len(output.Proxies) > 1 {
 			fmt.Println("Proxies:")

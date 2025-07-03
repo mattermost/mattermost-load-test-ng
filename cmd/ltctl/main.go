@@ -235,6 +235,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	for _, agent := range output.Agents {
 		fmt.Printf(" - %s\n", agent.Tags.Name)
 	}
+	for _, agent := range output.BrowserAgents {
+		fmt.Printf(" - %s\n", agent.Tags.Name)
+	}
 	for _, instance := range output.Instances {
 		fmt.Printf(" - %s\n", instance.Tags.Name)
 	}

@@ -87,6 +87,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 
 	browserAgents := make([]*client.Agent, len(config.BrowserAgents))
+
 	for i := range len(browserAgents) {
 		// we dont need browseragents url
 		browserAgent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
@@ -188,6 +189,10 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	if err != nil {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
+
+	// Additional logic to check how many users to add to
+	// server agents, and how many to add in browser agents.
+
 	for i, inc := range dist {
 		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
 		if _, err := c.agents[i].AddUsers(inc); err != nil {
@@ -199,6 +204,9 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 			}
 		}
 	}
+
+	// Additional loop here to add to browser agents.
+
 	return nil
 }
 

@@ -443,6 +443,54 @@ resource "aws_instance" "loadtest_agent" {
 
 }
 
+resource "aws_instance" "loadtest_browser_agent" {
+  tags = {
+    Name = "${var.cluster_name}-browser-agent-${count.index}"
+  }
+
+  connection {
+    type = "ssh"
+    host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
+  }
+
+  ami           = var.aws_ami
+  instance_type = var.browser_agent_instance_type
+  key_name      = aws_key_pair.key.id
+  count         = var.browser_agent_instance_count
+  subnet_id     = (length(var.cluster_subnet_ids.agent) > 0) ? element(tolist(var.cluster_subnet_ids.agent), count.index) : null
+
+  associate_public_ip_address = var.agent_allocate_public_ip_address
+  availability_zone           = var.aws_az
+
+  vpc_security_group_ids = [aws_security_group.agent.id]
+
+  root_block_device {
+    volume_size = var.block_device_sizes_agent
+    volume_type = var.block_device_type
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/agent.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
+}
+
 resource "aws_security_group" "app" {
   count       = var.app_instance_count > 0 ? 1 : 0
   name        = "${var.cluster_name}-app-security-group"
