@@ -2,7 +2,7 @@
 node_modules/
 
 # Playwright test results and reports
-e2etest-results/
+e2etest_results/
 playwright-report/
 html-report.html
 
@@ -26,7 +26,6 @@ Thumbs.db
 # Build outputs (if applicable)
 dist/
 build/
-server_build/
 
 # npm debug logs
 npm-debug.log*

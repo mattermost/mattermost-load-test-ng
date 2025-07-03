@@ -56,12 +56,26 @@ make install
 
 This will:
 - Install Node.js dependencies
-- Install Playwright Chromium browser with dependencies
+- Install Playwright Chromium browser with dependencies (headless mode only by default)
 
 For dependencies only (without Playwright):
 ```bash
 make install-dependencies
 ```
+
+#### Browser Installation Modes
+
+By default, the Makefile installs Playwright in headless-only mode for better performance and smaller footprint. If you need the complete browser installation (including UI components), you can override this behavior:
+
+```bash
+# Install with complete browser (including UI)
+PLAYWRIGHT_HEADLESS_ONLY=false make install
+
+# Or when running in development mode
+PLAYWRIGHT_HEADLESS_ONLY=false make dev
+```
+
+**Note**: Complete browser installation is larger and includes additional dependencies, but may be necessary for certain testing scenarios or debugging purposes.
 
 ### Running the Server
 

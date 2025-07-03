@@ -1,8 +1,17 @@
 .PHONY: install build start dev clean test lint help
 
 # Environment variables
-export PLAYWRIGHT_BROWSERS_PATH ?= 0
+export PLAYWRIGHT_HEADLESS_ONLY ?= true
 export PATH := ./node_modules/.bin:$(PATH)
+
+## Clean build artifacts, node_modules, and test results
+clean:
+	@echo "Cleaning build artifacts, node_modules, and test results"
+	rm -rf build
+	rm -rf node_modules
+	rm -rf e2etest_results
+	rm -rf .cache
+	@echo "Cleaning complete"
 
 ## Install npm dependencies
 install-dependencies:
@@ -13,40 +22,39 @@ install-dependencies:
 ## Install Playwright Chromium browser with its dependencies
 install-playwright: export PLAYWRIGHT_BROWSERS_PATH=0
 install-playwright: install-dependencies
-	@echo "Installing Playwright Chromium browser"
-	./node_modules/.bin/playwright install --with-deps chromium
-	@echo "Successfully installed Playwright Chromium browser binaries in node_modules/playwright-core/.local-browsers"
+	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
+		echo "Installing Playwright Headless Chromium browser"; \
+		./node_modules/.bin/playwright install --with-deps --only-shell chromium; \
+	else \
+		echo "Installing Playwright Chromium browser"; \
+		./node_modules/.bin/playwright install --with-deps chromium; \
+	fi
+	@echo "Successfully installed browser binaries in node_modules/playwright-core/.local-browsers"
 
 ## Install npm dependencies and Playwright Chromium browser with its dependencies
 install: install-dependencies install-playwright
 
-## Build the TypeScript server
-build: install
+## Build the Browser API server
+build: clean install-dependencies install-playwright
 	@echo "Building server"
 	./node_modules/.bin/tsc
-	@echo "Server built successfully"
+	@echo "Browser API server built successfully"
 
 ## Start the browser API server in production mode
-start: install build
-	@echo "Starting browser api server"
+## Note: This installs the browser in headless mode only
+start: build
+	@echo "Starting Browser API server"
 	node build/server.js
 
 ## Start the browser API server in development mode
-start-dev: install
-	@echo "Starting browser api server in development mode"
+dev: install
+	@echo "Starting Browser API server in development mode"
 	./node_modules/.bin/tsx src/server.ts
 
 ## Start the browser API server in development watch mode
-start-watch: install
+dev-watch: install
 	@echo "Starting browser api server in development watch mode"
 	./node_modules/.bin/tsx watch src/server.ts
-
-## Clean build artifacts, node_modules, and test results
-clean:
-	rm -rf build
-	rm -rf node_modules
-	rm -rf test-results
-	rm -rf .cache
 
 ## Show this help message
 help:
