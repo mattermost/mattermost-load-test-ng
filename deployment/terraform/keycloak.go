@@ -51,12 +51,12 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		}
 
 		// Allow postgres user to read the file
-		_, err = sshc.RunCommand("sudo chown postgres:postgres /var/lib/postgresql/keycloak-database.sql")
+		_, err = sshc.RunCommand("sudo chown postgres:postgres /tmp/keycloak-database.sql")
 		if err != nil {
 			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
 		}
 
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /var/lib/postgresql/keycloak-database.sql`)
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /tmp/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
@@ -378,7 +378,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 	cfg.SamlSettings.IdpDescriptorURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName)
 	cfg.SamlSettings.IdpMetadataURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/protocol/saml/descriptor")
 	cfg.SamlSettings.ServiceProviderIdentifier = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakSAMLClientID)
-	cfg.SamlSettings.AssertionConsumerServiceURL = model.NewPointer(t.config.ServerScheme + "://" + getServerURL(t.output, t.config) + "/login/sso/saml")
+	cfg.SamlSettings.AssertionConsumerServiceURL = model.NewPointer(getServerURL(t.output, t.config) + "/login/sso/saml")
 	cfg.SamlSettings.SignatureAlgorithm = model.NewPointer("RSAwithSHA1")
 	cfg.SamlSettings.CanonicalAlgorithm = model.NewPointer("Canonical1.0")
 	cfg.SamlSettings.ScopingIDPProviderId = model.NewPointer("")
