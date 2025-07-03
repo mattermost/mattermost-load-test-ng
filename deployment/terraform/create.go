@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -60,6 +61,8 @@ type Terraform struct {
 	config      *deployment.Config
 	output      *Output
 	initialized bool
+	awsCfg      aws.Config
+	awsCfgMut   sync.Mutex
 }
 
 // New returns a new Terraform instance.
@@ -76,10 +79,16 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
 	}
 
-	return &Terraform{
+	t := &Terraform{
 		id:     id,
 		config: &cfg,
-	}, nil
+	}
+
+	if err := t.InitCreds(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func ensureTerraformStateDir(dir string) error {

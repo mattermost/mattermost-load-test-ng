@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -350,10 +351,7 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	return url
 }
 
-// GetAWSConfig returns the AWS config, using the profile configured in the
-// deployer if present, and defaulting to the default credential chain otherwise.
-// If a role ARN is provided, it will assume that role.
-func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+func (t *Terraform) InitCreds() error {
 	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
 	var opts []func(*awsconfig.LoadOptions) error
 
@@ -365,7 +363,7 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(), opts...)
 	if err != nil {
-		return aws.Config{}, fmt.Errorf("unable to load default config: %w", err)
+		return fmt.Errorf("unable to load default config: %w", err)
 	}
 
 	if t.config.AWSRoleARN != "" {
@@ -377,7 +375,35 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 		cfg.Credentials = aws.NewCredentialsCache(creds)
 	}
 
-	return cfg, nil
+	t.awsCfgMut.Lock()
+	t.awsCfg = cfg
+	t.awsCfgMut.Unlock()
+
+	if t.config.AWSRoleARN != "" {
+		go func() {
+			ticker := time.Tick(10 * time.Minute)
+			for range ticker {
+				t.awsCfgMut.Lock()
+				mlog.Info("Credentials refresher: starting")
+				stsSvc := sts.NewFromConfig(t.awsCfg)
+				creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
+				t.awsCfg.Credentials = aws.NewCredentialsCache(creds)
+				mlog.Info("Credentials refresher: starting")
+				t.awsCfgMut.Unlock()
+			}
+		}()
+	}
+
+	return nil
+}
+
+// GetAWSConfig returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise.
+// If a role ARN is provided, it will assume that role.
+func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	t.awsCfgMut.Lock()
+	defer t.awsCfgMut.Unlock()
+	return t.awsCfg.Copy(), nil
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the
