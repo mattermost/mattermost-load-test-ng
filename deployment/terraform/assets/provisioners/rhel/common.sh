@@ -61,14 +61,13 @@ function install_postgresql_server() {
     install_postgresql_repo
     sudo dnf -y install postgresql${postgresql_version}-server
     sudo /usr/pgsql-${postgresql_version}/bin/postgresql-${postgresql_version}-setup initdb
-    sudo systemctl enable --now postgresql-${postgresql_version}
 }
 
 function install_postgresql_server_and_init() {
     echo "Installing basic PostgreSQL"
     install_postgresql_server
-    sudo /usr/bin/postgresql-setup --initdb
-    sudo systemctl enable --now postgresql
+    sudo /usr/bin/postgresql-${postgresql_version}-setup --initdb
+    sudo systemctl enable --now postgresql-${postgresql_version}
 }
 
 function install_otel_collector() {
