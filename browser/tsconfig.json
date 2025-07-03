@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["es2024", "dom", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
+    "lib": ["ES2022", "DOM"],
     "module": "NodeNext",
     "rootDir": "./src",
     "moduleResolution": "node16",
