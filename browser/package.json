@@ -12,6 +12,7 @@
     "@types/node": "24.0.3",
     "@types/supertest": "6.0.3",
     "@vitest/ui": "3.2.4",
+    "esbuild": "^0.24.0",
     "prettier": "3.6.0",
     "supertest": "7.1.1",
     "tsconfig-paths": "4.2.0",
@@ -27,6 +28,13 @@
     "playwright": "1.53.1"
   },
   "scripts": {
+    "build": "npm run build:clean && npm run build:prod",
+    "build:clean": "rm -rf dist",
+    "build:prod": "NODE_ENV=production node scripts/build.js",
+    "build:dev": "NODE_ENV=development node scripts/build.js",
+    "build:watch": "NODE_ENV=development node scripts/build.js --watch",
+    "start": "node dist/server.js",
+    "dev": "npm run build:watch",
     "lint:check": "prettier --check 'src/**/*.ts'",
     "lint:fix": "prettier --write 'src/**/*.ts'",
     "types:check": "tsc --noEmit",

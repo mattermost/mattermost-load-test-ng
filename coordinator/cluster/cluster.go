@@ -68,7 +68,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 	agents := make([]*client.Agent, len(config.Agents))
 	errMap := make(map[*client.Agent]*errorTrack)
-	for i := 0; i < len(agents); i++ {
+	for i := range len(agents) {
 		agent, err := client.New(config.Agents[i].Id, config.Agents[i].ApiURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create api client for agent: %w", err)
@@ -87,7 +87,8 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 
 	browserAgents := make([]*client.Agent, len(config.BrowserAgents))
-	for i := 0; i < len(browserAgents); i++ {
+	for i := range len(browserAgents) {
+		// we dont need browseragents url
 		browserAgent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("cluster: failed to create api client for browser agent: %w", err)

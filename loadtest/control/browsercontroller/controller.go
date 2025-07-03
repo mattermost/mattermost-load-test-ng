@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -67,20 +66,20 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 	}
 
 	// Get browser API URL from environment variable (same as browser server uses)
-	browserAPIURL := os.Getenv("BROWSER_AGENT_API_URL")
-	if browserAPIURL == "" {
-		return nil, errors.New("BROWSER_AGENT_API_URL environment variable is required")
-	}
+	// browserAPIURL := os.Getenv("BROWSER_AGENT_API_URL")
+	// if browserAPIURL == "" {
+	// 	return nil, errors.New("BROWSER_AGENT_API_URL environment variable is required")
+	// }
 
 	return &BrowserController{
-		id:            id,
-		user:          user,
-		status:        status,
-		rate:          1.0,
-		stopChan:      make(chan struct{}),
-		stoppedChan:   make(chan struct{}),
-		wg:            &sync.WaitGroup{},
-		browserAPIURL: browserAPIURL,
+		id:          id,
+		user:        user,
+		status:      status,
+		rate:        1.0,
+		stopChan:    make(chan struct{}),
+		stoppedChan: make(chan struct{}),
+		wg:          &sync.WaitGroup{},
+		// browserAPIURL: browserAPIURL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
