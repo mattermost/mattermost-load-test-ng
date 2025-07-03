@@ -19,6 +19,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -353,19 +355,33 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 }
 
 // GetAWSConfig returns the AWS config, using the profile configured in the
-// deployer if present, and defaulting to the default credential chain otherwise
+// deployer if present, and defaulting to the default credential chain otherwise.
+// If a role ARN is provided, it will assume that role.
 func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
+	var opts []func(*awsconfig.LoadOptions) error
 
-	if t.config.AWSProfile == "" {
-		return awsconfig.LoadDefaultConfig(
-			context.Background(),
-			regionOpt,
-		)
+	opts = append(opts, regionOpt)
+
+	if t.config.AWSProfile != "" {
+		opts = append(opts, awsconfig.WithSharedConfigProfile(t.config.AWSProfile))
 	}
 
-	profileOpt := awsconfig.WithSharedConfigProfile(t.config.AWSProfile)
-	return awsconfig.LoadDefaultConfig(context.Background(), profileOpt, regionOpt)
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(), opts...)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("unable to load default config: %w", err)
+	}
+
+	if t.config.AWSRoleARN != "" {
+		// See https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/stscreds#hdr-Assume_Role
+		// Create the credentials from AssumeRoleProvider to assume the role
+		// identified by AWSRoleARN, and use them in the loaded config
+		stsSvc := sts.NewFromConfig(cfg)
+		creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
+		cfg.Credentials = aws.NewCredentialsCache(creds)
+	}
+
+	return cfg, nil
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the
