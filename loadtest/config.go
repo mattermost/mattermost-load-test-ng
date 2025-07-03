@@ -142,6 +142,13 @@ type UsersConfiguration struct {
 	PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 }
 
+// BrowserConfiguration holds information about the browser related settings
+// used for the browser agent to run the simulation tests while running the load-test.
+type BrowserConfiguration struct {
+	// Whether to run the simulation tests in headless mode.
+	Headless bool `default:"true"`
+}
+
 // Config holds information needed to create and initialize a new load-test
 // agent.
 type Config struct {
@@ -149,7 +156,9 @@ type Config struct {
 	UserControllerConfiguration UserControllerConfiguration
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
+	BrowserConfiguration        BrowserConfiguration
 	LogSettings                 logger.Settings
+	BrowserLogSettings          logger.Settings
 }
 
 // IsValid reports whether a given Config is valid or not.
