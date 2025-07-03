@@ -16,6 +16,7 @@ export async function scenario1({page, userId, password}: BrowserInstance, serve
     await handlePreferenceCheckbox(page);
     await performLogin({page, userId, password});
 
+    // Runs the simulation atleast once and then runs it in continuous loop if simulationMode is true
     do {
       const scrollCount = simulationMode ? 40 : 3;
       await postInChannel({page});

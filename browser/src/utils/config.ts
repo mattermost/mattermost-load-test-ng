@@ -50,9 +50,8 @@ export function getFileLoggingLocation(): string {
 /**
  * Generates a random port in the specified range
  * Useful when you want to avoid sequential ports for parallel tests
+ * If not provided, the default range is 10000-65000
  */
-export function getRandomPortForTests(): number {
-  const min = 10000;
-  const max = 65000;
+export function getRandomPortForTests(min = 10000, max = 65000): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }

@@ -50,16 +50,8 @@ export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
   }
 
   return {
-    error: (message: string) => {
-      return logger.error(message);
-    },
-
-    warn: (message: string) => {
-      return logger.warn(message);
-    },
-
-    info: (message: string) => {
-      return logger.info(message);
-    },
+    error: logger.error,
+    warn: logger.warn,
+    info: logger.info,
   };
 }
