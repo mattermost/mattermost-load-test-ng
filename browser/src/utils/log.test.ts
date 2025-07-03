@@ -32,7 +32,7 @@ describe('log', () => {
     it('should use console functions when logger is not provided', () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const infoSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       const logger = createLogger(undefined, true);
 

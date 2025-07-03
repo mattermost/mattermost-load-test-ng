@@ -45,13 +45,13 @@ export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
     return {
       error: console.error,
       warn: console.warn,
-      info: console.info,
+      info: console.log,
     };
   }
 
   return {
-    error: logger.error,
-    warn: logger.warn,
-    info: logger.info,
+    error: logger.error.bind(logger),
+    warn: logger.warn.bind(logger),
+    info: logger.info.bind(logger),
   };
 }
