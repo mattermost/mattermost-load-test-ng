@@ -6,22 +6,22 @@ import {postInChannel} from './post_in_channel.js';
 import {scrollInChannel} from './scrolling_in_channel.js';
 import type {BrowserInstance} from '../lib/browser_manager.js';
 
-export async function scenario1({page, userId, password}: BrowserInstance, serverURL: string) {
+export async function scenario1({page, userId, password}: BrowserInstance, serverURL: string, simulationMode = true) {
   if (!page) {
     throw new Error('Page is not initialized');
   }
 
   try {
     await page.goto(serverURL);
-    await page.waitForNavigation();
     await handlePreferenceCheckbox(page);
     await performLogin({page, userId, password});
 
-    while (true) {
+    do {
+      const scrollCount = simulationMode ? 40 : 3;
       await postInChannel({page});
-      await scrollInChannel(page, 'sidebarItem_off-topic', 40, 400, 500);
-      await scrollInChannel(page, 'sidebarItem_town-square', 40, 400, 500);
-    }
+      await scrollInChannel(page, 'sidebarItem_off-topic', scrollCount, 400, 500);
+      await scrollInChannel(page, 'sidebarItem_town-square', scrollCount, 400, 500);
+    } while (simulationMode);
   } catch (error: any) {
     throw {error: error?.error, testId: error?.testId};
   }

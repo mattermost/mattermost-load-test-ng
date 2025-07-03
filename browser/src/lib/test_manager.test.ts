@@ -73,7 +73,6 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'testUser',
         'scenario1',
       );
 
@@ -94,7 +93,6 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'testUser',
         'scenario1',
       );
 
@@ -123,7 +121,6 @@ describe('TestManager', () => {
         mockBrowserInstance,
         stoppingMockSessions,
         'http://localhost:8065',
-        'testUser',
         'scenario1',
       );
 
@@ -147,7 +144,6 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'testUser',
         'scenario1',
       );
 
@@ -169,7 +165,6 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'testUser',
         'scenario1',
       );
 

@@ -1,7 +1,7 @@
 import {defineConfig, devices} from '@playwright/test';
 
 export default defineConfig({
-  testDir: './src/tests',
+  testDir: './src/e2e_specs',
   outputDir: './e2etest-results',
   fullyParallel: true,
   use: {

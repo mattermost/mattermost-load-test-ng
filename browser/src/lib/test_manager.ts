@@ -36,9 +36,9 @@ export class TestManager {
     browserInstance: BrowserInstance,
     activeBrowserSessions: ActiveBrowserSessions,
     serverURL: string,
-    userId: string,
     scenarioId: string,
   ): Promise<BrowserInstance | undefined> {
+    const {userId} = browserInstance;
     let updatedBrowserInstance: BrowserInstance | undefined = {...browserInstance};
 
     try {

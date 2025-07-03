@@ -7,7 +7,7 @@ import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
 import {isBrowserHeadless} from '../utils/config.js';
 
-const CLEANUP_TIMEOUT = 4 * 1000; // 2 seconds
+const CLEANUP_TIMEOUT_MS = 4_000;
 
 export enum SessionState {
   CREATING = 'creating', // The browser and other instances are being created
@@ -43,7 +43,7 @@ export class BrowserTestSessionManager {
   private constructor() {
     this.activeBrowserSessions = new Map();
 
-    this.startPeriodicBrowserSessionCleanup(CLEANUP_TIMEOUT);
+    this.startPeriodicBrowserSessionCleanup(CLEANUP_TIMEOUT_MS);
   }
 
   public static getInstance() {
@@ -194,7 +194,7 @@ export class BrowserTestSessionManager {
 
   /**
    * Start tests asynchronously for a browser session
-   * It infroms if the test failed or was stopped.
+   * It informs if the test failed or was stopped.
    * Also cleans up the browser session regardless of test success or failure
    */
   private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance, serverURL: string) {
@@ -206,7 +206,6 @@ export class BrowserTestSessionManager {
       browserInstance,
       this.activeBrowserSessions,
       serverURL,
-      userId,
       scenarioId,
     );
 
