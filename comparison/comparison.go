@@ -94,13 +94,14 @@ func (c *Comparison) Run() (Output, error) {
 	for dpID, dp := range c.deployments {
 		go func(dpID string, dp *deploymentConfig) {
 			defer wg.Done()
-			t, err := terraform.New(dpID, dp.config)
-			if err != nil {
-				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
-				return
-			}
 
 			for ltID, lt := range dp.loadTests {
+				t, err := terraform.New(dpID, dp.config)
+				if err != nil {
+					errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+					return
+				}
+
 				res := Result{deploymentID: dpID}
 				dumpFilename := lt.getDumpFilename(ltID)
 				s3BucketURI := lt.S3BucketDumpURI
