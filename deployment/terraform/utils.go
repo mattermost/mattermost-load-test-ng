@@ -381,7 +381,7 @@ func (t *Terraform) InitCreds() error {
 
 	if t.config.AWSRoleARN != "" {
 		go func() {
-			ticker := time.Tick(10 * time.Minute)
+			ticker := time.Tick(1 * time.Minute)
 			for range ticker {
 				t.awsCfgMut.Lock()
 				mlog.Info("Credentials refresher: starting")
