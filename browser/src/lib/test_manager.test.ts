@@ -18,7 +18,7 @@ vi.mock('../app.js', () => {
   };
 });
 
-vi.mock('../simulations/scenario1.js', () => ({
+vi.mock('../simulations/scenario_1.js', () => ({
   scenario1: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -87,7 +87,7 @@ describe('TestManager', () => {
 
     test('should handle test failure', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
+      vi.mocked(await import('../simulations/scenario_1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
@@ -113,7 +113,7 @@ describe('TestManager', () => {
       });
 
       // Mock scenario to throw error to simulate interruption
-      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(
+      vi.mocked(await import('../simulations/scenario_1.js')).scenario1.mockRejectedValueOnce(
         new Error('Test interrupted'),
       );
 
@@ -138,7 +138,7 @@ describe('TestManager', () => {
         error: new Error('Test step failed'),
         testId: 'login',
       };
-      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(testError);
+      vi.mocked(await import('../simulations/scenario_1.js')).scenario1.mockRejectedValueOnce(testError);
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
@@ -159,7 +159,7 @@ describe('TestManager', () => {
 
     test('should handle test error without testId', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('../simulations/scenario1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
+      vi.mocked(await import('../simulations/scenario_1.js')).scenario1.mockRejectedValueOnce(new Error('Test failed'));
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,

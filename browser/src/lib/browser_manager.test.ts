@@ -43,7 +43,7 @@ vi.mock('playwright', () => {
   };
 });
 
-vi.mock('../simulations/scenario1.js', () => ({
+vi.mock('../simulations/scenario_1.js', () => ({
   scenario1: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -53,7 +53,7 @@ vi.mock('../simulations/scenario1.js', () => ({
 
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
 import * as playwright from 'playwright';
-import * as scenario1Module from '../simulations/scenario1.js';
+import * as scenario1Module from '../simulations/scenario_1.js';
 
 const mocks = (playwright as any).__mocks;
 const scenario1Mock = vi.mocked(scenario1Module.scenario1);

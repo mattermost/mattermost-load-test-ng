@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 import {log} from '../app.js';
-import * as tests from '../simulations/scenario1.js';
+import * as tests from '../simulations/scenario_1.js';
 import type {BrowserInstance, ActiveBrowserSessions} from '../lib/browser_manager.js';
 import {SessionState} from '../lib/browser_manager.js';
 

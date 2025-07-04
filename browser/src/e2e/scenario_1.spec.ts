@@ -3,7 +3,7 @@
 
 import {test} from '@playwright/test';
 
-import {scenario1} from '../simulations/scenario1.js';
+import {scenario1} from '../simulations/scenario_1.js';
 import {getMattermostServerURL} from '../utils/config.js';
 import type {BrowserInstance} from '../lib/browser_manager.js';
 

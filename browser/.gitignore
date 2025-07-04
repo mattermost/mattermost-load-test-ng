@@ -2,7 +2,7 @@
 node_modules/
 
 # Playwright test results and reports
-e2etest_results/
+e2e_results/
 playwright-report/
 html-report.html
 
