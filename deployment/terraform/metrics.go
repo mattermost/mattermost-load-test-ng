@@ -180,6 +180,12 @@ func (t *Terraform) setupMetrics(extAgent *ssh.ExtAgent) error {
 		hosts += fmt.Sprintf("%s %s\n", t.output.KeycloakServer.PrivateIP, host)
 	}
 
+	if t.output.HasOpenLDAP() {
+		host := "openldap"
+		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:9100", host))
+		hosts += fmt.Sprintf("%s %s\n", t.output.OpenLDAPServer.PrivateIP, host)
+	}
+
 	if t.output.HasRedis() {
 		redisEndpoint := fmt.Sprintf("redis://%s", net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port)))
 		redisTargets = append(redisTargets, "metrics:9121")

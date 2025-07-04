@@ -94,5 +94,10 @@ func displayInfo(genValues GeneratedValues, output *Output) {
 	if output.HasRedis() {
 		fmt.Println("Redis endpoint: ", net.JoinHostPort(output.RedisServer.Address, strconv.Itoa(output.RedisServer.Port)))
 	}
+
+	if output.HasOpenLDAP() {
+		fmt.Println("OpenLDAP server IP: " + output.OpenLDAPServer.GetConnectionIP())
+		fmt.Println("OpenLDAP server URL: ldap://" + output.OpenLDAPServer.GetConnectionDNS() + ":389")
+	}
 	fmt.Println("==================================================")
 }
