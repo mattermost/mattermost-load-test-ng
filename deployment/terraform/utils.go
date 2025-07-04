@@ -387,9 +387,34 @@ func (t *Terraform) InitCreds() error {
 			for range ticker {
 				t.awsCfgMut.Lock()
 				mlog.Info("Credentials refresher: starting", mlog.String("id", id))
+				
+				// Test current credentials before refresh
+				if currentCreds, err := t.awsCfg.Credentials.Retrieve(context.Background()); err != nil {
+					mlog.Error("Failed to retrieve current credentials", mlog.String("id", id), mlog.Err(err))
+				} else {
+					mlog.Info("Current credentials retrieved successfully", mlog.String("id", id), mlog.String("access_key", currentCreds.AccessKeyID[:8]+"..."))
+				}
+				
+				// Create new STS service and assume role
 				stsSvc := sts.NewFromConfig(t.awsCfg)
 				creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
-				t.awsCfg.Credentials = aws.NewCredentialsCache(creds)
+				newCredCache := aws.NewCredentialsCache(creds)
+				
+				// Test new credentials before applying
+				if newCreds, err := newCredCache.Retrieve(context.Background()); err != nil {
+					mlog.Error("Failed to assume role with new credentials", mlog.String("id", id), mlog.String("role_arn", t.config.AWSRoleARN), mlog.Err(err))
+				} else {
+					mlog.Info("Successfully assumed role", mlog.String("id", id), mlog.String("access_key", newCreds.AccessKeyID[:8]+"..."), mlog.Time("expiry", newCreds.Expires))
+					t.awsCfg.Credentials = newCredCache
+					
+					// Verify the credentials work with a test STS call
+					if _, err := stsSvc.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{}); err != nil {
+						mlog.Error("New credentials failed STS test", mlog.String("id", id), mlog.Err(err))
+					} else {
+						mlog.Info("New credentials passed STS test", mlog.String("id", id))
+					}
+				}
+				
 				mlog.Info("Credentials refresher: finished", mlog.String("id", id))
 				t.awsCfgMut.Unlock()
 			}
