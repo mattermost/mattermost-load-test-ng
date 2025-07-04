@@ -23,12 +23,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: ci/pre-init
-        run: |
-          make assets
-          echo "Checking if 'make assets' was ran after adding files..."
-          git diff --exit-code
-
       - name: ci/verify
         run: make verify-gomod
 

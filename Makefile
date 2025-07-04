@@ -39,13 +39,8 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
-assets: ## Generate the assets. Install go-bindata if needed.
-	go install github.com/kevinburke/go-bindata/go-bindata@v3.23.0
-	go generate ./...
-	go fmt ./...
 
-build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
-
+build: build-linux build-osx ## Build the binary for all platforms.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
