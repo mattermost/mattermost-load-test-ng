@@ -381,14 +381,16 @@ func (t *Terraform) InitCreds() error {
 
 	if t.config.AWSRoleARN != "" {
 		go func() {
+			id := model.NewId()
+			mlog.Info("Starting new ticker", mlog.String("id", id))
 			ticker := time.Tick(1 * time.Minute)
 			for range ticker {
 				t.awsCfgMut.Lock()
-				mlog.Info("Credentials refresher: starting")
+				mlog.Info("Credentials refresher: starting", mlog.String("id", id))
 				stsSvc := sts.NewFromConfig(t.awsCfg)
 				creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
 				t.awsCfg.Credentials = aws.NewCredentialsCache(creds)
-				mlog.Info("Credentials refresher: starting")
+				mlog.Info("Credentials refresher: finished", mlog.String("id", id))
 				t.awsCfgMut.Unlock()
 			}
 		}()
