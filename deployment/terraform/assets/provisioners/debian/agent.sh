@@ -16,6 +16,12 @@ until [ "$n" -ge 3 ]; do
 	sudo apt-get -y update &&
 		sudo apt-get install -y prometheus-node-exporter &&
 		sudo apt-get install -y numactl linux-tools-aws &&
+		# Install nvm and latest LTS Node.js
+		curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash &&
+		export NVM_DIR="$HOME/.nvm" &&
+		[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" &&
+		nvm install --lts &&
+		nvm use --lts &&
 		# Install OpenTelemetry collector, using ubuntu user to avoid permission issues
 		wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb &&
 		sudo dpkg -i otelcol-contrib_0.120.0_linux_amd64.deb &&

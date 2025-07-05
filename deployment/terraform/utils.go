@@ -103,6 +103,13 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		}
 	}
 
+	// Match against the browser agent names.
+	for _, agent := range output.BrowserAgents {
+		if resource == agent.Tags.Name {
+			return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, agent.GetConnectionIP())), nil
+		}
+	}
+
 	// Match against the instance names.
 	for _, instance := range output.Instances {
 		if resource == instance.Tags.Name {
@@ -264,6 +271,8 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("agent_instance_count=%d", t.config.AgentInstanceCount),
 		"-var", fmt.Sprintf("agent_instance_type=%s", t.config.AgentInstanceType),
 		"-var", fmt.Sprintf("agent_allocate_public_ip_address=%t", t.config.AgentAllocatePublicIPAddress),
+		"-var", fmt.Sprintf("browser_agent_instance_count=%d", t.config.BrowserAgentInstanceCount),
+		"-var", fmt.Sprintf("browser_agent_instance_type=%s", t.config.BrowserAgentInstanceType),
 		"-var", fmt.Sprintf("es_instance_count=%d", t.config.ElasticSearchSettings.InstanceCount),
 		"-var", fmt.Sprintf("es_instance_type=%s", t.config.ElasticSearchSettings.InstanceType),
 		"-var", fmt.Sprintf("es_version=%s", t.config.ElasticSearchSettings.Version),

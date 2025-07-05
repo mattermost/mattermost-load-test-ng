@@ -39,8 +39,15 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
+assets: ## Generate the assets. Install go-bindata if needed.
+	go install github.com/kevinburke/go-bindata/go-bindata@v3.23.0
+	go generate ./...
+	go fmt ./...
 
-build: build-linux build-osx ## Build the binary for all platforms.
+build-browser-api: ## Build the browser testing HTTP server.
+	cd browser && npm run server:build
+
+build: assets build-linux build-osx build-browser-api ## Generate the assets and build the binary for all platforms.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
@@ -50,6 +57,7 @@ ifneq ($(STATUS), 0)
 	@echo Warning: Repository has uncommitted changes.
 endif
 	@$(MAKE) build-linux
+	@$(MAKE) build-browser-api
 	rm -rf $(DIST_ROOT)
 	$(eval PLATFORM=linux-amd64)
 	$(eval PLATFORM_DIST_PATH=$(DIST_PATH)/$(PLATFORM))
@@ -65,6 +73,15 @@ endif
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
+
+	# Copy browser build directory if it exists
+	if [ -d "browser/build" ]; then \
+		cp -r browser/build $(PLATFORM_DIST_PATH)/browser; \
+		cp -r browser/node_modules $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/.env $(PLATFORM_DIST_PATH)/; \
+	fi
+
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)

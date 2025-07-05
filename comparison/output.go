@@ -28,6 +28,10 @@ type DeploymentInfo struct {
 	AgentInstanceCount int
 	// Type of EC2 load-test agent instances.
 	AgentInstanceType string
+	// Number of browser agent instances.
+	BrowserAgentInstanceCount int
+	// Type of EC2 browser agent instances.
+	BrowserAgentInstanceType string
 	// Type of EC2 proxy instance.
 	ProxyInstanceType string
 	// Number of RDS nodes.
@@ -70,13 +74,15 @@ type Output struct {
 
 func getDeploymentInfo(config *deployment.Config) DeploymentInfo {
 	return DeploymentInfo{
-		AppInstanceCount:   config.AppInstanceCount,
-		AppInstanceType:    config.AppInstanceType,
-		AgentInstanceCount: config.AgentInstanceCount,
-		AgentInstanceType:  config.AgentInstanceType,
-		ProxyInstanceType:  config.ProxyInstanceType,
-		DBInstanceCount:    config.TerraformDBSettings.InstanceCount,
-		DBInstanceType:     config.TerraformDBSettings.InstanceType,
+		AppInstanceCount:          config.AppInstanceCount,
+		AppInstanceType:           config.AppInstanceType,
+		AgentInstanceCount:        config.AgentInstanceCount,
+		AgentInstanceType:         config.AgentInstanceType,
+		BrowserAgentInstanceCount: config.BrowserAgentInstanceCount,
+		BrowserAgentInstanceType:  config.BrowserAgentInstanceType,
+		ProxyInstanceType:         config.ProxyInstanceType,
+		DBInstanceCount:           config.TerraformDBSettings.InstanceCount,
+		DBInstanceType:            config.TerraformDBSettings.InstanceType,
 	}
 }
 

@@ -52,7 +52,16 @@ type config struct {
 		AvgSessionsPerUser     int     `default:"1" validate:"range:[1,]"`
 		PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 	}
-	LogSettings logger.Settings
+	BrowserConfiguration struct {
+		Headless bool `default:"true"`
+	}
+	LogSettings        logger.Settings
+	BrowserLogSettings struct {
+		EnableConsole bool   `default:"true"`
+		ConsoleLevel  string `default:"debug" validate:"oneof:{trace, debug, info, warn, error, fatal, silent}"`
+		EnableFile    bool   `default:"false"`
+		FileLocation  string `default:"browseragent.log"`
+	}
 }
 
 type TestHelper struct {

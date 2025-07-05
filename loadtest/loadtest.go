@@ -97,6 +97,10 @@ func (lt *LoadTester) addUser() error {
 	}
 
 	var controller control.UserController
+	// if lt.isInBrowserAgentMode {
+	// controller = NewBrowserController()
+	// }
+
 	if len(lt.idleControllers) > 0 {
 		controller = lt.idleControllers[0]
 		lt.idleControllers = lt.idleControllers[1:]
