@@ -149,6 +149,12 @@ func getActionList(c *SimulController) []userAction {
 			minServerVersion: control.MinSupportedVersion, // 5.26.0
 		},
 		{
+			name:             "UpdateCustomAttribute",
+			run:              c.updateCustomAttribute,
+			frequency:        0.0040,
+			minServerVersion: semver.MustParse("10.9.0"),
+		},
+		{
 			name:             "SearchGroupChannels",
 			run:              searchGroupChannels,
 			frequency:        0.0204,

@@ -342,7 +342,7 @@ func (t *Terraform) getAsset(filename string) string {
 // 4. First app server IP
 func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	if deploymentConfig.ServerURL != "" {
-		return deploymentConfig.ServerURL
+		return deploymentConfig.ServerScheme + "://" + deploymentConfig.ServerURL
 	}
 
 	url := output.Instances[0].GetConnectionIP()
@@ -358,7 +358,7 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 		url = output.Proxies[0].PrivateIP
 	}
 
-	return url
+	return deploymentConfig.ServerScheme + "://" + url
 }
 
 // GetAWSConfig returns the AWS config, using the profile configured in the

@@ -625,6 +625,24 @@ The name of a host that will be used for two purposes:
 - It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
 This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.
 
+## ServerURL
+
+_string_
+
+The URL of the Mattermost server that the agent client will use to connect to the Mattermost servers. This is used to override the server URL in the agent's config in case there's a proxy in front of the Mattermost server.
+
+> [!WARNING] 
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
+
+## ServerScheme
+
+_string_ (default `http`)
+
+The URL scheme (http/https) that the agent client will use to connect to the Mattermost servers. This is used to override the server scheme in the agent's config.
+
+> [!WARNING]
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
+
 ## UsersFilePath
 
 *string*

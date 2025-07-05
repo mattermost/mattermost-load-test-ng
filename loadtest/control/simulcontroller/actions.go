@@ -4,6 +4,7 @@
 package simulcontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -755,6 +756,28 @@ func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionR
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated sidebar categories, ids [%s, %s]", cat1.Id, cat2.Id)}
+}
+
+func (c *SimulController) updateCustomAttribute(u user.User) control.UserActionResponse {
+	field := u.Store().RandomProperty()
+	if field == nil {
+		return control.UserActionResponse{Info: "no custom profile attributes to update"}
+	}
+
+	randomText := control.PickRandomWord()
+	value, err := json.Marshal(randomText)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	values := make(map[string]json.RawMessage)
+	values[field.ID] = value
+
+	err = u.PatchCPAValues(values)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated CPA field for user %s", u.Store().Id())}
 }
 
 func editPost(u user.User) control.UserActionResponse {
@@ -2016,6 +2039,22 @@ func (c *SimulController) openUserProfile(u user.User) control.UserActionRespons
 	if err := u.GetChannelMember(ch.Id, post.UserId); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+	if cpaEnabled {
+		// attempt to retrieve from store
+		attributes := u.Store().GetCPAValues(post.UserId)
+		if len(attributes) == 0 {
+			// Retrieve custom profile attribute values for the user.
+			if _, err = u.GetCPAValues(post.UserId); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+		}
+	}
+
 	// If it's a DM/GM channel, the webapp still sends the current team
 	// the user is part of
 	if ch.TeamId == "" {

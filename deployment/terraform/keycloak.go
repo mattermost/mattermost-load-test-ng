@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -46,18 +45,18 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		mlog.Info("keycloak database not found, creating it and associated role")
 
 		// Upload and import keycloak initial SQL file``
-		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
+		_, err := sshc.Upload(strings.NewReader(MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak base database sql file: %w", err)
 		}
 
 		// Allow postgres user to read the file
-		_, err = sshc.RunCommand("sudo chown postgres:postgres /var/lib/postgresql/keycloak-database.sql")
+		_, err = sshc.RunCommand("sudo chown postgres:postgres /tmp/keycloak-database.sql")
 		if err != nil {
 			return fmt.Errorf("failed to change permissions on keycloak database sql file: %w", err)
 		}
 
-		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /var/lib/postgresql/keycloak-database.sql`)
+		_, err = sshc.RunCommand(`sudo -iu postgres psql -v ON_ERROR_STOP=on -f /tmp/keycloak-database.sql`)
 		if err != nil {
 			return fmt.Errorf("failed to setup keycloak database: %w", err)
 		}
@@ -74,7 +73,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// proceed with the default one.
 	if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI == "" {
 		extraArguments = append(extraArguments, "--import-realm")
-		keycloakRealmFile, err := assets.AssetString("mattermost-realm.json")
+		keycloakRealmFile, err := AssetString("mattermost-realm.json")
 		if err != nil {
 			return fmt.Errorf("failed to read default keycloak realm file: %w", err)
 		}
@@ -379,7 +378,7 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 	cfg.SamlSettings.IdpDescriptorURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName)
 	cfg.SamlSettings.IdpMetadataURL = model.NewPointer(keycloakUrl + "/realms/" + t.config.ExternalAuthProviderSettings.KeycloakRealmName + "/protocol/saml/descriptor")
 	cfg.SamlSettings.ServiceProviderIdentifier = model.NewPointer(t.config.ExternalAuthProviderSettings.KeycloakSAMLClientID)
-	cfg.SamlSettings.AssertionConsumerServiceURL = model.NewPointer("http://" + getServerURL(t.output, t.config) + "/login/sso/saml")
+	cfg.SamlSettings.AssertionConsumerServiceURL = model.NewPointer(getServerURL(t.output, t.config) + "/login/sso/saml")
 	cfg.SamlSettings.SignatureAlgorithm = model.NewPointer("RSAwithSHA1")
 	cfg.SamlSettings.CanonicalAlgorithm = model.NewPointer("Canonical1.0")
 	cfg.SamlSettings.ScopingIDPProviderId = model.NewPointer("")

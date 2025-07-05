@@ -78,6 +78,17 @@ func Login(u user.User) UserActionResponse {
 		return UserActionResponse{Err: NewUserError(err)}
 	}
 
+	cpaEnabled, resp := CustomProfileAttributesEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+	if cpaEnabled {
+		err = u.GetCPAFields()
+		if err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
 	return UserActionResponse{Info: "logged in"}
 }
 
@@ -1031,6 +1042,11 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 
 func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
 	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
+	return allow, UserActionResponse{}
+}
+
+func CustomProfileAttributesEnabled(u user.User) (bool, UserActionResponse) {
+	allow := u.Store().FeatureFlags()["CustomProfileAttributes"]
 	return allow, UserActionResponse{}
 }
 

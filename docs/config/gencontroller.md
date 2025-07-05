@@ -30,6 +30,12 @@ The number of private channels to be created.
 
 The number of public channels to be created.
 
+## NumCPAFields
+
+*int64*
+
+The number of Custom Profile Attribute fields to be created.
+
 ## NumPosts
 
 *int64*

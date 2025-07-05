@@ -21,7 +21,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -232,19 +231,21 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		switch {
 		// SiteURL defined, multiple app nodes: we use SiteURL, since that points to the proxy itself
 		case t.config.SiteURL != "" && t.output.HasProxy():
-			siteURL = "http://" + t.config.SiteURL
+			siteURL = t.config.ServerScheme + "://" + t.config.SiteURL
 		// SiteURL defined, single app node: we use SiteURL plus the port, since SiteURL points to the app node (which is listening in 8065)
 		case t.config.SiteURL != "":
-			siteURL = "http://" + t.config.SiteURL + ":8065"
+			siteURL = t.config.ServerScheme + "://" + t.config.SiteURL + ":8065"
 		// SiteURL not defined, multiple app nodes: we use the proxy's public DNS
 		case t.output.HasProxy():
 			// This case will only succeed if siteURL is empty.
 			// And it's an error to have siteURL empty and set multiple proxies. (see (c *Config) validateProxyConfig)
 			// So we can safely take the DNS of the first entry.
-			siteURL = "http://" + t.output.Proxies[0].GetConnectionDNS()
+			siteURL = t.config.ServerScheme + "://" + t.output.Proxies[0].PublicDNS
 		// SiteURL not defined, single app node: we use the app node's public DNS plus port
+		case t.config.ServerURL != "":
+			siteURL = t.config.ServerScheme + "://" + t.config.ServerURL
 		default:
-			siteURL = "http://" + t.output.Instances[0].GetConnectionDNS() + ":8065"
+			siteURL = t.config.ServerScheme + "://" + t.output.Instances[0].PublicDNS + ":8065"
 		}
 
 		// Updating the config.json for each instance of app server
@@ -264,6 +265,7 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 			pingURL = t.output.Proxies[0].GetConnectionDNS()
 		}
 
+		// Non-ssl is used for pinging the server
 		if err := pingServer("http://" + pingURL); err != nil {
 			return fmt.Errorf("error whiling pinging server: %w", err)
 		}
@@ -865,7 +867,6 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 
 		cacheObjects := "10m"
 		cacheSize := "3g"
-		rxQueueSize := 1024 // This is the default on most EC2 instances
 
 		info, err := t.getProxyInstanceInfo()
 		if err != nil {
@@ -877,11 +878,6 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			cacheObjects = "50m"
 			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
 			// from my tests. So there's no point stretching it further.
-
-			// MM-58179
-			// We are increasing the receive ring buffer size on the network card. This proved to significantly lower packet loss
-			// (and retransmissions) on particularly bursty connections (e.g. websockets).
-			rxQueueSize = 8192
 		}
 
 		nginxConfig, err := genNginxConfig(t.config)
@@ -939,10 +935,8 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			return
 		}
 
-		incRXSizeCmd := fmt.Sprintf("sudo ethtool -G $(ip route show to default | awk '{print $5}') rx %d", rxQueueSize)
-		cmd = fmt.Sprintf("%s && sudo sysctl -p && sudo systemctl restart nginx", incRXSizeCmd)
-		if out, err := sshc.RunCommand(cmd); err != nil {
-			mlog.Error("error running ssh command", mlog.String("output", string(out)), mlog.String("cmd", cmd), mlog.Err(err))
+		if err := modifyRXSize(sshc); err != nil {
+			mlog.Error("unable to modify the RX buffer size", mlog.Err(err))
 			return
 		}
 	}()
@@ -1206,19 +1200,19 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
-	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
-	assets.RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
-	assets.RestoreAssets(t.config.TerraformStateDir, "saml-idp.crt")
-	assets.RestoreAssets(t.config.TerraformStateDir, "provisioners")
+	RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
+	RestoreAssets(t.config.TerraformStateDir, "variables.tf")
+	RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
+	RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
+	RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
+	RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
+	RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
+	RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
+	RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
+	RestoreAssets(t.config.TerraformStateDir, "saml-idp.crt")
+	RestoreAssets(t.config.TerraformStateDir, "provisioners")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
