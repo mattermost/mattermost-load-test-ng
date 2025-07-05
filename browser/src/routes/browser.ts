@@ -26,7 +26,6 @@ async function addBrowser(
   reply: FastifyReply,
 ): Promise<IReply> {
   const {userId, password} = request.body;
-  console.log('addBrowser', userId, password);
 
   if (!userId || userId.length === 0) {
     return reply.code(400).send({

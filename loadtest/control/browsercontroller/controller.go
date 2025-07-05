@@ -36,13 +36,15 @@ type BrowserController struct {
 
 // AddBrowserRequest represents the request body for adding a browser session
 type AddBrowserRequest struct {
-	UserID   string `json:"userId"`
-	Password string `json:"password"`
+	// UserID is the username or email of the user to add a browser session
+	UserID   string `json:"userId" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 // RemoveBrowserRequest represents the request body for removing a browser session
 type RemoveBrowserRequest struct {
-	UserID string `json:"userId"`
+	// UserID is the username or email of the user to remove a browser session
+	UserID string `json:"userId" validate:"required"`
 }
 
 // BrowserAPIResponse represents the response from the browser API
@@ -92,7 +94,7 @@ func (c *BrowserController) Run() {
 	c.mu.Unlock()
 
 	if c.user == nil {
-		c.sendFailStatus("controller was not initialized")
+		c.sendFailStatus("browser controller was not initialized")
 		return
 	}
 
@@ -111,13 +113,12 @@ func (c *BrowserController) Run() {
 		close(c.stoppedChan)
 	}()
 
-	// Create browser session (equivalent to adding a user)
-	if err := c.createBrowserSession(); err != nil {
+	if err := c.addBrowser(); err != nil {
 		c.status <- c.newErrorStatus(control.NewUserError(err))
 		return
 	}
 
-	c.status <- c.newInfoStatus("browser session created successfully")
+	c.status <- c.newInfoStatus("browser added successfully")
 
 	// Wait until stop is called
 	<-c.stopChan
@@ -126,6 +127,12 @@ func (c *BrowserController) Run() {
 // SetRate sets the relative speed of execution. For browser controller,
 // this is a no-op since browser actions are managed by the Node.js server.
 func (c *BrowserController) SetRate(rate float64) error {
+	if rate < 0 {
+		return errors.New("rate should be a positive value")
+	}
+
+	// Currently unused but should be stored anyways
+	c.rate = rate
 	return nil
 }
 
@@ -139,11 +146,11 @@ func (c *BrowserController) Stop() {
 	}
 	c.mu.Unlock()
 
-	// Remove browser session before stopping
-	if err := c.removeBrowserSession(); err != nil {
+	// Remove browser before stopping
+	if err := c.removeBrowser(); err != nil {
 		c.status <- c.newErrorStatus(control.NewUserError(err))
 	} else {
-		c.status <- c.newInfoStatus("browser session removed successfully")
+		c.status <- c.newInfoStatus("browser removed successfully")
 	}
 
 	close(c.stopChan)
@@ -160,19 +167,21 @@ func (c *BrowserController) InjectAction(actionID string) error {
 	return nil
 }
 
-// createBrowserSession makes a POST request to create a new browser session
-func (c *BrowserController) createBrowserSession() error {
+// addBrowser makes a POST request to BrowserAPI to add a browser
+func (c *BrowserController) addBrowser() error {
 	// Get user credentials from the user entity
 	userStore := c.user.Store()
+
+	if userStore.Username() == "" {
+		return fmt.Errorf("username is empty")
+	}
+	if userStore.Password() == "" {
+		return fmt.Errorf("password is empty")
+	}
 
 	requestBody := AddBrowserRequest{
 		UserID:   userStore.Username(),
 		Password: userStore.Password(),
-	}
-
-	// If username is empty, use email as userId
-	if requestBody.UserID == "" {
-		requestBody.UserID = userStore.Email()
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -183,9 +192,13 @@ func (c *BrowserController) createBrowserSession() error {
 	url := fmt.Sprintf("%s/browsers", c.browserAPIURL)
 	resp, err := c.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return fmt.Errorf("failed to create browser session: %w", err)
+		return fmt.Errorf("failed to add browser: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("HTTP error: %d", resp.StatusCode)
+	}
 
 	var apiResponse BrowserAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
@@ -203,10 +216,14 @@ func (c *BrowserController) createBrowserSession() error {
 	return nil
 }
 
-// removeBrowserSession makes a DELETE request to remove the browser session
-func (c *BrowserController) removeBrowserSession() error {
+// removeBrowser makes a DELETE request to BrowserAPI to remove the browser
+func (c *BrowserController) removeBrowser() error {
 	// Get user credentials from the user entity
 	userStore := c.user.Store()
+
+	if userStore.Username() == "" {
+		return fmt.Errorf("username is empty")
+	}
 
 	requestBody := RemoveBrowserRequest{
 		UserID: userStore.Username(),
@@ -231,9 +248,13 @@ func (c *BrowserController) removeBrowserSession() error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to remove browser session: %w", err)
+		return fmt.Errorf("failed to remove browser: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("HTTP error: %d", resp.StatusCode)
+	}
 
 	var apiResponse BrowserAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
@@ -241,11 +262,13 @@ func (c *BrowserController) removeBrowserSession() error {
 	}
 
 	if !apiResponse.Success {
+		errorCode := "unknown error"
 		errorMsg := "unknown error"
 		if apiResponse.Error != nil {
+			errorCode = apiResponse.Error.Code
 			errorMsg = apiResponse.Error.Message
 		}
-		return fmt.Errorf("browser API returned error: %s", errorMsg)
+		return fmt.Errorf("browser API returned error: %s-%s", errorCode, errorMsg)
 	}
 
 	return nil
