@@ -3,30 +3,32 @@
 
 import {app, log} from './app.js';
 
-const BROWSER_AGENT_API_URL = 'http://localhost:5000';
+// This is a constant for the API URL of the LTBrowser server.
+// Also defined in loadtest/control/browsercontroller/controller.go
+const LT_BROWSER_API_URL = 'http://localhost:5000';
 
 async function startServer() {
   try {
-    const apiURL = new URL(BROWSER_AGENT_API_URL);
+    const apiURL = new URL(LT_BROWSER_API_URL);
     const host = apiURL.hostname;
     const port = Number(apiURL.port);
 
     await app.listen({host, port});
   } catch (err) {
-    log.error(`[server] Server failed to start: ${err}`);
+    log.error(`[server] LTBrowser server failed to start: ${err}`);
     process.exit(1);
   }
 }
 
 async function stopServer(signal: string) {
-  log.info(`[server] Received ${signal}, Server stopping`);
+  log.info(`[server] Received ${signal}, LTBrowser server stopping`);
 
   try {
     await app.close();
-    log.info('[server] Server stopped');
+    log.info('[server] LTBrowser server stopped');
     process.exit(0);
   } catch (err) {
-    log.error(`[server] Error during shutdown: ${err}`);
+    log.error(`[server] LTBrowser server encountered error during shutdown: ${err}`);
     process.exit(1);
   }
 }

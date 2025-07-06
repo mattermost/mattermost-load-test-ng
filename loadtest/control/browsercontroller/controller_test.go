@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 	require.NotNil(t, controller)
 	require.Equal(t, 1, controller.id)
 	require.Equal(t, user, controller.user)
-	require.Equal(t, BROWSER_AGENT_API_URL, controller.browserAPIURL)
+	require.Equal(t, LT_BROWSER_API_URL, controller.ltBrowserApiUrl)
 	require.Equal(t, 1.0, controller.rate)
 	require.NotNil(t, controller.httpClient)
 	require.False(t, controller.isRunning)
@@ -82,14 +82,14 @@ func TestRun(t *testing.T) {
 	// Create a controller with a nil user
 	statusChanWithoutUser := make(chan control.UserStatus, 10)
 	controllerWithEmptyUser := &BrowserController{
-		id:            1,
-		user:          nil,
-		status:        statusChanWithoutUser,
-		rate:          1.0,
-		stopChan:      make(chan struct{}),
-		stoppedChan:   make(chan struct{}),
-		browserAPIURL: BROWSER_AGENT_API_URL,
-		isRunning:     false,
+		id:              1,
+		user:            nil,
+		status:          statusChanWithoutUser,
+		rate:            1.0,
+		stopChan:        make(chan struct{}),
+		stoppedChan:     make(chan struct{}),
+		ltBrowserApiUrl: LT_BROWSER_API_URL,
+		isRunning:       false,
 	}
 
 	// Test that controller's Run method fails if the user is nil
@@ -271,7 +271,7 @@ func TestAddBrowser(t *testing.T) {
 	statusChanValid := make(chan control.UserStatus, 10)
 	controllerValid, err := New(1, newUser(t, "testuser", "testpass"), statusChanValid)
 	require.NoError(t, err)
-	controllerValid.browserAPIURL = mockServer.URL
+	controllerValid.ltBrowserApiUrl = mockServer.URL
 
 	// Test that the browser is added successfully
 	err = controllerValid.addBrowser()
@@ -290,7 +290,7 @@ func TestAddBrowser(t *testing.T) {
 	statusChanError := make(chan control.UserStatus, 10)
 	controllerError, err := New(1, newUser(t, "testuser", "testpass"), statusChanError)
 	require.NoError(t, err)
-	controllerError.browserAPIURL = mockServerError.URL
+	controllerError.ltBrowserApiUrl = mockServerError.URL
 
 	// Test that the addBrowser fails due to API returned error
 	err = controllerError.addBrowser()
@@ -308,7 +308,7 @@ func TestAddBrowser(t *testing.T) {
 	statusChanHTTPError := make(chan control.UserStatus, 10)
 	controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass"), statusChanHTTPError)
 	require.NoError(t, err)
-	controllerHTTPError.browserAPIURL = mockServerHTTPError.URL
+	controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
 	// Test that the addBrowser fails due to HTTP error
 	err = controllerHTTPError.addBrowser()
@@ -351,7 +351,7 @@ func TestRemoveBrowser(t *testing.T) {
 	statusChanValid := make(chan control.UserStatus, 10)
 	controllerValid, err := New(1, newUser(t, "testuser", "testpass"), statusChanValid)
 	require.NoError(t, err)
-	controllerValid.browserAPIURL = mockServer.URL
+	controllerValid.ltBrowserApiUrl = mockServer.URL
 
 	// Test that the browser is removed successfully
 	err = controllerValid.removeBrowser()
@@ -370,7 +370,7 @@ func TestRemoveBrowser(t *testing.T) {
 	statusChanError := make(chan control.UserStatus, 10)
 	controllerError, err := New(1, newUser(t, "testuser", "testpass"), statusChanError)
 	require.NoError(t, err)
-	controllerError.browserAPIURL = mockServerError.URL
+	controllerError.ltBrowserApiUrl = mockServerError.URL
 
 	// Test that the removeBrowser fails due to API returned error
 	err = controllerError.removeBrowser()
@@ -388,7 +388,7 @@ func TestRemoveBrowser(t *testing.T) {
 	statusChanHTTPError := make(chan control.UserStatus, 10)
 	controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass"), statusChanHTTPError)
 	require.NoError(t, err)
-	controllerHTTPError.browserAPIURL = mockServerHTTPError.URL
+	controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
 	// Test that the removeBrowser fails due to HTTP error
 	err = controllerHTTPError.removeBrowser()

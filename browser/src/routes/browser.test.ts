@@ -252,8 +252,8 @@ describe('API /browsers', () => {
       expect(response.body).toEqual({
         success: false,
         error: {
-          code: 'SERVER_URL_MISSING',
-          message: 'serverURL is missing in config.json',
+          code: 'MM_SERVER_URL_MISSING',
+          message: 'Mattermost server URL is missing in config.json',
         },
       });
     });

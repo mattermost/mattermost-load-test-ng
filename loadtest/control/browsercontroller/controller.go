@@ -16,22 +16,22 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
-const BROWSER_AGENT_API_URL = "http://localhost:5000"
+const LT_BROWSER_API_URL = "http://localhost:5000"
 
 // BrowserController is a controller that manages browser sessions
 // by communicating with the browserLt API server.
 type BrowserController struct {
-	id            int
-	user          user.User
-	status        chan<- control.UserStatus
-	rate          float64
-	stopChan      chan struct{}
-	stoppedChan   chan struct{}
-	wg            *sync.WaitGroup
-	browserAPIURL string
-	httpClient    *http.Client
-	isRunning     bool
-	mu            sync.Mutex
+	id              int
+	user            user.User
+	status          chan<- control.UserStatus
+	rate            float64
+	stopChan        chan struct{}
+	stoppedChan     chan struct{}
+	wg              *sync.WaitGroup
+	ltBrowserApiUrl string
+	httpClient      *http.Client
+	isRunning       bool
+	mu              sync.Mutex
 }
 
 // AddBrowserRequest represents the request body for adding a browser session
@@ -67,14 +67,14 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 	}
 
 	return &BrowserController{
-		id:            id,
-		user:          user,
-		status:        status,
-		rate:          1.0,
-		stopChan:      make(chan struct{}),
-		stoppedChan:   make(chan struct{}),
-		wg:            &sync.WaitGroup{},
-		browserAPIURL: BROWSER_AGENT_API_URL,
+		id:              id,
+		user:            user,
+		status:          status,
+		rate:            1.0,
+		stopChan:        make(chan struct{}),
+		stoppedChan:     make(chan struct{}),
+		wg:              &sync.WaitGroup{},
+		ltBrowserApiUrl: LT_BROWSER_API_URL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -189,7 +189,7 @@ func (c *BrowserController) addBrowser() error {
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/browsers", c.browserAPIURL)
+	url := fmt.Sprintf("%s/browsers", c.ltBrowserApiUrl)
 	resp, err := c.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to add browser: %w", err)
@@ -239,7 +239,7 @@ func (c *BrowserController) removeBrowser() error {
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/browsers", c.browserAPIURL)
+	url := fmt.Sprintf("%s/browsers", c.ltBrowserApiUrl)
 	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)

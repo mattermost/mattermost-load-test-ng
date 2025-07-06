@@ -56,7 +56,7 @@ describe('src/server', () => {
 
     await import('./server.js');
 
-    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Server failed to start:'));
+    expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('LTBrowser server failed to start:'));
   });
 
   test('should handle server shutdown on SIGTERM', async () => {
@@ -65,7 +65,7 @@ describe('src/server', () => {
 
     process.emit('SIGTERM', 'SIGTERM');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGTERM, Server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGTERM, LTBrowser server stopping'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
@@ -75,7 +75,7 @@ describe('src/server', () => {
 
     process.emit('SIGINT', 'SIGINT');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGINT, Server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGINT, LTBrowser server stopping'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
@@ -87,7 +87,9 @@ describe('src/server', () => {
     process.emit('SIGTERM', 'SIGTERM');
 
     await vi.waitFor(() =>
-      expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Error during shutdown:')),
+      expect(mockLogError).toHaveBeenCalledWith(
+        expect.stringContaining('LTBrowser server encountered error during shutdown:'),
+      ),
     );
   });
 

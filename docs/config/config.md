@@ -192,7 +192,7 @@ The location of the log file.
 
 When true enables colored output.
 
-## BrowserLogSetting
+## BrowserLogSettings
 
 ### EnableConsole
 
@@ -206,20 +206,35 @@ When true, the browser server outputs log messages to the console based on Conso
 
 Level of detail at which log events are written to the console.
 
-Possible values:
+Possible values (in order of decreasing verbosity, these are case sensitive):
 - `trace`
 - `debug`
 - `info`
 - `warn`
 - `error`
 - `fatal`
-- `silent`
 
 ### EnableFile
 
 *bool*
 
 When true, the browser server outputs log messages to the file specified by the `FileLocation` setting.
+
+### FileLevel
+
+*string*
+
+Level of detail at which log events are written to log files. Exactly same as `ConsoleLevel` as mentioned above.
+
+Possible values (in order of decreasing verbosity, these are case sensitive):
+- `trace`
+- `debug`
+- `info`
+- `warn`
+- `error`
+- `fatal`
+
+When both `EnableConsole` and `EnableFile` are true, the logs are written asynchronously to reduce overhead.
 
 ### FileLocation
 

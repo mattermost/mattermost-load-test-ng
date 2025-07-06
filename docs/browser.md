@@ -103,6 +103,58 @@ make build
 
 - `BROWSER_AGENT_API_URL`: Required. The URL where the browser agent will listen (e.g., `http://127.0.0.1:5000`)
 
+### Configuration
+
+The browser agent uses configuration from `config/config.json` in the project root. Key browser-related settings include:
+
+#### BrowserConfiguration
+```json
+{
+  "BrowserConfiguration": {
+    "Headless": true
+  }
+}
+```
+- `Headless`: Controls whether browsers run in headless mode (true) or with UI (false)
+
+#### BrowserLogSettings
+```json
+{
+  "BrowserLogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "debug",
+    "EnableFile": true,
+    "FileLevel": "info",
+    "FileLocation": "browseragent.log"
+  }
+}
+```
+- `EnableConsole`: Enable/disable console logging
+- `ConsoleLevel`: Log level for console output. Possible values (in order of decreasing verbosity): `trace`, `debug`, `info`, `warn`, `error`, `fatal`
+- `EnableFile`: Enable/disable file logging
+- `FileLevel`: Log level for file output. Same values as `ConsoleLevel`: `trace`, `debug`, `info`, `warn`, `error`, `fatal`
+- `FileLocation`: Path to the log file
+
+When both `EnableConsole` and `EnableFile` are true, the logs are written asynchronously to reduce overhead.
+
+#### UsersConfiguration
+```json
+{
+  "UsersConfiguration": {
+    "MaxActiveBrowserUsers": 10
+  }
+}
+```
+- `MaxActiveBrowserUsers`: Maximum number of concurrent browser sessions
+
+**Important**: After modifying `BrowserLogSettings` in `config/config.json`, you must restart the Browser API server for changes to take effect:
+
+```bash
+# Stop the current server (Ctrl+C) then restart
+make start        # For production
+make start-dev    # For development
+```
+
 ## Test Scenarios
 
 The browser agent includes both programmatic test scenarios for load testing and standalone test specifications for manual testing and development.

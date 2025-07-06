@@ -4,32 +4,65 @@
 import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import pino from 'pino';
 
 import {
   isConsoleLoggingEnabled,
   getConsoleLoggingLevel,
-  getFileLoggingLocation,
   isFileLoggingEnabled,
+  getFileLoggingLevel,
+  getFileLoggingLocation,
 } from './config.js';
 
 export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
-  if (!isConsoleLoggingEnabled()) {
+  const consoleLoggingEnabled = isConsoleLoggingEnabled();
+  const fileLoggingEnabled = isFileLoggingEnabled();
+
+  if (!consoleLoggingEnabled && !fileLoggingEnabled) {
     return false;
   }
 
-  const loggerConfig: FastifyLoggerOptions = {
-    level: getConsoleLoggingLevel(),
-  };
-
-  if (isFileLoggingEnabled()) {
-    const dirname = path.dirname(fileURLToPath(import.meta.url));
-    const rootDir = path.resolve(dirname, '../../..');
-    const filePath = path.join(rootDir, getFileLoggingLocation());
-
-    loggerConfig.file = filePath;
+  if (consoleLoggingEnabled && !fileLoggingEnabled) {
+    return {
+      level: getConsoleLoggingLevel(),
+    };
   }
 
-  return loggerConfig;
+  const dirname = path.dirname(fileURLToPath(import.meta.url));
+  const rootDir = path.resolve(dirname, '../../..');
+  const filePath = path.join(rootDir, getFileLoggingLocation());
+
+  if (!consoleLoggingEnabled && fileLoggingEnabled) {
+    return {
+      level: getFileLoggingLevel(),
+      file: filePath,
+    };
+  }
+
+  // When both console and file logging are enabled, create transport stream
+  // and use it for both console and file logging simultaneously
+  const transport = pino.transport({
+    targets: [
+      {
+        target: 'pino/file',
+        level: getConsoleLoggingLevel(),
+        options: {
+          destination: 1, // standard output to console
+        },
+      },
+      {
+        target: 'pino/file',
+        level: getFileLoggingLevel(),
+        options: {
+          destination: filePath,
+        },
+      },
+    ],
+  });
+
+  return {
+    stream: transport,
+  };
 }
 
 export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {

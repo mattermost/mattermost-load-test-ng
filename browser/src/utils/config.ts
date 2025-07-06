@@ -32,7 +32,7 @@ export function isBrowserHeadless(): boolean {
 }
 
 export function isConsoleLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings.EnableConsole;
+  return configJson.BrowserLogSettings?.EnableConsole ?? false;
 }
 
 export function getConsoleLoggingLevel(): string {
@@ -40,7 +40,11 @@ export function getConsoleLoggingLevel(): string {
 }
 
 export function isFileLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings.EnableFile;
+  return configJson.BrowserLogSettings?.EnableFile ?? true;
+}
+
+export function getFileLoggingLevel(): string {
+  return configJson.BrowserLogSettings.FileLevel;
 }
 
 export function getFileLoggingLocation(): string {

@@ -149,6 +149,16 @@ type BrowserConfiguration struct {
 	Headless bool `default:"true"`
 }
 
+// BrowserLogSettings holds information to be used to initialize the logger for the LTBrowser API
+// refer to /browser/src/utils/log.ts
+type BrowserLogSettings struct {
+	EnableConsole bool   `default:"false"`
+	ConsoleLevel  string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+	EnableFile    bool   `default:"true"`
+	FileLevel     string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+	FileLocation  string `default:"browseragent.log"`
+}
+
 // Config holds information needed to create and initialize a new load-test
 // agent.
 type Config struct {
@@ -158,7 +168,7 @@ type Config struct {
 	UsersConfiguration          UsersConfiguration
 	BrowserConfiguration        BrowserConfiguration
 	LogSettings                 logger.Settings
-	BrowserLogSettings          logger.Settings
+	BrowserLogSettings          BrowserLogSettings
 }
 
 // IsValid reports whether a given Config is valid or not.

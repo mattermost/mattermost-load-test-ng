@@ -66,9 +66,10 @@
     "EnableColor": false
   },
   "BrowserLogSettings": {
-    "EnableConsole": true,
-    "ConsoleLevel": "debug",
+    "EnableConsole": false,
+    "ConsoleLevel": "error",
     "EnableFile": true,
+    "FileLevel": "error",
     "FileLocation": "browseragent.log"
   }
 }

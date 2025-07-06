@@ -52,8 +52,8 @@ async function addBrowser(
     return reply.code(400).send({
       success: false,
       error: {
-        code: 'SERVER_URL_MISSING',
-        message: 'serverURL is missing in config.json',
+        code: 'MM_SERVER_URL_MISSING',
+        message: 'Mattermost server URL is missing in config.json',
       },
     });
   }
