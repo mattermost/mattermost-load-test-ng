@@ -383,7 +383,7 @@ func (t *Terraform) InitCreds() error {
 		go func() {
 			id := model.NewId()
 			mlog.Info("Starting new ticker", mlog.String("id", id))
-			ticker := time.Tick(25 * time.Minute)
+			ticker := time.Tick(1 * time.Minute)
 			for range ticker {
 				t.awsCfgMut.Lock()
 				mlog.Info("Credentials refresher: starting", mlog.String("id", id))
