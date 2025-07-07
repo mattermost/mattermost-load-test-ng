@@ -343,7 +343,7 @@ func getServerVersion(serverURL string) (string, error) {
 
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
-func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics, isBAInstance bool) (loadtest.NewController, error) {
+func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics, isBrowserAgentInstance bool) (loadtest.NewController, error) {
 	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
 
 	// http.Transport to be shared amongst all clients.
@@ -459,7 +459,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 		// We detect early on if the current instance is going to run browser agents
 		// this is because of design decision to run only browser agents in the instance
-		if isBAInstance {
+		if isBrowserAgentInstance {
 			return browsercontroller.New(id, ue, status)
 		}
 

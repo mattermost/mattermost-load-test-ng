@@ -94,18 +94,14 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.activeControllers)
-	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
+	if !lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
+		return ErrMaxUsersReached
+	}
+	if lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveBrowserUsers {
 		return ErrMaxUsersReached
 	}
 
 	var controller control.UserController
-
-	// if lt.isBrowserAgent {
-	// 	controller = NewBrowserController()
-	// }
-	// if lt.isInBrowserAgentMode {
-	// controller = NewBrowserController()
-	// }
 
 	if len(lt.idleControllers) > 0 {
 		controller = lt.idleControllers[0]
