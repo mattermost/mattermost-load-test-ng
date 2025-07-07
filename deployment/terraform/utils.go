@@ -411,7 +411,7 @@ func refreshToken(t *Terraform, id string) {
 
 	// Create new STS service and assume role
 	stsSvc := sts.NewFromConfig(t.awsCfg)
-	creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
+	creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN, func(opt *stscreds.AssumeRoleOptions) { opt.Duration = 1 * time.Hour })
 	newCredCache := aws.NewCredentialsCache(creds)
 
 	// Test new credentials before applying
