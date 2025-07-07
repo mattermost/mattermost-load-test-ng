@@ -19,7 +19,7 @@
       "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz",
       "NumUsers": 1000,
       "Duration": "5m"
-    }
+    },
     {
       "Type": "bounded",
       "DBEngine": "mysql",
