@@ -45,7 +45,8 @@ assets: ## Generate the assets. Install go-bindata if needed.
 	go fmt ./...
 
 build-browser-api: ## Build the browser testing HTTP server.
-	cd browser && npm run server:build
+	cd browser
+	@$(MAKE) build
 
 build: assets build-linux build-osx build-browser-api ## Generate the assets and build the binary for all platforms.
 
@@ -79,7 +80,8 @@ endif
 		cp -r browser/build $(PLATFORM_DIST_PATH)/browser; \
 		cp -r browser/node_modules $(PLATFORM_DIST_PATH)/browser; \
 		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
-		cp browser/.env $(PLATFORM_DIST_PATH)/; \
+		cp browser/package-lock.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/Makefile $(PLATFORM_DIST_PATH)/browser; \
 	fi
 
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))

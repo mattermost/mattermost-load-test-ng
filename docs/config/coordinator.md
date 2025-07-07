@@ -26,6 +26,28 @@ The URL to the load-test API server that will run the agent.
 
 The maximum number of concurrently active users to be run across the whole load-agent cluster.
 
+### BrowserAgents
+
+*[]cluster.LoadAgentConfig*
+
+#### Id
+
+*string*
+
+The unique identifier of the browser load-agent to be created and run.
+
+#### ApiURL
+
+*string*
+
+The URL to the load-test API server that will run the agent. Since this is an agent as well, it will be the same as the load-test API server. This should not be confused with the LTBrowser API server which is a separate server that is controlled by the load-test API server.
+
+### MaxActiveBrowserUsers
+
+*int*
+
+The maximum number of concurrently active browser users to be run across the whole load-agent cluster.
+
 ## MonitorConfig
 
 *performance.MonitorConfig*

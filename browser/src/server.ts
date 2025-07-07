@@ -9,9 +9,9 @@ const LT_BROWSER_API_URL = 'http://localhost:5000';
 
 async function startServer() {
   try {
-    const apiURL = new URL(LT_BROWSER_API_URL);
-    const host = apiURL.hostname;
-    const port = Number(apiURL.port);
+    const url = new URL(LT_BROWSER_API_URL);
+    const host = url.hostname;
+    const port = Number(url.port);
 
     await app.listen({host, port});
   } catch (err) {

@@ -34,26 +34,29 @@ install-playwright: install-dependencies
 ## Install npm dependencies and Playwright Chromium browser with its dependencies
 install: install-dependencies install-playwright
 
+## Reinstall npm dependencies and Playwright Chromium browser with its dependencies
+clean-install: clean install-dependencies install-playwright
+
 ## Build the Browser API server
-build: clean install-dependencies install-playwright
+build: clean-install install-dependencies install-playwright
 	@echo "Building server"
 	./node_modules/.bin/tsc
 	@echo "Browser API server built successfully"
 
 ## Start the browser API server in production mode
 ## Note: This installs the browser in headless mode only
-start: build
-	@echo "Starting Browser API server"
+start: install
+	@echo "Starting LTBrowser API server"
 	node build/server.js
 
 ## Start the browser API server in development mode
 dev: install
-	@echo "Starting Browser API server in development mode"
+	@echo "Starting LTBrowser API server in development mode"
 	./node_modules/.bin/tsx src/server.ts
 
 ## Start the browser API server in development watch mode
 dev-watch: install
-	@echo "Starting browser api server in development watch mode"
+	@echo "Starting LTBrowser API server in development watch mode"
 	./node_modules/.bin/tsx watch src/server.ts
 
 ## Show this help message

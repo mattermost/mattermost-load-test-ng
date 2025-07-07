@@ -108,11 +108,11 @@ func RunLoadTestCmdF(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	newC, err := api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil)
+	newC, err := api.NewControllerWrapper(config, ucConfig, userOffset, userPrefix, nil, false)
 	if err != nil {
 		return fmt.Errorf("error while creating new controller: %w", err)
 	}
-	lt, err := loadtest.New(config, newC, log)
+	lt, err := loadtest.New(config, newC, log, false)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

@@ -21,7 +21,8 @@ import (
 
 // api keeps track of the load-test API server state.
 type api struct {
-	mut       sync.RWMutex
+	mut sync.RWMutex
+	// This is a map of load-test agent id to the load-test agent instance.
 	resources map[string]interface{}
 	metrics   *performance.Metrics
 	coordLog  *mlog.Logger
@@ -35,11 +36,14 @@ func (a *api) getResource(id string) (interface{}, bool) {
 	return val, ok
 }
 
+// It is used to store the load-test agent in the resources map.
+// which can be retrieved later using getResource
 func (a *api) setResource(id string, res interface{}) bool {
 	a.mut.Lock()
 	defer a.mut.Unlock()
 	if _, ok := a.resources[id]; !ok {
 		a.resources[id] = res
+		mlog.Info("API Resource set for id: " + id)
 		return true
 	}
 	return false
@@ -95,8 +99,6 @@ func SetupAPIRouter(coordLog, agentLog *mlog.Logger) *mux.Router {
 	r := router.PathPrefix("/loadagent").Subrouter()
 	r.HandleFunc("/create", a.createLoadAgentHandler).Methods("POST").Queries("id", "{^[a-z]+[0-9]*$}")
 	r.HandleFunc("/{id}/run", a.runLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/runbrowser", a.runBrowserLoadAgentHandler).Methods("POST")
-	r.HandleFunc("/{id}/stopbrowser", a.stopBrowserLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}/stop", a.stopLoadAgentHandler).Methods("POST")
 	r.HandleFunc("/{id}", a.destroyLoadAgentHandler).Methods("DELETE")
 	r.HandleFunc("/{id}", a.getLoadAgentStatusHandler).Methods("GET")

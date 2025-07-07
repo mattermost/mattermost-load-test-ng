@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simplecontroller"
@@ -298,4 +300,76 @@ func TestGetUserCredentials(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsBrowserAgentInstance(t *testing.T) {
+	// Get original home directory to restore later
+	originalHome := os.Getenv("HOME")
+
+	t.Run("returns true when agent_type.txt contains browser_agent", func(t *testing.T) {
+		// Create temporary directory to use as home
+		tempDir, err := os.MkdirTemp("", "test_home_browser")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Set temporary home directory
+		os.Setenv("HOME", tempDir)
+		defer os.Setenv("HOME", originalHome)
+
+		// Create agent_type.txt file with browser_agent content
+		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
+		err = os.WriteFile(agentTypeFile, []byte("  "+deployment.AgentTypeBrowser+"  \n"), 0644)
+		require.NoError(t, err)
+
+		// Test the function
+		result := isBrowserAgentInstance()
+		require.True(t, result)
+	})
+
+	t.Run("returns false when agent_type.txt contains server_agent", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_home_server")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		os.Setenv("HOME", tempDir)
+		defer os.Setenv("HOME", originalHome)
+
+		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
+		err = os.WriteFile(agentTypeFile, []byte(deployment.AgentTypeServer), 0644)
+		require.NoError(t, err)
+
+		result := isBrowserAgentInstance()
+		require.False(t, result)
+	})
+
+	t.Run("returns false when agent_type.txt file does not exist", func(t *testing.T) {
+		// Create temporary directory to use as home
+		tempDir, err := os.MkdirTemp("", "test_home_missing")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Set temporary home directory
+		os.Setenv("HOME", tempDir)
+		defer os.Setenv("HOME", originalHome)
+
+		// Test the function (no agent_type.txt file created)
+		result := isBrowserAgentInstance()
+		require.False(t, result)
+	})
+
+	t.Run("returns false when agent_type.txt contains unknown content", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test_home_unknown")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		os.Setenv("HOME", tempDir)
+		defer os.Setenv("HOME", originalHome)
+
+		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
+		err = os.WriteFile(agentTypeFile, []byte("unknown_agent_type"), 0644)
+		require.NoError(t, err)
+
+		result := isBrowserAgentInstance()
+		require.False(t, result)
+	})
 }

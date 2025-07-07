@@ -33,7 +33,6 @@ const (
 	UserControllerNoop                          = "noop"
 	UserControllerGenerative                    = "generative"
 	UserControllerCluster                       = "cluster"
-	UserControllerBrowser                       = "browser"
 )
 
 // RatesDistribution maps a rate to a percentage of controllers that should run

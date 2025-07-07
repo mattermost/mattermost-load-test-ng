@@ -16,6 +16,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 )
 
+// This is the URL of the LTBrowser API server ran from /browser
 const LT_BROWSER_API_URL = "http://localhost:5000"
 
 // BrowserController is a controller that manages browser sessions

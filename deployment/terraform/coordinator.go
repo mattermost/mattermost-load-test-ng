@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	BrowserAgentPort = "5000"
+	LT_API_PORT = "4000"
 )
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
@@ -40,15 +40,17 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + LT_API_PORT,
 		})
 	}
 
+	// Notice we are not passing the port of LTBrowser API server here
+	// but its the LT API port since LTBrowser API will be called from LT API server and not directly from coordinator
 	var browserAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.BrowserAgents {
 		browserAgentConfigs = append(browserAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":" + BrowserAgentPort,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + LT_API_PORT,
 		})
 	}
 

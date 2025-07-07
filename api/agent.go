@@ -19,6 +19,7 @@ import (
 	"github.com/blang/semver"
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
@@ -115,7 +116,9 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics)
+	isBAInstance := isBrowserAgentInstance()
+
+	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics, isBAInstance)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -123,7 +126,8 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			Error:   fmt.Sprintf("could not create agent: %s", err),
 		})
 	}
-	lt, err := loadtest.New(&ltConfig, newC, a.agentLog)
+
+	lt, err := loadtest.New(&ltConfig, newC, a.agentLog, isBAInstance)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -132,6 +136,9 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Store the loadTest's LoadTester instance in the API's resource map using the agentId as the key.
+	// This allows the LoadTester to be retrieved later by other API endpoints of /loadtest
 	if ok := a.setResource(agentId, lt); !ok {
 		writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
 			Error: fmt.Sprintf("resource with id %s already exists", agentId),
@@ -176,12 +183,14 @@ func (a *api) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
 	if err = lt.Run(); err != nil {
 		writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return
 	}
+
 	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent started",
 		Status:  lt.Status(),
@@ -334,7 +343,7 @@ func getServerVersion(serverURL string) (string, error) {
 
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
-func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) (loadtest.NewController, error) {
+func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics, isBAInstance bool) (loadtest.NewController, error) {
 	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
 
 	// http.Transport to be shared amongst all clients.
@@ -447,9 +456,10 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
 		ue := userentity.New(ueSetup, ueConfig)
-		// Read the text file which will be created in home directory by terraform to check if this is browser node or agent node
-		// Check here if and return earyly if browser node. return early BrowserController.New(id, ue, status)
-		if true {
+
+		// We detect early on if the current instance is going to run browser agents
+		// this is because of design decision to run only browser agents in the instance
+		if isBAInstance {
 			return browsercontroller.New(id, ue, status)
 		}
 
@@ -479,9 +489,6 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 
 			admin := userentity.New(ueSetup, ueConfig)
 			return clustercontroller.New(id, admin, status)
-		case loadtest.UserControllerBrowser:
-			// Check which type of node we are running on. if this is browser node or agent node
-			return browsercontroller.New(id, ue, status)
 		default:
 			panic("controller type must be valid")
 		}
@@ -601,16 +608,31 @@ func createCustomEmoji(config *loadtest.Config) error {
 	return err
 }
 
-func (a *api) runBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := a.getLoadAgentById(w, r)
+// Checks if the current instance is going to run browser agents.
+func isBrowserAgentInstance() bool {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return
+		mlog.Warn("Failed to get home directory for searching agent_type.txt file", mlog.Err(err))
+		return false
 	}
-}
 
-func (a *api) stopBrowserLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := a.getLoadAgentById(w, r)
-	if err != nil {
-		return
+	// Check for the agent type file created by configureAndRunAgents in deployment/terraform/agent.go
+	agentTypeFile := homeDir + "/" + deployment.AgentTypeFileName
+	if _, err := os.Stat(agentTypeFile); err == nil {
+		file, err := os.ReadFile(agentTypeFile)
+		if err != nil {
+			mlog.Warn("Failed to read agent_type.txt file", mlog.Err(err))
+			return false
+		}
+
+		fileContent := strings.TrimSpace(string(file))
+		if fileContent == deployment.AgentTypeBrowser {
+			mlog.Info("Detected type as browser_agent from agent_type.txt file")
+			return true
+		}
+	} else {
+		mlog.Debug("agent_type.txt file not found in the home directory")
 	}
+
+	return false
 }

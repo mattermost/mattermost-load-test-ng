@@ -20,6 +20,7 @@ import (
 )
 
 const dstUsersFilePath = "/home/{{.Username}}/users.txt"
+const dstAgentTypeFilePath = "/home/{{.Username}}/" + deployment.AgentTypeFileName
 
 func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
@@ -102,10 +103,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 	allAgents := make([]agentInfo, 0, len(t.output.Agents)+len(t.output.BrowserAgents))
 	for i, agent := range t.output.Agents {
-		allAgents = append(allAgents, agentInfo{instance: agent, agentType: "server_agent", index: i})
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeServer, index: i})
 	}
 	for i, agent := range t.output.BrowserAgents {
-		allAgents = append(allAgents, agentInfo{instance: agent, agentType: "browser_agent", index: i})
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeBrowser, index: i})
 	}
 
 	wg := sync.WaitGroup{}
@@ -199,7 +200,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
-				{srcData: agentType, dstPath: t.ExpandWithUser("/home/{{.Username}}/agent_type.txt"), msg: "Uploading agent type file"},
+				{srcData: agentType, dstPath: t.ExpandWithUser(dstAgentTypeFilePath), msg: "Uploading agent type file"},
 			}
 
 			if t.config.UsersFilePath != "" {
