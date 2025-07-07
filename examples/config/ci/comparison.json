@@ -12,6 +12,20 @@
       "Type": "unbounded",
       "DBEngine": "postgresql",
       "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz"
+    },
+    {
+      "Type": "bounded",
+      "DBEngine": "postgresql",
+      "DBDumpURL": "https://lt-public-data.s3.us-east-1.amazonaws.com/20M_710_psql.sql.gz",
+      "NumUsers": 1000,
+      "Duration": "5m"
+    }
+    {
+      "Type": "bounded",
+      "DBEngine": "mysql",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_610_fixed_mysql.sql.gz",
+      "NumUsers": 1000,
+      "Duration": "5m"
     }
   ],
   "Output": {
