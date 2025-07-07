@@ -110,18 +110,40 @@ func (c *BrowserController) Run() {
 		c.mu.Lock()
 		c.isRunning = false
 		c.mu.Unlock()
+		c.user.ClearUserData()
 		c.sendStopStatus()
 		close(c.stoppedChan)
 	}()
+
+	initActions := []control.UserAction{
+		control.SignUp,
+		control.Login,
+		control.JoinTeam,
+	}
+
+	for _, action := range initActions {
+		if resp := action(c.user); resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+			return
+		} else if resp.Info != "" {
+			c.status <- c.newInfoStatus(resp.Info)
+		}
+
+		// If stop signal is received then stop the controller
+		select {
+		case <-c.stopChan:
+			return
+		default:
+		}
+	}
 
 	if err := c.addBrowser(); err != nil {
 		c.status <- c.newErrorStatus(control.NewUserError(err))
 		return
 	}
-
 	c.status <- c.newInfoStatus("browser added successfully")
 
-	// Wait until stop is called
+	// Wait until stop signal is received to stop the controller
 	<-c.stopChan
 }
 
