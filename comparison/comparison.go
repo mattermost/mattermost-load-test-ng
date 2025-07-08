@@ -74,7 +74,7 @@ func (c *Comparison) Run() (Output, error) {
 	}
 
 	nLoadTests := c.getLoadTestsCount()
-	resultsCh := make(chan Result, nLoadTests)
+	resultsCh := make(chan *Result, nLoadTests)
 
 	// Run tests concurrently
 	err = c.deploymentAction(func(t *terraform.Terraform, dpID string, dpConfig *deploymentConfig) error {
@@ -88,7 +88,7 @@ func (c *Comparison) Run() (Output, error) {
 
 		// Run tests for each deployment
 		for ltID, lt := range dpConfig.loadTests {
-			res := Result{deploymentID: dpID}
+			res := &Result{deploymentID: dpID}
 			dumpFilename := lt.getDumpFilename(ltID)
 			s3BucketURI := lt.S3BucketDumpURI
 			for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
@@ -113,6 +113,11 @@ func (c *Comparison) Run() (Output, error) {
 				}
 			}
 
+			// For each pair of base/new builds, compare the results and generate the report
+			res, err := c.getResults(t, dpConfig, res)
+			if err != nil {
+				return err
+			}
 			resultsCh <- res
 		}
 
@@ -127,8 +132,10 @@ func (c *Comparison) Run() (Output, error) {
 	mlog.Info("load-tests have completed, generating results")
 
 	output.DeploymentInfo = c.deploymentInfo
-	// do actual comparisons and generate some results
-	output.Results = c.getResults(resultsCh)
+
+	for res := range resultsCh {
+		output.Results = append(output.Results, *res)
+	}
 
 	return output, nil
 }
