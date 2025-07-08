@@ -134,7 +134,7 @@ type UsersConfiguration struct {
 	// agent.
 	MaxActiveUsers int `default:"2000" validate:"range:(0,]"`
 	// The maximum number of browser users that can be simulated by a single load-test agent
-	MaxActiveBrowserUsers int `default:"0" validate:"range:[0,]"`
+	MaxActiveBrowserUsers int `default:"100" validate:"range:[0,]"`
 	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 	// The percentage of users generated that will be system admins
