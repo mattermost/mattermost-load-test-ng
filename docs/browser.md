@@ -1,3 +1,5 @@
+# NOTE: This is a work in progress. Should be reviewed before merging.
+
 # Mattermost Browser Load Testing Agent
 
 ## Overview
@@ -163,22 +165,84 @@ The browser agent includes both programmatic test scenarios for load testing and
 
 Each test scenario consists of two main files:
 
-1. **Scenario Implementation** (`scenario1.ts`) - Used by the browser server API for automated load testing
-2. **Test Specification** (`scenario1.spec.ts`) - Used for manual testing with Playwright
+1. **Scenario Implementation** (`src/simulations/scenario_1.ts`) - Used by the browser server API for automated load testing
+2. **Test Specification** (`src/e2e/scenario_1.spec.ts`) - Used for manual testing with Playwright
+
+#### Current Implementation
+
+**Scenario Implementation**: `src/simulations/scenario_1.ts`
+```typescript
+export async function scenario1({page, userId, password}: BrowserInstance, serverURL: string, runInLoop = true) {
+  if (!page) {
+    throw new Error('Page is not initialized');
+  }
+
+  try {
+    await page.goto(serverURL);
+    await handlePreferenceCheckbox(page);
+    await performLogin({page, userId, password});
+
+    // Runs the simulation atleast once and then runs it in continuous loop if simulationMode is true
+    do {
+      const scrollCount = runInLoop ? 40 : 3;
+      await postInChannel({page});
+      await scrollInChannel(page, 'sidebarItem_off-topic', scrollCount, 400, 500);
+      await scrollInChannel(page, 'sidebarItem_town-square', scrollCount, 400, 500);
+    } while (runInLoop);
+  } catch (error: any) {
+    throw {error: error?.error, testId: error?.testId};
+  }
+}
+```
+
+**Test Specification**: `src/e2e/scenario_1.spec.ts`
+```typescript
+import {test} from '@playwright/test';
+import {scenario1} from '../simulations/scenario_1.js';
+import {getMattermostServerURL} from '../utils/config.js';
+import type {BrowserInstance} from '../lib/browser_manager.js';
+
+test('Scenario 1', async ({page}) => {
+  const browserInstance = {
+    page,
+    userId: 'user1@example.com',
+    password: 'Password-1!',
+  } as BrowserInstance;
+
+  const serverURL = getMattermostServerURL();
+
+  await scenario1(browserInstance, serverURL, false);
+});
+```
 
 #### Key Differences:
-- **Implementation file**: Runs in infinite loop for continuous load testing, accepts dynamic user credentials
-- **Spec file**: Runs once with hardcoded credentials for manual testing and validation
+- **Implementation file**: Accepts `runInLoop` parameter to control continuous execution for load testing
+- **Spec file**: Wraps the simulation function and calls it with `runInLoop: false` for single-run testing
+- **Spec file**: Uses configuration from `config.json` for server URL and provides test credentials
+- **Spec file**: Compatible with Playwright's test runner and reporting
 
 ### Running Manual Tests
 
 #### Prerequisites
+
+For running E2E tests, you need the complete browser installation (not just headless mode):
+
 ```bash
 cd browser
-make install
+PLAYWRIGHT_HEADLESS_ONLY=false make install
 ```
 
-#### Running Individual Test Scenarios
+If you already have the headless-only installation, you can install the complete browser:
+
+```bash
+PLAYWRIGHT_HEADLESS_ONLY=false make install-playwright
+```
+
+**Note**: The complete browser installation is required for E2E tests because they may need UI components and debugging capabilities that are not available in headless-only mode.
+
+#### Running Test Scenarios with Playwright
+
+The project includes npm scripts that handle the proper Node.js configuration for running TypeScript tests:
 
 1. **Run all E2E tests**:
    ```bash
@@ -197,20 +261,85 @@ make install
 
 4. **Run specific test file**:
    ```bash
-   npx playwright test src/simulations/scenario1.spec.ts
+   NODE_OPTIONS='--import=tsx/esm' npx playwright test src/e2e/scenario_1.spec.ts
    ```
 
 5. **Run tests in headed mode (visible browser)**:
    ```bash
-   npx playwright test --headed
+   NODE_OPTIONS='--import=tsx/esm' npx playwright test --headed
    ```
 
-6. **Run unit tests**:
+6. **Run tests with specific browser**:
+   ```bash
+   NODE_OPTIONS='--import=tsx/esm' npx playwright test --project=chromium
+   ```
+
+#### Running Unit Tests
+
+7. **Run unit tests**:
    ```bash
    npm run unittest:run      # Run once
    npm run unittest:watch    # Run in watch mode
    npm run unittest:ui       # Run with UI
    ```
+
+#### Important Notes
+
+- The project uses `NODE_OPTIONS='--import=tsx/esm'` to handle TypeScript imports properly
+- All npm scripts in `package.json` include the necessary Node.js configuration
+- When running Playwright commands directly (not through npm scripts), you must include the `NODE_OPTIONS` environment variable
+- Test files are located in `src/e2e/` directory for E2E tests and throughout `src/` for unit tests
+
+#### Troubleshooting E2E Tests
+
+**1. Server URL Configuration Issues**
+- **Problem**: Tests fail with connection errors or navigation timeouts
+- **Solution**: Check if the server URL is present and correct in `config/config.json`:
+  ```json
+  {
+    "ConnectionConfiguration": {
+      "ServerURL": "http://localhost:8065"
+    }
+  }
+  ```
+
+**2. Missing Dependencies in UI Mode**
+- **Problem**: Playwright UI mode fails to start or shows errors
+- **Solution**: If opening tests in UI mode, Playwright might need to install additional dependencies. Check "Toggle output" on the top left of the Playwright runner to see if there are any missing dependencies. Install them with:
+  ```bash
+  PLAYWRIGHT_HEADLESS_ONLY=false make install-playwright
+  ```
+
+**3. Browser Launch Failures**
+- **Problem**: Tests fail with "Browser not found" or launch errors
+- **Solution**: Ensure you have the complete browser installation:
+  ```bash
+  PLAYWRIGHT_HEADLESS_ONLY=false make install
+  ```
+  If the issue persists, try clearing the browser cache:
+  ```bash
+  npx playwright install --force chromium
+  ```
+
+**4. TypeScript Import Errors**
+- **Problem**: Tests fail with module import errors or TypeScript compilation issues
+- **Solution**: Ensure you're using the correct Node.js options. Always use the npm scripts or include `NODE_OPTIONS='--import=tsx/esm'` when running Playwright directly:
+  ```bash
+  NODE_OPTIONS='--import=tsx/esm' npx playwright test
+  ```
+
+**5. Test Timeout Issues**
+- **Problem**: Tests timeout during page navigation or element interactions
+- **Solution**: 
+  - Verify the target Mattermost server is running and accessible
+  - Check network connectivity to the server
+  - Increase timeout in `playwright.config.ts` if needed:
+    ```typescript
+    use: {
+      actionTimeout: 30000,
+      navigationTimeout: 30000,
+    }
+    ```
 
 #### Test Configuration
 
@@ -236,23 +365,58 @@ export default defineConfig({
 
 To create a new test scenario:
 
-1. **Create the implementation file** (`src/simulations/scenarioN.ts`):
+1. **Create the implementation file** (`src/simulations/scenario_N.ts`):
    ```typescript
-   export async function scenarioN({page, userId, password}: BrowserInstance, serverURL: string) {
-     // Implementation for load testing (infinite loop)
+   import type {BrowserInstance} from '../lib/browser_manager.js';
+   
+   export async function scenarioN({page, userId, password}: BrowserInstance, serverURL: string, runInLoop = true) {
+     if (!page) {
+       throw new Error('Page is not initialized');
+     }
+   
+     try {
+       await page.goto(serverURL);
+       // Add your scenario logic here
+       
+       do {
+         // Your test actions here
+         // Adjust behavior based on runInLoop parameter
+       } while (runInLoop);
+     } catch (error: any) {
+       throw {error: error?.error, testId: error?.testId};
+     }
    }
    ```
 
-2. **Create the test specification file** (`src/simulations/scenarioN.spec.ts`):
+2. **Create the test specification file** (`src/e2e/scenario_N.spec.ts`):
    ```typescript
    import {test} from '@playwright/test';
+   import {scenarioN} from '../simulations/scenario_N.js';
+   import {getMattermostServerURL} from '../utils/config.js';
+   import type {BrowserInstance} from '../lib/browser_manager.js';
    
    test('Scenario N', async ({page}) => {
-     // Single-run test for manual validation
+     const browserInstance = {
+       page,
+       userId: 'testuser@example.com',
+       password: 'TestPassword123!',
+     } as BrowserInstance;
+   
+     const serverURL = getMattermostServerURL();
+   
+     await scenarioN(browserInstance, serverURL, false);
    });
    ```
 
 3. **Update the browser manager** to include the new scenario in the test execution.
+
+#### Benefits of This Pattern
+
+- **Reusability**: Same simulation code works for both load testing and manual testing
+- **Consistency**: Ensures manual tests use the same logic as load tests
+- **Flexibility**: `runInLoop` parameter allows different behaviors for different contexts
+- **Configuration**: Spec files can use centralized configuration while simulations remain flexible
+- **Playwright Integration**: Spec files work seamlessly with Playwright's test runner and reporting
 
 ### Test Results and Reports
 

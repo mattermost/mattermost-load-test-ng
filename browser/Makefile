@@ -2,7 +2,7 @@
 
 # Environment variables
 export PLAYWRIGHT_HEADLESS_ONLY ?= true
-export PATH := ./node_modules/.bin:$(PATH)
+BIN := ./node_modules/.bin
 
 ## Clean build artifacts, node_modules, and test results
 clean:
@@ -24,10 +24,10 @@ install-playwright: export PLAYWRIGHT_BROWSERS_PATH=0
 install-playwright: install-dependencies
 	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
 		echo "Installing Playwright Headless Chromium browser"; \
-		./node_modules/.bin/playwright install --with-deps --only-shell chromium; \
+		$(BIN)/playwright install --with-deps --only-shell chromium; \
 	else \
 		echo "Installing Playwright Chromium browser"; \
-		./node_modules/.bin/playwright install --with-deps chromium; \
+		$(BIN)/playwright install --with-deps chromium; \
 	fi
 	@echo "Successfully installed browser binaries in node_modules/playwright-core/.local-browsers"
 
@@ -40,7 +40,7 @@ clean-install: clean install-dependencies install-playwright
 ## Build the Browser API server
 build: clean-install install-dependencies install-playwright
 	@echo "Building server"
-	./node_modules/.bin/tsc
+	$(BIN)/tsc
 	@echo "Browser API server built successfully"
 
 ## Start the browser API server in production mode
@@ -52,12 +52,12 @@ start: install
 ## Start the browser API server in development mode
 dev: install
 	@echo "Starting LTBrowser API server in development mode"
-	./node_modules/.bin/tsx src/server.ts
+	$(BIN)/tsx src/server.ts
 
 ## Start the browser API server in development watch mode
 dev-watch: install
 	@echo "Starting LTBrowser API server in development watch mode"
-	./node_modules/.bin/tsx watch src/server.ts
+	$(BIN)/tsx watch src/server.ts
 
 ## Show this help message
 help:
