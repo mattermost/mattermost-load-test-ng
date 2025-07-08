@@ -23,7 +23,7 @@ func RunServerCmdF(cmd *cobra.Command, args []string) error {
 	// TODO: add a config file for the API server.
 	logger.Init(&logger.Settings{
 		EnableConsole: true,
-		ConsoleLevel:  "DEBUG",
+		ConsoleLevel:  "ERROR",
 		ConsoleJson:   false,
 		EnableFile:    true,
 		FileLevel:     "INFO",

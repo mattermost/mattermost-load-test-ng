@@ -172,7 +172,6 @@ func (a *Agent) Run() (loadtest.Status, error) {
 	var status loadtest.Status
 	resp, err := a.apiPost(a.apiURL+a.id+"/run", nil)
 
-	//TODO: create a new endpot '/run-browser' for browser agent
 	if err != nil {
 		return status, err
 	}
