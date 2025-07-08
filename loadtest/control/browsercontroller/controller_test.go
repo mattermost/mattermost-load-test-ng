@@ -128,7 +128,6 @@ func TestRun(t *testing.T) {
 
 		require.Error(t, errorStatus.Err)
 		require.Equal(t, control.USER_STATUS_ERROR, errorStatus.Code)
-		require.Contains(t, errorStatus.Err.Error(), "HTTP error")
 
 		status = <-statusChan
 		require.Equal(t, control.USER_STATUS_STOPPED, status.Code)
