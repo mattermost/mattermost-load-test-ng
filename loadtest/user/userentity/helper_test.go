@@ -49,6 +49,7 @@ type config struct {
 		UsersFilePath          string
 		InitialActiveUsers     int     `default:"0" validate:"range:[0,$MaxActiveUsers]"`
 		MaxActiveUsers         int     `default:"2000" validate:"range:(0,]"`
+		MaxActiveBrowserUsers  int     `default:"0" validate:"range:[0,]"`
 		AvgSessionsPerUser     int     `default:"1" validate:"range:[1,]"`
 		PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 	}
@@ -57,9 +58,10 @@ type config struct {
 	}
 	LogSettings        logger.Settings
 	BrowserLogSettings struct {
-		EnableConsole bool   `default:"true"`
-		ConsoleLevel  string `default:"debug" validate:"oneof:{trace, debug, info, warn, error, fatal, silent}"`
-		EnableFile    bool   `default:"false"`
+		EnableConsole bool   `default:"false"`
+		ConsoleLevel  string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+		EnableFile    bool   `default:"true"`
+		FileLevel     string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
 		FileLocation  string `default:"browseragent.log"`
 	}
 }
