@@ -7,15 +7,12 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
-	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator/performance/prometheus"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
-
-	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 // DeploymentInfo holds information regarding a deployment.
@@ -80,96 +77,66 @@ func getDeploymentInfo(config *deployment.Config) DeploymentInfo {
 	}
 }
 
-func (c *Comparison) getResults(resultsCh <-chan Result) []Result {
-	var wg sync.WaitGroup
-	var results []Result
-	resCh := make(chan Result, len(resultsCh))
-
-	wg.Add(len(resultsCh))
-	for res := range resultsCh {
-		go func(res Result) {
-			defer wg.Done()
-
-			if len(res.LoadTests) < 2 || res.LoadTests[0].Failed || res.LoadTests[1].Failed {
-				mlog.Error("unable to generate results", mlog.String("deployment ID", res.deploymentID))
-				resCh <- res
-				return
-			}
-
-			dp := c.deployments[res.deploymentID]
-			t, err := terraform.New(res.deploymentID, dp.config)
-			if err != nil {
-				mlog.Error("Failed to create terraform engine", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				return
-			}
-			output, err := t.Output()
-			if err != nil {
-				mlog.Error("Failed to get terraform output", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				return
-			}
-
-			promURL := "http://" + output.MetricsServer.GetConnectionIP() + ":9090"
-			helper, err := prometheus.NewHelper(promURL)
-			if err != nil {
-				mlog.Error("Failed to create prometheus.Helper", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				return
-			}
-			g := report.New(res.LoadTests[0].Label, helper, dp.config.Report)
-			baseReport, err := g.Generate(res.LoadTests[0].Status.StartTime, res.LoadTests[0].Status.StopTime)
-			if err != nil {
-				mlog.Error("Error while generating report", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				return
-			}
-			g = report.New(res.LoadTests[1].Label, helper, dp.config.Report)
-			newReport, err := g.Generate(res.LoadTests[1].Status.StartTime, res.LoadTests[1].Status.StopTime)
-			if err != nil {
-				mlog.Error("Error while generating report", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				return
-			}
-
-			if c.config.Output.GenerateReport {
-				var buf bytes.Buffer
-				graphsPrefix := fmt.Sprintf("%s_%s_%d_", res.LoadTests[0].Config.DBEngine,
-					res.LoadTests[0].Config.Type, res.LoadTests[0].loadTestID)
-				opts := report.CompareOpts{
-					GenGraph:     c.config.Output.GenerateGraphs,
-					GraphsPrefix: graphsPrefix,
-				}
-				opts.GraphsPrefix = filepath.Join(c.config.Output.GraphsPath, opts.GraphsPrefix)
-
-				err := report.Compare(&buf, opts, baseReport, newReport)
-				if err != nil {
-					mlog.Error("Failed to compare reports", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-				}
-				res.Report = buf.String()
-			}
-
-			if c.config.Output.UploadDashboard {
-				var dashboardData bytes.Buffer
-				title := fmt.Sprintf("Comparison - %d - %s - %s",
-					res.LoadTests[0].loadTestID, res.LoadTests[0].Config.DBEngine, res.LoadTests[0].Config.Type)
-				if err := report.GenerateDashboard(title, baseReport, newReport, &dashboardData); err != nil {
-					mlog.Error("Failed to generate dashboard", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-					return
-				}
-
-				url, err := t.UploadDashboard(dashboardData.String())
-				if err != nil {
-					mlog.Error("Failed to upload dashboard", mlog.String("deployment ID", res.deploymentID), mlog.Err(err))
-					return
-				}
-				res.DashboardURL = fmt.Sprintf("http://%s:3000%s", output.MetricsServer.GetConnectionIP(), url)
-			}
-
-			resCh <- res
-		}(res)
+func (c *Comparison) getResults(t *terraform.Terraform, dpConfig *deploymentConfig, res *Result) (*Result, error) {
+	if len(res.LoadTests) < 2 || res.LoadTests[0].Failed || res.LoadTests[1].Failed {
+		return res, fmt.Errorf("unable to generate results; deployment ID: %q", res.deploymentID)
 	}
 
-	wg.Wait()
-	close(resCh)
-	for res := range resCh {
-		results = append(results, res)
+	output, err := t.Output()
+	if err != nil {
+		return res, fmt.Errorf("failed to get terraform output: %w", err)
 	}
 
-	return results
+	promURL := "http://" + output.MetricsServer.GetConnectionIP() + ":9090"
+	helper, err := prometheus.NewHelper(promURL)
+	if err != nil {
+		return res, fmt.Errorf("failed to create prometheus.Helper: %w", err)
+	}
+
+	g := report.New(res.LoadTests[0].Label, helper, dpConfig.config.Report)
+	baseReport, err := g.Generate(res.LoadTests[0].Status.StartTime, res.LoadTests[0].Status.StopTime)
+	if err != nil {
+		return res, fmt.Errorf("error while generating report: %w", err)
+	}
+
+	g = report.New(res.LoadTests[1].Label, helper, dpConfig.config.Report)
+	newReport, err := g.Generate(res.LoadTests[1].Status.StartTime, res.LoadTests[1].Status.StopTime)
+	if err != nil {
+		return res, fmt.Errorf("error while generating report: %w", err)
+	}
+
+	if c.config.Output.GenerateReport {
+		var buf bytes.Buffer
+		graphsPrefix := fmt.Sprintf("%s_%s_%d_", res.LoadTests[0].Config.DBEngine,
+			res.LoadTests[0].Config.Type, res.LoadTests[0].loadTestID)
+		opts := report.CompareOpts{
+			GenGraph:     c.config.Output.GenerateGraphs,
+			GraphsPrefix: graphsPrefix,
+		}
+		opts.GraphsPrefix = filepath.Join(c.config.Output.GraphsPath, opts.GraphsPrefix)
+
+		if err := report.Compare(&buf, opts, baseReport, newReport); err != nil {
+			return res, fmt.Errorf("failed to compare reports: %w", err)
+		}
+
+		res.Report = buf.String()
+	}
+
+	if c.config.Output.UploadDashboard {
+		var dashboardData bytes.Buffer
+		title := fmt.Sprintf("Comparison - %d - %s - %s",
+			res.LoadTests[0].loadTestID, res.LoadTests[0].Config.DBEngine, res.LoadTests[0].Config.Type)
+		if err := report.GenerateDashboard(title, baseReport, newReport, &dashboardData); err != nil {
+
+			return res, fmt.Errorf("failed to generate dashboard: %w", err)
+		}
+
+		url, err := t.UploadDashboard(dashboardData.String())
+		if err != nil {
+			return res, fmt.Errorf("failed to upload dashboard: %w", err)
+		}
+		res.DashboardURL = fmt.Sprintf("http://%s:3000%s", output.MetricsServer.GetConnectionIP(), url)
+	}
+
+	return res, nil
 }

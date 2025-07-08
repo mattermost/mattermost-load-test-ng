@@ -25,11 +25,11 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpID s
 			defer wg.Done()
 			t, err := terraform.New(id, dp.config)
 			if err != nil {
-				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				errsCh <- fmt.Errorf("failed to create terraform engine in deployment with ID %q: %w", id, err)
 				return
 			}
 			if err := action(t, id, dp); err != nil {
-				errsCh <- fmt.Errorf("deployment action failed: %w", err)
+				errsCh <- fmt.Errorf("action in deployment with ID %q failed: %w", id, err)
 			}
 		}(id, dp)
 	}
