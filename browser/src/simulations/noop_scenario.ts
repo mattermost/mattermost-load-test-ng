@@ -6,7 +6,10 @@ import {postInChannel} from './post_in_channel.js';
 import {scrollInChannel} from './scrolling_in_channel.js';
 import type {BrowserInstance} from '../lib/browser_manager.js';
 
-export async function scenario1({page, userId, password}: BrowserInstance, serverURL: string, runInLoop = true) {
+// NoopScenario is a very basic scenario.
+// It just performs very basic actions in a loop. Such as:
+// Login, Post in channel, Scroll in channel and then repeat the process.
+export async function noopScenario({page, userId, password}: BrowserInstance, serverURL: string, runInLoop = true) {
   if (!page) {
     throw new Error('Page is not initialized');
   }

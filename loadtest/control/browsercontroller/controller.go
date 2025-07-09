@@ -190,9 +190,48 @@ func (c *BrowserController) InjectAction(actionID string) error {
 	return nil
 }
 
-// addBrowser makes a POST request to BrowserAPI to add a browser
+// This is HTTP client helper which is used to make API requests to the LTBrowser API server.
+func (c *BrowserController) makeRequestToLTBrowserApi(method, endpoint string, requestBody interface{}) (*BrowserAPIResponse, error) {
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	url := fmt.Sprintf("%s%s", c.ltBrowserApiUrl, endpoint)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create %s request: %w", method, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make %s request: %w", method, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP error: %d", resp.StatusCode)
+	}
+
+	var apiResponse BrowserAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !apiResponse.Success {
+		errorMsg := "unknown error"
+		if apiResponse.Error != nil {
+			errorMsg = apiResponse.Error.Message
+		}
+		return nil, fmt.Errorf("browser API returned error: %s", errorMsg)
+	}
+
+	return &apiResponse, nil
+}
+
 func (c *BrowserController) addBrowser() error {
-	// Get user credentials from the user entity
 	userStore := c.user.Store()
 
 	if userStore.Username() == "" {
@@ -207,41 +246,11 @@ func (c *BrowserController) addBrowser() error {
 		Password: userStore.Password(),
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/browsers", c.ltBrowserApiUrl)
-	resp, err := c.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return fmt.Errorf("failed to add browser: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP error: %d", resp.StatusCode)
-	}
-
-	var apiResponse BrowserAPIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	if !apiResponse.Success {
-		errorMsg := "unknown error"
-		if apiResponse.Error != nil {
-			errorMsg = apiResponse.Error.Message
-		}
-		return fmt.Errorf("browser API returned error: %s", errorMsg)
-	}
-
-	return nil
+	_, err := c.makeRequestToLTBrowserApi("POST", "/browsers", requestBody)
+	return err
 }
 
-// removeBrowser makes a DELETE request to BrowserAPI to remove the browser
 func (c *BrowserController) removeBrowser() error {
-	// Get user credentials from the user entity
 	userStore := c.user.Store()
 
 	if userStore.Username() == "" {
@@ -257,44 +266,8 @@ func (c *BrowserController) removeBrowser() error {
 		requestBody.UserID = userStore.Email()
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/browsers", c.ltBrowserApiUrl)
-	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to remove browser: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP error: %d", resp.StatusCode)
-	}
-
-	var apiResponse BrowserAPIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	if !apiResponse.Success {
-		errorCode := "unknown error"
-		errorMsg := "unknown error"
-		if apiResponse.Error != nil {
-			errorCode = apiResponse.Error.Code
-			errorMsg = apiResponse.Error.Message
-		}
-		return fmt.Errorf("browser API returned error: %s-%s", errorCode, errorMsg)
-	}
-
-	return nil
+	_, err := c.makeRequestToLTBrowserApi("DELETE", "/browsers", requestBody)
+	return err
 }
 
 // Helper methods for status reporting

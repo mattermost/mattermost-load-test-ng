@@ -43,7 +43,6 @@ func (a *api) setResource(id string, res interface{}) bool {
 	defer a.mut.Unlock()
 	if _, ok := a.resources[id]; !ok {
 		a.resources[id] = res
-		mlog.Info("API Resource set for id: " + id)
 		return true
 	}
 	return false

@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -116,7 +117,10 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isBAInstance := isBrowserAgentInstance()
+	isBAInstance, err := isBrowserAgentInstance()
+	if err != nil {
+		mlog.Warn("failed to detect agent_type", mlog.Err(err))
+	}
 
 	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics, isBAInstance)
 	if err != nil {
@@ -609,30 +613,28 @@ func createCustomEmoji(config *loadtest.Config) error {
 }
 
 // Checks if the current instance is going to run browser agents.
-func isBrowserAgentInstance() bool {
+func isBrowserAgentInstance() (bool, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		mlog.Warn("Failed to get home directory for searching agent_type.txt file", mlog.Err(err))
-		return false
+		return false, fmt.Errorf("failed to get home directory for agent_type.txt: %w", err)
 	}
 
 	// Check for the agent type file created by configureAndRunAgents in deployment/terraform/agent.go
-	agentTypeFile := homeDir + "/" + deployment.AgentTypeFileName
-	if _, err := os.Stat(agentTypeFile); err == nil {
-		file, err := os.ReadFile(agentTypeFile)
-		if err != nil {
-			mlog.Warn("Failed to read agent_type.txt file", mlog.Err(err))
-			return false
-		}
-
-		fileContent := strings.TrimSpace(string(file))
-		if fileContent == deployment.AgentTypeBrowser {
-			mlog.Info("Detected type as browser_agent from agent_type.txt file")
-			return true
-		}
-	} else {
-		mlog.Debug("agent_type.txt file not found in the home directory")
+	agentTypeFilePath := filepath.Join(homeDir, deployment.AgentTypeFileName)
+	agentTypeFile, err := os.ReadFile(agentTypeFilePath)
+	if err != nil {
+		return false, fmt.Errorf("failed to read agent_type.txt: %w", err)
 	}
 
-	return false
+	fileContent := strings.TrimSpace(string(agentTypeFile))
+	switch fileContent {
+	case deployment.AgentTypeBrowser:
+		mlog.Info("detected type as browser_agent from agent_type.txt")
+		return true, nil
+	case deployment.AgentTypeServer:
+		mlog.Info("detected type as server_agent from agent_type.txt")
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid agent_type in agent_type.txt")
+	}
 }

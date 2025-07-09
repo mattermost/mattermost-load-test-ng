@@ -15,20 +15,20 @@ async function startServer() {
 
     await app.listen({host, port});
   } catch (err) {
-    log.error(`[server] LTBrowser server failed to start: ${err}`);
+    log.error(`LTBrowser server failed to start: ${err}`);
     process.exit(1);
   }
 }
 
 async function stopServer(signal: string) {
-  log.info(`[server] Received ${signal}, LTBrowser server stopping`);
+  log.info(`LTBrowser server stopping due to ${signal}`);
 
   try {
     await app.close();
-    log.info('[server] LTBrowser server stopped');
+    log.info('LTBrowser server stopped');
     process.exit(0);
   } catch (err) {
-    log.error(`[server] LTBrowser server encountered error during shutdown: ${err}`);
+    log.error(`LTBrowser server encountered error during shutdown: ${err}`);
     process.exit(1);
   }
 }
@@ -39,13 +39,13 @@ process.on('SIGINT', () => stopServer('SIGINT'));
 
 // Handle uncaught errors
 process.on('uncaughtException', (err) => {
-  log.error(`[server] Uncaught exception: ${err}`);
+  log.error(`LTBrowser server encountered uncaught exception: ${err}`);
   stopServer('uncaughtException');
 });
 
 // Handle unhandled rejections
 process.on('unhandledRejection', (reason, promise) => {
-  log.error(`[server] Unhandled rejection at: ${promise}, reason: ${reason}`);
+  log.error(`LTBrowser server encountered unhandled rejection at: ${promise}, reason: ${reason}`);
   stopServer('unhandledRejection');
 });
 

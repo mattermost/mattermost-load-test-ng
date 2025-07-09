@@ -316,13 +316,12 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 		os.Setenv("HOME", tempDir)
 		defer os.Setenv("HOME", originalHome)
 
-		// Create agent_type.txt file with browser_agent content
 		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
 		err = os.WriteFile(agentTypeFile, []byte("  "+deployment.AgentTypeBrowser+"  \n"), 0644)
 		require.NoError(t, err)
 
-		// Test the function
-		result := isBrowserAgentInstance()
+		result, err := isBrowserAgentInstance()
+		require.NoError(t, err)
 		require.True(t, result)
 	})
 
@@ -338,22 +337,21 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 		err = os.WriteFile(agentTypeFile, []byte(deployment.AgentTypeServer), 0644)
 		require.NoError(t, err)
 
-		result := isBrowserAgentInstance()
+		result, err := isBrowserAgentInstance()
+		require.NoError(t, err)
 		require.False(t, result)
 	})
 
 	t.Run("returns false when agent_type.txt file does not exist", func(t *testing.T) {
-		// Create temporary directory to use as home
 		tempDir, err := os.MkdirTemp("", "test_home_missing")
 		require.NoError(t, err)
 		defer os.RemoveAll(tempDir)
 
-		// Set temporary home directory
 		os.Setenv("HOME", tempDir)
 		defer os.Setenv("HOME", originalHome)
 
-		// Test the function (no agent_type.txt file created)
-		result := isBrowserAgentInstance()
+		result, err := isBrowserAgentInstance()
+		require.Error(t, err)
 		require.False(t, result)
 	})
 
@@ -369,7 +367,8 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 		err = os.WriteFile(agentTypeFile, []byte("unknown_agent_type"), 0644)
 		require.NoError(t, err)
 
-		result := isBrowserAgentInstance()
+		result, err := isBrowserAgentInstance()
+		require.Error(t, err)
 		require.False(t, result)
 	})
 }

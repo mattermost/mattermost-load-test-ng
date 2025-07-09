@@ -43,8 +43,8 @@ vi.mock('playwright', () => {
   };
 });
 
-vi.mock('../simulations/scenario_1.js', () => ({
-  scenario1: vi.fn().mockImplementation(async () => {
+vi.mock('../simulations/noop_scenario.js', () => ({
+  noopScenario: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
     return undefined;
@@ -53,10 +53,10 @@ vi.mock('../simulations/scenario_1.js', () => ({
 
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
 import * as playwright from 'playwright';
-import * as scenario1Module from '../simulations/scenario_1.js';
+import * as noopScenarioModule from '../simulations/noop_scenario.js';
 
 const mocks = (playwright as any).__mocks;
-const scenario1Mock = vi.mocked(scenario1Module.scenario1);
+const noopScenarioMock = vi.mocked(noopScenarioModule.noopScenario);
 
 describe('BrowserManager', () => {
   beforeEach(() => {
@@ -70,7 +70,7 @@ describe('BrowserManager', () => {
     mocks.mockPageClose.mockClear();
     mocks.mockContextClose.mockClear();
     mocks.mockBrowserClose.mockClear();
-    scenario1Mock.mockClear();
+    noopScenarioMock.mockClear();
 
     // Reset default return values
     mocks.mockChromiumLaunch.mockResolvedValue(mocks.mockBrowser);
@@ -209,7 +209,7 @@ describe('BrowserManager', () => {
 
   test('should mark user"s session as failed when tests fail', async () => {
     // Set up test scenario to fail
-    scenario1Mock.mockRejectedValueOnce(new Error('Test scenario failed'));
+    noopScenarioMock.mockRejectedValueOnce(new Error('Test scenario failed'));
 
     await browserTestSessionManager.createBrowserSession('testfailuser', 'password', 'http://localhost:8065');
 

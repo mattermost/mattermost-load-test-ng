@@ -3,11 +3,11 @@
 
 import {test} from '@playwright/test';
 
-import {scenario1} from '../simulations/scenario_1.js';
+import {noopScenario} from '../simulations/noop_scenario.js';
 import {getMattermostServerURL} from '../utils/config.js';
 import type {BrowserInstance} from '../lib/browser_manager.js';
 
-test('Scenario 1', async ({page}) => {
+test('Noop Scenario', async ({page}) => {
   const browserInstance = {
     page,
     userId: 'user1@example.com',
@@ -16,5 +16,5 @@ test('Scenario 1', async ({page}) => {
 
   const serverURL = getMattermostServerURL();
 
-  await scenario1(browserInstance, serverURL, false);
+  await noopScenario(browserInstance, serverURL, false);
 });

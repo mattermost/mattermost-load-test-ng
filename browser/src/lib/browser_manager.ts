@@ -113,14 +113,14 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`[browser_manager] Failed to create browser instance for "${userId}"`);
+      log.error(`failed to create browser instance for "${userId}" in browser_manager`);
       return {
         isCreated: false,
         message: `Failed to create browser instance for user "${userId}"`,
       };
     }
 
-    // Try to create the context second
+    // Try to create the context after the browser instance is created
     try {
       const context = await instance.browser!.newContext();
 
@@ -133,14 +133,14 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`[browser_manager] Failed to create context for "${userId}"`);
+      log.error(`failed to create context for "${userId}" in browser_manager`);
       return {
         isCreated: false,
         message: `Failed to create context for user "${userId}"`,
       };
     }
 
-    // Try to create the page third
+    // Try to create the page after the context is created
     try {
       const page = await instance.context!.newPage();
 
@@ -153,7 +153,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`[browser_manager] Failed to create page for "${userId}"`);
+      log.error(`failed to create page for "${userId}" in browser_manager`);
       return {
         isCreated: false,
         message: `Failed to create page for user "${userId}"`,
@@ -201,7 +201,7 @@ export class BrowserTestSessionManager {
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 
-    const scenarioId = 'scenario1';
+    const scenarioId = 'noop';
     const updatedBrowserInstance = await testManager.startTest(
       browserInstance,
       this.activeBrowserSessions,
@@ -236,8 +236,7 @@ export class BrowserTestSessionManager {
         instance.state === SessionState.CREATION_FAILED ||
         instance.state === SessionState.COMPLETED ||
         instance.state === SessionState.STOPPING ||
-        instance.state === SessionState.FAILED ||
-        instance.state === SessionState.CLEANUP_FAILED
+        instance.state === SessionState.FAILED
       ) {
         await this.cleanupBrowserSession(instance);
       }
@@ -290,11 +289,11 @@ export class BrowserTestSessionManager {
     const cleanupPromisesResults = await Promise.allSettled(cleanupPromises);
 
     if (cleanupPromisesResults.length === 0) {
-      log.info('[browser_manager] No active browser sessions to clean up');
+      log.info('no active browser sessions to clean up in browser_manager');
     } else if (cleanupPromisesResults.every((result) => result.status === 'fulfilled')) {
-      log.info('[browser_manager] Successfully cleaned up all browser sessions');
+      log.info('successfully cleaned up all browser sessions in browser_manager');
     } else {
-      log.error('[browser_manager] Failed to clean up some browser sessions');
+      log.error('failed to clean up some browser sessions in browser_manager');
     }
   }
 }

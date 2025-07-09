@@ -65,7 +65,7 @@ describe('src/server', () => {
 
     process.emit('SIGTERM', 'SIGTERM');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGTERM, LTBrowser server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('LTBrowser server stopping due to SIGTERM'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
@@ -75,7 +75,7 @@ describe('src/server', () => {
 
     process.emit('SIGINT', 'SIGINT');
 
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Received SIGINT, LTBrowser server stopping'));
+    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('LTBrowser server stopping due to SIGINT'));
     expect(mockAppClose).toHaveBeenCalled();
   });
 
@@ -100,7 +100,9 @@ describe('src/server', () => {
     process.emit('uncaughtException', new Error('Uncaught error'));
 
     await vi.waitFor(() => {
-      expect(mockLogError).toHaveBeenCalledWith(expect.stringContaining('Uncaught exception:'));
+      expect(mockLogError).toHaveBeenCalledWith(
+        expect.stringContaining('LTBrowser server encountered uncaught exception:'),
+      );
     });
   });
 

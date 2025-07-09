@@ -406,7 +406,7 @@ func TestRemoveBrowser(t *testing.T) {
 
 		err = controllerError.removeBrowser()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "browser API returned error: BROWSER_NOT_FOUND-Browser session not found")
+		require.Contains(t, err.Error(), "browser API returned error: Browser session not found")
 	})
 
 	t.Run("fails due to HTTP error", func(t *testing.T) {
