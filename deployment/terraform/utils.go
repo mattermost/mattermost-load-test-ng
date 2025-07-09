@@ -428,9 +428,16 @@ func (t *Terraform) refreshAWSCredentialsFromRole() error {
 		return fmt.Errorf("AWSRoleARN must be non-empty")
 	}
 
+	// Timeout per AWS call
+	const timeout = 30 * time.Second
+
+	// Use a 30-second timeout for testing current credentials
+	currCtx, currCancel := context.WithTimeout(context.Background(), timeout)
+	defer currCancel()
+
 	// Test current credentials before refresh: if they are not valid, we
 	// cannot refresh
-	if _, err := t.awsCfg.Credentials.Retrieve(context.Background()); err != nil {
+	if _, err := t.awsCfg.Credentials.Retrieve(currCtx); err != nil {
 		return fmt.Errorf("failed to retrieve current credentials: %w", err)
 	}
 
@@ -439,8 +446,12 @@ func (t *Terraform) refreshAWSCredentialsFromRole() error {
 	creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN, func(opt *stscreds.AssumeRoleOptions) { opt.Duration = AWSRoleTokenDuration })
 	newCredCache := aws.NewCredentialsCache(creds)
 
+	// Use a 30-second timeout for retrieveing the credentials
+	retrieveCtx, retrieveCancel := context.WithTimeout(context.Background(), timeout)
+	defer retrieveCancel()
+
 	// Test new credentials
-	newCreds, err := newCredCache.Retrieve(context.Background())
+	newCreds, err := newCredCache.Retrieve(retrieveCtx)
 	if err != nil {
 		return fmt.Errorf("failed to assume role %q with new credentials: %w", t.config.AWSRoleARN, err)
 	}
@@ -449,8 +460,12 @@ func (t *Terraform) refreshAWSCredentialsFromRole() error {
 	mlog.Info("successfully assumed role", mlog.Time("expiry", newCreds.Expires))
 	t.awsCfg.Credentials = newCredCache
 
+	// Use a 30-second timeout for making the STS call
+	stsCtx, stsCancel := context.WithTimeout(context.Background(), timeout)
+	defer stsCancel()
+
 	// Further verify the credentials work with a test STS call
-	if _, err := stsSvc.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{}); err != nil {
+	if _, err := stsSvc.GetCallerIdentity(stsCtx, &sts.GetCallerIdentityInput{}); err != nil {
 		return fmt.Errorf("new credentials failed STS test: %w", err)
 	}
 
