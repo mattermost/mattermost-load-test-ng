@@ -392,9 +392,7 @@ func (t *Terraform) InitCreds() error {
 		cfg.Credentials = aws.NewCredentialsCache(creds)
 	}
 
-	t.awsCfgMut.Lock()
 	t.awsCfg = cfg
-	t.awsCfgMut.Unlock()
 
 	if t.config.AWSRoleARN != "" {
 		// Refresh the credentials once so that the time of the interval below
