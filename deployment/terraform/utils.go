@@ -397,7 +397,7 @@ func (t *Terraform) InitCreds() error {
 	// If this is running in CI, and the role is set, we are using role
 	// chaining, so we need to continually refresh the token for actions that
 	// will take longer than one hour, like comparisons.
-	if os.Getenv("IS_CI") == "true" && t.config.AWSRoleARN != "" {
+	if os.Getenv("CI") == "true" && t.config.AWSRoleARN != "" {
 		// Refresh the credentials once so that the time of the interval below
 		// starts now
 		if err := t.refreshAWSCredentialsFromRole(); err != nil {
