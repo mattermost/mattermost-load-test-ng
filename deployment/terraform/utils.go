@@ -356,12 +356,12 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 }
 
 // Durations for the expiry of the AWS Role credentials and for its refresh
-// interval, which, out of an abundance of caution, is a bit shorter than half
-// the expiry duration of the role.
+// interval, which, out of an abundance of caution, is a quarter of the expiry
+// duration of the role.
 const (
 	// One hour is the maximum allowed by role chaining
 	AWSRoleTokenDuration        = 1 * time.Hour
-	AWSRoleTokenRefreshInterval = 25 * time.Minute
+	AWSRoleTokenRefreshInterval = AWSRoleTokenDuration / 4
 )
 
 // InitCreds authenticates into AWS using the default credentials chain,
