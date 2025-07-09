@@ -405,8 +405,7 @@ func (t *Terraform) InitCreds() error {
 		// If it fails, exit the goroutine, since it needs the previous credentials to be
 		// valid for the refresh logic to work.
 		go func() {
-			ticker := time.Tick(AWSRoleTokenRefreshInterval)
-			for range ticker {
+			for range time.Tick(AWSRoleTokenRefreshInterval) {
 				if err := t.refreshAWSCredentialsFromRole(); err != nil {
 					mlog.Error("unable to refresh token, stopping goroutine", mlog.Err(err))
 					return
