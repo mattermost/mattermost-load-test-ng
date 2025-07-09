@@ -364,6 +364,10 @@ const (
 	AWSRoleTokenRefreshInterval = 25 * time.Minute
 )
 
+// InitCreds authenticates into AWS using the default credentials chain,
+// optionally assuming the AWS role if its ARN is provided in the configuration.
+// In that case, it also starts a goroutine that will refresh the credentials to
+// maintain them updated.
 func (t *Terraform) InitCreds() error {
 	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
 	var opts []func(*awsconfig.LoadOptions) error
