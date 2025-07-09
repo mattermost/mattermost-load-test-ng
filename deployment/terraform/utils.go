@@ -16,10 +16,12 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -353,10 +355,16 @@ func getServerURL(output *Output, deploymentConfig *deployment.Config) string {
 	return deploymentConfig.ServerScheme + "://" + url
 }
 
-// GetAWSConfig returns the AWS config, using the profile configured in the
-// deployer if present, and defaulting to the default credential chain otherwise.
-// If a role ARN is provided, it will assume that role.
-func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+// Durations for the expiry of the AWS Role credentials and for its refresh
+// interval, which, out of an abundance of caution, is a bit shorter than half
+// the expiry duration of the role.
+const (
+	// One hour is the maximum allowed by role chaining
+	AWSRoleTokenDuration        = 1 * time.Hour
+	AWSRoleTokenRefreshInterval = 25 * time.Minute
+)
+
+func (t *Terraform) InitCreds() error {
 	regionOpt := awsconfig.WithRegion(t.config.AWSRegion)
 	var opts []func(*awsconfig.LoadOptions) error
 
@@ -366,13 +374,95 @@ func (t *Terraform) GetAWSConfig() (aws.Config, error) {
 		opts = append(opts, awsconfig.WithSharedConfigProfile(t.config.AWSProfile))
 	}
 
-	if t.config.AWSRoleARN != "" {
-		opts = append(opts, awsconfig.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
-			options.RoleARN = t.config.AWSRoleARN
-		}))
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(), opts...)
+	if err != nil {
+		return fmt.Errorf("unable to load default config: %w", err)
 	}
 
-	return awsconfig.LoadDefaultConfig(context.Background(), opts...)
+	if t.config.AWSRoleARN != "" {
+		// See https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/stscreds#hdr-Assume_Role
+		// Create the credentials from AssumeRoleProvider to assume the role
+		// identified by AWSRoleARN, and use them in the loaded config
+		stsSvc := sts.NewFromConfig(cfg)
+		creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN)
+		cfg.Credentials = aws.NewCredentialsCache(creds)
+	}
+
+	t.awsCfgMut.Lock()
+	t.awsCfg = cfg
+	t.awsCfgMut.Unlock()
+
+	if t.config.AWSRoleARN != "" {
+		// Refresh the credentials once so that the time of the interval below
+		// starts now
+		if err := t.refreshAWSCredentialsFromRole(); err != nil {
+			return fmt.Errorf("unable to refresh token: %w", err)
+		}
+
+		// Start a goroutine refreshing the credentials every AWSRoleTokenRefreshInterval.
+		// If it fails, exit the goroutine, since it needs the previous credentials to be
+		// valid for the refresh logic to work.
+		go func() {
+			ticker := time.Tick(AWSRoleTokenRefreshInterval)
+			for range ticker {
+				if err := t.refreshAWSCredentialsFromRole(); err != nil {
+					mlog.Error("unable to refresh token, stopping goroutine", mlog.Err(err))
+					return
+				}
+			}
+		}()
+	}
+
+	return nil
+}
+
+// refreshAWSCredentialsFromRole refreshes the current credentials by assuming
+// the role again, with an expiry duration of one hour, which is the maximum
+// allowed when using role chaining
+func (t *Terraform) refreshAWSCredentialsFromRole() error {
+	t.awsCfgMut.Lock()
+	defer t.awsCfgMut.Unlock()
+
+	if t.config.AWSRoleARN == "" {
+		return fmt.Errorf("AWSRoleARN must be non-empty")
+	}
+
+	// Test current credentials before refresh: if they are not valid, we
+	// cannot refresh
+	if _, err := t.awsCfg.Credentials.Retrieve(context.Background()); err != nil {
+		return fmt.Errorf("failed to retrieve current credentials: %w", err)
+	}
+
+	// Create new STS service and assume role again
+	stsSvc := sts.NewFromConfig(t.awsCfg)
+	creds := stscreds.NewAssumeRoleProvider(stsSvc, t.config.AWSRoleARN, func(opt *stscreds.AssumeRoleOptions) { opt.Duration = AWSRoleTokenDuration })
+	newCredCache := aws.NewCredentialsCache(creds)
+
+	// Test new credentials
+	newCreds, err := newCredCache.Retrieve(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to assume role %q with new credentials: %w", t.config.AWSRoleARN, err)
+	}
+
+	// Update the stored configuration with the new credentials
+	mlog.Info("successfully assumed role", mlog.Time("expiry", newCreds.Expires))
+	t.awsCfg.Credentials = newCredCache
+
+	// Further verify the credentials work with a test STS call
+	if _, err := stsSvc.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{}); err != nil {
+		return fmt.Errorf("new credentials failed STS test: %w", err)
+	}
+
+	return nil
+}
+
+// GetAWSConfig returns the AWS config, using the profile configured in the
+// deployer if present, and defaulting to the default credential chain otherwise.
+// If a role ARN is provided, it will assume that role.
+func (t *Terraform) GetAWSConfig() (aws.Config, error) {
+	t.awsCfgMut.Lock()
+	defer t.awsCfgMut.Unlock()
+	return t.awsCfg.Copy(), nil
 }
 
 // GetAWSCreds returns the AWS config, using the profile configured in the
