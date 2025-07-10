@@ -31,7 +31,6 @@ type BrowserController struct {
 	wg              *sync.WaitGroup
 	ltBrowserApiUrl string
 	httpClient      *http.Client
-	isRunning       bool
 	mu              sync.Mutex
 }
 
@@ -79,7 +78,6 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		isRunning: false,
 	}, nil
 }
 
@@ -87,12 +85,7 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 // This corresponds to adding a user in the browser load test.
 func (c *BrowserController) Run() {
 	c.mu.Lock()
-	if c.isRunning {
-		c.mu.Unlock()
-		return
-	}
-	c.isRunning = true
-	c.mu.Unlock()
+	defer c.mu.Unlock()
 
 	if c.user == nil {
 		c.sendFailStatus("browser controller was not initialized")
@@ -107,9 +100,6 @@ func (c *BrowserController) Run() {
 	}
 
 	defer func() {
-		c.mu.Lock()
-		c.isRunning = false
-		c.mu.Unlock()
 		c.user.ClearUserData()
 		c.sendStopStatus()
 		close(c.stoppedChan)
@@ -163,11 +153,7 @@ func (c *BrowserController) SetRate(rate float64) error {
 // This corresponds to removing a user in the browser load test.
 func (c *BrowserController) Stop() {
 	c.mu.Lock()
-	if !c.isRunning {
-		c.mu.Unlock()
-		return
-	}
-	c.mu.Unlock()
+	defer c.mu.Unlock()
 
 	// Remove browser before stopping
 	if err := c.removeBrowser(); err != nil {

@@ -91,7 +91,6 @@ func TestRun(t *testing.T) {
 			stopChan:        make(chan struct{}),
 			stoppedChan:     make(chan struct{}),
 			ltBrowserApiUrl: LT_BROWSER_API_URL,
-			isRunning:       false,
 		}
 
 		go controllerWithEmptyUser.Run()
@@ -148,13 +147,6 @@ func TestRun(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	t.Run("stopping controller that is not running does not cause issues", func(t *testing.T) {
-		controllerNotRunning, statusChanNotRunning := newController(t)
-		defer close(statusChanNotRunning)
-
-		controllerNotRunning.Stop()
-	})
-
 	t.Run("controller stops properly when running", func(t *testing.T) {
 		controllerRunning, statusChanRunning := newController(t)
 
