@@ -12,6 +12,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test restoreAssetFile function
+func TestRestoreAssetFile(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "restore_asset_file_test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// Test data
+	testData := []byte("test file content")
+	targetPath := filepath.Join(tempDir, "subdir", "testfile.txt")
+
+	// Call restoreAssetFile
+	err = restoreAssetFile(testData, targetPath)
+	require.NoError(t, err)
+
+	// Verify the file was created
+	_, err = os.Stat(targetPath)
+	require.NoError(t, err)
+
+	// Verify the file content
+	content, err := os.ReadFile(targetPath)
+	require.NoError(t, err)
+	require.Equal(t, testData, content)
+
+	// Verify file permissions
+	info, err := os.Stat(targetPath)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0644), info.Mode().Perm())
+
+	// Verify directory was created with correct permissions
+	dirInfo, err := os.Stat(filepath.Dir(targetPath))
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0755), dirInfo.Mode().Perm())
+}
+
+func TestRestoreAssetFile_InvalidPath(t *testing.T) {
+	// Test with an invalid path (trying to write to a read-only location)
+	testData := []byte("test content")
+	
+	// Try to write to a path that should fail on most systems
+	invalidPath := "/invalid/readonly/path/file.txt"
+	err := restoreAssetFile(testData, invalidPath)
+	require.Error(t, err)
+}
+
 // Test Asset function
 func TestAsset(t *testing.T) {
 	// Test reading a valid file

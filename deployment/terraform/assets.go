@@ -38,6 +38,16 @@ func MustAssetString(name string) string {
 	return string(MustAsset(name))
 }
 
+// restoreAssetFile writes a single embedded file to the specified path
+func restoreAssetFile(data []byte, targetPath string) error {
+	// Create parent directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(targetPath, data, 0644)
+}
+
 // RestoreAssets writes an embedded asset to the given directory
 func RestoreAssets(dir, name string) error {
 	assetPath := filepath.Join("assets", name)
@@ -76,12 +86,7 @@ func RestoreAssets(dir, name string) error {
 					return err
 				}
 
-				// Create parent directory if it doesn't exist
-				if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
-					return err
-				}
-
-				return os.WriteFile(targetPath, data, 0644)
+				return restoreAssetFile(data, targetPath)
 			}
 
 			return nil
@@ -95,11 +100,5 @@ func RestoreAssets(dir, name string) error {
 	}
 
 	outputPath := filepath.Join(dir, name)
-
-	// Create directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return err
-	}
-
-	return os.WriteFile(outputPath, data, 0644)
+	return restoreAssetFile(data, outputPath)
 }
