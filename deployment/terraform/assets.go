@@ -42,12 +42,12 @@ func MustAssetString(name string) string {
 func RestoreAssets(dir, name string) error {
 	assetPath := filepath.Join("assets", name)
 
-	// Check if it's a directory
 	fileInfo, err := fs.Stat(assetsFS, assetPath)
 	if err != nil {
 		return err
 	}
 
+	// Check if it's a directory
 	if fileInfo.IsDir() {
 		// It's a directory, copy recursively using WalkDir
 		return fs.WalkDir(assetsFS, assetPath, func(path string, d fs.DirEntry, err error) error {
@@ -71,7 +71,6 @@ func RestoreAssets(dir, name string) error {
 			// Check if it's a directory and only proceed for files, since files are the only ones we want to copy
 			// and we make sure the target directory exists before copying. This prevents empty folders.
 			if !d.IsDir() {
-				// Copy file
 				data, err := assetsFS.ReadFile(path)
 				if err != nil {
 					return err
