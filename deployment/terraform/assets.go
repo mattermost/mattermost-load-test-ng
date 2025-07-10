@@ -68,10 +68,9 @@ func RestoreAssets(dir, name string) error {
 
 			targetPath := filepath.Join(dir, name, relPath)
 
-			if d.IsDir() {
-				// Create directory
-				return os.MkdirAll(targetPath, 0755)
-			} else {
+			// Check if it's a directory and only proceed for files, since files are the only ones we want to copy
+			// and we make sure the target directory exists before copying. This prevents empty folders.
+			if !d.IsDir() {
 				// Copy file
 				data, err := assetsFS.ReadFile(path)
 				if err != nil {
@@ -85,6 +84,8 @@ func RestoreAssets(dir, name string) error {
 
 				return os.WriteFile(targetPath, data, 0644)
 			}
+
+			return nil
 		})
 	}
 
