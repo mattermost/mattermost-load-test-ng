@@ -119,7 +119,7 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 	isBAInstance, err := isBrowserAgentInstance()
 	if err != nil {
-		mlog.Warn("failed to detect agent_type", mlog.Err(err))
+		mlog.Warn("failed to detect agent_type. Going ahead assuming it's a server agent", mlog.Err(err))
 	}
 
 	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics, isBAInstance)
