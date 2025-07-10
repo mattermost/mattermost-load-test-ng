@@ -18,7 +18,7 @@ func TestAsset(t *testing.T) {
 	data, err := Asset("outputs.tf")
 	require.NoError(t, err)
 	require.NotEmpty(t, data)
-	
+
 	// Convert to string and verify it contains expected content
 	content := string(data)
 	require.Contains(t, content, "output")
@@ -38,18 +38,18 @@ func TestAsset_ValidTerraformFile(t *testing.T) {
 		"cluster.tf",
 		"elasticsearch.tf",
 	}
-	
+
 	for _, fileName := range terraformFiles {
 		data, err := Asset(fileName)
 		require.NoError(t, err, "Failed to read %s", fileName)
 		require.NotEmpty(t, data, "File %s should not be empty", fileName)
-		
+
 		// Verify it's a terraform file by checking for terraform syntax
 		content := string(data)
-		require.True(t, strings.Contains(content, "resource") || 
-			strings.Contains(content, "variable") || 
+		require.True(t, strings.Contains(content, "resource") ||
+			strings.Contains(content, "variable") ||
 			strings.Contains(content, "output") ||
-			strings.Contains(content, "data"), 
+			strings.Contains(content, "data"),
 			"File %s should contain terraform syntax", fileName)
 	}
 }
@@ -59,7 +59,7 @@ func TestMustAsset(t *testing.T) {
 	// Test reading a valid file
 	data := MustAsset("outputs.tf")
 	require.NotEmpty(t, data)
-	
+
 	// Convert to string and verify it contains expected content
 	content := string(data)
 	require.Contains(t, content, "output")
@@ -80,7 +80,7 @@ func TestMustAsset_PanicMessage(t *testing.T) {
 			require.Contains(t, panicMsg, "asset: Asset(non_existent_file.txt):")
 		}
 	}()
-	
+
 	MustAsset("non_existent_file.txt")
 	t.Error("Expected panic did not occur")
 }
@@ -92,7 +92,7 @@ func TestAssetString(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, content)
 	require.Contains(t, content, "output")
-	
+
 	// Compare with Asset function result
 	data, err := Asset("outputs.tf")
 	require.NoError(t, err)
@@ -111,17 +111,17 @@ func TestAssetString_ValidYamlFile(t *testing.T) {
 		"datasource.yaml",
 		"dashboard.yaml",
 	}
-	
+
 	for _, fileName := range yamlFiles {
 		content, err := AssetString(fileName)
 		require.NoError(t, err, "Failed to read %s", fileName)
 		require.NotEmpty(t, content, "File %s should not be empty", fileName)
-		
+
 		// Verify it's a YAML file by checking for YAML syntax
-		require.True(t, strings.Contains(content, ":") || 
+		require.True(t, strings.Contains(content, ":") ||
 			strings.Contains(content, "---") ||
 			strings.Contains(content, "name:") ||
-			strings.Contains(content, "type:"), 
+			strings.Contains(content, "type:"),
 			"File %s should contain YAML syntax", fileName)
 	}
 }
@@ -132,7 +132,7 @@ func TestMustAssetString(t *testing.T) {
 	content := MustAssetString("outputs.tf")
 	require.NotEmpty(t, content)
 	require.Contains(t, content, "output")
-	
+
 	// Compare with MustAsset function result
 	data := MustAsset("outputs.tf")
 	require.Equal(t, string(data), content)
@@ -153,7 +153,7 @@ func TestMustAssetString_PanicMessage(t *testing.T) {
 			require.Contains(t, panicMsg, "asset: Asset(non_existent_file.txt):")
 		}
 	}()
-	
+
 	MustAssetString("non_existent_file.txt")
 	t.Error("Expected panic did not occur")
 }
@@ -161,21 +161,21 @@ func TestMustAssetString_PanicMessage(t *testing.T) {
 // Test consistency between functions
 func TestAssetFunctions_Consistency(t *testing.T) {
 	fileName := "outputs.tf"
-	
+
 	// Get data using Asset
 	data, err := Asset(fileName)
 	require.NoError(t, err)
-	
+
 	// Get data using MustAsset
 	mustData := MustAsset(fileName)
-	
+
 	// Get string using AssetString
 	str, err := AssetString(fileName)
 	require.NoError(t, err)
-	
+
 	// Get string using MustAssetString
 	mustStr := MustAssetString(fileName)
-	
+
 	// All should be consistent
 	require.Equal(t, data, mustData)
 	require.Equal(t, string(data), str)
@@ -186,7 +186,7 @@ func TestAssetFunctions_Consistency(t *testing.T) {
 // Test with different file types
 func TestAssetFunctions_DifferentFileTypes(t *testing.T) {
 	testCases := []struct {
-		fileName     string
+		fileName        string
 		expectedContent string
 	}{
 		{"outputs.tf", "output"},
@@ -195,23 +195,23 @@ func TestAssetFunctions_DifferentFileTypes(t *testing.T) {
 		{"datasource.yaml", ":"},
 		{"dashboard.yaml", ":"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.fileName, func(t *testing.T) {
 			// Test Asset
 			data, err := Asset(tc.fileName)
 			require.NoError(t, err)
 			require.Contains(t, string(data), tc.expectedContent)
-			
+
 			// Test MustAsset
 			mustData := MustAsset(tc.fileName)
 			require.Equal(t, data, mustData)
-			
+
 			// Test AssetString
 			str, err := AssetString(tc.fileName)
 			require.NoError(t, err)
 			require.Contains(t, str, tc.expectedContent)
-			
+
 			// Test MustAssetString
 			mustStr := MustAssetString(tc.fileName)
 			require.Equal(t, str, mustStr)
