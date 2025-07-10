@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"embed"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -39,6 +40,55 @@ func MustAssetString(name string) string {
 
 // RestoreAssets writes an embedded asset to the given directory
 func RestoreAssets(dir, name string) error {
+	assetPath := "assets/" + name
+
+	// Check if it's a directory
+	fileInfo, err := fs.Stat(assetsFS, assetPath)
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.IsDir() {
+		// It's a directory, copy recursively using WalkDir
+		return fs.WalkDir(assetsFS, assetPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// Calculate the relative path from the asset root
+			relPath, err := filepath.Rel(assetPath, path)
+			if err != nil {
+				return err
+			}
+
+			// Skip the root directory itself
+			if relPath == "." {
+				return nil
+			}
+
+			targetPath := filepath.Join(dir, name, relPath)
+
+			if d.IsDir() {
+				// Create directory
+				return os.MkdirAll(targetPath, 0755)
+			} else {
+				// Copy file
+				data, err := assetsFS.ReadFile(path)
+				if err != nil {
+					return err
+				}
+
+				// Create parent directory if it doesn't exist
+				if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+					return err
+				}
+
+				return os.WriteFile(targetPath, data, 0644)
+			}
+		})
+	}
+
+	// It's a file, copy it to the destination
 	data, err := Asset(name)
 	if err != nil {
 		return err
