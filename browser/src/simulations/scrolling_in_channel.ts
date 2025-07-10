@@ -12,7 +12,7 @@ export async function scrollInChannel(
   scrollStep: number,
   pauseBetweenScrolls: number,
 ): Promise<void> {
-  log.info(`[simulation][run][scrollInChannel]`);
+  log.info('run--scrollInChannel');
 
   try {
     // Navigate to the specified channel
@@ -41,7 +41,7 @@ export async function scrollInChannel(
       await page.waitForTimeout(pauseBetweenScrolls);
     }
 
-    log.info('[simulation][pass][scrollInChannel]');
+    log.info('pass--scrollInChannel');
   } catch (error) {
     throw {error, testId: 'scrollInChannel'};
   }

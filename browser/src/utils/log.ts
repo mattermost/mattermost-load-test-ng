@@ -4,7 +4,13 @@
 import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import pino from 'pino';
+import {createRequire} from 'module';
+import {TransportTargetOptions} from 'pino';
+import pinoCaller from 'pino-caller';
+import {PrettyOptions} from 'pino-pretty';
+
+const require = createRequire(import.meta.url);
+const pino = require('pino');
 
 import {
   isConsoleLoggingEnabled,
@@ -22,46 +28,55 @@ export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
     return false;
   }
 
-  if (consoleLoggingEnabled && !fileLoggingEnabled) {
-    return {
-      level: getConsoleLoggingLevel(),
-    };
-  }
-
   const dirname = path.dirname(fileURLToPath(import.meta.url));
   const rootDir = path.resolve(dirname, '../../..');
   const filePath = path.join(rootDir, getFileLoggingLocation());
 
-  if (!consoleLoggingEnabled && fileLoggingEnabled) {
+  const commonPinoPrettyOptions: PrettyOptions = {
+    colorize: false,
+    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l p',
+    singleLine: true,
+    hideObject: false,
+    levelFirst: true,
+  };
+
+  const fileLoggingTransport: TransportTargetOptions = {
+    target: 'pino-pretty',
+    level: getFileLoggingLevel(),
+    options: {
+      destination: filePath,
+      ...commonPinoPrettyOptions,
+    },
+  };
+  const consoleLoggingTransport: TransportTargetOptions = {
+    target: 'pino-pretty',
+    level: getConsoleLoggingLevel(),
+    options: {
+      destination: 1, // standard output to console
+      ...commonPinoPrettyOptions,
+    },
+  };
+
+  if (consoleLoggingEnabled && !fileLoggingEnabled) {
     return {
-      level: getFileLoggingLevel(),
-      file: filePath,
+      stream: pino.transport({
+        targets: [consoleLoggingTransport],
+      }),
     };
   }
 
-  // When both console and file logging are enabled, create transport stream
-  // and use it for both console and file logging simultaneously
-  const transport = pino.transport({
-    targets: [
-      {
-        target: 'pino/file',
-        level: getConsoleLoggingLevel(),
-        options: {
-          destination: 1, // standard output to console
-        },
-      },
-      {
-        target: 'pino/file',
-        level: getFileLoggingLevel(),
-        options: {
-          destination: filePath,
-        },
-      },
-    ],
-  });
+  if (!consoleLoggingEnabled && fileLoggingEnabled) {
+    return {
+      stream: pino.transport({
+        targets: [fileLoggingTransport],
+      }),
+    };
+  }
 
   return {
-    stream: transport,
+    stream: pino.transport({
+      targets: [fileLoggingTransport, consoleLoggingTransport],
+    }),
   };
 }
 
@@ -82,9 +97,14 @@ export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
     };
   }
 
+  // @ts-expect-error pino-caller is not ESM compatible yet
+  const pinoWithCaller = pinoCaller(logger, {
+    relativeTo: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..'),
+  });
+
   return {
-    error: logger.error.bind(logger),
-    warn: logger.warn.bind(logger),
-    info: logger.info.bind(logger),
+    error: pinoWithCaller.error.bind(pinoWithCaller),
+    warn: pinoWithCaller.warn.bind(pinoWithCaller),
+    info: pinoWithCaller.info.bind(pinoWithCaller),
   };
 }

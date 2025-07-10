@@ -79,8 +79,8 @@ describe('TestManager', () => {
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.COMPLETED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][start][noop][testUser]');
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][completed][noop][testUser]');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--noop--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -101,8 +101,8 @@ describe('TestManager', () => {
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][start][noop][testUser]');
-      expect(mockLog.error).toHaveBeenCalledWith('[simulation][failed][noop][testUser][Error: Test failed]');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--Error: Test failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
@@ -128,8 +128,8 @@ describe('TestManager', () => {
 
       expect(updatedInstance).toBeUndefined();
 
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][start][noop][testUser]');
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][stopped][noop][testUser]');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--noop--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -153,8 +153,8 @@ describe('TestManager', () => {
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
       // Verify correct logging for test error with testId
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][start][noop][testUser]');
-      expect(mockLog.error).toHaveBeenCalledWith('[simulation][failed][noop][testUser][login][Test step failed]');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--login--Test step failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
@@ -175,8 +175,8 @@ describe('TestManager', () => {
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('[simulation][start][noop][testUser]');
-      expect(mockLog.error).toHaveBeenCalledWith('[simulation][failed][noop][testUser][Error: Test failed]');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--Error: Test failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });

@@ -6,7 +6,7 @@ import type {Page} from 'playwright';
 import {log} from '../app.js';
 
 export async function handlePreferenceCheckbox(page: Page) {
-  log.info('[simulation][run][handlePreferenceCheckbox]');
+  log.info('run--handlePreferenceCheckbox');
 
   try {
     // Try to find the checkbox with a short timeout
@@ -24,10 +24,10 @@ export async function handlePreferenceCheckbox(page: Page) {
       }
     });
 
-    log.info('[simulation][pass][handlePreferenceCheckbox]');
+    log.info('pass--handlePreferenceCheckbox');
   } catch (error) {
     // If checkbox not found, log and skip
-    log.info('[simulation][skip][handlePreferenceCheckbox]');
+    log.info('skip--handlePreferenceCheckbox');
   }
 }
 
@@ -40,7 +40,7 @@ export async function performLogin({
   userId: string;
   password: string;
 }): Promise<void> {
-  log.info('[simulation][run][performLogin]');
+  log.info('run--performLogin');
 
   try {
     await page.waitForSelector('#input_loginId');
@@ -48,7 +48,7 @@ export async function performLogin({
     await page.type('#input_password-input', password);
     await page.keyboard.press('Enter');
 
-    log.info('[simulation][pass][performLogin]');
+    log.info('pass--performLogin');
   } catch (error) {
     throw {error, testId: 'performLogin'};
   }
