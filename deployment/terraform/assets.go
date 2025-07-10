@@ -40,7 +40,7 @@ func MustAssetString(name string) string {
 
 // RestoreAssets writes an embedded asset to the given directory
 func RestoreAssets(dir, name string) error {
-	assetPath := "assets/" + name
+	assetPath := filepath.Join("assets", name)
 
 	// Check if it's a directory
 	fileInfo, err := fs.Stat(assetsFS, assetPath)
