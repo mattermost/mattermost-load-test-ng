@@ -189,7 +189,7 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 
-	// Additional logic to check how many users to add to
+	// TODO: Additional logic to check how many users to add to
 	// server agents, and how many to add in browser agents.
 
 	for i, inc := range dist {
@@ -204,7 +204,7 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 		}
 	}
 
-	// Additional loop here to add to browser agents.
+	// TODO: Loop through browser agents and add users to them.
 
 	return nil
 }
