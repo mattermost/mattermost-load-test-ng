@@ -154,7 +154,7 @@ describe('TestManager', () => {
 
       // Verify correct logging for test error with testId
       expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--login--Test step failed');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--login--Error: Test step failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });

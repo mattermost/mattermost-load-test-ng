@@ -63,7 +63,7 @@ export class TestManager {
         updatedBrowserInstance.state = SessionState.FAILED;
 
         if (this.isTestFailureError(error)) {
-          log.error(`simulation-failed--${scenarioId}--${userId}--${error.testId}--${error.error.message}`);
+          log.error(`simulation-failed--${scenarioId}--${userId}--${error.testId}--${error.error}`);
         } else {
           log.error(`simulation-failed--${scenarioId}--${userId}--${error}`);
         }

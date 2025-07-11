@@ -4,22 +4,30 @@
 import path from 'path';
 import fs from 'fs';
 import {fileURLToPath} from 'url';
+import {z as zod} from 'zod';
+import pino from 'pino';
 
-/**
- * Read and parse the config.json file located in config/config.json
- */
-export function loadConfigJson() {
-  try {
-    const dirname = path.dirname(fileURLToPath(import.meta.url));
-    const configPath = path.resolve(dirname, '../../../config/config.json');
+const logLabelLevels = Object.values(pino.levels.labels);
 
-    const configData = fs.readFileSync(configPath, 'utf8');
-    return JSON.parse(configData);
-  } catch (error) {
-    console.error('Failed to load config.json file:', error);
-    process.exit(1);
-  }
-}
+const SliceOfConfigJsonSchema = zod.object({
+  ConnectionConfiguration: zod.object({
+    ServerURL: zod.string().min(1, 'ConnectionConfiguration.ServerURL cannot be empty'),
+  }),
+  BrowserConfiguration: zod.object({
+    Headless: zod.boolean(),
+  }),
+  BrowserLogSettings: zod.object({
+    EnableConsole: zod.boolean(),
+    ConsoleLevel: zod.enum(logLabelLevels, {
+      message: `BrowserLogSettings.ConsoleLevel must be one of: ${logLabelLevels.join(', ')}`,
+    }),
+    EnableFile: zod.boolean(),
+    FileLevel: zod.enum(logLabelLevels, {
+      message: `BrowserLogSettings.FileLevel must be one of: ${logLabelLevels.join(', ')}`,
+    }),
+    FileLocation: zod.string().min(1, 'BrowserLogSettings.FileLocation cannot be empty'),
+  }),
+});
 
 export const configJson = loadConfigJson();
 
@@ -32,7 +40,7 @@ export function isBrowserHeadless(): boolean {
 }
 
 export function isConsoleLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings?.EnableConsole ?? false;
+  return configJson.BrowserLogSettings.EnableConsole;
 }
 
 export function getConsoleLoggingLevel(): string {
@@ -40,7 +48,7 @@ export function getConsoleLoggingLevel(): string {
 }
 
 export function isFileLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings?.EnableFile ?? true;
+  return configJson.BrowserLogSettings.EnableFile;
 }
 
 export function getFileLoggingLevel(): string {
@@ -52,10 +60,30 @@ export function getFileLoggingLocation(): string {
 }
 
 /**
- * Generates a random port in the specified range
- * Useful when you want to avoid sequential ports for parallel tests
- * If not provided, the default range is 10000-65000
+ * Read and parse the config.json file located in config/config.json
  */
-export function getRandomPortForTests(min = 10000, max = 65000): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function loadConfigJson() {
+  try {
+    const dirname = path.dirname(fileURLToPath(import.meta.url));
+    const configPath = path.resolve(dirname, '../../../config/config.json');
+
+    const configData = fs.readFileSync(configPath, 'utf8');
+    const rawConfig = JSON.parse(configData);
+
+    const parsedConfig = SliceOfConfigJsonSchema.safeParse(rawConfig);
+
+    if (!parsedConfig.success) {
+      const issues = parsedConfig.error.issues.map((issue) => {
+        const fieldPath = issue.path.join('.') || 'unknownField';
+        return `${issue.message} for '${fieldPath}'`;
+      });
+
+      throw new Error(`${issues.join(', ')}`);
+    }
+
+    return parsedConfig.data;
+  } catch (error) {
+    console.error('Failed loading config.json.', error);
+    process.exit(1);
+  }
 }

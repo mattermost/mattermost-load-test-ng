@@ -6,7 +6,6 @@ import supertest from 'supertest';
 import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
-import {getRandomPortForTests} from '../utils/config.js';
 
 vi.mock('../utils/config.js', async (importOriginal) => {
   const actual = await importOriginal();
@@ -14,7 +13,6 @@ vi.mock('../utils/config.js', async (importOriginal) => {
     ...(actual as any),
     getMattermostServerURL: vi.fn().mockReturnValue('http://localhost:8065'),
     isBrowserHeadless: vi.fn().mockReturnValue(true),
-    getRandomPortForTests: (actual as any).getRandomPortForTests,
   };
 });
 
@@ -81,13 +79,15 @@ vi.mock('../simulations/noop_scenario.js', () => ({
 }));
 
 describe('API /browsers', () => {
+  const MIN_PORT = 10000;
+  const MAX_PORT = 65000;
   let app: FastifyInstance;
   let port: number;
 
   beforeEach(async () => {
     // Create app instance with real browser manager
     app = createApp({logger: false});
-    port = getRandomPortForTests();
+    port = Math.floor(Math.random() * (MAX_PORT - MIN_PORT + 1)) + MIN_PORT;
   });
 
   afterEach(async () => {

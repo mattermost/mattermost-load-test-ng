@@ -113,7 +113,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create browser instance for "${userId}" in browser_manager`);
+      log.error(`failed to create browser instance for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
         message: `Failed to create browser instance for user "${userId}"`,
@@ -133,7 +133,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create context for "${userId}" in browser_manager`);
+      log.error(`failed to create context for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
         message: `Failed to create context for user "${userId}"`,
@@ -153,7 +153,7 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create page for "${userId}" in browser_manager`);
+      log.error(`failed to create page for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
         message: `Failed to create page for user "${userId}"`,

@@ -27,6 +27,6 @@ export async function noopScenario({page, userId, password}: BrowserInstance, se
       await scrollInChannel(page, 'sidebarItem_town-square', scrollCount, 400, 500);
     } while (runInLoop);
   } catch (error: any) {
-    throw {error: error?.error, testId: error?.testId};
+    throw error;
   }
 }

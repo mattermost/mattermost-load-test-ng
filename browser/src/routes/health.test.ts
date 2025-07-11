@@ -6,7 +6,6 @@ import supertest from 'supertest';
 import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
-import {getRandomPortForTests} from '../utils/config.js';
 
 vi.mock('os', () => {
   return {
@@ -42,12 +41,14 @@ describe('API /health', () => {
 });
 
 describe('API /health', () => {
+  const MIN_PORT = 10000;
+  const MAX_PORT = 65000;
   let appInstance: FastifyInstance;
   let port: number;
 
   beforeEach(async () => {
     appInstance = createApp({logger: false});
-    port = getRandomPortForTests();
+    port = Math.floor(Math.random() * (MAX_PORT - MIN_PORT + 1)) + MIN_PORT;
   });
 
   afterEach(async () => {
