@@ -8,4 +8,8 @@ const (
 
 	OperatingSystemKindDebian = "debian"
 	OperatingSystemKindRHEL   = "rhel"
+
+	AgentTypeFileName = "agent_type.txt"
+	AgentTypeServer   = "server_agent"
+	AgentTypeBrowser  = "browser_agent"
 )

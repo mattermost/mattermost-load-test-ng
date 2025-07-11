@@ -130,7 +130,7 @@ func checkSignature(t *testing.T, req *http.Request) {
 
 	// Check all items were correctly computed
 	require.Equal(t, algorithm, "AWS4-HMAC-SHA256")
-	today := time.Now().Format("20060102")
+	today := time.Now().UTC().Format("20060102")
 	expectedCredential := fmt.Sprintf("Credential=%s/%s/%s/%s/aws4_request", accessKeyID, today, region, service)
 	require.Equal(t, expectedCredential, credential)
 	require.Equal(t, "SignedHeaders=host;x-amz-date", signedHeaders)
