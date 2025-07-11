@@ -88,6 +88,6 @@ type Status struct {
 	ActiveUsers        int       // Total number of currently active users across the load-test agents cluster.
 	NumErrors          int64     // Total number of errors received from the load-test agents cluster.
 	SupportedUsers     int       // Number of supported users.
-	ActiveBrowserUsers int       // Total browser users
-	NumBrowserErrors   int64     // Total browser errors
+	ActiveBrowserUsers int       // Total browser users.
+	NumBrowserErrors   int64     // Total browser errors.
 }

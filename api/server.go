@@ -36,7 +36,7 @@ func (a *api) getResource(id string) (interface{}, bool) {
 	return val, ok
 }
 
-// It is used to store the load-test agent in the resources map.
+// setResource is used to store the load-test agent in the resources map,
 // which can be retrieved later using getResource
 func (a *api) setResource(id string, res interface{}) bool {
 	a.mut.Lock()

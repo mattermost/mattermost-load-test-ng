@@ -17,7 +17,7 @@ import (
 )
 
 // This is the URL of the LTBrowser API server ran from /browser
-const LT_BROWSER_API_URL = "http://localhost:5000"
+const LTBrowserApi = "http://localhost:5000"
 
 // BrowserController is a controller that manages browser sessions
 // by communicating with the browserLt API server.
@@ -25,7 +25,6 @@ type BrowserController struct {
 	id              int
 	user            user.User
 	status          chan<- control.UserStatus
-	rate            float64
 	stopChan        chan struct{}
 	stoppedChan     chan struct{}
 	wg              *sync.WaitGroup
@@ -37,14 +36,14 @@ type BrowserController struct {
 // AddBrowserRequest represents the request body for adding a browser session
 type AddBrowserRequest struct {
 	// UserID is the username or email of the user to add a browser session
-	UserID   string `json:"userId" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	UserID   string `json:"userId"`
+	Password string `json:"password"`
 }
 
 // RemoveBrowserRequest represents the request body for removing a browser session
 type RemoveBrowserRequest struct {
 	// UserID is the username or email of the user to remove a browser session
-	UserID string `json:"userId" validate:"required"`
+	UserID string `json:"userId"`
 }
 
 // BrowserAPIResponse represents the response from the browser API
@@ -70,11 +69,10 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 		id:              id,
 		user:            user,
 		status:          status,
-		rate:            1.0,
 		stopChan:        make(chan struct{}),
 		stoppedChan:     make(chan struct{}),
 		wg:              &sync.WaitGroup{},
-		ltBrowserApiUrl: LT_BROWSER_API_URL,
+		ltBrowserApiUrl: LTBrowserApi,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -140,12 +138,6 @@ func (c *BrowserController) Run() {
 // SetRate sets the relative speed of execution. For browser controller,
 // this is a no-op since browser actions are managed by the Node.js server.
 func (c *BrowserController) SetRate(rate float64) error {
-	if rate < 0 {
-		return errors.New("rate should be a positive value")
-	}
-
-	// Currently unused but should be stored anyways
-	c.rate = rate
 	return nil
 }
 
@@ -232,7 +224,7 @@ func (c *BrowserController) addBrowser() error {
 		Password: userStore.Password(),
 	}
 
-	_, err := c.makeRequestToLTBrowserApi("POST", "/browsers", requestBody)
+	_, err := c.makeRequestToLTBrowserApi(http.MethodPost, "/browsers", requestBody)
 	return err
 }
 
@@ -252,7 +244,7 @@ func (c *BrowserController) removeBrowser() error {
 		requestBody.UserID = userStore.Email()
 	}
 
-	_, err := c.makeRequestToLTBrowserApi("DELETE", "/browsers", requestBody)
+	_, err := c.makeRequestToLTBrowserApi(http.MethodDelete, "/browsers", requestBody)
 	return err
 }
 

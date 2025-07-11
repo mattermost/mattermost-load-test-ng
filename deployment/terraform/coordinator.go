@@ -17,9 +17,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-const (
-	LT_API_PORT = "4000"
-)
+const ltAPIPort = "4000"
 
 // StartCoordinator starts the coordinator in the current load-test deployment.
 func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
@@ -40,7 +38,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":" + LT_API_PORT,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
 		})
 	}
 
@@ -50,7 +48,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	for _, val := range t.output.BrowserAgents {
 		browserAgentConfigs = append(browserAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":" + LT_API_PORT,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
 		})
 	}
 

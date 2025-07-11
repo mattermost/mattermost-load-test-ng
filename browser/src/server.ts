@@ -4,7 +4,7 @@
 import {app, log} from './app.js';
 
 // This is a constant for the API URL of the LTBrowser server.
-// Also defined in loadtest/control/browsercontroller/controller.go
+// Also defined in loadtest/control/browsercontroller/controller.go as LTBrowserApi
 const LT_BROWSER_API_URL = 'http://localhost:5000';
 
 async function startServer() {

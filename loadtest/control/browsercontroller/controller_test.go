@@ -35,8 +35,7 @@ func TestNew(t *testing.T) {
 		require.NotNil(t, controller)
 		require.Equal(t, 1, controller.id)
 		require.Equal(t, user, controller.user)
-		require.Equal(t, LT_BROWSER_API_URL, controller.ltBrowserApiUrl)
-		require.Equal(t, 1.0, controller.rate)
+		require.Equal(t, LTBrowserApi, controller.ltBrowserApiUrl)
 		require.NotNil(t, controller.httpClient)
 	})
 
@@ -87,10 +86,9 @@ func TestRun(t *testing.T) {
 			id:              1,
 			user:            nil,
 			status:          statusChanWithoutUser,
-			rate:            1.0,
 			stopChan:        make(chan struct{}),
 			stoppedChan:     make(chan struct{}),
-			ltBrowserApiUrl: LT_BROWSER_API_URL,
+			ltBrowserApiUrl: LTBrowserApi,
 		}
 
 		go controllerWithEmptyUser.Run()
@@ -217,19 +215,18 @@ func createMockServer(t *testing.T, config MockServerConfig) *httptest.Server {
 			require.Equal(t, "/browsers", r.URL.Path)
 			require.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
-			if method == "POST" || method == "DELETE" {
-				if method == "POST" {
-					var requestBody AddBrowserRequest
-					err := json.NewDecoder(r.Body).Decode(&requestBody)
-					require.NoError(t, err)
-					require.Equal(t, "testuser", requestBody.UserID)
-					require.Equal(t, "testpass", requestBody.Password)
-				} else if method == "DELETE" {
-					var requestBody RemoveBrowserRequest
-					err := json.NewDecoder(r.Body).Decode(&requestBody)
-					require.NoError(t, err)
-					require.Equal(t, "testuser", requestBody.UserID)
-				}
+			switch method {
+			case http.MethodPost:
+				var requestBody AddBrowserRequest
+				err := json.NewDecoder(r.Body).Decode(&requestBody)
+				require.NoError(t, err)
+				require.Equal(t, "testuser", requestBody.UserID)
+				require.Equal(t, "testpass", requestBody.Password)
+			case http.MethodDelete:
+				var requestBody RemoveBrowserRequest
+				err := json.NewDecoder(r.Body).Decode(&requestBody)
+				require.NoError(t, err)
+				require.Equal(t, "testuser", requestBody.UserID)
 			}
 		}
 

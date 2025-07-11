@@ -165,9 +165,12 @@ func (c *LoadAgentCluster) Shutdown() {
 	}
 
 	for _, browserAgent := range c.browserAgents {
-		if _, err := browserAgent.Destroy(); err != nil {
-			c.log.Error("cluster: failed to stop browser agent", mlog.Err(err))
-		}
+		go func(browserAgent *client.Agent) {
+			defer wg.Done()
+			if _, err := browserAgent.Destroy(); err != nil {
+				c.log.Error("cluster: failed to stop browser agent", mlog.Err(err))
+			}
+		}(browserAgent)
 	}
 
 	wg.Wait()
@@ -276,8 +279,18 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 			if err := createAgent(browserAgent, c.ltConfig); err != nil {
 				c.log.Error("browser agent create failed", mlog.Err(err))
 			}
+
+			// We continue to the next browser agent regardless of whether createAgent() succeeds or fails.
+			// The coordinator's feedback loop calls Status() regularly so:
+			// - If createAgent() succeeded: the newly created agent will have its status collected on the next call
+			// - If createAgent() failed: we avoid processing invalid status data and will retry creation next time
+			continue
 		} else if err != nil {
 			c.log.Error("cluster: failed to get status for browser agent:", mlog.Err(err))
+
+			// We cant process the status of the browser agent if we cannot get the status.
+			// We continue to the next browser agent.
+			continue
 		}
 
 		status.ActiveBrowserUsers += int(st.NumUsers)

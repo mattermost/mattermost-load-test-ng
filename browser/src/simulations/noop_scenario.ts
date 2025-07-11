@@ -19,7 +19,7 @@ export async function noopScenario({page, userId, password}: BrowserInstance, se
     await handlePreferenceCheckbox(page);
     await performLogin({page, userId, password});
 
-    // Runs the simulation atleast once and then runs it in continuous loop if simulationMode is true
+    // Runs the simulation at least once and then runs it in a continuous loop if simulationMode is true
     do {
       const scrollCount = runInLoop ? 40 : 3;
       await postInChannel({page});

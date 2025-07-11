@@ -94,9 +94,13 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.activeControllers)
+
+	// If the load-test is not a browser agent, we check if the maximum number of users has been reached.
 	if !lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
 		return ErrMaxUsersReached
 	}
+
+	// If the load-test is a browser agent, we check if the maximum number of browser users has been reached.
 	if lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveBrowserUsers {
 		return ErrMaxUsersReached
 	}
