@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -61,6 +62,8 @@ type Terraform struct {
 	output      *Output
 	initialized bool
 	genValues   *GeneratedValues
+	awsCfg      aws.Config
+	awsCfgMut   sync.Mutex
 }
 
 // New returns a new Terraform instance.
@@ -82,11 +85,17 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to get generated values: %w", err)
 	}
 
-	return &Terraform{
+	t := &Terraform{
 		id:        id,
 		config:    &cfg,
 		genValues: genValues,
-	}, nil
+	}
+
+	if err := t.InitCreds(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func ensureTerraformStateDir(dir string) error {
