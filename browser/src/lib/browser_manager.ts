@@ -6,6 +6,7 @@ import {Browser, BrowserContext, chromium, Page} from 'playwright';
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
 import {isBrowserHeadless} from '../utils/config.js';
+import {SimulationIds} from 'src/simulations/registry.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -201,12 +202,11 @@ export class BrowserTestSessionManager {
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 
-    const scenarioId = 'noop';
     const updatedBrowserInstance = await testManager.startTest(
       browserInstance,
       this.activeBrowserSessions,
       serverURL,
-      scenarioId,
+      SimulationIds.postAndScroll,
     );
 
     if (updatedBrowserInstance) {

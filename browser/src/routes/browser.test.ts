@@ -74,8 +74,8 @@ vi.mock('playwright', () => {
 });
 
 // Mock the test scenarios to prevent background scenario execution errors
-vi.mock('../simulations/noop_scenario.js', () => ({
-  noopScenario: vi.fn().mockResolvedValue(undefined),
+vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
+  postAndScrollScenario: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('API /browsers', () => {

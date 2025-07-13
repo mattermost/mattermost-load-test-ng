@@ -18,8 +18,8 @@ vi.mock('../app.js', () => {
   };
 });
 
-vi.mock('../simulations/noop_scenario.js', () => ({
-  noopScenario: vi.fn().mockImplementation(async () => {
+vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
+  postAndScrollScenario: vi.fn().mockImplementation(async () => {
     // Wait a bit before resolving to simulate test execution
     await new Promise((resolve) => setTimeout(resolve, 10));
     return undefined;
@@ -27,6 +27,7 @@ vi.mock('../simulations/noop_scenario.js', () => ({
 }));
 
 import * as appModule from '../app.js';
+import {SimulationIds} from 'src/simulations/registry.js';
 
 const mockLog = (appModule as any).__mockLog;
 
@@ -59,7 +60,7 @@ describe('TestManager', () => {
     });
 
     test('should get scenario function by id', () => {
-      const scenario = testManager.getScenario('noop');
+      const scenario = testManager.getScenario('postAndScroll');
       expect(scenario).toBeDefined();
       expect(typeof scenario).toBe('function');
     });
@@ -73,21 +74,21 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'noop',
+        SimulationIds.postAndScroll,
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.COMPLETED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--noop--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--postAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
 
     test('should handle test failure', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('../simulations/noop_scenario.js')).noopScenario.mockRejectedValueOnce(
+      vi.mocked(await import('../simulations/post_and_scroll_scenario.js')).postAndScrollScenario.mockRejectedValueOnce(
         new Error('Test failed'),
       );
 
@@ -95,14 +96,14 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'noop',
+        SimulationIds.postAndScroll,
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
@@ -115,7 +116,7 @@ describe('TestManager', () => {
       });
 
       // Mock scenario to throw error to simulate interruption
-      vi.mocked(await import('../simulations/noop_scenario.js')).noopScenario.mockRejectedValueOnce(
+      vi.mocked(await import('../simulations/post_and_scroll_scenario.js')).postAndScrollScenario.mockRejectedValueOnce(
         new Error('Test interrupted'),
       );
 
@@ -123,13 +124,13 @@ describe('TestManager', () => {
         mockBrowserInstance,
         stoppingMockSessions,
         'http://localhost:8065',
-        'noop',
+        SimulationIds.postAndScroll,
       );
 
       expect(updatedInstance).toBeUndefined();
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--noop--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--postAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -140,28 +141,32 @@ describe('TestManager', () => {
         error: new Error('Test step failed'),
         testId: 'login',
       };
-      vi.mocked(await import('../simulations/noop_scenario.js')).noopScenario.mockRejectedValueOnce(testError);
+      vi.mocked(await import('../simulations/post_and_scroll_scenario.js')).postAndScrollScenario.mockRejectedValueOnce(
+        testError,
+      );
 
       const updatedInstance = await testManager.startTest(
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'noop',
+        SimulationIds.postAndScroll,
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
       // Verify correct logging for test error with testId
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--login--Error: Test step failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith(
+        'simulation-failed--postAndScroll--testUser--login--Error: Test step failed',
+      );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
 
     test('should handle test error without testId', async () => {
       // Mock scenario to throw error
-      vi.mocked(await import('../simulations/noop_scenario.js')).noopScenario.mockRejectedValueOnce(
+      vi.mocked(await import('../simulations/post_and_scroll_scenario.js')).postAndScrollScenario.mockRejectedValueOnce(
         new Error('Test failed'),
       );
 
@@ -169,14 +174,14 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'noop',
+        SimulationIds.postAndScroll,
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--noop--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--noop--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });

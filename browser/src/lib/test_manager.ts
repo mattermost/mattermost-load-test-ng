@@ -2,9 +2,10 @@
 // See LICENSE.txt for license information.
 
 import {log} from '../app.js';
-import * as tests from '../simulations/noop_scenario.js';
+import * as tests from '../simulations/post_and_scroll_scenario.js';
 import type {BrowserInstance, ActiveBrowserSessions} from '../lib/browser_manager.js';
 import {SessionState} from '../lib/browser_manager.js';
+import {SimulationIds} from '../simulations/registry.js';
 
 interface TestError {
   error: Error;
@@ -29,7 +30,7 @@ export class TestManager {
   }
 
   private initScenarios(): void {
-    this.scenarios.set('noop', tests.noopScenario);
+    this.scenarios.set(SimulationIds.postAndScroll, tests.postAndScrollScenario);
   }
 
   public async startTest(
