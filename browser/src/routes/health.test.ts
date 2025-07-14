@@ -36,7 +36,11 @@ describe('API /health', () => {
 
     await healthRoutes(mockFastify as any);
 
-    expect(mockFastify.get).toHaveBeenCalledWith('/health', expect.any(Function));
+    expect(mockFastify.get).toHaveBeenCalledWith(
+      '/health',
+      expect.objectContaining({schema: expect.any(Object)}),
+      expect.any(Function),
+    );
   });
 });
 
@@ -66,14 +70,12 @@ describe('API /health', () => {
       .expect('Content-Type', /json/);
 
     expect(response.body).toEqual({
-      200: {
-        success: true,
-        data: {
-          startTime: expect.any(String),
-          uptime: expect.any(String),
-          hostname: expect.any(String),
-          platform: expect.any(String),
-        },
+      success: true,
+      data: {
+        startTime: expect.any(String),
+        uptime: expect.any(String),
+        hostname: expect.any(String),
+        platform: expect.any(String),
       },
     });
   });

@@ -6,6 +6,7 @@ import os from 'os';
 import ms from 'ms';
 
 import {type IReply} from './types.js';
+import {getSchema} from './health.schema.js';
 
 interface HealthDataResponse {
   startTime: string;
@@ -20,7 +21,7 @@ const hostname = os.hostname();
 const platform = process.platform;
 
 export default async function healthRoutes(fastify: FastifyInstance) {
-  fastify.get<{Reply: IReply}>('/health', getHealth);
+  fastify.get<{Reply: IReply}>('/health', {schema: getSchema}, getHealth);
 }
 
 export async function getHealth(_: FastifyRequest, reply: FastifyReply): Promise<IReply> {
@@ -33,9 +34,7 @@ export async function getHealth(_: FastifyRequest, reply: FastifyReply): Promise
   };
 
   return reply.code(200).send({
-    200: {
-      success: true,
-      data: healthData,
-    },
+    success: true,
+    data: healthData,
   });
 }

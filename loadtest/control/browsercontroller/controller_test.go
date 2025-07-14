@@ -183,14 +183,14 @@ func TestStop(t *testing.T) {
 	})
 }
 
-func newUser(t *testing.T, username, password string) *userentity.UserEntity {
+func newUser(t *testing.T, username, password string, email string) *userentity.UserEntity {
 	store, err := memstore.New(nil)
 	require.NoError(t, err)
 	return userentity.New(userentity.Setup{Store: store}, userentity.Config{
 		ServerURL:    "http://localhost:8065",
 		WebSocketURL: "ws://localhost:8065",
 		Username:     username,
-		Email:        "test@example.com",
+		Email:        email,
 		Password:     password,
 	})
 }
@@ -220,13 +220,11 @@ func createMockServer(t *testing.T, config MockServerConfig) *httptest.Server {
 				var requestBody AddBrowserRequest
 				err := json.NewDecoder(r.Body).Decode(&requestBody)
 				require.NoError(t, err)
-				require.Equal(t, "testuser", requestBody.UserID)
+				require.Equal(t, "testuser", requestBody.User)
 				require.Equal(t, "testpass", requestBody.Password)
 			case http.MethodDelete:
-				var requestBody RemoveBrowserRequest
-				err := json.NewDecoder(r.Body).Decode(&requestBody)
-				require.NoError(t, err)
-				require.Equal(t, "testuser", requestBody.UserID)
+				queryParams := r.URL.Query()
+				require.Equal(t, "testuser", queryParams.Get("user"))
 			}
 		}
 
@@ -282,7 +280,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanValid := make(chan control.UserStatus, 10)
 		defer close(statusChanValid)
 
-		controllerValid, err := New(1, newUser(t, "testuser", "testpass"), statusChanValid)
+		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanValid)
 		require.NoError(t, err)
 		controllerValid.ltBrowserApiUrl = mockServer.URL
 
@@ -302,7 +300,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanError := make(chan control.UserStatus, 10)
 		defer close(statusChanError)
 
-		controllerError, err := New(1, newUser(t, "testuser", "testpass"), statusChanError)
+		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanError)
 		require.NoError(t, err)
 		controllerError.ltBrowserApiUrl = mockServerError.URL
 
@@ -321,7 +319,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanHTTPError := make(chan control.UserStatus, 10)
 		defer close(statusChanHTTPError)
 
-		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass"), statusChanHTTPError)
+		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanHTTPError)
 		require.NoError(t, err)
 		controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
@@ -330,8 +328,8 @@ func TestAddBrowser(t *testing.T) {
 		require.Contains(t, err.Error(), "HTTP error: 500")
 	})
 
-	t.Run("fails due to empty username", func(t *testing.T) {
-		userEmptyUsername := newUser(t, "", "testpass")
+	t.Run("fails due to empty username and email", func(t *testing.T) {
+		userEmptyUsername := newUser(t, "", "testpass", "")
 		statusChanEmptyUsername := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyUsername)
 
@@ -340,11 +338,11 @@ func TestAddBrowser(t *testing.T) {
 
 		err = controllerEmptyUsername.addBrowser()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "username is empty")
+		require.Contains(t, err.Error(), "username and email both are empty, either username or email is required")
 	})
 
 	t.Run("fails due to empty password", func(t *testing.T) {
-		userEmptyPassword := newUser(t, "testuser", "")
+		userEmptyPassword := newUser(t, "testuser", "", "test@example.com")
 		statusChanEmptyPassword := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyPassword)
 
@@ -369,7 +367,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanValid := make(chan control.UserStatus, 10)
 		defer close(statusChanValid)
 
-		controllerValid, err := New(1, newUser(t, "testuser", "testpass"), statusChanValid)
+		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanValid)
 		require.NoError(t, err)
 		controllerValid.ltBrowserApiUrl = mockServer.URL
 
@@ -389,7 +387,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanError := make(chan control.UserStatus, 10)
 		defer close(statusChanError)
 
-		controllerError, err := New(1, newUser(t, "testuser", "testpass"), statusChanError)
+		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanError)
 		require.NoError(t, err)
 		controllerError.ltBrowserApiUrl = mockServerError.URL
 
@@ -408,7 +406,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanHTTPError := make(chan control.UserStatus, 10)
 		defer close(statusChanHTTPError)
 
-		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass"), statusChanHTTPError)
+		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanHTTPError)
 		require.NoError(t, err)
 		controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
@@ -418,7 +416,7 @@ func TestRemoveBrowser(t *testing.T) {
 	})
 
 	t.Run("fails due to empty username", func(t *testing.T) {
-		userEmptyUsername := newUser(t, "", "testpass")
+		userEmptyUsername := newUser(t, "", "testpass", "")
 		statusChanEmptyUsername := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyUsername)
 
@@ -427,6 +425,6 @@ func TestRemoveBrowser(t *testing.T) {
 
 		err = controllerEmptyUsername.removeBrowser()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "username is empty")
+		require.Contains(t, err.Error(), "username and email both are empty, either username or email is required")
 	})
 }

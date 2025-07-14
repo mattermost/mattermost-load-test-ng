@@ -6,6 +6,10 @@ export interface IReply {
     success: boolean;
     message: string;
   };
+  201: {
+    success: boolean;
+    message: string;
+  };
   400: {
     success: boolean;
     error: {

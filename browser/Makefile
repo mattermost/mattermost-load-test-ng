@@ -59,6 +59,13 @@ dev-watch: install
 	@echo "Starting LTBrowser API server in development watch mode"
 	$(BIN)/tsx watch src/server.ts
 
+## Generate the OpenAPI schemas for the API in JSON and YAML format
+schema:
+	@echo "Generating OpenAPI schema in JSON format"
+	NODE_OPTIONS='--import=tsx/esm' $(BIN)/fastify generate-swagger src/app.ts > ./openapi.json
+	@echo "Generating OpenAPI schema in YAML format"
+	NODE_OPTIONS='--import=tsx/esm' $(BIN)/fastify generate-swagger --yaml=true src/app.ts > ./openapi.yaml
+
 ## Show this help message
 help:
 	@awk '/^##/{c=substr($$0,3); getline; if($$1 ~ /^[a-zA-Z_-]+:/) printf "\033[36m%-15s\033[0m %s\n", $$1, c}' ./Makefile | sort

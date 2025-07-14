@@ -3,7 +3,6 @@
 
 import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
-// Mock playwright
 vi.mock('playwright', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPage = {close: mockPageClose};
@@ -28,7 +27,6 @@ vi.mock('playwright', () => {
     chromium: {
       launch: mockChromiumLaunch,
     },
-    // Export mocks for test access
     __mocks: {
       mockPageClose,
       mockContextNewPage,

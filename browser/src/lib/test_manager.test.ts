@@ -27,7 +27,7 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 }));
 
 import * as appModule from '../app.js';
-import {SimulationIds} from 'src/simulations/registry.js';
+import {SimulationIds} from '../simulations/registry.js';
 
 const mockLog = (appModule as any).__mockLog;
 

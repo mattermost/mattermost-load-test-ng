@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -30,20 +31,13 @@ type BrowserController struct {
 	wg              *sync.WaitGroup
 	ltBrowserApiUrl string
 	httpClient      *http.Client
-	mu              sync.Mutex
 }
 
 // AddBrowserRequest represents the request body for adding a browser session
 type AddBrowserRequest struct {
-	// UserID is the username or email of the user to add a browser session
-	UserID   string `json:"userId"`
+	// User is the username or email of the user to add a browser session
+	User     string `json:"user"`
 	Password string `json:"password"`
-}
-
-// RemoveBrowserRequest represents the request body for removing a browser session
-type RemoveBrowserRequest struct {
-	// UserID is the username or email of the user to remove a browser session
-	UserID string `json:"userId"`
 }
 
 // BrowserAPIResponse represents the response from the browser API
@@ -82,9 +76,6 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 // Run starts the browser controller by creating a browser session.
 // This corresponds to adding a user in the browser load test.
 func (c *BrowserController) Run() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.user == nil {
 		c.sendFailStatus("browser controller was not initialized")
 		return
@@ -135,8 +126,8 @@ func (c *BrowserController) Run() {
 	<-c.stopChan
 }
 
-// SetRate sets the relative speed of execution. For browser controller,
-// this is a no-op since browser actions are managed by the Node.js server.
+// SetRate is a no-op for browser controller since actions and their speed are
+// managed by the Browser service.
 func (c *BrowserController) SetRate(rate float64) error {
 	return nil
 }
@@ -144,9 +135,6 @@ func (c *BrowserController) SetRate(rate float64) error {
 // Stop stops the browser controller and removes the browser session.
 // This corresponds to removing a user in the browser load test.
 func (c *BrowserController) Stop() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	// Remove browser before stopping
 	if err := c.removeBrowser(); err != nil {
 		c.status <- c.newErrorStatus(control.NewUserError(err))
@@ -163,20 +151,31 @@ func (c *BrowserController) Stop() {
 }
 
 // InjectAction is a no-op for browser controller since actions are managed
-// by the Node.js server through the browser sessions.
+// by the Browser service.
 func (c *BrowserController) InjectAction(actionID string) error {
 	return nil
 }
 
 // This is HTTP client helper which is used to make API requests to the LTBrowser API server.
-func (c *BrowserController) makeRequestToLTBrowserApi(method, endpoint string, requestBody interface{}) (*BrowserAPIResponse, error) {
+func (c *BrowserController) makeRequestToLTBrowserApi(method string, requestBody interface{}, queryParams url.Values) (*BrowserAPIResponse, error) {
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	url := fmt.Sprintf("%s%s", c.ltBrowserApiUrl, endpoint)
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+	const browserRoute = "/browsers"
+
+	// Use url.JoinPath to properly construct the URL
+	apiURL, err := url.JoinPath(c.ltBrowserApiUrl, browserRoute)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct URL: %w", err)
+	}
+
+	if queryParams != nil {
+		apiURL += "?" + queryParams.Encode()
+	}
+
+	req, err := http.NewRequest(method, apiURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create %s request: %w", method, err)
 	}
@@ -212,39 +211,45 @@ func (c *BrowserController) makeRequestToLTBrowserApi(method, endpoint string, r
 func (c *BrowserController) addBrowser() error {
 	userStore := c.user.Store()
 
-	if userStore.Username() == "" {
-		return fmt.Errorf("username is empty")
+	if userStore.Username() == "" && userStore.Email() == "" {
+		return fmt.Errorf("username and email both are empty, either username or email is required")
 	}
+
+	userNameOrEmail := userStore.Username()
+	if userNameOrEmail == "" {
+		userNameOrEmail = userStore.Email()
+	}
+
 	if userStore.Password() == "" {
 		return fmt.Errorf("password is empty")
 	}
 
 	requestBody := AddBrowserRequest{
-		UserID:   userStore.Username(),
+		User:     userNameOrEmail,
 		Password: userStore.Password(),
 	}
 
-	_, err := c.makeRequestToLTBrowserApi(http.MethodPost, "/browsers", requestBody)
+	_, err := c.makeRequestToLTBrowserApi(http.MethodPost, requestBody, nil)
 	return err
 }
 
 func (c *BrowserController) removeBrowser() error {
 	userStore := c.user.Store()
 
-	if userStore.Username() == "" {
-		return fmt.Errorf("username is empty")
-	}
-
-	requestBody := RemoveBrowserRequest{
-		UserID: userStore.Username(),
+	if userStore.Username() == "" && userStore.Email() == "" {
+		return fmt.Errorf("username and email both are empty, either username or email is required")
 	}
 
 	// If username is empty, use email as userId
-	if requestBody.UserID == "" {
-		requestBody.UserID = userStore.Email()
+	userNameOrEmail := userStore.Username()
+	if userNameOrEmail == "" {
+		userNameOrEmail = userStore.Email()
 	}
 
-	_, err := c.makeRequestToLTBrowserApi(http.MethodDelete, "/browsers", requestBody)
+	userIdQueryParams := url.Values{}
+	userIdQueryParams.Set("user", userNameOrEmail)
+
+	_, err := c.makeRequestToLTBrowserApi(http.MethodDelete, nil, userIdQueryParams)
 	return err
 }
 

@@ -6,7 +6,7 @@ import {Browser, BrowserContext, chromium, Page} from 'playwright';
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
 import {isBrowserHeadless} from '../utils/config.js';
-import {SimulationIds} from 'src/simulations/registry.js';
+import {SimulationIds} from '../simulations/registry.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -117,7 +117,7 @@ export class BrowserTestSessionManager {
       log.error(`failed to create browser instance for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
-        message: `Failed to create browser instance for user "${userId}"`,
+        message: `Failed to create browser instance for user ${userId}`,
       };
     }
 
@@ -137,7 +137,7 @@ export class BrowserTestSessionManager {
       log.error(`failed to create context for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
-        message: `Failed to create context for user "${userId}"`,
+        message: `Failed to create context for user ${userId}`,
       };
     }
 
@@ -157,7 +157,7 @@ export class BrowserTestSessionManager {
       log.error(`failed to create page for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
-        message: `Failed to create page for user "${userId}"`,
+        message: `Failed to create page for user ${userId}`,
       };
     }
 
@@ -288,12 +288,11 @@ export class BrowserTestSessionManager {
 
     const cleanupPromisesResults = await Promise.allSettled(cleanupPromises);
 
-    if (cleanupPromisesResults.length === 0) {
-      log.info('no active browser sessions to clean up in browser_manager');
-    } else if (cleanupPromisesResults.every((result) => result.status === 'fulfilled')) {
+    if (
+      cleanupPromisesResults.length !== 0 &&
+      cleanupPromisesResults.every((result) => result.status === 'fulfilled')
+    ) {
       log.info('successfully cleaned up all browser sessions in browser_manager');
-    } else {
-      log.error('failed to clean up some browser sessions in browser_manager');
     }
   }
 }

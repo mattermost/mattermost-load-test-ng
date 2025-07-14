@@ -108,9 +108,21 @@ describe('API /browsers', () => {
 
     await browserRoutes(fastify as any);
 
-    expect(fastify.get).toHaveBeenCalledWith('/browsers', expect.any(Function));
-    expect(fastify.post).toHaveBeenCalledWith('/browsers', expect.any(Function));
-    expect(fastify.delete).toHaveBeenCalledWith('/browsers', expect.any(Function));
+    expect(fastify.get).toHaveBeenCalledWith(
+      '/browsers',
+      expect.objectContaining({schema: expect.any(Object)}),
+      expect.any(Function),
+    );
+    expect(fastify.post).toHaveBeenCalledWith(
+      '/browsers',
+      expect.objectContaining({schema: expect.any(Object)}),
+      expect.any(Function),
+    );
+    expect(fastify.delete).toHaveBeenCalledWith(
+      '/browsers',
+      expect.objectContaining({schema: expect.any(Object)}),
+      expect.any(Function),
+    );
     expect(fastify.addHook).toHaveBeenCalledWith('onClose', expect.any(Function));
   });
 
@@ -121,115 +133,15 @@ describe('API /browsers', () => {
       const response = await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'integration-test-user',
+          user: 'integration-test-user',
           password: 'testpassword',
         })
-        .expect(200)
+        .expect(201)
         .expect('Content-Type', /json/);
 
       expect(response.body).toEqual({
         success: true,
         message: expect.stringContaining('Browser instance created for user integration-test-user'),
-      });
-    });
-
-    test('should return 400 when userId is missing', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .post('/browsers')
-        .send({
-          password: 'testpassword',
-        })
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'USER_ID_MISSING',
-          message: 'userId is missing',
-        },
-      });
-    });
-
-    test('should return 400 when userId is empty string', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .post('/browsers')
-        .send({
-          userId: '',
-          password: 'testpassword',
-        })
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'USER_ID_MISSING',
-          message: 'userId is missing',
-        },
-      });
-    });
-
-    test('should return 400 when password is missing', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .post('/browsers')
-        .send({
-          userId: 'testuser',
-        })
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'PASSWORD_MISSING',
-          message: 'password is missing',
-        },
-      });
-    });
-
-    test('should return 400 when password is empty string', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .post('/browsers')
-        .send({
-          userId: 'testuser',
-          password: '',
-        })
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'PASSWORD_MISSING',
-          message: 'password is missing',
-        },
-      });
-    });
-
-    test('should return 400 when both userId and password are missing', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .post('/browsers')
-        .send({})
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'USER_ID_MISSING',
-          message: 'userId is missing',
-        },
       });
     });
 
@@ -243,7 +155,7 @@ describe('API /browsers', () => {
       const response = await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'testuser',
+          user: 'testuser',
           password: 'testpassword',
         })
         .expect(400)
@@ -265,10 +177,10 @@ describe('API /browsers', () => {
       const response1 = await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'duplicate-test-user',
+          user: 'duplicate-test-user',
           password: 'testpassword',
         })
-        .expect(200);
+        .expect(201);
 
       expect(response1.body.success).toBe(true);
 
@@ -276,7 +188,7 @@ describe('API /browsers', () => {
       const response2 = await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'duplicate-test-user',
+          user: 'duplicate-test-user',
           password: 'testpassword',
         })
         .expect(400);
@@ -296,11 +208,11 @@ describe('API /browsers', () => {
       // Send two requests with same userId simultaneously
       const [response1, response2] = await Promise.allSettled([
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId: 'concurrent-test-user',
+          user: 'concurrent-test-user',
           password: 'testpassword',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId: 'concurrent-test-user',
+          user: 'concurrent-test-user',
           password: 'testpassword',
         }),
       ]);
@@ -310,7 +222,7 @@ describe('API /browsers', () => {
         .map((result) => (result.status === 'fulfilled' ? result.value : null))
         .filter(Boolean);
 
-      const successResponses = responses.filter((r) => r!.status === 200);
+      const successResponses = responses.filter((r) => r!.status === 201);
       const failureResponses = responses.filter((r) => r!.status === 400);
 
       expect(successResponses).toHaveLength(1);
@@ -330,7 +242,7 @@ describe('API /browsers', () => {
       // Send multiple requests in rapid succession
       const requestPromises = Array.from({length: numRequests}, () =>
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId,
+          user: userId,
           password: 'testpassword',
         }),
       );
@@ -341,7 +253,7 @@ describe('API /browsers', () => {
         .map((result) => (result as PromiseFulfilledResult<any>).value);
 
       // Count success and failure responses
-      const successCount = fulfilledResponses.filter((r) => r.status === 200).length;
+      const successCount = fulfilledResponses.filter((r) => r.status === 201).length;
       const failureCount = fulfilledResponses.filter((r) => r.status === 400).length;
 
       // Exactly one should succeed, the rest should fail
@@ -349,7 +261,7 @@ describe('API /browsers', () => {
       expect(failureCount).toBe(numRequests - 1);
 
       // Verify the success response
-      const successResponse = fulfilledResponses.find((r) => r.status === 200);
+      const successResponse = fulfilledResponses.find((r) => r.status === 201);
       expect(successResponse!.body.success).toBe(true);
       expect(successResponse!.body.message).toContain(userId);
 
@@ -374,22 +286,22 @@ describe('API /browsers', () => {
       // Send requests for different users simultaneously
       const responses = await Promise.all([
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId: 'user1',
+          user: 'user1',
           password: 'password1',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId: 'user2',
+          user: 'user2',
           password: 'password2',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
-          userId: 'user3',
+          user: 'user3',
           password: 'password3',
         }),
       ]);
 
       // All should succeed
       responses.forEach((response, index) => {
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
         expect(response.body.message).toContain(`user${index + 1}`);
       });
@@ -421,10 +333,10 @@ describe('API /browsers', () => {
       await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'session-list-user',
+          user: 'session-list-user',
           password: 'testpassword',
         })
-        .expect(200);
+        .expect(201);
 
       // Check that it appears in the list
       const response = await supertest(`http://localhost:${port}`).get('/browsers').expect(200);
@@ -449,10 +361,10 @@ describe('API /browsers', () => {
         await supertest(`http://localhost:${port}`)
           .post('/browsers')
           .send({
-            userId,
+            user: userId,
             password: 'testpassword',
           })
-          .expect(200);
+          .expect(201);
       }
 
       // Check that all appear in the list
@@ -478,10 +390,10 @@ describe('API /browsers', () => {
         await supertest(`http://localhost:${port}`)
           .post('/browsers')
           .send({
-            userId,
+            user: userId,
             password: 'testpassword',
           })
-          .expect(200);
+          .expect(201);
       }
 
       // Check that all appear in the list with various states
@@ -508,10 +420,10 @@ describe('API /browsers', () => {
       await supertest(`http://localhost:${port}`)
         .post('/browsers')
         .send({
-          userId: 'delete-test-user',
+          user: 'delete-test-user',
           password: 'testpassword',
         })
-        .expect(200);
+        .expect(201);
 
       // Verify it exists
       const listResponse = await supertest(`http://localhost:${port}`).get('/browsers').expect(200);
@@ -521,8 +433,8 @@ describe('API /browsers', () => {
       // Remove the session
       const deleteResponse = await supertest(`http://localhost:${port}`)
         .delete('/browsers')
-        .send({
-          userId: 'delete-test-user',
+        .query({
+          user: 'delete-test-user',
         })
         .expect(200);
 
@@ -543,51 +455,13 @@ describe('API /browsers', () => {
       }
     });
 
-    test('should return 400 when userId is missing', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .delete('/browsers')
-        .send({})
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'USER_ID_MISSING',
-          message: 'userId is missing',
-        },
-      });
-    });
-
-    test('should return 400 when userId is empty string', async () => {
-      await app.listen({port});
-
-      const response = await supertest(`http://localhost:${port}`)
-        .delete('/browsers')
-        .send({
-          userId: '',
-        })
-        .expect(400)
-        .expect('Content-Type', /json/);
-
-      expect(response.body).toEqual({
-        success: false,
-        error: {
-          code: 'USER_ID_MISSING',
-          message: 'userId is missing',
-        },
-      });
-    });
-
     test('should fail to remove non-existent session', async () => {
       await app.listen({port});
 
       const response = await supertest(`http://localhost:${port}`)
         .delete('/browsers')
-        .send({
-          userId: 'non-existent-user',
+        .query({
+          user: 'non-existent-user',
         })
         .expect(400);
 
@@ -614,10 +488,10 @@ describe('API /browsers', () => {
     response = await supertest(`http://localhost:${port}`)
       .post('/browsers')
       .send({
-        userId,
+        user: userId,
         password: 'testpassword',
       })
-      .expect(200);
+      .expect(201);
     expect(response.body.success).toBe(true);
 
     // 3. Verify session exists
@@ -629,7 +503,7 @@ describe('API /browsers', () => {
     response = await supertest(`http://localhost:${port}`)
       .post('/browsers')
       .send({
-        userId,
+        user: userId,
         password: 'testpassword',
       })
       .expect(400);
@@ -638,8 +512,8 @@ describe('API /browsers', () => {
     // 5. Remove session
     response = await supertest(`http://localhost:${port}`)
       .delete('/browsers')
-      .send({
-        userId,
+      .query({
+        user: userId,
       })
       .expect(200);
     expect(response.body.success).toBe(true);

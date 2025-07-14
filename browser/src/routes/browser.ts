@@ -6,18 +6,26 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
 import {getMattermostServerURL} from '../utils/config.js';
+import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
   fastify.addHook('onClose', closeBrowser);
 
-  fastify.post<{Reply: IReply; Body: AddBrowserRequestBody}>('/browsers', addBrowser);
-  fastify.delete<{Reply: IReply; Body: RemoveBrowserRequestBody}>('/browsers', removeBrowser);
-  fastify.get<{Reply: IReply}>('/browsers', getBrowsers);
+  fastify.post<{Reply: IReply; Body: AddBrowserRequestBody}>('/browsers', {schema: postSchema}, addBrowser);
+  fastify.delete<{Reply: IReply; Querystring: RemoveBrowserRequestQuery}>(
+    '/browsers',
+    {schema: deleteSchema},
+    removeBrowser,
+  );
+  fastify.get<{Reply: IReply}>('/browsers', {schema: getSchema}, getBrowsers);
 }
 
 interface AddBrowserRequestBody {
-  userId: string;
+  /**
+   * user is the username or email of the user to create a browser session for
+   */
+  user: string;
   password: string;
 }
 
@@ -25,14 +33,14 @@ async function addBrowser(
   request: FastifyRequest<{Body: AddBrowserRequestBody}>,
   reply: FastifyReply,
 ): Promise<IReply> {
-  const {userId, password} = request.body;
+  const {user, password} = request.body;
 
-  if (!userId || userId.length === 0) {
+  if (!user || user.length === 0) {
     return reply.code(400).send({
       success: false,
       error: {
-        code: 'USER_ID_MISSING',
-        message: 'userId is missing',
+        code: 'USER_MISSING',
+        message: 'username or email is missing',
       },
     });
   }
@@ -58,7 +66,7 @@ async function addBrowser(
     });
   }
 
-  const createInstanceResult = await browserTestSessionManager.createBrowserSession(userId, password, serverURL);
+  const createInstanceResult = await browserTestSessionManager.createBrowserSession(user, password, serverURL);
 
   if (!createInstanceResult.isCreated) {
     return reply.code(400).send({
@@ -70,23 +78,26 @@ async function addBrowser(
     });
   }
 
-  return reply.code(200).send({
+  return reply.code(201).send({
     success: true,
     message: createInstanceResult.message,
   });
 }
 
-interface RemoveBrowserRequestBody {
-  userId: string;
+interface RemoveBrowserRequestQuery {
+  /**
+   * user is the username or email of the user to remove the browser session
+   */
+  user: string;
 }
 
 async function removeBrowser(
-  request: FastifyRequest<{Body: RemoveBrowserRequestBody}>,
+  request: FastifyRequest<{Querystring: RemoveBrowserRequestQuery}>,
   reply: FastifyReply,
 ): Promise<IReply> {
-  const {userId} = request.body;
+  const {user} = request.query;
 
-  if (!userId) {
+  if (!user) {
     return reply.code(400).send({
       success: false,
       error: {
@@ -96,7 +107,7 @@ async function removeBrowser(
     });
   }
 
-  const removeInstanceResult = await browserTestSessionManager.removeBrowserSession(userId);
+  const removeInstanceResult = await browserTestSessionManager.removeBrowserSession(user);
 
   if (!removeInstanceResult.isRemoved) {
     return reply.code(400).send({
