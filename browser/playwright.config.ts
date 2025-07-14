@@ -7,6 +7,7 @@ export default defineConfig({
   use: {
     trace: 'off',
   },
+  workers: "100%",
   projects: [
     {
       name: 'chromium',
