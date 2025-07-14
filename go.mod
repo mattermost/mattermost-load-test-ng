@@ -38,6 +38,7 @@ require (
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20250521083701-1cb244e8760d
 	github.com/opensearch-project/opensearch-go/v4 v4.4.0
 	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/pkg/sftp v1.13.9
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/wiggin77/merror v1.0.5
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
@@ -100,6 +101,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattermost/go-i18n v1.11.1-0.20211013152124-5c415071e404 // indirect
 	github.com/mattermost/logr/v2 v2.0.22 // indirect

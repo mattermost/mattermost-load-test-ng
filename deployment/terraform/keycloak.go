@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -46,7 +45,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 		mlog.Info("keycloak database not found, creating it and associated role")
 
 		// Upload and import keycloak initial SQL file``
-		_, err := sshc.Upload(strings.NewReader(assets.MustAssetString("keycloak-database.sql")), "/tmp/keycloak-database.sql", true)
+		_, err := sshc.Upload(strings.NewReader(MustAssetString("keycloak-database.sql")), "/var/lib/postgresql/keycloak-database.sql", true)
 		if err != nil {
 			return fmt.Errorf("failed to upload keycloak base database sql file: %w", err)
 		}
@@ -74,7 +73,7 @@ func (t *Terraform) setupKeycloak(extAgent *ssh.ExtAgent) error {
 	// proceed with the default one.
 	if t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI == "" {
 		extraArguments = append(extraArguments, "--import-realm")
-		keycloakRealmFile, err := assets.AssetString("mattermost-realm.json")
+		keycloakRealmFile, err := AssetString("mattermost-realm.json")
 		if err != nil {
 			return fmt.Errorf("failed to read default keycloak realm file: %w", err)
 		}

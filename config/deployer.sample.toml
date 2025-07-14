@@ -3,6 +3,7 @@ AWSAMI = 'ami-003d3d03cfe1b0468'
 AWSProfile = 'mm-loadtest'
 AWSRegion = 'us-east-1'
 AWSAvailabilityZone = 'us-east-1c'
+AWSRoleARN = ''
 ConnectionType = 'public'
 
 # Mattermost configuration

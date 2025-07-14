@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConfig *deploymentConfig) error) error {
+func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpID string, dpConfig *deploymentConfig) error) error {
 	var wg sync.WaitGroup
 	wg.Add(len(c.deployments))
 	errsCh := make(chan error, len(c.deployments))
@@ -25,11 +25,11 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 			defer wg.Done()
 			t, err := terraform.New(id, dp.config)
 			if err != nil {
-				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				errsCh <- fmt.Errorf("failed to create terraform engine in deployment with ID %q: %w", id, err)
 				return
 			}
-			if err := action(t, dp); err != nil {
-				errsCh <- fmt.Errorf("deployment action failed: %w", err)
+			if err := action(t, id, dp); err != nil {
+				errsCh <- fmt.Errorf("action in deployment with ID %q failed: %w", id, err)
 			}
 		}(id, dp)
 	}

@@ -21,9 +21,9 @@ import (
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
-	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/assets"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -62,6 +62,8 @@ type Terraform struct {
 	output      *Output
 	initialized bool
 	genValues   *GeneratedValues
+	awsCfg      aws.Config
+	awsCfgMut   sync.Mutex
 }
 
 // New returns a new Terraform instance.
@@ -83,11 +85,17 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to get generated values: %w", err)
 	}
 
-	return &Terraform{
+	t := &Terraform{
 		id:        id,
 		config:    &cfg,
 		genValues: genValues,
-	}, nil
+	}
+
+	if err := t.InitCreds(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func ensureTerraformStateDir(dir string) error {
@@ -1234,20 +1242,20 @@ func (t *Terraform) preFlightCheck() error {
 }
 
 func (t *Terraform) init() error {
-	assets.RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "variables.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "ldap.tf")
-	assets.RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
-	assets.RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
-	assets.RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
-	assets.RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
-	assets.RestoreAssets(t.config.TerraformStateDir, "saml-idp.crt")
-	assets.RestoreAssets(t.config.TerraformStateDir, "provisioners")
+	RestoreAssets(t.config.TerraformStateDir, "outputs.tf")
+	RestoreAssets(t.config.TerraformStateDir, "variables.tf")
+	RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
+	RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
+	RestoreAssets(t.config.TerraformStateDir, "ldap.tf")
+	RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
+	RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
+	RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
+	RestoreAssets(t.config.TerraformStateDir, "coordinator_dashboard_tmpl.json")
+	RestoreAssets(t.config.TerraformStateDir, "es_dashboard_data.json")
+	RestoreAssets(t.config.TerraformStateDir, "redis_dashboard_data.json")
+	RestoreAssets(t.config.TerraformStateDir, "keycloak.service")
+	RestoreAssets(t.config.TerraformStateDir, "saml-idp.crt")
+	RestoreAssets(t.config.TerraformStateDir, "provisioners")
 
 	// We lock to make this call safe for concurrent use
 	// since "terraform init" command can write to common files under
