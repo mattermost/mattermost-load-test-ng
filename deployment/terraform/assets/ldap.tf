@@ -78,22 +78,40 @@ resource "aws_vpc_security_group_ingress_rule" "openldap_ssh_privateip" {
   cidr_ipv4         = "${local.private_ip}/32"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "openldap_ldap" {
+resource "aws_vpc_security_group_ingress_rule" "openldap_ldap_publicip" {
   count             = var.openldap_enabled ? 1 : 0
   security_group_id = aws_security_group.openldap[0].id
   from_port         = 389
   to_port           = 389
   ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = "${local.public_ip}/32"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "openldap_ldaps" {
+resource "aws_vpc_security_group_ingress_rule" "openldap_ldap_privateip" {
+  count             = var.openldap_enabled ? 1 : 0
+  security_group_id = aws_security_group.openldap[0].id
+  from_port         = 389
+  to_port           = 389
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "openldap_ldaps_publicip" {
   count             = var.openldap_enabled ? 1 : 0
   security_group_id = aws_security_group.openldap[0].id
   from_port         = 636
   to_port           = 636
   ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = "${local.public_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "openldap_ldaps_privateip" {
+  count             = var.openldap_enabled ? 1 : 0
+  security_group_id = aws_security_group.openldap[0].id
+  from_port         = 636
+  to_port           = 636
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
 }
 
 # Allow app servers to connect to LDAP (port 389)

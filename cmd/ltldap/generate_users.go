@@ -289,9 +289,8 @@ func RunGenerateUsersCommandF(cmd *cobra.Command, args []string) error {
 			"-f", outputFile,
 			"-c") // Continue on errors
 
-		err = terraform.RunCommand(ldapaddCmd, nil)
+		err = deployment.RunCommand(ldapaddCmd, nil)
 		if err != nil {
-			mlog.Error("Failed to import LDIF", mlog.Err(err))
 			return fmt.Errorf("failed to import LDIF to LDAP: %w", err)
 		}
 
@@ -306,7 +305,8 @@ func MakeGenerateUsersCommand() *cobra.Command {
 		Use:   "users <start-index> <end-index>",
 		Short: "Generate LDIF file with users from start-index to end-index",
 		Long: `Generate an LDIF file containing users from testuser-<start> to testuser-<end>.
-All users will have the password 'testPass123$' and will be part of the 'developers' group.
+All users will have the password 'testPass123$' unless --user-password is specified,
+and will be part of the 'developers' group.
 Additional groups (group-1, group-2, etc.) can be created with random user membership.
 LDAP connection settings (BaseDN, BindUsername, BindPassword) are read from the deployment config.
 
