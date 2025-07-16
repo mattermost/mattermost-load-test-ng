@@ -37,11 +37,11 @@ type LoadAgentClusterConfig struct {
 }
 
 func (c *LoadAgentClusterConfig) IsValid(ltConfig loadtest.Config) error {
-	if ltConfig.UsersConfiguration.MaxActiveUsers*len(c.Agents) < c.MaxActiveUsers {
+	if len(c.Agents) > 0 && ltConfig.UsersConfiguration.MaxActiveUsers*len(c.Agents) < c.MaxActiveUsers {
 		return errors.New("coordinator: total MaxActiveUsers in loadTest should not be less than clusterConfig.MaxActiveUsers")
 	}
 
-	if ltConfig.UsersConfiguration.MaxActiveBrowserUsers*len(c.BrowserAgents) < c.MaxActiveBrowserUsers {
+	if len(c.BrowserAgents) > 0 && ltConfig.UsersConfiguration.MaxActiveBrowserUsers*len(c.BrowserAgents) < c.MaxActiveBrowserUsers {
 		return errors.New("coordinator: total MaxActiveBrowserUsers in loadTest should not be less than clusterConfig.MaxActiveBrowserUsers")
 	}
 
