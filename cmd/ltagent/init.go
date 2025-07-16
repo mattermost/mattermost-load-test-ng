@@ -123,6 +123,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	numUsers := 50
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
 	config.UsersConfiguration.InitialActiveUsers = numUsers
+	config.UsersConfiguration.MaxActiveUsers = numUsers
+	config.UsersConfiguration.MaxActiveBrowserUsers = numUsers
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,

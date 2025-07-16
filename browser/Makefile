@@ -22,7 +22,9 @@ install-dependencies:
 ## Install Playwright Chromium browser with its dependencies
 install-playwright: export PLAYWRIGHT_BROWSERS_PATH=0
 install-playwright: install-dependencies
-	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
+	@if $(BIN)/playwright install --dry-run chromium > /dev/null 2>&1; then \
+		echo "Playwright browser already installed, skipping"; \
+	elif [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
 		echo "Installing Playwright Headless Chromium browser"; \
 		$(BIN)/playwright install --with-deps --only-shell chromium; \
 	else \
@@ -35,10 +37,10 @@ install-playwright: install-dependencies
 install: install-dependencies install-playwright
 
 ## Reinstall npm dependencies and Playwright Chromium browser with its dependencies
-clean-install: clean install-dependencies install-playwright
+clean-install: clean install
 
 ## Build the Browser API server
-build: clean-install install-dependencies install-playwright
+build: clean-install
 	@echo "Building server"
 	$(BIN)/tsc
 	@echo "Browser API server built successfully"

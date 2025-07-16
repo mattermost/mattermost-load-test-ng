@@ -40,8 +40,7 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
 build-browser-api: ## Build the browser testing HTTP server.
-	cd browser
-	@$(MAKE) build
+	cd browser && $(MAKE) build
 
 build: build-linux build-osx build-browser-api ## Build the binary for all platforms and browser API server.
 
