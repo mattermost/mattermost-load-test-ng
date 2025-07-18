@@ -132,6 +132,11 @@ func (t *Terraform) makeCmdForResource(resource string) (*exec.Cmd, error) {
 		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.KeycloakServer.GetConnectionIP())), nil
 	}
 
+	// Match against the openldap server
+	if output.OpenLDAPServer.Tags.Name == resource {
+		return exec.Command("ssh", fmt.Sprintf("%s@%s", t.Config().AWSAMIUser, output.OpenLDAPServer.GetConnectionIP())), nil
+	}
+
 	// Match against the metrics servers, as well as convenient aliases.
 	switch resource {
 	case "metrics", "prometheus", "grafana", output.MetricsServer.Tags.Name:
@@ -302,6 +307,9 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("block_device_sizes_job=%d", t.config.StorageSizes.Job),
 		"-var", fmt.Sprintf("block_device_sizes_elasticsearch=%d", t.config.StorageSizes.ElasticSearch),
 		"-var", fmt.Sprintf("block_device_sizes_keycloak=%d", t.config.StorageSizes.KeyCloak),
+		"-var", fmt.Sprintf("block_device_sizes_openldap=%d", t.config.StorageSizes.OpenLDAP),
+		"-var", fmt.Sprintf("openldap_enabled=%t", t.config.OpenLDAPSettings.Enabled),
+		"-var", fmt.Sprintf("openldap_instance_type=%s", t.config.OpenLDAPSettings.InstanceType),
 		"-var", fmt.Sprintf("redis_enabled=%t", t.config.RedisSettings.Enabled),
 		"-var", fmt.Sprintf("redis_node_type=%s", t.config.RedisSettings.NodeType),
 		"-var", fmt.Sprintf("redis_param_group_name=%s", t.config.RedisSettings.ParameterGroupName),

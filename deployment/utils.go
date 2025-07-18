@@ -5,10 +5,13 @@ package deployment
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
+	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
 type Cmd struct {
@@ -106,4 +109,33 @@ func BuildLoadDBDumpCmd(dumpFilename string, dbInfo DBSettings) (string, error) 
 	loadCmd := fmt.Sprintf("zcat %s | %s", dumpFilename, dbConnCmd)
 
 	return loadCmd, nil
+}
+
+// CmdLogger implements io.Writer to log command output through mlog
+type CmdLogger struct{}
+
+// Write logs the input to mlog and returns the length of the input
+func (*CmdLogger) Write(in []byte) (int, error) {
+	mlog.Info(strings.TrimSpace(string(in)))
+	return len(in), nil
+}
+
+// RunCommand executes a command with proper logging
+// If dst is set, it captures output to dst. Otherwise, it logs output through mlog.
+func RunCommand(cmd *exec.Cmd, dst io.Writer) error {
+	// If dst is set, that means we want to capture the output.
+	// We write a simple case to handle that using CombinedOutput.
+	if dst != nil {
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		_, err = dst.Write(out)
+		return err
+	}
+
+	cmd.Stdout = &CmdLogger{}
+	cmd.Stderr = cmd.Stdout
+
+	return cmd.Run()
 }

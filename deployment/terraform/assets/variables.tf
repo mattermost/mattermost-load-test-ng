@@ -13,6 +13,7 @@ variable "cluster_subnet_ids" {
     elasticsearch = list(string)
     metrics = list(string)
     keycloak = list(string)
+    openldap = list(string)
     database = list(string)
     redis = list(string)
   })
@@ -232,4 +233,23 @@ variable "enable_metrics_instance" {
 }
 
 variable "metrics_instance_type" {
+}
+
+# OpenLDAP variables
+variable "openldap_enabled" {
+  description = "Enable OpenLDAP server"
+  type        = bool
+  default     = false
+}
+
+variable "openldap_instance_type" {
+  description = "Instance type for OpenLDAP server"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "block_device_sizes_openldap" {
+  description = "Block device size for OpenLDAP server"
+  type        = number
+  default     = 20
 }
