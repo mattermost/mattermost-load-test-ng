@@ -10,7 +10,13 @@ do
         # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
         echo "Attempt ${n}"
         sudo dnf -y update && \
-        sudo dnf -y install numactl kernel-tools wget && \
+        sudo dnf -y install numactl kernel-tools wget curl && \
+        # Install nvm and latest LTS Node.js
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && \
+        export NVM_DIR="$HOME/.nvm" && \
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+        nvm install --lts && \
+        nvm use --lts && \
         install_prometheus_node_exporter && \
         install_otel_collector && \
         exit 0

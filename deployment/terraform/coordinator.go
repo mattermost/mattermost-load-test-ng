@@ -17,6 +17,8 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const ltAPIPort = "4000"
+
 // StartCoordinator starts the coordinator in the current load-test deployment.
 func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err := t.preFlightCheck(); err != nil {
@@ -36,7 +38,17 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
+		})
+	}
+
+	// Notice we are not passing the port of LTBrowser API server here
+	// but its the LT API port since LTBrowser API will be called from LT API server and not directly from coordinator
+	var browserAgentConfigs []cluster.LoadAgentConfig
+	for _, val := range t.output.BrowserAgents {
+		browserAgentConfigs = append(browserAgentConfigs, cluster.LoadAgentConfig{
+			Id:     val.Tags.Name,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
 		})
 	}
 
@@ -58,6 +70,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
+	config.ClusterConfig.BrowserAgents = browserAgentConfigs
 	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating

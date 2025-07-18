@@ -50,6 +50,10 @@ var ltConfig = Config{
 		ConsoleLevel: "ERROR",
 		FileLevel:    "ERROR",
 	},
+	BrowserLogSettings: BrowserLogSettings{
+		ConsoleLevel: "error",
+		FileLevel:    "error",
+	},
 }
 
 func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {
@@ -73,19 +77,19 @@ func newController(id int, status chan<- control.UserStatus) (control.UserContro
 func TestNew(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
 
-	lt, err := New(nil, newController, log)
+	lt, err := New(nil, newController, log, false)
 	require.NotNil(t, err)
 	require.Nil(t, lt)
 
-	lt, err = New(&ltConfig, nil, log)
+	lt, err = New(&ltConfig, nil, log, false)
 	require.Error(t, err)
 	require.Nil(t, lt)
 
-	lt, err = New(&ltConfig, newController, nil)
+	lt, err = New(&ltConfig, newController, nil, false)
 	require.Error(t, err)
 	require.Nil(t, lt)
 
-	lt, err = New(&ltConfig, newController, log)
+	lt, err = New(&ltConfig, newController, log, false)
 	require.NoError(t, err)
 	require.NotNil(t, lt)
 }
@@ -93,7 +97,7 @@ func TestNew(t *testing.T) {
 func TestAddUsers(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
 
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.Nil(t, err)
 
 	n, err := lt.AddUsers(0)
@@ -122,7 +126,7 @@ func TestAddUsers(t *testing.T) {
 
 func TestRemoveUsers(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.NoError(t, err)
 	defer close(lt.statusChan)
 
@@ -175,7 +179,7 @@ func TestRemoveUsers(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -191,7 +195,7 @@ func TestRun(t *testing.T) {
 
 func TestRerun(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.Nil(t, err)
 	err = lt.Run()
 	require.NoError(t, err)
@@ -208,7 +212,7 @@ func TestRerun(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.Nil(t, err)
 	err = lt.Stop()
 	require.Equal(t, ErrNotRunning, err)
@@ -230,7 +234,7 @@ func TestStop(t *testing.T) {
 
 func TestStatus(t *testing.T) {
 	log := logger.New(&ltConfig.LogSettings)
-	lt, err := New(&ltConfig, newController, log)
+	lt, err := New(&ltConfig, newController, log, false)
 	require.NotNil(t, lt)
 	require.Nil(t, err)
 

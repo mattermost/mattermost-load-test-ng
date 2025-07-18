@@ -4,9 +4,14 @@ RestTimeSec = 2
 
 [ClusterConfig]
 MaxActiveUsers = 2000
+MaxActiveBrowserUsers = 1000
 
 [[ClusterConfig.Agents]]
 Id = 'lt0'
+ApiURL = 'http://localhost:4000'
+
+[[ClusterConfig.BrowserAgents]]
+Id = 'br0'
 ApiURL = 'http://localhost:4000'
 
 [MonitorConfig]
