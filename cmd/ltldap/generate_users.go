@@ -34,7 +34,7 @@ func generateGroupMembershipsOptimized(userDNs []string, numGroups int) []GroupM
 	for i := 1; i <= numGroups; i++ {
 		groups[i] = GroupMembership{
 			GroupName: fmt.Sprintf("group-%d", i),
-			Members:   make([]string, 0, len(userDNs)/3), // Estimate capacity based on 40% membership
+			Members:   make([]string, 0, len(userDNs)/3), // Estimate capacity based on 33% membership
 		}
 	}
 
