@@ -116,12 +116,15 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}, nil
 }
 
-// Run starts all the load-test agents available in the cluster.
+// Run starts all the server load test agents and browser load test agents available in the cluster.
 func (c *LoadAgentCluster) Run() error {
+	c.log.Info("cluster: starting server load test agents", mlog.Int("num_agents", len(c.agents)), mlog.Int("num_browser_agents", len(c.browserAgents)))
+
 	for _, agent := range slices.Concat(c.agents, c.browserAgents) {
 		if _, err := agent.Run(); err != nil {
 			return fmt.Errorf("cluster: failed to start agent: id: %s, %w", agent.Id(), err)
 		}
+		c.log.Info("cluster: successfully started an agent", mlog.String("id", agent.Id()))
 	}
 
 	return nil
@@ -161,6 +164,7 @@ func (c *LoadAgentCluster) Shutdown() {
 func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	all := slices.Concat(c.agents, c.browserAgents)
 	if len(all) == 0 {
+		c.log.Info("cluster: no server or browser agents to increment users")
 		return nil
 	}
 
@@ -193,6 +197,7 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 func (c *LoadAgentCluster) DecrementUsers(n int) error {
 	all := slices.Concat(c.agents, c.browserAgents)
 	if len(all) == 0 {
+		c.log.Info("cluster: no server or browser agents to decrement users")
 		return nil
 	}
 
