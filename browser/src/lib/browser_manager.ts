@@ -231,6 +231,7 @@ export class BrowserTestSessionManager {
       return;
     }
 
+    const cleanupPromises: Promise<boolean>[] = [];
     for (const instance of this.activeBrowserSessions.values()) {
       if (
         instance.state === SessionState.CREATION_FAILED ||
@@ -238,9 +239,13 @@ export class BrowserTestSessionManager {
         instance.state === SessionState.STOPPING ||
         instance.state === SessionState.FAILED
       ) {
-        await this.cleanupBrowserSession(instance);
+        cleanupPromises.push(this.cleanupBrowserSession(instance));
       }
     }
+
+    // Wait for all cleanup operations to complete in parallel
+    // we used allSettled because each cleanup operation is independent of the others
+    await Promise.allSettled(cleanupPromises);
   }
 
   private async cleanupBrowserSession(browserInstance: BrowserInstance): Promise<boolean> {
