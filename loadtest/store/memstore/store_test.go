@@ -4,6 +4,7 @@
 package memstore
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -817,4 +818,66 @@ func TestPostsWithAckRequests(t *testing.T) {
 	posts, err := s.PostsWithAckRequests()
 	require.NoError(t, err)
 	assert.ElementsMatch(t, ackPosts, posts)
+}
+
+func TestCPAValues(t *testing.T) {
+	t.Run("SetCPAFields", func(t *testing.T) {
+		s := newStore(t)
+
+		err := s.SetCPAFields(nil)
+		require.NoError(t, err)
+
+		err = s.SetCPAFields([]*model.PropertyField{})
+		require.NoError(t, err)
+
+		err = s.SetCPAFields([]*model.PropertyField{
+			{ID: "an id"},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("GetCPAFields", func(t *testing.T) {
+		s := newStore(t)
+
+		expected := []*model.PropertyField{
+			{ID: "an id"},
+		}
+
+		err := s.SetCPAFields(expected)
+		require.NoError(t, err)
+
+		actual := s.GetCPAFields()
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("SetCPAValues", func(t *testing.T) {
+		s := newStore(t)
+		userID := model.NewId()
+
+		err := s.SetCPAValues(userID, nil)
+		require.NoError(t, err)
+
+		err = s.SetCPAValues(userID, map[string]json.RawMessage{})
+		require.NoError(t, err)
+
+		err = s.SetCPAValues(userID, map[string]json.RawMessage{
+			"field": json.RawMessage(`"Field Value"`),
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("GetCPAValues", func(t *testing.T) {
+		s := newStore(t)
+		userID := model.NewId()
+
+		expected := map[string]json.RawMessage{
+			"field": json.RawMessage(`"Field Value"`),
+		}
+
+		err := s.SetCPAValues(userID, expected)
+		require.NoError(t, err)
+
+		actual := s.GetCPAValues(userID)
+		require.Equal(t, expected, actual)
+	})
 }
