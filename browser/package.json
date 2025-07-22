@@ -3,6 +3,7 @@
   "author": "Mattermost, Inc.",
   "type": "module",
   "version": "0.1.0",
+  "private": true,
   "engines": {
     "node": "22.16.x",
     "npm": ">=10.9.2"
