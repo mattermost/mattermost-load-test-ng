@@ -60,14 +60,40 @@ export function getFileLoggingLocation(): string {
 }
 
 /**
- * Read and parse the config.json file located in config/config.json
+ * Find the repository root by looking for specific marker files
  */
+function findRootDirectory(startDir: string): string {
+  const rootFiles = ['go.mod', '.git'];
+
+  let currentDir = startDir;
+  while (currentDir !== path.dirname(currentDir)) {
+    // Check if any of our defined root files exist in the current directory
+    for (const rootFile of rootFiles) {
+      if (fs.existsSync(path.join(currentDir, rootFile))) {
+        return currentDir;
+      }
+    }
+
+    // Move up one directory
+    currentDir = path.dirname(currentDir);
+  }
+
+  // Fallback to the starting directory if no repo root found
+  return startDir;
+}
+
+function findConfigJsonPath(): string {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const rootDir = findRootDirectory(currentDir);
+  const configJsonPath = path.join(rootDir, 'config', 'config.json');
+  return configJsonPath;
+}
+
 function loadConfigJson() {
   try {
-    const dirname = path.dirname(fileURLToPath(import.meta.url));
-    const configPath = path.resolve(dirname, '../../../config/config.json');
+    const configJsonPath = findConfigJsonPath();
 
-    const configData = fs.readFileSync(configPath, 'utf8');
+    const configData = fs.readFileSync(configJsonPath, 'utf8');
     const rawConfig = JSON.parse(configData);
 
     const parsedConfig = SliceOfConfigJsonSchema.safeParse(rawConfig);
