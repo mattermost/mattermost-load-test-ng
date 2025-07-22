@@ -15,19 +15,15 @@ export async function postAndScrollScenario(
     throw new Error('Page is not initialized');
   }
 
-  try {
-    await page.goto(serverURL);
-    await handlePreferenceCheckbox(page);
-    await performLogin({page, userId, password});
+  await page.goto(serverURL);
+  await handlePreferenceCheckbox(page);
+  await performLogin({page, userId, password});
 
-    // Runs the simulation at least once and then runs it in a continuous loop if simulationMode is true
-    do {
-      const scrollCount = runInLoop ? 40 : 3;
-      await postInChannel({page});
-      await scrollInChannel(page, 'sidebarItem_off-topic', scrollCount, 400, 500);
-      await scrollInChannel(page, 'sidebarItem_town-square', scrollCount, 400, 500);
-    } while (runInLoop);
-  } catch (error: any) {
-    throw error;
-  }
+  // Runs the simulation at least once and then runs it in a continuous loop if simulationMode is true
+  do {
+    const scrollCount = runInLoop ? 40 : 3;
+    await postInChannel({page});
+    await scrollInChannel(page, 'sidebarItem_off-topic', scrollCount, 400, 500);
+    await scrollInChannel(page, 'sidebarItem_town-square', scrollCount, 400, 500);
+  } while (runInLoop);
 }
