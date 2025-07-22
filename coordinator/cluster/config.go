@@ -26,7 +26,7 @@ type LoadAgentClusterConfig struct {
 	Agents []LoadAgentConfig `default_size:"1"`
 	// MaxActiveUsers defines the upper limit of concurrently active users to run across
 	// the whole cluster.
-	MaxActiveUsers int `default:"1000" validate:"range:(0,]"`
+	MaxActiveUsers int `default:"1000" validate:"range:[0,]"`
 	// BrowserAgents is a list of the browser agents API endpoints to be used during
 	// the load-test. Its length defines the number of browser agents instances
 	// used during a load-test.
