@@ -138,6 +138,8 @@ func (s *MemStore) Clear() {
 	s.channelBookmarks = map[string]*model.ChannelBookmarkWithFileInfo{}
 	clear(s.scheduledPosts)
 	s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
+	clear(s.customAttributeValues)
+	s.customAttributeValues = map[string]map[string]json.RawMessage{}
 }
 
 func (s *MemStore) setupQueues(config *Config) error {
