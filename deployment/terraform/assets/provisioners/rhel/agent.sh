@@ -11,12 +11,13 @@ do
         echo "Attempt ${n}"
         sudo dnf -y update && \
         sudo dnf -y install numactl kernel-tools wget curl && \
-        # Install nvm and latest LTS Node.js
+        # Install nvm - Node.js version manager
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && \
         export NVM_DIR="$HOME/.nvm" && \
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
-        nvm install --lts && \
-        nvm use --lts && \
+        # Install the Node.js version defined in .nvmrc and use it
+        nvm install && \
+        nvm use && \
         install_prometheus_node_exporter && \
         install_otel_collector && \
         exit 0
