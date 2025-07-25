@@ -23,6 +23,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment/opensearch"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/mattermost/mattermost/server/public/model"
@@ -61,6 +62,8 @@ type Terraform struct {
 	output      *Output
 	initialized bool
 	genValues   *GeneratedValues
+	awsCfg      aws.Config
+	awsCfgMut   sync.Mutex
 }
 
 // New returns a new Terraform instance.
@@ -82,11 +85,17 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 		return nil, fmt.Errorf("unable to get generated values: %w", err)
 	}
 
-	return &Terraform{
+	t := &Terraform{
 		id:        id,
 		config:    &cfg,
 		genValues: genValues,
-	}, nil
+	}
+
+	if err := t.InitCreds(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func ensureTerraformStateDir(dir string) error {
@@ -223,6 +232,13 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		// Setting up keycloak.
 		if err := t.setupKeycloak(extAgent); err != nil {
 			return fmt.Errorf("error setting up keycloak server: %w", err)
+		}
+	}
+
+	if t.output.HasOpenLDAP() {
+		// Setting up OpenLDAP.
+		if err := t.setupOpenLDAP(extAgent); err != nil {
+			return fmt.Errorf("error setting up OpenLDAP server: %w", err)
 		}
 	}
 
@@ -1160,6 +1176,32 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		}
 	}
 
+	if t.output.HasOpenLDAP() {
+		cfg.LdapSettings.Enable = model.NewPointer(true)
+		cfg.LdapSettings.EnableSync = model.NewPointer(false) // Keeping it false for now,
+		// otherwise it keeps running syncs unnecessarily when we don't want it to.
+		cfg.LdapSettings.LdapServer = model.NewPointer(t.output.OpenLDAPServer.PrivateIP)
+		cfg.LdapSettings.LdapPort = model.NewPointer(389)
+		cfg.LdapSettings.BaseDN = model.NewPointer(t.config.OpenLDAPSettings.BaseDN)
+		cfg.LdapSettings.BindUsername = model.NewPointer(t.config.OpenLDAPSettings.BindUsername)
+		cfg.LdapSettings.BindPassword = model.NewPointer(t.config.OpenLDAPSettings.BindPassword)
+		cfg.LdapSettings.UserFilter = model.NewPointer(t.config.OpenLDAPSettings.UserFilter)
+		cfg.LdapSettings.GroupFilter = model.NewPointer(t.config.OpenLDAPSettings.GroupFilter)
+		cfg.LdapSettings.GroupDisplayNameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.GroupIdAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.FirstNameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.LastNameAttribute = model.NewPointer("sn")
+		cfg.LdapSettings.EmailAttribute = model.NewPointer("mail")
+		cfg.LdapSettings.UsernameAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.NicknameAttribute = model.NewPointer("cn")
+		cfg.LdapSettings.IdAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.PositionAttribute = model.NewPointer("")
+		cfg.LdapSettings.LoginIdAttribute = model.NewPointer("uid")
+		cfg.LdapSettings.QueryTimeout = model.NewPointer(60)
+		cfg.LdapSettings.MaxPageSize = model.NewPointer(500)
+		cfg.LdapSettings.ReAddRemovedMembers = model.NewPointer(true)
+	}
+
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in marshalling config: %w", err)
@@ -1204,6 +1246,7 @@ func (t *Terraform) init() error {
 	RestoreAssets(t.config.TerraformStateDir, "variables.tf")
 	RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
 	RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
+	RestoreAssets(t.config.TerraformStateDir, "ldap.tf")
 	RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")

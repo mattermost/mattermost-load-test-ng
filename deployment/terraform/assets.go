@@ -5,6 +5,7 @@ package terraform
 
 import (
 	"embed"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -37,19 +38,67 @@ func MustAssetString(name string) string {
 	return string(MustAsset(name))
 }
 
+// restoreAssetFile writes a single embedded file to the specified path
+func restoreAssetFile(data []byte, targetPath string) error {
+	// Create parent directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(targetPath, data, 0644)
+}
+
 // RestoreAssets writes an embedded asset to the given directory
 func RestoreAssets(dir, name string) error {
+	assetPath := filepath.Join("assets", name)
+
+	fileInfo, err := fs.Stat(assetsFS, assetPath)
+	if err != nil {
+		return err
+	}
+
+	// Check if it's a directory
+	if fileInfo.IsDir() {
+		// It's a directory, copy recursively using WalkDir
+		return fs.WalkDir(assetsFS, assetPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// Calculate the relative path from the asset root
+			relPath, err := filepath.Rel(assetPath, path)
+			if err != nil {
+				return err
+			}
+
+			// Skip the root directory itself
+			if relPath == "." {
+				return nil
+			}
+
+			targetPath := filepath.Join(dir, name, relPath)
+
+			// Check if it's a directory and only proceed for files, since files are the only ones we want to copy
+			// and we make sure the target directory exists before copying. This prevents empty folders.
+			if !d.IsDir() {
+				data, err := assetsFS.ReadFile(path)
+				if err != nil {
+					return err
+				}
+
+				return restoreAssetFile(data, targetPath)
+			}
+
+			return nil
+		})
+	}
+
+	// It's a file, copy it to the destination
 	data, err := Asset(name)
 	if err != nil {
 		return err
 	}
 
 	outputPath := filepath.Join(dir, name)
-
-	// Create directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return err
-	}
-
-	return os.WriteFile(outputPath, data, 0644)
+	return restoreAssetFile(data, outputPath)
 }

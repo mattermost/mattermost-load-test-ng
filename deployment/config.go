@@ -24,6 +24,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// AWSProfile is the optional name of the AWS profile to use for all AWS commands
 	AWSProfile string `default:""`
+	// AWSRoleARN is the optional ARN of an IAM role to assume for AWS operations
+	AWSRoleARN string `default:""`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
 	// AWSAvailabilityZone defines the Availability Zone
@@ -104,6 +106,7 @@ type Config struct {
 	LoadTestDownloadURL   string `default:"https://latest.mattermost.com/mattermost-load-test-ng-linux" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
+	OpenLDAPSettings      OpenLDAPSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -169,6 +172,7 @@ type ClusterSubnetIDs struct {
 	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
 	Metrics       []string `default_size:"0" json:"metrics"`
 	Keycloak      []string `default_size:"0" json:"keycloak"`
+	OpenLDAP      []string `default_size:"0" json:"openldap"`
 	Database      []string `default_size:"0" json:"database"`
 	Redis         []string `default_size:"0" json:"redis"`
 }
@@ -219,6 +223,8 @@ type StorageSizes struct {
 	ElasticSearch int `default:"100"`
 	// Size, in GiB, for the storage of the keycloak instances
 	KeyCloak int `default:"10"`
+	// Size, in GiB, for the storage of the openldap instances
+	OpenLDAP int `default:"20"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
@@ -367,6 +373,23 @@ type RedisSettings struct {
 	ParameterGroupName string `default:"default.redis7"`
 	// EngineVersion indicates the engine version.
 	EngineVersion string `default:"7.1"`
+}
+
+type OpenLDAPSettings struct {
+	// Enabled indicates whether to add OpenLDAP or not.
+	Enabled bool
+	// InstanceType indicates the instance type.
+	InstanceType string `default:"t3.medium"`
+	// BaseDN is the base distinguished name for LDAP searches.
+	BaseDN string `default:"dc=mm,dc=test,dc=com"`
+	// BindUsername is the username to bind to the LDAP server.
+	BindUsername string `default:"cn=admin,dc=mm,dc=test,dc=com"`
+	// BindPassword is the password to bind to the LDAP server.
+	BindPassword string `default:""`
+	// UserFilter is the LDAP filter for user searches.
+	UserFilter string `default:"(objectClass=inetOrgPerson)"`
+	// GroupFilter is the LDAP filter for group searches.
+	GroupFilter string `default:"(objectClass=groupOfNames)"`
 }
 
 // JobServerSettings contains the necessary data to deploy a job
@@ -526,4 +549,5 @@ func (c *Config) MarkForDestroyAllButMetrics() {
 	c.RedisSettings.Enabled = false
 	c.JobServerSettings.InstanceCount = 0
 	c.ExternalAuthProviderSettings.Enabled = false
+	c.OpenLDAPSettings.Enabled = false
 }

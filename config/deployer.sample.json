@@ -2,6 +2,7 @@
   "AWSProfile": "mm-loadtest",
   "AWSRegion": "us-east-1",
   "AWSAvailabilityZone": "us-east-1c",
+  "AWSRoleARN": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
@@ -13,6 +14,7 @@
     "Job": [],
     "Keycloak": [],
     "Metrics": [],
+    "OpenLDAP": [],
     "Proxy": [],
     "Redis": []
   },
@@ -45,6 +47,15 @@
     "NodeType": "cache.m7g.2xlarge",
     "ParameterGroupName": "default.redis7",
     "EngineVersion": "7.1"
+  },
+  "OpenLDAPSettings": {
+    "Enabled": false,
+    "InstanceType": "t3.medium",
+    "BaseDN": "dc=mm,dc=test,dc=com",
+    "BindUsername": "cn=admin,dc=mm,dc=test,dc=com",
+    "BindPassword": "",
+    "UserFilter": "(objectClass=inetOrgPerson)",
+    "GroupFilter": "(objectClass=groupOfNames)"
   },
   "JobServerSettings":{
     "InstanceCount": 0,
@@ -162,7 +173,8 @@
     "App": 10,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 100
+    "ElasticSearch": 100,
+    "OpenLDAP": 20
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,
