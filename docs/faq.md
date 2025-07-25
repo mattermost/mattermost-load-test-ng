@@ -179,3 +179,7 @@ You will have to run this for every loadtest agent you have. These will be appen
 These are intended for users that need to override the connection URL to their Mattermost server in their load tests environments, in most cases because there's a custom reverse proxy in front of the load-test deployment.
 
 This **should not be used in most cases** as the loadtest agent will automatically detect the server URL and scheme from the configuration and deployed services.
+
+### When starting deployment create, it fails due to `No default subnet for availability zone: 'AWS_SUBNETS_HERE'.`
+
+This likely happens because AWS doesn’t have an available subnet in the zone we explicitly set in the Terraform config. You can fix this by leaving `AWSAvailabilityZone` empty in the `config/deployer.json`.

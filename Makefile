@@ -39,8 +39,10 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
+build-browser-api: ## Build the browser testing HTTP server.
+	cd browser && $(MAKE) build
 
-build: build-linux build-osx ## Build the binary for all platforms.
+build: build-linux build-osx build-browser-api ## Build the binary for all platforms and browser API server.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
@@ -50,6 +52,7 @@ ifneq ($(STATUS), 0)
 	@echo Warning: Repository has uncommitted changes.
 endif
 	@$(MAKE) build-linux
+	@$(MAKE) build-browser-api
 	rm -rf $(DIST_ROOT)
 	$(eval PLATFORM=linux-amd64)
 	$(eval PLATFORM_DIST_PATH=$(DIST_PATH)/$(PLATFORM))
@@ -62,9 +65,20 @@ endif
 	cp config/simplecontroller.sample.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
 	cp LICENSE.txt $(PLATFORM_DIST_PATH)
+	cp .nvmrc $(PLATFORM_DIST_PATH)
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
+
+	# Copy LTBrowser build directory if it exists
+	if [ -d "browser/dist" ]; then \
+		mkdir -p $(PLATFORM_DIST_PATH)/browser; \
+		cp -r browser/dist $(PLATFORM_DIST_PATH)/browser/dist; \
+		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/package-lock.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/Makefile $(PLATFORM_DIST_PATH)/browser; \
+	fi
+
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)

@@ -10,7 +10,18 @@ do
         # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
         echo "Attempt ${n}"
         sudo dnf -y update && \
-        sudo dnf -y install numactl kernel-tools wget && \
+        # Foundation build tool which also include 'make'
+        sudo dnf -y groupinstall "Development Tools" && \
+        sudo dnf -y install numactl kernel-tools wget curl && \
+        echo "Installing nvm Node.js version manager" && \
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash && \
+        export NVM_DIR="$HOME/.nvm" && \
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" && \
+        echo "nvm installed successfully with version $(nvm --version)" && \
+        # Although we have a .nvmrc file, but we cannot use that because its not available at the provisioner level
+        nvm install 22.16 && \
+        nvm use 22.16 && \
+        echo "Node.js installed successfully with version $(node --version)" && \
         install_prometheus_node_exporter && \
         install_otel_collector && \
         exit 0

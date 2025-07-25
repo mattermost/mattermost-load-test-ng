@@ -1,1 +1,7 @@
+# This is the Node.js version required for the project
+#
+# NOTE: If changing this version, also update the provisioning scripts.
+# See provisioning scripts for more details.
+# - deployment/terraform/assets/provisioners/debian/agent.sh
+# - deployment/terraform/assets/provisioners/rhel/agent.sh
 22.16

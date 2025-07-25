@@ -116,6 +116,18 @@ The number of load-test agent instances. The first instance will also host the [
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
+## BrowserAgentInstanceCount
+
+*int*
+
+The number of browser agent instances.
+
+## BrowserAgentInstanceType
+
+*string*
+
+The type of the EC2 instance of the browser agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
 ## AgentAllocatePublicIPAddress
 
 *bool*

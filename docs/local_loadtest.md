@@ -142,8 +142,7 @@ The [`coordinator`](coordinator.md) does also help running a load-test across a 
 
 ### Prerequisites
 
-In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
-correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.
+In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.
 
 ### Start the load-test agent API server
 

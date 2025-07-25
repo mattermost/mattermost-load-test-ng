@@ -10,6 +10,10 @@ output "agents" {
   value = aws_instance.loadtest_agent[*]
 }
 
+output "browserAgents" {
+  value = aws_instance.loadtest_browser_agent[*]
+}
+
 output "metricsServer" {
   value = aws_instance.metrics_server
 }
