@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"text/template"
 
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 

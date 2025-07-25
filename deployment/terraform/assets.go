@@ -5,7 +5,6 @@ package terraform
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -50,7 +49,6 @@ func restoreAssetFile(data []byte, targetPath string) error {
 }
 
 // RestoreAssets writes an embedded asset to the given directory
-// If name is a file, it writes the file. If name is a directory, it recursively writes all files in the directory.
 func RestoreAssets(dir, name string) error {
 	assetPath := filepath.Join("assets", name)
 
@@ -103,43 +101,4 @@ func RestoreAssets(dir, name string) error {
 
 	outputPath := filepath.Join(dir, name)
 	return restoreAssetFile(data, outputPath)
-}
-
-// restoreDir recursively extracts a directory from the embedded filesystem
-func restoreDir(baseDir, relPath, assetPath string) error {
-	entries, err := fs.ReadDir(assetsFS, assetPath)
-	if err != nil {
-		return fmt.Errorf("failed to read directory %s: %w", assetPath, err)
-	}
-
-	for _, entry := range entries {
-		entryRelPath := filepath.Join(relPath, entry.Name())
-		entryAssetPath := filepath.Join(assetPath, entry.Name())
-
-		if entry.IsDir() {
-			// Recursively handle subdirectories
-			if err := restoreDir(baseDir, entryRelPath, entryAssetPath); err != nil {
-				return err
-			}
-		} else {
-			// Extract the file
-			data, err := assetsFS.ReadFile(entryAssetPath)
-			if err != nil {
-				return fmt.Errorf("failed to read file %s: %w", entryAssetPath, err)
-			}
-
-			outputPath := filepath.Join(baseDir, entryRelPath)
-
-			// Create directory if it doesn't exist
-			if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-				return fmt.Errorf("failed to create directory for %s: %w", outputPath, err)
-			}
-
-			if err := os.WriteFile(outputPath, data, 0644); err != nil {
-				return fmt.Errorf("failed to write file %s: %w", outputPath, err)
-			}
-		}
-	}
-
-	return nil
 }
