@@ -288,8 +288,6 @@ net.core.wmem_max = 16777216
 
 const baseAPIServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltapi`
 
-const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && node /home/%s/mattermost-load-test-ng/browser/server.js"`
-
 const apiServiceFile = `
 [Unit]
 Description=Mattermost load-test API Server
@@ -310,6 +308,8 @@ LimitNOFILE=262144
 [Install]
 WantedBy=multi-user.target
 `
+
+const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && make -C /home/%s/mattermost-load-test-ng/browser install && node /home/%s/mattermost-load-test-ng/browser/dist/server.js"`
 
 const browserAPIServiceFile = `
 [Unit]

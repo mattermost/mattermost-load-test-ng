@@ -16,6 +16,7 @@ until [ "$n" -ge 3 ]; do
 		sudo apt-get -y update &&
 		sudo apt-get install -y prometheus-node-exporter &&
 		sudo apt-get install -y numactl linux-tools-aws &&
+		sudo apt-get install -y make &&
 		echo "Installing nvm Node.js version manager" &&
 		curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash &&
 		export NVM_DIR="$HOME/.nvm" &&

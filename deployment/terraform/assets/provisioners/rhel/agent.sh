@@ -10,6 +10,8 @@ do
         # Note: commands below are expected to be either idempotent or generally safe to be run more than once.
         echo "Attempt ${n}"
         sudo dnf -y update && \
+        # Foundation build tool which also include 'make'
+        sudo dnf -y groupinstall "Development Tools" && \
         sudo dnf -y install numactl kernel-tools wget curl && \
         echo "Installing nvm Node.js version manager" && \
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash && \

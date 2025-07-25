@@ -171,7 +171,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			tplVars = map[string]any{
-				"execStart": fmt.Sprintf(baseBrowserAPIServerCmd, t.Config().AWSAMIUser, t.Config().AWSAMIUser),
+				"execStart": fmt.Sprintf(baseBrowserAPIServerCmd, t.Config().AWSAMIUser, t.Config().AWSAMIUser, t.Config().AWSAMIUser),
 				"User":      t.Config().AWSAMIUser,
 			}
 			browserBuf := bytes.NewBufferString("")

@@ -25,7 +25,6 @@ Thumbs.db
 
 # Build outputs (if applicable)
 dist/
-build/
 
 # npm debug logs
 npm-debug.log*

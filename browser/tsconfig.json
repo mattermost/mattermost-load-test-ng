@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "importHelpers": true,
     "allowJs": true,
-    "outDir": "./build",
+    "outDir": "./dist",
     "noImplicitAny": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,
@@ -23,5 +23,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "build", "e2etest_results"]
+  "exclude": ["node_modules", "dist", "e2etest_results"]
 }

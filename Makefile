@@ -65,14 +65,15 @@ endif
 	cp config/simplecontroller.sample.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
 	cp LICENSE.txt $(PLATFORM_DIST_PATH)
+	cp .nvmrc $(PLATFORM_DIST_PATH)
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
 
-	# Copy browser build directory if it exists
-	if [ -d "browser/build" ]; then \
-		cp -r browser/build $(PLATFORM_DIST_PATH)/browser; \
-		cp -r browser/node_modules $(PLATFORM_DIST_PATH)/browser; \
+	# Copy LTBrowser build directory if it exists
+	if [ -d "browser/dist" ]; then \
+		mkdir -p $(PLATFORM_DIST_PATH)/browser; \
+		cp -r browser/dist $(PLATFORM_DIST_PATH)/browser/dist; \
 		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
 		cp browser/package-lock.json $(PLATFORM_DIST_PATH)/browser; \
 		cp browser/Makefile $(PLATFORM_DIST_PATH)/browser; \

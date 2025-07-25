@@ -63,7 +63,7 @@ export function getFileLoggingLocation(): string {
  * Find the repository root by looking for specific marker files
  */
 function findRootDirectory(startDir: string): string {
-  const rootFiles = ['go.mod', '.git'];
+  const rootFiles = ['go.mod', '.git', 'bin', '.nvmrc'];
 
   let currentDir = startDir;
   while (currentDir !== path.dirname(currentDir)) {
