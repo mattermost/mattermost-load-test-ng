@@ -252,6 +252,9 @@ func RunSSHListCmdF(cmd *cobra.Command, args []string) error {
 	if output.HasKeycloak() {
 		fmt.Printf(" - %s\n", output.KeycloakServer.Tags.Name)
 	}
+	if output.HasOpenLDAP() {
+		fmt.Printf(" - %s\n", output.OpenLDAPServer.Tags.Name)
+	}
 	return nil
 }
 

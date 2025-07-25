@@ -3,6 +3,7 @@ AWSAMI = 'ami-003d3d03cfe1b0468'
 AWSProfile = 'mm-loadtest'
 AWSRegion = 'us-east-1'
 AWSAvailabilityZone = 'us-east-1c'
+AWSRoleARN = ''
 ConnectionType = 'public'
 
 # Mattermost configuration
@@ -60,6 +61,7 @@ Agent = []
 ElasticSearch = []
 Metrics = []
 Keycloak = []
+OpenLDAP = []
 Database = []
 Redis = []
 
@@ -93,6 +95,15 @@ ClusterIdentifier = ''
 [JobServerSettings]
 InstanceCount = 0
 InstanceType = 'c5.xlarge'
+
+[OpenLDAPSettings]
+Enabled = false
+InstanceType = 't3.medium'
+BaseDN = 'dc=mm,dc=test,dc=com'
+BindUsername = 'cn=admin,dc=mm,dc=test,dc=com'
+BindPassword = ''
+UserFilter = '(objectClass=inetOrgPerson)'
+GroupFilter = '(objectClass=groupOfNames)'
 
 [LogSettings]
 ConsoleJson = false
@@ -155,6 +166,13 @@ ElasticSearch = 20
 Job = 50
 Metrics = 50
 Proxy = 10
+OpenLDAP = 20
+
+[RedisSettings]
+Enabled = false
+NodeType = 'cache.m7g.2xlarge'
+ParameterGroupName = 'default.redis7'
+EngineVersion = '7.1'
 
 [TerraformDBSettings]
 ClusterIdentifier = ''

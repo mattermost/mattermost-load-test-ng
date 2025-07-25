@@ -1038,7 +1038,7 @@ resource "aws_vpc_security_group_ingress_rule" "keycloak_https" {
   cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "keycloaak_http" {
+resource "aws_vpc_security_group_ingress_rule" "keycloak_http" {
   count             = var.keycloak_enabled ? 1 : 0
   security_group_id = aws_security_group.keycloak[0].id
   from_port         = 8080

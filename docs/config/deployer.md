@@ -19,6 +19,12 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 > [!TIP]
 > Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
 
+## AWSRoleARN
+
+*string*
+
+The ARN of an AWS role that will be assumed by the tool to interact with AWS. This role is assumed by using the default credentials chain. This role is expected to expire in one hour due to role chaining, so if it is configured, the credentials will be automatically refreshed every 25 minutes. This means that the role needs to have permission to assume itself.
+
 ## AWSAMI
 
 *string*
