@@ -1,7 +1,8 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {FastifyBaseLogger, FastifyLoggerOptions} from 'fastify';
+import {FastifyBaseLogger, FastifyLoggerOptions, FastifyRequest, FastifyReply, RawServerBase} from 'fastify';
+import type {ResSerializerReply} from 'fastify/types/logger.js';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {createRequire} from 'module';
@@ -9,6 +10,8 @@ import {TransportTargetOptions} from 'pino';
 import pinoCaller from 'pino-caller';
 import {PrettyOptions} from 'pino-pretty';
 
+// We need to use the require function to import pino and pino-pretty
+// because they are not ESM compatible yet.
 const require = createRequire(import.meta.url);
 const pino = require('pino');
 
@@ -20,13 +23,9 @@ import {
   getFileLoggingLocation,
 } from './config.js';
 
-export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
+export function getServerLoggerConfig(): FastifyLoggerOptions {
   const consoleLoggingEnabled = isConsoleLoggingEnabled();
   const fileLoggingEnabled = isFileLoggingEnabled();
-
-  if (!consoleLoggingEnabled && !fileLoggingEnabled) {
-    return false;
-  }
 
   const dirname = path.dirname(fileURLToPath(import.meta.url));
   const rootDir = path.resolve(dirname, '../../..');
@@ -57,26 +56,40 @@ export function getServerLoggerConfig(): FastifyLoggerOptions | boolean {
     },
   };
 
-  if (consoleLoggingEnabled && !fileLoggingEnabled) {
-    return {
-      stream: pino.transport({
-        targets: [consoleLoggingTransport],
-      }),
-    };
+  const targets: TransportTargetOptions[] = [];
+  if (consoleLoggingEnabled) {
+    targets.push(consoleLoggingTransport);
+  }
+  if (fileLoggingEnabled) {
+    targets.push(fileLoggingTransport);
   }
 
-  if (!consoleLoggingEnabled && fileLoggingEnabled) {
-    return {
-      stream: pino.transport({
-        targets: [fileLoggingTransport],
-      }),
-    };
+  let serializers: FastifyLoggerOptions['serializers'] = {};
+  if (consoleLoggingEnabled || fileLoggingEnabled) {
+    serializers = {
+      req: (request: FastifyRequest) => {
+        return {
+          method: request.method,
+          url: request.url,
+          path: request.routeOptions.url,
+          host: request.hostname,
+          remoteAddress: request.ip,
+          remotePort: request.socket.remotePort,
+          parameters: request.params,
+          query: request.query,
+        };
+      },
+      res: (reply: ResSerializerReply<RawServerBase, FastifyReply>) => {
+        return {
+          statusCode: reply.statusCode,
+        };
+      },
+    }
   }
 
   return {
-    stream: pino.transport({
-      targets: [fileLoggingTransport, consoleLoggingTransport],
-    }),
+    stream: pino.transport({targets}),
+    serializers,
   };
 }
 
