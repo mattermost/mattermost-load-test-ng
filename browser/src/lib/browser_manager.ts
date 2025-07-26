@@ -103,6 +103,13 @@ export class BrowserTestSessionManager {
     try {
       const browser = await chromium.launch({
         headless: isBrowserHeadless(),
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--memory-pressure-off',
+        ],
       });
 
       instance = {...instance, browser};
@@ -114,7 +121,6 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create browser instance for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
         message: `Failed to create browser instance for user ${userId}`,
@@ -134,10 +140,9 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create context for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
-        message: `Failed to create context for user ${userId}`,
+        message: `Failed to create browser context for user ${userId}`,
       };
     }
 
@@ -154,10 +159,9 @@ export class BrowserTestSessionManager {
       };
       this.activeBrowserSessions.set(userId, creationFailedInstance);
 
-      log.error(`failed to create page for "${userId}" in browser_manager ${error}`);
       return {
         isCreated: false,
-        message: `Failed to create page for user ${userId}`,
+        message: `Failed to create browser page for user ${userId}`,
       };
     }
 
@@ -171,25 +175,29 @@ export class BrowserTestSessionManager {
 
     return {
       isCreated: true,
-      message: `Browser instance created for user ${userId}`,
+      message: `Successfully created browser instance for user ${userId}`,
     };
   }
 
   public async removeBrowserSession(userId: string): Promise<{isRemoved: boolean; message: string}> {
     const browserInstance = this.activeBrowserSessions.get(userId);
     if (!browserInstance) {
+      const message = `Browser instance does not exist for user ${userId}`;
+      log.info(message);
       return {
         isRemoved: false,
-        message: `Browser instance does not exist for user ${userId}`,
+        message,
       };
     }
 
     const toBeRemovedInstance = {...browserInstance, state: SessionState.STOPPING};
     this.activeBrowserSessions.set(userId, toBeRemovedInstance);
 
+    const message = `Browser instance scheduled for removal for user ${userId}`;
+    log.info(message);
     return {
       isRemoved: true,
-      message: `Browser instance scheduled for removal for user ${userId}`,
+      message,
     };
   }
 
@@ -199,6 +207,9 @@ export class BrowserTestSessionManager {
    * Also cleans up the browser session regardless of test success or failure
    */
   private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance, serverURL: string) {
+    const message = `Starting simulation tests for user ${userId}`;
+    log.info(message);
+
     const instance = {...browserInstance, state: SessionState.STARTED};
     this.activeBrowserSessions.set(userId, instance);
 

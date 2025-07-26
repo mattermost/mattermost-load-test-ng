@@ -309,7 +309,7 @@ LimitNOFILE=262144
 WantedBy=multi-user.target
 `
 
-const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && make -C /home/%s/mattermost-load-test-ng/browser install && node /home/%s/mattermost-load-test-ng/browser/dist/server.js"`
+const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && make -C /home/%s/mattermost-load-test-ng/browser start-service"`
 
 const browserAPIServiceFile = `
 [Unit]

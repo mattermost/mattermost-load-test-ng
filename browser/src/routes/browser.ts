@@ -36,32 +36,38 @@ async function addBrowser(
   const {user, password} = request.body;
 
   if (!user || user.length === 0) {
+    const errorMessage = "username or email is missing";
+    request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
       error: {
         code: 'USER_MISSING',
-        message: 'username or email is missing',
+        message: errorMessage,
       },
     });
   }
 
   if (!password || password.length === 0) {
+    const errorMessage = "password is missing";
+    request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
       error: {
         code: 'PASSWORD_MISSING',
-        message: 'password is missing',
+        message: errorMessage,
       },
     });
   }
 
   const serverURL = getMattermostServerURL();
   if (!serverURL) {
+    const errorMessage = "Mattermost server URL is missing in config.json";
+    request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
       error: {
         code: 'MM_SERVER_URL_MISSING',
-        message: 'Mattermost server URL is missing in config.json',
+        message: errorMessage,
       },
     });
   }
@@ -69,6 +75,7 @@ async function addBrowser(
   const createInstanceResult = await browserTestSessionManager.createBrowserSession(user, password, serverURL);
 
   if (!createInstanceResult.isCreated) {
+    request.log.error(`${request.method}:${request.url} - ${createInstanceResult.message}`);
     return reply.code(400).send({
       success: false,
       error: {
@@ -78,6 +85,7 @@ async function addBrowser(
     });
   }
 
+  request.log.info(`${request.method}:${request.url} - ${createInstanceResult.message}`);
   return reply.code(201).send({
     success: true,
     message: createInstanceResult.message,
@@ -98,11 +106,13 @@ async function removeBrowser(
   const {user} = request.query;
 
   if (!user) {
+    const errorMessage = "userId is missing";
+    request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
       error: {
         code: 'USER_ID_MISSING',
-        message: 'userId is missing',
+        message: errorMessage,
       },
     });
   }
@@ -110,6 +120,7 @@ async function removeBrowser(
   const removeInstanceResult = await browserTestSessionManager.removeBrowserSession(user);
 
   if (!removeInstanceResult.isRemoved) {
+    request.log.error(`${request.method}:${request.url} - ${removeInstanceResult.message}`);
     return reply.code(400).send({
       success: false,
       error: {
@@ -119,15 +130,17 @@ async function removeBrowser(
     });
   }
 
+  request.log.info(`${request.method}:${request.url} - ${removeInstanceResult.message}`);
   return reply.code(200).send({
     success: true,
     message: removeInstanceResult.message,
   });
 }
 
-async function getBrowsers(_: FastifyRequest, reply: FastifyReply): Promise<IReply> {
+async function getBrowsers(request: FastifyRequest, reply: FastifyReply): Promise<IReply> {
   const activeSessions = browserTestSessionManager.getActiveBrowserSessions();
 
+  request.log.info(`${request.method}:${request.url} - ${activeSessions.length} active browser sessions`);
   return reply.code(200).send({
     success: true,
     data: {
