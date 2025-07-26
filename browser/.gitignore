@@ -23,7 +23,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Build outputs (if applicable)
+# Build outputs
 dist/
 
 # npm debug logs
@@ -43,7 +43,3 @@ $RECYCLE.BIN/
 
 # Linux files
 *~
-
-# Docker files (if applicable)
-docker-compose.override.yml
-docker-compose.*.yml
