@@ -2,6 +2,7 @@
 
 # Environment variables
 export PLAYWRIGHT_HEADLESS_ONLY ?= true
+export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
 install-dependencies:
@@ -9,7 +10,6 @@ install-dependencies:
 	npm install
 	@echo "Successfully installed node_modules of LTBrowser"
 
-install-playwright: export PLAYWRIGHT_BROWSERS_PATH=0
 install-playwright: install-dependencies
 	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
 		echo "Installing Playwright Headless Chromium browser"; \
@@ -38,8 +38,10 @@ build: clean install-dependencies
 	$(BIN)/tsc
 	@echo "LTBrowser server built successfully"
 
+## Used by service to start the LTBrowser server in linux environments
 start-service: install
-	node server.js
+	@echo "Starting LTBrowser API server"
+	node dist/server.js
 
 ## Start the LTBrowser server by first doing a cleanup and then performing a production mode build
 start: build install-playwright
