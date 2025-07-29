@@ -19,7 +19,8 @@ export async function postAndScrollScenario(
   await handlePreferenceCheckbox(page);
   await performLogin({page, userId, password});
 
-  // Runs the simulation at least once and then runs it in a continuous loop if simulationMode is true
+  // Runs the simulation at least once and then runs it in a continuous loop if runInLoop is true
+  // which is true by default
   do {
     const scrollCount = runInLoop ? 40 : 3;
     await postInChannel({page});
