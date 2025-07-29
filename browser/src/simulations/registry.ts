@@ -1,6 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import {BrowserInstance} from '../lib/browser_manager.js';
 import {postAndScrollScenario} from './post_and_scroll_scenario.js';
 
 export enum SimulationIds {
@@ -8,11 +9,11 @@ export enum SimulationIds {
   login = 'login',
 }
 
-type SimulationRegistryItem = {
+export type SimulationRegistryItem = {
   id: SimulationIds;
   name?: string;
   description?: string;
-  scenario: unknown;
+  scenario: (browserInstance: BrowserInstance, serverURL: string) => Promise<void>;
 };
 
 export const SimulationsRegistry: SimulationRegistryItem[] = [

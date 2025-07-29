@@ -2,21 +2,18 @@
 // See LICENSE.txt for license information.
 
 import {log} from '../app.js';
-import * as tests from '../simulations/post_and_scroll_scenario.js';
 import type {BrowserInstance, ActiveBrowserSessions} from '../lib/browser_manager.js';
 import {SessionState} from '../lib/browser_manager.js';
-import {SimulationIds} from '../simulations/registry.js';
+import {SimulationIds, SimulationsRegistry, type SimulationRegistryItem} from '../simulations/registry.js';
 
 interface TestError {
   error: Error;
   testId: string;
 }
 
-type ScenarioMap = (browserInstance: BrowserInstance, serverURL: string) => Promise<void>;
-
 export class TestManager {
   private static instance: TestManager;
-  private scenarios: Map<string, ScenarioMap> = new Map();
+  private scenarios: Map<string, SimulationRegistryItem['scenario']> = new Map();
 
   private constructor() {
     this.initScenarios();
@@ -30,14 +27,16 @@ export class TestManager {
   }
 
   private initScenarios(): void {
-    this.scenarios.set(SimulationIds.postAndScroll, tests.postAndScrollScenario);
+    SimulationsRegistry.forEach((simulation) => {
+      this.scenarios.set(simulation.id, simulation.scenario);
+    });
   }
 
   public async startTest(
     browserInstance: BrowserInstance,
     activeBrowserSessions: ActiveBrowserSessions,
     serverURL: string,
-    scenarioId: string,
+    scenarioId: SimulationIds,
   ): Promise<BrowserInstance | undefined> {
     const {userId} = browserInstance;
     let updatedBrowserInstance: BrowserInstance | undefined = {...browserInstance};
@@ -74,7 +73,7 @@ export class TestManager {
     return updatedBrowserInstance;
   }
 
-  public getScenario(scenarioId: string): ScenarioMap {
+  public getScenario(scenarioId: SimulationIds): SimulationRegistryItem['scenario'] {
     const scenario = this.scenarios.get(scenarioId);
     if (!scenario) {
       throw new Error(`Scenario ${scenarioId} not found`);

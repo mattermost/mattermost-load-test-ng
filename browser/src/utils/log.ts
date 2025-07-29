@@ -84,7 +84,7 @@ export function getServerLoggerConfig(): FastifyLoggerOptions {
           statusCode: reply.statusCode,
         };
       },
-    }
+    };
   }
 
   return {

@@ -52,6 +52,7 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
 import * as playwright from 'playwright';
 import * as postAndScrollScenario from '../simulations/post_and_scroll_scenario.js';
+import {SimulationIds} from '../simulations/registry.js';
 
 const mocks = (playwright as any).__mocks;
 const postAndScrollScenarioMock = vi.mocked(postAndScrollScenario.postAndScrollScenario);
@@ -102,10 +103,11 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
+      SimulationIds.postAndScroll,
     );
 
     expect(isCreated).toBe(true);
-    expect(message).toContain('Browser instance created for user user1');
+    expect(message).toContain('Successfully created browser instance for user user1');
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     expect(sessions.length).toBe(1);
@@ -114,13 +116,19 @@ describe('BrowserManager', () => {
   });
 
   test('createBrowserSession should fail when user"s session already exists', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     // Try to create another session with same userId
     const {isCreated, message} = await browserTestSessionManager.createBrowserSession(
       'user1',
       'password',
       'http://localhost:8065',
+      SimulationIds.postAndScroll,
     );
 
     expect(isCreated).toBe(false);
@@ -135,7 +143,12 @@ describe('BrowserManager', () => {
   });
 
   test('removeBrowserSession should mark user"s session for removal', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     const {isRemoved, message} = await browserTestSessionManager.removeBrowserSession('user1');
 
@@ -156,6 +169,7 @@ describe('BrowserManager', () => {
       'failuser',
       'password',
       'http://localhost:8065',
+      SimulationIds.postAndScroll,
     );
 
     expect(isCreated).toBe(false);
@@ -175,10 +189,11 @@ describe('BrowserManager', () => {
       'contextfailuser',
       'password',
       'http://localhost:8065',
+      SimulationIds.postAndScroll,
     );
 
     expect(isCreated).toBe(false);
-    expect(message).toContain('Failed to create context');
+    expect(message).toContain('Failed to create browser context for user');
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     const failedSession = sessions.find((s) => s.userId === 'contextfailuser');
@@ -194,6 +209,7 @@ describe('BrowserManager', () => {
       'pagefailuser',
       'password',
       'http://localhost:8065',
+      SimulationIds.postAndScroll,
     );
 
     expect(isCreated).toBe(false);
@@ -209,7 +225,12 @@ describe('BrowserManager', () => {
     // Set up test scenario to fail
     postAndScrollScenarioMock.mockRejectedValueOnce(new Error('Test scenario failed'));
 
-    await browserTestSessionManager.createBrowserSession('testfailuser', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'testfailuser',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     await vi.runAllTimersAsync();
 
@@ -220,7 +241,12 @@ describe('BrowserManager', () => {
   });
 
   test('should mark user"s session as completed when tests complete successfully', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     await vi.runAllTimersAsync();
 
@@ -231,8 +257,18 @@ describe('BrowserManager', () => {
   });
 
   test('shutdown should clean up all sessions', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
-    await browserTestSessionManager.createBrowserSession('user2', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
+    await browserTestSessionManager.createBrowserSession(
+      'user2',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     await browserTestSessionManager.shutdown();
 
@@ -243,7 +279,12 @@ describe('BrowserManager', () => {
   });
 
   test('should mark user"s session as cleanup_failed when cleanup fails', async () => {
-    await browserTestSessionManager.createBrowserSession('user1', 'password', 'http://localhost:8065');
+    await browserTestSessionManager.createBrowserSession(
+      'user1',
+      'password',
+      'http://localhost:8065',
+      SimulationIds.postAndScroll,
+    );
 
     await vi.runAllTimersAsync();
 

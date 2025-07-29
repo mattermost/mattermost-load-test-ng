@@ -21,6 +21,24 @@ export enum SessionState {
   CLEANUP_FAILED = 'cleanup_failed', // The browser or any other instances failed to be cleaned up
 }
 
+const browserArguments = [
+  '--enable-automation', // Disables UI prompts that interfere with automation eg extension warning etc.
+
+  // Common unwanted browser features
+  '--disable-client-side-phishing-detection', // Disables client-side phishing detection
+  '--disable-component-extensions-with-background-pages', // Disables loading of Chrome extensions with background pages
+  '--disable-default-apps', // Disables installing/loading default Chrome apps such as Youtube etc.
+  '--disable-extensions', // Disables loading of Chrome extensions
+  '--disable-features=InterestFeedContentSuggestions', // Disables content suggestions
+  '--disable-features=Translate', // Disables translation of web pages
+  '--disable-search-engine-choice-screen', // Disables search engine choice screen
+  '--no-first-run', // Skip Chromium's setup dialogs, wizard and welcome screen
+
+  // Background network services
+  '--disable-background-networking', // Disables background network services such as extension updates etc
+  '--disable-sync', // Disables syncing of Chrome settings across devices
+];
+
 export type BrowserInstance = {
   browser: Browser | null;
   context: BrowserContext | null;
@@ -80,6 +98,7 @@ export class BrowserTestSessionManager {
     userId: string,
     password: string,
     serverURL: string,
+    simulationId: SimulationIds,
   ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
       return {
@@ -103,13 +122,7 @@ export class BrowserTestSessionManager {
     try {
       const browser = await chromium.launch({
         headless: isBrowserHeadless(),
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--memory-pressure-off',
-        ],
+        args: browserArguments,
       });
 
       instance = {...instance, browser};
@@ -123,7 +136,7 @@ export class BrowserTestSessionManager {
 
       return {
         isCreated: false,
-        message: `Failed to create browser instance for user ${userId}`,
+        message: `Failed to create browser instance for user ${userId}, error: ${error}`,
       };
     }
 
@@ -142,7 +155,7 @@ export class BrowserTestSessionManager {
 
       return {
         isCreated: false,
-        message: `Failed to create browser context for user ${userId}`,
+        message: `Failed to create browser context for user ${userId}, error: ${error}`,
       };
     }
 
@@ -161,7 +174,7 @@ export class BrowserTestSessionManager {
 
       return {
         isCreated: false,
-        message: `Failed to create browser page for user ${userId}`,
+        message: `Failed to create browser page for user ${userId}, error: ${error}`,
       };
     }
 
@@ -171,7 +184,7 @@ export class BrowserTestSessionManager {
     };
     this.activeBrowserSessions.set(userId, instance);
 
-    this.startTestsInBrowserSession(userId, instance, serverURL);
+    this.startTestsInBrowserSession(userId, instance, serverURL, simulationId);
 
     return {
       isCreated: true,
@@ -206,8 +219,13 @@ export class BrowserTestSessionManager {
    * It informs if the test failed or was stopped.
    * Also cleans up the browser session regardless of test success or failure
    */
-  private async startTestsInBrowserSession(userId: string, browserInstance: BrowserInstance, serverURL: string) {
-    const message = `Starting simulation tests for user ${userId}`;
+  private async startTestsInBrowserSession(
+    userId: string,
+    browserInstance: BrowserInstance,
+    serverURL: string,
+    simulationId: SimulationIds,
+  ) {
+    const message = `Starting ${simulationId} simulation tests for user ${userId}`;
     log.info(message);
 
     const instance = {...browserInstance, state: SessionState.STARTED};
@@ -217,7 +235,7 @@ export class BrowserTestSessionManager {
       browserInstance,
       this.activeBrowserSessions,
       serverURL,
-      SimulationIds.postAndScroll,
+      simulationId,
     );
 
     if (updatedBrowserInstance) {

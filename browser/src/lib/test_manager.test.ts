@@ -60,13 +60,13 @@ describe('TestManager', () => {
     });
 
     test('should get scenario function by id', () => {
-      const scenario = testManager.getScenario('postAndScroll');
+      const scenario = testManager.getScenario('postAndScroll' as any);
       expect(scenario).toBeDefined();
       expect(typeof scenario).toBe('function');
     });
 
     test('should throw error for invalid scenario id', () => {
-      expect(() => testManager.getScenario('invalid')).toThrow('Scenario invalid not found');
+      expect(() => testManager.getScenario('invalid' as any)).toThrow('Scenario invalid not found');
     });
 
     test('should complete test successfully', async () => {

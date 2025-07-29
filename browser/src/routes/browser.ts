@@ -7,6 +7,7 @@ import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
 import {getMattermostServerURL} from '../utils/config.js';
 import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
+import {SimulationIds} from '../simulations/registry.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
@@ -36,7 +37,7 @@ async function addBrowser(
   const {user, password} = request.body;
 
   if (!user || user.length === 0) {
-    const errorMessage = "username or email is missing";
+    const errorMessage = 'username or email is missing';
     request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
@@ -48,7 +49,7 @@ async function addBrowser(
   }
 
   if (!password || password.length === 0) {
-    const errorMessage = "password is missing";
+    const errorMessage = 'password is missing';
     request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
@@ -61,7 +62,7 @@ async function addBrowser(
 
   const serverURL = getMattermostServerURL();
   if (!serverURL) {
-    const errorMessage = "Mattermost server URL is missing in config.json";
+    const errorMessage = 'Mattermost server URL is missing in config.json';
     request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
@@ -72,7 +73,15 @@ async function addBrowser(
     });
   }
 
-  const createInstanceResult = await browserTestSessionManager.createBrowserSession(user, password, serverURL);
+  // TODO: make this configurable
+  const simulationId = SimulationIds.postAndScroll;
+
+  const createInstanceResult = await browserTestSessionManager.createBrowserSession(
+    user,
+    password,
+    serverURL,
+    simulationId,
+  );
 
   if (!createInstanceResult.isCreated) {
     request.log.error(`${request.method}:${request.url} - ${createInstanceResult.message}`);
@@ -106,7 +115,7 @@ async function removeBrowser(
   const {user} = request.query;
 
   if (!user) {
-    const errorMessage = "userId is missing";
+    const errorMessage = 'userId is missing';
     request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,
