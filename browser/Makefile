@@ -6,57 +6,63 @@ export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
 install-dependencies:
-	@echo "Installing node_modules of LTBrowser"
+	@echo "Installing node_modules of LTBrowser app"
 	npm install
-	@echo "Successfully installed node_modules of LTBrowser"
+	@echo "Successfully installed node_modules of LTBrowser app"
 
 install-playwright: install-dependencies
 	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
-		echo "Installing Playwright Headless Chromium browser"; \
+		echo "Installing Playwright Headless Chromium browser of LTBrowser app"; \
 		$(BIN)/playwright install --with-deps --only-shell chromium; \
 	else \
-		echo "Installing Playwright Chromium browser"; \
+		echo "Installing Playwright Chromium browser of LTBrowser app"; \
 		$(BIN)/playwright install --with-deps chromium; \
 	fi
-	@echo "Successfully installed browser binaries in node_modules/playwright-core/.local-browsers"
+	@echo "Successfully installed browser binaries in node_modules/playwright-core/.local-browsers of LTBrowser app"
 
 ## Install npm dependencies and Playwright Chromium browser with its dependencies
 install: install-dependencies install-playwright
 
 ## Clean build artifacts, node_modules, and test results
 clean:
-	@echo "Cleaning build artifacts, node_modules, and test results"
-	rm -rf build
+	@echo "Cleaning build artifacts, node_modules, and test results of LTBrowser app"
+	rm -rf dist
 	rm -rf node_modules
-	rm -rf e2etest_results
+	rm -rf e2e_results
 	rm -rf .cache
-	@echo "Cleaning complete"
+
+build-server:
+	@echo "Building LTBrowser app"
+	$(BIN)/tsc
+	@echo "LTBrowser app built successfully"
 
 ## Builds the LTBrowser server, by first installing the dependencies and then building the server. This does not install the Playwright browser which should be done separately
-build: clean install-dependencies
-	@echo "Building LTBrowser server"
-	$(BIN)/tsc
-	@echo "LTBrowser server built successfully"
+build: clean install-dependencies build-server
 
 ## Used by service to start the LTBrowser server in linux environments
 start-service: install
-	@echo "Starting LTBrowser API server"
+	@echo "Starting LTBrowser app service"
 	node dist/server.js
 
 ## Start the LTBrowser server by first doing a cleanup and then performing a production mode build
 start: build install-playwright
-	@echo "Starting LTBrowser API server"
+	@echo "Starting LTBrowser app"
 	node dist/server.js
 
 ## Start the LTBrowser server in development mode
 dev: install
-	@echo "Starting LTBrowser API server in development mode"
+	@echo "Starting LTBrowser app in development mode"
 	$(BIN)/tsx src/server.ts
 
 ## Start the LTBrowser server in development watch mode
 dev-watch: install
-	@echo "Starting LTBrowser API server in development watch mode"
+	@echo "Starting LTBrowser app in development watch mode"
 	$(BIN)/tsx watch src/server.ts
+
+## Run the smoke simulations
+smoke-simulation: install
+	@echo "Running smoke simulation of LTBrowser app"
+	$(BIN)/tsx src/smoke_simulations/add_sessions.ts
 
 ## Generate the OpenAPI schemas for the API in JSON and YAML format
 schema:
