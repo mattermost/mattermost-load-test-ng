@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -116,11 +117,13 @@ func (c *BrowserController) Run() {
 		}
 	}
 
-	if err := c.addBrowser(); err != nil {
+	response, err := c.addBrowser()
+	if err != nil {
+		fmt.Println("failed to add browser with the browser controller", err, response)
 		c.status <- c.newErrorStatus(control.NewUserError(err))
 		return
 	}
-	c.status <- c.newInfoStatus("browser added successfully")
+	c.status <- c.newInfoStatus(fmt.Sprintf("browser added successfully, response: %+v", response.Message))
 
 	// Wait until stop signal is received to stop the controller
 	<-c.stopChan
@@ -189,7 +192,8 @@ func (c *BrowserController) makeRequestToLTBrowserApi(method string, requestBody
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("HTTP error: %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("response status code: %d, response body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var apiResponse BrowserAPIResponse
@@ -198,21 +202,23 @@ func (c *BrowserController) makeRequestToLTBrowserApi(method string, requestBody
 	}
 
 	if !apiResponse.Success {
-		errorMsg := "unknown error"
+		errorMsg := "unknown error message"
+		errorCode := "unknown error code"
 		if apiResponse.Error != nil {
 			errorMsg = apiResponse.Error.Message
+			errorCode = apiResponse.Error.Code
 		}
-		return nil, fmt.Errorf("browser API returned error: %s", errorMsg)
+		return nil, fmt.Errorf("browser API returned error: %s, error code: %s", errorMsg, errorCode)
 	}
 
 	return &apiResponse, nil
 }
 
-func (c *BrowserController) addBrowser() error {
+func (c *BrowserController) addBrowser() (*BrowserAPIResponse, error) {
 	userStore := c.user.Store()
 
 	if userStore.Username() == "" && userStore.Email() == "" {
-		return fmt.Errorf("username and email both are empty, either username or email is required")
+		return nil, fmt.Errorf("username and email both are empty, either username or email is required")
 	}
 
 	userNameOrEmail := userStore.Username()
@@ -221,7 +227,7 @@ func (c *BrowserController) addBrowser() error {
 	}
 
 	if userStore.Password() == "" {
-		return fmt.Errorf("password is empty")
+		return nil, fmt.Errorf("password is empty")
 	}
 
 	requestBody := AddBrowserRequest{
@@ -229,8 +235,8 @@ func (c *BrowserController) addBrowser() error {
 		Password: userStore.Password(),
 	}
 
-	_, err := c.makeRequestToLTBrowserApi(http.MethodPost, requestBody, nil)
-	return err
+	response, err := c.makeRequestToLTBrowserApi(http.MethodPost, requestBody, nil)
+	return response, err
 }
 
 func (c *BrowserController) removeBrowser() error {

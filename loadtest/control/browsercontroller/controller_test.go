@@ -284,7 +284,7 @@ func TestAddBrowser(t *testing.T) {
 		require.NoError(t, err)
 		controllerValid.ltBrowserApiUrl = mockServer.URL
 
-		err = controllerValid.addBrowser()
+		_, err = controllerValid.addBrowser()
 		require.NoError(t, err)
 	})
 
@@ -304,7 +304,7 @@ func TestAddBrowser(t *testing.T) {
 		require.NoError(t, err)
 		controllerError.ltBrowserApiUrl = mockServerError.URL
 
-		err = controllerError.addBrowser()
+		_, err = controllerError.addBrowser()
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "browser API returned error: User not found")
 	})
@@ -323,9 +323,9 @@ func TestAddBrowser(t *testing.T) {
 		require.NoError(t, err)
 		controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
-		err = controllerHTTPError.addBrowser()
+		_, err = controllerHTTPError.addBrowser()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "HTTP error: 500")
+		require.Contains(t, err.Error(), "response status code: 500")
 	})
 
 	t.Run("fails due to empty username and email", func(t *testing.T) {
@@ -336,7 +336,7 @@ func TestAddBrowser(t *testing.T) {
 		controllerEmptyUsername, err := New(1, userEmptyUsername, statusChanEmptyUsername)
 		require.NoError(t, err)
 
-		err = controllerEmptyUsername.addBrowser()
+		_, err = controllerEmptyUsername.addBrowser()
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "username and email both are empty, either username or email is required")
 	})
@@ -349,7 +349,7 @@ func TestAddBrowser(t *testing.T) {
 		controllerEmptyPassword, err := New(1, userEmptyPassword, statusChanEmptyPassword)
 		require.NoError(t, err)
 
-		err = controllerEmptyPassword.addBrowser()
+		_, err = controllerEmptyPassword.addBrowser()
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "password is empty")
 	})
@@ -412,7 +412,7 @@ func TestRemoveBrowser(t *testing.T) {
 
 		err = controllerHTTPError.removeBrowser()
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "HTTP error: 404")
+		require.Contains(t, err.Error(), "response status code: 404")
 	})
 
 	t.Run("fails due to empty username", func(t *testing.T) {
