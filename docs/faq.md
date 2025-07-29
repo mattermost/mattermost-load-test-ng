@@ -182,4 +182,6 @@ This **should not be used in most cases** as the loadtest agent will automatical
 
 ### When starting deployment create, it fails due to `No default subnet for availability zone: 'AWS_SUBNETS_HERE'.`
 
-This likely happens because AWS doesn’t have an available subnet in the zone we explicitly set in the Terraform config. You can fix this by leaving `AWSAvailabilityZone` empty in the `config/deployer.json`.
+This likely happens because AWS doesn’t have an available subnet in the zone we explicitly set in the Terraform config. You can fix this by leaving AWSAvailabilityZone empty in config/deployer.json.
+
+Just a heads-up — leaving it empty might increase traffic-related AWS costs for very large tests, since resources won’t necessarily be deployed in the same Availability Zone.
