@@ -32,7 +32,9 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := t.output.Agents[0].GetConnectionIP()
+
+	// Coordinator resides in the first agent instance
+	coordinatorIP := t.output.Agents[0].GetConnectionIP()
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.Agents {
@@ -56,12 +58,14 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
+
+	sshClientCoordinator, err := extAgent.NewClient(t.Config().AWSAMIUser, coordinatorIP)
 	if err != nil {
 		return err
 	}
+	defer sshClientCoordinator.Close()
 
-	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
+	mlog.Info("Setting up coordinator", mlog.String("ip", coordinatorIP))
 
 	if config == nil {
 		config, err = coordinator.ReadConfig("")
@@ -81,7 +85,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	}
 	mlog.Info("Uploading updated coordinator config file")
 	dstPath := fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.config.AWSAMIUser)
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+	if out, err := sshClientCoordinator.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
@@ -107,7 +111,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 
-	batch := []struct {
+	batchForControllerConfigs := []struct {
 		input   interface{}
 		dstPath string
 	}{
@@ -125,22 +129,23 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		},
 	}
 
-	for _, info := range batch {
+	// Upload config files to the coordinator instance
+	for _, info := range batchForControllerConfigs {
 		data, err := json.MarshalIndent(info.input, "", "  ")
 		if err != nil {
 			return err
 		}
 
-		mlog.Info(info.dstPath)
-		if out, err := sshc.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
-			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
+		mlog.Info("Uploading config file to instance", mlog.String("file", info.dstPath))
+		if out, err := sshClientCoordinator.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
+			return fmt.Errorf("error uploading file to instance, dstPath: %s, output: %q: %w", info.dstPath, out, err)
 		}
 	}
 
 	mlog.Info("Starting the coordinator")
 
 	id := t.config.ClusterName + "-coordinator-0"
-	coord, err := client.New(id, "http://"+ip+":4000", nil)
+	coord, err := client.New(id, "http://"+coordinatorIP+":4000", nil)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator client: %w", err)
 	}
