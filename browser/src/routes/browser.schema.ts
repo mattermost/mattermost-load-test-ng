@@ -17,6 +17,10 @@ export const postSchema = {
         type: 'string',
         description: 'Password of the user',
       },
+      server_url: {
+        type: 'string',
+        description: 'URL of the Mattermost server',
+      },
     },
   },
   response: {

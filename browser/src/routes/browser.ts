@@ -5,7 +5,6 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
-import {getMattermostServerURL} from '../utils/config.js';
 import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
 import {SimulationIds} from '../simulations/registry.js';
 
@@ -28,6 +27,7 @@ interface AddBrowserRequestBody {
    */
   user: string;
   password: string;
+  server_url: string;
 }
 
 async function addBrowser(
@@ -60,9 +60,13 @@ async function addBrowser(
     });
   }
 
-  const serverURL = getMattermostServerURL();
+  // TODO: server url should always be used from the config.json instead of the request body
+  // TODO: this is a temporary fix for now
+  // const serverURL = getMattermostServerURL();
+
+  const serverURL = request.body.server_url;
   if (!serverURL) {
-    const errorMessage = 'Mattermost server URL is missing in config.json';
+    const errorMessage = 'Mattermost server URL is empty';
     request.log.error(`${request.method}:${request.url} - ${errorMessage}`);
     return reply.code(400).send({
       success: false,

@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 	defer close(statusChan)
 
 	t.Run("controller is created successfully", func(t *testing.T) {
-		controller, err := New(1, user, statusChan)
+		controller, err := New(1, user, "http://localhost:8065", statusChan)
 		require.NoError(t, err)
 		require.NotNil(t, controller)
 		require.Equal(t, 1, controller.id)
@@ -40,14 +40,14 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("controller is not created if user is nil", func(t *testing.T) {
-		controller, err := New(1, nil, statusChan)
+		controller, err := New(1, nil, "http://localhost:8065", statusChan)
 		require.Error(t, err)
 		require.Nil(t, controller)
 		require.Contains(t, err.Error(), "user cannot be nil")
 	})
 
 	t.Run("controller is not created if status channel is nil", func(t *testing.T) {
-		controller, err := New(1, user, nil)
+		controller, err := New(1, user, "http://localhost:8065", nil)
 		require.Error(t, err)
 		require.Nil(t, controller)
 		require.Contains(t, err.Error(), "status channel cannot be nil")
@@ -70,7 +70,7 @@ func newController(t *testing.T) (*BrowserController, chan control.UserStatus) {
 
 	statusChan := make(chan control.UserStatus, 10)
 
-	controller, err := New(1, user, statusChan)
+	controller, err := New(1, user, "http://localhost:8065", statusChan)
 	require.NoError(t, err)
 	require.NotNil(t, controller)
 
@@ -280,7 +280,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanValid := make(chan control.UserStatus, 10)
 		defer close(statusChanValid)
 
-		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanValid)
+		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanValid)
 		require.NoError(t, err)
 		controllerValid.ltBrowserApiUrl = mockServer.URL
 
@@ -300,7 +300,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanError := make(chan control.UserStatus, 10)
 		defer close(statusChanError)
 
-		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanError)
+		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanError)
 		require.NoError(t, err)
 		controllerError.ltBrowserApiUrl = mockServerError.URL
 
@@ -319,7 +319,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanHTTPError := make(chan control.UserStatus, 10)
 		defer close(statusChanHTTPError)
 
-		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanHTTPError)
+		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanHTTPError)
 		require.NoError(t, err)
 		controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
@@ -333,7 +333,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanEmptyUsername := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyUsername)
 
-		controllerEmptyUsername, err := New(1, userEmptyUsername, statusChanEmptyUsername)
+		controllerEmptyUsername, err := New(1, userEmptyUsername, "http://localhost:8065", statusChanEmptyUsername)
 		require.NoError(t, err)
 
 		_, err = controllerEmptyUsername.addBrowser()
@@ -346,7 +346,7 @@ func TestAddBrowser(t *testing.T) {
 		statusChanEmptyPassword := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyPassword)
 
-		controllerEmptyPassword, err := New(1, userEmptyPassword, statusChanEmptyPassword)
+		controllerEmptyPassword, err := New(1, userEmptyPassword, "http://localhost:8065", statusChanEmptyPassword)
 		require.NoError(t, err)
 
 		_, err = controllerEmptyPassword.addBrowser()
@@ -367,7 +367,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanValid := make(chan control.UserStatus, 10)
 		defer close(statusChanValid)
 
-		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanValid)
+		controllerValid, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanValid)
 		require.NoError(t, err)
 		controllerValid.ltBrowserApiUrl = mockServer.URL
 
@@ -387,7 +387,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanError := make(chan control.UserStatus, 10)
 		defer close(statusChanError)
 
-		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanError)
+		controllerError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanError)
 		require.NoError(t, err)
 		controllerError.ltBrowserApiUrl = mockServerError.URL
 
@@ -406,7 +406,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanHTTPError := make(chan control.UserStatus, 10)
 		defer close(statusChanHTTPError)
 
-		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), statusChanHTTPError)
+		controllerHTTPError, err := New(1, newUser(t, "testuser", "testpass", "test@example.com"), "http://localhost:8065", statusChanHTTPError)
 		require.NoError(t, err)
 		controllerHTTPError.ltBrowserApiUrl = mockServerHTTPError.URL
 
@@ -420,7 +420,7 @@ func TestRemoveBrowser(t *testing.T) {
 		statusChanEmptyUsername := make(chan control.UserStatus, 10)
 		defer close(statusChanEmptyUsername)
 
-		controllerEmptyUsername, err := New(1, userEmptyUsername, statusChanEmptyUsername)
+		controllerEmptyUsername, err := New(1, userEmptyUsername, "http://localhost:8065", statusChanEmptyUsername)
 		require.NoError(t, err)
 
 		err = controllerEmptyUsername.removeBrowser()

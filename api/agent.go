@@ -464,7 +464,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		// We detect early on if the current instance is going to run browser agents
 		// this is because of design decision to run only browser agents in the instance
 		if isBrowserAgentInstance {
-			return browsercontroller.New(id, ue, status)
+			return browsercontroller.New(id, ue, config.ConnectionConfiguration.ServerURL, status)
 		}
 
 		switch config.UserControllerConfiguration.Type {

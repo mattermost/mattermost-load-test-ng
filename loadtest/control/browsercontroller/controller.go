@@ -31,14 +31,16 @@ type BrowserController struct {
 	stoppedChan     chan struct{}
 	wg              *sync.WaitGroup
 	ltBrowserApiUrl string
+	mmServerUrl     string
 	httpClient      *http.Client
 }
 
 // AddBrowserRequest represents the request body for adding a browser session
 type AddBrowserRequest struct {
 	// User is the username or email of the user to add a browser session
-	User     string `json:"user"`
-	Password string `json:"password"`
+	User      string `json:"user"`
+	Password  string `json:"password"`
+	ServerURL string `json:"server_url"`
 }
 
 // BrowserAPIResponse represents the response from the browser API
@@ -52,7 +54,8 @@ type BrowserAPIResponse struct {
 }
 
 // New creates and initializes a new BrowserController with given parameters.
-func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserController, error) {
+// TODO: serverURL should be removed from here and LTBrowser API should be updated to use the serverURL from the config.json
+func New(id int, user user.User, serverURL string, status chan<- control.UserStatus) (*BrowserController, error) {
 	if user == nil {
 		return nil, errors.New("user cannot be nil")
 	}
@@ -68,6 +71,7 @@ func New(id int, user user.User, status chan<- control.UserStatus) (*BrowserCont
 		stoppedChan:     make(chan struct{}),
 		wg:              &sync.WaitGroup{},
 		ltBrowserApiUrl: LTBrowserApi,
+		mmServerUrl:     serverURL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -231,8 +235,9 @@ func (c *BrowserController) addBrowser() (*BrowserAPIResponse, error) {
 	}
 
 	requestBody := AddBrowserRequest{
-		User:     userNameOrEmail,
-		Password: userStore.Password(),
+		User:      userNameOrEmail,
+		Password:  userStore.Password(),
+		ServerURL: c.mmServerUrl,
 	}
 
 	response, err := c.makeRequestToLTBrowserApi(http.MethodPost, requestBody, nil)
