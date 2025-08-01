@@ -253,14 +253,6 @@ func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval
 			max, err = strconv.ParseFloat(maxs, 64)
 		}
 		val = value.Float()
-	case reflect.Slice:
-		if mins != "" {
-			min, err = strconv.ParseFloat(mins, 64)
-		}
-		if maxs != "" {
-			max, err = strconv.ParseFloat(maxs, 64)
-		}
-		val = float64(value.Len())
 	default:
 		return errors.New("could not validate this value within a range")
 	}

@@ -30,7 +30,7 @@ type LoadAgentClusterConfig struct {
 	// BrowserAgents is a list of the browser agents API endpoints to be used during
 	// the load-test. Its length defines the number of browser agents instances
 	// used during a load-test.
-	BrowserAgents []LoadAgentConfig `default_size:"0" validate:"range:[0,]"`
+	BrowserAgents []LoadAgentConfig `default_size:"0"`
 	// MaxActiveBrowserUsers defines the upper limit of concurrently active browser users to run across
 	// the whole cluster.
 	MaxActiveBrowserUsers int `default:"0" validate:"range:[0,]"`
