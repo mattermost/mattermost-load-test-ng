@@ -154,7 +154,7 @@ type BrowserLogSettings struct {
 	EnableConsole bool   `default:"false"`
 	ConsoleLevel  string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
 	EnableFile    bool   `default:"true"`
-	FileLevel     string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+	FileLevel     string `default:"debug" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
 	FileLocation  string `default:"browseragent.log"`
 }
 
