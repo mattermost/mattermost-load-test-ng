@@ -101,8 +101,6 @@ func (c *BrowserController) Run() {
 
 	initActions := []control.UserAction{
 		control.SignUp,
-		control.Login,
-		control.JoinTeam,
 	}
 
 	for _, action := range initActions {
@@ -197,7 +195,7 @@ func (c *BrowserController) makeRequestToLTBrowserApi(method string, requestBody
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("response status code: %d, response body: %s", resp.StatusCode, string(bodyBytes))
+		return nil, fmt.Errorf("failed as response is in-between (200,300]: response status code: %d, response body: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var apiResponse BrowserAPIResponse

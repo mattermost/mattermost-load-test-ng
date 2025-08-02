@@ -151,6 +151,16 @@ The first step is having the server running.
 ```sh
 go run ./cmd/ltapi
 ```
+### Start LTBrowser server (optional)
+
+If load tests is configured to run browser tests then you need to start the LTBrowser server as well.
+From a different terminal, run the following commands to start the LTBrowser server.
+
+```sh
+nvm use
+cd browser
+make start
+```
 
 ### Configure the coordinator
 

@@ -160,7 +160,7 @@ To compare the results of your load tests, see [here](compare.md).
   ```
 * To access a specific host via SSH, run:
   ```sh
-  go run ./cmd/ltctl ssh <instance-name>  
+  go run ./cmd/ltctl ssh <instance-name>
   ```
 
 * Following are some common targets:
