@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import path from 'path';
+import {dirname, join} from 'path';
 import fs from 'fs';
 import {fileURLToPath} from 'url';
 import {z as zod} from 'zod';
@@ -62,20 +62,20 @@ export function getFileLoggingLocation(): string {
 /**
  * Find the repository root by looking for specific marker files
  */
-function findRootDirectory(startDir: string): string {
+export function findRootDirectory(startDir: string): string {
   const rootFiles = ['go.mod', '.git', 'bin', '.nvmrc'];
 
   let currentDir = startDir;
-  while (currentDir !== path.dirname(currentDir)) {
+  while (currentDir !== dirname(currentDir)) {
     // Check if any of our defined root files exist in the current directory
     for (const rootFile of rootFiles) {
-      if (fs.existsSync(path.join(currentDir, rootFile))) {
+      if (fs.existsSync(join(currentDir, rootFile))) {
         return currentDir;
       }
     }
 
     // Move up one directory
-    currentDir = path.dirname(currentDir);
+    currentDir = dirname(currentDir);
   }
 
   // Fallback to the starting directory if no repo root found
@@ -83,9 +83,9 @@ function findRootDirectory(startDir: string): string {
 }
 
 function findConfigJsonPath(): string {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const currentDir = dirname(fileURLToPath(import.meta.url));
   const rootDir = findRootDirectory(currentDir);
-  const configJsonPath = path.join(rootDir, 'config', 'config.json');
+  const configJsonPath = join(rootDir, 'config', 'config.json');
   return configJsonPath;
 }
 
@@ -112,4 +112,11 @@ function loadConfigJson() {
     console.error('Failed loading config.json.', error);
     process.exit(1);
   }
+}
+
+export function findScreenshotsDir(): string {
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+  const rootDir = findRootDirectory(currentDir);
+  const screenshotsDir = join(rootDir, 'browser', 'screenshots');
+  return screenshotsDir;
 }

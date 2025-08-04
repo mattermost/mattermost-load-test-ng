@@ -104,6 +104,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     expect(isCreated).toBe(true);
@@ -121,6 +122,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     // Try to create another session with same userId
@@ -129,6 +131,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     expect(isCreated).toBe(false);
@@ -148,6 +151,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     const {isRemoved, message} = await browserTestSessionManager.removeBrowserSession('user1');
@@ -170,6 +174,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     expect(isCreated).toBe(false);
@@ -190,6 +195,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     expect(isCreated).toBe(false);
@@ -210,6 +216,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     expect(isCreated).toBe(false);
@@ -230,6 +237,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     await vi.runAllTimersAsync();
@@ -246,6 +254,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     await vi.runAllTimersAsync();
@@ -262,12 +271,14 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
     await browserTestSessionManager.createBrowserSession(
       'user2',
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     await browserTestSessionManager.shutdown();
@@ -284,6 +295,7 @@ describe('BrowserManager', () => {
       'password',
       'http://localhost:8065',
       SimulationIds.postAndScroll,
+      true,
     );
 
     await vi.runAllTimersAsync();

@@ -30,6 +30,7 @@ clean:
 	rm -rf node_modules
 	rm -rf e2e_results
 	rm -rf .cache
+	rm -rf screenshots
 
 build-server:
 	@echo "Building LTBrowser app"
@@ -61,8 +62,21 @@ dev-watch: install
 
 ## Run the smoke simulations
 smoke-simulation: install
-	@echo "Running smoke simulation of LTBrowser app"
-	$(BIN)/tsx src/smoke_simulations/add_sessions.ts
+	@if [ -f "src/smoke_simulations/smoke_simulation.json" ]; then \
+		echo "Running smoke simulation of LTBrowser app"; \
+	else \
+		echo "Error: smoke_simulation.json file not found, copy the smoke_simulation.sample.json file in the same directory to smoke_simulation.json and edit it"; \
+		exit 1; \
+	fi
+
+	@if [ -f "src/smoke_simulations/index.ts" ]; then \
+		$(BIN)/tsx src/smoke_simulations/index.ts; \
+	elif [ -f "src/smoke_simulations/index.js" ]; then \
+		node src/smoke_simulations/index.js; \
+	else \
+		echo "Error: file not found (checked .ts and .js extensions)"; \
+		exit 1; \
+	fi
 
 ## Generate the OpenAPI schemas for the API in JSON and YAML format
 schema:

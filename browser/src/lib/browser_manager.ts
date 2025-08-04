@@ -2,11 +2,12 @@
 // See LICENSE.txt for license information.
 
 import {Browser, BrowserContext, chromium, Page} from 'playwright';
+import {join} from 'path';
 
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
-import {isBrowserHeadless} from '../utils/config.js';
 import {SimulationIds} from '../simulations/registry.js';
+import {findScreenshotsDir} from '../utils/config.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -99,6 +100,7 @@ export class BrowserTestSessionManager {
     password: string,
     serverURL: string,
     simulationId: SimulationIds,
+    isHeadless: boolean,
   ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
       return {
@@ -121,7 +123,7 @@ export class BrowserTestSessionManager {
     // Try to create the browser instance first
     try {
       const browser = await chromium.launch({
-        headless: isBrowserHeadless(),
+        headless: isHeadless,
         args: browserArguments,
       });
 
@@ -255,12 +257,29 @@ export class BrowserTestSessionManager {
     }, timeout);
   }
 
+  private async takeScreenshotOnClose(page: Page, userId: string): Promise<void> {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `on_page_close_screenshot_${userId}_${timestamp}.png`;
+      const filepath = join(findScreenshotsDir(), filename);
+
+      await page.screenshot({
+        path: filepath,
+        fullPage: false,
+      });
+
+      log.info(`Successfully took screenshot on page close for user ${userId}`);
+    } catch (error) {
+      log.error(`Failed to take screenshot on page close for user ${userId}: ${error}`);
+    }
+  }
+
   private async cleanupBrowserSessions() {
     if (this.activeBrowserSessions.size === 0) {
       return;
     }
 
-    const cleanupPromises: Promise<boolean>[] = [];
+    const promises: Promise<void>[] = [];
     for (const instance of this.activeBrowserSessions.values()) {
       if (
         instance.state === SessionState.CREATION_FAILED ||
@@ -268,13 +287,15 @@ export class BrowserTestSessionManager {
         instance.state === SessionState.STOPPING ||
         instance.state === SessionState.FAILED
       ) {
-        cleanupPromises.push(this.cleanupBrowserSession(instance));
+        // Take a screenshot on page close and then cleanup the browser session
+        // We use finally because we want to cleanup the browser session regardless of the screenshot operation success or failure
+        promises.push(this.takeScreenshotOnClose(instance.page!, instance.userId).finally(() => this.cleanupBrowserSession(instance)));
       }
     }
 
     // Wait for all cleanup operations to complete in parallel
     // we used allSettled because each cleanup operation is independent of the others
-    await Promise.allSettled(cleanupPromises);
+    await Promise.allSettled(promises);
   }
 
   private async cleanupBrowserSession(browserInstance: BrowserInstance): Promise<boolean> {

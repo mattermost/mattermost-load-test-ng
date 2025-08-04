@@ -8,6 +8,8 @@ import {IReply} from './types.js';
 import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
 import {SimulationIds} from '../simulations/registry.js';
 
+import {isBrowserHeadless} from '../utils/config.js';
+
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
   fastify.addHook('onClose', closeBrowser);
@@ -85,6 +87,7 @@ async function addBrowser(
     password,
     serverURL,
     simulationId,
+    isBrowserHeadless(),
   );
 
   if (!createInstanceResult.isCreated) {

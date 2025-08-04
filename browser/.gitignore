@@ -43,3 +43,9 @@ $RECYCLE.BIN/
 
 # Linux files
 *~
+
+# Config files
+src/smoke_simulations/smoke_simulation.json
+
+# Screenshots directory
+screenshots/
