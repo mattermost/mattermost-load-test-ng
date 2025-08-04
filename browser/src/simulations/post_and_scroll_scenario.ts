@@ -5,6 +5,7 @@ import {handlePreferenceCheckbox, performLogin} from './login.js';
 import {postInChannel} from './post_in_channel.js';
 import {scrollInChannel} from './scrolling_in_channel.js';
 import type {BrowserInstance} from '../lib/browser_manager.js';
+import {handleTeamSelection} from './team_select.js';
 
 export async function postAndScrollScenario(
   {page, userId, password}: BrowserInstance,
@@ -16,8 +17,12 @@ export async function postAndScrollScenario(
   }
 
   await page.goto(serverURL);
+
   await handlePreferenceCheckbox(page);
+
   await performLogin({page, userId, password});
+
+  await handleTeamSelection(page);
 
   // Runs the simulation at least once and then runs it in a continuous loop if runInLoop is true
   // which is true by default

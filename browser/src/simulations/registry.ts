@@ -6,7 +6,6 @@ import {postAndScrollScenario} from './post_and_scroll_scenario.js';
 
 export enum SimulationIds {
   postAndScroll = 'postAndScroll',
-  login = 'login',
 }
 
 export type SimulationRegistryItem = {
