@@ -1066,8 +1066,9 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	// Setting to * is more of a quick fix. A proper fix would be to get the DNS name of the first
 	// node or the proxy and set that.
 	cfg.ServiceSettings.AllowCorsFrom = model.NewPointer("*")
-	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)       // Makes manual testing easier
-	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false) // Makes manual testing easier
+	cfg.ServiceSettings.EnableTutorial = model.NewPointer(false)           // Makes manual testing easier
+	cfg.ServiceSettings.EnableOnboardingFlow = model.NewPointer(false)     // Makes manual testing easier
+	cfg.ServiceSettings.EnableDesktopLandingPage = model.NewPointer(false) // Disable landing page which requests to open in desktop app
 
 	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewPointer("2500")
