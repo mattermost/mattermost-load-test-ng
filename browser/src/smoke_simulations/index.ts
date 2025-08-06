@@ -78,7 +78,6 @@ function verifyConfig(): string | null {
   if (!smokeSimulationConfig.simulations || smokeSimulationConfig.simulations.length === 0) {
     return 'Simulations are not set in smoke_simulation.json, check "simulations" field';
   } else if (!smokeSimulationConfig.simulations.every((sim: any) => simulationIds.includes(sim))) {
-
     return 'All or some simulations ids are not valid in smoke_simulation.json, check "simulations" field';
   }
 

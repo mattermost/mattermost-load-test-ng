@@ -220,7 +220,7 @@ describe('BrowserManager', () => {
     );
 
     expect(isCreated).toBe(false);
-    expect(message).toContain('Failed to create page');
+    expect(message).toContain('Failed to create browser page for user');
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     const failedSession = sessions.find((s) => s.userId === 'pagefailuser');

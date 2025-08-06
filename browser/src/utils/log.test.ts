@@ -127,7 +127,13 @@ describe('getServerLoggerConfig', () => {
 
     const result = getServerLoggerConfig();
 
-    expect(result).toBe(false);
+    expect(result).toEqual({
+      stream: {stream: 'mock'},
+      serializers: {},
+    });
+    expect(mockTransport).toHaveBeenCalledWith({
+      targets: [],
+    });
   });
 
   it('should return transport config when only console logging is enabled', () => {
@@ -139,6 +145,7 @@ describe('getServerLoggerConfig', () => {
 
     expect(result).toEqual({
       stream: {stream: 'mock'},
+      serializers: expect.any(Object),
     });
     expect(mockTransport).toHaveBeenCalledWith({
       targets: expect.arrayContaining([
@@ -160,6 +167,7 @@ describe('getServerLoggerConfig', () => {
 
     expect(result).toEqual({
       stream: {stream: 'mock'},
+      serializers: expect.any(Object),
     });
     expect(mockTransport).toHaveBeenCalledWith({
       targets: expect.arrayContaining([
@@ -182,6 +190,7 @@ describe('getServerLoggerConfig', () => {
 
     expect(result).toEqual({
       stream: {stream: 'mock'},
+      serializers: expect.any(Object),
     });
     expect(mockTransport).toHaveBeenCalledWith({
       targets: expect.arrayContaining([

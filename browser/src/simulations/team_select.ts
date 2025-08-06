@@ -20,7 +20,7 @@ export async function handleTeamSelection(page: Page): Promise<void> {
     const teamElement = page.locator('.signup-team-dir a').first();
     await teamElement.click();
 
-    await page.waitForURL(url => !url.pathname.includes('/select_team'));
+    await page.waitForURL((url) => !url.pathname.includes('/select_team'));
 
     log.info('pass--handleTeamSelection');
   } catch (error) {

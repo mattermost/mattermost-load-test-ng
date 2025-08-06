@@ -135,13 +135,14 @@ describe('API /browsers', () => {
         .send({
           user: 'integration-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         })
         .expect(201)
         .expect('Content-Type', /json/);
 
       expect(response.body).toEqual({
         success: true,
-        message: expect.stringContaining('Browser instance created for user integration-test-user'),
+        message: expect.stringContaining('Successfully created browser instance for user integration-test-user'),
       });
     });
 
@@ -165,7 +166,7 @@ describe('API /browsers', () => {
         success: false,
         error: {
           code: 'MM_SERVER_URL_MISSING',
-          message: 'Mattermost server URL is missing in config.json',
+          message: 'Mattermost server URL is empty',
         },
       });
     });
@@ -179,6 +180,7 @@ describe('API /browsers', () => {
         .send({
           user: 'duplicate-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         })
         .expect(201);
 
@@ -190,6 +192,7 @@ describe('API /browsers', () => {
         .send({
           user: 'duplicate-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         })
         .expect(400);
 
@@ -210,10 +213,12 @@ describe('API /browsers', () => {
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: 'concurrent-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: 'concurrent-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         }),
       ]);
 
@@ -244,6 +249,7 @@ describe('API /browsers', () => {
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: userId,
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         }),
       );
 
@@ -288,14 +294,17 @@ describe('API /browsers', () => {
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: 'user1',
           password: 'password1',
+          server_url: 'http://localhost:8065',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: 'user2',
           password: 'password2',
+          server_url: 'http://localhost:8065',
         }),
         supertest(`http://localhost:${port}`).post('/browsers').send({
           user: 'user3',
           password: 'password3',
+          server_url: 'http://localhost:8065',
         }),
       ]);
 
@@ -335,6 +344,7 @@ describe('API /browsers', () => {
         .send({
           user: 'session-list-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         })
         .expect(201);
 
@@ -363,6 +373,7 @@ describe('API /browsers', () => {
           .send({
             user: userId,
             password: 'testpassword',
+            server_url: 'http://localhost:8065',
           })
           .expect(201);
       }
@@ -392,6 +403,7 @@ describe('API /browsers', () => {
           .send({
             user: userId,
             password: 'testpassword',
+            server_url: 'http://localhost:8065',
           })
           .expect(201);
       }
@@ -422,6 +434,7 @@ describe('API /browsers', () => {
         .send({
           user: 'delete-test-user',
           password: 'testpassword',
+          server_url: 'http://localhost:8065',
         })
         .expect(201);
 
@@ -490,6 +503,7 @@ describe('API /browsers', () => {
       .send({
         user: userId,
         password: 'testpassword',
+        server_url: 'http://localhost:8065',
       })
       .expect(201);
     expect(response.body.success).toBe(true);
@@ -505,6 +519,7 @@ describe('API /browsers', () => {
       .send({
         user: userId,
         password: 'testpassword',
+        server_url: 'http://localhost:8065',
       })
       .expect(400);
     expect(response.body.success).toBe(false);

@@ -9,7 +9,10 @@ export async function handlePreferenceCheckbox(page: Page) {
   log.info('run--handlePreferenceCheckbox');
 
   try {
-    const isLandingPage = await page.waitForURL(url => url.pathname.includes('/landing')).then(() => true).catch(() => false);
+    const isLandingPage = await page
+      .waitForURL((url) => url.pathname.includes('/landing'))
+      .then(() => true)
+      .catch(() => false);
     if (!isLandingPage) {
       throw new Error('Not on landing page');
     }
@@ -50,7 +53,7 @@ export async function performLogin({
     await page.type('#input_password-input', password);
     await page.keyboard.press('Enter');
 
-    await page.waitForURL(url => !url.pathname.includes('/login'));
+    await page.waitForURL((url) => !url.pathname.includes('/login'));
 
     log.info('pass--performLogin');
   } catch (error) {

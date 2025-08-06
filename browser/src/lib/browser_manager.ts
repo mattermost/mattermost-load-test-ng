@@ -289,7 +289,11 @@ export class BrowserTestSessionManager {
       ) {
         // Take a screenshot on page close and then cleanup the browser session
         // We use finally because we want to cleanup the browser session regardless of the screenshot operation success or failure
-        promises.push(this.takeScreenshotOnClose(instance.page!, instance.userId).finally(() => this.cleanupBrowserSession(instance)));
+        promises.push(
+          this.takeScreenshotOnClose(instance.page!, instance.userId).finally(() =>
+            this.cleanupBrowserSession(instance),
+          ),
+        );
       }
     }
 
