@@ -235,6 +235,12 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
+	if t.output.HasEFS() {
+		if err := t.setupEFS(extAgent); err != nil {
+			return fmt.Errorf("error setting up efs: %w", err)
+		}
+	}
+
 	if t.output.HasOpenLDAP() {
 		// Setting up OpenLDAP.
 		if err := t.setupOpenLDAP(extAgent); err != nil {
@@ -1072,7 +1078,10 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.EmailSettings.SMTPServer = model.NewPointer(t.output.MetricsServer.PrivateIP)
 	cfg.EmailSettings.SMTPPort = model.NewPointer("2500")
 
-	if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
+	if t.output.HasEFS() {
+		cfg.FileSettings.DriverName = model.NewPointer("local")
+		cfg.FileSettings.Directory = model.NewPointer(efsDirectory)
+	} else if t.output.HasProxy() && t.output.HasS3Key() && t.output.HasS3Bucket() {
 		cfg.FileSettings.DriverName = model.NewPointer("amazons3")
 		cfg.FileSettings.AmazonS3AccessKeyId = model.NewPointer(t.output.S3Key.Id)
 		cfg.FileSettings.AmazonS3SecretAccessKey = model.NewPointer(t.output.S3Key.Secret)

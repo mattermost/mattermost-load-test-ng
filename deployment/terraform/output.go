@@ -66,6 +66,9 @@ type output struct {
 			CacheNodes []RedisInstance `json:"cache_nodes"`
 		} `json:"value"`
 	} `json:"redisServer"`
+	EFSaccessPoint struct {
+		Value []EFSAccessPoint `json:"value"`
+	} `json:"efsAccessPoint"`
 }
 
 // Output contains the output variables which are
@@ -87,6 +90,7 @@ type Output struct {
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
 	OpenLDAPServer          Instance            `json:"openldapServer"`
 	RedisServer             RedisInstance       `json:"redisServer"`
+	EFSAccessPoint          EFSAccessPoint      `json:"efsAccessPoint"`
 	AMIUser                 string              `json:"amiUser"`
 }
 
@@ -148,6 +152,11 @@ type RedisInstance struct {
 	Address string `json:"address"`
 	Id      string `json:"id"`
 	Port    int    `json:"port"`
+}
+
+type EFSAccessPoint struct {
+	Id           string `json:"id"`
+	FileSystemId string `json:"file_system_id"`
 }
 
 // Tags are the values attached to resource.
@@ -283,6 +292,10 @@ func (t *Terraform) loadOutput() error {
 		outputv2.RedisServer = o.RedisServer.Value[0].CacheNodes[0]
 	}
 
+	if len(o.EFSaccessPoint.Value) > 0 {
+		outputv2.EFSAccessPoint = o.EFSaccessPoint.Value[0]
+	}
+
 	t.output = outputv2
 
 	return nil
@@ -357,6 +370,10 @@ func (o *Output) HasJobServer() bool {
 // HasKeycloak returns whether a deployment has Keycloak installed in it or not.
 func (o *Output) HasKeycloak() bool {
 	return o.KeycloakServer.GetConnectionIP() != ""
+}
+
+func (o *Output) HasEFS() bool {
+	return o.EFSAccessPoint.Id != "" && o.EFSAccessPoint.FileSystemId != ""
 }
 
 // HasOpenLDAP returns whether a deployment has OpenLDAP installed in it or not.

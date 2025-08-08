@@ -56,6 +56,14 @@ output "jobServers" {
   value = aws_instance.job_server[*]
 }
 
+output "efsAccessPoint" {
+  value = aws_efs_access_point.shared_dir
+}
+
+output "efsFileSystem" {
+  value = aws_efs_file_system.efs_shared[*]
+}
+
 output "amiUser" {
   value = var.aws_ami_user
 }

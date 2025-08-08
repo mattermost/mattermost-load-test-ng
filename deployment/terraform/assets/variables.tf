@@ -235,6 +235,10 @@ variable "enable_metrics_instance" {
 variable "metrics_instance_type" {
 }
 
+variable "create_efs" {
+  type        = bool
+}
+
 # OpenLDAP variables
 variable "openldap_enabled" {
   description = "Enable OpenLDAP server"

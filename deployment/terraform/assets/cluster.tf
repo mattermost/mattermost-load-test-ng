@@ -24,6 +24,10 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  create_s3_bucket = var.app_instance_count > 1 && var.s3_external_bucket_name == "" && !var.create_efs ? 1 : 0
+}
+
 data "http" "my_public_ip" {
   url = "https://checkip.amazonaws.com"
 }
@@ -93,6 +97,50 @@ resource "aws_instance" "app_server" {
       "chmod +x /tmp/provisioner.sh",
       "/tmp/provisioner.sh",
     ]
+  }
+}
+data "aws_vpc" "selected" {
+  tags = {
+    Name = "Default VPC"
+  }
+}
+
+data "aws_subnets" "lt_selected" {
+  filter {
+    name = "vpc-id"
+    values = [data.aws_vpc.selected.id]
+  }
+
+  tags = {
+    Name = "loadtest*"
+  }
+}
+
+resource "aws_efs_file_system" "efs_shared" {
+  count = var.create_efs ? 1 : 0
+
+  tags = {
+   Name = "${var.cluster_name}-shared-fs"
+  }
+}
+
+resource "aws_efs_mount_target" "efs_mount" {
+  for_each = (var.create_efs ? toset(data.aws_subnets.lt_selected.ids) : toset({}))
+  file_system_id = aws_efs_file_system.efs_shared.0.id
+  subnet_id      = each.value
+  security_groups = [aws_security_group.efs[0].id]
+}
+
+resource "aws_efs_access_point" "shared_dir" {
+  count = var.create_efs ? 1 : 0
+
+  file_system_id = aws_efs_file_system.efs_shared.0.id
+  tags = {
+   Name = "${var.cluster_name}-shared-dir"
+  }
+
+  root_directory {
+    path = "/"
   }
 }
 
@@ -252,17 +300,17 @@ resource "aws_instance" "proxy_server" {
 
 resource "aws_iam_user" "s3user" {
   name  = "${var.cluster_name}-s3user"
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
+  count = local.create_s3_bucket
 }
 
 resource "aws_iam_access_key" "s3key" {
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
+  count = local.create_s3_bucket
 }
 
 resource "aws_s3_bucket" "s3bucket" {
   bucket = "${var.cluster_name}.s3bucket"
-  count  = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
+  count  = local.create_s3_bucket
   tags = {
     Name = "${var.cluster_name}-s3bucket"
   }
@@ -273,7 +321,7 @@ resource "aws_s3_bucket" "s3bucket" {
 resource "aws_iam_user_policy" "s3userpolicy" {
   name  = "${var.cluster_name}-s3userpolicy"
   user  = aws_iam_user.s3user[0].name
-  count = var.app_instance_count > 1 && var.s3_external_bucket_name == "" ? 1 : 0
+  count = local.create_s3_bucket
 
   policy = <<EOF
 {
@@ -893,7 +941,7 @@ locals {
 }
 
 resource "null_resource" "s3_dump" {
-  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "" && var.s3_external_bucket_name == "") ? 1 : 0
+  count = (var.app_instance_count > 1 && var.s3_bucket_dump_uri != "" && var.s3_external_bucket_name == "" && !var.create_efs) ? 1 : 0
 
   provisioner "local-exec" {
     command = "aws ${local.profile_flag} s3 cp ${var.s3_bucket_dump_uri} s3://${aws_s3_bucket.s3bucket[0].id} --recursive"
@@ -997,4 +1045,50 @@ resource "aws_vpc_security_group_ingress_rule" "keycloak_http" {
   to_port           = 8080
   ip_protocol       = "tcp"
   cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_security_group" "efs" {
+  count       = var.create_efs ? 1 : 0
+  name        = "${var.cluster_name}-efs-security-group"
+  description = "EFS security group for loadtest cluster ${var.cluster_name}"
+  vpc_id      = var.cluster_vpc_id
+
+  # Remove the app security group reference from here
+  ingress {
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Or use a more restricted CIDR range for your VPC
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1" # Allow all outbound traffic
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "efs-sg"
+  }
+}
+
+resource "aws_security_group_rule" "efs-from-app" {
+  count                    = var.create_efs && var.app_instance_count > 0 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 2049
+  to_port                  = 2049
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.efs[0].id
+  source_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_security_group_rule" "app-to-efs" {
+  count                    = var.create_efs && var.app_instance_count > 0 ? 1 : 0
+  type                     = "ingress"
+  from_port                = 2049
+  to_port                  = 2049
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.app[0].id
+  source_security_group_id = aws_security_group.efs[0].id
 }

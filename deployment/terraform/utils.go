@@ -298,6 +298,7 @@ func (t *Terraform) getParams() []string {
 		"-var", fmt.Sprintf("mattermost_license_file=%s", t.config.MattermostLicenseFile),
 		"-var", fmt.Sprintf("job_server_instance_count=%d", t.config.JobServerSettings.InstanceCount),
 		"-var", fmt.Sprintf("job_server_instance_type=%s", t.config.JobServerSettings.InstanceType),
+		"-var", fmt.Sprintf("create_efs=%t", t.config.EnableEFS),
 		"-var", fmt.Sprintf("s3_bucket_dump_uri=%s", t.config.S3BucketDumpURI),
 		"-var", fmt.Sprintf("s3_external_bucket_name=%s", t.config.ExternalBucketSettings.AmazonS3Bucket),
 		"-var", fmt.Sprintf("block_device_sizes_agent=%d", t.config.StorageSizes.Agent),
