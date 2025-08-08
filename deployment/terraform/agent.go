@@ -18,7 +18,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-const dstUsersFilePath = "/home/ubuntu/users.txt"
+const dstUsersFilePath = "/home/{{.Username}}/users.txt"
 
 func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 	cfg, err := loadtest.ReadConfig("")
@@ -28,13 +28,18 @@ func (t *Terraform) generateLoadtestAgentConfig() (*loadtest.Config, error) {
 
 	url := getServerURL(t.output, t.config)
 
-	cfg.ConnectionConfiguration.ServerURL = "http://" + url
-	cfg.ConnectionConfiguration.WebSocketURL = "ws://" + url
+	websocketScheme := "ws"
+	if t.config.ServerScheme == "https" {
+		websocketScheme = "wss"
+	}
+
+	cfg.ConnectionConfiguration.ServerURL = url
+	cfg.ConnectionConfiguration.WebSocketURL = strings.Replace(url, t.config.ServerScheme+"://", websocketScheme+"://", 1)
 	cfg.ConnectionConfiguration.AdminEmail = t.config.AdminEmail
 	cfg.ConnectionConfiguration.AdminPassword = t.config.AdminPassword
 
 	if t.config.UsersFilePath != "" {
-		cfg.UsersConfiguration.UsersFilePath = dstUsersFilePath
+		cfg.UsersConfiguration.UsersFilePath = t.ExpandWithUser(dstUsersFilePath)
 	}
 
 	return cfg, nil
@@ -98,7 +103,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		go func() {
 			defer wg.Done()
 
-			sshc, err := extAgent.NewClient(instance.GetConnectionIP())
+			sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 			if err != nil {
 				mlog.Error("error creating ssh client", mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
@@ -106,7 +111,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 			mlog.Info("Configuring agent", mlog.String("ip", instance.GetConnectionIP()), mlog.Int("agent", agentNumber))
 			if uploadBinary {
-				dstFilePath := "/home/ubuntu/tmp.tar.gz"
+				dstFilePath := t.ExpandWithUser("/home/{{.Username}}/tmp.tar.gz")
 				mlog.Info("Uploading binary", mlog.String("file", packagePath), mlog.Int("agent", agentNumber))
 				if out, err := sshc.UploadFile(packagePath, dstFilePath, false); err != nil {
 					mlog.Error("error uploading file", mlog.String("path", packagePath), mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
@@ -131,15 +136,25 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			tplVars := map[string]any{
 				"blockProfileRate": t.config.PyroscopeSettings.BlockProfileRate,
-				"execStart":        baseAPIServerCmd,
+				"execStart":        fmt.Sprintf(baseAPIServerCmd, t.Config().AWSAMIUser),
+				"User":             t.Config().AWSAMIUser,
 			}
 			if t.config.EnableAgentFullLogs {
-				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> /home/ubuntu/ltapi.log'", baseAPIServerCmd)
+				tplVars["execStart"] = fmt.Sprintf("/bin/bash -c '%s &>> %s'", fmt.Sprintf(baseAPIServerCmd, t.Config().AWSAMIUser), t.ExpandWithUser("/home/{{.Username}}/ltapi.log"))
 			}
 			buf := bytes.NewBufferString("")
 			tpl.Execute(buf, tplVars)
 
-			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP())
+			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
+			if err != nil {
+				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
+				foundErr.Store(true)
+				return
+			}
+
+			otelcolConfigFile, err := fillConfigTemplate(otelcolConfig, map[string]any{
+				"User": t.Config().AWSAMIUser,
+			})
 			if err != nil {
 				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
 				foundErr.Store(true)
@@ -151,11 +166,11 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
-				{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
+				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 			}
 
 			if t.config.UsersFilePath != "" {
-				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: dstUsersFilePath, msg: "Uploading list of users credentials"})
+				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: t.ExpandWithUser(dstUsersFilePath), msg: "Uploading list of users credentials"})
 			}
 
 			// If SiteURL is set, update /etc/hosts to point to the correct IP
@@ -190,7 +205,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			}
 
 			mlog.Info("Starting load-test api server", mlog.Int("agent", agentNumber))
-			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo service ltapi restart"); err != nil {
+			if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltapi"); err != nil {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return
@@ -212,7 +227,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 		return errors.New("there are no agents to initialize load-test")
 	}
 	ip := t.output.Agents[0].GetConnectionIP()
-	sshc, err := extAgent.NewClient(ip)
+	sshc, err := extAgent.NewClient(t.Config().AWSAMIUser, ip)
 	if err != nil {
 		return err
 	}
@@ -225,7 +240,7 @@ func (t *Terraform) initLoadtest(extAgent *ssh.ExtAgent, initData bool) error {
 	if err != nil {
 		return err
 	}
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/config.json"
+	dstPath := t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/config.json")
 	mlog.Info("Uploading updated config file")
 	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error uploading file, output: %q: %w", out, err)

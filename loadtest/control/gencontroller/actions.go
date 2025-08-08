@@ -4,6 +4,7 @@
 package gencontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -69,6 +70,62 @@ func (c *GenController) createTeam(u user.User) (res control.UserActionResponse)
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created team %s", id)}
+}
+
+func (c *GenController) createCPAField(u user.User) (res control.UserActionResponse) {
+	if !st.inc(StateTargetCPAFields, c.config.NumCPAFields) {
+		return control.UserActionResponse{Info: "target number of custom profile fields reached"}
+	}
+	defer func() {
+		if res.Err != nil || res.Warn != "" {
+			st.dec(StateTargetCPAFields)
+		}
+	}()
+
+	// Only sysadmin can create CPA fields
+	isSysAdmin, err := u.IsSysAdmin()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	if !isSysAdmin {
+		return control.UserActionResponse{Warn: "not an admin user, unable to create a CPA field"}
+	}
+
+	cpaField := &model.PropertyField{
+		Name: control.PickRandomWord() + "_" + control.PickRandomWord(),
+		Type: model.PropertyFieldTypeText,
+	}
+	field, err := u.CreateCPAField(cpaField)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created CPA field %s", field.ID)}
+}
+
+func (c *GenController) createCPAValues(u user.User) (res control.UserActionResponse) {
+	fields := u.Store().GetCPAFields()
+	if len(fields) == 0 {
+		return control.UserActionResponse{Info: "no CPA Fields returned"}
+	}
+	values := make(map[string]json.RawMessage)
+
+	for _, field := range fields {
+		randomText := control.PickRandomWord()
+		value, err := json.Marshal(randomText)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		values[field.ID] = value
+	}
+
+	err := u.PatchCPAValues(values)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("created CPA values for user %s", u.Store().Id())}
 }
 
 func (c *GenController) createPublicChannel(u user.User) (res control.UserActionResponse) {

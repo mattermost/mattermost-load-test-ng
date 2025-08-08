@@ -39,6 +39,9 @@ type output struct {
 	KeycloakServer struct {
 		Value []Instance `json:"value"`
 	} `json:"keycloakServer"`
+	OpenLDAPServer struct {
+		Value []Instance `json:"value"`
+	} `json:"openldapServer"`
 	KeycloakDatabaseCluster struct {
 		Value []struct {
 			Endpoint          string `json:"endpoint"`
@@ -85,8 +88,10 @@ type Output struct {
 	DBSecurityGroup         []SecurityGroup     `json:"dbSecurityGroup"`
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
+	OpenLDAPServer          Instance            `json:"openldapServer"`
 	RedisServer             RedisInstance       `json:"redisServer"`
 	EFSAccessPoint          EFSAccessPoint      `json:"efsAccessPoint"`
+	AMIUser                 string              `json:"amiUser"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -262,6 +267,10 @@ func (t *Terraform) loadOutput() error {
 		outputv2.KeycloakServer = o.KeycloakServer.Value[0]
 		outputv2.KeycloakServer.SetConnectionType(t.config.ConnectionType)
 	}
+	if len(o.OpenLDAPServer.Value) > 0 {
+		outputv2.OpenLDAPServer = o.OpenLDAPServer.Value[0]
+		outputv2.OpenLDAPServer.SetConnectionType(t.config.ConnectionType)
+	}
 	if len(o.KeycloakDatabaseCluster.Value) > 0 {
 		for _, inst := range o.KeycloakDatabaseCluster.Value {
 			outputv2.KeycloakDatabaseCluster.Instances = append(outputv2.KeycloakDatabaseCluster.Instances, DBInstance{
@@ -365,6 +374,11 @@ func (o *Output) HasKeycloak() bool {
 
 func (o *Output) HasEFS() bool {
 	return o.EFSAccessPoint.Id != "" && o.EFSAccessPoint.FileSystemId != ""
+}
+
+// HasOpenLDAP returns whether a deployment has OpenLDAP installed in it or not.
+func (o *Output) HasOpenLDAP() bool {
+	return o.OpenLDAPServer.GetConnectionIP() != ""
 }
 
 // DBReaders returns the list of db reader endpoints.

@@ -1,10 +1,10 @@
-//go:generate go-bindata -nometadata -mode 0644 -pkg report -o ./bindata.go -prefix "assets/" assets/
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
 package report
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"math"
@@ -18,6 +18,28 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/prometheus/common/model"
 )
+
+//go:embed assets/*
+var assetsFS embed.FS
+
+// Asset returns the content of the embedded file
+func Asset(name string) ([]byte, error) {
+	return assetsFS.ReadFile("assets/" + name)
+}
+
+// MustAsset returns the content of the embedded file and panics on error
+func MustAsset(name string) []byte {
+	data, err := Asset(name)
+	if err != nil {
+		panic("asset: Asset(" + name + "): " + err.Error())
+	}
+	return data
+}
+
+// MustAssetString returns the content of the embedded file as string and panics on error
+func MustAssetString(name string) string {
+	return string(MustAsset(name))
+}
 
 type sortByType int
 

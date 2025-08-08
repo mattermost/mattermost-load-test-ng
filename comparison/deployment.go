@@ -16,7 +16,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConfig *deploymentConfig) error) error {
+func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpID string, dpConfig *deploymentConfig) error) error {
 	var wg sync.WaitGroup
 	wg.Add(len(c.deployments))
 	errsCh := make(chan error, len(c.deployments))
@@ -25,11 +25,11 @@ func (c *Comparison) deploymentAction(action func(t *terraform.Terraform, dpConf
 			defer wg.Done()
 			t, err := terraform.New(id, dp.config)
 			if err != nil {
-				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
+				errsCh <- fmt.Errorf("failed to create terraform engine in deployment with ID %q: %w", id, err)
 				return
 			}
-			if err := action(t, dp); err != nil {
-				errsCh <- fmt.Errorf("deployment action failed: %w", err)
+			if err := action(t, id, dp); err != nil {
+				errsCh <- fmt.Errorf("action in deployment with ID %q failed: %w", id, err)
 			}
 		}(id, dp)
 	}
@@ -62,7 +62,7 @@ func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuil
 	}
 	clients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.GetConnectionIP())
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}

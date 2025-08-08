@@ -1130,11 +1130,10 @@ func TestRandomThread(t *testing.T) {
 		s := newStore(t)
 		id1 := model.NewId()
 		id2 := model.NewId()
-		err := s.SetThreads([]*model.ThreadResponse{
-			{PostId: id1},
-			{PostId: id2},
+		err := s.SetThreads([]*store.ThreadResponseWrapped{
+			{ThreadResponse: model.ThreadResponse{PostId: id1}},
+			{ThreadResponse: model.ThreadResponse{PostId: id2}},
 		})
-		fmt.Println(id1, id2)
 		require.NoError(t, err)
 		th, err := s.RandomThread()
 		require.NoError(t, err)

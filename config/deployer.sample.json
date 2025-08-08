@@ -2,6 +2,7 @@
   "AWSProfile": "mm-loadtest",
   "AWSRegion": "us-east-1",
   "AWSAvailabilityZone": "us-east-1c",
+  "AWSRoleARN": "",
   "AWSAMI": "ami-003d3d03cfe1b0468",
   "ClusterName": "loadtest",
   "ClusterVpcID": "",
@@ -13,6 +14,7 @@
     "Job": [],
     "Keycloak": [],
     "Metrics": [],
+    "OpenLDAP": [],
     "Proxy": [],
     "Redis": []
   },
@@ -20,6 +22,7 @@
   "AppInstanceCount": 1,
   "AppInstanceType": "c7i.xlarge",
   "AppAttachIAMProfile": "",
+  "EnableMetricsInstance": true,
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
@@ -43,6 +46,15 @@
     "ParameterGroupName": "default.redis7",
     "EngineVersion": "7.1"
   },
+  "OpenLDAPSettings": {
+    "Enabled": false,
+    "InstanceType": "t3.medium",
+    "BaseDN": "dc=mm,dc=test,dc=com",
+    "BindUsername": "cn=admin,dc=mm,dc=test,dc=com",
+    "BindPassword": "",
+    "UserFilter": "(objectClass=inetOrgPerson)",
+    "GroupFilter": "(objectClass=groupOfNames)"
+  },
   "JobServerSettings":{
     "InstanceCount": 0,
     "InstanceType": "c7i.xlarge"
@@ -56,6 +68,8 @@
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
   "SiteURL": "",
+  "ServerURL": "",
+  "ServerScheme": "http",
   "EnableNetPeekMetrics": false,
   "TerraformDBSettings": {
     "InstanceCount": 1,
@@ -72,7 +86,7 @@
     "DataSource": "",
     "DataSourceReplicas": [],
     "DataSourceSearchReplicas": [],
-    "ClusterIdentifier": "",
+    "ClusterIdentifier": ""
   },
   "ExternalBucketSettings": {
     "AmazonS3AccessKeyId": "",
@@ -157,7 +171,8 @@
     "App": 10,
     "Metrics": 50,
     "Job": 50,
-    "ElasticSearch": 100
+    "ElasticSearch": 100,
+    "OpenLDAP": 20
   },
   "PyroscopeSettings": {
     "EnableAppProfiling": true,

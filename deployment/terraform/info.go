@@ -16,12 +16,12 @@ func (t *Terraform) Info() error {
 		return err
 	}
 
-	displayInfo(output)
+	displayInfo(*t.GeneratedValues(), output)
 
 	return nil
 }
 
-func displayInfo(output *Output) {
+func displayInfo(genValues GeneratedValues, output *Output) {
 	fmt.Println("==================================================")
 	fmt.Println("Deployment information:")
 
@@ -66,6 +66,9 @@ func displayInfo(output *Output) {
 
 	if output.HasMetrics() {
 		fmt.Println("Grafana URL: http://" + output.MetricsServer.GetConnectionIP() + ":3000")
+		fmt.Println("Grafana credentials:")
+		fmt.Println("  - User: admin")
+		fmt.Println("  - Pass: " + genValues.GrafanaAdminPassword)
 		fmt.Println("Prometheus URL: http://" + output.MetricsServer.GetConnectionIP() + ":9090")
 		fmt.Println("Pyroscope URL: http://" + output.MetricsServer.GetConnectionIP() + ":4040")
 	}
@@ -90,6 +93,11 @@ func displayInfo(output *Output) {
 
 	if output.HasRedis() {
 		fmt.Println("Redis endpoint: ", net.JoinHostPort(output.RedisServer.Address, strconv.Itoa(output.RedisServer.Port)))
+	}
+
+	if output.HasOpenLDAP() {
+		fmt.Println("OpenLDAP server IP: " + output.OpenLDAPServer.GetConnectionIP())
+		fmt.Println("OpenLDAP server URL: ldap://" + output.OpenLDAPServer.GetConnectionDNS() + ":389")
 	}
 	fmt.Println("==================================================")
 }

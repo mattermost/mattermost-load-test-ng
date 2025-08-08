@@ -5,9 +5,10 @@ package memstore
 
 import (
 	"errors"
+	"math/rand"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
-	"math/rand"
 )
 
 var (
@@ -399,6 +400,15 @@ func (s *MemStore) RandomCategory(teamID string) (model.SidebarCategoryWithChann
 	return category, nil
 }
 
+func (s *MemStore) RandomProperty() *model.PropertyField {
+	fields := s.GetCPAFields()
+	if len(fields) > 0 {
+		index := rand.Intn(len(fields))
+		return fields[index]
+	}
+	return nil
+}
+
 func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
 	var def K
 	if len(m) == 0 {
@@ -413,15 +423,15 @@ func pickRandomKeyFromMap[K comparable, V any](m map[K]V) (K, error) {
 }
 
 // RandomThread returns a random post.
-func (s *MemStore) RandomThread() (model.ThreadResponse, error) {
+func (s *MemStore) RandomThread() (store.ThreadResponseWrapped, error) {
 	s.lock.RLock()
 	threads, err := s.getThreads(false)
 	s.lock.RUnlock()
 	if err != nil {
-		return model.ThreadResponse{}, err
+		return store.ThreadResponseWrapped{}, err
 	}
 	if len(threads) == 0 {
-		return model.ThreadResponse{}, ErrThreadNotFound
+		return store.ThreadResponseWrapped{}, ErrThreadNotFound
 	}
 	return *threads[rand.Intn(len(threads))], nil
 }

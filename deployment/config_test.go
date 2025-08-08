@@ -181,6 +181,7 @@ func TestClusterSubnetIDs(t *testing.T) {
 		Keycloak:      []string{},
 		Database:      []string{},
 		Redis:         []string{},
+		OpenLDAP:      []string{},
 	}
 
 	t.Run("String()", func(t *testing.T) {
@@ -190,15 +191,15 @@ func TestClusterSubnetIDs(t *testing.T) {
 		}{
 			{
 				actual:   defaultStruct,
-				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"openldap":null,"database":null,"redis":null}`,
 			},
 			{
 				actual:   emptyStructNilSlices,
-				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"database":null,"redis":null}`,
+				expected: `{"app":null,"job":null,"proxy":null,"agent":null,"elasticsearch":null,"metrics":null,"keycloak":null,"openldap":null,"database":null,"redis":null}`,
 			},
 			{
 				actual:   emptyStructEmptySlices,
-				expected: `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`,
+				expected: `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"openldap":[],"database":[],"redis":[]}`,
 			},
 		}
 
@@ -247,7 +248,7 @@ func TestClusterSubnetIDs(t *testing.T) {
 		cfg := Config{}
 		defaults.Set(&cfg)
 
-		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"database":[],"redis":[]}`
+		expected := `{"app":[],"job":[],"proxy":[],"agent":[],"elasticsearch":[],"metrics":[],"keycloak":[],"openldap":[],"database":[],"redis":[]}`
 		// The bug that prompted this was that we declared String with a
 		// pointer receiver, in which case fmt never calls the String method.
 		// Hence the explicit test to use fmt, and the need to skip the linter

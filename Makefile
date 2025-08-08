@@ -39,13 +39,8 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
-assets: ## Generate the assets. Install go-bindata if needed.
-	go install github.com/kevinburke/go-bindata/go-bindata@v3.23.0
-	go generate ./...
-	go fmt ./...
 
-build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
-
+build: build-linux build-osx ## Build the binary for all platforms.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
@@ -81,13 +76,22 @@ verify-gomod: ## Run go mod verify.
 	$(GO) mod download
 	$(GO) mod verify
 
-check-style: golangci-lint ## Check the style of the code.
+check-style: golangci-lint validate-json-configs ## Check the style of the code.
 
 golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64
 
 	@echo Running golangci-lint
 	$(GOBIN)/golangci-lint run ./...
+
+validate-json-configs:
+	$(GO) run ./scripts/json_validator.go config/config.sample.json
+	$(GO) run ./scripts/json_validator.go config/coordinator.sample.json
+	$(GO) run ./scripts/json_validator.go config/deployer.sample.json
+	$(GO) run ./scripts/json_validator.go config/comparison.sample.json
+	$(GO) run ./scripts/json_validator.go config/gencontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...

@@ -158,7 +158,7 @@ func New(setup Setup, config Config) *UserEntity {
 			"agent":    "other",
 		},
 		ClientID: model.NewId(),
-		Start:    float64(time.Now().UnixMilli()) / 1000,
+		Start:    float64(time.Now().UnixMilli()),
 	})
 
 	return &ue

@@ -4,6 +4,7 @@
 package user
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
@@ -195,6 +196,9 @@ type User interface {
 	GetChannelUnread(channelId string) (*model.ChannelUnread, error)
 	// GetChannelMembers fetches and stores channel members for the specified channel.
 	GetChannelMembers(channelId string, page, perPage int) error
+	// GetAllChannelMembersForUser gets all channel memberships for the
+	// specified user regardless of the team the channels are part of
+	GetAllChannelMembersForUser(userId string) error
 	// GetChannelMembersForUser gets the channel members for the specified user in
 	// the specified team.
 	GetChannelMembersForUser(userId, teamId string) error
@@ -297,9 +301,13 @@ type User interface {
 
 	// Threads
 	// GetUserThreads fetches and stores threads. It returns a list of thread ids.
-	GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error)
+	GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*store.ThreadResponseWrapped, error)
 	// UpdateThreadFollow updates the follow state of the thread
 	UpdateThreadFollow(teamId, threadId string, state bool) error
+	// UpdateThreadLastUpdateAt updates the lastUpdateAt of the given thread
+	// This simply forwards the call to the store, but we use the User interface
+	// because direct access to the store is via the UserStore interface, not MutableUserStore.
+	UpdateThreadLastUpdateAt(threadId string, lastUpdateAt int64) error
 	// GetPostThread gets a post with all the other posts in the same thread.
 	GetPostThreadWithOpts(threadId, etag string, opts model.GetPostsOptions) ([]string, bool, error)
 	// MarkAllThreadsInTeamAsRead marks all threads in a team as read
@@ -350,4 +358,10 @@ type User interface {
 	UpdateScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
 	DeleteScheduledPost(scheduledPost *model.ScheduledPost) error
 	GetTeamScheduledPosts(teamID string) error
+
+	// Custom Profile Attributes
+	GetCPAValues(userId string) (map[string]json.RawMessage, error)
+	PatchCPAValues(values map[string]json.RawMessage) error
+	GetCPAFields() error
+	CreateCPAField(field *model.PropertyField) (*model.PropertyField, error)
 }

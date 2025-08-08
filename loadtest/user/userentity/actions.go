@@ -17,6 +17,7 @@ import (
 	"strconv"
 
 	"github.com/graph-gophers/graphql-go"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -696,6 +697,39 @@ func (ue *UserEntity) GetChannelMembers(channelId string, page, perPage int) err
 	return ue.store.SetChannelMembers(channelMembers)
 }
 
+// GetAllChannelMembersForUser gets all channel memberships for the
+// specified user regardless of the team the channels are part of
+func (ue *UserEntity) GetAllChannelMembersForUser(userId string) error {
+	page := 0
+	perPage := 200
+	for {
+		// Get perPage members from /users/$user_id/channel_members
+		membersWithTeamData, _, err := ue.client.GetChannelMembersWithTeamData(context.Background(), userId, page, perPage)
+		if err != nil {
+			return err
+		}
+
+		// Retrieve the embedded ChannelMember struct, we don't store the team data
+		plainMembers := make(model.ChannelMembers, len(membersWithTeamData))
+		for i, memberWithTeamData := range membersWithTeamData {
+			plainMembers[i] = memberWithTeamData.ChannelMember
+		}
+
+		// Set the slice of members we got
+		if err := ue.store.SetChannelMembers(plainMembers); err != nil {
+			return err
+		}
+
+		// Stop when we get to the last page
+		if len(membersWithTeamData) < perPage {
+			return nil
+		}
+
+		page++
+	}
+
+}
+
 // GetChannelMembersForUser gets the channel members for the specified user in
 // the specified team.
 func (ue *UserEntity) GetChannelMembersForUser(userId, teamId string) error {
@@ -1362,7 +1396,7 @@ func (ue *UserEntity) MessageExport() error {
 
 // GetPostsAfter fetches and stores posts in a given channelId that were made after
 // a given postId.
-func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*model.ThreadResponse, error) {
+func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThreadsOpts) ([]*store.ThreadResponseWrapped, error) {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return nil, err
@@ -1372,10 +1406,17 @@ func (ue *UserEntity) GetUserThreads(teamId string, options *model.GetUserThread
 		return nil, err
 	}
 
-	return threads.Threads, ue.store.SetThreads(threads.Threads)
+	tWrapped := make([]*store.ThreadResponseWrapped, len(threads.Threads))
+	for i := range threads.Threads {
+		tWrapped[i] = &store.ThreadResponseWrapped{
+			ThreadResponse: *threads.Threads[i],
+		}
+	}
+
+	return tWrapped, ue.store.SetThreads(tWrapped)
 }
 
-// UpdateThreadFollow updates the follow state of the the given thread
+// UpdateThreadFollow updates the follow state of the given thread
 func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
@@ -1383,6 +1424,11 @@ func (ue *UserEntity) UpdateThreadFollow(teamId, threadId string, state bool) er
 	}
 	_, err = ue.client.UpdateThreadFollowForUser(context.Background(), user.Id, teamId, threadId, state)
 	return err
+}
+
+// UpdateThreadLastUpdateAt updates the lastUpdateAt of the given thread
+func (ue *UserEntity) UpdateThreadLastUpdateAt(threadId string, lastUpdateAt int64) error {
+	return ue.store.SetThreadLastUpdateAt(threadId, lastUpdateAt)
 }
 
 // GetPostThread gets a post with all the other posts in the same thread.
@@ -1429,7 +1475,13 @@ func (ue *UserEntity) UpdateThreadRead(teamId, threadId string, timestamp int64)
 	if err != nil {
 		return err
 	}
-	return ue.store.SetThreads([]*model.ThreadResponse{thread})
+
+	tWrapped := make([]*store.ThreadResponseWrapped, 1)
+	tWrapped[0] = &store.ThreadResponseWrapped{
+		ThreadResponse: *thread,
+	}
+
+	return ue.store.SetThreads(tWrapped)
 }
 
 // GetSidebarCategories fetches and stores the sidebar categories for an user.

@@ -50,8 +50,10 @@ func TestGetServerURL(t *testing.T) {
 					PublicIP: "localhost",
 				}},
 			},
-			config:   &deployment.Config{},
-			expected: "localhost:8065",
+			config: &deployment.Config{
+				ServerScheme: "http",
+			},
+			expected: "http://localhost:8065",
 		}, {
 			name: "proxy, no siteurl",
 			output: &Output{
@@ -62,8 +64,10 @@ func TestGetServerURL(t *testing.T) {
 					PrivateIP: "proxy_ip",
 				}},
 			},
-			config:   &deployment.Config{},
-			expected: "proxy_ip",
+			config: &deployment.Config{
+				ServerScheme: "http",
+			},
+			expected: "http://proxy_ip",
 		}, {
 			name: "no proxy, siteurl",
 			output: &Output{
@@ -72,9 +76,10 @@ func TestGetServerURL(t *testing.T) {
 				}},
 			},
 			config: &deployment.Config{
-				SiteURL: "ltserver",
+				SiteURL:      "ltserver",
+				ServerScheme: "http",
 			},
-			expected: "ltserver:8065",
+			expected: "http://ltserver:8065",
 		}, {
 			name: "proxy, siteurl",
 			output: &Output{
@@ -86,9 +91,10 @@ func TestGetServerURL(t *testing.T) {
 				}},
 			},
 			config: &deployment.Config{
-				SiteURL: "ltserver",
+				SiteURL:      "ltserver",
+				ServerScheme: "http",
 			},
-			expected: "ltserver",
+			expected: "http://ltserver",
 		}, {
 			name: "serverurl takes priority",
 			output: &Output{
@@ -100,10 +106,23 @@ func TestGetServerURL(t *testing.T) {
 				}},
 			},
 			config: &deployment.Config{
-				SiteURL:   "siteurl",
-				ServerURL: "serverurl",
+				SiteURL:      "siteurl",
+				ServerURL:    "serverurl",
+				ServerScheme: "http",
 			},
-			expected: "serverurl",
+			expected: "http://serverurl",
+		}, {
+			name: "https is supported",
+			output: &Output{
+				Instances: []Instance{{
+					PrivateIP: "localhost",
+				}},
+			},
+			config: &deployment.Config{
+				SiteURL:      "ltserver",
+				ServerScheme: "https",
+			},
+			expected: "https://ltserver:8065",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

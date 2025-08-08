@@ -52,10 +52,9 @@ resource "aws_instance" "app_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami                  = var.aws_ami
@@ -78,11 +77,26 @@ resource "aws_instance" "app_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/app.sh"
+    destination = "/tmp/provisioner.sh"
   }
 
   provisioner "remote-exec" {
-    script = "provisioners/app.sh"
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
   }
 }
 data "aws_vpc" "selected" {
@@ -179,7 +193,6 @@ data "aws_iam_policy_document" "metrics_policy_document" {
   }
 }
 
-
 resource "aws_iam_role_policy" "metrics_policy" {
   name   = "${var.cluster_name}-metrics-policy"
   role   = aws_iam_role.metrics_role.name
@@ -192,15 +205,14 @@ resource "aws_instance" "metrics_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
   instance_type     = var.metrics_instance_type
-  count             = var.app_instance_count > 0 ? 1 : 0
+  count             = var.enable_metrics_instance ? 1 : 0
   key_name          = aws_key_pair.key.id
   availability_zone = var.aws_az
   subnet_id         = (length(var.cluster_subnet_ids.metrics) > 0) ? element(tolist(var.cluster_subnet_ids.metrics), count.index) : null
@@ -216,9 +228,25 @@ resource "aws_instance" "metrics_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/metrics.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/metrics.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_instance" "proxy_server" {
@@ -244,15 +272,30 @@ resource "aws_instance" "proxy_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
+    user = var.aws_ami_user
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/proxy.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/proxy.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_iam_user" "s3user" {
@@ -407,8 +450,8 @@ resource "aws_instance" "loadtest_agent" {
 
   connection {
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami           = var.aws_ami
@@ -427,9 +470,25 @@ resource "aws_instance" "loadtest_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "remote-exec" {
-    script = "provisioners/agent.sh"
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
   }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/agent.sh"
+    destination = "/tmp/provisioner.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
+  }
+
 }
 
 resource "aws_security_group" "app" {
@@ -437,46 +496,69 @@ resource "aws_security_group" "app" {
   name        = "${var.cluster_name}-app-security-group"
   description = "App security group for loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
-  }
-  ingress {
-    from_port   = 8065
-    to_port     = 8065
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port = 8067
-    to_port   = 8067
-    protocol  = "tcp"
-    # Maybe restrict only from Prometheus server ?
-    # But handy while taking profiles without manually ssh-ing into the server.
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port       = 9100
-    to_port         = 9100
-    protocol        = "tcp"
-    security_groups = [aws_security_group.metrics[0].id]
-  }
-  # netpeek metrics
-  ingress {
-    from_port       = 9045
-    to_port         = 9045
-    protocol        = "tcp"
-    security_groups = [aws_security_group.metrics[0].id]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "app_ssh_public" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.app[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.public_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_ssh_private" {
+  count             = var.app_instance_count > 0 && local.private_ip != "" ? 1 : 0
+  security_group_id = aws_security_group.app[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_web" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.app[0].id
+  from_port         = 8065
+  to_port           = 8065
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_metrics" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.app[0].id
+  from_port         = 8067
+  to_port           = 8067
+  ip_protocol       = "tcp"
+  # Maybe restrict only from Prometheus server ?
+  # But handy while taking profiles without manually ssh-ing into the server.
+  cidr_ipv4 = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_nodeexporter" {
+  count                        = var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.app[0].id
+  from_port                    = 9100
+  to_port                      = 9100
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_netpeek" {
+  count                        = var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.app[0].id
+  from_port                    = 9045
+  to_port                      = 9045
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_egress" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.app[0].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_security_group" "app_gossip" {
@@ -484,37 +566,49 @@ resource "aws_security_group" "app_gossip" {
   name        = "${var.cluster_name}-app-security-group-gossip"
   description = "App security group for gossip loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
+}
 
-  ingress {
-    from_port       = 8074
-    to_port         = 8074
-    protocol        = "udp"
-    security_groups = [aws_security_group.app[0].id]
-  }
-  ingress {
-    from_port       = 8074
-    to_port         = 8074
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id]
-  }
-  ingress {
-    from_port       = 8075
-    to_port         = 8075
-    protocol        = "udp"
-    security_groups = [aws_security_group.app[0].id]
-  }
-  ingress {
-    from_port       = 8075
-    to_port         = 8075
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "app_gossip_8074_udp" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.app_gossip[0].id
+  from_port                    = 8074
+  to_port                      = 8074
+  ip_protocol                  = "udp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_gossip_8074_tcp" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.app_gossip[0].id
+  from_port                    = 8074
+  to_port                      = 8074
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_gossip_8075_udp" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.app_gossip[0].id
+  from_port                    = 8075
+  to_port                      = 8075
+  ip_protocol                  = "udp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_gossip_8075_tcp" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.app_gossip[0].id
+  from_port                    = 8075
+  to_port                      = 8075
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_gossip_egress" {
+  count             = var.app_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.app_gossip[0].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 
@@ -522,20 +616,24 @@ resource "aws_security_group" "db" {
   count  = var.app_instance_count > 0 ? 1 : 0
   name   = "${var.cluster_name}-db-security-group"
   vpc_id = var.cluster_vpc_id
+}
 
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id]
-  }
+resource "aws_vpc_security_group_ingress_rule" "db_msyql" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.db[0].id
+  from_port                    = 3306
+  to_port                      = 3306
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
 
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id]
-  }
+resource "aws_vpc_security_group_ingress_rule" "db_postgres" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.db[0].id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
 }
 
 resource "aws_security_group" "agent" {
@@ -544,128 +642,130 @@ resource "aws_security_group" "agent" {
   vpc_id      = var.cluster_vpc_id
 }
 
-resource "aws_security_group_rule" "agent-ssh" {
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "agent_ssh_public" {
+  security_group_id = aws_security_group.agent.id
   from_port         = 22
   to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks       = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
-  security_group_id = aws_security_group.agent.id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.public_ip}/32"
 }
 
-resource "aws_security_group_rule" "agent-api" {
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "agent_ssh_private" {
+  count             = local.private_ip != "" ? 1 : 0
+  security_group_id = aws_security_group.agent.id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "agent_api" {
+  security_group_id = aws_security_group.agent.id
   from_port         = 4000
   to_port           = 4000
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "agent_egress" {
   security_group_id = aws_security_group.agent.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_security_group_rule" "agent-egress" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.agent.id
+resource "aws_vpc_security_group_ingress_rule" "agent_metrics-to-prometheus" {
+  count                        = var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.agent.id
+  from_port                    = 4000
+  to_port                      = 4000
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
 }
 
-resource "aws_security_group_rule" "agent-metrics-to-prometheus" {
-  count                    = var.app_instance_count > 0 ? 1 : 0
-  type                     = "ingress"
-  from_port                = 4000
-  to_port                  = 4000
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.agent.id
-  source_security_group_id = aws_security_group.metrics[0].id
-}
-
-resource "aws_security_group_rule" "agent-node-exporter" {
-  count                    = var.app_instance_count > 0 ? 1 : 0
-  type                     = "ingress"
-  from_port                = 9100
-  to_port                  = 9100
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.agent.id
-  source_security_group_id = aws_security_group.metrics[0].id
+resource "aws_vpc_security_group_ingress_rule" "agent-node-exporter" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.agent.id
+  from_port                    = 9100
+  to_port                      = 9100
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
 }
 
 resource "aws_security_group" "metrics" {
-  count  = var.app_instance_count > 0 ? 1 : 0
+  count  = var.enable_metrics_instance ? 1 : 0
   name   = "${var.cluster_name}-metrics-security-group"
   vpc_id = var.cluster_vpc_id
 }
 
-resource "aws_security_group_rule" "metrics-ssh" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_ssh_publicip" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 22
   to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks       = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.public_ip}/32"
 }
 
-resource "aws_security_group_rule" "metrics-prometheus" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_ssh_privateip" {
+  count             = var.enable_metrics_instance && local.private_ip != "" ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "metrics_prometheus" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 9090
   to_port           = 9090
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 
-resource "aws_security_group_rule" "metrics-cloudwatchexporter" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_cloudwatchexporter" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 9106
   to_port           = 9106
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_security_group_rule" "metrics-grafana" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_grafana" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 3000
   to_port           = 3000
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_security_group_rule" "metrics-pyroscope" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_pyroscope" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 4040
   to_port           = 4040
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_security_group_rule" "metrics-loki" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "ingress"
+resource "aws_vpc_security_group_ingress_rule" "metrics_loki" {
+  count             = var.enable_metrics_instance ? 1 : 0
+  security_group_id = aws_security_group.metrics[0].id
   from_port         = 3100
   to_port           = 3100
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
-resource "aws_security_group_rule" "metrics-egress" {
-  count             = var.app_instance_count > 0 ? 1 : 0
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
+resource "aws_vpc_security_group_egress_rule" "metrics_egress" {
+  count             = var.enable_metrics_instance ? 1 : 0
   security_group_id = aws_security_group.metrics[0].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_security_group" "redis" {
@@ -673,14 +773,26 @@ resource "aws_security_group" "redis" {
   description = "Security group for redis instance"
   vpc_id      = var.cluster_vpc_id
 
-  ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
-  }
-
   count = var.redis_enabled ? 1 : 0
+}
+
+
+resource "aws_vpc_security_group_ingress_rule" "redis_app" {
+  count                        = var.redis_enabled ? 1 : 0
+  security_group_id            = aws_security_group.redis[0].id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_metrics" {
+  count                        = var.redis_enabled && var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.redis[0].id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
 }
 
 resource "aws_security_group" "elastic" {
@@ -688,26 +800,37 @@ resource "aws_security_group" "elastic" {
   description = "Security group for elastic instance"
   vpc_id      = var.cluster_vpc_id
 
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app[0].id, aws_security_group.metrics[0].id]
-  }
-
   count = var.es_instance_count > 0 ? 1 : 0
 }
 
+resource "aws_vpc_security_group_ingress_rule" "elastic_app" {
+  count                        = var.es_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.elastic[0].id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "elastic_metrics" {
+  count                        = var.es_instance_count > 0 && var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.elastic[0].id
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
+}
+
+
 # We need a separate security group rule to prevent cyclic dependency between
 # the app group and metrics group.
-resource "aws_security_group_rule" "app-to-inbucket" {
-  count                    = var.app_instance_count > 0 ? 1 : 0
-  type                     = "ingress"
-  from_port                = 2500
-  to_port                  = 2500
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.metrics[0].id
-  source_security_group_id = aws_security_group.app[0].id
+resource "aws_vpc_security_group_ingress_rule" "app_to-inbucket" {
+  count                        = var.app_instance_count > 0 ? 1 : 0
+  security_group_id            = aws_security_group.metrics[0].id
+  from_port                    = 2500
+  to_port                      = 2500
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app[0].id
 }
 
 resource "aws_security_group" "proxy" {
@@ -715,34 +838,49 @@ resource "aws_security_group" "proxy" {
   name        = "${var.cluster_name}-proxy-security-group"
   description = "Proxy security group for loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
+}
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "proxy_web" {
+  count             = var.proxy_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.proxy[0].id
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "proxy_ssh_publicip" {
+  count             = var.proxy_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.proxy[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.public_ip}/32"
+}
 
-  ingress {
-    from_port       = 9100
-    to_port         = 9100
-    protocol        = "tcp"
-    security_groups = [aws_security_group.metrics[0].id]
-  }
+resource "aws_vpc_security_group_ingress_rule" "proxy_ssh_privateip" {
+  count             = var.proxy_instance_count > 0 && local.private_ip != "" ? 1 : 0
+  security_group_id = aws_security_group.proxy[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "proxy_metrics" {
+  count                        = var.proxy_instance_count > 0 && var.enable_metrics_instance ? 1 : 0
+  security_group_id            = aws_security_group.proxy[0].id
+  from_port                    = 9100
+  to_port                      = 9100
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.metrics[0].id
+}
+
+resource "aws_vpc_security_group_egress_rule" "proxy_egress" {
+  count             = var.proxy_instance_count > 0 ? 1 : 0
+  security_group_id = aws_security_group.proxy[0].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_instance" "job_server" {
@@ -751,10 +889,9 @@ resource "aws_instance" "job_server" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
@@ -775,11 +912,27 @@ resource "aws_instance" "job_server" {
 
   provisioner "file" {
     source      = var.mattermost_license_file
-    destination = "/home/ubuntu/mattermost.mattermost-license"
+    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
+  }
+
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/job.sh"
+    destination = "/tmp/provisioner.sh"
   }
 
   provisioner "remote-exec" {
-    script = "provisioners/job.sh"
+    inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
+      "chmod +x /tmp/provisioner.sh",
+      "/tmp/provisioner.sh",
+    ]
   }
 }
 
@@ -802,10 +955,9 @@ resource "aws_instance" "keycloak" {
   }
 
   connection {
-    # The default username for our AMI
     type = "ssh"
-    user = "ubuntu"
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
+    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
@@ -825,14 +977,21 @@ resource "aws_instance" "keycloak" {
   }
 
   provisioner "file" {
-    source      = "provisioners/keycloak.sh"
+    source      = "provisioners/${var.operating_system_kind}/common.sh"
+    destination = "/tmp/common.sh"
+  }
+
+  provisioner "file" {
+    source      = "provisioners/${var.operating_system_kind}/keycloak.sh"
     destination = "/tmp/provisioner.sh"
   }
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp",
+      "chmod +x /tmp/common.sh",
       "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh ${var.keycloak_version}",
+      "/tmp/provisioner.sh",
     ]
   }
 }
@@ -843,34 +1002,49 @@ resource "aws_security_group" "keycloak" {
   description = "KeyCloak security group for loadtest cluster ${var.cluster_name}"
   vpc_id      = var.cluster_vpc_id
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+}
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = local.private_ip != "" ? ["${local.public_ip}/32", "${local.private_ip}/32"] : ["${local.public_ip}/32"]
-  }
+resource "aws_vpc_security_group_egress_rule" "keycloak_egress" {
+  count             = var.keycloak_enabled ? 1 : 0
+  security_group_id = aws_security_group.keycloak[0].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
 
-  // To access keycloak
-  ingress {
-    from_port   = 8443
-    to_port     = 8443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "keycloak_ssh_publicip" {
+  count             = var.keycloak_enabled ? 1 : 0
+  security_group_id = aws_security_group.keycloak[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.public_ip}/32"
+}
 
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "keycloak_ssh_privateip" {
+  count             = var.keycloak_enabled && local.private_ip != "" ? 1 : 0
+  security_group_id = aws_security_group.keycloak[0].id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${local.private_ip}/32"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "keycloak_https" {
+  count             = var.keycloak_enabled ? 1 : 0
+  security_group_id = aws_security_group.keycloak[0].id
+  from_port         = 8443
+  to_port           = 8443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "keycloak_http" {
+  count             = var.keycloak_enabled ? 1 : 0
+  security_group_id = aws_security_group.keycloak[0].id
+  from_port         = 8080
+  to_port           = 8080
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
 }
 
 resource "aws_security_group" "efs" {

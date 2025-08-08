@@ -13,6 +13,7 @@ variable "cluster_subnet_ids" {
     elasticsearch = list(string)
     metrics = list(string)
     keycloak = list(string)
+    openldap = list(string)
     database = list(string)
     redis = list(string)
   })
@@ -20,6 +21,12 @@ variable "cluster_subnet_ids" {
 
 variable "connection_type" {
 }
+
+# Provisioner variables
+variable "operating_system_kind" {
+}
+
+# App variables
 
 variable "app_attach_iam_profile" {
 }
@@ -211,6 +218,9 @@ variable "aws_region" {
 variable "aws_ami" {
 }
 
+variable "aws_ami_user" {
+}
+
 variable "custom_tags" {
   type = map(string)
 }
@@ -218,9 +228,32 @@ variable "custom_tags" {
 variable "aws_az" {
 }
 
+variable "enable_metrics_instance" {
+  type = bool
+}
+
 variable "metrics_instance_type" {
 }
 
 variable "create_efs" {
   type        = bool
+}
+
+# OpenLDAP variables
+variable "openldap_enabled" {
+  description = "Enable OpenLDAP server"
+  type        = bool
+  default     = false
+}
+
+variable "openldap_instance_type" {
+  description = "Instance type for OpenLDAP server"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "block_device_sizes_openldap" {
+  description = "Block device size for OpenLDAP server"
+  type        = number
+  default     = 20
 }

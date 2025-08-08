@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
 package terraform
 
 import (
@@ -27,7 +30,7 @@ WantedBy=multi-user.target
 
 func (t *Terraform) setupEFS(extAgent *ssh.ExtAgent) error {
 	for _, val := range t.output.Instances {
-		sshc, err := extAgent.NewClient(val.GetConnectionIP())
+		sshc, err := extAgent.NewClient(t.output.AMIUser, val.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}

@@ -24,6 +24,8 @@ var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
 type Config struct {
 	// AWSProfile is the optional name of the AWS profile to use for all AWS commands
 	AWSProfile string `default:""`
+	// AWSRoleARN is the optional ARN of an IAM role to assume for AWS operations
+	AWSRoleARN string `default:""`
 	// AWSRegion is the region used to deploy all resources.
 	AWSRegion string `default:"us-east-1"`
 	// AWSAvailabilityZone defines the Availability Zone
@@ -31,6 +33,10 @@ type Config struct {
 	AWSAvailabilityZone string `default:"us-east-1c"`
 	// AWSAMI is the AMI to use for all EC2 instances.
 	AWSAMI string `default:"ami-0fa37863afb290840"`
+	// OperatingSystem
+	OperatingSystemKind string `default:"debian" validate:"oneof:{debian,rhel}"`
+	// AWSAMIUser is the user to use when connecting to the AMI.
+	AWSAMIUser string `default:"ubuntu"`
 	// ClusterName is the name of the cluster.
 	ClusterName string `default:"loadtest" validate:"alpha"`
 	// ClusterVpcID is the id of the VPC associated to the resources.
@@ -45,6 +51,8 @@ type Config struct {
 	AppInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// IAM role to attach to the app servers
 	AppAttachIAMProfile string `default:""`
+	// EnableMetricsInstance enables deploying a metrics instance
+	EnableMetricsInstance bool `default:"true"`
 	// Type of the EC2 instance for metrics.
 	MetricsInstanceType string `default:"t3.xlarge" validate:"notempty"`
 	// Number of agents, first agent and coordinator will share the same instance.
@@ -94,6 +102,7 @@ type Config struct {
 	LoadTestDownloadURL   string `default:"https://latest.mattermost.com/mattermost-load-test-ng-linux" validate:"url"`
 	ElasticSearchSettings ElasticSearchSettings
 	RedisSettings         RedisSettings
+	OpenLDAPSettings      OpenLDAPSettings
 	JobServerSettings     JobServerSettings
 	LogSettings           logger.Settings
 	Report                report.Config
@@ -123,6 +132,8 @@ type Config struct {
 	// Mattermost servers. This is used to override the server URL in the agent's config in case there's a
 	// proxy in front of the Mattermost server.
 	ServerURL string `default:""`
+	// ServerScheme is the scheme to use when connecting to the Mattermost server.
+	ServerScheme string `default:"http" validate:"oneof:{http,https}"`
 	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
@@ -159,6 +170,7 @@ type ClusterSubnetIDs struct {
 	ElasticSearch []string `default_size:"0" json:"elasticsearch"`
 	Metrics       []string `default_size:"0" json:"metrics"`
 	Keycloak      []string `default_size:"0" json:"keycloak"`
+	OpenLDAP      []string `default_size:"0" json:"openldap"`
 	Database      []string `default_size:"0" json:"database"`
 	Redis         []string `default_size:"0" json:"redis"`
 }
@@ -209,6 +221,8 @@ type StorageSizes struct {
 	ElasticSearch int `default:"100"`
 	// Size, in GiB, for the storage of the keycloak instances
 	KeyCloak int `default:"10"`
+	// Size, in GiB, for the storage of the openldap instances
+	OpenLDAP int `default:"20"`
 }
 
 // PyroscopeSettings contains flags to enable/disable the profiling
@@ -359,6 +373,23 @@ type RedisSettings struct {
 	EngineVersion string `default:"7.1"`
 }
 
+type OpenLDAPSettings struct {
+	// Enabled indicates whether to add OpenLDAP or not.
+	Enabled bool
+	// InstanceType indicates the instance type.
+	InstanceType string `default:"t3.medium"`
+	// BaseDN is the base distinguished name for LDAP searches.
+	BaseDN string `default:"dc=mm,dc=test,dc=com"`
+	// BindUsername is the username to bind to the LDAP server.
+	BindUsername string `default:"cn=admin,dc=mm,dc=test,dc=com"`
+	// BindPassword is the password to bind to the LDAP server.
+	BindPassword string `default:""`
+	// UserFilter is the LDAP filter for user searches.
+	UserFilter string `default:"(objectClass=inetOrgPerson)"`
+	// GroupFilter is the LDAP filter for group searches.
+	GroupFilter string `default:"(objectClass=groupOfNames)"`
+}
+
 // JobServerSettings contains the necessary data to deploy a job
 // server.
 type JobServerSettings struct {
@@ -499,4 +530,21 @@ func ReadConfig(configFilePath string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// MarkForDestroyAllButMetrics overrides all created resources setting their instance
+// counts to 0 or their enable flags to false, so that everything is destroyed
+// in the next Create except for the metrics instance and related resources.
+// Note that this list should be kept up-to-date when new resources are added
+// to the Terraform files.
+func (c *Config) MarkForDestroyAllButMetrics() {
+	c.AppInstanceCount = 0
+	c.ProxyInstanceCount = 0
+	c.AgentInstanceCount = 0
+	c.TerraformDBSettings.InstanceCount = 0
+	c.ElasticSearchSettings.InstanceCount = 0
+	c.RedisSettings.Enabled = false
+	c.JobServerSettings.InstanceCount = 0
+	c.ExternalAuthProviderSettings.Enabled = false
+	c.OpenLDAPSettings.Enabled = false
 }

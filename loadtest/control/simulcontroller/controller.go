@@ -149,6 +149,12 @@ func getActionList(c *SimulController) []userAction {
 			minServerVersion: control.MinSupportedVersion, // 5.26.0
 		},
 		{
+			name:             "UpdateCustomAttribute",
+			run:              c.updateCustomAttribute,
+			frequency:        0.0040,
+			minServerVersion: semver.MustParse("10.9.0"),
+		},
+		{
 			name:             "SearchGroupChannels",
 			run:              searchGroupChannels,
 			frequency:        0.0204,
@@ -405,23 +411,13 @@ func (c *SimulController) Run() {
 	}()
 
 	// Init controller's server version
-	serverVersionString, err := c.user.Store().ServerVersion()
-	if err != nil {
-		c.sendFailStatus("server version could not be retrieved")
-		return
-	}
-	serverVersion, err := control.ParseServerVersion(serverVersionString)
-	if err != nil {
-		c.sendFailStatus("server version could not be parsed")
-		return
-	}
-	c.serverVersion = serverVersion
+	c.serverVersion = c.user.Store().ServerVersion()
 
 	// Early check that the server version is greater or equal than the initialVersion
 	if !c.isVersionSupported(control.MinSupportedVersion) {
 		c.sendFailStatus(fmt.Sprintf(
 			"server version %q is lower than the minimum supported version %q",
-			serverVersion.String(),
+			c.serverVersion.String(),
 			control.MinSupportedVersion.String(),
 		))
 		return
@@ -458,6 +454,7 @@ func (c *SimulController) Run() {
 	}
 
 	var action *userAction
+	var err error
 
 	// Filter only actions that are available for the current server
 	var supportedActions []userAction

@@ -234,10 +234,15 @@ func DestroyComparisonCmdF(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read comparison config: %w", err)
 	}
 
+	maintainMetrics, err := cmd.Flags().GetBool("do-not-destroy-metrics-instance")
+	if err != nil {
+		return fmt.Errorf("failed getting the --do-not-destroy-metrics-instance flag: %w", err)
+	}
+
 	cmp, err := comparison.New(cfg, &deployerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize comparison object: %w", err)
 	}
 
-	return cmp.Destroy()
+	return cmp.Destroy(maintainMetrics)
 }

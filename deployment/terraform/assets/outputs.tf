@@ -18,6 +18,10 @@ output "keycloakServer" {
   value = aws_instance.keycloak
 }
 
+output "openldapServer" {
+  value = aws_instance.openldap
+}
+
 output "proxy" {
   value = aws_instance.proxy_server
 }
@@ -55,6 +59,11 @@ output "jobServers" {
 output "efsAccessPoint" {
   value = aws_efs_access_point.shared_dir
 }
+
 output "efsFileSystem" {
   value = aws_efs_file_system.efs_shared[*]
+}
+
+output "amiUser" {
+  value = var.aws_ami_user
 }
