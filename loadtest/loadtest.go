@@ -319,7 +319,7 @@ func New(config *Config, nc NewController, log *mlog.Logger, isBrowserAgent bool
 
 	return &LoadTester{
 		config:            config,
-		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		statusChan:        make(chan control.UserStatus, (config.UsersConfiguration.MaxActiveUsers + config.UsersConfiguration.MaxActiveBrowserUsers)),
 		newController:     nc,
 		status:            Status{},
 		activeControllers: make([]control.UserController, 0),
