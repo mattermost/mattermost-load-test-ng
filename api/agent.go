@@ -349,6 +349,9 @@ func getServerVersion(serverURL string) (string, error) {
 // a new UserController.
 func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics, isBrowserAgentInstance bool) (loadtest.NewController, error) {
 	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
+	if isBrowserAgentInstance {
+		maxHTTPconns = loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveBrowserUsers)
+	}
 
 	// http.Transport to be shared amongst all clients.
 	transport := &http.Transport{
