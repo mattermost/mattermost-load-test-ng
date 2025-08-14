@@ -12,13 +12,14 @@ install-dependencies:
 
 install-playwright: install-dependencies
 	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
-		echo "Installing Playwright Headless Chromium browser of LTBrowser app"; \
-		$(BIN)/playwright install --with-deps --only-shell chromium; \
+		echo "Installing headless Playwright Chromium browser of LTBrowser app"; \
+		$(BIN)/playwright install --with-deps --no-shell chromium; \
+		echo "Successfully installed headless Playwright Chromium browser of LTBrowser app"; \
 	else \
-		echo "Installing Playwright Chromium browser of LTBrowser app"; \
+		echo "Installing headed Playwright Chromium browser of LTBrowser app"; \
 		$(BIN)/playwright install --with-deps chromium; \
+		echo "Successfully installed headed Playwright Chromium browser of LTBrowser app"; \
 	fi
-	@echo "Successfully installed browser binaries in node_modules/playwright-core/.local-browsers of LTBrowser app"
 
 ## Install npm dependencies and Playwright Chromium browser with its dependencies
 install: install-dependencies install-playwright
