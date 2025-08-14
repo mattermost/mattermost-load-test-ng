@@ -1,7 +1,6 @@
 .PHONY: clean install build start dev dev-watch schema help
 
 # Environment variables
-export PLAYWRIGHT_HEADLESS_ONLY ?= true
 export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
@@ -11,15 +10,9 @@ install-dependencies:
 	@echo "Successfully installed node_modules of LTBrowser app"
 
 install-playwright: install-dependencies
-	@if [ "$(PLAYWRIGHT_HEADLESS_ONLY)" = "true" ]; then \
-		echo "Installing headless Playwright Chromium browser of LTBrowser app"; \
-		$(BIN)/playwright install --with-deps --no-shell chromium; \
-		echo "Successfully installed headless Playwright Chromium browser of LTBrowser app"; \
-	else \
-		echo "Installing headed Playwright Chromium browser of LTBrowser app"; \
-		$(BIN)/playwright install --with-deps chromium; \
-		echo "Successfully installed headed Playwright Chromium browser of LTBrowser app"; \
-	fi
+	@echo "Installing Playwright Chromium browser of LTBrowser app"
+	$(BIN)/playwright install --with-deps chromium
+	@echo "Successfully installed Playwright Chromium browser of LTBrowser app"
 
 ## Install npm dependencies and Playwright Chromium browser with its dependencies
 install: install-dependencies install-playwright
