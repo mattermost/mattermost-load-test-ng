@@ -28,6 +28,13 @@ FileJson = true
 FileLevel = 'INFO'
 FileLocation = 'ltagent.log'
 
+[BrowserLogSettings]
+EnableConsole = true
+ConsoleLevel = 'debug'
+EnableFile = true
+FileLevel = 'debug'
+FileLocation = 'browseragent.log'
+
 [UserControllerConfiguration]
 ServerVersion = ''
 Type = 'simulative'
@@ -56,5 +63,9 @@ Rate = 30.0
 AvgSessionsPerUser = 1.0
 InitialActiveUsers = 0.0
 MaxActiveUsers = 2000.0
+MaxActiveBrowserUsers = 15.0
 PercentOfUsersAreAdmin = 0.0005
 UsersFilePath = ''
+
+[BrowserConfiguration]
+Headless = true

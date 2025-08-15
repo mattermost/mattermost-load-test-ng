@@ -49,6 +49,7 @@
     "InitialActiveUsers": 0,
     "UsersFilePath": "",
     "MaxActiveUsers": 2000,
+    "MaxActiveBrowserUsers": 15,
     "AvgSessionsPerUser": 1,
     "PercentOfUsersAreAdmin": 0.0005
   },
