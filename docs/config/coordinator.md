@@ -46,7 +46,7 @@ The URL to the load-test API server that will run the agent. Since this is an ag
 
 *int*
 
-The maximum number of concurrently active browser users to be run across the entire load-agent cluster. Note that there is also a MaxActiveBrowserUsers setting in config/config.json which limits the number of browser users per individual agent, while this setting limits the total number of browser users across all agents in the cluster. The MaxActiveBrowserUsers value in the cluster configuration should be less than the product of MaxActiveBrowserUsers per browser agent multiplied by the number of browser agents.
+The maximum number of concurrently active browser users to be run across the entire load-agent cluster. Note that there is also a MaxActiveBrowserUsers setting in config/config.json which limits the number of browser users per individual agent, while this setting limits the total number of browser users across all agents in the cluster. The MaxActiveBrowserUsers value in the cluster configuration should be less than the product of MaxActiveBrowserUsers per browser agent multiplied by the number of browser agents. This value cannot be larger than `MaxActiveUsers`, since `MaxActiveUsers` is the cap of total users connected across the load-agent cluster.
 
 ## MonitorConfig
 
