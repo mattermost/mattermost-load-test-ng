@@ -48,10 +48,17 @@ export async function performLogin({
   log.info('run--performLogin');
 
   try {
-    await page.waitForSelector('#input_loginId');
-    await page.type('#input_loginId', userId);
-    await page.type('#input_password-input', password);
-    await page.keyboard.press('Enter');
+    const inputLoginId = page.getByTestId('login-id-input');
+    await inputLoginId.waitFor({state: 'visible'});
+    await inputLoginId.fill(userId);
+
+    const inputPassword = page.locator('#input_password-input');
+    await inputPassword.waitFor({state: 'visible'});
+    await inputPassword.fill(password);
+
+    const saveButton = page.getByTestId('saveSetting');
+    await saveButton.waitFor({state: 'visible'});
+    await saveButton.click();
 
     await page.waitForURL((url) => !url.pathname.includes('/login'));
 

@@ -9,9 +9,15 @@ export async function postInChannel({page}: {page: Page}): Promise<void> {
   log.info('run--postInChannel');
 
   try {
-    await page.waitForSelector('#post_textbox');
-    await page.type('#post_textbox', `Hello, world! ${new Date().toISOString()}`, {delay: 100});
-    await page.keyboard.press('Enter');
+    const textbox = page.getByTestId('post_textbox');
+    await textbox.waitFor({state: 'visible'});
+    await textbox.click();
+    const nowDate = new Date();
+    await textbox.fill(`Hello, world! ${nowDate.toLocaleDateString()} ${nowDate.toLocaleTimeString()}`);
+
+    const postButton = page.getByRole('button', {name: 'Send Now'});
+    await postButton.waitFor({state: 'visible'});
+    await postButton.click();
 
     log.info('pass--postInChannel');
   } catch (error) {

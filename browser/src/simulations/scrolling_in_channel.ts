@@ -7,7 +7,6 @@ import {log} from '../app.js';
 
 export async function scrollInChannel(
   page: Page,
-  channelId: string,
   scrollCount: number,
   scrollStep: number,
   pauseBetweenScrolls: number,
@@ -15,15 +14,7 @@ export async function scrollInChannel(
   log.info('run--scrollInChannel');
 
   try {
-    // Navigate to the specified channel
-    await page.evaluate((id) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.click();
-      } else {
-        throw new Error(`Channel with id ${id} not found`);
-      }
-    }, channelId);
+    await page.locator('.post-list__dynamic').waitFor({state: 'visible'});
 
     for (let i = 0; i < scrollCount; i++) {
       // Scroll up by scrollStep pixels - passing params as a single object
