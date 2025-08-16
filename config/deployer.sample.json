@@ -26,6 +26,8 @@
   "MetricsInstanceType": "t3.xlarge",
   "AgentInstanceCount": 2,
   "AgentInstanceType": "c7i.xlarge",
+  "BrowserAgentInstanceCount": 2,
+  "BrowserAgentInstanceType": "c7i.xlarge",
   "AgentAllocatePublicIPAddress": true,
   "ElasticSearchSettings": {
     "InstanceCount": 0,

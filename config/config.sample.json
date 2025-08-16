@@ -49,8 +49,12 @@
     "InitialActiveUsers": 0,
     "UsersFilePath": "",
     "MaxActiveUsers": 2000,
+    "MaxActiveBrowserUsers": 15,
     "AvgSessionsPerUser": 1,
     "PercentOfUsersAreAdmin": 0.0005
+  },
+  "BrowserConfiguration": {
+    "Headless": true
   },
   "LogSettings": {
     "EnableConsole": true,
@@ -61,5 +65,12 @@
     "FileJson": true,
     "FileLocation": "ltagent.log",
     "EnableColor": false
+  },
+  "BrowserLogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "debug",
+    "EnableFile": true,
+    "FileLevel": "debug",
+    "FileLocation": "browseragent.log"
   }
 }

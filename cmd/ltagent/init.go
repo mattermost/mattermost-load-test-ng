@@ -123,6 +123,8 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 	numUsers := 50
 	config.UserControllerConfiguration.Type = loadtest.UserControllerGenerative
 	config.UsersConfiguration.InitialActiveUsers = numUsers
+	config.UsersConfiguration.MaxActiveUsers = numUsers
+	config.UsersConfiguration.MaxActiveBrowserUsers = numUsers
 	config.UserControllerConfiguration.RatesDistribution = []loadtest.RatesDistribution{
 		{
 			Rate:       0.2,
@@ -130,11 +132,11 @@ func RunInitCmdF(cmd *cobra.Command, args []string) error {
 		},
 	}
 
-	newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil)
+	newC, err := api.NewControllerWrapper(config, &genConfig, 0, userPrefix, nil, false)
 	if err != nil {
 		return fmt.Errorf("error while creating new controller: %w", err)
 	}
-	lt, err := loadtest.New(config, newC, log)
+	lt, err := loadtest.New(config, newC, log, false)
 	if err != nil {
 		return fmt.Errorf("error while initializing loadtest: %w", err)
 	}

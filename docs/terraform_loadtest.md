@@ -154,8 +154,17 @@ To compare the results of your load tests, see [here](compare.md).
 
 ### SSH access to the terraformed hosts
 
-To access one of the terraformed hosts via ssh, invoke `ltctl ssh` with the appropriate target:
-* One of the instance names (invoke `ltctl ssh` to list them)
-* `coordinator` to connect to the first agent doing double duty as the loadtest coordinator
-* `proxy` to connect to the instance running Nginx
-* `metrics`, `prometheus` or `grafana` to connect to the instance running all metrics related services
+* To get the list of terraformed hosts:
+  ```sh
+  go run ./cmd/ltctl ssh  
+  ```
+* To access a specific host via SSH, run:
+  ```sh
+  go run ./cmd/ltctl ssh <instance-name>
+  ```
+
+* Following are some common targets:
+  * `coordinator` — connects to the first agent, which also acts as the load test coordinator
+  * `proxy` — connects to the instance running Nginx
+  * `metrics`, `prometheus`, or `grafana` — connects to the instance running all metrics-related services
+  * `browser-agent` — connects to the instance running the browser agent

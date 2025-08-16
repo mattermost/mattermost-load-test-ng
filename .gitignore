@@ -24,6 +24,7 @@ ltagent.log
 ltcoordinator.log
 deployer.log
 ltapi.log
+browseragent.log
 
 .tmp
 debug

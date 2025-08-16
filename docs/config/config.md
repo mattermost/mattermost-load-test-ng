@@ -122,11 +122,25 @@ The path to the file which contains a list of user email and passwords that will
 
 The maximum amount of concurrently active users the load-test agent will run.
 
+### MaxActiveBrowserUsers
+
+*int*
+
+The maximum amount of concurrently active browser users per instance the load-test agent will run.
+
 ### PercentOfUsersAreAdmin
 
 *float*
 
 The percentage of users generated that will be system admins.
+
+## BrowserConfiguration
+
+### Headless
+
+*bool*
+
+When true, the browser server will run the simulation tests in headless mode.
 
 ## LogSettings
 
@@ -177,3 +191,53 @@ The location of the log file.
 *bool*
 
 When true enables colored output.
+
+## BrowserLogSettings
+
+### EnableConsole
+
+*bool*
+
+When true, the browser server outputs log messages to the console based on ConsoleLevel option.
+
+### ConsoleLevel
+
+*string*
+
+Level of detail at which log events are written to the console.
+
+Possible values (in order of decreasing verbosity, these are case sensitive):
+- `trace`
+- `debug`
+- `info`
+- `warn`
+- `error`
+- `fatal`
+
+### EnableFile
+
+*bool*
+
+When true, the browser server outputs log messages to the file specified by the `FileLocation` setting.
+
+### FileLevel
+
+*string*
+
+Level of detail at which log events are written to log files. Exactly same as `ConsoleLevel` as mentioned above.
+
+Possible values (in order of decreasing verbosity, these are case sensitive):
+- `trace`
+- `debug`
+- `info`
+- `warn`
+- `error`
+- `fatal`
+
+When both `EnableConsole` and `EnableFile` are true, the logs are written asynchronously to reduce overhead.
+
+### FileLocation
+
+*string*
+
+The location of the log file.

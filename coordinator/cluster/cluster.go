@@ -6,6 +6,7 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -22,11 +23,12 @@ import (
 // LoadAgentCluster is the object holding information about all the load-test
 // agents available in the cluster.
 type LoadAgentCluster struct {
-	config   LoadAgentClusterConfig
-	ltConfig loadtest.Config
-	agents   []*client.Agent
-	errMap   map[*client.Agent]*errorTrack
-	log      *mlog.Logger
+	config        LoadAgentClusterConfig
+	ltConfig      loadtest.Config
+	agents        []*client.Agent
+	browserAgents []*client.Agent
+	errMap        map[*client.Agent]*errorTrack
+	log           *mlog.Logger
 }
 
 type errorTrack struct {
@@ -67,10 +69,10 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 	}
 	agents := make([]*client.Agent, len(config.Agents))
 	errMap := make(map[*client.Agent]*errorTrack)
-	for i := 0; i < len(agents); i++ {
+	for i := range len(agents) {
 		agent, err := client.New(config.Agents[i].Id, config.Agents[i].ApiURL, nil)
 		if err != nil {
-			return nil, fmt.Errorf("cluster: failed to create api client: %w", err)
+			return nil, fmt.Errorf("cluster: failed to create api client for agent: %w", err)
 		}
 		agents[i] = agent
 		errMap[agent] = &errorTrack{}
@@ -85,32 +87,57 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 		}
 	}
 
+	browserAgents := make([]*client.Agent, len(config.BrowserAgents))
+
+	for i := range len(browserAgents) {
+		browserAgent, err := client.New(config.BrowserAgents[i].Id, config.BrowserAgents[i].ApiURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("cluster: failed to create api client for browser agent: %w", err)
+		}
+		browserAgents[i] = browserAgent
+		errMap[browserAgent] = &errorTrack{}
+
+		if _, err := browserAgent.Status(); err == nil {
+			continue
+		}
+
+		if err := createAgent(browserAgent, ltConfig); err != nil {
+			return nil, err
+		}
+	}
+
 	return &LoadAgentCluster{
-		agents:   agents,
-		config:   config,
-		ltConfig: ltConfig,
-		errMap:   errMap,
-		log:      log,
+		agents:        agents,
+		browserAgents: browserAgents,
+		config:        config,
+		ltConfig:      ltConfig,
+		errMap:        errMap,
+		log:           log,
 	}, nil
 }
 
-// Run starts all the load-test agents available in the cluster.
+// Run starts all the server load test agents and browser load test agents available in the cluster.
 func (c *LoadAgentCluster) Run() error {
-	for _, agent := range c.agents {
+	c.log.Info("cluster: starting server load test agents", mlog.Int("num_agents", len(c.agents)), mlog.Int("num_browser_agents", len(c.browserAgents)))
+
+	for _, agent := range slices.Concat(c.agents, c.browserAgents) {
 		if _, err := agent.Run(); err != nil {
-			return fmt.Errorf("cluster: failed to start agent: %w", err)
+			return fmt.Errorf("cluster: failed to start agent: id: %s, %w", agent.Id(), err)
 		}
+		c.log.Info("cluster: successfully started an agent", mlog.String("id", agent.Id()))
 	}
+
 	return nil
 }
 
 // Stop stops all the load-test agents available in the cluster.
 func (c *LoadAgentCluster) Stop() error {
-	for _, agent := range c.agents {
+	for _, agent := range slices.Concat(c.agents, c.browserAgents) {
 		if _, err := agent.Stop(); err != nil {
-			return fmt.Errorf("cluster: failed to stop agent: %w", err)
+			return fmt.Errorf("cluster: failed to stop agent: id: %s, %w", agent.Id(), err)
 		}
 	}
+
 	return nil
 }
 
@@ -118,26 +145,30 @@ func (c *LoadAgentCluster) Stop() error {
 // It makes sure agent.Destroy() is called once for every agent in the cluster.
 func (c *LoadAgentCluster) Shutdown() {
 	var wg sync.WaitGroup
-	wg.Add(len(c.agents))
-	for _, ag := range c.agents {
+	wg.Add(len(c.agents) + len(c.browserAgents))
+
+	for _, ag := range slices.Concat(c.agents, c.browserAgents) {
 		go func(ag *client.Agent) {
 			defer wg.Done()
 			if _, err := ag.Destroy(); err != nil {
-				c.log.Error("cluster: failed to stop agent", mlog.Err(err))
+				c.log.Error("cluster: failed to stop agent", mlog.String("id", ag.Id()), mlog.Err(err))
 			}
 		}(ag)
 	}
+
 	wg.Wait()
 }
 
 // IncrementUsers increments the total number of active users in the load-test
 // custer by the provided amount.
 func (c *LoadAgentCluster) IncrementUsers(n int) error {
-	if len(c.agents) == 0 {
+	all := slices.Concat(c.agents, c.browserAgents)
+	if len(all) == 0 {
+		c.log.Info("cluster: no server or browser agents to increment users")
 		return nil
 	}
 
-	amounts, err := getUsersAmounts(c.agents)
+	amounts, err := getUsersAmounts(all)
 	if err != nil {
 		return err
 	}
@@ -145,28 +176,32 @@ func (c *LoadAgentCluster) IncrementUsers(n int) error {
 	if err != nil {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
+
 	for i, inc := range dist {
-		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", c.config.Agents[i].Id))
-		if _, err := c.agents[i].AddUsers(inc); err != nil {
+		c.log.Info("cluster: adding users to agent", mlog.Int("num_users", inc), mlog.String("agent_id", all[i].Id()))
+		if _, err := all[i].AddUsers(inc); err != nil {
 			c.log.Error("cluster: adding users failed", mlog.Err(err))
 			// Most probably the agent crashed, so we just start it again.
-			if _, err := c.agents[i].Run(); err != nil {
+			if _, err := all[i].Run(); err != nil {
 				c.log.Error("agent restart failed", mlog.Err(err))
 				return fmt.Errorf("cluster: failed to add users to agent: %w", err)
 			}
 		}
 	}
+
 	return nil
 }
 
 // DecrementUsers decrements the total number of active users in the load-test
 // custer by the provided amount.
 func (c *LoadAgentCluster) DecrementUsers(n int) error {
-	if len(c.agents) == 0 {
+	all := slices.Concat(c.agents, c.browserAgents)
+	if len(all) == 0 {
+		c.log.Info("cluster: no server or browser agents to decrement users")
 		return nil
 	}
 
-	amounts, err := getUsersAmounts(c.agents)
+	amounts, err := getUsersAmounts(all)
 	if err != nil {
 		return err
 	}
@@ -176,9 +211,9 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 	}
 	for i, dec := range dist {
 		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
-		if _, err := c.agents[i].RemoveUsers(dec); err != nil {
+		if _, err := all[i].RemoveUsers(dec); err != nil {
 			// Most probably the agent crashed, so we just start it again.
-			if _, err := c.agents[i].Run(); err != nil {
+			if _, err := all[i].Run(); err != nil {
 				c.log.Error("agent restart failed", mlog.Err(err))
 				return fmt.Errorf("cluster: failed to remove users from agent: %w", err)
 			}
@@ -218,6 +253,44 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 		// Total errors = current errors + past accumulated errors from restarts.
 		status.NumErrors += currentError + totalErrors
 	}
+
+	for _, browserAgent := range c.browserAgents {
+		st, err := browserAgent.Status()
+		// Agent probably crashed. We create it again.
+		if errors.Is(err, client.ErrAgentNotFound) {
+			if err := createAgent(browserAgent, c.ltConfig); err != nil {
+				c.log.Error("browser agent create failed", mlog.Err(err))
+			}
+
+			// We continue to the next browser agent regardless of whether createAgent() succeeds or fails.
+			// The coordinator's feedback loop calls Status() regularly so:
+			// - If createAgent() succeeded: the newly created agent will have its status collected on the next call
+			// - If createAgent() failed: we avoid processing invalid status data and will retry creation next time
+			continue
+		} else if err != nil {
+			c.log.Error("cluster: failed to get status for browser agent:", mlog.Err(err))
+
+			// We cant process the status of the browser agent if we cannot get the status.
+			// We continue to the next browser agent.
+			continue
+		}
+
+		status.ActiveUsers += int(st.NumUsers)
+		currentError := st.NumErrors
+		errInfo := c.errMap[browserAgent]
+		lastError := atomic.LoadInt64(&errInfo.lastError)
+		totalErrors := atomic.LoadInt64(&errInfo.totalErrors)
+		if currentError < lastError {
+			// crash
+			atomic.AddInt64(&errInfo.totalErrors, lastError)
+			totalErrors += lastError
+		}
+		atomic.StoreInt64(&errInfo.lastError, currentError)
+
+		// Total errors = current errors + past accumulated errors from restarts.
+		status.NumErrors += currentError + totalErrors
+	}
+
 	return status, nil
 }
 
@@ -225,7 +298,7 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 // at the next possible opportunity.
 func (c *LoadAgentCluster) InjectAction(actionID string) error {
 	merr := merror.New()
-	for _, agent := range c.agents {
+	for _, agent := range slices.Concat(c.agents, c.browserAgents) {
 		if _, err := agent.InjectAction(actionID); err != nil {
 			merr.Append(fmt.Errorf("cluster: failed to inject action %s for agent %s: %w", actionID, agent.Id(), err))
 		}

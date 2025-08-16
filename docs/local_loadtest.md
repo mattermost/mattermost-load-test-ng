@@ -142,8 +142,7 @@ The [`coordinator`](coordinator.md) does also help running a load-test across a 
 
 ### Prerequisites
 
-In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and
-correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.
+In order to run the [`coordinator`](coordinator.md) a [Prometheus](https://prometheus.io/docs/introduction/overview/) server needs to be running and correctly [configured](https://docs.mattermost.com/deployment/metrics.html) for the target Mattermost instance.
 
 ### Start the load-test agent API server
 
@@ -151,6 +150,16 @@ The first step is having the server running.
 
 ```sh
 go run ./cmd/ltapi
+```
+### Start LTBrowser server (optional)
+
+If load tests is configured to run browser tests then you need to start the LTBrowser server as well.
+From a different terminal, run the following commands to start the LTBrowser server.
+
+```sh
+nvm use
+cd browser
+make start
 ```
 
 ### Configure the coordinator

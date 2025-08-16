@@ -309,6 +309,27 @@ LimitNOFILE=262144
 WantedBy=multi-user.target
 `
 
+const baseBrowserAPIServerCmd = `/bin/bash -c "source /home/%s/.nvm/nvm.sh && make -C /home/%s/mattermost-load-test-ng/browser start-service"`
+
+const browserAPIServiceFile = `
+[Unit]
+Description=Mattermost load-test Browser API Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ printf "%s" .execStart}}
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
+LimitNOFILE=262144
+
+[Install]
+WantedBy=multi-user.target
+`
+
 const esExporterServiceFile = `
 [Unit]
 Description=Elasticsearch prometheus exporter

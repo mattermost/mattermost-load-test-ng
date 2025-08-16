@@ -51,7 +51,7 @@ type UserControllerConfiguration struct {
 	//   UserControllerSimulative - A more realistic controller.
 	//   UserControllerNoop
 	//   UserControllerGenerative - A controller used to generate data.
-	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative}"`
+	Type userControllerType `default:"simulative" validate:"oneof:{simple,simulative,noop,cluster,generative,browser}"`
 	// A distribution of rate multipliers that will affect the speed at which user actions are
 	// executed by the UserController.
 	// A Rate of < 1.0 will run actions at a faster pace.
@@ -133,10 +133,29 @@ type UsersConfiguration struct {
 	// The maximum number of users that can be simulated by a single load-test
 	// agent.
 	MaxActiveUsers int `default:"2000" validate:"range:(0,]"`
+	// The maximum number of browser users that can be simulated by a single load-test agent
+	MaxActiveBrowserUsers int `default:"12" validate:"range:[0,]"`
 	// The average number of sessions per user.
 	AvgSessionsPerUser int `default:"1" validate:"range:[1,]"`
 	// The percentage of users generated that will be system admins
 	PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
+}
+
+// BrowserConfiguration holds information about the browser related settings
+// used for the browser agent to run the simulation tests while running the load-test.
+type BrowserConfiguration struct {
+	// Whether to run the simulation tests in headless mode.
+	Headless bool `default:"true"`
+}
+
+// BrowserLogSettings holds information to be used to initialize the logger for the LTBrowser API
+// refer to /browser/src/utils/log.ts
+type BrowserLogSettings struct {
+	EnableConsole bool   `default:"false"`
+	ConsoleLevel  string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+	EnableFile    bool   `default:"true"`
+	FileLevel     string `default:"debug" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
+	FileLocation  string `default:"browseragent.log"`
 }
 
 // Config holds information needed to create and initialize a new load-test
@@ -146,7 +165,9 @@ type Config struct {
 	UserControllerConfiguration UserControllerConfiguration
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
+	BrowserConfiguration        BrowserConfiguration
 	LogSettings                 logger.Settings
+	BrowserLogSettings          BrowserLogSettings
 }
 
 // IsValid reports whether a given Config is valid or not.

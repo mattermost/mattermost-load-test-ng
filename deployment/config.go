@@ -59,6 +59,10 @@ type Config struct {
 	AgentInstanceCount int `default:"2" validate:"range:[0,)"`
 	// Type of the EC2 instance for agent.
 	AgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
+	// Number of browser agents.
+	BrowserAgentInstanceCount int `default:"0" validate:"range:[0,)"`
+	// Type of the EC2 instance for browser agent.
+	BrowserAgentInstanceType string `default:"c7i.xlarge" validate:"notempty"`
 	// Logs the command output (stdout & stderr) to home directory.
 	EnableAgentFullLogs bool `default:"true"`
 	// Should a pubic IP be allocated for the agent instance.
@@ -541,6 +545,7 @@ func (c *Config) MarkForDestroyAllButMetrics() {
 	c.AppInstanceCount = 0
 	c.ProxyInstanceCount = 0
 	c.AgentInstanceCount = 0
+	c.BrowserAgentInstanceCount = 0
 	c.TerraformDBSettings.InstanceCount = 0
 	c.ElasticSearchSettings.InstanceCount = 0
 	c.RedisSettings.Enabled = false
