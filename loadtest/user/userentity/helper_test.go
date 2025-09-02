@@ -54,7 +54,8 @@ type config struct {
 		PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 	}
 	BrowserConfiguration struct {
-		Headless bool `default:"true"`
+		Headless            bool `default:"true"`
+		SimulationTimeoutMs int  `default:"60000" validate:"range:[0,]"`
 	}
 	LogSettings        logger.Settings
 	BrowserLogSettings struct {
