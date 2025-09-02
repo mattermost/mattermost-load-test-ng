@@ -54,7 +54,8 @@
     "PercentOfUsersAreAdmin": 0.0005
   },
   "BrowserConfiguration": {
-    "Headless": true
+    "Headless": true,
+    "SimulationTimeoutMs": 60000
   },
   "LogSettings": {
     "EnableConsole": true,

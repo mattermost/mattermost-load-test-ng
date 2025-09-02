@@ -69,3 +69,4 @@ UsersFilePath = ''
 
 [BrowserConfiguration]
 Headless = true
+SimulationTimeoutMs = 60000

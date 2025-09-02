@@ -15,6 +15,7 @@ const SliceOfConfigJsonSchema = zod.object({
   }),
   BrowserConfiguration: zod.object({
     Headless: zod.boolean(),
+    SimulationTimeoutMs: zod.number().gte(0, 'SimulationTimeoutMs must be greater than 0, If you want to disable the timeout, set it to 0'),
   }),
   BrowserLogSettings: zod.object({
     EnableConsole: zod.boolean(),
@@ -37,6 +38,12 @@ export function getMattermostServerURL(): string {
 
 export function isBrowserHeadless(): boolean {
   return configJson.BrowserConfiguration.Headless;
+}
+
+const DEFAULT_SIMULATION_TIMEOUT_MS = 60_000;
+
+export function getSimulationTimeoutMs(): number {
+  return configJson.BrowserConfiguration.SimulationTimeoutMs || DEFAULT_SIMULATION_TIMEOUT_MS;
 }
 
 export function isConsoleLoggingEnabled(): boolean {
