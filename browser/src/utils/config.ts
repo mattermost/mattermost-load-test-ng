@@ -43,7 +43,7 @@ export function isBrowserHeadless(): boolean {
 const DEFAULT_SIMULATION_TIMEOUT_MS = 60_000;
 
 export function getSimulationTimeoutMs(): number {
-  return configJson.BrowserConfiguration.SimulationTimeoutMs || DEFAULT_SIMULATION_TIMEOUT_MS;
+  return configJson.BrowserConfiguration.SimulationTimeoutMs ?? DEFAULT_SIMULATION_TIMEOUT_MS;
 }
 
 export function isConsoleLoggingEnabled(): boolean {
