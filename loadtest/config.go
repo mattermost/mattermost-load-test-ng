@@ -146,6 +146,8 @@ type UsersConfiguration struct {
 type BrowserConfiguration struct {
 	// Whether to run the simulation tests in headless mode.
 	Headless bool `default:"true"`
+	// The timeout for the simulation tests.
+	SimulationTimeoutMs int `default:"60000" validate:"range:[0,]"`
 }
 
 // BrowserLogSettings holds information to be used to initialize the logger for the LTBrowser API

@@ -7,7 +7,7 @@ import {join} from 'path';
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
 import {SimulationIds} from '../simulations/registry.js';
-import {findScreenshotsDir} from '../utils/config.js';
+import {findScreenshotsDir, getSimulationTimeoutMs} from '../utils/config.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -164,6 +164,7 @@ export class BrowserTestSessionManager {
     // Try to create the page after the context is created
     try {
       const page = await instance.context!.newPage();
+      page.setDefaultTimeout(getSimulationTimeoutMs());
 
       instance = {...instance, page};
       this.activeBrowserSessions.set(userId, instance);
