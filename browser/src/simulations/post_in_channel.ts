@@ -19,7 +19,7 @@ export async function postInChannel({page}: {page: Page}): Promise<void> {
     await postButton.waitFor({state: 'visible'});
     await postButton.click();
 
-    // # Wait until textbox is cleared
+    // Wait until textbox is cleared
     await textbox.evaluate((el) => (el as HTMLTextAreaElement).value === '');
 
     log.info('pass--postInChannel');
