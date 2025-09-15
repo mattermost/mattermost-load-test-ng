@@ -13,7 +13,7 @@ export async function goToChannel(page: Page, channelId: string): Promise<void> 
     await channel.waitFor({state: 'visible'});
     await channel.click();
 
-    // # Wait until the loading screen is gone and the channel is loaded
+    // Wait until the loading screen is gone and the channel is loaded
     await page.locator('#virtualizedPostListContent').waitFor({state: 'visible'});
 
     log.info('pass--goToChannel');
