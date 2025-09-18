@@ -125,7 +125,7 @@ resource "aws_efs_file_system" "efs_shared" {
 }
 
 resource "aws_efs_mount_target" "efs_mount" {
-  for_each = (var.create_efs ? toset(data.aws_subnets.lt_selected.ids) : toset({}))
+  for_each = (var.create_efs ? toset(data.aws_subnets.lt_selected.ids) : toset([]))
   file_system_id = aws_efs_file_system.efs_shared.0.id
   subnet_id      = each.value
   security_groups = [aws_security_group.efs[0].id]
