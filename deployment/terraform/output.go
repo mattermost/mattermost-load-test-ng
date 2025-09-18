@@ -210,12 +210,17 @@ func (t *Terraform) loadOutput() error {
 		return err
 	}
 
-	var clusterName string
+	var (
+		clusterName string
+		amiUser     string
+	)
 	if t.config != nil {
 		clusterName = t.config.ClusterName
+		amiUser = t.config.AWSAMIUser
 	}
 	outputv2 := &Output{
 		ClusterName:   clusterName,
+		AMIUser:       amiUser,
 		Instances:     o.Instances.Value,
 		Agents:        o.Agents.Value,
 		BrowserAgents: o.BrowserAgents.Value,
