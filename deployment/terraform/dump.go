@@ -109,7 +109,7 @@ func (t *Terraform) IngestDump() error {
 	dumpURI := t.config.DBDumpURI
 	fileName := filepath.Base(dumpURI)
 	mlog.Info("Provisioning dump file", mlog.String("uri", dumpURI))
-	if err := deployment.ProvisionURL(appClients[0], dumpURI, fileName); err != nil {
+	if _, err := t.ProvisionURL(appClients[0], dumpURI, fileName); err != nil {
 		return err
 	}
 
@@ -169,7 +169,7 @@ func (t *Terraform) ExecuteCustomSQL() error {
 	for _, sqlURI := range t.config.DBExtraSQL {
 		fileName := filepath.Base(sqlURI)
 		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlURI))
-		if err := deployment.ProvisionURL(client, sqlURI, fileName); err != nil {
+		if _, err := t.ProvisionURL(client, sqlURI, fileName); err != nil {
 			return err
 		}
 
