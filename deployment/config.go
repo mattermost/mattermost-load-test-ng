@@ -96,6 +96,9 @@ type Config struct {
 	MattermostConfigPatchFile string `default:""`
 	// Mattermost instance sysadmin e-mail.
 	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
+	// MattermostPlugins maps each specified plugin ID to an URL (or local file if
+	// prepended with file://) from which to download and install it
+	MattermostPlugins map[string]string
 	// Mattermost instance sysadmin user name.
 	AdminUsername string `default:"sysadmin" validate:"notempty"`
 	// Mattermost instance sysadmin password.
