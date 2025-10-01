@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -322,12 +321,13 @@ func (t *Terraform) IngestKeycloakDump() error {
 	dumpURI := t.config.ExternalAuthProviderSettings.KeycloakDBDumpURI
 	fileName := filepath.Base(dumpURI)
 	mlog.Info("Provisioning keycloak dump file", mlog.String("uri", dumpURI))
-	if err := deployment.ProvisionURL(client, dumpURI, fileName); err != nil {
+	dumpDstPath, err := t.ProvisionURL(client, dumpURI, fileName)
+	if err != nil {
 		return err
 	}
 
 	commands := []string{
-		fmt.Sprintf("tar xzf /home/%s/%s -C /tmp", t.Config().AWSAMIUser, fileName),
+		fmt.Sprintf("tar xzf %s -C /tmp", dumpDstPath),
 		"sudo -iu postgres psql -d keycloak -v ON_ERROR_STOP=on -f /tmp/" + strings.TrimSuffix(fileName, ".tgz"),
 	}
 

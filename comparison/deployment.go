@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 
@@ -73,13 +72,13 @@ func provisionFiles(t *terraform.Terraform, dpConfig *deploymentConfig, baseBuil
 	for _, client := range clients {
 		for id, ltConfig := range dpConfig.loadTests {
 			if ltConfig.DBDumpURL != "" {
-				if err := deployment.ProvisionURL(client, ltConfig.DBDumpURL, ltConfig.getDumpFilename(id)); err != nil {
+				if _, err := t.ProvisionURL(client, ltConfig.DBDumpURL, ltConfig.getDumpFilename(id)); err != nil {
 					return err
 				}
 			}
 		}
 		for _, cfg := range []BuildConfig{baseBuildCfg, newBuildCfg} {
-			if err := deployment.ProvisionURL(client, cfg.URL, getBuildFilename(cfg)); err != nil {
+			if _, err := t.ProvisionURL(client, cfg.URL, getBuildFilename(cfg)); err != nil {
 				return err
 			}
 		}

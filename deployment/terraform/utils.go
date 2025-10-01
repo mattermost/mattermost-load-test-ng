@@ -536,3 +536,32 @@ func generatePseudoRandomPassword(length int) string {
 	}
 	return string(s)
 }
+
+// ProvisionURL takes a URL pointing to a file to be provisioned.
+// It works on both local files prefixed with file:// or remote files.
+// In case of local files, they are uploaded to the server.
+func (t *Terraform) ProvisionURL(client *ssh.Client, url, filename string) (string, error) {
+	dstPath := fmt.Sprintf("/home/%s/%s", t.config.AWSAMIUser, filename)
+	if strings.HasPrefix(url, "file://") {
+		// upload file from local filesystem
+		path := strings.TrimPrefix(url, filePrefix)
+		info, err := os.Stat(path)
+		if err != nil {
+			return "", err
+		}
+		if !info.Mode().IsRegular() {
+			return "", fmt.Errorf("build file %s has to be a regular file", path)
+		}
+		if out, err := client.UploadFile(path, dstPath, false); err != nil {
+			return "", fmt.Errorf("error uploading build: %w %s", err, out)
+		}
+	} else {
+		// download build file from URL
+		cmd := fmt.Sprintf("wget -O %s %s", dstPath, url)
+		if out, err := client.RunCommand(cmd); err != nil {
+			return "", fmt.Errorf("failed to run cmd %q: %w %s", cmd, err, out)
+		}
+	}
+
+	return dstPath, nil
+}

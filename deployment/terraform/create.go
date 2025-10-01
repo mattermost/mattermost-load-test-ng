@@ -563,6 +563,29 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		}
 	}
 
+	// Install user-specified plugins, extracting directly in the plugins/ directory
+	for id, url := range t.config.MattermostPlugins {
+		// Make sure that the directory exists
+		dir := "/opt/mattermost/plugins/"
+		cmd := fmt.Sprintf("mkdir -p %s", dir)
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+		}
+
+		// Upload the tarball
+		fileName := id + ".tar.gz"
+		tarballDstPath, err := t.ProvisionURL(sshc, url, fileName)
+		if err != nil {
+			return fmt.Errorf("error uploading file %q: %w", url, err)
+		}
+
+		// Extract it directly into the plugins directory
+		cmd = fmt.Sprintf("tar xzf %s --directory=%s", tarballDstPath, dir)
+		if out, err := sshc.RunCommand(cmd); err != nil {
+			return fmt.Errorf("error running ssh command %q, output: %q: %w", cmd, string(out), err)
+		}
+	}
+
 	// Starting mattermost.
 	mlog.Info("Applying kernel settings and starting mattermost", mlog.String("host", ip))
 	cmd = "sudo sysctl -p && sudo systemctl daemon-reload && sudo systemctl restart mattermost"
@@ -1136,6 +1159,18 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 
 	cfg.PluginSettings.Enable = model.NewPointer(true)
 	cfg.PluginSettings.EnableUploads = model.NewPointer(true)
+
+	// Disable all automatically enabled plugins to start from scratch
+	for id, pluginState := range cfg.PluginSettings.PluginStates {
+		mlog.Info("Disabling plugin", mlog.String("plugin ID", id))
+		pluginState.Enable = false
+	}
+
+	// And just enable the ones specified by the user in the config
+	for id := range t.config.MattermostPlugins {
+		mlog.Info("Enabling plugin", mlog.String("plugin ID", id))
+		cfg.PluginSettings.PluginStates[id] = &model.PluginState{Enable: true}
+	}
 
 	cfg.JobSettings.RunJobs = model.NewPointer(jobServerEnabled)
 
