@@ -6,7 +6,6 @@ package deployment
 import (
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -26,35 +25,6 @@ type DBSettings struct {
 	DBName   string
 	Host     string
 	Engine   string
-}
-
-// ProvisionURL takes a URL pointing to a file to be provisioned.
-// It works on both local files prefixed with file:// or remote files.
-// In case of local files, they are uploaded to the server.
-func ProvisionURL(client *ssh.Client, url, filename string) error {
-	filePrefix := "file://"
-	if strings.HasPrefix(url, filePrefix) {
-		// upload file from local filesystem
-		path := strings.TrimPrefix(url, filePrefix)
-		info, err := os.Stat(path)
-		if err != nil {
-			return err
-		}
-		if !info.Mode().IsRegular() {
-			return fmt.Errorf("build file %s has to be a regular file", path)
-		}
-		if out, err := client.UploadFile(path, fmt.Sprintf("$HOME/%s", filename), false); err != nil {
-			return fmt.Errorf("error uploading build: %w %s", err, out)
-		}
-	} else {
-		// download build file from URL
-		cmd := fmt.Sprintf("wget -O %s %s", filename, url)
-		if out, err := client.RunCommand(cmd); err != nil {
-			return fmt.Errorf("failed to run cmd %q: %w %s", cmd, err, out)
-		}
-	}
-
-	return nil
 }
 
 func dbConnString(dbInfo DBSettings) (string, error) {

@@ -493,6 +493,14 @@ The location of the Mattermost Enterprise Edition license file.
 
 An optional path to a partial Mattermost config file to be applied as patch during app server deployment.
 
+## MattermostPlugins
+
+*map[string]string*
+
+A map of plugin identifiers to a string indicating where to download the plugin tarball (expecting a `.tar.gz`) from. This string can be:
+- A URL: the plugin tarball will be downloaded into the app nodes from this URL.
+- A `file://` prefixed path: the plugin tarball will be uploaded from your local filesystem to the app nodes.
+
 ## AdminEmail
 
 *string*

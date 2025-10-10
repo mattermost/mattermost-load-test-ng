@@ -142,7 +142,7 @@ func (sshc *Client) Upload(src io.Reader, dst string, sudo bool) ([]byte, error)
 	// Direct upload without sudo
 	dstFile, err := sftpClient.Create(dst)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create destination file: %w", err)
+		return nil, fmt.Errorf("failed to create destination file %q: %w", dst, err)
 	}
 	defer dstFile.Close()
 

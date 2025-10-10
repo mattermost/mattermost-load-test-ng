@@ -182,5 +182,8 @@
     "BlockProfileRate": 0
   },
   "CustomTags": {
+  },
+  "Plugins": {
+    "playbooks": "https://plugins.releases.mattermost.com/release/mattermost-plugin-playbooks-v2.4.1-linux-amd64.tar.gz"
   }
 }
