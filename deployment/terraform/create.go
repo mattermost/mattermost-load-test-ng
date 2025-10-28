@@ -1130,11 +1130,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.LogSettings.FileLevel = model.NewPointer("WARN")
 	cfg.LogSettings.EnableSentry = model.NewPointer(false)
 
-	cfg.NotificationLogSettings.EnableConsole = model.NewPointer(true)
-	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("WARN")
-	cfg.NotificationLogSettings.EnableFile = model.NewPointer(true)
-	cfg.NotificationLogSettings.FileLevel = model.NewPointer("WARN")
-
 	cfg.SqlSettings.DriverName = model.NewPointer(driverName)
 	cfg.SqlSettings.DataSource = model.NewPointer(clusterDSN)
 	cfg.SqlSettings.DataSourceReplicas = readerDSN
