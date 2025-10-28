@@ -92,7 +92,7 @@ func writeResults(results []comparison.Result, writer io.Writer) error {
 		}
 		content += "==================================================\n\n"
 	}
-	_, err := fmt.Fprintf(writer, content)
+	_, err := fmt.Fprint(writer, content)
 	return err
 }
 

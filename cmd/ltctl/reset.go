@@ -109,7 +109,7 @@ func RunResetCmdF(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, c := range cmds {
-		fmt.Printf(c.msg)
+		fmt.Print(c.msg)
 		for _, client := range c.clients {
 			if out, err := client.RunCommand(c.value); err != nil {
 				return fmt.Errorf("failed to run cmd %q: %w %s", c.value, err, out)

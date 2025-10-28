@@ -501,7 +501,7 @@ func (c *Config) validateElasticSearchConfig() error {
 
 		domainName := c.ClusterName + "-es"
 		if !esDomainNameRe.Match([]byte(domainName)) {
-			return fmt.Errorf("Elasticsearch domain name must start with a lowercase alphabet and be at least " +
+			return errors.New("Elasticsearch domain name must start with a lowercase alphabet and be at least " +
 				"3 and no more than 28 characters long. Valid characters are a-z (lowercase letters), 0-9, and - " +
 				"(hyphen). Current value is \"" + domainName + "\"")
 		}
