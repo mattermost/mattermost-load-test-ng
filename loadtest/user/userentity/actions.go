@@ -226,7 +226,7 @@ func (ue *UserEntity) Logout() error {
 
 // GetClientConfig fetches and stores the limited server's configuration for logged in user.
 func (ue *UserEntity) GetClientConfig() error {
-	config, _, err := ue.client.GetOldClientConfig(context.Background(), "")
+	config, _, err := ue.client.GetClientConfig(context.Background(), "")
 	if err != nil {
 		return err
 	}
