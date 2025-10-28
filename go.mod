@@ -157,10 +157,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.37.1 // indirect
 )
-
-replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190515063710-7b18d6600f6b
-
-replace github.com/codegangsta/cli v1.22.1 => github.com/urfave/cli v1.22.1
-
-// ojg requires go >= 1.24. Remove this once we upgrade to 1.24
-exclude github.com/ohler55/ojg v1.26.2
