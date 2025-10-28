@@ -1,8 +1,6 @@
 module github.com/mattermost/mattermost-load-test-ng
 
-go 1.23.0
-
-toolchain go1.23.7
+go 1.24.6
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
