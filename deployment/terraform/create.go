@@ -75,7 +75,7 @@ func New(id string, cfg deployment.Config) (*Terraform, error) {
 			errStr += "\t1. Change the TerraformStateDir setting in config/deployer.json to a directory you have permissions over (recommended).\n"
 			errStr += fmt.Sprintf("\t2. Manually create the currently configured directory %q and change its owner to your current user.\n", cfg.TerraformStateDir)
 			errStr += "\t3. Run this and all next commands as root (not recommended)."
-			return nil, fmt.Errorf(errStr)
+			return nil, errors.New(errStr)
 		}
 		return nil, fmt.Errorf("unable to create Terraform state directory %q: %w", cfg.TerraformStateDir, err)
 	}
@@ -1129,11 +1129,6 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.LogSettings.EnableFile = model.NewPointer(true)
 	cfg.LogSettings.FileLevel = model.NewPointer("WARN")
 	cfg.LogSettings.EnableSentry = model.NewPointer(false)
-
-	cfg.NotificationLogSettings.EnableConsole = model.NewPointer(true)
-	cfg.NotificationLogSettings.ConsoleLevel = model.NewPointer("WARN")
-	cfg.NotificationLogSettings.EnableFile = model.NewPointer(true)
-	cfg.NotificationLogSettings.FileLevel = model.NewPointer("WARN")
 
 	cfg.SqlSettings.DriverName = model.NewPointer(driverName)
 	cfg.SqlSettings.DataSource = model.NewPointer(clusterDSN)

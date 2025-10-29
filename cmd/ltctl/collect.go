@@ -220,7 +220,7 @@ func collect(config deployment.Config, deploymentId string, outputName string) e
 				if err := json.Unmarshal(input, &cfg); err != nil {
 					return nil, fmt.Errorf("failed to unmarshal MM configuration: %w", err)
 				}
-				cfg.Sanitize(nil)
+				cfg.Sanitize(nil, nil)
 				sanitizedCfg, err := json.MarshalIndent(cfg, "", "  ")
 				if err != nil {
 					return nil, fmt.Errorf("failed to sanitize MM configuration: %w", err)
