@@ -108,6 +108,9 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 
 test: ## Run all tests.
+	$(GO) test -v -mod=readonly -race -tags=integration ./...
+
+test-ci: ## Run all tests with failfast to avoid running all tests when one fails.
 	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...
 
 MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz

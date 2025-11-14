@@ -44,4 +44,4 @@ jobs:
         run: make check-style
 
       - name: ci/test
-        run: make test
+        run: make test-ci
