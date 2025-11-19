@@ -96,7 +96,7 @@ Before attempting to use an existing database, ensure your database will accept 
 
 Yes, you can run multiple load test deployments simultaneously within the same AWS account. The key requirement is that each deployment must have a `ClusterName` and `TerraformStateDir` that are unique in its `config/deployer.json` file.
 
-The `ClusterName` is used as a prefix for all AWS resources (EC2 instances, security groups, S3 buckets, etc.) created by the deployment. The `TerraformStateDir` is where Terraform stores the state files locally in your machine for the deployment. Both must be unique to avoid conflicts between deployments.
+The `ClusterName` is used as a prefix for all AWS resources (EC2 instances, security groups, S3 buckets, etc.) created by the deployment. The `TerraformStateDir` is where Terraform stores the state files locally on your machine for the deployment. Both must be unique to avoid conflicts between deployments.
 
 Steps to run multiple simultaneous deployments:
 
