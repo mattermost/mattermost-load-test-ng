@@ -63,7 +63,7 @@ Rate = 30.0
 AvgSessionsPerUser = 1.0
 InitialActiveUsers = 0.0
 MaxActiveUsers = 2000.0
-MaxActiveBrowserUsers = 15.0
+MaxActiveBrowserUsers = 5.0
 PercentOfUsersAreAdmin = 0.0005
 UsersFilePath = ''
 
