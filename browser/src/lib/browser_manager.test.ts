@@ -5,7 +5,11 @@ import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
 vi.mock('playwright', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
-  const mockPage = {close: mockPageClose};
+  const mockPageSetDefaultTimeout = vi.fn();
+  const mockPage = {
+    close: mockPageClose,
+    setDefaultTimeout: mockPageSetDefaultTimeout,
+  };
 
   const mockContextNewPage = vi.fn().mockResolvedValue(mockPage);
   const mockContextClose = vi.fn().mockResolvedValue(undefined);
@@ -29,6 +33,7 @@ vi.mock('playwright', () => {
     },
     __mocks: {
       mockPageClose,
+      mockPageSetDefaultTimeout,
       mockContextNewPage,
       mockContextClose,
       mockBrowserNewContext,
@@ -59,7 +64,6 @@ const postAndScrollScenarioMock = vi.mocked(postAndScrollScenario.postAndScrollS
 
 describe('BrowserManager', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.useFakeTimers();
 
     // Reset mocks

@@ -20,6 +20,7 @@ vi.mock('playwright', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPage = {
     close: mockPageClose,
+    setDefaultTimeout: vi.fn(),
     goto: vi.fn().mockResolvedValue(undefined),
     fill: vi.fn().mockResolvedValue(undefined),
     click: vi.fn().mockResolvedValue(undefined),
