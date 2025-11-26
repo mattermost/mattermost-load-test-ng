@@ -15,7 +15,9 @@ const SliceOfConfigJsonSchema = zod.object({
   }),
   BrowserConfiguration: zod.object({
     Headless: zod.boolean(),
-    SimulationTimeoutMs: zod.number().gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
+    SimulationTimeoutMs: zod
+      .number()
+      .gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
   }),
   BrowserLogSettings: zod.object({
     EnableConsole: zod.boolean(),
