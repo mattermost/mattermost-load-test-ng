@@ -92,6 +92,30 @@ Before attempting to use an existing database, ensure your database will accept 
 
 4. Continue with the deployment create process.
 
+### Can I run multiple load tests simultaneously with the same AWS account?
+
+Yes, you can run multiple load test deployments simultaneously within the same AWS account. The key requirement is that each deployment must have a `ClusterName` and `TerraformStateDir` that are unique in its `config/deployer.json` file.
+
+The `ClusterName` is used as a prefix for all AWS resources (EC2 instances, security groups, S3 buckets, etc.) created by the deployment. The `TerraformStateDir` is where Terraform stores the state files locally on your machine for the deployment. Both must be unique to avoid conflicts between deployments.
+
+Steps to run multiple simultaneous deployments:
+
+1. Create separate deployer config files for each deployment:
+   ```sh
+   cp config/deployer.json config/deployer-test1.json
+   cp config/deployer.json config/deployer-test2.json
+   ```
+   
+1. Edit each config file to set unique values for both `ClusterName` and `TerraformStateDir`:
+   - `ClusterName`: e.g., `"loadtest1"`, `"loadtest2"`, etc.
+   - `TerraformStateDir`: e.g., `"/var/lib/mattermost-load-test-ng/loadtest1"`, `"/var/lib/mattermost-load-test-ng/loadtest2"`, etc.
+
+1. Run the deployment create command for each deployment in different terminals:
+   ```sh
+   go run ./cmd/ltctl deployment create --config config/deployer-test1.json
+   go run ./cmd/ltctl deployment create --config config/deployer-test2.json
+   ```
+
 ### Can I export a Grafana dashboard for future reference?
 
 Yes, you can do so by using the feature to [publish a snapshot to Raintank](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#publish-a-snapshot). An example of what such a snapshot looks like: [MySQL bounded test comparing `v7.9.1` vs `v7.10.0-rc2`](https://snapshots.raintank.io/dashboard/snapshot/h356ygrRZIUFWf5u5cctLjFavu97lFR2?orgId=2).
