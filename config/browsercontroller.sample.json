@@ -1,0 +1,4 @@
+{
+    "RunInHeadless": true,
+    "SimulationTimeoutMs": 60000
+}

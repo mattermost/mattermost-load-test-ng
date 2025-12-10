@@ -141,15 +141,6 @@ type UsersConfiguration struct {
 	PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 }
 
-// BrowserConfiguration holds information about the browser related settings
-// used for the browser agent to run the simulation tests while running the load-test.
-type BrowserConfiguration struct {
-	// Whether to run the simulation tests in headless mode.
-	Headless bool `default:"true"`
-	// The timeout for the simulation tests.
-	SimulationTimeoutMs int `default:"60000" validate:"range:[0,]"`
-}
-
 // BrowserLogSettings holds information to be used to initialize the logger for the LTBrowser API
 // refer to /browser/src/utils/log.ts
 type BrowserLogSettings struct {
@@ -167,7 +158,6 @@ type Config struct {
 	UserControllerConfiguration UserControllerConfiguration
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
-	BrowserConfiguration        BrowserConfiguration
 	LogSettings                 logger.Settings
 	BrowserLogSettings          BrowserLogSettings
 }
