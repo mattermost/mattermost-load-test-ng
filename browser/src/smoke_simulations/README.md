@@ -38,7 +38,7 @@ Smoke simulations allow you to:
 | `serverURL` | string | Mattermost server URL (e.g., `http://localhost:8065`) |
 | `sessionMonitorIntervalMs` | number | Interval in milliseconds for session status reporting (0 to disable) |
 | `testDurationMs` | number | Total test duration in milliseconds before automatically stopping the tests |
-| `isHeadless` | boolean | Run browsers in headless mode (default: true) |
+| `RunInHeadless` | boolean | Run browsers in headless mode (default: true) |
 
 ## Monitoring Output
 
@@ -65,7 +65,7 @@ The monitor provides real-time feedback on active sessions:
   "sessionMonitorIntervalMs": 5000,
   "testDurationMs": 120000,
   "simulations": ["postAndScroll"],
-  "isHeadless": false
+  "RunInHeadless": false
 }
 ```
 
@@ -82,6 +82,6 @@ The monitor provides real-time feedback on active sessions:
   "sessionMonitorIntervalMs": 10000,
   "testDurationMs": 600000,
   "simulations": ["postAndScroll", "postAndScroll", "postAndScroll"],
-  "isHeadless": true
+  "RunInHeadless": true
 }
 ```
