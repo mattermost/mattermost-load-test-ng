@@ -7,7 +7,7 @@ import {FastifyInstance} from 'fastify';
 
 import {createApp} from '../app.js';
 
-vi.mock('../utils/config.js', async (importOriginal) => {
+vi.mock('../utils/config_accessors.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as any),
@@ -149,7 +149,7 @@ describe('API /browsers', () => {
 
     test('should return 400 when server URL is missing in config', async () => {
       // Mock getMattermostServerURL to return empty string
-      const {getMattermostServerURL} = await import('../utils/config.js');
+      const {getMattermostServerURL} = await import('../utils/config_accessors.js');
       vi.mocked(getMattermostServerURL).mockReturnValueOnce('');
 
       await app.listen({port});

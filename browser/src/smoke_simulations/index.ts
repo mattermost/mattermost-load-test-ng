@@ -4,7 +4,7 @@
 import ms from 'ms';
 
 import {browserTestSessionManager} from '../lib/browser_manager.js';
-import {getMattermostServerURL} from '../utils/config.js';
+import {getMattermostServerURL} from '../utils/config_accessors.js';
 import {SimulationIds, SimulationsRegistry} from '../simulations/registry.js';
 
 // @ts-ignore smoke_simulation.json may not be present in the project depending upon usage
@@ -19,7 +19,7 @@ async function createBrowserSession(user: {username: string; password: string}, 
       user.password,
       smokeSimulationConfig.serverURL,
       simulationId,
-      smokeSimulationConfig.isHeadless,
+      smokeSimulationConfig.RunInHeadless,
     );
 
     if (r.isCreated) {

@@ -9,8 +9,9 @@
       "password": "password-1"
     }
   ],
+  "simulations": ["postAndScroll", "postAndScroll"],
   "serverURL": "http://localhost:8065",
-  "sessionMonitorIntervalMs": 5000,
+  "RunInHeadless": false,
   "testDurationMs": 120000,
-  "simulations": ["postAndScroll", "postAndScroll"]
+  "sessionMonitorIntervalMs": 5000
 }

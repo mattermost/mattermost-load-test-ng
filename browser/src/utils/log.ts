@@ -21,7 +21,7 @@ import {
   isFileLoggingEnabled,
   getFileLoggingLevel,
   getFileLoggingLocation,
-} from './config.js';
+} from './config_accessors.js';
 
 export function getServerLoggerConfig(): FastifyLoggerOptions {
   const consoleLoggingEnabled = isConsoleLoggingEnabled();

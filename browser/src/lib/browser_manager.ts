@@ -7,7 +7,8 @@ import {join} from 'path';
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
 import {SimulationIds} from '../simulations/registry.js';
-import {findScreenshotsDir, getSimulationTimeoutMs} from '../utils/config.js';
+import {screenshotsDirectory} from '../utils/config_helpers.js';
+import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -262,7 +263,7 @@ export class BrowserTestSessionManager {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `on_page_close_screenshot_${userId}_${timestamp}.png`;
-      const filepath = join(findScreenshotsDir(), filename);
+      const filepath = join(screenshotsDirectory, filename);
 
       await page.screenshot({
         path: filepath,
