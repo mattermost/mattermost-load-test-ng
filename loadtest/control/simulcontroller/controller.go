@@ -27,7 +27,7 @@ func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
 			name:             "SwitchChannel",
-			run:              switchChannel,
+			run:              c.switchChannel,
 			frequency:        6.5219,
 			minServerVersion: control.MinSupportedVersion,
 		},
@@ -509,6 +509,19 @@ func (c *SimulController) Run() {
 			c.runAction(&ia)
 		}
 	}
+}
+
+func (c *SimulController) RunHook(hookType plugins.HookType, u user.User, payload any) error {
+	merr := merror.New()
+	for _, plugin := range c.plugins {
+		go func(p plugins.Plugin) {
+			if err := p.RunHook(hookType, u, payload); err != nil {
+				merr.Append(err)
+			}
+		}(plugin)
+	}
+
+	return merr.ErrorOrNil()
 }
 
 func (c *SimulController) runAction(action *userAction) {

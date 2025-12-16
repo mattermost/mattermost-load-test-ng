@@ -38,15 +38,11 @@ type Plugin interface {
 	// ClearUserData must clear all user's data in the plugin's store.
 	ClearUserData()
 
-	// HookLogin must implement the logic the plugin performs right after the
-	// user has logged in.
-	HookLogin(u user.User) error
-	// HookSwitchTeam must implement the logic the plugin performs right after the
-	// user has switched to team with ID teamId.
-	HookSwitchTeam(u user.User, teamId string) error
-	// HookSwitchChannel must implement the logic the plugin performs right after the
-	// user has switched to team with ID channelId.
-	HookSwitchChannel(u user.User, channelId string) error
+	// RunHook must run the logic corresponding to the [HookType]. It receives
+	// the user and a generic payload, that should be converted to the proper
+	// type ([HookPayloadLogin], [HookPayloadSwitchTeam],
+	// [HookPayloadSwitchChannel]...) to access the data.
+	RunHook(hookType HookType, u user.User, payload any) error
 }
 
 // PluginAction contains all the information for a plugin's action to be
