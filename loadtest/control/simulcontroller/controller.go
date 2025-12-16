@@ -6,14 +6,17 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
+	"github.com/wiggin77/merror"
 )
 
 const (
@@ -329,6 +332,17 @@ func getActionList(c *SimulController) []userAction {
 		//     server, use control.UnreleasedVersion
 	}
 
+	for _, plugin := range c.plugins {
+		for _, action := range plugin.Actions() {
+			actions = append(actions, userAction{
+				name:             plugin.PluginId() + "." + action.Name,
+				run:              action.Run,
+				frequency:        action.Frequency,
+				minServerVersion: plugin.MinServerVersion(),
+			})
+		}
+	}
+
 	return actions
 }
 
@@ -356,6 +370,7 @@ type SimulController struct {
 	connectedFlag      int32           // indicates that the controller is connected
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      semver.Version  // stores the current server version
+	plugins            []plugins.Plugin
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -383,6 +398,12 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		wg:                 &sync.WaitGroup{},
 	}
 
+	plugins.GeneratePluginControllers(plugins.TypeSimulController, func(p plugins.Plugin) {
+		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
+			controller.plugins = append(controller.plugins, p)
+		}
+	})
+
 	controller.actionList = getActionList(controller)
 	controller.actionMap = getActionMap(controller.actionList)
 
@@ -406,6 +427,9 @@ func (c *SimulController) Run() {
 			c.status <- c.newErrorStatus(control.NewUserError(err))
 		}
 		c.user.ClearUserData()
+		for _, p := range c.plugins {
+			p.ClearUserData()
+		}
 		c.sendStopStatus()
 		close(c.stoppedChan)
 	}()
