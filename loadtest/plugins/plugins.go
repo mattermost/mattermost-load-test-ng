@@ -37,12 +37,22 @@ type Plugin interface {
 
 	// ClearUserData must clear all user's data in the plugin's store.
 	ClearUserData()
+}
+
+type SimulPlugin interface {
+	Plugin
 
 	// RunHook must run the logic corresponding to the [HookType]. It receives
 	// the user and a generic payload, that should be converted to the proper
 	// type ([HookPayloadLogin], [HookPayloadSwitchTeam],
 	// [HookPayloadSwitchChannel]...) to access the data.
 	RunHook(hookType HookType, u user.User, payload any) error
+}
+
+type GenPlugin interface {
+	Plugin
+
+	Done() bool
 }
 
 // PluginAction contains all the information for a plugin's action to be
@@ -61,21 +71,25 @@ type PluginAction struct {
 // The global lock to protect access to [registeredPluginsByType]
 var pluginsLock sync.RWMutex
 
-// genPluginFunc is the type of a function returning a [Plugin].
+// genPluginFunc is the type of a function returning a [SimulPlugin].
 // It is used by plugins to register themselves against the controllers.
 type genPluginFunc = func() Plugin
 
 // The global map of registerd plugins, mapping each [ControllerType] to a list
-// of functions that generate a [Plugin].
+// of functions that generate a [SimulPlugin].
 var registeredPluginsByType = map[ControllerType][]genPluginFunc{}
 
-// ControllerType is the type of the controller a [Plugin] should be injected to.
+// ControllerType is the type of the controller a [SimulPlugin] should be injected to.
 type ControllerType string
 
 const (
 	// TypeSimulController is the type of [Plugin]s that should be injected into
 	// the [simulcontroller.SimulController] controller.
 	TypeSimulController ControllerType = "simulcontroller"
+
+	// TypeGenController is the type of [Plugin]s that should be injected into
+	// the [gencontroller.GenController] controller.
+	TypeGenController ControllerType = "gencontroller"
 )
 
 // RegisterPlugin registers the function f, which is called

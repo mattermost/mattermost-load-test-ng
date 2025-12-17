@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
+	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/wiggin77/merror"
 )
@@ -332,6 +333,7 @@ func getActionList(c *SimulController) []userAction {
 		//     server, use control.UnreleasedVersion
 	}
 
+	actions = []userAction{}
 	for _, plugin := range c.plugins {
 		for _, action := range plugin.Actions() {
 			actions = append(actions, userAction{
@@ -370,7 +372,7 @@ type SimulController struct {
 	connectedFlag      int32           // indicates that the controller is connected
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      semver.Version  // stores the current server version
-	plugins            []plugins.Plugin
+	plugins            []plugins.SimulPlugin
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -400,7 +402,12 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 
 	plugins.GeneratePluginControllers(plugins.TypeSimulController, func(p plugins.Plugin) {
 		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
-			controller.plugins = append(controller.plugins, p)
+			s, ok := p.(plugins.SimulPlugin)
+			if !ok {
+				// Should never happen
+				return
+			}
+			controller.plugins = append(controller.plugins, s)
 		}
 	})
 
@@ -514,7 +521,7 @@ func (c *SimulController) Run() {
 func (c *SimulController) RunHook(hookType plugins.HookType, u user.User, payload any) error {
 	merr := merror.New()
 	for _, plugin := range c.plugins {
-		go func(p plugins.Plugin) {
+		go func(p plugins.SimulPlugin) {
 			if err := p.RunHook(hookType, u, payload); err != nil {
 				merr.Append(err)
 			}

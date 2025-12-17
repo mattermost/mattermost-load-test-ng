@@ -43,6 +43,8 @@ type Config struct {
 
 	// Indicates the distribution of chanel members within channels.
 	ChannelMembersDistribution []ChannelMemberDistribution
+
+	EnabledPlugins []string
 }
 
 // ChannelMemberDistribution holds the member limit and what percentage of channels will have the limit.
