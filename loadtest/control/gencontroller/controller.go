@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -27,6 +29,7 @@ type GenController struct {
 	config                  *Config
 	channelSelectionWeights []int
 	numUsers                int
+	plugins                 []plugins.GenController
 }
 
 // New creates and initializes a new GenController with given parameters.
@@ -46,6 +49,18 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		weights[i] = int(config.ChannelMembersDistribution[i].Probability * 100)
 	}
 
+	installedPlugins := []plugins.GenController{}
+	plugins.SpawnPluginControllers(plugins.TypeGenController, func(p plugins.Controller) {
+		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
+			s, ok := p.(plugins.GenController)
+			if !ok {
+				// Should never happen
+				return
+			}
+			installedPlugins = append(installedPlugins, s)
+		}
+	})
+
 	sc := &GenController{
 		id:                      id,
 		user:                    user,
@@ -56,6 +71,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		config:                  config,
 		channelSelectionWeights: weights,
 		numUsers:                numUsers,
+		plugins:                 installedPlugins,
 	}
 
 	return sc, nil
@@ -247,8 +263,27 @@ func (c *GenController) Run() {
 		},
 	}
 
+	for _, p := range c.plugins {
+		id := p.PluginId()
+		for _, a := range p.Actions() {
+			actions[id+"."+a.Name] = userAction{
+				run:        a.Run,
+				frequency:  100 * int(a.Frequency),
+				idleTimeMs: 10,
+			}
+		}
+	}
+
 	c.runActions(actions, func() bool {
-		return st.get(StateTargetTeams) >= c.config.NumTeams &&
+		pluginsDone := true
+		for _, p := range c.plugins {
+			if !p.Done() {
+				pluginsDone = false
+				break
+			}
+		}
+		return pluginsDone &&
+			st.get(StateTargetTeams) >= c.config.NumTeams &&
 			st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM &&
 			st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM &&
 			st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate &&
