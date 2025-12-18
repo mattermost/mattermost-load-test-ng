@@ -106,6 +106,7 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/gencontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/browsercontroller.sample.json
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -race -tags=integration ./...

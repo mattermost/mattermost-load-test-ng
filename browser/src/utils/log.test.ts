@@ -5,7 +5,7 @@ import {vi, describe, it, expect, beforeEach} from 'vitest';
 import {FastifyBaseLogger} from 'fastify';
 
 // Mock all the dependencies with simple implementations
-vi.mock('./config.js', () => ({
+vi.mock('./config_accessors.js', () => ({
   isConsoleLoggingEnabled: vi.fn(() => false),
   getConsoleLoggingLevel: vi.fn(() => 'info'),
   isFileLoggingEnabled: vi.fn(() => false),
@@ -13,13 +13,34 @@ vi.mock('./config.js', () => ({
   getFileLoggingLocation: vi.fn(() => 'logs/browser.log'),
 }));
 
-vi.mock('path', () => ({
-  default: {
+vi.mock('./config_helpers.js', () => ({
+  configJson: {
+    ConnectionConfiguration: {ServerURL: 'http://localhost:8065'},
+    BrowserLogSettings: {
+      EnableConsole: false,
+      ConsoleLevel: 'info',
+      EnableFile: false,
+      FileLevel: 'debug',
+      FileLocation: 'logs/browser.log',
+    },
+  },
+  browserControllerConfigJson: {
+    RunInHeadless: true,
+    SimulationTimeoutMs: 60000,
+  },
+  getRootDirectory: vi.fn(() => '/mock/root'),
+  screenshotsDirectory: '/mock/root/browser/screenshots',
+}));
+
+vi.mock('path', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as any),
     dirname: vi.fn(() => '/mock/path/to'),
     resolve: vi.fn(() => '/mock/root'),
     join: vi.fn(() => '/mock/root/logs/browser.log'),
-  },
-}));
+  };
+});
 
 vi.mock('url', () => ({
   fileURLToPath: vi.fn(() => '/mock/path/to/file.js'),
@@ -57,7 +78,7 @@ import {
   isFileLoggingEnabled,
   getFileLoggingLevel,
   getFileLoggingLocation,
-} from './config.js';
+} from './config_accessors.js';
 
 describe('createLogger', () => {
   const mockLogger = {

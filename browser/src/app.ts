@@ -8,7 +8,7 @@ import {Ajv} from 'ajv';
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
 import {getServerLoggerConfig, createLogger} from './utils/log.js';
-import {isConsoleLoggingEnabled} from './utils/config.js';
+import {isConsoleLoggingEnabled} from './utils/config_accessors.js';
 
 export async function applyMiddleware(fastifyInstance: FastifyInstance) {
   const baseSchema = {
