@@ -28,15 +28,15 @@ const SliceOfConfigJsonSchema = zod.object({
   }),
 });
 
-const simulationIds = Object.values(SimulationIds);
+const validSimulationIds = Object.values(SimulationIds);
 
 const BrowserControllerConfigJsonSchema = zod.object({
   RunInHeadless: zod.boolean(),
   SimulationTimeoutMs: zod
     .number()
     .gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
-  SimulationId: zod.enum(simulationIds, {
-    message: `The SimulationId configuration value must be one of: [${simulationIds.join(', ')}]`,
+  SimulationId: zod.enum(validSimulationIds, {
+    message: `The SimulationId configuration value must be one of: [${validSimulationIds.join(', ')}]`,
   }),
 });
 
