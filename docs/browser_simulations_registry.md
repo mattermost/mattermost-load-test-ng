@@ -14,7 +14,7 @@ This document lists all available browser simulations that can be run using the 
 1. Opens the Mattermost server URL in the browser
 2. Handles the preference checkbox on the landing page if present
 3. Logs in using the provided credentials
-4. Selects a the first team if team selection is required in the team selection page
+4. Selects the first team if team selection is required in the team selection page
 5. Continuously loops through the following actions:
    - Navigates to the `town-square` channel
    - Posts a message in the `town-square` channel
