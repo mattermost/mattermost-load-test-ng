@@ -73,7 +73,7 @@ export class TestManager {
     return updatedBrowserInstance;
   }
 
-  public getScenario(scenarioId: keyof typeof SimulationIds): SimulationRegistryItem['scenario'] {
+  public getScenario(scenarioId: SimulationIds): SimulationRegistryItem['scenario'] {
     const scenario = this.scenarios.get(scenarioId);
     if (!scenario) {
       throw new Error(`Scenario ${scenarioId} not found`);
