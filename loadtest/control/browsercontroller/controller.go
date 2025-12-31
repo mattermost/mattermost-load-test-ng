@@ -19,6 +19,7 @@ import (
 )
 
 // This is the URL of the LTBrowser API server ran from /browser
+// it resides in the same instance as the controllers instance.
 const LTBrowserApi = "http://localhost:5000"
 
 // BrowserController is a controller that manages browser sessions
