@@ -36,7 +36,7 @@ export class TestManager {
     browserInstance: BrowserInstance,
     activeBrowserSessions: ActiveBrowserSessions,
     serverURL: string,
-    scenarioId: SimulationIds,
+    scenarioId: keyof typeof SimulationIds,
   ): Promise<BrowserInstance | undefined> {
     const {userId} = browserInstance;
     let updatedBrowserInstance: BrowserInstance | undefined = {...browserInstance};
@@ -73,7 +73,7 @@ export class TestManager {
     return updatedBrowserInstance;
   }
 
-  public getScenario(scenarioId: SimulationIds): SimulationRegistryItem['scenario'] {
+  public getScenario(scenarioId: keyof typeof SimulationIds): SimulationRegistryItem['scenario'] {
     const scenario = this.scenarios.get(scenarioId);
     if (!scenario) {
       throw new Error(`Scenario ${scenarioId} not found`);

@@ -6,9 +6,8 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {browserTestSessionManager} from '../lib/browser_manager.js';
 import {IReply} from './types.js';
 import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
-import {SimulationIds} from '../simulations/registry.js';
 
-import {isBrowserHeadless} from '../utils/config_accessors.js';
+import {getSimulationId, isBrowserHeadless} from '../utils/config_accessors.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
@@ -79,8 +78,7 @@ async function addBrowser(
     });
   }
 
-  // TODO: make this configurable
-  const simulationId = SimulationIds.postAndScroll;
+  const simulationId = getSimulationId();
 
   const createInstanceResult = await browserTestSessionManager.createBrowserSession(
     user,

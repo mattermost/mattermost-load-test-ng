@@ -13,6 +13,7 @@ vi.mock('../utils/config_accessors.js', async (importOriginal) => {
     ...(actual as any),
     getMattermostServerURL: vi.fn().mockReturnValue('http://localhost:8065'),
     isBrowserHeadless: vi.fn().mockReturnValue(true),
+    getSimulationId: vi.fn().mockReturnValue('postAndScroll'),
   };
 });
 

@@ -27,6 +27,7 @@ vi.mock('./config_helpers.js', () => ({
   browserControllerConfigJson: {
     RunInHeadless: true,
     SimulationTimeoutMs: 60000,
+    SimulationId: 'postAndScroll',
   },
   getRootDirectory: vi.fn(() => '/mock/root'),
   screenshotsDirectory: '/mock/root/browser/screenshots',
