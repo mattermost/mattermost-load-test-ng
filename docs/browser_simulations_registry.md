@@ -1,6 +1,6 @@
 # Browser Simulations Registry
 
-This document lists all available browser simulations that can be run using the browser controller. Programmatically it is defined in the [registry](https://github.com/mattermost/mattermost-load-test-ng/blob/master/browser/src/simulations/registry.ts) file. This gives an overview of the flow of the simulation and the actions that are performed.
+This document lists all available browser simulations that can be run using the browser controller. Programmatically it is defined in the [registry.ts in simulations folder](../browser/src/simulations/registry.ts) file. This gives an overview of the flow of the simulation and the actions that are performed.
 
 ## Simulations list
 
