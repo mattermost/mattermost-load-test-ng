@@ -37,6 +37,6 @@ export function getSimulationTimeoutMs(): number {
   return browserControllerConfigJson.SimulationTimeoutMs ?? DEFAULT_SIMULATION_TIMEOUT_MS;
 }
 
-export function getSimulationId(): keyof typeof SimulationIds {
+export function getSimulationId(): SimulationIds {
   return browserControllerConfigJson.SimulationId;
 }

@@ -100,7 +100,7 @@ export class BrowserTestSessionManager {
     userId: string,
     password: string,
     serverURL: string,
-    simulationId: keyof typeof SimulationIds,
+    simulationId: SimulationIds,
     isHeadless: boolean,
   ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
@@ -227,7 +227,7 @@ export class BrowserTestSessionManager {
     userId: string,
     browserInstance: BrowserInstance,
     serverURL: string,
-    simulationId: keyof typeof SimulationIds,
+    simulationId: SimulationIds,
   ) {
     const message = `Starting ${simulationId} simulation tests for user ${userId}`;
     log.info(message);
