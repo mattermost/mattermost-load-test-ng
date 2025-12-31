@@ -28,12 +28,14 @@ const SliceOfConfigJsonSchema = zod.object({
   }),
 });
 
+const simulationIds = Object.values(SimulationIds);
+
 const BrowserControllerConfigJsonSchema = zod.object({
   RunInHeadless: zod.boolean(),
   SimulationTimeoutMs: zod
     .number()
     .gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
-  SimulationId: zod.enum(Object.values(SimulationIds)),
+  SimulationId: zod.enum(simulationIds, {message: `SimulationId must be one of: [${simulationIds.join(', ')}]`}),
 });
 
 const GoModFileName = 'go.mod';
