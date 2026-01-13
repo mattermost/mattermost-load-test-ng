@@ -3,7 +3,8 @@
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
 
-import {SessionState} from './browser_manager.js';
+import {SessionState} from '@mattermost/load-test-ng-browser';
+
 import {TestManager, testManager} from './test_manager.js';
 
 vi.mock('../app.js', () => {

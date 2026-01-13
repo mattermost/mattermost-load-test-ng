@@ -1,27 +1,18 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {Browser, BrowserContext, chromium, Page} from 'playwright';
+import {chromium, Page} from 'playwright';
 import {join} from 'path';
+
+import {SessionState} from '@mattermost/load-test-ng-browser';
+import {type BrowserInstance} from '@mattermost/load-test-ng-browser';
 
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
-import {SimulationIds} from '../simulations/registry.js';
 import {screenshotsDirectory} from '../utils/config_helpers.js';
 import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
-
-export enum SessionState {
-  CREATING = 'creating', // The browser and other instances are being created
-  CREATION_FAILED = 'creation_failed', // The browser or any other instances failed to be created
-  CREATED = 'created', // The browser and other instances were created successfully
-  STARTED = 'started', // The test was started
-  STOPPING = 'stopping', // The test was stopped by the user
-  COMPLETED = 'completed', // The test was completed successfully
-  FAILED = 'failed', // The test failed at any point
-  CLEANUP_FAILED = 'cleanup_failed', // The browser or any other instances failed to be cleaned up
-}
 
 const browserArguments = [
   '--enable-automation', // Disables UI prompts that interfere with automation eg extension warning etc.
@@ -40,16 +31,6 @@ const browserArguments = [
   '--disable-background-networking', // Disables background network services such as extension updates etc
   '--disable-sync', // Disables syncing of Chrome settings across devices
 ];
-
-export type BrowserInstance = {
-  browser: Browser | null;
-  context: BrowserContext | null;
-  page: Page | null;
-  userId: string;
-  password: string;
-  createdAt: Date;
-  state: SessionState;
-};
 
 export type ActiveBrowserSessions = Map<string, BrowserInstance>;
 
@@ -100,7 +81,7 @@ export class BrowserTestSessionManager {
     userId: string,
     password: string,
     serverURL: string,
-    simulationId: SimulationIds,
+    simulationId: string,
     isHeadless: boolean,
   ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
@@ -227,7 +208,7 @@ export class BrowserTestSessionManager {
     userId: string,
     browserInstance: BrowserInstance,
     serverURL: string,
-    simulationId: SimulationIds,
+    simulationId: string,
   ) {
     const message = `Starting ${simulationId} simulation tests for user ${userId}`;
     log.info(message);

@@ -1,7 +1,6 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {SimulationIds} from '../simulations/registry.js';
 import {configJson, browserControllerConfigJson} from './config_helpers.js';
 
 export function getMattermostServerURL(): string {
@@ -37,7 +36,7 @@ export function getSimulationTimeoutMs(): number {
   return browserControllerConfigJson.SimulationTimeoutMs ?? DEFAULT_SIMULATION_TIMEOUT_MS;
 }
 
-export function getSimulationId(): SimulationIds | string {
+export function getSimulationId(): string {
   return browserControllerConfigJson.SimulationId;
 }
 

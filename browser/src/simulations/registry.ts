@@ -1,11 +1,10 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {BrowserInstance} from '../lib/browser_manager.js';
+import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/load-test-ng-browser';
+
 import {postAndScrollScenario} from './post_and_scroll_scenario.js';
 import {log} from '../app.js';
-
-import { type SimulationRegistryItem } from '@mattermost/load-test-ng-browser';
 
 // Import playbooks simulations
 import {PlaybooksSimulationIds, PlaybooksSimulationsRegistry, type SimulationLogger} from 'playbooks-load-simulations';

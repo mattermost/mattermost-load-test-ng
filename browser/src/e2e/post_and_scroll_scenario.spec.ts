@@ -5,7 +5,8 @@ import {test} from '@playwright/test';
 
 import {postAndScrollScenario} from '../simulations/post_and_scroll_scenario.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
-import type {BrowserInstance} from '../lib/browser_manager.js';
+
+import {type BrowserInstance} from '@mattermost/load-test-ng-browser';
 
 test('Post and Scroll Scenario', async ({page}) => {
   const browserInstance = {

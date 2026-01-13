@@ -4,9 +4,10 @@
 import {handlePreferenceCheckbox, performLogin} from './login.js';
 import {postInChannel} from './post_in_channel.js';
 import {scrollInChannel} from './scrolling_in_channel.js';
-import type {BrowserInstance} from '../lib/browser_manager.js';
 import {handleTeamSelection} from './team_select.js';
 import {goToChannel} from './go_to_channel.js';
+
+import {type BrowserInstance} from '@mattermost/load-test-ng-browser';
 
 export async function postAndScrollScenario(
   {page, userId, password}: BrowserInstance,
