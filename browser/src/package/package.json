@@ -1,0 +1,25 @@
+{
+  "name": "@mattermost/load-test-ng-browser",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "types:check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.57.0"
+  }
+}

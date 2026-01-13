@@ -37,6 +37,10 @@ export function getSimulationTimeoutMs(): number {
   return browserControllerConfigJson.SimulationTimeoutMs ?? DEFAULT_SIMULATION_TIMEOUT_MS;
 }
 
-export function getSimulationId(): SimulationIds {
+export function getSimulationId(): SimulationIds | string {
   return browserControllerConfigJson.SimulationId;
+}
+
+export function arePluginsEnabled(): boolean {
+  return browserControllerConfigJson.EnabledPlugins ?? false;
 }

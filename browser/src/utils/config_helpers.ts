@@ -7,8 +7,6 @@ import {fileURLToPath} from 'url';
 import {z as zod} from 'zod';
 import pino from 'pino';
 
-import {SimulationIds} from '../simulations/registry.js';
-
 const logLabelLevels = Object.values(pino.levels.labels);
 
 const SliceOfConfigJsonSchema = zod.object({
@@ -33,9 +31,8 @@ const BrowserControllerConfigJsonSchema = zod.object({
   SimulationTimeoutMs: zod
     .number()
     .gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
-  SimulationId: zod.enum(SimulationIds, {
-    message: `The SimulationId configuration value must be one of: [${Object.values(SimulationIds).join(', ')}]`,
-  }),
+  EnabledPlugins: zod.boolean(),
+  SimulationId: zod.string().min(1, 'SimulationId cannot be empty'),
 });
 
 const GoModFileName = 'go.mod';
