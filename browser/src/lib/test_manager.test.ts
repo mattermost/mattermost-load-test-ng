@@ -3,7 +3,7 @@
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
 
-import {SessionState} from '@mattermost/load-test-ng-browser';
+import {SessionState} from '@mattermost/loadtest-browser';
 
 import {TestManager, testManager} from './test_manager.js';
 

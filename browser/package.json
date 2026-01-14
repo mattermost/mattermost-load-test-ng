@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@fastify/swagger": "9.6.1",
-    "@mattermost/load-test-ng-browser": "file:src/package",
+    "@mattermost/loadtest-browser": "file:src/package",
     "@mattermost/playwright-lib": "file:../../mattermost/e2e-tests/playwright/lib",
     "@playwright/test": "1.57.0",
     "fastify": "5.6.2",
@@ -32,7 +32,7 @@
     "pino": "10.1.0",
     "pino-caller": "4.0.0",
     "pino-pretty": "13.1.2",
-    "playbooks-load-simulations": "file:../../mattermost-plugin-playbooks/loadtest/browser",
+    "mattermost-plugin-playbooks-loadtest-browser": "file:../../mattermost-plugin-playbooks/loadtest/browser",
     "playwright": "1.57.0",
     "zod": "4.1.12"
   },

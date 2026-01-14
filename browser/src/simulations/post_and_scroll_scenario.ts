@@ -7,7 +7,7 @@ import {scrollInChannel} from './scrolling_in_channel.js';
 import {handleTeamSelection} from './team_select.js';
 import {goToChannel} from './go_to_channel.js';
 
-import {type BrowserInstance} from '@mattermost/load-test-ng-browser';
+import {type BrowserInstance} from '@mattermost/loadtest-browser';
 
 export async function postAndScrollScenario(
   {page, userId, password}: BrowserInstance,

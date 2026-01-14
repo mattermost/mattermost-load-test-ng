@@ -4,8 +4,8 @@
 import {log} from '../app.js';
 import {type ActiveBrowserSessions} from '../lib/browser_manager.js';
 
-import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/load-test-ng-browser';
-import {SessionState} from '@mattermost/load-test-ng-browser';
+import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/loadtest-browser';
+import {SessionState} from '@mattermost/loadtest-browser';
 
 import {SimulationsRegistry} from '../simulations/registry.js';
 

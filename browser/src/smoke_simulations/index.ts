@@ -10,7 +10,7 @@ import {SimulationIds, SimulationsRegistry} from '../simulations/registry.js';
 // @ts-ignore smoke_simulation.json may not be present in the project depending upon usage
 import smokeSimulationConfig from './smoke_simulation.json' with {type: 'json'};
 
-async function createBrowserSession(user: {username: string; password: string}, simulationId: SimulationIds) {
+async function createBrowserSession(user: {username: string; password: string}, simulationId: string) {
   console.info(`🔍 Creating session for ${user.username}`);
 
   try {

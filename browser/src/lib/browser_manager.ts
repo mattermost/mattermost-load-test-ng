@@ -1,11 +1,11 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {chromium, Page} from 'playwright';
+import {chromium, Page, devices} from 'playwright';
 import {join} from 'path';
 
-import {SessionState} from '@mattermost/load-test-ng-browser';
-import {type BrowserInstance} from '@mattermost/load-test-ng-browser';
+import {SessionState} from '@mattermost/loadtest-browser';
+import {type BrowserInstance} from '@mattermost/loadtest-browser';
 
 import {log} from '../app.js';
 import {testManager} from '../lib/test_manager.js';
@@ -126,7 +126,12 @@ export class BrowserTestSessionManager {
 
     // Try to create the context after the browser instance is created
     try {
-      const context = await instance.browser!.newContext();
+      const context = await instance.browser!.newContext({
+        viewport: {width: 1366, height: 768},
+        isMobile: false,
+        hasTouch: false,
+        deviceScaleFactor: 1,
+      });
 
       instance = {...instance, context};
       this.activeBrowserSessions.set(userId, instance);

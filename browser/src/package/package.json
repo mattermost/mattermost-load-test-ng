@@ -1,5 +1,5 @@
 {
-  "name": "@mattermost/load-test-ng-browser",
+  "name": "@mattermost/loadtest-browser",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,10 +16,10 @@
     "build": "tsc",
     "types:check": "tsc --noEmit"
   },
+  "dependencies": {
+    "playwright": "1.57.0"
+  },
   "devDependencies": {
     "typescript": "5.9.3"
-  },
-  "peerDependencies": {
-    "playwright": ">=1.57.0"
   }
 }
