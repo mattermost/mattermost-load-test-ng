@@ -7,6 +7,8 @@ import {fileURLToPath} from 'url';
 import {z as zod} from 'zod';
 import pino from 'pino';
 
+import {SimulationIds} from '../simulations/registry.js';
+
 const logLabelLevels = Object.values(pino.levels.labels);
 
 const SliceOfConfigJsonSchema = zod.object({
