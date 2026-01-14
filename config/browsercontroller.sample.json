@@ -1,4 +1,5 @@
 {
     "RunInHeadless": true,
-    "SimulationTimeoutMs": 60000
+    "SimulationTimeoutMs": 60000,
+    "SimulationId": "postAndScroll"
 }

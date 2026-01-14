@@ -13,3 +13,9 @@ If set to `true`, browser simulations will run in a headless Chromium browser in
 The timeout in milliseconds for browser simulations. This value sets the default timeout for page interactions and navigation operations. The value must be greater than or equal to `0`. See [Playwright's setDefaultTimeout](https://playwright.dev/docs/api/class-page#page-set-default-timeout) for more details.
 
 **Default:** `60000`
+
+## SimulationId
+
+*string*
+
+The ID of the simulation to run. See [Browser Simulations Registry](../browser_simulations_registry.md) for the full list of available simulations and their descriptions.
