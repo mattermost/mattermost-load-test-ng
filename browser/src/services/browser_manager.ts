@@ -1,14 +1,14 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {chromium, Page, devices} from 'playwright';
+import {chromium, Page} from 'playwright';
 import {join} from 'path';
 
-import {SessionState} from '@mattermost/loadtest-browser';
-import {type BrowserInstance} from '@mattermost/loadtest-browser';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
+import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
 import {log} from '../app.js';
-import {testManager} from '../lib/test_manager.js';
+import {testManager} from './test_manager.js';
 import {screenshotsDirectory} from '../utils/config_helpers.js';
 import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
 

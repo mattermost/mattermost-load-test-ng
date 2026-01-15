@@ -2,10 +2,10 @@
 // See LICENSE.txt for license information.
 
 import {log} from '../app.js';
-import {type ActiveBrowserSessions} from '../lib/browser_manager.js';
+import {type ActiveBrowserSessions} from './browser_manager.js';
 
-import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/loadtest-browser';
-import {SessionState} from '@mattermost/loadtest-browser';
+import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/loadtest-browser-lib';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
 
 import {SimulationsRegistry} from '../simulations/registry.js';
 

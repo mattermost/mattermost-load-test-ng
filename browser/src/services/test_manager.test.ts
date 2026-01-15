@@ -3,7 +3,7 @@
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
 
-import {SessionState} from '@mattermost/loadtest-browser';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
 
 import {TestManager, testManager} from './test_manager.js';
 
@@ -28,7 +28,6 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 }));
 
 import * as appModule from '../app.js';
-import {SimulationIds} from '../simulations/registry.js';
 
 const mockLog = (appModule as any).__mockLog;
 
@@ -75,7 +74,7 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'postAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
@@ -97,7 +96,7 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'postAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
@@ -125,7 +124,7 @@ describe('TestManager', () => {
         mockBrowserInstance,
         stoppingMockSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'postAndScroll',
       );
 
       expect(updatedInstance).toBeUndefined();
@@ -150,7 +149,7 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'postAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
@@ -175,7 +174,7 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'postAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();

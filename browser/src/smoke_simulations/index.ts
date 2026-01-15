@@ -3,9 +3,9 @@
 
 import ms from 'ms';
 
-import {browserTestSessionManager} from '../lib/browser_manager.js';
+import {browserTestSessionManager} from '../services/browser_manager.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
-import {SimulationIds, SimulationsRegistry} from '../simulations/registry.js';
+import {SimulationsRegistry} from '../simulations/registry.js';
 
 // @ts-ignore smoke_simulation.json may not be present in the project depending upon usage
 import smokeSimulationConfig from './smoke_simulation.json' with {type: 'json'};
@@ -109,9 +109,7 @@ async function run() {
 
   const cs: Promise<boolean>[] = [];
   for (let i = 0; i < smokeSimulationConfig.users.length; i++) {
-    cs.push(
-      createBrowserSession(smokeSimulationConfig.users[i], smokeSimulationConfig.simulations[i] as SimulationIds),
-    );
+    cs.push(createBrowserSession(smokeSimulationConfig.users[i], smokeSimulationConfig.simulations[i]));
   }
 
   const rs = await Promise.allSettled(cs);

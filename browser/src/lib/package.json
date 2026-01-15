@@ -1,5 +1,5 @@
 {
-  "name": "@mattermost/loadtest-browser",
+  "name": "@mattermost/loadtest-browser-lib",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

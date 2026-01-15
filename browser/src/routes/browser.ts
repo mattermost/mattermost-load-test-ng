@@ -3,7 +3,7 @@
 
 import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 
-import {browserTestSessionManager} from '../lib/browser_manager.js';
+import {browserTestSessionManager} from '../services/browser_manager.js';
 import {IReply} from './types.js';
 import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
 
