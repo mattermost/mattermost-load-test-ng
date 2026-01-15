@@ -15,6 +15,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -126,7 +127,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	channel, err := c.user.Store().CurrentChannel()
 	if errors.Is(err, memstore.ErrChannelNotFound) {
 		// If the current channel is not set we switch to a random one.
-		return switchChannel(c.user)
+		return c.switchChannel(c.user)
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -162,6 +163,11 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 				if err != nil {
 					mlog.Warn("Failed to store observation", mlog.Err(err))
 				}
+
+				if err := c.RunHook(plugins.HookLogin, u, nil); err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
@@ -328,10 +334,15 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		}
 	}
 
+	hookPayload := plugins.HookPayloadSwitchTeam{TeamId: team.Id}
+	if err := c.RunHook(plugins.HookSwitchTeam, u, hookPayload); err != nil {
+		return control.UserActionResponse{Err: err}
+	}
+
 	// We should probably keep track of the last channel viewed in the team but
 	// for now we can simplify and randomly pick one each time.
 
-	return switchChannel(u)
+	return c.switchChannel(u)
 }
 
 func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
@@ -552,7 +563,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	return control.UserActionResponse{Info: fmt.Sprintf("viewed channel %s", channel.Id)}
 }
 
-func switchChannel(u user.User) control.UserActionResponse {
+func (c *SimulController) switchChannel(u user.User) control.UserActionResponse {
 	start := time.Now()
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
@@ -591,6 +602,11 @@ func switchChannel(u user.User) control.UserActionResponse {
 		if err := u.UpdateActiveChannel(channel.Id); err != nil {
 			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
 		}
+	}
+
+	hookPayload := plugins.HookPayloadSwitchChannel{ChannelId: channel.Id}
+	if err := c.RunHook(plugins.HookSwitchChannel, u, hookPayload); err != nil {
+		return control.UserActionResponse{Err: err}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
