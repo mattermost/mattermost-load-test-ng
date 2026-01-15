@@ -26,6 +26,10 @@ clean:
 	rm -rf .cache
 	rm -rf screenshots
 
+	@echo "Cleaning build artifacts of @mattermost/loadtest-browser-lib"
+	cd src/lib && rm -rf dist
+	cd src/lib && rm -rf node_modules
+
 build-server:
 	@echo "Building LTBrowser app"
 	$(BIN)/tsc
