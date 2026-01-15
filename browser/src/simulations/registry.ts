@@ -5,8 +5,6 @@ import {type SimulationRegistryItem} from '@mattermost/loadtest-browser';
 
 import {postAndScrollScenario} from './post_and_scroll_scenario.js';
 
-import {SimulationsRegistry as PlaybooksSimulationsRegistry} from 'mattermost-plugin-playbooks-loadtest-browser';
-
 export const SimulationsRegistry: SimulationRegistryItem[] = [
   {
     id: 'postAndScroll',
@@ -14,5 +12,7 @@ export const SimulationsRegistry: SimulationRegistryItem[] = [
     description: 'A basic scenario that posts and scrolls in a channel',
     scenario: postAndScrollScenario,
   },
-  ...PlaybooksSimulationsRegistry,
+  // Here goes the plugins simulations registry
+  // after it is imported from the plugin's loadtest-browser package
+  // ...PluginsSimulationsRegistry,
 ];
