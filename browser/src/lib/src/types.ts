@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {Browser, BrowserContext, Page} from 'playwright';
+import type {Browser, BrowserContext, Page} from 'playwright';
 
 export enum SessionState {
   CREATING = 'creating', // The browser and other instances are being created

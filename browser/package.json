@@ -35,9 +35,9 @@
     "zod": "^4.3.5"
   },
   "scripts": {
-    "lint:check": "prettier --check 'src/**/*.ts'",
-    "lint:fix": "prettier --write 'src/**/*.ts'",
-    "types:check": "tsc --noEmit",
+    "lint:check": "prettier --check 'src/**/*.ts' && npm run lint:check --workspaces --if-present",
+    "lint:fix": "prettier --write 'src/**/*.ts' && npm run lint:fix --workspaces --if-present",
+    "types:check": "tsc --noEmit && npm run types:check --workspaces --if-present",
     "e2etest:run": "NODE_OPTIONS='--import=tsx/esm' playwright test",
     "e2etest:ui": "NODE_OPTIONS='--import=tsx/esm' playwright test --ui",
     "e2etest:debug": "NODE_OPTIONS='--import=tsx/esm' playwright test --debug",

@@ -16,6 +16,8 @@
     "importHelpers": true,
     "allowJs": false,
     "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
     "noImplicitAny": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,

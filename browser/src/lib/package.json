@@ -13,8 +13,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "types:check": "tsc --noEmit"
+    "prepare": "tsc",
+    "types:check": "tsc --noEmit",
+    "lint:check": "prettier --check 'src/**/*.ts'",
+    "lint:fix": "prettier --write 'src/**/*.ts'"
   },
   "dependencies": {
     "playwright": "1.57.0"
