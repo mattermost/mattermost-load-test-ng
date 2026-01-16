@@ -1,10 +1,13 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/loadtest-browser-lib';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
+
+import {type ActiveBrowserSessions} from './browser_manager.js';
+
 import {log} from '../app.js';
-import type {BrowserInstance, ActiveBrowserSessions} from '../lib/browser_manager.js';
-import {SessionState} from '../lib/browser_manager.js';
-import {SimulationIds, SimulationsRegistry, type SimulationRegistryItem} from '../simulations/registry.js';
+import {SimulationsRegistry} from '../simulations/registry.js';
 
 interface TestError {
   error: Error;
@@ -36,7 +39,7 @@ export class TestManager {
     browserInstance: BrowserInstance,
     activeBrowserSessions: ActiveBrowserSessions,
     serverURL: string,
-    scenarioId: SimulationIds,
+    scenarioId: string,
   ): Promise<BrowserInstance | undefined> {
     const {userId} = browserInstance;
     let updatedBrowserInstance: BrowserInstance | undefined = {...browserInstance};
@@ -73,7 +76,7 @@ export class TestManager {
     return updatedBrowserInstance;
   }
 
-  public getScenario(scenarioId: SimulationIds): SimulationRegistryItem['scenario'] {
+  public getScenario(scenarioId: string): SimulationRegistryItem['scenario'] {
     const scenario = this.scenarios.get(scenarioId);
     if (!scenario) {
       throw new Error(`Scenario ${scenarioId} not found`);

@@ -1,7 +1,8 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {Page} from 'playwright';
+import type {Page} from 'playwright';
+
 import {log} from '../app.js';
 
 export async function handleTeamSelection(page: Page): Promise<void> {
@@ -23,7 +24,7 @@ export async function handleTeamSelection(page: Page): Promise<void> {
     await page.waitForURL((url) => !url.pathname.includes('/select_team'));
 
     log.info('pass--handleTeamSelection');
-  } catch (error) {
+  } catch (_error) {
     log.info('skip--handleTeamSelection');
   }
 }

@@ -6,6 +6,9 @@ e2e_results/
 playwright-report/
 html-report.html
 
+# TypeScript build info
+*.tsbuildinfo
+
 # Logs
 logs/
 *.log

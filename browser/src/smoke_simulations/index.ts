@@ -3,14 +3,12 @@
 
 import ms from 'ms';
 
-import {browserTestSessionManager} from '../lib/browser_manager.js';
-import {getMattermostServerURL} from '../utils/config_accessors.js';
-import {SimulationIds, SimulationsRegistry} from '../simulations/registry.js';
-
-// @ts-ignore smoke_simulation.json may not be present in the project depending upon usage
 import smokeSimulationConfig from './smoke_simulation.json' with {type: 'json'};
+import {browserTestSessionManager} from '../services/browser_manager.js';
+import {SimulationsRegistry} from '../simulations/registry.js';
+import {getMattermostServerURL} from '../utils/config_accessors.js';
 
-async function createBrowserSession(user: {username: string; password: string}, simulationId: SimulationIds) {
+async function createBrowserSession(user: {username: string; password: string}, simulationId: string) {
   console.info(`🔍 Creating session for ${user.username}`);
 
   try {
@@ -26,12 +24,11 @@ async function createBrowserSession(user: {username: string; password: string}, 
       console.info(`✅ Session created: ${r.message}`);
       console.info(`⌛️ Starting simulation ${simulationId} for ${user.username}`);
       return true;
-    } else {
-      console.error(`❌ Failed: ${r.message}`);
-      return false;
     }
+    console.error(`❌ Failed: ${r.message}`);
+    return false;
   } catch (error) {
-    console.error(`❌ Exception:`, error);
+    console.error('❌ Exception:', error);
     return false;
   }
 }
@@ -107,11 +104,9 @@ async function run() {
   console.info(`ℹ️ Users: ${smokeSimulationConfig.users.length}`);
   console.info(`ℹ️ Test duration: ${ms(smokeSimulationConfig.testDurationMs, {long: true})}`);
 
-  const cs: Promise<boolean>[] = [];
+  const cs: Array<Promise<boolean>> = [];
   for (let i = 0; i < smokeSimulationConfig.users.length; i++) {
-    cs.push(
-      createBrowserSession(smokeSimulationConfig.users[i], smokeSimulationConfig.simulations[i] as SimulationIds),
-    );
+    cs.push(createBrowserSession(smokeSimulationConfig.users[i], smokeSimulationConfig.simulations[i]));
   }
 
   const rs = await Promise.allSettled(cs);

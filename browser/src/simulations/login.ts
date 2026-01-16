@@ -30,7 +30,7 @@ export async function handlePreferenceCheckbox(page: Page) {
     });
 
     log.info('pass--handlePreferenceCheckbox');
-  } catch (error) {
+  } catch (_error) {
     // If checkbox not found, log and skip
     log.info('skip--handlePreferenceCheckbox');
   }
