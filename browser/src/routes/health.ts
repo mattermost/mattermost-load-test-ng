@@ -1,12 +1,13 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import os from 'os';
+
+import type {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import ms from 'ms';
 
-import {type IReply} from './types.js';
 import {getSchema} from './health.schema.js';
+import {type IReply} from './types.js';
 
 interface HealthDataResponse {
   startTime: string;

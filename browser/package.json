@@ -10,10 +10,13 @@
     "npm": ">=10"
   },
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
     "@types/ms": "^2.1.0",
     "@types/node": "^25.0.8",
     "@types/supertest": "^6.0.3",
     "@vitest/ui": "^4.0.17",
+    "eslint": "^9.18.0",
+    "typescript-eslint": "^8.20.0",
     "fastify-cli": "^7.4.1",
     "prettier": "^3.8.0",
     "supertest": "^7.2.2",
@@ -35,9 +38,9 @@
     "zod": "^4.3.5"
   },
   "scripts": {
-    "lint:check": "prettier --check 'src/**/*.ts' && npm run lint:check --workspaces --if-present",
-    "lint:fix": "prettier --write 'src/**/*.ts' && npm run lint:fix --workspaces --if-present",
-    "types:check": "tsc --noEmit && npm run types:check --workspaces --if-present",
+    "lint:check": "prettier --check 'src/**/*.ts' && eslint 'src/**/*.ts'",
+    "lint:fix": "prettier --write 'src/**/*.ts' && eslint 'src/**/*.ts' --fix",
+    "types:check": "tsc --noEmit && tsc -p src/lib --noEmit",
     "e2etest:run": "NODE_OPTIONS='--import=tsx/esm' playwright test",
     "e2etest:ui": "NODE_OPTIONS='--import=tsx/esm' playwright test --ui",
     "e2etest:debug": "NODE_OPTIONS='--import=tsx/esm' playwright test --debug",

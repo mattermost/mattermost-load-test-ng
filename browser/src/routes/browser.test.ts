@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
+import type {FastifyInstance} from 'fastify';
 import supertest from 'supertest';
-import {FastifyInstance} from 'fastify';
+import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
 import {createApp} from '../app.js';
 

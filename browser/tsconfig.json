@@ -23,5 +23,8 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "e2etest_results"]
+  "exclude": ["node_modules", "dist", "e2etest_results", "src/lib"],
+  "references": [
+    {"path": "./src/lib"}
+  ]
 }

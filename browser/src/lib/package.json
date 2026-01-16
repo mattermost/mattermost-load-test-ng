@@ -17,16 +17,12 @@
     "npm": ">=10"
   },
   "scripts": {
-    "prepare": "tsc",
-    "types:check": "tsc --noEmit",
-    "lint:check": "prettier --check 'src/**/*.ts'",
-    "lint:fix": "prettier --write 'src/**/*.ts'"
+    "prepare": "tsc"
   },
   "dependencies": {
     "playwright": "^1.57.0"
   },
   "devDependencies": {
-    "prettier": "^3.8.0",
     "typescript": "^5.9.3"
   }
 }

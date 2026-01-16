@@ -1,14 +1,14 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import fastify, {FastifyInstance, FastifyPluginOptions, FastifyServerOptions} from 'fastify';
 import swagger from '@fastify/swagger';
-import {Ajv} from 'ajv';
+import type {FastifyInstance, FastifyPluginOptions, FastifyServerOptions} from 'fastify';
+import fastify from 'fastify';
 
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
-import {getServerLoggerConfig, createLogger} from './utils/log.js';
 import {isConsoleLoggingEnabled} from './utils/config_accessors.js';
+import {getServerLoggerConfig, createLogger} from './utils/log.js';
 
 export async function applyMiddleware(fastifyInstance: FastifyInstance) {
   const baseSchema = {
@@ -34,9 +34,10 @@ export function createApp(options?: FastifyServerOptions): FastifyInstance {
     trustProxy: true,
     ajv: {
       plugins: [
-        function (ajv: Ajv) {
+        function (ajv: any) {
           // This is used to whitelist the x-examples in the OpenAPI schema
           ajv.addKeyword({keyword: 'x-examples'});
+          return ajv;
         },
       ],
     },

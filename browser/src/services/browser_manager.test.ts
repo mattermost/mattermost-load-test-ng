@@ -55,7 +55,9 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 }));
 
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
+
 import * as playwright from 'playwright';
+
 import * as postAndScrollScenario from '../simulations/post_and_scroll_scenario.js';
 
 const mocks = (playwright as any).__mocks;

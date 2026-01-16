@@ -1,11 +1,12 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {dirname, join} from 'path';
 import fs from 'fs';
+import {dirname, join} from 'path';
 import {fileURLToPath} from 'url';
-import {z as zod} from 'zod';
+
 import pino from 'pino';
+import {z as zod} from 'zod';
 
 const logLabelLevels = Object.values(pino.levels.labels);
 

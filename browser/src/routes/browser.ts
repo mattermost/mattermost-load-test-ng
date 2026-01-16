@@ -1,12 +1,12 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import type {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+
+import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
+import type {IReply} from './types.js';
 
 import {browserTestSessionManager} from '../services/browser_manager.js';
-import {IReply} from './types.js';
-import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
-
 import {getSimulationId, isBrowserHeadless} from '../utils/config_accessors.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {

@@ -1,16 +1,19 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {chromium, Page} from 'playwright';
 import {join} from 'path';
+
+import type {Page} from 'playwright';
+import {chromium} from 'playwright';
 
 import {SessionState} from '@mattermost/loadtest-browser-lib';
 import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
-import {log} from '../app.js';
 import {testManager} from './test_manager.js';
-import {screenshotsDirectory} from '../utils/config_helpers.js';
+
+import {log} from '../app.js';
 import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
+import {screenshotsDirectory} from '../utils/config_helpers.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 
@@ -267,7 +270,7 @@ export class BrowserTestSessionManager {
       return;
     }
 
-    const promises: Promise<void>[] = [];
+    const promises: Array<Promise<void>> = [];
     for (const instance of this.activeBrowserSessions.values()) {
       if (
         instance.state === SessionState.CREATION_FAILED ||
@@ -307,7 +310,7 @@ export class BrowserTestSessionManager {
       this.activeBrowserSessions.delete(browserInstance.userId);
 
       return true;
-    } catch (error) {
+    } catch (_error) {
       // the browser session was not cleaned up successfully
       // then we need to mark the browser instance as cleanup failed so we can retry cleanup later
       const cleanupFailedInstance: BrowserInstance = {
@@ -328,7 +331,7 @@ export class BrowserTestSessionManager {
     }
 
     // Clean up all active sessions
-    const cleanupPromises: Promise<boolean>[] = [];
+    const cleanupPromises: Array<Promise<boolean>> = [];
     for (const instance of this.activeBrowserSessions.values()) {
       cleanupPromises.push(this.cleanupBrowserSession(instance));
     }
