@@ -12,6 +12,10 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=24",
+    "npm": ">=10"
+  },
   "scripts": {
     "prepare": "tsc",
     "types:check": "tsc --noEmit",
@@ -19,9 +23,10 @@
     "lint:fix": "prettier --write 'src/**/*.ts'"
   },
   "dependencies": {
-    "playwright": "1.57.0"
+    "playwright": "^1.57.0"
   },
   "devDependencies": {
-    "typescript": "5.9.3"
+    "prettier": "^3.8.0",
+    "typescript": "^5.9.3"
   }
 }
