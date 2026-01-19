@@ -14,8 +14,16 @@ The timeout in milliseconds for browser simulations. This value sets the default
 
 **Default:** `60000`
 
+## EnabledPlugins
+
+*boolean*
+
+The default value is `false`, so the load test will use only the predefined simulations built into the browser controller. If set to `true`, the load test will also look for and run simulations provided by plugins.
+
+**Default:** `false`
+
 ## SimulationId
 
 *string*
 
-The ID of the simulation to run. See [Browser Simulations Registry](../browser_simulations_registry.md) for the full list of available simulations and their descriptions.
+The ID of the simulation to run. For a complete list and description of available simulations, see the [Browser Simulations Registry](../browser_simulations_registry.md). If `EnabledPlugins` is set to `true`, specify the simulation ID as defined in the plugin’s Simulations Registry.
