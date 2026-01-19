@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
+import type {BrowserInstance, Logger} from '@mattermost/loadtest-browser-lib';
 
 import {goToChannel} from './go_to_channel.js';
 import {handlePreferenceCheckbox, performLogin} from './login.js';
@@ -12,6 +12,7 @@ import {handleTeamSelection} from './team_select.js';
 export async function postAndScrollScenario(
   {page, userId, password}: BrowserInstance,
   serverURL: string,
+  log: Logger,
   runInLoop = true,
 ) {
   if (!page) {
@@ -20,22 +21,22 @@ export async function postAndScrollScenario(
 
   await page.goto(serverURL);
 
-  await handlePreferenceCheckbox(page);
+  await handlePreferenceCheckbox(page, log);
 
-  await performLogin({page, userId, password});
+  await performLogin({page, userId, password}, log);
 
-  await handleTeamSelection(page);
+  await handleTeamSelection(page, log);
 
   // Runs the simulation at least once and then runs it in a continuous loop if runInLoop is true
   // which is true by default
   const scrollCount = runInLoop ? 40 : 3;
   do {
-    await goToChannel(page, 'town-square');
-    await postInChannel({page});
-    await scrollInChannel(page, scrollCount, 400, 500);
+    await goToChannel(page, 'town-square', log);
+    await postInChannel({page}, log);
+    await scrollInChannel(page, scrollCount, 400, 500, log);
 
-    await goToChannel(page, 'off-topic');
-    await postInChannel({page});
-    await scrollInChannel(page, scrollCount, 400, 500);
+    await goToChannel(page, 'off-topic', log);
+    await postInChannel({page}, log);
+    await scrollInChannel(page, scrollCount, 400, 500, log);
   } while (runInLoop);
 }

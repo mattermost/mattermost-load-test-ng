@@ -2,10 +2,9 @@
 // See LICENSE.txt for license information.
 
 import type {Page} from 'playwright';
+import type {Logger} from '@mattermost/loadtest-browser-lib';
 
-import {log} from '../app.js';
-
-export async function goToChannel(page: Page, channelId: string): Promise<void> {
+export async function goToChannel(page: Page, channelId: string, log: Logger): Promise<void> {
   log.info('run--goToChannel');
 
   try {

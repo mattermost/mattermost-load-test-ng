@@ -3,13 +3,14 @@
 
 import type {Page} from 'playwright';
 
-import {log} from '../app.js';
+import type {Logger} from '@mattermost/loadtest-browser-lib';
 
 export async function scrollInChannel(
   page: Page,
   scrollCount: number,
   scrollStep: number,
   pauseBetweenScrolls: number,
+  log: Logger,
 ): Promise<void> {
   log.info('run--scrollInChannel');
 

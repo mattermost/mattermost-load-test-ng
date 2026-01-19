@@ -1,7 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {type BrowserInstance, type SimulationRegistryItem} from '@mattermost/loadtest-browser-lib';
+import type {BrowserInstance, SimulationRegistryItem} from '@mattermost/loadtest-browser-lib';
 import {SessionState} from '@mattermost/loadtest-browser-lib';
 
 import {type ActiveBrowserSessions} from './browser_manager.js';
@@ -30,6 +30,7 @@ export class TestManager {
   }
 
   private initScenarios(): void {
+    // Injests the simulations registry and adds it to the scenarios map
     SimulationsRegistry.forEach((simulation) => {
       this.scenarios.set(simulation.id, simulation.scenario);
     });
@@ -48,7 +49,7 @@ export class TestManager {
       log.info(`simulation-starting--${scenarioId}--${userId}`);
 
       const scenario = this.getScenario(scenarioId);
-      await scenario(browserInstance, serverURL);
+      await scenario(browserInstance, serverURL, log);
 
       updatedBrowserInstance.state = SessionState.COMPLETED;
       log.info(`simulation-completed--${scenarioId}--${userId}`);

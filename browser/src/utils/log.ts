@@ -5,6 +5,7 @@ import {createRequire} from 'module';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
+import type {Logger} from '@mattermost/loadtest-browser-lib';
 import type {FastifyBaseLogger, FastifyLoggerOptions, FastifyRequest, FastifyReply, RawServerBase} from 'fastify';
 import type {ResSerializerReply} from 'fastify/types/logger.js';
 import type {TransportTargetOptions} from 'pino';
@@ -94,7 +95,7 @@ export function getServerLoggerConfig(): FastifyLoggerOptions {
   };
 }
 
-export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
+export function createLogger(logger?: FastifyBaseLogger, isEnabled = true): Logger {
   if (!isEnabled) {
     return {
       error: () => {},
@@ -120,5 +121,13 @@ export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
     error: pinoWithCaller.error.bind(pinoWithCaller),
     warn: pinoWithCaller.warn.bind(pinoWithCaller),
     info: pinoWithCaller.info.bind(pinoWithCaller),
+  };
+}
+
+export function createNullLogger(): Logger {
+  return {
+    error: () => {},
+    warn: () => {},
+    info: () => {},
   };
 }

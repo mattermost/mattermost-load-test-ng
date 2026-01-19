@@ -7,6 +7,7 @@ import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
 import {postAndScrollScenario} from '../simulations/post_and_scroll_scenario.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
+import {createNullLogger} from 'src/utils/log.js';
 
 test('Post and Scroll Scenario', async ({page}) => {
   const browserInstance = {
@@ -17,5 +18,5 @@ test('Post and Scroll Scenario', async ({page}) => {
 
   const serverURL = getMattermostServerURL();
 
-  await postAndScrollScenario(browserInstance, serverURL, false);
+  await postAndScrollScenario(browserInstance, serverURL, createNullLogger(), false);
 });

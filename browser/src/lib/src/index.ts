@@ -3,4 +3,4 @@
 
 export {SessionState} from './types.js';
 
-export type {BrowserInstance, SimulationRegistryItem} from './types.js';
+export type {BrowserInstance, SimulationRegistryItem, Logger} from './types.js';

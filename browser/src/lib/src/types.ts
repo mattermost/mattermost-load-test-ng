@@ -28,6 +28,16 @@ export type BrowserInstance = {
   state: SessionState;
 };
 
+interface LoggerFn {
+  (message?: string, ...args: unknown[]): void;
+}
+
+export interface Logger {
+  error: LoggerFn;
+  warn: LoggerFn;
+  info: LoggerFn;
+}
+
 /**
  * Registry item type for a browser simulation scenario.
  */
@@ -39,5 +49,5 @@ export interface SimulationRegistryItem {
   /** Description of what the simulation does */
   description?: string;
   /** The scenario function to execute */
-  scenario: (browserInstance: BrowserInstance, serverURL: string) => Promise<void>;
+  scenario: (browserInstance: BrowserInstance, serverURL: string, logger: Logger, runInLoop?: boolean) => Promise<void>;
 }

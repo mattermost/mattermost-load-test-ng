@@ -3,9 +3,9 @@
 
 import type {Page} from 'playwright';
 
-import {log} from '../app.js';
+import type {Logger} from '@mattermost/loadtest-browser-lib';
 
-export async function handleTeamSelection(page: Page): Promise<void> {
+export async function handleTeamSelection(page: Page, log: Logger): Promise<void> {
   log.info('run--handleTeamSelection');
 
   try {
