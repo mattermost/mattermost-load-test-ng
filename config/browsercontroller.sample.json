@@ -2,5 +2,5 @@
     "RunInHeadless": true,
     "SimulationTimeoutMs": 60000,
     "EnabledPlugins": false,
-    "SimulationId": "postAndScroll"
+    "SimulationId": "mattermostPostAndScroll"
 }
