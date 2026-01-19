@@ -5,7 +5,7 @@ import ms from 'ms';
 
 import smokeSimulationConfig from './smoke_simulation.json' with {type: 'json'};
 import {browserTestSessionManager} from '../services/browser_manager.js';
-import {SimulationsRegistry} from '../simulations/registry.js';
+import {SimulationsRegistry} from '../registry.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
 
 async function createBrowserSession(user: {username: string; password: string}, simulationId: string) {

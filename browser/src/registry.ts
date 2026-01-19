@@ -3,7 +3,7 @@
 
 import {type SimulationRegistryItem} from '@mattermost/loadtest-browser-lib';
 
-import {postAndScrollScenario} from './post_and_scroll_scenario.js';
+import {postAndScrollScenario} from './simulations/post_and_scroll_scenario.js';
 
 export const SimulationsRegistry: SimulationRegistryItem[] = [
   {

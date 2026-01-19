@@ -7,7 +7,7 @@ import {SessionState} from '@mattermost/loadtest-browser-lib';
 import {type ActiveBrowserSessions} from './browser_manager.js';
 
 import {log} from '../app.js';
-import {SimulationsRegistry} from '../simulations/registry.js';
+import {SimulationsRegistry} from '../registry.js';
 
 interface TestError {
   error: Error;
