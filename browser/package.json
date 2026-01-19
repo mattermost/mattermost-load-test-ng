@@ -6,8 +6,8 @@
     "src/lib"
   ],
   "engines": {
-    "node": ">=24",
-    "npm": ">=10"
+    "node": ">=20 || >=22 || >=24",
+    "npm": ">=10 || >=11"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

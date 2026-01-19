@@ -13,8 +13,8 @@
     "dist"
   ],
   "engines": {
-    "node": ">=24",
-    "npm": ">=10"
+    "node": ">=20 || >=22 || >=24",
+    "npm": ">=10 || >=11"
   },
   "scripts": {
     "prepare": "tsc"
