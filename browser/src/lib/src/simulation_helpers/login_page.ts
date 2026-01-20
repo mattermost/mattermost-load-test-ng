@@ -6,12 +6,12 @@ import {LoginPage} from '@mattermost/playwright-lib';
 
 import type {Logger} from '../types/log.js';
 
-type extraArgs = {
+type ExtraArgs = {
   userId: string;
   password: string;
 };
 
-export async function performLogin(page: Page, log: Logger, {userId, password}: extraArgs): Promise<void> {
+export async function performLogin(page: Page, log: Logger, {userId, password}: ExtraArgs): Promise<void> {
   log.info('run--performLogin');
 
   try {

@@ -5,14 +5,14 @@ import type {Page} from 'playwright';
 
 import type {Logger} from '@mattermost/loadtest-browser-lib';
 
-type extraArgs = {
+type ExtraArgs = {
   /**
    * If left empty, the first team in the list will be selected.
    */
   teamName?: string;
 };
 
-export async function performTeamSelection(page: Page, log: Logger, {teamName}: extraArgs): Promise<void> {
+export async function performTeamSelection(page: Page, log: Logger, {teamName}: ExtraArgs): Promise<void> {
   log.info('run--performTeamSelection');
 
   try {
