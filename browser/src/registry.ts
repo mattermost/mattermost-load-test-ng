@@ -8,7 +8,7 @@ import {postAndScrollScenario} from './simulations/post_and_scroll_scenario.js';
 export const SimulationsRegistry: SimulationRegistryItem[] = [
   {
     id: 'mattermostPostAndScroll',
-    name: 'Mattermost\'s post and scroll scenario',
+    name: "Mattermost's post and scroll scenario",
     description: 'A basic scenario that posts and scrolls in the Mattermost channels',
     scenario: postAndScrollScenario,
   },

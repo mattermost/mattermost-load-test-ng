@@ -60,7 +60,7 @@ describe('TestManager', () => {
     });
 
     test('should get scenario function by id', () => {
-      const scenario = testManager.getScenario('postAndScroll' as any);
+      const scenario = testManager.getScenario('mattermostPostAndScroll' as any);
       expect(scenario).toBeDefined();
       expect(typeof scenario).toBe('function');
     });
@@ -74,14 +74,14 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'postAndScroll',
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.COMPLETED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--mattermostPostAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -96,14 +96,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'postAndScroll',
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith(
+        'simulation-failed--mattermostPostAndScroll--testUser--Error: Test failed',
+      );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
@@ -124,13 +126,13 @@ describe('TestManager', () => {
         mockBrowserInstance,
         stoppingMockSessions,
         'http://localhost:8065',
-        'postAndScroll',
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeUndefined();
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--mattermostPostAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -149,16 +151,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'postAndScroll',
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
       // Verify correct logging for test error with testId
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
       expect(mockLog.error).toHaveBeenCalledWith(
-        'simulation-failed--postAndScroll--testUser--login--Error: Test step failed',
+        'simulation-failed--mattermostPostAndScroll--testUser--login--Error: Test step failed',
       );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
@@ -174,14 +176,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        'postAndScroll',
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith(
+        'simulation-failed--mattermostPostAndScroll--testUser--Error: Test failed',
+      );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });

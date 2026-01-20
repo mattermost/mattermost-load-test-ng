@@ -2,12 +2,11 @@
 // See LICENSE.txt for license information.
 
 import type {BrowserInstance, Logger} from '@mattermost/loadtest-browser-lib';
+import {performLogin, handleLandingPage, performTeamSelection} from '@mattermost/loadtest-browser-lib';
 
 import {goToChannel} from './go_to_channel.js';
-import {handlePreferenceCheckbox, performLogin} from './login.js';
 import {postInChannel} from './post_in_channel.js';
 import {scrollInChannel} from './scrolling_in_channel.js';
-import {handleTeamSelection} from './team_select.js';
 
 export async function postAndScrollScenario(
   {page, userId, password}: BrowserInstance,
@@ -21,11 +20,11 @@ export async function postAndScrollScenario(
 
   await page.goto(serverURL);
 
-  await handlePreferenceCheckbox(page, log);
+  await handleLandingPage(page, log);
 
-  await performLogin({page, userId, password}, log);
+  await performLogin(page, log, {userId, password});
 
-  await handleTeamSelection(page, log);
+  await performTeamSelection(page, log, {teamName: ''});
 
   // Runs the simulation at least once and then runs it in a continuous loop if runInLoop is true
   // which is true by default

@@ -3,6 +3,8 @@
 
 import type {Browser, BrowserContext, Page} from 'playwright';
 
+import type {Logger} from './log.js';
+
 export enum SessionState {
   CREATING = 'creating', // The browser and other instances are being created
   CREATION_FAILED = 'creation_failed', // The browser or any other instances failed to be created
@@ -27,16 +29,6 @@ export type BrowserInstance = {
   createdAt: Date;
   state: SessionState;
 };
-
-interface LoggerFn {
-  (message?: string, ...args: unknown[]): void;
-}
-
-export interface Logger {
-  error: LoggerFn;
-  warn: LoggerFn;
-  info: LoggerFn;
-}
 
 /**
  * Registry item type for a browser simulation scenario.

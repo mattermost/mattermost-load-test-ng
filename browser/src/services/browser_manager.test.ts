@@ -108,7 +108,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -126,7 +126,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -135,7 +135,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -155,7 +155,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -178,7 +178,7 @@ describe('BrowserManager', () => {
       'failuser',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -199,7 +199,7 @@ describe('BrowserManager', () => {
       'contextfailuser',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -220,7 +220,7 @@ describe('BrowserManager', () => {
       'pagefailuser',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -241,7 +241,7 @@ describe('BrowserManager', () => {
       'testfailuser',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -258,7 +258,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -275,14 +275,14 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
     await browserTestSessionManager.createBrowserSession(
       'user2',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -299,7 +299,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      'postAndScroll',
+      'mattermostPostAndScroll',
       true,
     );
 
