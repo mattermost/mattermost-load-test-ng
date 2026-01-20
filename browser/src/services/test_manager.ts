@@ -30,7 +30,7 @@ export class TestManager {
   }
 
   private initScenarios(): void {
-    // Injests the simulations registry and adds it to the scenarios map
+    // Ingests the simulations registry and adds it to the scenarios map
     SimulationsRegistry.forEach((simulation) => {
       this.scenarios.set(simulation.id, simulation.scenario);
     });
