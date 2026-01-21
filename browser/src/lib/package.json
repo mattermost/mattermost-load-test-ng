@@ -20,6 +20,7 @@
     "prepare": "tsc"
   },
   "dependencies": {
+    "@mattermost/playwright-lib": "^11.3.0",
     "playwright": "^1.57.0"
   },
   "devDependencies": {
