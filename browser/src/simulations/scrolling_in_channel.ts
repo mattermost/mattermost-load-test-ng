@@ -1,8 +1,7 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from 'playwright';
-
+import type {Page} from '@playwright/test';
 import type {Logger} from '@mattermost/loadtest-browser-lib';
 
 export async function scrollInChannel(

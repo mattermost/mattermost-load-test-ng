@@ -2,15 +2,12 @@
 // See LICENSE.txt for license information.
 
 import {join} from 'path';
-
-import type {Page} from 'playwright';
-import {chromium} from 'playwright';
-
+import type {Page} from '@playwright/test';
+import {chromium} from '@playwright/test';
 import {SessionState} from '@mattermost/loadtest-browser-lib';
 import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
 import {testManager} from './test_manager.js';
-
 import {log} from '../app.js';
 import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
 import {screenshotsDirectory} from '../utils/config_helpers.js';

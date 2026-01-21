@@ -17,7 +17,7 @@ vi.mock('../utils/config_accessors.js', async (importOriginal) => {
   };
 });
 
-vi.mock('playwright', () => {
+vi.mock('@playwright/test', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPage = {
     close: mockPageClose,

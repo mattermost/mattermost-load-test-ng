@@ -2,8 +2,9 @@
 // See LICENSE.txt for license information.
 
 import type {Page} from '@playwright/test';
-import type {Logger} from '../types/log.js';
 import {LandingLoginPage} from '@mattermost/playwright-lib';
+
+import type {Logger} from '../types/log.js';
 
 export async function handleLandingPage(page: Page, log: Logger): Promise<void> {
   log.info('run--handleLandingPage');

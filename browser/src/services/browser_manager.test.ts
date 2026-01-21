@@ -3,7 +3,7 @@
 
 import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
-vi.mock('playwright', () => {
+vi.mock('@playwright/test', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPageSetDefaultTimeout = vi.fn();
   const mockPage = {
