@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {describe, test, expect, vi, beforeEach, afterEach} from 'vitest';
+import type {FastifyInstance} from 'fastify';
 import supertest from 'supertest';
-import {FastifyInstance} from 'fastify';
+import {describe, test, expect, vi, beforeEach, afterEach} from 'vitest';
 
 import {createApp} from '../app.js';
 
@@ -34,6 +34,7 @@ describe('API /health', () => {
   test('should register health route', async () => {
     const {default: healthRoutes} = await import('./health.js');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await healthRoutes(mockFastify as any);
 
     expect(mockFastify.get).toHaveBeenCalledWith(

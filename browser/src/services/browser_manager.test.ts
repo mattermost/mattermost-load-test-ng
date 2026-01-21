@@ -3,7 +3,7 @@
 
 import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
-vi.mock('playwright', () => {
+vi.mock('@playwright/test', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPageSetDefaultTimeout = vi.fn();
   const mockPage = {
@@ -55,10 +55,12 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 }));
 
 import {BrowserTestSessionManager, browserTestSessionManager} from './browser_manager.js';
-import * as playwright from 'playwright';
-import * as postAndScrollScenario from '../simulations/post_and_scroll_scenario.js';
-import {SimulationIds} from '../simulations/registry.js';
 
+import * as playwright from '@playwright/test';
+
+import * as postAndScrollScenario from '../simulations/post_and_scroll_scenario.js';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mocks = (playwright as any).__mocks;
 const postAndScrollScenarioMock = vi.mocked(postAndScrollScenario.postAndScrollScenario);
 
@@ -107,12 +109,12 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
     expect(isCreated).toBe(true);
-    expect(message).toContain('Successfully created browser instance for user user1');
+    expect(message).toContain('Successfully initiated creation of browser instance for user user1');
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     expect(sessions.length).toBe(1);
@@ -125,7 +127,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -134,7 +136,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -154,7 +156,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -177,7 +179,7 @@ describe('BrowserManager', () => {
       'failuser',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -198,7 +200,7 @@ describe('BrowserManager', () => {
       'contextfailuser',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -219,7 +221,7 @@ describe('BrowserManager', () => {
       'pagefailuser',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -240,7 +242,7 @@ describe('BrowserManager', () => {
       'testfailuser',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -257,7 +259,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -274,14 +276,14 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
     await browserTestSessionManager.createBrowserSession(
       'user2',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 
@@ -298,7 +300,7 @@ describe('BrowserManager', () => {
       'user1',
       'password',
       'http://localhost:8065',
-      SimulationIds.postAndScroll,
+      'mattermostPostAndScroll',
       true,
     );
 

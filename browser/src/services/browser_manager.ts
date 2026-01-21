@@ -1,27 +1,18 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {Browser, BrowserContext, chromium, Page} from 'playwright';
 import {join} from 'path';
+import type {Page} from '@playwright/test';
+import {chromium} from '@playwright/test';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
+import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
+import {testManager} from './test_manager.js';
 import {log} from '../app.js';
-import {testManager} from '../lib/test_manager.js';
-import {SimulationIds} from '../simulations/registry.js';
-import {screenshotsDirectory} from '../utils/config_helpers.js';
 import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
+import {screenshotsDirectory} from '../utils/config_helpers.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
-
-export enum SessionState {
-  CREATING = 'creating', // The browser and other instances are being created
-  CREATION_FAILED = 'creation_failed', // The browser or any other instances failed to be created
-  CREATED = 'created', // The browser and other instances were created successfully
-  STARTED = 'started', // The test was started
-  STOPPING = 'stopping', // The test was stopped by the user
-  COMPLETED = 'completed', // The test was completed successfully
-  FAILED = 'failed', // The test failed at any point
-  CLEANUP_FAILED = 'cleanup_failed', // The browser or any other instances failed to be cleaned up
-}
 
 const browserArguments = [
   '--enable-automation', // Disables UI prompts that interfere with automation eg extension warning etc.
@@ -40,16 +31,6 @@ const browserArguments = [
   '--disable-background-networking', // Disables background network services such as extension updates etc
   '--disable-sync', // Disables syncing of Chrome settings across devices
 ];
-
-export type BrowserInstance = {
-  browser: Browser | null;
-  context: BrowserContext | null;
-  page: Page | null;
-  userId: string;
-  password: string;
-  createdAt: Date;
-  state: SessionState;
-};
 
 export type ActiveBrowserSessions = Map<string, BrowserInstance>;
 
@@ -100,7 +81,7 @@ export class BrowserTestSessionManager {
     userId: string,
     password: string,
     serverURL: string,
-    simulationId: SimulationIds,
+    simulationId: string,
     isHeadless: boolean,
   ): Promise<{isCreated: boolean; message: string}> {
     if (this.activeBrowserSessions.has(userId)) {
@@ -145,7 +126,12 @@ export class BrowserTestSessionManager {
 
     // Try to create the context after the browser instance is created
     try {
-      const context = await instance.browser!.newContext();
+      const context = await instance.browser!.newContext({
+        viewport: {width: 1366, height: 768},
+        isMobile: false,
+        hasTouch: false,
+        deviceScaleFactor: 1,
+      });
 
       instance = {...instance, context};
       this.activeBrowserSessions.set(userId, instance);
@@ -192,7 +178,7 @@ export class BrowserTestSessionManager {
 
     return {
       isCreated: true,
-      message: `Successfully created browser instance for user ${userId}`,
+      message: `Successfully initiated creation of browser instance for user ${userId}`,
     };
   }
 
@@ -227,7 +213,7 @@ export class BrowserTestSessionManager {
     userId: string,
     browserInstance: BrowserInstance,
     serverURL: string,
-    simulationId: SimulationIds,
+    simulationId: string,
   ) {
     const message = `Starting ${simulationId} simulation tests for user ${userId}`;
     log.info(message);
@@ -281,7 +267,7 @@ export class BrowserTestSessionManager {
       return;
     }
 
-    const promises: Promise<void>[] = [];
+    const promises: Array<Promise<void>> = [];
     for (const instance of this.activeBrowserSessions.values()) {
       if (
         instance.state === SessionState.CREATION_FAILED ||
@@ -321,7 +307,7 @@ export class BrowserTestSessionManager {
       this.activeBrowserSessions.delete(browserInstance.userId);
 
       return true;
-    } catch (error) {
+    } catch {
       // the browser session was not cleaned up successfully
       // then we need to mark the browser instance as cleanup failed so we can retry cleanup later
       const cleanupFailedInstance: BrowserInstance = {
@@ -342,7 +328,7 @@ export class BrowserTestSessionManager {
     }
 
     // Clean up all active sessions
-    const cleanupPromises: Promise<boolean>[] = [];
+    const cleanupPromises: Array<Promise<boolean>> = [];
     for (const instance of this.activeBrowserSessions.values()) {
       cleanupPromises.push(this.cleanupBrowserSession(instance));
     }

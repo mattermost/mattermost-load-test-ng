@@ -1,11 +1,10 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from 'playwright';
+import type {Page} from '@playwright/test';
+import type {Logger} from '@mattermost/loadtest-browser-lib';
 
-import {log} from '../app.js';
-
-export async function postInChannel({page}: {page: Page}): Promise<void> {
+export async function postInChannel({page}: {page: Page}, log: Logger): Promise<void> {
   log.info('run--postInChannel');
 
   try {

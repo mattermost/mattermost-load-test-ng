@@ -1,15 +1,16 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
+import type {FastifyInstance} from 'fastify';
 import supertest from 'supertest';
-import {FastifyInstance} from 'fastify';
+import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
 import {createApp} from '../app.js';
 
 vi.mock('../utils/config_accessors.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(actual as any),
     getMattermostServerURL: vi.fn().mockReturnValue('http://localhost:8065'),
     isBrowserHeadless: vi.fn().mockReturnValue(true),
@@ -17,7 +18,7 @@ vi.mock('../utils/config_accessors.js', async (importOriginal) => {
   };
 });
 
-vi.mock('playwright', () => {
+vi.mock('@playwright/test', () => {
   const mockPageClose = vi.fn().mockResolvedValue(undefined);
   const mockPage = {
     close: mockPageClose,
@@ -108,6 +109,7 @@ describe('API /browsers', () => {
 
     const {default: browserRoutes} = await import('./browser.js');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await browserRoutes(fastify as any);
 
     expect(fastify.get).toHaveBeenCalledWith(
@@ -144,7 +146,9 @@ describe('API /browsers', () => {
 
       expect(response.body).toEqual({
         success: true,
-        message: expect.stringContaining('Successfully created browser instance for user integration-test-user'),
+        message: expect.stringContaining(
+          'Successfully initiated creation of browser instance for user integration-test-user',
+        ),
       });
     });
 
@@ -258,6 +262,7 @@ describe('API /browsers', () => {
       const responses = await Promise.allSettled(requestPromises);
       const fulfilledResponses = responses
         .filter((result) => result.status === 'fulfilled')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((result) => (result as PromiseFulfilledResult<any>).value);
 
       // Count success and failure responses
@@ -387,6 +392,7 @@ describe('API /browsers', () => {
       expect(response.body.data.count).toBe(3);
       expect(response.body.data.sessions).toHaveLength(3);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const returnedUserIds = response.body.data.sessions.map((s: any) => s.userId);
       userIds.forEach((userId) => {
         expect(returnedUserIds).toContain(userId);
@@ -418,6 +424,7 @@ describe('API /browsers', () => {
       expect(response.body.data.sessions).toHaveLength(3);
 
       // Each session should have a valid state
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       response.body.data.sessions.forEach((session: any) => {
         expect(userIds).toContain(session.userId);
         expect(typeof session.state).toBe('string');
@@ -463,6 +470,7 @@ describe('API /browsers', () => {
 
       // Session might still be in list but with 'stopping' state, or might be cleaned up
       if (finalListResponse.body.data.count > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const session = finalListResponse.body.data.sessions.find((s: any) => s.userId === 'delete-test-user');
         if (session) {
           expect(['stopping', 'cleanup_failed']).toContain(session.state);
@@ -539,6 +547,7 @@ describe('API /browsers', () => {
     response = await supertest(`http://localhost:${port}`).get('/browsers').expect(200);
 
     if (response.body.data.count > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const session = response.body.data.sessions.find((s: any) => s.userId === userId);
       if (session) {
         expect(['stopping', 'cleanup_failed']).toContain(session.state);

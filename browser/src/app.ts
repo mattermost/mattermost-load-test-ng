@@ -1,14 +1,15 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import fastify, {FastifyInstance, FastifyPluginOptions, FastifyServerOptions} from 'fastify';
 import swagger from '@fastify/swagger';
-import {Ajv} from 'ajv';
+import type {FastifyInstance, FastifyServerOptions} from 'fastify';
+import fastify from 'fastify';
+import {type Ajv} from 'ajv';
 
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
-import {getServerLoggerConfig, createLogger} from './utils/log.js';
 import {isConsoleLoggingEnabled} from './utils/config_accessors.js';
+import {getServerLoggerConfig, createLogger} from './utils/log.js';
 
 export async function applyMiddleware(fastifyInstance: FastifyInstance) {
   const baseSchema = {
@@ -37,6 +38,7 @@ export function createApp(options?: FastifyServerOptions): FastifyInstance {
         function (ajv: Ajv) {
           // This is used to whitelist the x-examples in the OpenAPI schema
           ajv.addKeyword({keyword: 'x-examples'});
+          return ajv;
         },
       ],
     },
@@ -56,6 +58,6 @@ export const log = createLogger(app.log, isConsoleLoggingEnabled());
 /**
  * This is used by the Fastify CLI to generate the OpenAPI schema. This needs to be exported as default.
  */
-export default async function schema(fastifyInstance: FastifyInstance, _options: FastifyPluginOptions) {
+export default async function schema(fastifyInstance: FastifyInstance) {
   await applyMiddleware(fastifyInstance);
 }

@@ -3,7 +3,8 @@
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
 
-import {SessionState} from './browser_manager.js';
+import {SessionState} from '@mattermost/loadtest-browser-lib';
+
 import {TestManager, testManager} from './test_manager.js';
 
 vi.mock('../app.js', () => {
@@ -27,8 +28,8 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 }));
 
 import * as appModule from '../app.js';
-import {SimulationIds} from '../simulations/registry.js';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockLog = (appModule as any).__mockLog;
 
 describe('TestManager', () => {
@@ -60,12 +61,14 @@ describe('TestManager', () => {
     });
 
     test('should get scenario function by id', () => {
-      const scenario = testManager.getScenario('postAndScroll' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const scenario = testManager.getScenario('mattermostPostAndScroll' as any);
       expect(scenario).toBeDefined();
       expect(typeof scenario).toBe('function');
     });
 
     test('should throw error for invalid scenario id', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(() => testManager.getScenario('invalid' as any)).toThrow('Scenario invalid not found');
     });
 
@@ -74,14 +77,14 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.COMPLETED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-completed--mattermostPostAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -96,14 +99,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith(
+        'simulation-failed--mattermostPostAndScroll--testUser--Error: Test failed',
+      );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });
@@ -124,13 +129,13 @@ describe('TestManager', () => {
         mockBrowserInstance,
         stoppingMockSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeUndefined();
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-stopped--mattermostPostAndScroll--testUser');
       expect(mockLog.info).toHaveBeenCalledTimes(2);
       expect(mockLog.error).not.toHaveBeenCalled();
     });
@@ -149,16 +154,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
       // Verify correct logging for test error with testId
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
       expect(mockLog.error).toHaveBeenCalledWith(
-        'simulation-failed--postAndScroll--testUser--login--Error: Test step failed',
+        'simulation-failed--mattermostPostAndScroll--testUser--login--Error: Test step failed',
       );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
@@ -174,14 +179,16 @@ describe('TestManager', () => {
         mockBrowserInstance,
         mockActiveBrowserSessions,
         'http://localhost:8065',
-        SimulationIds.postAndScroll,
+        'mattermostPostAndScroll',
       );
 
       expect(updatedInstance).toBeDefined();
       expect(updatedInstance?.state).toBe(SessionState.FAILED);
 
-      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--postAndScroll--testUser');
-      expect(mockLog.error).toHaveBeenCalledWith('simulation-failed--postAndScroll--testUser--Error: Test failed');
+      expect(mockLog.info).toHaveBeenCalledWith('simulation-starting--mattermostPostAndScroll--testUser');
+      expect(mockLog.error).toHaveBeenCalledWith(
+        'simulation-failed--mattermostPostAndScroll--testUser--Error: Test failed',
+      );
       expect(mockLog.info).toHaveBeenCalledTimes(1);
       expect(mockLog.error).toHaveBeenCalledTimes(1);
     });

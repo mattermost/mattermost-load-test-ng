@@ -1,20 +1,20 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {FastifyBaseLogger, FastifyLoggerOptions, FastifyRequest, FastifyReply, RawServerBase} from 'fastify';
-import type {ResSerializerReply} from 'fastify/types/logger.js';
+import {createRequire} from 'module';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {createRequire} from 'module';
-import {TransportTargetOptions} from 'pino';
+
+import type {Logger} from '@mattermost/loadtest-browser-lib';
+import type {FastifyBaseLogger, FastifyLoggerOptions, FastifyRequest, FastifyReply, RawServerBase} from 'fastify';
+import type {ResSerializerReply} from 'fastify/types/logger.js';
+import type {TransportTargetOptions} from 'pino';
 import pinoCaller from 'pino-caller';
-import {PrettyOptions} from 'pino-pretty';
+import type {PrettyOptions} from 'pino-pretty';
 
 // We need to use the require function to import pino and pino-pretty
 // because they are not ESM compatible yet.
 const require = createRequire(import.meta.url);
-const pino = require('pino');
-
 import {
   isConsoleLoggingEnabled,
   getConsoleLoggingLevel,
@@ -22,6 +22,8 @@ import {
   getFileLoggingLevel,
   getFileLoggingLocation,
 } from './config_accessors.js';
+
+const pino = require('pino');
 
 export function getServerLoggerConfig(): FastifyLoggerOptions {
   const consoleLoggingEnabled = isConsoleLoggingEnabled();
@@ -93,13 +95,9 @@ export function getServerLoggerConfig(): FastifyLoggerOptions {
   };
 }
 
-export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
+export function createLogger(logger?: FastifyBaseLogger, isEnabled = true): Logger {
   if (!isEnabled) {
-    return {
-      error: () => {},
-      warn: () => {},
-      info: () => {},
-    };
+    return createNullLogger();
   }
 
   if (!logger) {
@@ -119,5 +117,13 @@ export function createLogger(logger?: FastifyBaseLogger, isEnabled = true) {
     error: pinoWithCaller.error.bind(pinoWithCaller),
     warn: pinoWithCaller.warn.bind(pinoWithCaller),
     info: pinoWithCaller.info.bind(pinoWithCaller),
+  };
+}
+
+export function createNullLogger(): Logger {
+  return {
+    error: () => {},
+    warn: () => {},
+    info: () => {},
   };
 }

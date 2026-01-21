@@ -1,8 +1,8 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import type {FastifyBaseLogger} from 'fastify';
 import {vi, describe, it, expect, beforeEach} from 'vitest';
-import {FastifyBaseLogger} from 'fastify';
 
 // Mock all the dependencies with simple implementations
 vi.mock('./config_accessors.js', () => ({
@@ -36,6 +36,7 @@ vi.mock('./config_helpers.js', () => ({
 vi.mock('path', async (importOriginal) => {
   const actual = await importOriginal();
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(actual as any),
     dirname: vi.fn(() => '/mock/path/to'),
     resolve: vi.fn(() => '/mock/root'),
@@ -72,7 +73,6 @@ vi.mock('pino-caller', () => ({
   default: vi.fn((logger) => logger),
 }));
 
-import {createLogger, getServerLoggerConfig} from './log.js';
 import {
   isConsoleLoggingEnabled,
   getConsoleLoggingLevel,
@@ -80,6 +80,7 @@ import {
   getFileLoggingLevel,
   getFileLoggingLocation,
 } from './config_accessors.js';
+import {createLogger, getServerLoggerConfig} from './log.js';
 
 describe('createLogger', () => {
   const mockLogger = {

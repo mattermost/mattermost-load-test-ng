@@ -16,6 +16,9 @@
     "importHelpers": true,
     "allowJs": false,
     "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
     "noImplicitAny": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,
@@ -23,8 +26,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "e2etest_results"],
-  "references": [
-    {"path": "./src/lib"}
-  ]
+  "exclude": ["node_modules", "dist"]
 }
