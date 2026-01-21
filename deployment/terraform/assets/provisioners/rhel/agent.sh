@@ -19,8 +19,8 @@ do
         [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" && \
         echo "nvm installed successfully with version $(nvm --version)" && \
         # Although we have a .nvmrc file, but we cannot use that because its not available at the provisioner level
-        nvm install 22.16 && \
-        nvm use 22.16 && \
+        nvm install 24.11 && \
+        nvm use 24.11 && \
         echo "Node.js installed successfully with version $(node --version)" && \
         install_prometheus_node_exporter && \
         install_otel_collector && \

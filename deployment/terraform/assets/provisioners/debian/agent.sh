@@ -23,8 +23,8 @@ until [ "$n" -ge 3 ]; do
 		[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" &&
 		echo "nvm installed successfully with version $(nvm --version)" &&
 		# Although we have a .nvmrc file, but we cannot use that because its not available at the provisioner level
-		nvm install 22.16 &&
-		nvm use 22.16 &&
+		nvm install 24.11 &&
+		nvm use 24.11 &&
 		echo "Node.js installed successfully with version $(node --version)" &&
 		# Install OpenTelemetry collector, using ubuntu user to avoid permission issues
 		wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb &&
