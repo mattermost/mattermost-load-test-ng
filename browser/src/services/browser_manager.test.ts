@@ -60,6 +60,7 @@ import * as playwright from '@playwright/test';
 
 import * as postAndScrollScenario from '../simulations/post_and_scroll_scenario.js';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mocks = (playwright as any).__mocks;
 const postAndScrollScenarioMock = vi.mocked(postAndScrollScenario.postAndScrollScenario);
 
@@ -113,7 +114,7 @@ describe('BrowserManager', () => {
     );
 
     expect(isCreated).toBe(true);
-    expect(message).toContain('Successfully created browser instance for user user1');
+    expect(message).toContain('Successfully initiated creation of browser instance for user user1');
 
     const sessions = browserTestSessionManager.getActiveBrowserSessions();
     expect(sessions.length).toBe(1);

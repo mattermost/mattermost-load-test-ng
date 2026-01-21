@@ -29,6 +29,7 @@ vi.mock('../simulations/post_and_scroll_scenario.js', () => ({
 
 import * as appModule from '../app.js';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockLog = (appModule as any).__mockLog;
 
 describe('TestManager', () => {
@@ -60,12 +61,14 @@ describe('TestManager', () => {
     });
 
     test('should get scenario function by id', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scenario = testManager.getScenario('mattermostPostAndScroll' as any);
       expect(scenario).toBeDefined();
       expect(typeof scenario).toBe('function');
     });
 
     test('should throw error for invalid scenario id', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(() => testManager.getScenario('invalid' as any)).toThrow('Scenario invalid not found');
     });
 

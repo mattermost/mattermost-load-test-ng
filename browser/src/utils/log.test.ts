@@ -36,6 +36,7 @@ vi.mock('./config_helpers.js', () => ({
 vi.mock('path', async (importOriginal) => {
   const actual = await importOriginal();
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(actual as any),
     dirname: vi.fn(() => '/mock/path/to'),
     resolve: vi.fn(() => '/mock/root'),

@@ -34,6 +34,7 @@ vi.mock('./app.js', () => {
 });
 
 describe('src/server', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockExit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as any);
   const originalEnv = {...process.env};
   const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);

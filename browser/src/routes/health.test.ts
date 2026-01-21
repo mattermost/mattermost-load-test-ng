@@ -34,6 +34,7 @@ describe('API /health', () => {
   test('should register health route', async () => {
     const {default: healthRoutes} = await import('./health.js');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await healthRoutes(mockFastify as any);
 
     expect(mockFastify.get).toHaveBeenCalledWith(

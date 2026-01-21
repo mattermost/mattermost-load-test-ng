@@ -2,23 +2,19 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default [
-  {
-    ignores: ['**/dist/', '**/node_modules/'],
-  },
-
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    ignores: ['**/dist/', '**/node_modules/'],
+  },
+  {
     files: ['src/**/*.ts'],
-    ignores: ['src/lib/**'],
     languageOptions: {
       parserOptions: {
-        project: './tsconfig.json',
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
+    rules: {},
   },
 ];

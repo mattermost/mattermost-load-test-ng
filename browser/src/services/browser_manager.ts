@@ -178,7 +178,7 @@ export class BrowserTestSessionManager {
 
     return {
       isCreated: true,
-      message: `Successfully created browser instance for user ${userId}`,
+      message: `Successfully initiated creation of browser instance for user ${userId}`,
     };
   }
 
@@ -307,7 +307,7 @@ export class BrowserTestSessionManager {
       this.activeBrowserSessions.delete(browserInstance.userId);
 
       return true;
-    } catch (_error) {
+    } catch {
       // the browser session was not cleaned up successfully
       // then we need to mark the browser instance as cleanup failed so we can retry cleanup later
       const cleanupFailedInstance: BrowserInstance = {

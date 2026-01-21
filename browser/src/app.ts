@@ -2,8 +2,9 @@
 // See LICENSE.txt for license information.
 
 import swagger from '@fastify/swagger';
-import type {FastifyInstance, FastifyPluginOptions, FastifyServerOptions} from 'fastify';
+import type {FastifyInstance, FastifyServerOptions} from 'fastify';
 import fastify from 'fastify';
+import {type Ajv} from 'ajv';
 
 import browserRoutes from './routes/browser.js';
 import healthRoutes from './routes/health.js';
@@ -34,7 +35,7 @@ export function createApp(options?: FastifyServerOptions): FastifyInstance {
     trustProxy: true,
     ajv: {
       plugins: [
-        function (ajv: any) {
+        function (ajv: Ajv) {
           // This is used to whitelist the x-examples in the OpenAPI schema
           ajv.addKeyword({keyword: 'x-examples'});
           return ajv;
@@ -57,6 +58,6 @@ export const log = createLogger(app.log, isConsoleLoggingEnabled());
 /**
  * This is used by the Fastify CLI to generate the OpenAPI schema. This needs to be exported as default.
  */
-export default async function schema(fastifyInstance: FastifyInstance, _options: FastifyPluginOptions) {
+export default async function schema(fastifyInstance: FastifyInstance) {
   await applyMiddleware(fastifyInstance);
 }
