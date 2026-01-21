@@ -97,11 +97,7 @@ export function getServerLoggerConfig(): FastifyLoggerOptions {
 
 export function createLogger(logger?: FastifyBaseLogger, isEnabled = true): Logger {
   if (!isEnabled) {
-    return {
-      error: () => {},
-      warn: () => {},
-      info: () => {},
-    };
+    return createNullLogger();
   }
 
   if (!logger) {
