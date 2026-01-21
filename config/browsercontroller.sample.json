@@ -1,6 +1,6 @@
 {
+    "SimulationId": "mattermostPostAndScroll",
     "RunInHeadless": true,
     "SimulationTimeoutMs": 60000,
-    "EnabledPlugins": false,
-    "SimulationId": "mattermostPostAndScroll"
+    "EnabledPlugins": false
 }
