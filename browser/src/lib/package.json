@@ -1,5 +1,15 @@
 {
   "name": "@mattermost/loadtest-browser-lib",
+  "version": "1.31.0",
+  "description": "Shared types, helpers and utilities for Mattermost browser-based load testing simulations using Playwright",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattermost/mattermost-load-test-ng.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mattermost/mattermost-load-test-ng/issues"
+  },
+  "homepage": "https://github.com/mattermost/mattermost-load-test-ng/tree/master/browser/src/lib#readme",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +22,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20 || >=22 || >=24",
     "npm": ">=10 || >=11"
