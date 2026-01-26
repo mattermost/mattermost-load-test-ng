@@ -332,7 +332,7 @@ func getActionList(c *SimulController) []userAction {
 		//     server, use control.UnreleasedVersion
 	}
 
-	// actions = []userAction{}
+	// Include the actions from registered plugins
 	for _, plugin := range c.plugins {
 		for _, action := range plugin.Actions() {
 			actions = append(actions, userAction{
