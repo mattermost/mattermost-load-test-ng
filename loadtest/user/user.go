@@ -25,6 +25,9 @@ type GraphQLInput struct {
 // User provides a wrapper interface to interact with the Mattermost server
 // through its client APIs. It persists the data to its UserStore for later use.
 type User interface {
+	// client
+	Client() *model.Client4
+
 	// store
 	// Store exposes the underlying UserStore.
 	Store() store.UserStore
