@@ -330,6 +330,27 @@ LimitNOFILE=262144
 WantedBy=multi-user.target
 `
 
+const baseLtlibreServerCmd = `/home/%s/mattermost-load-test-ng/bin/ltlibre`
+
+const ltlibreServiceFile = `
+[Unit]
+Description=Mattermost load-test Libre Translate Mock Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ printf "%s" .execStart}}
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/{{.User}}/mattermost-load-test-ng
+User={{.User}}
+Group={{.User}}
+LimitNOFILE=262144
+
+[Install]
+WantedBy=multi-user.target
+`
+
 const esExporterServiceFile = `
 [Unit]
 Description=Elasticsearch prometheus exporter
