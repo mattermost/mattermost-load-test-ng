@@ -55,6 +55,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 			s, ok := p.(plugins.GenController)
 			if !ok {
 				// Should never happen
+				mlog.Error("The provided plugins.Controller cannot be casted to plugins.GenController", mlog.String("plugin_id", p.PluginId()))
 				return
 			}
 			installedPlugins = append(installedPlugins, s)

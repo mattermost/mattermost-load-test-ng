@@ -403,7 +403,8 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
 			s, ok := p.(plugins.SimulController)
 			if !ok {
-				// Should never happen, but we need to check
+				// Should never happen
+				mlog.Error("The provided plugins.Controller cannot be casted to plugins.SimulController", mlog.String("plugin_id", p.PluginId()))
 				return
 			}
 			controller.plugins = append(controller.plugins, s)
