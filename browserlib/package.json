@@ -2,14 +2,6 @@
   "name": "@mattermost/loadtest-browser-lib",
   "version": "1.31.0",
   "description": "Shared types, helpers and utilities for Mattermost browser-based load testing simulations using Playwright",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mattermost/mattermost-load-test-ng.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mattermost/mattermost-load-test-ng/issues"
-  },
-  "homepage": "https://github.com/mattermost/mattermost-load-test-ng/tree/master/browser/src/lib#readme",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,13 +22,19 @@
     "npm": ">=10 || >=11"
   },
   "scripts": {
-    "prepare": "tsc"
-  },
-  "dependencies": {
-    "@mattermost/playwright-lib": "^11.3.0",
-    "@playwright/test": "^1.57.0"
+    "build": "npm run build:bundle && npm run build:types",
+    "build:bundle": "node scripts/generate_bundle.mjs",
+    "build:types": "node scripts/generate_types.mjs",
+    "prepare": "npm run build",
+    "clean": "rm -rf dist node_modules *.tsbuildinfo"
   },
   "devDependencies": {
+    "@types/node": "^25.1.0",
+    "esbuild": "^0.27.2",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@mattermost/playwright-lib": "^11.4.0",
+    "@playwright/test": "^1.57.0"
   }
 }
