@@ -2,16 +2,12 @@
   "name": "mattermost-loadtest-browser",
   "type": "module",
   "private": true,
-  "workspaces": [
-    "src/lib"
-  ],
   "engines": {
     "node": ">=20 || >=22 || >=24",
     "npm": ">=10 || >=11"
   },
   "dependencies": {
     "@fastify/swagger": "^9.6.1",
-    "@mattermost/loadtest-browser-lib": "*",
     "@mattermost/playwright-lib": "^11.4.0",
     "@playwright/test": "^1.57.0",
     "fastify": "^5.6.2",
