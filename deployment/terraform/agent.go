@@ -177,6 +177,23 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 			browserBuf := bytes.NewBufferString("")
 			tpl.Execute(browserBuf, tplVars)
 
+			var ltlibreBuf *bytes.Buffer
+			if t.config.LtlibreSettings.Enabled {
+				tpl, err = template.New("").Parse(ltlibreServiceFile)
+				if err != nil {
+					mlog.Error("could not parse ltlibre service template", mlog.Err(err), mlog.Int("agent", agentNumber))
+					foundErr.Store(true)
+					return
+				}
+
+				tplVars = map[string]any{
+					"execStart": fmt.Sprintf(baseLtlibreServerCmd, t.Config().AWSAMIUser),
+					"User":      t.Config().AWSAMIUser,
+				}
+				ltlibreBuf = bytes.NewBufferString("")
+				tpl.Execute(ltlibreBuf, tplVars)
+			}
+
 			otelcolConfig, err := renderAgentOtelcolConfig(instance.Tags.Name, t.output.MetricsServer.GetConnectionIP(), t.Config().AWSAMIUser)
 			if err != nil {
 				mlog.Error("unable to render otelcol config", mlog.Int("agent", agentNumber), mlog.Err(err))
@@ -201,6 +218,14 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 				{srcData: agentType, dstPath: t.ExpandWithUser(dstAgentTypeFilePath), msg: "Uploading agent type file"},
+			}
+
+			if t.config.LtlibreSettings.Enabled {
+				batch = append(batch, uploadInfo{
+					srcData: strings.TrimPrefix(ltlibreBuf.String(), "\n"),
+					dstPath: "/lib/systemd/system/ltlibre.service",
+					msg:     "Uploading ltlibre service file",
+				})
 			}
 
 			if t.config.UsersFilePath != "" {
@@ -250,6 +275,15 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				mlog.Error("error starting load-test api server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
 				foundErr.Store(true)
 				return
+			}
+
+			if t.config.LtlibreSettings.Enabled {
+				mlog.Info("Starting ltlibre server", mlog.Int("agent", agentNumber))
+				if out, err := sshc.RunCommand("sudo systemctl daemon-reload && sudo systemctl restart ltlibre"); err != nil {
+					mlog.Error("error starting ltlibre server", mlog.String("output", string(out)), mlog.Err(err), mlog.Int("agent", agentNumber))
+					foundErr.Store(true)
+					return
+				}
 			}
 		}()
 	}
