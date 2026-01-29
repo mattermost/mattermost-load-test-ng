@@ -32,10 +32,13 @@ function generateTypes() {
             getCurrentDirectory: ts.sys.getCurrentDirectory,
             getNewLine: () => ts.sys.newLine,
         };
+        // eslint-disable-next-line no-undef
         console.error(ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost));
+        // eslint-disable-next-line no-undef
         process.exit(1);
     }
 
+    // eslint-disable-next-line no-undef
     console.log('@mattermost/loadtest-browser-lib: Type declarations generated');
 }
 

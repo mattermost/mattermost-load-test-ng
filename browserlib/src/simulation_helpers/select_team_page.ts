@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Page} from '@playwright/test';
+import type { Page } from "@playwright/test";
 
-import type {Logger} from '../types/log.js';
+import type { Logger } from "../types/log.js";
 
 type ExtraArgs = {
   /**
@@ -12,35 +12,39 @@ type ExtraArgs = {
   teamName?: string;
 };
 
-export async function performTeamSelection(page: Page, log: Logger, {teamName}: ExtraArgs): Promise<void> {
-  log.info('run--performTeamSelection');
+export async function performTeamSelection(
+  page: Page,
+  log: Logger,
+  { teamName }: ExtraArgs,
+): Promise<void> {
+  log.info("run--performTeamSelection");
 
   try {
     const isTeamSelectionPage = await page
-      .waitForURL((url) => url.pathname.includes('/select_team'))
+      .waitForURL((url) => url.pathname.includes("/select_team"))
       .then(() => true)
       .catch(() => false);
     if (!isTeamSelectionPage) {
-      throw new Error('Not on team selection page');
+      throw new Error("Not on team selection page");
     }
 
-    await page.waitForSelector('.signup-team-dir a');
+    await page.waitForSelector(".signup-team-dir a");
 
     let teamIconElement;
     if (teamName) {
-      teamIconElement = page.locator('.signup-team-dir a').filter({
-        has: page.locator('.signup-team-dir__name', {hasText: teamName}),
+      teamIconElement = page.locator(".signup-team-dir a").filter({
+        has: page.locator(".signup-team-dir__name", { hasText: teamName }),
       });
     } else {
-      teamIconElement = page.locator('.signup-team-dir a').first();
+      teamIconElement = page.locator(".signup-team-dir a").first();
     }
 
     await teamIconElement.click();
 
-    await page.waitForURL((url) => !url.pathname.includes('/select_team'));
+    await page.waitForURL((url) => !url.pathname.includes("/select_team"));
 
-    log.info('pass--performTeamSelection');
+    log.info("pass--performTeamSelection");
   } catch {
-    log.info('skip--performTeamSelection');
+    log.info("skip--performTeamSelection");
   }
 }

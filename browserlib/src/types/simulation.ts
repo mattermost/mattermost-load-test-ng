@@ -1,19 +1,19 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import type {Browser, BrowserContext, Page} from '@playwright/test';
+import type { Browser, BrowserContext, Page } from "@playwright/test";
 
-import type {Logger} from './log.js';
+import type { Logger } from "./log.js";
 
 export enum SessionState {
-  CREATING = 'creating', // The browser and other instances are being created
-  CREATION_FAILED = 'creation_failed', // The browser or any other instances failed to be created
-  CREATED = 'created', // The browser and other instances were created successfully
-  STARTED = 'started', // The test was started
-  STOPPING = 'stopping', // The test was stopped by the user
-  COMPLETED = 'completed', // The test was completed successfully
-  FAILED = 'failed', // The test failed at any point
-  CLEANUP_FAILED = 'cleanup_failed', // The browser or any other instances failed to be cleaned up
+  CREATING = "creating", // The browser and other instances are being created
+  CREATION_FAILED = "creation_failed", // The browser or any other instances failed to be created
+  CREATED = "created", // The browser and other instances were created successfully
+  STARTED = "started", // The test was started
+  STOPPING = "stopping", // The test was stopped by the user
+  COMPLETED = "completed", // The test was completed successfully
+  FAILED = "failed", // The test failed at any point
+  CLEANUP_FAILED = "cleanup_failed", // The browser or any other instances failed to be cleaned up
 }
 
 /**
@@ -41,5 +41,10 @@ export interface SimulationRegistryItem {
   /** Description of what the simulation does */
   description?: string;
   /** The scenario function to execute */
-  scenario: (browserInstance: BrowserInstance, serverURL: string, logger: Logger, runInLoop?: boolean) => Promise<void>;
+  scenario: (
+    browserInstance: BrowserInstance,
+    serverURL: string,
+    logger: Logger,
+    runInLoop?: boolean,
+  ) => Promise<void>;
 }
