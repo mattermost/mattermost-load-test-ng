@@ -15,6 +15,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
+
+	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
 
 // GenController is an implementation of a UserController used to generate
