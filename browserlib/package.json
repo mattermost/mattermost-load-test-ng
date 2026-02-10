@@ -22,14 +22,9 @@
     "npm": ">=10 || >=11"
   },
   "scripts": {
-    "build": "npm run build:bundle && npm run build:types",
-    "build:bundle": "node scripts/generate_bundle.mjs",
-    "build:types": "node scripts/generate_types.mjs",
     "lint:check": "prettier --check 'src/**/*.ts' && eslint 'src/**/*.ts'",
     "lint:fix": "prettier --write 'src/**/*.ts' && eslint 'src/**/*.ts' --fix",
-    "types:check": "tsc --noEmit",
-    "prepare": "npm run build",
-    "clean": "rm -rf dist node_modules *.tsbuildinfo"
+    "types:check": "tsc --noEmit"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
