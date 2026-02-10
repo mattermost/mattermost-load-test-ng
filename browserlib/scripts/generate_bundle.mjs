@@ -21,9 +21,6 @@ async function generateBundle() {
             '@playwright/test',
         ],
     });
-
-    // eslint-disable-next-line no-undef
-    console.log('@mattermost/loadtest-browser-lib: Bundle generated');
 }
 
 await generateBundle();

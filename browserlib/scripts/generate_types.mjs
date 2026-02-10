@@ -37,9 +37,6 @@ function generateTypes() {
         // eslint-disable-next-line no-undef
         process.exit(1);
     }
-
-    // eslint-disable-next-line no-undef
-    console.log('@mattermost/loadtest-browser-lib: Type declarations generated');
 }
 
 generateTypes();
