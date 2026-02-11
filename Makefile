@@ -129,7 +129,7 @@ else
 ifeq ($(TAG_EXISTS), 0)
 	@echo "Error: tag ${NEXT_VER} already exists"
 else
-	go install github.com/goreleaser/goreleaser@latest
+	go install github.com/goreleaser/goreleaser/v2@latest
 	@echo -n "Release will be created from branch $(CURR_BRANCH). "
 	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	git pull

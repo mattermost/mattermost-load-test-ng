@@ -1,3 +1,5 @@
+version: 2
+
 git:
   # If there are more than one tag in the same commit, pick the newest one
   tag_sort: -version:creatordate
@@ -34,7 +36,8 @@ archives:
   -
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     wrap_in_directory: true
-    format: tar.gz
+    formats:
+      - tar.gz
     files:
       - LICENSE.txt
       - config/config.sample.json
