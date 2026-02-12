@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {createRequire} from 'module';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import {createRequire} from 'node:module';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import type {Logger} from '@mattermost/loadtest-browser-lib';
 import type {FastifyBaseLogger, FastifyLoggerOptions, FastifyRequest, FastifyReply, RawServerBase} from 'fastify';
