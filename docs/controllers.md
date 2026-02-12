@@ -38,9 +38,15 @@ It is used to calculate what is the ideal performance of a Mattermost instance.
 It's sole purpose is to have the user login once, open a WebSocket connection and perform just one request.  
 Running this controller will serve as a baseline against which to compare other results.  
 
+### `GenController`
+
+This controller's purpose is to generate data (teams, channels, posts, etc.).
+This is particularly useful when a more realistic starting setup is required.
+Also, it is used to populate an empty database during the init process.
+
 ### `BrowserController`
 
 This is a specialized controller that runs browser-based simulations using Playwright.
 Unlike other controllers, it cannot be used by simply setting `UserControllerConfiguration.Type`.
 Instead, it requires a dedicated load-test agent setup and configuration through the API server.
-See [loadtest/control/browsercontroller/controller.go](../loadtest/control/browsercontroller/controller.go) and its configuration is documented in [docs/config/browsercontroller.md](config/browsercontroller.md).  
+See [loadtest/control/browsercontroller/controller.go](../loadtest/control/browsercontroller/controller.go) and its configuration is documented in [docs/config/browsercontroller.md](config/browsercontroller.md).
