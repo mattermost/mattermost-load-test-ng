@@ -7,10 +7,18 @@ import {fileURLToPath} from 'node:url';
 
 import ms from 'ms';
 
-import type {SmokeSimulationConfig} from './types.js';
 import {browserTestSessionManager} from '../services/browser_manager.js';
 import {SimulationsRegistry} from '../registry.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
+
+interface SmokeSimulationConfig {
+  users: Array<{username: string; password: string}>;
+  simulations: string[];
+  serverURL: string;
+  RunInHeadless: boolean;
+  testDurationMs: number;
+  sessionMonitorIntervalMs: number;
+}
 
 function readConfig(): SmokeSimulationConfig {
   try {

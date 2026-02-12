@@ -64,7 +64,7 @@ The monitor provides real-time feedback on active sessions:
   "serverURL": "http://localhost:8065",
   "sessionMonitorIntervalMs": 5000,
   "testDurationMs": 120000,
-  "simulations": ["postAndScroll"],
+  "simulations": ["mattermostPostAndScroll"],
   "RunInHeadless": false
 }
 ```
@@ -81,7 +81,7 @@ The monitor provides real-time feedback on active sessions:
   "serverURL": "https://staging.mattermost.com",
   "sessionMonitorIntervalMs": 10000,
   "testDurationMs": 600000,
-  "simulations": ["postAndScroll", "postAndScroll", "postAndScroll"],
+  "simulations": ["mattermostPostAndScroll", "mattermostPostAndScroll", "mattermostPostAndScroll"],
   "RunInHeadless": true
 }
 ```
