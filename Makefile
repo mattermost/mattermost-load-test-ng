@@ -74,6 +74,7 @@ endif
 	if [ -d "browser/dist" ]; then \
 		mkdir -p $(PLATFORM_DIST_PATH)/browser; \
 		cp -r browser/dist $(PLATFORM_DIST_PATH)/browser/dist; \
+		cp -r browser/packs $(PLATFORM_DIST_PATH)/browser/packs; \
 		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
 		cp browser/package-lock.json $(PLATFORM_DIST_PATH)/browser; \
 		cp browser/Makefile $(PLATFORM_DIST_PATH)/browser; \
