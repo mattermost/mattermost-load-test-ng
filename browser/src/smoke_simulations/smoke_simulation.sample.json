@@ -9,7 +9,7 @@
       "password": "password-1"
     }
   ],
-  "simulations": ["postAndScroll", "postAndScroll"],
+  "simulations": ["mattermostPostAndScroll", "mattermostPostAndScroll"],
   "serverURL": "http://localhost:8065",
   "RunInHeadless": false,
   "testDurationMs": 120000,
