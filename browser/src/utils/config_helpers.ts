@@ -1,9 +1,9 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import fs from 'fs';
-import {dirname, join} from 'path';
-import {fileURLToPath} from 'url';
+import fs from 'node:fs';
+import {dirname, join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 import pino from 'pino';
 import {z as zod} from 'zod';
