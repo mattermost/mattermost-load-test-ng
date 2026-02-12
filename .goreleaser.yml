@@ -7,6 +7,7 @@ before:
   hooks:
     - go mod download
     - go mod verify
+    - make build-browser-api
 builds:
   - main: ./cmd/ltagent
     id: "ltagent"
@@ -40,10 +41,17 @@ archives:
       - tar.gz
     files:
       - LICENSE.txt
+      - .nvmrc
       - config/config.sample.json
+      - config/browsercontroller.sample.json
       - config/coordinator.sample.json
       - config/simplecontroller.sample.json
       - config/simulcontroller.sample.json
+      - browser/dist/**
+      - browser/packs/**
+      - browser/package.json
+      - browser/package-lock.json
+      - browser/Makefile
 changelog:
   sort: desc
 release:

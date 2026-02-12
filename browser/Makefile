@@ -4,9 +4,12 @@
 export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
+# Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
+nvm_install_node = if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm install; fi
+
 install-dependencies:
 	@echo "Installing node_modules of LTBrowser app"
-	npm install
+	@$(nvm_install_node) && npm install
 	@echo "Successfully installed node_modules of LTBrowser app"
 
 install-playwright: install-dependencies
@@ -28,7 +31,7 @@ clean:
 
 build-server:
 	@echo "Building LTBrowser app"
-	$(BIN)/tsc
+	@$(nvm_install_node) && $(BIN)/tsc
 	@echo "LTBrowser app built successfully"
 
 ## Builds the LTBrowser server, by first installing the dependencies and then building the server. This does not install the Playwright browser which should be done separately

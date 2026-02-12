@@ -60,12 +60,14 @@ endif
 	mkdir -p $(PLATFORM_DIST_PATH)/config
 	mkdir -p $(PLATFORM_DIST_PATH)/bin
 
+	cp LICENSE.txt $(PLATFORM_DIST_PATH)
+	cp .nvmrc $(PLATFORM_DIST_PATH)
+
 	cp config/config.sample.json $(PLATFORM_DIST_PATH)/config/config.json
+	cp config/browsercontroller.sample.json $(PLATFORM_DIST_PATH)/config/browsercontroller.json
 	cp config/coordinator.sample.json $(PLATFORM_DIST_PATH)/config/coordinator.json
 	cp config/simplecontroller.sample.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
-	cp LICENSE.txt $(PLATFORM_DIST_PATH)
-	cp .nvmrc $(PLATFORM_DIST_PATH)
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
