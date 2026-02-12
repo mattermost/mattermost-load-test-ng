@@ -26,7 +26,7 @@ function readConfig(): SmokeSimulationConfig {
     const configPath = join(__dirname, 'smoke_simulation.json');
     const config = readFileSync(configPath, 'utf-8');
     return JSON.parse(config) as SmokeSimulationConfig;
-  } catch  {
+  } catch {
     console.error(`❌ Failed to read config`);
     process.exit(1);
   }
