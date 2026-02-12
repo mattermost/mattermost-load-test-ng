@@ -15,7 +15,7 @@ interface SmokeSimulationConfig {
   users: Array<{username: string; password: string}>;
   simulations: string[];
   serverURL: string;
-  RunInHeadless: boolean;
+  runInHeadless: boolean;
   testDurationMs: number;
   sessionMonitorIntervalMs: number;
 }
@@ -25,9 +25,9 @@ function readConfig(): SmokeSimulationConfig {
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const configPath = join(__dirname, 'smoke_simulation.json');
     const config = readFileSync(configPath, 'utf-8');
-    return JSON.parse(config);
-  } catch (error) {
-    console.error(`❌ Failed to read config: ${error}`);
+    return JSON.parse(config) as SmokeSimulationConfig;
+  } catch  {
+    console.error(`❌ Failed to read config`);
     process.exit(1);
   }
 }
@@ -41,7 +41,7 @@ async function createBrowserSession(user: {username: string; password: string}, 
       user.password,
       smokeSimulationConfig.serverURL,
       simulationId,
-      smokeSimulationConfig.RunInHeadless,
+      smokeSimulationConfig.runInHeadless,
     );
 
     if (r.isCreated) {
