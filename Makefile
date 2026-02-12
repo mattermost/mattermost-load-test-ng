@@ -61,6 +61,7 @@ endif
 	mkdir -p $(PLATFORM_DIST_PATH)/bin
 
 	cp config/config.sample.json $(PLATFORM_DIST_PATH)/config/config.json
+	cp config/browsercontroller.sample.json $(PLATFORM_DIST_PATH)/config/browsercontroller.json
 	cp config/coordinator.sample.json $(PLATFORM_DIST_PATH)/config/coordinator.json
 	cp config/simplecontroller.sample.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json

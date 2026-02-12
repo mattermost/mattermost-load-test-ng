@@ -43,6 +43,7 @@ archives:
       - LICENSE.txt
       - .nvmrc
       - config/config.sample.json
+      - config/browsercontroller.sample.json
       - config/coordinator.sample.json
       - config/simplecontroller.sample.json
       - config/simulcontroller.sample.json
