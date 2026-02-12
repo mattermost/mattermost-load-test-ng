@@ -2,20 +2,16 @@
   "name": "mattermost-loadtest-browser",
   "type": "module",
   "private": true,
-  "workspaces": [
-    "src/lib"
-  ],
   "engines": {
     "node": ">=20 || >=22 || >=24",
     "npm": ">=10 || >=11"
   },
   "dependencies": {
     "@fastify/swagger": "^9.6.1",
-    "@mattermost/loadtest-browser-lib": "*",
-    "@mattermost/playwright-lib": "^11.3.0",
+    "@mattermost/loadtest-browser-lib": "file:./packs/loadtest-browser-lib.tgz",
+    "@mattermost/playwright-lib": "^11.4.0",
     "@playwright/test": "^1.57.0",
     "fastify": "^5.6.2",
-    "luxon": "^3.7.2",
     "ms": "^2.1.3",
     "pino": "^10.2.0",
     "pino-caller": "^4.0.0",
@@ -24,7 +20,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
-    "@types/luxon": "^3.7.1",
     "@types/ms": "^2.1.0",
     "@types/node": "^25.0.8",
     "@types/supertest": "^6.0.3",
@@ -43,7 +38,7 @@
   "scripts": {
     "lint:check": "prettier --check 'src/**/*.ts' && eslint 'src/**/*.ts'",
     "lint:fix": "prettier --write 'src/**/*.ts' && eslint 'src/**/*.ts' --fix",
-    "types:check": "tsc --noEmit && tsc -p src/lib --noEmit",
+    "types:check": "tsc --noEmit",
     "e2etest:run": "NODE_OPTIONS='--import=tsx/esm' playwright test",
     "e2etest:ui": "NODE_OPTIONS='--import=tsx/esm' playwright test --ui",
     "e2etest:debug": "NODE_OPTIONS='--import=tsx/esm' playwright test --debug",
