@@ -1,12 +1,28 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import {readFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
 import ms from 'ms';
 
-import smokeSimulationConfig from './smoke_simulation.json' with {type: 'json'};
+import type {SmokeSimulationConfig} from './types.js';
 import {browserTestSessionManager} from '../services/browser_manager.js';
 import {SimulationsRegistry} from '../registry.js';
 import {getMattermostServerURL} from '../utils/config_accessors.js';
+
+function readConfig(): SmokeSimulationConfig {
+  try {
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const configPath = join(__dirname, 'smoke_simulation.json');
+    const config = readFileSync(configPath, 'utf-8');
+    return JSON.parse(config);
+  } catch (error) {
+    console.error(`❌ Failed to read config: ${error}`);
+    process.exit(1);
+  }
+}
 
 async function createBrowserSession(user: {username: string; password: string}, simulationId: string) {
   console.info(`🔍 Creating session for ${user.username}`);
@@ -130,7 +146,9 @@ function stop() {
   }, smokeSimulationConfig.testDurationMs);
 }
 
+let smokeSimulationConfig: SmokeSimulationConfig;
 (async function () {
+  smokeSimulationConfig = readConfig();
   monitor();
   await run();
   stop();
