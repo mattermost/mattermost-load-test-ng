@@ -23,6 +23,8 @@ AGENT=$(GOBIN)/ltagent
 AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
 API_SERVER=$(GOBIN)/ltapi
 API_SERVER_ARGS=-mod=readonly -trimpath ./cmd/ltapi
+LIBRE=$(GOBIN)/ltlibre
+LIBRE_ARGS=-mod=readonly -trimpath ./cmd/ltlibre
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
@@ -38,6 +40,9 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	@echo Build OSX amd64
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
+
+build-libre: ## Build the mock LibreTranslate server.
+	$(GO) build -o $(LIBRE) $(LIBRE_ARGS)
 
 build-browser-api: ## Build the browser testing HTTP server.
 	cd browser && $(MAKE) build
@@ -110,6 +115,7 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/browsercontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/ltlibre.sample.json
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -race -tags=integration ./...
