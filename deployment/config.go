@@ -111,6 +111,7 @@ type Config struct {
 	RedisSettings         RedisSettings
 	OpenLDAPSettings      OpenLDAPSettings
 	JobServerSettings     JobServerSettings
+	LtlibreSettings       LtlibreSettings
 	LogSettings           logger.Settings
 	Report                report.Config
 	// Directory under which the .terraform directory and state files are managed.
@@ -404,6 +405,12 @@ type JobServerSettings struct {
 	InstanceCount int `default:"0" validate:"range:[0,1]"`
 	// Job server instance type to be created.
 	InstanceType string `default:"c7i.xlarge"`
+}
+
+// LtlibreSettings contains the settings for the mock LibreTranslate server.
+type LtlibreSettings struct {
+	// Enabled indicates whether to start ltlibre on agent instances.
+	Enabled bool `default:"false"`
 }
 
 // DBParameter contains info regarding a single RDS DB specific parameter.
