@@ -216,7 +216,60 @@ func SelectWeighted(weights []int) (int, error) {
 
 // PickRandomWord returns a random  word.
 func PickRandomWord() string {
-	return PickRandomString(words)
+	return generateWord("ja")
+}
+
+// Unicode ranges for CJK character generation.
+var langCharRanges = map[string][][2]int{
+	"zh": {
+		{0x4E00, 0x9FFF}, // CJK Unified Ideographs
+	},
+	"ja": {
+		{0x3041, 0x3096}, // Hiragana
+		{0x30A1, 0x30F6}, // Katakana
+		{0x4E00, 0x9FFF}, // Kanji (CJK Unified Ideographs)
+	},
+	"ko": {
+		{0xAC00, 0xD7A3}, // Hangul Syllables
+	},
+}
+
+// randomCharFromRanges returns a random rune from one of the given Unicode
+// ranges, with each range weighted proportionally to its size.
+func randomCharFromRanges(ranges [][2]int) rune {
+	totalSize := 0
+	for _, r := range ranges {
+		totalSize += r[1] - r[0] + 1
+	}
+	idx := rand.Intn(totalSize)
+	for _, r := range ranges {
+		size := r[1] - r[0] + 1
+		if idx < size {
+			return rune(r[0] + idx)
+		}
+		idx -= size
+	}
+	return rune(ranges[0][0])
+}
+
+// generateWord produces a single random CJK word whose character count
+// varies by language (1-3 for zh/ko, 1-4 for ja).
+func generateWord(lang string) string {
+	ranges := langCharRanges[lang]
+	var length int
+	switch lang {
+	case "zh":
+		length = rand.Intn(3) + 1 // 1-3 characters
+	case "ja":
+		length = rand.Intn(4) + 1 // 1-4 characters
+	case "ko":
+		length = rand.Intn(3) + 1 // 1-3 characters
+	}
+	chars := make([]rune, length)
+	for i := range chars {
+		chars[i] = randomCharFromRanges(ranges)
+	}
+	return string(chars)
 }
 
 // PickRandomString returns a random string from the given slice of strings
