@@ -26,24 +26,12 @@ resource "aws_instance" "openldap" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/openldap.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/openldap.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_security_group" "openldap" {

@@ -80,24 +80,12 @@ resource "aws_instance" "app_server" {
     destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/app.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/app.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 data "aws_vpc" "selected" {
   tags = {
@@ -228,25 +216,12 @@ resource "aws_instance" "metrics_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/metrics.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/metrics.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_instance" "proxy_server" {
@@ -277,25 +252,12 @@ resource "aws_instance" "proxy_server" {
     host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/proxy.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/proxy.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_iam_user" "s3user" {
@@ -470,25 +432,12 @@ resource "aws_instance" "loadtest_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/agent.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/agent.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_instance" "loadtest_browser_agent" {
@@ -518,25 +467,12 @@ resource "aws_instance" "loadtest_browser_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/agent.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/agent.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_security_group" "app" {
@@ -964,24 +900,12 @@ resource "aws_instance" "job_server" {
   }
 
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/job.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/job.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 locals {
@@ -1024,24 +948,12 @@ resource "aws_instance" "keycloak" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/keycloak.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/keycloak.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_security_group" "keycloak" {
