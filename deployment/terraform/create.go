@@ -465,6 +465,12 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		return fmt.Errorf("error executing service file template: %w", err)
 	}
 
+	// Upload license file
+	licenseDst := fmt.Sprintf("/home/%s/mattermost.mattermost-license", t.config.AWSAMIUser)
+	if _, err := sshc.UploadFile(t.config.MattermostLicenseFile, licenseDst, false); err != nil {
+		return fmt.Errorf("error uploading license file: %w", err)
+	}
+
 	// Upload files
 	batch := []uploadInfo{
 		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},

@@ -75,11 +75,6 @@ resource "aws_instance" "app_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = var.mattermost_license_file
-    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
-  }
-
   user_data_replace_on_change = true
   user_data = templatefile("${path.module}/user_data.sh.tpl", {
     common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
@@ -893,12 +888,6 @@ resource "aws_instance" "job_server" {
     volume_size = var.block_device_sizes_job
     volume_type = var.block_device_type
   }
-
-  provisioner "file" {
-    source      = var.mattermost_license_file
-    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
-  }
-
 
   user_data_replace_on_change = true
   user_data = templatefile("${path.module}/user_data.sh.tpl", {
