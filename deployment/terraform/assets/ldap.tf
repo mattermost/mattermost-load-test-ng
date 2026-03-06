@@ -4,12 +4,6 @@ resource "aws_instance" "openldap" {
     Name = "${var.cluster_name}-openldap"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.openldap_instance_type
   count             = var.openldap_enabled ? 1 : 0

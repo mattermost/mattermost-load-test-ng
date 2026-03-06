@@ -51,12 +51,6 @@ resource "aws_instance" "app_server" {
     Name = "${var.cluster_name}-app-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami                  = var.aws_ami
   instance_type        = var.app_instance_type
   key_name             = aws_key_pair.key.id
@@ -187,12 +181,6 @@ resource "aws_instance" "metrics_server" {
     Name = "${var.cluster_name}-metrics"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.metrics_instance_type
   count             = var.enable_metrics_instance ? 1 : 0
@@ -239,12 +227,6 @@ resource "aws_instance" "proxy_server" {
   root_block_device {
     volume_size = var.block_device_sizes_proxy
     volume_type = var.block_device_type
-  }
-
-  connection {
-    type = "ssh"
-    user = var.aws_ami_user
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
   }
 
   user_data_replace_on_change = true
@@ -405,12 +387,6 @@ resource "aws_instance" "loadtest_agent" {
     Name = "${var.cluster_name}-agent-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami           = var.aws_ami
   instance_type = var.agent_instance_type
   key_name      = aws_key_pair.key.id
@@ -438,12 +414,6 @@ resource "aws_instance" "loadtest_agent" {
 resource "aws_instance" "loadtest_browser_agent" {
   tags = {
     Name = "${var.cluster_name}-browser-agent-${count.index}"
-  }
-
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
   }
 
   ami           = var.aws_ami
@@ -867,12 +837,6 @@ resource "aws_instance" "job_server" {
     Name = "${var.cluster_name}-job-server-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.job_server_instance_type
   key_name          = aws_key_pair.key.id
@@ -913,12 +877,6 @@ resource "null_resource" "s3_dump" {
 resource "aws_instance" "keycloak" {
   tags = {
     Name = "${var.cluster_name}-keycloak"
-  }
-
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
   }
 
   ami               = var.aws_ami
