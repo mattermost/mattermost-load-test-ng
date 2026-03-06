@@ -2,9 +2,6 @@
 
 set -euo pipefail
 
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
-
 # Versions
 export prometheus_node_exporter_version="1.8.2"
 export otel_collector_version="0.110.0"
