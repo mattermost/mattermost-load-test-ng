@@ -74,8 +74,8 @@ function install_otel_collector() {
     echo "Installing OpenTelemetry Collector"
     wget "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${otel_collector_version}/otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm" && \
     sudo rpm -i "otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm" && \
-    sudo sed -i "s/User=.*/User=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
-    sudo sed -i "s/Group=.*/Group=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo sed -i "s/User=.*/User=${USER}/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo sed -i "s/Group=.*/Group=${USER}/g" /lib/systemd/system/otelcol-contrib.service && \
     sudo systemctl daemon-reload && \
     sudo systemctl restart otelcol-contrib
 }

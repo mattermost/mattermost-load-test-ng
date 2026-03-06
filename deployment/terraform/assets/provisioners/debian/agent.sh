@@ -32,6 +32,7 @@ until [ "$n" -ge 3 ]; do
 		sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
 		sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
 		sudo systemctl daemon-reload && sudo systemctl restart otelcol-contrib &&
+		sudo chown -R ${USER}:${USER} ${HOME}/.nvm &&
 		exit 0
 	n=$((n + 1))
 	sleep 2
