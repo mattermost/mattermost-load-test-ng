@@ -2,12 +2,6 @@
 
 set -euo pipefail
 
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
-	echo 'Waiting for cloud-init...'
-	sleep 1
-done
-
 # Retry loop (up to 3 times)
 n=0
 until [ "$n" -ge 3 ]; do
@@ -32,6 +26,7 @@ until [ "$n" -ge 3 ]; do
 		sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
 		sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
 		sudo systemctl daemon-reload && sudo systemctl restart otelcol-contrib &&
+		sudo chown -R ${USER}:${USER} ${HOME}/.nvm &&
 		exit 0
 	n=$((n + 1))
 	sleep 2
