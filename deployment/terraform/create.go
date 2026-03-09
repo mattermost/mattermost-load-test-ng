@@ -1407,6 +1407,7 @@ func (t *Terraform) waitForProvisioning(extAgent *ssh.ExtAgent) error {
 			backoff := 5 * time.Second
 			const maxBackoff = 30 * time.Second
 			const sentinelPath = "/var/lib/cloud/instance/provisioning-done"
+			const exitcodePath = "/var/lib/cloud/instance/provisioning-exitcode"
 
 			for time.Now().Before(deadline) {
 				out, err := sshc.RunCommand("test -f " + sentinelPath)
@@ -1414,6 +1415,14 @@ func (t *Terraform) waitForProvisioning(extAgent *ssh.ExtAgent) error {
 					mlog.Info("Provisioning complete", mlog.String("name", name))
 					return
 				}
+
+				// Check if provisioning failed explicitly.
+				exitCode, ecErr := sshc.RunCommand("cat " + exitcodePath)
+				if ecErr == nil {
+					errCh <- fmt.Errorf("provisioning failed on %s (%s) with exit code %s: check /var/log/cloud-init-output.log on the instance for details", name, ip, strings.TrimSpace(string(exitCode)))
+					return
+				}
+
 				mlog.Debug("Still waiting for provisioning",
 					mlog.String("name", name),
 					mlog.String("output", string(out)),

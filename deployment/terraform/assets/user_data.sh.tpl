@@ -18,6 +18,9 @@ export HOME="/home/${ami_user}"
 export USER="${ami_user}"
 
 cd /tmp
-/tmp/provisioner.sh
-
-touch /var/lib/cloud/instance/provisioning-done
+if /tmp/provisioner.sh; then
+  touch /var/lib/cloud/instance/provisioning-done
+else
+  echo "$?" > /var/lib/cloud/instance/provisioning-exitcode
+  exit 1
+fi
