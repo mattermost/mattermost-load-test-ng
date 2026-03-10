@@ -20,7 +20,7 @@ until [ "$n" -ge 3 ]; do
 		nvm install 24.11 &&
 		nvm use 24.11 &&
 		echo "Node.js installed successfully with version $(node --version)" &&
-		# Install OpenTelemetry collector, using ubuntu user to avoid permission issues
+		# Install OpenTelemetry collector, using current user to avoid permission issues
 		wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb &&
 		sudo dpkg -i otelcol-contrib_0.120.0_linux_amd64.deb &&
 		sudo sed -i "s/User=.*/User=${USER}/g" /lib/systemd/system/otelcol-contrib.service &&

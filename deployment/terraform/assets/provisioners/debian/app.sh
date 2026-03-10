@@ -23,11 +23,11 @@ until [ "$n" -ge 3 ]; do
 		sudo apt-get install -y numactl linux-tools-aws &&
 		wget https://github.com/streamer45/netpeek/releases/download/v0.1.4/netpeek-v0.1.4 &&
 		sudo mv netpeek-v* /usr/local/bin/netpeek && sudo chmod +x /usr/local/bin/netpeek &&
-		# Install OpenTelemetry collector, using ubuntu user to avoid permission issues
+		# Install OpenTelemetry collector, using current user to avoid permission issues
 		wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb &&
 		sudo dpkg -i otelcol-contrib_0.120.0_linux_amd64.deb &&
-		sudo sed -i 's/User=.*/User=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
-		sudo sed -i 's/Group=.*/Group=ubuntu/g' /lib/systemd/system/otelcol-contrib.service &&
+		sudo sed -i "s/User=.*/User=${USER}/g" /lib/systemd/system/otelcol-contrib.service &&
+		sudo sed -i "s/Group=.*/Group=${USER}/g" /lib/systemd/system/otelcol-contrib.service &&
 		sudo systemctl daemon-reload &&
 		sudo systemctl restart otelcol-contrib &&
 		exit 0
