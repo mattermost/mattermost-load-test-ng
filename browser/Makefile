@@ -1,15 +1,16 @@
-.PHONY: clean install build start dev dev-watch schema help
+.PHONY: clean nvm-install-node install build start dev dev-watch schema help 
 
 # Environment variables
 export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
-# Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
-nvm_install_node = if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm install; fi
+## Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
+nvm-install-node:
+	@if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm install; fi
 
 install-dependencies:
 	@echo "Installing node_modules of LTBrowser app"
-	@$(nvm_install_node) && npm install
+	@npm install
 	@echo "Successfully installed node_modules of LTBrowser app"
 
 install-playwright: install-dependencies
@@ -31,7 +32,7 @@ clean:
 
 build-server:
 	@echo "Building LTBrowser app"
-	@$(nvm_install_node) && $(BIN)/tsc
+	@$(BIN)/tsc
 	@echo "LTBrowser app built successfully"
 
 ## Builds the LTBrowser server, by first installing the dependencies and then building the server. This does not install the Playwright browser which should be done separately
@@ -48,17 +49,17 @@ start: build install-playwright
 	node dist/server.js
 
 ## Start the LTBrowser server in development mode
-dev: install
+dev: nvm-install-node install
 	@echo "Starting LTBrowser app in development mode"
 	$(BIN)/tsx src/server.ts
 
 ## Start the LTBrowser server in development watch mode
-dev-watch: install
+dev-watch: nvm-install-node install
 	@echo "Starting LTBrowser app in development watch mode"
 	$(BIN)/tsx watch src/server.ts
 
 ## Run the smoke simulations
-smoke-simulation: install
+smoke-simulation: nvm-install-node install
 	@if [ -f "src/smoke_simulations/smoke_simulation.json" ]; then \
 		echo "Running smoke simulation of LTBrowser app"; \
 	else \
