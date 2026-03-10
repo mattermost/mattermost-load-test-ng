@@ -1395,6 +1395,7 @@ func (t *Terraform) waitForProvisioning(extAgent *ssh.ExtAgent) error {
 		go func(name, ip string) {
 			defer wg.Done()
 
+			start := time.Now()
 			mlog.Info("Connecting to instance", mlog.String("name", name), mlog.String("ip", ip))
 			sshc, err := extAgent.NewClientWithRetry(t.config.AWSAMIUser, ip, provisioningTimeout)
 			if err != nil {
@@ -1403,7 +1404,12 @@ func (t *Terraform) waitForProvisioning(extAgent *ssh.ExtAgent) error {
 			}
 			defer sshc.Close()
 
-			deadline := time.Now().Add(provisioningTimeout)
+			remaining := provisioningTimeout - time.Since(start)
+			if remaining <= 0 {
+				errCh <- fmt.Errorf("provisioning timed out on %s (%s) after SSH connection: no time remaining for polling", name, ip)
+				return
+			}
+			deadline := time.Now().Add(remaining)
 			backoff := 5 * time.Second
 			const maxBackoff = 30 * time.Second
 			const sentinelPath = "/var/lib/cloud/instance/provisioning-done"
