@@ -74,7 +74,7 @@ type Config struct {
 	// Should a pubic IP be allocated for the proxy instance.
 	ProxyAllocatePublicIPAddress bool `default:"true"`
 	// Path to the SSH public key.
-	SSHPublicKey string `default:"~/.ssh/id_rsa.pub" validate:"notempty"`
+	SSHPublicKey string `default:"~/.ssh/id_ed25519.pub" validate:"notempty"`
 	// Terraform database connection and provision settings.
 	TerraformDBSettings TerraformDBSettings
 	// External database connection settings
