@@ -4,7 +4,7 @@
 export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
 
-## Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
+# Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
 nvm-install-node:
 	@if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm install; fi
 
