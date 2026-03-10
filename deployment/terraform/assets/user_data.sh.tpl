@@ -18,9 +18,11 @@ export HOME="/home/${ami_user}"
 export USER="${ami_user}"
 
 cd /tmp
-if /tmp/provisioner.sh; then
+rc=0
+/tmp/provisioner.sh || rc=$?
+if [ $rc -eq 0 ]; then
   touch /var/lib/cloud/instance/provisioning-done
 else
-  echo "$?" > /var/lib/cloud/instance/provisioning-exitcode
+  echo "$rc" > /var/lib/cloud/instance/provisioning-exitcode
   exit 1
 fi
