@@ -1,12 +1,16 @@
 # Packs directory of the browser loadtest
 
-This directory stores local `.tgz` package files for plugins and other dependencies that are not available on npm. These are installed as `file:` dependencies by `browser/package.json`.
+This directory stores local `.tgz` package files used as `file:` dependencies by `browser/package.json`. It serves two purposes: providing packages that are not published to any public npm registry, and overriding npm-published packages with local builds during active development.
 
 ## Why this directory exists
 
-Some packages used by the browser load test runner are not published to a public npm registry. This is by design: these packages are developed in tandem with this project, and maintaining versioned npm releases for every incremental change would introduce unnecessary overhead. Instead, they are built from their respective source repositories, packaged as tarballs via `npm pack`, and placed in this directory so that the browser runner can consume them locally without any dependency on an external registry.
+This directory covers two distinct use cases:
 
-A common use case is plugin load testing. When developing or iterating on plugin-specific simulation scripts, the plugin's load test package should be built and placed here. This allows any changes to the simulation scripts to be picked up immediately — simply rebuild and replace the tarball — without requiring a new npm release. For example:
+**Packages not on npm** — Some packages, such as plugin-specific load test simulation scripts, are never published to a public registry. They are developed in tandem with this project, and maintaining versioned npm releases for every incremental change would introduce unnecessary overhead. Instead, they are built from their respective source repositories, packaged as tarballs via `npm pack`, and placed here so the browser runner can consume them without any dependency on an external registry.
+
+**Local development overrides** — Packages that are published on npm, such as `@mattermost/loadtest-browser-lib`, can also be placed here to override the registry version during local development. This allows changes to be tested end-to-end immediately — simply rebuild the package and replace the tarball — without requiring a new npm release.
+
+A common example of both cases is plugin load testing: when developing or iterating on plugin-specific simulation scripts, the plugin's load test package is built locally and placed here so that changes are picked up immediately. For example:
 
 ```json
 "mattermost-plugin-playbooks-loadtest-browser": "file:packs/mattermost-plugin-playbooks-loadtest-browser-2.4.3.tgz",
