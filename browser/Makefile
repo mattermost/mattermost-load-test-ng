@@ -1,8 +1,21 @@
-.PHONY: clean nvm-install-node install build start dev dev-watch schema help 
+.PHONY: all help clean nvm-install-node install-dependencies install-playwright install build-server build start-service start dev dev-watch smoke-simulation schema
 
 # Environment variables
 export PLAYWRIGHT_BROWSERS_PATH ?= 0
 BIN := ./node_modules/.bin
+
+all: build
+
+help: ## Show available targets
+	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "%-24s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+clean: ## Clean build artifacts, node_modules, and other cache files
+	@echo "Cleaning build artifacts, node_modules, and test results of LTBrowser app"
+	rm -rf dist
+	rm -rf node_modules
+	rm -rf e2e_results
+	rm -rf .cache
+	rm -rf screenshots
 
 # Sets Node.js version from .nvmrc via nvm if it is installed, otherwise falls back to system Node
 nvm-install-node:
@@ -18,48 +31,32 @@ install-playwright: install-dependencies
 	$(BIN)/playwright install --with-deps chromium
 	@echo "Successfully installed Playwright Chromium browser of LTBrowser app"
 
-## Install npm dependencies and Playwright Chromium browser with its dependencies
-install: install-dependencies install-playwright
-
-## Clean build artifacts, node_modules, and test results
-clean:
-	@echo "Cleaning build artifacts, node_modules, and test results of LTBrowser app"
-	rm -rf dist
-	rm -rf node_modules
-	rm -rf e2e_results
-	rm -rf .cache
-	rm -rf screenshots
+install: install-dependencies install-playwright ## Installs the dependencies and Playwright Chromium browser with its dependencies
 
 build-server:
 	@echo "Building LTBrowser app"
 	@$(BIN)/tsc
 	@echo "LTBrowser app built successfully"
 
-## Builds the LTBrowser server, by first installing the dependencies and then building the server. This does not install the Playwright browser which should be done separately
-build: clean install-dependencies build-server
+build: clean install-dependencies build-server ## Builds the LTBrowser server by first installing the dependencies and then building the server
 
-## Used by service to start the LTBrowser server in linux environments
-start-service: install
+start-service: install ## Used by service to start the LTBrowser server in linux environments
 	@echo "Starting LTBrowser app service"
 	node dist/server.js
 
-## Start the LTBrowser server by first doing a cleanup and then performing a production mode build
-start: build install-playwright
+start: build install-playwright ## Start the LTBrowser server by first doing a cleanup and then performing a production mode build
 	@echo "Starting LTBrowser app"
 	node dist/server.js
 
-## Start the LTBrowser server in development mode
-dev: nvm-install-node install
+dev: nvm-install-node install ## Start the LTBrowser server in development mode
 	@echo "Starting LTBrowser app in development mode"
 	$(BIN)/tsx src/server.ts
 
-## Start the LTBrowser server in development watch mode
-dev-watch: nvm-install-node install
+dev-watch: nvm-install-node install ## Start the LTBrowser server in development watch mode
 	@echo "Starting LTBrowser app in development watch mode"
 	$(BIN)/tsx watch src/server.ts
 
-## Run the smoke simulations
-smoke-simulation: nvm-install-node install
+smoke-simulation: nvm-install-node install ## Run the smoke simulations
 	@if [ -f "src/smoke_simulations/smoke_simulation.json" ]; then \
 		echo "Running smoke simulation of LTBrowser app"; \
 	else \
@@ -76,14 +73,8 @@ smoke-simulation: nvm-install-node install
 		exit 1; \
 	fi
 
-## Generate the OpenAPI schemas for the API in JSON and YAML format
-schema:
+schema: ## Generate the OpenAPI schemas for the API in JSON and YAML format
 	@echo "Generating OpenAPI schema in JSON format"
 	NODE_OPTIONS='--import=tsx/esm' $(BIN)/fastify generate-swagger src/app.ts > ./openapi.json
 	@echo "Generating OpenAPI schema in YAML format"
 	NODE_OPTIONS='--import=tsx/esm' $(BIN)/fastify generate-swagger --yaml=true src/app.ts > ./openapi.yaml
-
-## Shows the list of available commands
-help:
-	@awk '/^##/{c=substr($$0,3); getline; if($$1 ~ /^[a-zA-Z_-]+:/) printf "\033[36m%-15s\033[0m %s\n", $$1, c}' ./Makefile | sort
-	@echo
