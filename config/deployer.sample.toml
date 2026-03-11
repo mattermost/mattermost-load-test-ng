@@ -42,7 +42,7 @@ DBDumpURI = ''
 
 # Load test configuration
 LoadTestDownloadURL = 'https://latest.mattermost.com/mattermost-load-test-ng-linux'
-SSHPublicKey = '~/.ssh/id_ed25519.pub'
+SSHPublicKey = '~/.ssh/id_rsa.pub'
 TerraformStateDir = '/var/lib/mattermost-load-test-ng'
 
 # Proxy server configuration

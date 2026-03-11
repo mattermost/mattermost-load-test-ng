@@ -65,7 +65,7 @@
   "ProxyInstanceCount": 1,
   "ProxyInstanceType": "c7i.xlarge",
   "ProxyAllocatePublicIPAddress": true,
-  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
+  "SSHPublicKey": "~/.ssh/id_rsa.pub",
   "TerraformStateDir" : "/var/lib/mattermost-load-test-ng",
   "S3BucketDumpURI" : "",
   "DBDumpURI": "",
@@ -183,7 +183,7 @@
   },
   "CustomTags": {
   },
-  "MattermostPlugins": {
+  "Plugins": {
     "playbooks": "https://plugins.releases.mattermost.com/release/mattermost-plugin-playbooks-v2.4.1-linux-amd64.tar.gz"
   }
 }
