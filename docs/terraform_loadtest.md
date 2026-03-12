@@ -181,7 +181,7 @@ To compare the results of your load tests, see [here](compare.md).
   ```sh
   go run ./cmd/ltctl db connect
   ```
-  This establishes an SSH tunnel through a jump host (app server or metrics server) and opens `psql`. By default it connects to the first reader instance, falling back to the writer if only one instance exists.
+  This establishes an SSH tunnel through a jump host (app server or metrics server) and opens `psql`. By default, it connects to the first reader instance, falling back to the writer if only one instance exists.
 
 * To connect to a specific instance:
   ```sh
