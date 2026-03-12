@@ -1,6 +1,6 @@
 {
   "name": "@mattermost/loadtest-browser-lib",
-  "version": "1.31.0",
+  "version": "1.31.1",
   "description": "Shared types, helpers and utilities for Mattermost browser-based load testing simulations using Playwright",
   "type": "module",
   "main": "dist/index.js",
