@@ -168,3 +168,25 @@ To compare the results of your load tests, see [here](compare.md).
   * `proxy` — connects to the instance running Nginx
   * `metrics`, `prometheus`, or `grafana` — connects to the instance running all metrics-related services
   * `browser-agent` — connects to the instance running the browser agent
+
+### Database access
+
+* To list all database cluster instances with their roles:
+  ```sh
+  go run ./cmd/ltctl db
+  ```
+  This will output each instance with its role (`writer` or `reader-N`), endpoint, and identifier.
+
+* To connect to a database instance via an interactive `psql` session:
+  ```sh
+  go run ./cmd/ltctl db connect
+  ```
+  This establishes an SSH tunnel through a jump host (app server or metrics server) and opens `psql`. By default, it connects to the first reader instance, falling back to the writer if only one instance exists.
+
+* To connect to a specific instance:
+  ```sh
+  go run ./cmd/ltctl db connect writer
+  go run ./cmd/ltctl db connect reader-0
+  ```
+
+  **Note:** Only `aurora-postgresql` is supported. `psql` must be installed locally.

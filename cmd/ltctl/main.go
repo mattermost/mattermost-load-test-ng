@@ -431,6 +431,27 @@ func main() {
 	sshCmd.AddCommand(sshListCmd)
 	rootCmd.AddCommand(sshCmd)
 
+	dbCmd := &cobra.Command{
+		Use:   "db",
+		Short: "Manage database connections",
+		RunE:  RunDBListCmdF,
+	}
+	dbListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List database cluster instances",
+		RunE:  RunDBListCmdF,
+		Args:  cobra.NoArgs,
+	}
+	dbConnectCmd := &cobra.Command{
+		Use:     "connect [target]",
+		Short:   "Connect to a database instance via psql",
+		Example: "ltctl db connect reader-0",
+		RunE:    RunDBConnectCmdF,
+		Args:    cobra.MaximumNArgs(1),
+	}
+	dbCmd.AddCommand(dbListCmd, dbConnectCmd)
+	rootCmd.AddCommand(dbCmd)
+
 	goCmd := &cobra.Command{
 		Use:     "go [instance]",
 		Short:   "Open browser for instance",
