@@ -434,7 +434,7 @@ func main() {
 	dbCmd := &cobra.Command{
 		Use:   "db",
 		Short: "Manage database connections",
-		RunE: RunDBListCmdF,
+		RunE:  RunDBListCmdF,
 	}
 	dbListCmd := &cobra.Command{
 		Use:   "list",
