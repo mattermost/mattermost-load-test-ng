@@ -16,7 +16,7 @@ do
       sudo curl -O -L --output-dir /opt/keycloak https://github.com/keycloak/keycloak/releases/download/${keycloak_version}/keycloak-${keycloak_version}.zip && \
       sudo unzip /opt/keycloak/keycloak-${keycloak_version}.zip -d /opt/keycloak && \
       sudo mkdir -p /opt/keycloak/keycloak-${keycloak_version}/data/import && \
-      sudo chown -R "$(whoami):$(whoami)" /opt/keycloak && \
+      sudo chown -R "${USER}:${USER}" /opt/keycloak && \
       install_prometheus_node_exporter && \
       exit 0
    n=$((n+1))

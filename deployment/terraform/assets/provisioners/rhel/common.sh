@@ -2,9 +2,6 @@
 
 set -euo pipefail
 
-# Wait for boot to be finished (e.g. networking to be up).
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
-
 # Versions
 export prometheus_node_exporter_version="1.8.2"
 export otel_collector_version="0.110.0"
@@ -74,8 +71,8 @@ function install_otel_collector() {
     echo "Installing OpenTelemetry Collector"
     wget "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${otel_collector_version}/otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm" && \
     sudo rpm -i "otelcol-contrib_${otel_collector_version}_linux_${arch}.rpm" && \
-    sudo sed -i "s/User=.*/User=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
-    sudo sed -i "s/Group=.*/Group=$(whoami)/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo sed -i "s/User=.*/User=${USER}/g" /lib/systemd/system/otelcol-contrib.service && \
+    sudo sed -i "s/Group=.*/Group=${USER}/g" /lib/systemd/system/otelcol-contrib.service && \
     sudo systemctl daemon-reload && \
     sudo systemctl restart otelcol-contrib
 }

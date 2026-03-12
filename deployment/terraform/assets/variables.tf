@@ -19,9 +19,6 @@ variable "cluster_subnet_ids" {
   })
 }
 
-variable "connection_type" {
-}
-
 # Provisioner variables
 variable "operating_system_kind" {
 }

@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -80,6 +81,63 @@ func (ea *ExtAgent) NewClientWithPort(ip, port, user string) (*Client, error) {
 // the ssh agent on port 22
 func (ea *ExtAgent) NewClient(user, ip string) (*Client, error) {
 	return ea.NewClientWithPort(ip, ":22", user)
+}
+
+// newClientWithTimeout returns a Client object by dialing the ssh agent on
+// port 22 with the given dial timeout. A zero timeout means no deadline.
+func (ea *ExtAgent) newClientWithTimeout(user, ip string, timeout time.Duration) (*Client, error) {
+	config := &ssh.ClientConfig{
+		User: user,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeysCallback(ea.agent.Signers),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         timeout,
+	}
+
+	sshc, err := ssh.Dial("tcp", ip+":22", config)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{client: sshc, IP: ip}, nil
+}
+
+// NewClientWithRetry attempts to create an SSH client connection with exponential
+// backoff, retrying until the given timeout is reached. The backoff starts at 2s
+// and doubles each attempt, capped at 30s.
+func (ea *ExtAgent) NewClientWithRetry(user, ip string, timeout time.Duration) (*Client, error) {
+	deadline := time.Now().Add(timeout)
+	backoff := 2 * time.Second
+	const maxBackoff = 30 * time.Second
+
+	var lastErr error
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			break
+		}
+
+		// Cap per-attempt timeout to the current backoff interval or remaining time,
+		// whichever is smaller, so a single dial cannot block past the deadline.
+		dialTimeout := min(backoff, remaining)
+
+		client, err := ea.newClientWithTimeout(user, ip, dialTimeout)
+		if err == nil {
+			return client, nil
+		}
+		lastErr = err
+
+		remaining = time.Until(deadline)
+		if remaining <= 0 || remaining < backoff {
+			break
+		}
+		time.Sleep(backoff)
+		backoff *= 2
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+	}
+	return nil, fmt.Errorf("ssh connection to %s timed out after %s: %w", ip, timeout, lastErr)
 }
 
 // RunCommand runs a given command in a new ssh session.

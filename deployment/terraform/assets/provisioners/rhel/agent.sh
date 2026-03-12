@@ -24,6 +24,7 @@ do
         echo "Node.js installed successfully with version $(node --version)" && \
         install_prometheus_node_exporter && \
         install_otel_collector && \
+        sudo chown -R ${USER}:${USER} ${HOME}/.nvm && \
         exit 0
    n=$((n+1))
    sleep 2

@@ -177,6 +177,10 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		return err
 	}
 
+	if err := t.waitForProvisioning(extAgent); err != nil {
+		return fmt.Errorf("error waiting for instance provisioning: %w", err)
+	}
+
 	// If we are restoring from a DB backup, or using an external database, then we need to hook up
 	// the created security group to it.
 	if (t.config.TerraformDBSettings.ClusterIdentifier != "" && len(t.output.DBSecurityGroup) > 0) || t.config.ExternalDBSettings.ClusterIdentifier != "" {
@@ -459,6 +463,12 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	})
 	if err != nil {
 		return fmt.Errorf("error executing service file template: %w", err)
+	}
+
+	// Upload license file
+	licenseDst := fmt.Sprintf("/home/%s/mattermost.mattermost-license", t.config.AWSAMIUser)
+	if _, err := sshc.UploadFile(t.config.MattermostLicenseFile, licenseDst, false); err != nil {
+		return fmt.Errorf("error uploading license file: %w", err)
 	}
 
 	// Upload files
@@ -1287,6 +1297,7 @@ func (t *Terraform) init() error {
 	RestoreAssets(t.config.TerraformStateDir, "cluster.tf")
 	RestoreAssets(t.config.TerraformStateDir, "elasticsearch.tf")
 	RestoreAssets(t.config.TerraformStateDir, "ldap.tf")
+	RestoreAssets(t.config.TerraformStateDir, "user_data.sh.tpl")
 	RestoreAssets(t.config.TerraformStateDir, "datasource.yaml")
 	RestoreAssets(t.config.TerraformStateDir, "dashboard.yaml")
 	RestoreAssets(t.config.TerraformStateDir, "default_dashboard_tmpl.json")
@@ -1331,4 +1342,118 @@ func pingServer(addr string) error {
 			return nil
 		}
 	}
+}
+
+const provisioningTimeout = 10 * time.Minute
+
+// waitForProvisioning waits for all EC2 instances to complete their cloud-init
+// provisioning by connecting via SSH and checking for the sentinel file.
+func (t *Terraform) waitForProvisioning(extAgent *ssh.ExtAgent) error {
+	type target struct {
+		name string
+		ip   string
+	}
+
+	var targets []target
+
+	for _, inst := range t.output.Instances {
+		targets = append(targets, target{name: inst.Tags.Name, ip: inst.GetConnectionIP()})
+	}
+	for _, inst := range t.output.Agents {
+		targets = append(targets, target{name: inst.Tags.Name, ip: inst.GetConnectionIP()})
+	}
+	for _, inst := range t.output.BrowserAgents {
+		targets = append(targets, target{name: inst.Tags.Name, ip: inst.GetConnectionIP()})
+	}
+	for _, inst := range t.output.JobServers {
+		targets = append(targets, target{name: inst.Tags.Name, ip: inst.GetConnectionIP()})
+	}
+	for _, inst := range t.output.Proxies {
+		targets = append(targets, target{name: inst.Tags.Name, ip: inst.GetConnectionIP()})
+	}
+	if t.output.HasMetrics() {
+		targets = append(targets, target{name: t.output.MetricsServer.Tags.Name, ip: t.output.MetricsServer.GetConnectionIP()})
+	}
+	if t.output.HasKeycloak() {
+		targets = append(targets, target{name: t.output.KeycloakServer.Tags.Name, ip: t.output.KeycloakServer.GetConnectionIP()})
+	}
+	if t.output.HasOpenLDAP() {
+		targets = append(targets, target{name: t.output.OpenLDAPServer.Tags.Name, ip: t.output.OpenLDAPServer.GetConnectionIP()})
+	}
+
+	if len(targets) == 0 {
+		return nil
+	}
+
+	mlog.Info("Waiting for cloud-init provisioning to complete on all instances", mlog.Int("count", len(targets)))
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(targets))
+
+	for _, tgt := range targets {
+		wg.Add(1)
+		go func(name, ip string) {
+			defer wg.Done()
+
+			start := time.Now()
+			mlog.Info("Connecting to instance", mlog.String("name", name), mlog.String("ip", ip))
+			sshc, err := extAgent.NewClientWithRetry(t.config.AWSAMIUser, ip, provisioningTimeout)
+			if err != nil {
+				errCh <- fmt.Errorf("failed to connect to %s (%s): %w", name, ip, err)
+				return
+			}
+			defer sshc.Close()
+
+			remaining := provisioningTimeout - time.Since(start)
+			if remaining <= 0 {
+				errCh <- fmt.Errorf("provisioning timed out on %s (%s) after SSH connection: no time remaining for polling", name, ip)
+				return
+			}
+			deadline := time.Now().Add(remaining)
+			backoff := 5 * time.Second
+			const maxBackoff = 30 * time.Second
+			const sentinelPath = "/var/lib/cloud/instance/provisioning-done"
+			const exitcodePath = "/var/lib/cloud/instance/provisioning-exitcode"
+
+			for time.Now().Before(deadline) {
+				out, err := sshc.RunCommand("test -f " + sentinelPath)
+				if err == nil {
+					mlog.Info("Provisioning complete", mlog.String("name", name))
+					return
+				}
+
+				// Check if provisioning failed explicitly.
+				exitCode, ecErr := sshc.RunCommand("cat " + exitcodePath)
+				if ecErr == nil {
+					errCh <- fmt.Errorf("provisioning failed on %s (%s) with exit code %s: check /var/log/cloud-init-output.log on the instance for details", name, ip, strings.TrimSpace(string(exitCode)))
+					return
+				}
+
+				mlog.Debug("Still waiting for provisioning",
+					mlog.String("name", name),
+					mlog.String("output", string(out)),
+				)
+				time.Sleep(backoff)
+				backoff *= 2
+				if backoff > maxBackoff {
+					backoff = maxBackoff
+				}
+			}
+			errCh <- fmt.Errorf("provisioning timed out on %s (%s): check /var/log/cloud-init-output.log on the instance for details", name, ip)
+		}(tgt.name, tgt.ip)
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	var errs []error
+	for err := range errCh {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	mlog.Info("All instances provisioned successfully")
+	return nil
 }

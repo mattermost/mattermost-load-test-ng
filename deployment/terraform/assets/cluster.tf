@@ -51,12 +51,6 @@ resource "aws_instance" "app_server" {
     Name = "${var.cluster_name}-app-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami                  = var.aws_ami
   instance_type        = var.app_instance_type
   key_name             = aws_key_pair.key.id
@@ -75,29 +69,12 @@ resource "aws_instance" "app_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = var.mattermost_license_file
-    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/app.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/app.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 data "aws_vpc" "selected" {
   tags = {
@@ -204,12 +181,6 @@ resource "aws_instance" "metrics_server" {
     Name = "${var.cluster_name}-metrics"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.metrics_instance_type
   count             = var.enable_metrics_instance ? 1 : 0
@@ -228,25 +199,12 @@ resource "aws_instance" "metrics_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/metrics.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/metrics.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_instance" "proxy_server" {
@@ -271,31 +229,12 @@ resource "aws_instance" "proxy_server" {
     volume_type = var.block_device_type
   }
 
-  connection {
-    type = "ssh"
-    user = var.aws_ami_user
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/proxy.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/proxy.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_iam_user" "s3user" {
@@ -448,12 +387,6 @@ resource "aws_instance" "loadtest_agent" {
     Name = "${var.cluster_name}-agent-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami           = var.aws_ami
   instance_type = var.agent_instance_type
   key_name      = aws_key_pair.key.id
@@ -470,36 +403,17 @@ resource "aws_instance" "loadtest_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/agent.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/agent.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_instance" "loadtest_browser_agent" {
   tags = {
     Name = "${var.cluster_name}-browser-agent-${count.index}"
-  }
-
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
   }
 
   ami           = var.aws_ami
@@ -518,25 +432,12 @@ resource "aws_instance" "loadtest_browser_agent" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/agent.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
-
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/agent.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_security_group" "app" {
@@ -936,12 +837,6 @@ resource "aws_instance" "job_server" {
     Name = "${var.cluster_name}-job-server-${count.index}"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.job_server_instance_type
   key_name          = aws_key_pair.key.id
@@ -958,30 +853,12 @@ resource "aws_instance" "job_server" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = var.mattermost_license_file
-    destination = "/home/${var.aws_ami_user}/mattermost.mattermost-license"
-  }
-
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/job.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/job.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 locals {
@@ -1002,12 +879,6 @@ resource "aws_instance" "keycloak" {
     Name = "${var.cluster_name}-keycloak"
   }
 
-  connection {
-    type = "ssh"
-    host = var.connection_type == "public" ? self.public_ip : self.private_ip
-    user = var.aws_ami_user
-  }
-
   ami               = var.aws_ami
   instance_type     = var.keycloak_instance_type
   count             = var.keycloak_enabled ? 1 : 0
@@ -1024,24 +895,12 @@ resource "aws_instance" "keycloak" {
     volume_type = var.block_device_type
   }
 
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/common.sh"
-    destination = "/tmp/common.sh"
-  }
-
-  provisioner "file" {
-    source      = "provisioners/${var.operating_system_kind}/keycloak.sh"
-    destination = "/tmp/provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /tmp",
-      "chmod +x /tmp/common.sh",
-      "chmod +x /tmp/provisioner.sh",
-      "/tmp/provisioner.sh",
-    ]
-  }
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tpl", {
+    common_sh      = file("${path.module}/provisioners/${var.operating_system_kind}/common.sh")
+    provisioner_sh = file("${path.module}/provisioners/${var.operating_system_kind}/keycloak.sh")
+    ami_user       = var.aws_ami_user
+  })
 }
 
 resource "aws_security_group" "keycloak" {
