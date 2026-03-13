@@ -93,7 +93,7 @@ verify-gomod: ## Run go mod verify.
 	$(GO) mod download
 	$(GO) mod verify
 
-check-style: golangci-lint validate-json-configs ## Check the style of the code.
+check-style: golangci-lint validate-json-configs validate-example-configs ## Check the style of the code.
 
 golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64
@@ -110,6 +110,16 @@ validate-json-configs:
 	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
 	$(GO) run ./scripts/json_validator.go config/browsercontroller.sample.json
+
+validate-example-configs: ## Validate example config files against real config structs.
+	$(GO) run ./cmd/validate-examples --type comparison examples/config/release/json/comparison.json
+	$(GO) run ./cmd/validate-examples --type config examples/config/release/json/config.json
+	$(GO) run ./cmd/validate-examples --type coordinator examples/config/release/json/coordinator.json
+	$(GO) run ./cmd/validate-examples --type deployer examples/config/release/json/deployer.json
+	$(GO) run ./cmd/validate-examples --type comparison examples/config/perfcomp/json/comparison.json
+	$(GO) run ./cmd/validate-examples --type config examples/config/perfcomp/json/config.json
+	$(GO) run ./cmd/validate-examples --type coordinator examples/config/perfcomp/json/coordinator.json
+	$(GO) run ./cmd/validate-examples --type deployer examples/config/perfcomp/json/deployer.json
 
 test: ## Run all tests.
 	$(GO) test -v -mod=readonly -race -tags=integration ./...
