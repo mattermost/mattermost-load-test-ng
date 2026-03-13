@@ -10,6 +10,13 @@
   "AppInstanceType": "c7i.xlarge",
   "ClusterName": "TBD",
   "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/vTBD/mattermost-load-test-ng-vTBD-linux-amd64.tar.gz",
+  "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
+  "MattermostLicenseFile": "",
+  "MetricsInstanceType": "t3.xlarge",
+  "ProxyInstanceCount": 1,
+  "ProxyInstanceType": "c7i.xlarge",
+  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
+  "TerraformStateDir": "./ltstatus",
   "LogSettings": {
     "ConsoleLevel": "INFO",
     "EnableColor": true,
@@ -17,10 +24,6 @@
     "FileLevel": "DEBUG",
     "FileLocation": "deployer.log"
   },
-  "MattermostLicenseFile": "",
-  "MetricsInstanceType": "t3.xlarge",
-  "ProxyInstanceCount": 1,
-  "ProxyInstanceType": "c7i.xlarge",
   "Report": {
     "GraphQueries": [
       {
@@ -66,19 +69,16 @@
     ],
     "Label": "{instance=~\"app.*\"}"
   },
-  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
   "SiteURL": "",
   "StorageSizes": {
     "App": 20
   },
   "TerraformDBSettings": {
     "DBParameters": [],
-    "InstanceCount": 2,
     "InstanceEngine": "aurora-postgresql",
-    "InstanceType": "db.r7g.xlarge",
+    "InstanceCount": 2,
     "InstanceType": "db.r7g.xlarge"
   },
-  "TerraformStateDir": "./ltstatus",
   "CustomTags": {
     "Origin": "release-testing"
   }

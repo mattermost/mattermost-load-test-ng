@@ -79,7 +79,6 @@
     "InstanceCount": 2,
     "InstanceType": "db.r7g.2xlarge"
   },
-  "TerraformStateDir": "./ltstatus",
   "CustomTags": {
     "Origin": "performance-comparison"
   }
