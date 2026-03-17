@@ -209,7 +209,7 @@ This likely happens because AWS doesn’t have an available subnet in the zone w
 
 Just a heads-up — leaving it empty might increase traffic-related AWS costs for very large tests, since resources won’t necessarily be deployed in the same Availability Zone.
 
-### Agent fails with a 501 error against Mattermost servers older than v11.0.1
+### Why does the agent fail with a 501 error against Mattermost servers older than v11.0.1?
 
 Starting with load-test-ng **v1.30.0**, the tool uses the `GetClientConfig` API endpoint, which changed in Mattermost **v11.0.1** (the `format` parameter was deprecated). Running load-test-ng v1.30.0 or later against a Mattermost server older than v11.0.1 will result in a 501 error.
 
