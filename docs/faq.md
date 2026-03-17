@@ -213,6 +213,6 @@ Just a heads-up — leaving it empty might increase traffic-related AWS costs fo
 
 Starting with load-test-ng **v1.30.0**, the tool uses the `GetClientConfig` API endpoint, which changed in Mattermost **v11.0.1** (the `format` parameter was deprecated). Running load-test-ng v1.30.0 or later against a Mattermost server older than v11.0.1 will result in a 501 error.
 
-If you are running a Mattermost server older than v11.0.1, use load-test-ng **v1.29.0** or earlier, which uses `GetOldClientConfig` (with `format=old`) and is compatible with pre-v11 servers.
+If you are running a Mattermost server older than v11.0.1, use load-test-ng **v1.29.0** or earlier, which calls the legacy client config API using `format=old` and is compatible with pre-v11 servers.
 
 **Note:** Older load-test-ng versions may not include the latest fixes or features. Review the [changelog](https://github.com/mattermost/mattermost-load-test-ng/releases) for your selected version to understand any potential limitations.
