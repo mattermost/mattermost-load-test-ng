@@ -101,20 +101,19 @@ The `ClusterName` is used as a prefix for all AWS resources (EC2 instances, secu
 Steps to run multiple simultaneous deployments:
 
 1. Create separate deployer config files for each deployment:
-   ```sh
-   cp config/deployer.json config/deployer-test1.json
-   cp config/deployer.json config/deployer-test2.json
-   ```
-   
+    ```sh
+    cp config/deployer.json config/deployer-test1.json
+    cp config/deployer.json config/deployer-test2.json
+    ```
 1. Edit each config file to set unique values for both `ClusterName` and `TerraformStateDir`:
-   - `ClusterName`: e.g., `"loadtest1"`, `"loadtest2"`, etc.
-   - `TerraformStateDir`: e.g., `"/var/lib/mattermost-load-test-ng/loadtest1"`, `"/var/lib/mattermost-load-test-ng/loadtest2"`, etc.
+    - `ClusterName`: e.g., `"loadtest1"`, `"loadtest2"`, etc.
+    - `TerraformStateDir`: e.g., `"/var/lib/mattermost-load-test-ng/loadtest1"`, `"/var/lib/mattermost-load-test-ng/loadtest2"`, etc.
 
 1. Run the deployment create command for each deployment in different terminals:
-   ```sh
-   go run ./cmd/ltctl deployment create --config config/deployer-test1.json
-   go run ./cmd/ltctl deployment create --config config/deployer-test2.json
-   ```
+    ```sh
+    go run ./cmd/ltctl deployment create --config config/deployer-test1.json
+    go run ./cmd/ltctl deployment create --config config/deployer-test2.json
+    ```
 
 ### Can I export a Grafana dashboard for future reference?
 
@@ -209,3 +208,11 @@ This **should not be used in most cases** as the loadtest agent will automatical
 This likely happens because AWS doesn’t have an available subnet in the zone we explicitly set in the Terraform config. You can fix this by leaving AWSAvailabilityZone empty in config/deployer.json.
 
 Just a heads-up — leaving it empty might increase traffic-related AWS costs for very large tests, since resources won’t necessarily be deployed in the same Availability Zone.
+
+### Why does the agent fail with a 501 error against Mattermost servers older than v11.0.1?
+
+Starting with load-test-ng **v1.30.0**, the tool uses the `GetClientConfig` API endpoint, which changed in Mattermost **v11.0.1** (the `format` parameter was deprecated). Running load-test-ng v1.30.0 or later against a Mattermost server older than v11.0.1 will result in a 501 error.
+
+If you are running a Mattermost server older than v11.0.1, use load-test-ng **v1.29.0** or earlier, which calls the legacy client config API using `format=old` and is compatible with pre-v11 servers.
+
+**Note:** Older load-test-ng versions may not include the latest fixes or features. Review the [changelog](https://github.com/mattermost/mattermost-load-test-ng/releases) for your selected version to understand any potential limitations.
