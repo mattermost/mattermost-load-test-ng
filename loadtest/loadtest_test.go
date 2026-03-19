@@ -50,10 +50,6 @@ var ltConfig = Config{
 		ConsoleLevel: "ERROR",
 		FileLevel:    "ERROR",
 	},
-	BrowserLogSettings: BrowserLogSettings{
-		ConsoleLevel: "error",
-		FileLevel:    "error",
-	},
 }
 
 func newController(id int, status chan<- control.UserStatus) (control.UserController, error) {

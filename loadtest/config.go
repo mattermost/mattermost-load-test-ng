@@ -141,16 +141,6 @@ type UsersConfiguration struct {
 	PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 }
 
-// BrowserLogSettings holds information to be used to initialize the logger for the LTBrowser API
-// refer to /browser/src/utils/log.ts
-type BrowserLogSettings struct {
-	EnableConsole bool   `default:"false"`
-	ConsoleLevel  string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
-	EnableFile    bool   `default:"true"`
-	FileLevel     string `default:"debug" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
-	FileLocation  string `default:"browseragent.log"`
-}
-
 // Config holds information needed to create and initialize a new load-test
 // agent.
 type Config struct {
@@ -159,7 +149,6 @@ type Config struct {
 	InstanceConfiguration       InstanceConfiguration
 	UsersConfiguration          UsersConfiguration
 	LogSettings                 logger.Settings
-	BrowserLogSettings          BrowserLogSettings
 }
 
 // IsValid reports whether a given Config is valid or not.
