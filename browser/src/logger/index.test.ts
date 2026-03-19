@@ -79,8 +79,8 @@ import {
   isFileLoggingEnabled,
   getFileLoggingLevel,
   getFileLoggingLocation,
-} from './config_accessors.js';
-import {createLogger, getServerLoggerConfig} from './log.js';
+} from '../config/accessors.js';
+import {createLogger, getServerLoggerConfig} from './index.js';
 
 describe('createLogger', () => {
   const mockLogger = {

@@ -154,7 +154,7 @@ describe('API /browsers', () => {
 
     test('should return 400 when server URL is missing in config', async () => {
       // Mock getMattermostServerURL to return empty string
-      const {getMattermostServerURL} = await import('../utils/config_accessors.js');
+      const {getMattermostServerURL} = await import('../config/accessors.js');
       vi.mocked(getMattermostServerURL).mockReturnValueOnce('');
 
       await app.listen({port});
