@@ -63,7 +63,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	}
 
 	commands := []string{
-		"rm -rf mattermost-load-test-ng*",
+		// Stop and remove are joined with ; so the rm still runs on the first deploy when the services don't exist yet.
+		// The services must be stopped before removing the directory to avoid a race condition with ltbrowserapi
+		// writing to browser/node_modules, which causes rm to fail with "Directory not empty".
+		"sudo systemctl stop ltapi ltbrowserapi 2>/dev/null; sudo rm -rf mattermost-load-test-ng*",
 		"tar xzf tmp.tar.gz",
 		"mv mattermost-load-test-ng* mattermost-load-test-ng",
 		"rm tmp.tar.gz",
