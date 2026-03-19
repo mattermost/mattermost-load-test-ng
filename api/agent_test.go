@@ -32,7 +32,23 @@ type requestData struct {
 	SimulControllerConfig  *simulcontroller.Config  `json:",omitempty"`
 }
 
+func setupAgentType(t *testing.T, agentType string) {
+	t.Helper()
+	originalHome := os.Getenv("HOME")
+	tempDir, err := os.MkdirTemp("", "test_home_"+agentType)
+	require.NoError(t, err)
+	agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
+	require.NoError(t, os.WriteFile(agentTypeFile, []byte(agentType), 0644))
+	os.Setenv("HOME", tempDir)
+	t.Cleanup(func() {
+		os.Setenv("HOME", originalHome)
+		os.RemoveAll(tempDir)
+	})
+}
+
 func TestAgentAPI(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -181,6 +197,8 @@ func TestAgentAPI(t *testing.T) {
 }
 
 func TestAgentAPIConcurrency(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -303,22 +321,8 @@ func TestGetUserCredentials(t *testing.T) {
 }
 
 func TestIsBrowserAgentInstance(t *testing.T) {
-	// Get original home directory to restore later
-	originalHome := os.Getenv("HOME")
-
 	t.Run("returns true when agent_type.txt contains browser_agent", func(t *testing.T) {
-		// Create temporary directory to use as home
-		tempDir, err := os.MkdirTemp("", "test_home_browser")
-		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
-
-		// Set temporary home directory
-		os.Setenv("HOME", tempDir)
-		defer os.Setenv("HOME", originalHome)
-
-		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
-		err = os.WriteFile(agentTypeFile, []byte("  "+deployment.AgentTypeBrowser+"  \n"), 0644)
-		require.NoError(t, err)
+		setupAgentType(t, deployment.AgentTypeBrowser)
 
 		result, err := isBrowserAgentInstance()
 		require.NoError(t, err)
@@ -326,16 +330,7 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt contains server_agent", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "test_home_server")
-		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
-
-		os.Setenv("HOME", tempDir)
-		defer os.Setenv("HOME", originalHome)
-
-		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
-		err = os.WriteFile(agentTypeFile, []byte(deployment.AgentTypeServer), 0644)
-		require.NoError(t, err)
+		setupAgentType(t, deployment.AgentTypeServer)
 
 		result, err := isBrowserAgentInstance()
 		require.NoError(t, err)
@@ -343,12 +338,14 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt file does not exist", func(t *testing.T) {
+		originalHome := os.Getenv("HOME")
 		tempDir, err := os.MkdirTemp("", "test_home_missing")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
-
+		t.Cleanup(func() {
+			os.Setenv("HOME", originalHome)
+			os.RemoveAll(tempDir)
+		})
 		os.Setenv("HOME", tempDir)
-		defer os.Setenv("HOME", originalHome)
 
 		result, err := isBrowserAgentInstance()
 		require.Error(t, err)
@@ -356,19 +353,105 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt contains unknown content", func(t *testing.T) {
+		originalHome := os.Getenv("HOME")
 		tempDir, err := os.MkdirTemp("", "test_home_unknown")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
-
+		t.Cleanup(func() {
+			os.Setenv("HOME", originalHome)
+			os.RemoveAll(tempDir)
+		})
 		os.Setenv("HOME", tempDir)
-		defer os.Setenv("HOME", originalHome)
 
 		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
-		err = os.WriteFile(agentTypeFile, []byte("unknown_agent_type"), 0644)
-		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(agentTypeFile, []byte("unknown_agent_type"), 0644))
 
 		result, err := isBrowserAgentInstance()
 		require.Error(t, err)
 		require.False(t, result)
+	})
+}
+
+func TestBrowserAgentConfigValidation(t *testing.T) {
+	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	mmServer := createFakeMMServer()
+	defer mmServer.Close()
+
+	e := httpexpect.New(t, server.URL+"/loadagent")
+
+	ltConfig := loadtest.Config{}
+	err := defaults.Set(&ltConfig)
+	require.NoError(t, err)
+	ltConfig.UserControllerConfiguration.ServerVersion = control.MinSupportedVersion.String()
+	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
+	ltConfig.UsersConfiguration.MaxActiveUsers = 100
+
+	t.Run("fails when browsercontroller.json is missing", func(t *testing.T) {
+		setupAgentType(t, deployment.AgentTypeBrowser)
+
+		rd := requestData{LoadTestConfig: ltConfig}
+		e.POST("/create").WithQuery("id", "ltb0").WithJSON(rd).
+			Expect().Status(http.StatusBadRequest).
+			JSON().Object().ContainsKey("error")
+	})
+
+	t.Run("succeeds with valid browsercontroller.json", func(t *testing.T) {
+		setupAgentType(t, deployment.AgentTypeBrowser)
+
+		// ReadConfig uses "./config/browsercontroller.json" relative to cwd,
+		// so we need to be at the repo root for the path to resolve.
+		originalDir, err := os.Getwd()
+		require.NoError(t, err)
+		require.NoError(t, os.Chdir(".."))
+		t.Cleanup(func() { os.Chdir(originalDir) })
+
+		rd := requestData{LoadTestConfig: ltConfig}
+		obj := e.POST("/create").WithQuery("id", "ltb1").WithJSON(rd).
+			Expect().Status(http.StatusCreated).
+			JSON().Object().ValueEqual("id", "ltb1")
+		rawMsg := obj.Value("message").String().Raw()
+		require.Equal(t, "load-test agent created", rawMsg)
+
+		e.POST("ltb1/stop").Expect().Status(http.StatusOK)
+		e.DELETE("ltb1").Expect().Status(http.StatusOK)
+	})
+
+	t.Run("fails with invalid browsercontroller.json values", func(t *testing.T) {
+		setupAgentType(t, deployment.AgentTypeBrowser)
+
+		// Create a temporary directory with an invalid browsercontroller.json
+		tempDir, err := os.MkdirTemp("", "test_browser_invalid_config")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(tempDir) })
+
+		configDir := filepath.Join(tempDir, "config")
+		require.NoError(t, os.MkdirAll(configDir, 0755))
+
+		invalidConfig := `{
+			"SimulationId": "",
+			"RunInHeadless": true,
+			"SimulationTimeoutMs": -1,
+			"EnabledPlugins": false,
+			"LogSettings": {
+				"EnableConsole": true,
+				"ConsoleLevel": "invalid_level",
+				"EnableFile": true,
+				"FileLevel": "debug",
+				"FileLocation": "browseragent.log"
+			}
+		}`
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(invalidConfig), 0644))
+
+		originalDir, err := os.Getwd()
+		require.NoError(t, err)
+		require.NoError(t, os.Chdir(tempDir))
+		t.Cleanup(func() { os.Chdir(originalDir) })
+
+		rd := requestData{LoadTestConfig: ltConfig}
+		e.POST("/create").WithQuery("id", "ltb2").WithJSON(rd).
+			Expect().Status(http.StatusBadRequest).
+			JSON().Object().ContainsKey("error")
 	})
 }
