@@ -5,4 +5,11 @@ package deployment
 
 const (
 	EnvVarTCPNoDelay = "MM_LOADTEST_TCPNODELAY"
+
+	OperatingSystemKindDebian = "debian"
+	OperatingSystemKindRHEL   = "rhel"
+
+	AgentTypeFileName = "agent_type.txt"
+	AgentTypeServer   = "server_agent"
+	AgentTypeBrowser  = "browser_agent"
 )

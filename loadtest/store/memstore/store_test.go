@@ -4,10 +4,12 @@
 package memstore
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/stretchr/testify/assert"
@@ -653,14 +655,36 @@ func TestThreads(t *testing.T) {
 	t.Run("SetThreads", func(t *testing.T) {
 		s := newStore(t)
 		id := model.NewId()
-		thread := &model.ThreadResponse{
-			PostId: id,
+		thread := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{
+				PostId: id,
+			},
 		}
-		err := s.SetThreads([]*model.ThreadResponse{thread})
+		err := s.SetThreads([]*store.ThreadResponseWrapped{thread})
 		require.NoError(t, err)
 		th, err := s.Thread(id)
 		require.NoError(t, err)
 		require.Equal(t, *thread, *th)
+	})
+
+	t.Run("SetThreadLastUpdateAt", func(t *testing.T) {
+		s := newStore(t)
+		id := model.NewId()
+		thread := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{
+				PostId: id,
+			},
+		}
+		err := s.SetThreads([]*store.ThreadResponseWrapped{thread})
+		require.NoError(t, err)
+		th, err := s.Thread(id)
+		require.NoError(t, err)
+		require.Equal(t, *thread, *th)
+
+		require.NoError(t, s.SetThreadLastUpdateAt(id, 1234))
+		th, err = s.Thread(id)
+		require.NoError(t, err)
+		require.Equal(t, int64(1234), *&th.LastUpdateAt)
 	})
 
 	t.Run("MarkAllThreadsInTeamAsRead", func(t *testing.T) {
@@ -679,11 +703,17 @@ func TestThreads(t *testing.T) {
 		threadId2 := model.NewId()
 		threadId3 := model.NewId()
 
-		thread1 := &model.ThreadResponse{PostId: threadId1, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 1, UnreadMentions: 1}
-		thread2 := &model.ThreadResponse{PostId: threadId2, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 2, UnreadMentions: 2}
-		thread3 := &model.ThreadResponse{PostId: threadId3, Post: &model.Post{ChannelId: channelId2}, UnreadReplies: 3, UnreadMentions: 3}
+		thread1 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{PostId: threadId1, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 1, UnreadMentions: 1},
+		}
+		thread2 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{PostId: threadId2, Post: &model.Post{ChannelId: channelId1}, UnreadReplies: 2, UnreadMentions: 2},
+		}
+		thread3 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{PostId: threadId3, Post: &model.Post{ChannelId: channelId2}, UnreadReplies: 3, UnreadMentions: 3},
+		}
 
-		err = s.SetThreads([]*model.ThreadResponse{thread1, thread2, thread3})
+		err = s.SetThreads([]*store.ThreadResponseWrapped{thread1, thread2, thread3})
 		require.NoError(t, err)
 
 		err = s.MarkAllThreadsInTeamAsRead(teamId1)
@@ -714,25 +744,32 @@ func TestThreads(t *testing.T) {
 		threadId2 := model.NewId()
 		threadId3 := model.NewId()
 		epoch := model.GetMillis()
-		thread1 := &model.ThreadResponse{
-			PostId:         threadId1,
-			UnreadReplies:  1,
-			UnreadMentions: 1,
-			LastReplyAt:    epoch,
+		thread1 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{
+				PostId:         threadId1,
+				UnreadReplies:  1,
+				UnreadMentions: 1,
+				LastReplyAt:    epoch,
+			},
 		}
-		thread2 := &model.ThreadResponse{
-			PostId:         threadId2,
-			UnreadReplies:  0,
-			UnreadMentions: 0,
-			LastReplyAt:    epoch + 1000,
+		thread2 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{
+				PostId:         threadId2,
+				UnreadReplies:  0,
+				UnreadMentions: 0,
+				LastReplyAt:    epoch + 1000,
+			},
 		}
-		thread3 := &model.ThreadResponse{
-			PostId:         threadId3,
-			UnreadReplies:  3,
-			UnreadMentions: 3,
-			LastReplyAt:    epoch + 2000,
+		thread3 := &store.ThreadResponseWrapped{
+			ThreadResponse: model.ThreadResponse{
+				PostId:         threadId3,
+				UnreadReplies:  3,
+				UnreadMentions: 3,
+				LastReplyAt:    epoch + 2000,
+			},
 		}
-		err := s.SetThreads([]*model.ThreadResponse{thread1, thread2, thread3})
+
+		err := s.SetThreads([]*store.ThreadResponseWrapped{thread1, thread2, thread3})
 		require.NoError(t, err)
 
 		threads, err := s.ThreadsSorted(true, false)
@@ -781,4 +818,66 @@ func TestPostsWithAckRequests(t *testing.T) {
 	posts, err := s.PostsWithAckRequests()
 	require.NoError(t, err)
 	assert.ElementsMatch(t, ackPosts, posts)
+}
+
+func TestCPAValues(t *testing.T) {
+	t.Run("SetCPAFields", func(t *testing.T) {
+		s := newStore(t)
+
+		err := s.SetCPAFields(nil)
+		require.NoError(t, err)
+
+		err = s.SetCPAFields([]*model.PropertyField{})
+		require.NoError(t, err)
+
+		err = s.SetCPAFields([]*model.PropertyField{
+			{ID: "an id"},
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("GetCPAFields", func(t *testing.T) {
+		s := newStore(t)
+
+		expected := []*model.PropertyField{
+			{ID: "an id"},
+		}
+
+		err := s.SetCPAFields(expected)
+		require.NoError(t, err)
+
+		actual := s.GetCPAFields()
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("SetCPAValues", func(t *testing.T) {
+		s := newStore(t)
+		userID := model.NewId()
+
+		err := s.SetCPAValues(userID, nil)
+		require.NoError(t, err)
+
+		err = s.SetCPAValues(userID, map[string]json.RawMessage{})
+		require.NoError(t, err)
+
+		err = s.SetCPAValues(userID, map[string]json.RawMessage{
+			"field": json.RawMessage(`"Field Value"`),
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("GetCPAValues", func(t *testing.T) {
+		s := newStore(t)
+		userID := model.NewId()
+
+		expected := map[string]json.RawMessage{
+			"field": json.RawMessage(`"Field Value"`),
+		}
+
+		err := s.SetCPAValues(userID, expected)
+		require.NoError(t, err)
+
+		actual := s.GetCPAValues(userID)
+		require.Equal(t, expected, actual)
+	})
 }

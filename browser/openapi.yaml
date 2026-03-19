@@ -1,0 +1,218 @@
+openapi: 3.0.3
+info:
+  title: LTBrowser API
+  description: API for managing browser instances in load testing
+  version: 0.1.0
+components:
+  schemas: {}
+paths:
+  /browsers:
+    post:
+      summary: Add a new browser instance
+      tags:
+        - browser
+      description: Creates a new browser instance for load testing with the provided
+        user credentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+                - password
+              properties:
+                user:
+                  type: string
+                  description: User ID or email address of the user to create a browser session
+                    for
+                password:
+                  type: string
+                  description: Password of the user
+        required: true
+      responses:
+        "201":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    default: true
+                  message:
+                    type: string
+                example:
+                  success: true
+                  message: Browser instance created for user bilalcall
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    default: false
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                example:
+                  success: false
+                  error:
+                    code: CREATE_SESSION_FAILED
+                    message: Failed to create context for user bilalcall
+    delete:
+      summary: Remove a browser instance
+      tags:
+        - browser
+      description: Removes an existing browser instance by user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: user
+          required: true
+          description: Username or email of the user to remove the browser session
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    default: true
+                  message:
+                    type: string
+                example:
+                  success: true
+                  message: Browser instance scheduled for removal for user bilalcall
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    default: false
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                example:
+                  success: false
+                  error:
+                    code: REMOVE_SESSION_FAILED
+                    message: Browser instance does not exist for user bilalcall
+    get:
+      summary: Get all active browser instances
+      tags:
+        - browser
+      description: Retrieves information about all active browser instances which
+        might or might not be running simulation tests. It also includes the
+        states each of the browser instances are in.
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      sessions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            userId:
+                              type: string
+                            createdAt:
+                              type: string
+                            state:
+                              type: string
+                      count:
+                        type: number
+              examples:
+                noSessions:
+                  summary: No active sessions
+                  description: Example showing when no browser sessions are currently active
+                  value:
+                    success: true
+                    data:
+                      count: 0
+                      sessions: []
+                activeSessions:
+                  summary: Multiple active sessions
+                  description: Example showing when there are multiple browser sessions in
+                    different states
+                  value:
+                    success: true
+                    data:
+                      count: 2
+                      sessions:
+                        - userId: bilalcall
+                          createdAt: 2021-01-01
+                          state: creation_failed
+                        - userId: salimword
+                          createdAt: 2021-01-01
+                          state: started
+  /health:
+    get:
+      summary: Health check endpoint
+      tags:
+        - health
+      description: Returns server health status, uptime, and system information
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    default: true
+                  data:
+                    type: object
+                    properties:
+                      startTime:
+                        type: string
+                        format: date-time
+                        description: Server start time in ISO format
+                      uptime:
+                        type: string
+                        description: Server uptime in human-readable format
+                      hostname:
+                        type: string
+                        description: Server hostname
+                      platform:
+                        type: string
+                        description: Operating system platform
+                example:
+                  success: true
+                  data:
+                    startTime: 2025-07-14T07:46:11.922Z
+                    uptime: 4m
+                    hostname: mm-macbook-pro.local
+                    platform: darwin
+

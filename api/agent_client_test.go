@@ -24,7 +24,7 @@ import (
 
 func createFakeMMServer() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Version-Id", "dev")
+		w.Header().Set("X-Version-Id", "1.0.0")
 		switch r.URL.Path {
 		case "/api/v4/users/login":
 			u := model.User{}

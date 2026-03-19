@@ -6,14 +6,19 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
+	"github.com/wiggin77/merror"
+
+	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
 
 const (
@@ -24,7 +29,7 @@ func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
 			name:             "SwitchChannel",
-			run:              switchChannel,
+			run:              c.switchChannel,
 			frequency:        6.5219,
 			minServerVersion: control.MinSupportedVersion,
 		},
@@ -153,6 +158,12 @@ func getActionList(c *SimulController) []userAction {
 			run:              c.updateSidebarCategory,
 			frequency:        0.0040,
 			minServerVersion: control.MinSupportedVersion, // 5.26.0
+		},
+		{
+			name:             "UpdateCustomAttribute",
+			run:              c.updateCustomAttribute,
+			frequency:        0.0040,
+			minServerVersion: semver.MustParse("10.9.0"),
 		},
 		{
 			name:             "SearchGroupChannels",
@@ -329,6 +340,18 @@ func getActionList(c *SimulController) []userAction {
 		//     server, use control.UnreleasedVersion
 	}
 
+	// Include the actions from registered plugins
+	for _, plugin := range c.plugins {
+		for _, action := range plugin.Actions() {
+			actions = append(actions, userAction{
+				name:             plugin.PluginId() + "." + action.Name,
+				run:              action.Run,
+				frequency:        action.Frequency,
+				minServerVersion: plugin.MinServerVersion(),
+			})
+		}
+	}
+
 	return actions
 }
 
@@ -356,6 +379,7 @@ type SimulController struct {
 	connectedFlag      int32           // indicates that the controller is connected
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      semver.Version  // stores the current server version
+	plugins            []plugins.SimulController
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -383,6 +407,18 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		wg:                 &sync.WaitGroup{},
 	}
 
+	plugins.SpawnPluginControllers(plugins.TypeSimulController, func(p plugins.Controller) {
+		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
+			s, ok := p.(plugins.SimulController)
+			if !ok {
+				// Should never happen
+				mlog.Error("The provided plugins.Controller cannot be casted to plugins.SimulController", mlog.String("plugin_id", p.PluginId()))
+				return
+			}
+			controller.plugins = append(controller.plugins, s)
+		}
+	})
+
 	controller.actionList = getActionList(controller)
 	controller.actionMap = getActionMap(controller.actionList)
 
@@ -406,28 +442,21 @@ func (c *SimulController) Run() {
 			c.status <- c.newErrorStatus(control.NewUserError(err))
 		}
 		c.user.ClearUserData()
+		for _, p := range c.plugins {
+			p.ClearUserData()
+		}
 		c.sendStopStatus()
 		close(c.stoppedChan)
 	}()
 
 	// Init controller's server version
-	serverVersionString, err := c.user.Store().ServerVersion()
-	if err != nil {
-		c.sendFailStatus("server version could not be retrieved")
-		return
-	}
-	serverVersion, err := control.ParseServerVersion(serverVersionString)
-	if err != nil {
-		c.sendFailStatus("server version could not be parsed")
-		return
-	}
-	c.serverVersion = serverVersion
+	c.serverVersion = c.user.Store().ServerVersion()
 
 	// Early check that the server version is greater or equal than the initialVersion
 	if !c.isVersionSupported(control.MinSupportedVersion) {
 		c.sendFailStatus(fmt.Sprintf(
 			"server version %q is lower than the minimum supported version %q",
-			serverVersion.String(),
+			c.serverVersion.String(),
 			control.MinSupportedVersion.String(),
 		))
 		return
@@ -464,6 +493,7 @@ func (c *SimulController) Run() {
 	}
 
 	var action *userAction
+	var err error
 
 	// Filter only actions that are available for the current server
 	var supportedActions []userAction
@@ -494,6 +524,19 @@ func (c *SimulController) Run() {
 			c.runAction(&ia)
 		}
 	}
+}
+
+func (c *SimulController) RunHook(hookType plugins.HookType, u user.User, payload any) error {
+	merr := merror.New()
+	for _, plugin := range c.plugins {
+		go func(p plugins.SimulController) {
+			if err := p.RunHook(hookType, u, payload); err != nil {
+				merr.Append(err)
+			}
+		}(plugin)
+	}
+
+	return merr.ErrorOrNil()
 }
 
 func (c *SimulController) runAction(action *userAction) {

@@ -4,6 +4,7 @@
 package simulcontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -125,7 +127,7 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 	channel, err := c.user.Store().CurrentChannel()
 	if errors.Is(err, memstore.ErrChannelNotFound) {
 		// If the current channel is not set we switch to a random one.
-		return switchChannel(c.user)
+		return c.switchChannel(c.user)
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
@@ -161,6 +163,11 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 				if err != nil {
 					mlog.Warn("Failed to store observation", mlog.Err(err))
 				}
+
+				if err := c.RunHook(plugins.HookLogin, u, nil); err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
@@ -256,14 +263,6 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 				break
 			}
 		}
-	} else {
-		if _, err := u.GetChannelsForTeamForUser(team.Id, u.Store().Id(), true); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-
-		if err := u.GetChannelMembersForUser(u.Store().Id(), team.Id); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
 	}
 
 	collapsedThreads, resp := control.CollapsedThreadsEnabled(u)
@@ -293,8 +292,11 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if err := u.GetTeamScheduledPosts(team.Id); err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+	// Get team scheduled posts from 10.3.0 onwards
+	if u.Store().ServerVersion().GTE(semver.MustParse("10.3.0")) {
+		if err := u.GetTeamScheduledPosts(team.Id); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("loaded team %s", team.Id)}
@@ -332,10 +334,15 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		}
 	}
 
+	hookPayload := plugins.HookPayloadSwitchTeam{TeamId: team.Id}
+	if err := c.RunHook(plugins.HookSwitchTeam, u, hookPayload); err != nil {
+		return control.UserActionResponse{Err: err}
+	}
+
 	// We should probably keep track of the last channel viewed in the team but
 	// for now we can simplify and randomly pick one each time.
 
-	return switchChannel(u)
+	return c.switchChannel(u)
 }
 
 func (c *SimulController) joinChannel(u user.User) control.UserActionResponse {
@@ -556,7 +563,7 @@ func viewChannel(u user.User, channel *model.Channel) control.UserActionResponse
 	return control.UserActionResponse{Info: fmt.Sprintf("viewed channel %s", channel.Id)}
 }
 
-func switchChannel(u user.User) control.UserActionResponse {
+func (c *SimulController) switchChannel(u user.User) control.UserActionResponse {
 	start := time.Now()
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
@@ -595,6 +602,11 @@ func switchChannel(u user.User) control.UserActionResponse {
 		if err := u.UpdateActiveChannel(channel.Id); err != nil {
 			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
 		}
+	}
+
+	hookPayload := plugins.HookPayloadSwitchChannel{ChannelId: channel.Id}
+	if err := c.RunHook(plugins.HookSwitchChannel, u, hookPayload); err != nil {
+		return control.UserActionResponse{Err: err}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("switched to channel %s", channel.Id)}
@@ -760,6 +772,28 @@ func (c *SimulController) updateSidebarCategory(u user.User) control.UserActionR
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("updated sidebar categories, ids [%s, %s]", cat1.Id, cat2.Id)}
+}
+
+func (c *SimulController) updateCustomAttribute(u user.User) control.UserActionResponse {
+	field := u.Store().RandomProperty()
+	if field == nil {
+		return control.UserActionResponse{Info: "no custom profile attributes to update"}
+	}
+
+	randomText := control.PickRandomWord()
+	value, err := json.Marshal(randomText)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	values := make(map[string]json.RawMessage)
+	values[field.ID] = value
+
+	err = u.PatchCPAValues(values)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("updated CPA field for user %s", u.Store().Id())}
 }
 
 func editPost(u user.User) control.UserActionResponse {
@@ -1771,63 +1805,77 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		thread = *threads[0]
 	}
 
-	postIds, hasNext, err := u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
+	// Get the lastUpdateAt
+	opts := model.GetPostsOptions{
 		CollapsedThreads: true,
 		Direction:        "down",
-		PerPage:          25,
-	})
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
+		PerPage:          60, // Matching with webapp's PER_PAGE_DEFAULT
 	}
-	if len(postIds) == 0 {
-		return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
-	}
-	newestPostId := postIds[len(postIds)-1]
-	newestPost, err := u.Store().Post(newestPostId)
-	if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-	var newestCreateAt int64
-	if errors.Is(err, memstore.ErrPostNotFound) {
-		newestCreateAt = thread.Post.CreateAt
-	} else {
-		newestCreateAt = newestPost.CreateAt
+	if thread.LastUpdateAt != 0 && c.serverVersion.GTE(semver.MustParse("10.8.0")) { // Use the new logic only from v10.8 onwards.
+		opts.UpdatesOnly = true
+		opts.FromUpdateAt = thread.LastUpdateAt
 	}
 
-	// scrolling between 1 and 3 times
-	numScrolls := rand.Intn(3) + 1
-	for i := 0; i < numScrolls && hasNext; i++ {
-		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", model.GetPostsOptions{
-			CollapsedThreads: true,
-			Direction:        "down",
-			PerPage:          25,
-			FromPost:         newestPostId,
-			FromCreateAt:     newestCreateAt,
-		})
+	// We always load the entire thread the first time.
+	// For subsequent loads, we only load the next updated posts.
+	hasNext := true
+	var allPostIds []string
+	for hasNext {
+		var postIds []string
+		postIds, hasNext, err = u.GetPostThreadWithOpts(thread.PostId, "", opts)
 		if err != nil {
+			// We are not checking for memstore.ErrPostNotFound because
+			// u.GetPostThreadWithOpts already stores the returned posts in the store.
+			// So the only case where an error might come is if list.Order doesn't
+			// have posts in list.Posts which is an error anyways.
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
-		if !hasNext {
-			break
-		}
-		newestPostId = postIds[len(postIds)-1]
-		newestPost, err = u.Store().Post(newestPostId)
-		if err != nil && !errors.Is(err, memstore.ErrPostNotFound) {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		if errors.Is(err, memstore.ErrPostNotFound) {
-			newestCreateAt = thread.Post.CreateAt
-		} else {
-			newestCreateAt = newestPost.CreateAt
+		if len(postIds) == 0 {
+			return control.UserActionResponse{Info: "viewthread: no posts available to view in thread"}
 		}
 
-		// idle time between scrolls, between 1 and 10 seconds.
-		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
+		newestPostId := postIds[len(postIds)-1]
+		newestPost, err := u.Store().Post(newestPostId)
+		if err != nil {
+			// We are not checking for memstore.ErrPostNotFound because
+			// u.GetPostThreadWithOpts already stores the returned posts in the store.
+			// So the only case where an error might come is if list.Order doesn't
+			// have posts in list.Posts which is an error anyways.
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+
+		// if updatesOnly, then use UpdateAt and updatesOnly options
+		if opts.UpdatesOnly {
+			opts.FromUpdateAt = newestPost.UpdateAt
+		} else {
+			opts.FromCreateAt = newestPost.CreateAt
+		}
+
+		opts.FromPost = newestPostId
+
+		if len(postIds) > 0 {
+			allPostIds = append(allPostIds, postIds...)
+		}
+
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "action canceled"}
-		case <-time.After(idleTime):
+		default:
 		}
+	}
+
+	// Find latest UpdateAt
+	latestUpdateAt, err := getLatestUpdateAt(allPostIds, u.Store().Post)
+	// We are not checking for memstore.ErrPostNotFound because
+	// u.GetPostThreadWithOpts already stores the returned posts in the store.
+	// So the only case where an error might come is if list.Order doesn't
+	// have posts in list.Posts which is an error anyways.
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.UpdateThreadLastUpdateAt(thread.PostId, latestUpdateAt); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
@@ -1836,7 +1884,7 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("viewedthread %s", thread.PostId)}
+	return control.UserActionResponse{Info: fmt.Sprintf("viewed thread %s", thread.PostId)}
 }
 
 func (c *SimulController) markAllThreadsInTeamAsRead(u user.User) control.UserActionResponse {
@@ -2049,6 +2097,22 @@ func (c *SimulController) openUserProfile(u user.User) control.UserActionRespons
 	if err := u.GetChannelMember(ch.Id, post.UserId); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
+
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+	if cpaEnabled {
+		// attempt to retrieve from store
+		attributes := u.Store().GetCPAValues(post.UserId)
+		if len(attributes) == 0 {
+			// Retrieve custom profile attribute values for the user.
+			if _, err = u.GetCPAValues(post.UserId); err != nil {
+				return control.UserActionResponse{Err: control.NewUserError(err)}
+			}
+		}
+	}
+
 	// If it's a DM/GM channel, the webapp still sends the current team
 	// the user is part of
 	if ch.TeamId == "" {

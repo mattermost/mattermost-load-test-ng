@@ -61,7 +61,7 @@ The steps to load-test a new feature in production, after testing new actions lo
     - Start the load test with `go run ./cmd/ltctl loadtest start`.
         - Once a loadtest is running, its status can be checked with `go run ./cmd/ltctl loadtest status`.
         - `ssh` into one of the agent machines, and `cat ~/mattermost-load-test-ng/logs/ltagent.log` to verify the load-test is working without errors.
-        - Open the Grafana deployment with the URL from `go run ./cmd/ltctl deployment info`. 
+        - Open the Grafana deployment with the URL from `go run ./cmd/ltctl deployment info`. The anonymous access has the `Viewer` role. If you need to edit the dashboards or do something that requires login, the `deployment info` command shows the credentials for the `admin` user.
         - It takes some time for the deployment to stabilize. Until the loadtest tool connects the `MaxActiveUsers` count of users to the app, there might be a big count of HTTP 4xx errors during this time.
             
             A sample error count vs time graph: ![error-vs-time](https://i.imgur.com/RSH1Szl.png)

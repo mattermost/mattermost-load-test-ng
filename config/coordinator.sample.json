@@ -6,11 +6,17 @@
         "ApiURL": "http://localhost:4000"
       }
     ],
-    "MaxActiveUsers": 2000
+    "MaxActiveUsers": 2000,
+    "BrowserAgents": [
+        {
+            "Id": "br0",
+            "ApiURL": "http://localhost:4000"
+        }
+    ],
+    "MaxActiveBrowserUsers": 1000
   },
   "MonitorConfig": {
     "PrometheusURL": "http://localhost:9090",
-    "UpdateIntervalMs": 2000,
     "Queries": [
       {
         "Description": "Percentage of HTTP 5xx server errors",

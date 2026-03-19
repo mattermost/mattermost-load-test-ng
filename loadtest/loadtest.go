@@ -35,6 +35,8 @@ type LoadTester struct {
 	activeControllers []control.UserController
 	idleControllers   []control.UserController
 
+	isBrowserAgent bool
+
 	log *mlog.Logger
 }
 
@@ -88,15 +90,23 @@ func (lt *LoadTester) AddUsers(numUsers int) (int, error) {
 	return numUsers, nil
 }
 
-// addUser is an internal API called from Run and AddUsers both.
+// addUser is an internal API called from Run for adding initial users and AddUsers for adding more users.
 // DO NOT call this by itself, because this method is not protected by a mutex.
 func (lt *LoadTester) addUser() error {
 	activeUsers := len(lt.activeControllers)
-	if activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
+
+	// If the load-test is not a browser agent, we check if the maximum number of users has been reached.
+	if !lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveUsers {
+		return ErrMaxUsersReached
+	}
+
+	// If the load-test is a browser agent, we check if the maximum number of browser users has been reached.
+	if lt.isBrowserAgent && activeUsers == lt.config.UsersConfiguration.MaxActiveBrowserUsers {
 		return ErrMaxUsersReached
 	}
 
 	var controller control.UserController
+
 	if len(lt.idleControllers) > 0 {
 		controller = lt.idleControllers[0]
 		lt.idleControllers = lt.idleControllers[1:]
@@ -193,13 +203,22 @@ func (lt *LoadTester) Run() error {
 	lt.status.NumUsersStopped = 0
 	lt.status.NumErrors = 0
 	lt.status.StartTime = time.Now()
-	lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
+
+	if lt.isBrowserAgent {
+		lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveBrowserUsers)
+	} else {
+		lt.statusChan = make(chan control.UserStatus, lt.config.UsersConfiguration.MaxActiveUsers)
+	}
 	startedChan := make(chan struct{})
 	go lt.handleStatus(startedChan)
 	<-startedChan
-	for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
-		if err := lt.addUser(); err != nil {
-			lt.log.Error(err.Error())
+
+	// Do not add initial users if the agent is a browser agent.
+	if !lt.isBrowserAgent {
+		for i := 0; i < lt.config.UsersConfiguration.InitialActiveUsers; i++ {
+			if err := lt.addUser(); err != nil {
+				lt.log.Error(err.Error())
+			}
 		}
 	}
 	lt.status.State = Running
@@ -275,7 +294,7 @@ func MaxHTTPConns(maxUsers int) int {
 // New creates and initializes a new LoadTester with given config. A factory
 // function is also given to enable the creation of UserController values from within the
 // loadtest package.
-func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error) {
+func New(config *Config, nc NewController, log *mlog.Logger, isBrowserAgent bool) (*LoadTester, error) {
 	if config == nil || nc == nil || log == nil {
 		return nil, errors.New("nil params passed")
 	}
@@ -300,11 +319,12 @@ func New(config *Config, nc NewController, log *mlog.Logger) (*LoadTester, error
 
 	return &LoadTester{
 		config:            config,
-		statusChan:        make(chan control.UserStatus, config.UsersConfiguration.MaxActiveUsers),
+		statusChan:        make(chan control.UserStatus, (config.UsersConfiguration.MaxActiveUsers + config.UsersConfiguration.MaxActiveBrowserUsers)),
 		newController:     nc,
 		status:            Status{},
 		activeControllers: make([]control.UserController, 0),
 		idleControllers:   make([]control.UserController, 0),
+		isBrowserAgent:    isBrowserAgent,
 		log:               log,
 	}, nil
 }

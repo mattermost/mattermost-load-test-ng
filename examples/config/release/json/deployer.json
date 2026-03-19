@@ -1,0 +1,85 @@
+{
+  "AWSAMI": "ami-003d3d03cfe1b0468",
+  "AWSAvailabilityZone": "",
+  "AWSProfile": "mm-loadtest",
+  "AgentInstanceCount": 6,
+  "AgentInstanceType": "c7i.xlarge",
+  "BrowserAgentInstanceCount": 2,
+  "BrowserAgentInstanceType": "c7i.xlarge",
+  "AppInstanceCount": 2,
+  "AppInstanceType": "c7i.xlarge",
+  "ClusterName": "TBD",
+  "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/vTBD/mattermost-load-test-ng-vTBD-linux-amd64.tar.gz",
+  "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
+  "MattermostLicenseFile": "",
+  "MetricsInstanceType": "t3.xlarge",
+  "ProxyInstanceCount": 1,
+  "ProxyInstanceType": "c7i.xlarge",
+  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
+  "TerraformStateDir": "./ltstatus",
+  "LogSettings": {
+    "ConsoleLevel": "INFO",
+    "EnableColor": true,
+    "FileJson": true,
+    "FileLevel": "DEBUG",
+    "FileLocation": "deployer.log"
+  },
+  "Report": {
+    "GraphQueries": [
+      {
+        "Name": "CPU Utilization",
+        "Query": "avg(rate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
+      },
+      {
+        "Name": "Heap In Use",
+        "Query": "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "Stack In Use",
+        "Query": "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "Goroutines In Use",
+        "Query": "sum(go_goroutines{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "RPS",
+        "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name": "Avg Store times",
+        "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name": "P99 Store times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name": "Avg API times",
+        "Query": "sum(rate(mattermost_api_time_sum[1m])) / sum(rate(mattermost_api_time_count[1m]))"
+      },
+      {
+        "Name": "P99 API times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name": "Number of Connected Devices",
+        "Query": "sum(mattermost_http_websockets_total{instance=~\"app.*:8067\"})"
+      }
+    ],
+    "Label": "{instance=~\"app.*\"}"
+  },
+  "SiteURL": "",
+  "StorageSizes": {
+    "App": 20
+  },
+  "TerraformDBSettings": {
+    "DBParameters": [],
+    "InstanceEngine": "aurora-postgresql",
+    "InstanceCount": 2,
+    "InstanceType": "db.r7g.xlarge"
+  },
+  "CustomTags": {
+    "Origin": "release-testing"
+  }
+}

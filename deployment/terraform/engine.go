@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"strings"
 
 	"time"
 
@@ -39,7 +38,7 @@ func (t *Terraform) runCommand(dst io.Writer, args ...string) error {
 	mlog.Debug("Running terraform command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, terraformBin, args...)
 
-	return _runCommand(cmd, dst)
+	return deployment.RunCommand(cmd, dst)
 }
 
 func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Writer) error {
@@ -61,33 +60,7 @@ func (t *Terraform) runAWSCommand(ctx context.Context, args []string, dst io.Wri
 	mlog.Debug("Running aws command", mlog.String("args", fmt.Sprintf("%v", args)))
 	cmd := exec.CommandContext(ctx, awsBin, args...)
 
-	return _runCommand(cmd, dst)
-}
-
-type cmdLogger struct {
-}
-
-func (*cmdLogger) Write(in []byte) (int, error) {
-	mlog.Info(strings.TrimSpace(string(in)))
-	return len(in), nil
-}
-
-func _runCommand(cmd *exec.Cmd, dst io.Writer) error {
-	// If dst is set, that means we want to capture the output.
-	// We write a simple case to handle that using CombinedOutput.
-	if dst != nil {
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return err
-		}
-		_, err = dst.Write(out)
-		return err
-	}
-
-	cmd.Stdout = &cmdLogger{}
-	cmd.Stderr = cmd.Stdout
-
-	return cmd.Run()
+	return deployment.RunCommand(cmd, dst)
 }
 
 func checkTerraformVersion() error {

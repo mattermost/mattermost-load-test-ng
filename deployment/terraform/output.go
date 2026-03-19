@@ -27,6 +27,9 @@ type output struct {
 	Agents struct {
 		Value []Instance `json:"value"`
 	} `json:"agents"`
+	BrowserAgents struct {
+		Value []Instance `json:"value"`
+	} `json:"browserAgents"`
 	MetricsServer struct {
 		Value []Instance `json:"value"`
 	} `json:"metricsServer"`
@@ -39,6 +42,9 @@ type output struct {
 	KeycloakServer struct {
 		Value []Instance `json:"value"`
 	} `json:"keycloakServer"`
+	OpenLDAPServer struct {
+		Value []Instance `json:"value"`
+	} `json:"openldapServer"`
 	KeycloakDatabaseCluster struct {
 		Value []struct {
 			Endpoint          string `json:"endpoint"`
@@ -63,6 +69,9 @@ type output struct {
 			CacheNodes []RedisInstance `json:"cache_nodes"`
 		} `json:"value"`
 	} `json:"redisServer"`
+	EFSaccessPoint struct {
+		Value []EFSAccessPoint `json:"value"`
+	} `json:"efsAccessPoint"`
 }
 
 // Output contains the output variables which are
@@ -73,6 +82,7 @@ type Output struct {
 	Instances               []Instance          `json:"instances"`
 	DBCluster               DBCluster           `json:"dbCluster"`
 	Agents                  []Instance          `json:"agents"`
+	BrowserAgents           []Instance          `json:"browserAgents"`
 	MetricsServer           Instance            `json:"metricsServer"`
 	ElasticSearchServer     ElasticSearchDomain `json:"elasticServer"`
 	ElasticSearchRoleARN    string              `json:"elasticRoleARN"`
@@ -82,7 +92,10 @@ type Output struct {
 	DBSecurityGroup         []SecurityGroup     `json:"dbSecurityGroup"`
 	KeycloakServer          Instance            `json:"keycloakServer"`
 	KeycloakDatabaseCluster DBCluster           `json:"keycloakDatabaseCluster"`
+	OpenLDAPServer          Instance            `json:"openldapServer"`
 	RedisServer             RedisInstance       `json:"redisServer"`
+	EFSAccessPoint          EFSAccessPoint      `json:"efsAccessPoint"`
+	AMIUser                 string              `json:"amiUser"`
 }
 
 // Instance is an AWS EC2 instance resource.
@@ -145,6 +158,11 @@ type RedisInstance struct {
 	Port    int    `json:"port"`
 }
 
+type EFSAccessPoint struct {
+	Id           string `json:"id"`
+	FileSystemId string `json:"file_system_id"`
+}
+
 // Tags are the values attached to resource.
 type Tags struct {
 	Name string `json:"Name"`
@@ -192,15 +210,21 @@ func (t *Terraform) loadOutput() error {
 		return err
 	}
 
-	var clusterName string
+	var (
+		clusterName string
+		amiUser     string
+	)
 	if t.config != nil {
 		clusterName = t.config.ClusterName
+		amiUser = t.config.AWSAMIUser
 	}
 	outputv2 := &Output{
-		ClusterName: clusterName,
-		Instances:   o.Instances.Value,
-		Agents:      o.Agents.Value,
-		JobServers:  o.JobServers.Value,
+		ClusterName:   clusterName,
+		AMIUser:       amiUser,
+		Instances:     o.Instances.Value,
+		Agents:        o.Agents.Value,
+		BrowserAgents: o.BrowserAgents.Value,
+		JobServers:    o.JobServers.Value,
 	}
 
 	if len(o.Proxy.Value) > 0 {
@@ -214,6 +238,9 @@ func (t *Terraform) loadOutput() error {
 		}
 		for i := range outputv2.Agents {
 			outputv2.Agents[i].SetConnectionType(t.config.ConnectionType)
+		}
+		for i := range outputv2.BrowserAgents {
+			outputv2.BrowserAgents[i].SetConnectionType(t.config.ConnectionType)
 		}
 		for i := range outputv2.JobServers {
 			outputv2.JobServers[i].SetConnectionType(t.config.ConnectionType)
@@ -253,6 +280,10 @@ func (t *Terraform) loadOutput() error {
 		outputv2.KeycloakServer = o.KeycloakServer.Value[0]
 		outputv2.KeycloakServer.SetConnectionType(t.config.ConnectionType)
 	}
+	if len(o.OpenLDAPServer.Value) > 0 {
+		outputv2.OpenLDAPServer = o.OpenLDAPServer.Value[0]
+		outputv2.OpenLDAPServer.SetConnectionType(t.config.ConnectionType)
+	}
 	if len(o.KeycloakDatabaseCluster.Value) > 0 {
 		for _, inst := range o.KeycloakDatabaseCluster.Value {
 			outputv2.KeycloakDatabaseCluster.Instances = append(outputv2.KeycloakDatabaseCluster.Instances, DBInstance{
@@ -272,6 +303,10 @@ func (t *Terraform) loadOutput() error {
 			return errors.New("No cache_nodes entry found in Terraform value output for Redis")
 		}
 		outputv2.RedisServer = o.RedisServer.Value[0].CacheNodes[0]
+	}
+
+	if len(o.EFSaccessPoint.Value) > 0 {
+		outputv2.EFSAccessPoint = o.EFSaccessPoint.Value[0]
 	}
 
 	t.output = outputv2
@@ -325,6 +360,11 @@ func (o *Output) HasAgents() bool {
 	return len(o.Agents) > 0
 }
 
+// HasBrowserAgents returns whether a deployment includes browser agent instances.
+func (o *Output) HasBrowserAgents() bool {
+	return len(o.BrowserAgents) > 0
+}
+
 // HasMetrics returns whether a deployment includes the metrics instance.
 func (o *Output) HasMetrics() bool {
 	return o.MetricsServer.GetConnectionIP() != ""
@@ -348,6 +388,15 @@ func (o *Output) HasJobServer() bool {
 // HasKeycloak returns whether a deployment has Keycloak installed in it or not.
 func (o *Output) HasKeycloak() bool {
 	return o.KeycloakServer.GetConnectionIP() != ""
+}
+
+func (o *Output) HasEFS() bool {
+	return o.EFSAccessPoint.Id != "" && o.EFSAccessPoint.FileSystemId != ""
+}
+
+// HasOpenLDAP returns whether a deployment has OpenLDAP installed in it or not.
+func (o *Output) HasOpenLDAP() bool {
+	return o.OpenLDAPServer.GetConnectionIP() != ""
 }
 
 // DBReaders returns the list of db reader endpoints.

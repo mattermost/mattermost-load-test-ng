@@ -171,6 +171,7 @@ func (a *Agent) Status() (loadtest.Status, error) {
 func (a *Agent) Run() (loadtest.Status, error) {
 	var status loadtest.Status
 	resp, err := a.apiPost(a.apiURL+a.id+"/run", nil)
+
 	if err != nil {
 		return status, err
 	}

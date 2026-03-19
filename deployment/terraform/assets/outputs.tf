@@ -10,12 +10,20 @@ output "agents" {
   value = aws_instance.loadtest_agent[*]
 }
 
+output "browserAgents" {
+  value = aws_instance.loadtest_browser_agent[*]
+}
+
 output "metricsServer" {
   value = aws_instance.metrics_server
 }
 
 output "keycloakServer" {
   value = aws_instance.keycloak
+}
+
+output "openldapServer" {
+  value = aws_instance.openldap
 }
 
 output "proxy" {
@@ -52,3 +60,14 @@ output "jobServers" {
   value = aws_instance.job_server[*]
 }
 
+output "efsAccessPoint" {
+  value = aws_efs_access_point.shared_dir
+}
+
+output "efsFileSystem" {
+  value = aws_efs_file_system.efs_shared[*]
+}
+
+output "amiUser" {
+  value = var.aws_ami_user
+}

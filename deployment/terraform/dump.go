@@ -34,7 +34,7 @@ func (t *Terraform) ClearLicensesData() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.GetConnectionIP())
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -98,7 +98,7 @@ func (t *Terraform) IngestDump() error {
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.GetConnectionIP())
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}
@@ -109,7 +109,7 @@ func (t *Terraform) IngestDump() error {
 	dumpURI := t.config.DBDumpURI
 	fileName := filepath.Base(dumpURI)
 	mlog.Info("Provisioning dump file", mlog.String("uri", dumpURI))
-	if err := deployment.ProvisionURL(appClients[0], dumpURI, fileName); err != nil {
+	if _, err := t.ProvisionURL(appClients[0], dumpURI, fileName); err != nil {
 		return err
 	}
 
@@ -158,7 +158,7 @@ func (t *Terraform) ExecuteCustomSQL() error {
 		return fmt.Errorf("no app instances deployed")
 	}
 
-	client, err := extAgent.NewClient(output.Instances[0].GetConnectionIP())
+	client, err := extAgent.NewClient(t.Config().AWSAMIUser, output.Instances[0].GetConnectionIP())
 	if err != nil {
 		return fmt.Errorf("error in getting ssh connection %w", err)
 	}
@@ -169,7 +169,7 @@ func (t *Terraform) ExecuteCustomSQL() error {
 	for _, sqlURI := range t.config.DBExtraSQL {
 		fileName := filepath.Base(sqlURI)
 		mlog.Info("Provisioning SQL file", mlog.String("uri", sqlURI))
-		if err := deployment.ProvisionURL(client, sqlURI, fileName); err != nil {
+		if _, err := t.ProvisionURL(client, sqlURI, fileName); err != nil {
 			return err
 		}
 
@@ -219,7 +219,7 @@ func (t *Terraform) executeDatabaseCommands(extraCommands []deployment.Cmd) erro
 
 	appClients := make([]*ssh.Client, len(output.Instances))
 	for i, instance := range output.Instances {
-		client, err := extAgent.NewClient(instance.GetConnectionIP())
+		client, err := extAgent.NewClient(t.Config().AWSAMIUser, instance.GetConnectionIP())
 		if err != nil {
 			return fmt.Errorf("error in getting ssh connection %w", err)
 		}

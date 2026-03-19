@@ -1,4 +1,4 @@
-# SimpleControllerConfiguration
+# SimpleController Configuration
 
 ## Actions
 

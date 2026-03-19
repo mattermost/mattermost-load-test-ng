@@ -13,13 +13,17 @@ variable "cluster_subnet_ids" {
     elasticsearch = list(string)
     metrics = list(string)
     keycloak = list(string)
+    openldap = list(string)
     database = list(string)
     redis = list(string)
   })
 }
 
-variable "connection_type" {
+# Provisioner variables
+variable "operating_system_kind" {
 }
+
+# App variables
 
 variable "app_attach_iam_profile" {
 }
@@ -39,6 +43,14 @@ variable "agent_instance_type" {
 }
 
 variable "agent_allocate_public_ip_address" {
+}
+
+# Browser Agent variables
+
+variable "browser_agent_instance_count" {
+}
+
+variable "browser_agent_instance_type" {
 }
 
 # Elasticsearch variables
@@ -109,7 +121,7 @@ variable "db_engine_version" {
   type = map(any)
   default = {
     "aurora-mysql"      = "8.0.mysql_aurora.3.05.2"
-    "aurora-postgresql" = "14.9"
+    "aurora-postgresql" = "14.18"
   }
 }
 
@@ -211,6 +223,9 @@ variable "aws_region" {
 variable "aws_ami" {
 }
 
+variable "aws_ami_user" {
+}
+
 variable "custom_tags" {
   type = map(string)
 }
@@ -218,5 +233,32 @@ variable "custom_tags" {
 variable "aws_az" {
 }
 
+variable "enable_metrics_instance" {
+  type = bool
+}
+
 variable "metrics_instance_type" {
+}
+
+variable "create_efs" {
+  type        = bool
+}
+
+# OpenLDAP variables
+variable "openldap_enabled" {
+  description = "Enable OpenLDAP server"
+  type        = bool
+  default     = false
+}
+
+variable "openldap_instance_type" {
+  description = "Instance type for OpenLDAP server"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "block_device_sizes_openldap" {
+  description = "Block device size for OpenLDAP server"
+  type        = number
+  default     = 20
 }

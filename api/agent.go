@@ -12,14 +12,18 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/gencontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/noopcontroller"
@@ -113,7 +117,12 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics)
+	isBAInstance, err := isBrowserAgentInstance()
+	if err != nil {
+		mlog.Warn("failed to detect agent_type. Going ahead assuming it's a server agent", mlog.Err(err))
+	}
+
+	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics, isBAInstance)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -121,7 +130,8 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 			Error:   fmt.Sprintf("could not create agent: %s", err),
 		})
 	}
-	lt, err := loadtest.New(&ltConfig, newC, a.agentLog)
+
+	lt, err := loadtest.New(&ltConfig, newC, a.agentLog, isBAInstance)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
 			Id:      agentId,
@@ -130,6 +140,9 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	// Store the loadTest's LoadTester instance in the API's resource map using the agentId as the key.
+	// This allows the LoadTester to be retrieved later by other API endpoints of /loadtest
 	if ok := a.setResource(agentId, lt); !ok {
 		writeAgentResponse(w, http.StatusConflict, &client.AgentResponse{
 			Error: fmt.Sprintf("resource with id %s already exists", agentId),
@@ -174,12 +187,14 @@ func (a *api) runLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
 	if err = lt.Run(); err != nil {
 		writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 			Error: err.Error(),
 		})
 		return
 	}
+
 	writeAgentResponse(w, http.StatusOK, &client.AgentResponse{
 		Message: "load-test agent started",
 		Status:  lt.Status(),
@@ -332,8 +347,11 @@ func getServerVersion(serverURL string) (string, error) {
 
 // NewControllerWrapper returns a constructor function used to create
 // a new UserController.
-func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics) (loadtest.NewController, error) {
+func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{}, userOffset int, namePrefix string, metrics *performance.Metrics, isBrowserAgentInstance bool) (loadtest.NewController, error) {
 	maxHTTPconns := loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveUsers)
+	if isBrowserAgentInstance {
+		maxHTTPconns = loadtest.MaxHTTPConns(config.UsersConfiguration.MaxActiveBrowserUsers)
+	}
 
 	// http.Transport to be shared amongst all clients.
 	transport := &http.Transport{
@@ -352,12 +370,25 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	}
 
 	var err error
-	serverVersion := config.UserControllerConfiguration.ServerVersion
-	if serverVersion == "" {
-		serverVersion, err = getServerVersion(config.ConnectionConfiguration.ServerURL)
+	serverVersionStr := config.UserControllerConfiguration.ServerVersion
+	if serverVersionStr == "" {
+		serverVersionStr, err = getServerVersion(config.ConnectionConfiguration.ServerURL)
 		if err != nil {
 			mlog.Error("Failed to get server version", mlog.Err(err))
 		}
+	}
+
+	// The server version string looks something like
+	// 10.8.0.-14635315842.c5915cb6b6a40c3468ba242e5742cf35.true
+	// but we are only interested in the first part, 10.8.0, which is semver-compatible
+	serverVersionParts := strings.Split(serverVersionStr, ".")
+	if len(serverVersionParts) < 3 {
+		return nil, fmt.Errorf("unable to extract the semver-compatible version from the string %q; expecting something like 10.5.3.someotherstuff", serverVersionStr)
+	}
+	serverVersionStr = strings.Join(serverVersionParts[:3], ".")
+	serverVersion, err := semver.Parse(serverVersionStr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse server version %q: %w", serverVersionStr, err)
 	}
 
 	creds, err := getUserCredentials(config.UsersConfiguration.UsersFilePath, config)
@@ -432,6 +463,12 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			ueSetup.Metrics = metrics.UserEntityMetrics()
 		}
 		ue := userentity.New(ueSetup, ueConfig)
+
+		// We detect early on if the current instance is going to run browser agents
+		// this is because of design decision to run only browser agents in the instance
+		if isBrowserAgentInstance {
+			return browsercontroller.New(id, ue, config.ConnectionConfiguration.ServerURL, status)
+		}
 
 		switch config.UserControllerConfiguration.Type {
 		case loadtest.UserControllerSimple:
@@ -576,4 +613,31 @@ func createCustomEmoji(config *loadtest.Config) error {
 		}
 	}
 	return err
+}
+
+// Checks if the current instance is going to run browser agents.
+func isBrowserAgentInstance() (bool, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return false, fmt.Errorf("failed to get home directory for agent_type.txt: %w", err)
+	}
+
+	// Check for the agent type file created by configureAndRunAgents in deployment/terraform/agent.go
+	agentTypeFilePath := filepath.Join(homeDir, deployment.AgentTypeFileName)
+	agentTypeFile, err := os.ReadFile(agentTypeFilePath)
+	if err != nil {
+		return false, fmt.Errorf("failed to read agent_type.txt: %w", err)
+	}
+
+	fileContent := strings.TrimSpace(string(agentTypeFile))
+	switch fileContent {
+	case deployment.AgentTypeBrowser:
+		mlog.Info("detected type as browser_agent from agent_type.txt")
+		return true, nil
+	case deployment.AgentTypeServer:
+		mlog.Info("detected type as server_agent from agent_type.txt")
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid agent_type in agent_type.txt")
+	}
 }

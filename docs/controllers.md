@@ -40,6 +40,13 @@ Running this controller will serve as a baseline against which to compare other 
 
 ### `GenController`
 
-This controller's purpose is to generate data (teams, channels, posts, etc.).  
-This is particularly useful when a more realistic starting setup is required.  
-Also, it is used to populate an empty database during the init process.  
+This controller's purpose is to generate data (teams, channels, posts, etc.).
+This is particularly useful when a more realistic starting setup is required.
+Also, it is used to populate an empty database during the init process.
+
+### `BrowserController`
+
+This is a specialized controller that runs browser-based simulations using Playwright.
+Unlike other controllers, it cannot be used by simply setting `UserControllerConfiguration.Type`.
+Instead, it requires a dedicated load-test agent setup and configuration through the API server.
+See [loadtest/control/browsercontroller/controller.go](../loadtest/control/browsercontroller/controller.go) for implementation details. Configuration is documented in [docs/config/browsercontroller.md](config/browsercontroller.md).

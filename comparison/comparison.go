@@ -6,7 +6,6 @@ package comparison
 import (
 	"fmt"
 	"sort"
-	"sync"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
@@ -74,90 +73,92 @@ func (c *Comparison) Run() (Output, error) {
 		return output, fmt.Errorf("failed to create ssh agent: %w", err)
 	}
 
-	// create deployments
-	err = c.deploymentAction(func(t *terraform.Terraform, dpConfig *deploymentConfig) error {
+	nLoadTests := c.getLoadTestsCount()
+	resultsCh := make(chan *Result, nLoadTests)
+
+	// Run tests concurrently
+	err = c.deploymentAction(func(t *terraform.Terraform, dpID string, dpConfig *deploymentConfig) error {
+		// Create deployments
 		if err := t.Create(extAgent, false); err != nil {
 			return err
 		}
-		return provisionFiles(t, dpConfig, c.config.BaseBuild, c.config.NewBuild)
+		if err := provisionFiles(t, dpConfig, c.config.BaseBuild, c.config.NewBuild); err != nil {
+			return err
+		}
+
+		// Run tests for each deployment
+		for ltID, lt := range dpConfig.loadTests {
+			res := &Result{deploymentID: dpID}
+			dumpFilename := lt.getDumpFilename(ltID)
+			s3BucketURI := lt.S3BucketDumpURI
+			for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
+				mlog.Debug("initializing load-test")
+				// initialize instance state
+				if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI); err != nil {
+					res.LoadTests[i] = LoadTestResult{Failed: true}
+					return err
+				}
+				mlog.Debug("load-test init done")
+
+				status, err := runLoadTest(t, lt)
+				if err != nil {
+					res.LoadTests[i] = LoadTestResult{Failed: true}
+					return err
+				}
+				res.LoadTests[i] = LoadTestResult{
+					loadTestID: ltID,
+					Label:      buildCfg.Label,
+					Config:     lt,
+					Status:     status,
+				}
+			}
+
+			// For each pair of base/new builds, compare the results and generate the report
+			res, err := c.getResults(t, dpConfig, res)
+			if err != nil {
+				return err
+			}
+			resultsCh <- res
+		}
+
+		return nil
 	})
 	if err != nil {
 		return output, err
 	}
 
-	// run load-tests
-	var wg sync.WaitGroup
-	wg.Add(len(c.deployments))
-	nLoadTests := c.getLoadTestsCount()
-	errsCh := make(chan error, nLoadTests)
-	resultsCh := make(chan Result, nLoadTests)
-	for dpID, dp := range c.deployments {
-		go func(dpID string, dp *deploymentConfig) {
-			defer wg.Done()
-			t, err := terraform.New(dpID, dp.config)
-			if err != nil {
-				errsCh <- fmt.Errorf("failed to create terraform engine: %w", err)
-				return
-			}
-
-			for ltID, lt := range dp.loadTests {
-				res := Result{deploymentID: dpID}
-				dumpFilename := lt.getDumpFilename(ltID)
-				s3BucketURI := lt.S3BucketDumpURI
-				for i, buildCfg := range []BuildConfig{c.config.BaseBuild, c.config.NewBuild} {
-					mlog.Debug("initializing load-test")
-					// initialize instance state
-					if err := initLoadTest(t, buildCfg, dumpFilename, s3BucketURI); err != nil {
-						res.LoadTests[i] = LoadTestResult{Failed: true}
-						errsCh <- err
-						break
-					}
-					mlog.Debug("load-test init done")
-
-					status, err := runLoadTest(t, lt)
-					if err != nil {
-						res.LoadTests[i] = LoadTestResult{Failed: true}
-						errsCh <- err
-						break
-					}
-					res.LoadTests[i] = LoadTestResult{
-						loadTestID: ltID,
-						Label:      buildCfg.Label,
-						Config:     lt,
-						Status:     status,
-					}
-				}
-
-				resultsCh <- res
-			}
-		}(dpID, dp)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultsCh)
-		close(errsCh)
-	}()
-
-	for err := range errsCh {
-		if err != nil {
-			mlog.Error("an error has occurred", mlog.Err(err))
-		}
-	}
+	close(resultsCh)
 
 	mlog.Info("load-tests have completed, generating results")
 
 	output.DeploymentInfo = c.deploymentInfo
-	// do actual comparisons and generate some results
-	output.Results = c.getResults(resultsCh)
+
+	for res := range resultsCh {
+		output.Results = append(output.Results, *res)
+	}
 
 	return output, nil
 }
 
 // Destroy destroys all resources associated with the deployments for the
 // current automated load-test comparisons.
-func (c *Comparison) Destroy() error {
-	return c.deploymentAction(func(t *terraform.Terraform, _ *deploymentConfig) error {
+func (c *Comparison) Destroy(maintainMetrics bool) error {
+	if maintainMetrics {
+		for _, dp := range c.deployments {
+			dp.config.MarkForDestroyAllButMetrics()
+		}
+
+		extAgent, err := ssh.NewAgent()
+		if err != nil {
+			return fmt.Errorf("failed to create ssh agent: %w", err)
+		}
+
+		return c.deploymentAction(func(t *terraform.Terraform, _ string, _ *deploymentConfig) error {
+			return t.Create(extAgent, false)
+		})
+	}
+
+	return c.deploymentAction(func(t *terraform.Terraform, _ string, _ *deploymentConfig) error {
 		if err := t.Sync(); err != nil {
 			return err
 		}

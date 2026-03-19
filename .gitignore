@@ -24,6 +24,7 @@ ltagent.log
 ltcoordinator.log
 deployer.log
 ltapi.log
+browseragent.log
 
 .tmp
 debug
@@ -85,3 +86,9 @@ mattermost-load-test.iml
 
 *.tar
 .aider*
+
+# lambda function
+lambda/node_modules
+lambda/screenshot*
+lambda/response*
+lambda/deployment.zip

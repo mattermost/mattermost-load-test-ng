@@ -22,6 +22,8 @@ type Monitor struct {
 	startTime  time.Time
 }
 
+const defaultUpdateIntervalMs = 1000
+
 // NewMonitor creates and initializes a new Monitor.
 func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
 	if log == nil {
@@ -47,7 +49,7 @@ func NewMonitor(config MonitorConfig, log *mlog.Logger) (*Monitor, error) {
 // Run will start the performance monitoring process.
 func (m *Monitor) Run() <-chan Status {
 	go func() {
-		ticker := time.NewTicker(time.Duration(m.config.UpdateIntervalMs) * time.Millisecond)
+		ticker := time.NewTicker(time.Duration(defaultUpdateIntervalMs) * time.Millisecond)
 		defer ticker.Stop()
 
 		m.log.Info("monitor: started")
@@ -101,7 +103,6 @@ func (m *Monitor) runQueries() Status {
 				mlog.String("query_threshold", fmt.Sprintf("%2.8f", query.Threshold)),
 			)
 			status = Status{Alert: true}
-			break
 		}
 	}
 	return status

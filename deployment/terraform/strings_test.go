@@ -135,7 +135,7 @@ service:
 func TestRenderAgentOtelcolConfig(t *testing.T) {
 	instanceName := "instance-name"
 	metricsIP := "127.0.0.1"
-	cfg, err := renderAgentOtelcolConfig(instanceName, metricsIP)
+	cfg, err := renderAgentOtelcolConfig(instanceName, metricsIP, "ubuntu")
 	require.NoError(t, err)
 
 	require.Equal(t, expectedAgentConf, cfg)

@@ -19,11 +19,34 @@ AWS Availability Zone in which to deploy instances. See the [AWS docs](https://d
 > [!TIP]
 > Deploying instances in the same Availability Zone can greatly reduce traffic costs. Refer to [data transfer pricing](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer_within_the_same_AWS_Region) for more details.
 
+## AWSRoleARN
+
+*string*
+
+The ARN of an AWS role that will be assumed by the tool to interact with AWS. This role is assumed by using the default credentials chain. This role is expected to expire in one hour due to role chaining, so if it is configured, the credentials will be automatically refreshed every 25 minutes. This means that the role needs to have permission to assume itself.
+
 ## AWSAMI
 
 *string*
 
 AWS AMI to use for the deployment. This is the image used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. We suggest Ubuntu 20.04 or 22.04. Note, the AMI could change between AWS Regions.
+
+## AWSAMIUser
+
+*string*
+
+Username to use when connecting to the AWS AMI. (default: `ubuntu`)
+
+## OperatingSystemKind
+
+*string*
+
+Operating system kind to use for the deployment. This is the operating system used for all EC2 instances created by the loadtest tool. See the [AWS AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) docs for more information. Right now we support `debian` (default) and `rhel`.
+
+Even though we support `debian` and `rhel`, we recommend using `debian` with Ubuntu 22.04 LTS as it is more widely used and supported and even if you can use Debian/RHEL for other systems it may end un breaking depending on the target system.
+
+> [!NOTE]
+> The `rhel` operating system kind have been tested ony with CentOS Stream 9.
 
 ## ClusterName
 
@@ -92,6 +115,18 @@ The number of load-test agent instances. The first instance will also host the [
 *string*
 
 The type of the EC2 instance of the loadtest agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
+
+## BrowserAgentInstanceCount
+
+*int*
+
+The number of browser agent instances.
+
+## BrowserAgentInstanceType
+
+*string*
+
+The type of the EC2 instance of the browser agent. See type [here](https://aws.amazon.com/ec2/instance-types/).
 
 ## AgentAllocatePublicIPAddress
 
@@ -458,6 +493,14 @@ The location of the Mattermost Enterprise Edition license file.
 
 An optional path to a partial Mattermost config file to be applied as patch during app server deployment.
 
+## MattermostPlugins
+
+*map[string]string*
+
+A map of plugin identifiers to a string indicating where to download the plugin tarball (expecting a `.tar.gz`) from. This string can be:
+- A URL: the plugin tarball will be downloaded into the app nodes from this URL.
+- A `file://` prefixed path: the plugin tarball will be uploaded from your local filesystem to the app nodes.
+
 ## AdminEmail
 
 *string*
@@ -595,6 +638,24 @@ The name of a host that will be used for two purposes:
 - It will override the server's site URL.
 - It will populate a new entry in the /etc/hosts file of the app nodes, so that it points to the proxy private IP or, if there's no proxy, to the current app node.
 This config is used for tests that require an existing database dump that contains permalinks. These permalinks point to a specific hostname. Without this setting, that hostname is not known by the nodes of a new deployment and the permalinks cannot be resolved.
+
+## ServerURL
+
+_string_
+
+The URL of the Mattermost server that the agent client will use to connect to the Mattermost servers. This is used to override the server URL in the agent's config in case there's a proxy in front of the Mattermost server.
+
+> [!WARNING] 
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
+
+## ServerScheme
+
+_string_ (default `http`)
+
+The URL scheme (http/https) that the agent client will use to connect to the Mattermost servers. This is used to override the server scheme in the agent's config.
+
+> [!WARNING]
+> **Only for custom deployments**: This setting should not be required under normal circumstances. Only change it if you know what you're doing.
 
 ## UsersFilePath
 

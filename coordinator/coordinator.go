@@ -44,7 +44,7 @@ func (c *Coordinator) Run() (<-chan struct{}, error) {
 		return nil, ErrNotStopped
 	}
 
-	c.log.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)))
+	c.log.Info("coordinator: ready to drive a cluster of load-test agents", mlog.Int("num_agents", len(c.config.ClusterConfig.Agents)), mlog.Int("num_browser_agents", len(c.config.ClusterConfig.BrowserAgents)))
 
 	if err := c.cluster.Run(); err != nil {
 		c.log.Error("coordinator: running cluster failed", mlog.Err(err))

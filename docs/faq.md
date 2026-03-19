@@ -20,6 +20,7 @@ The rule of thumb is that when starting an unbounded load-test we should always 
 The nature of the test is controlled by how the [`coordinator`](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md) controls the [feedback loop](https://github.com/mattermost/mattermost-load-test-ng/blob/master/docs/coordinator.md#the-feedback-loop). If the coordinator is configured to decrease the users when some metrics surpass a threshold (e.g. the P99 latency in the server is over 2 seconds), then the test will be unbounded. If the coordinator does not monitor these metrics and just let all users connect freely, then the test will be bounded.
 
 To configure this, you need to take a look at the [`MonitorConfig.Queries` configuration in the `coordinator.json` file](coordinator_config.md#queries):
+
 - If the array of queries is empty, or all of them are disabled (by setting `Alert` to `false`), the test is **bounded**.
 - If there is at least one query that is enabled, the test is **unbounded**.
 
@@ -91,16 +92,40 @@ Before attempting to use an existing database, ensure your database will accept 
 
 4. Continue with the deployment create process.
 
+### Can I run multiple load tests simultaneously with the same AWS account?
+
+Yes, you can run multiple load test deployments simultaneously within the same AWS account. The key requirement is that each deployment must have a `ClusterName` and `TerraformStateDir` that are unique in its `config/deployer.json` file.
+
+The `ClusterName` is used as a prefix for all AWS resources (EC2 instances, security groups, S3 buckets, etc.) created by the deployment. The `TerraformStateDir` is where Terraform stores the state files locally on your machine for the deployment. Both must be unique to avoid conflicts between deployments.
+
+Steps to run multiple simultaneous deployments:
+
+1. Create separate deployer config files for each deployment:
+    ```sh
+    cp config/deployer.json config/deployer-test1.json
+    cp config/deployer.json config/deployer-test2.json
+    ```
+1. Edit each config file to set unique values for both `ClusterName` and `TerraformStateDir`:
+    - `ClusterName`: e.g., `"loadtest1"`, `"loadtest2"`, etc.
+    - `TerraformStateDir`: e.g., `"/var/lib/mattermost-load-test-ng/loadtest1"`, `"/var/lib/mattermost-load-test-ng/loadtest2"`, etc.
+
+1. Run the deployment create command for each deployment in different terminals:
+    ```sh
+    go run ./cmd/ltctl deployment create --config config/deployer-test1.json
+    go run ./cmd/ltctl deployment create --config config/deployer-test2.json
+    ```
+
 ### Can I export a Grafana dashboard for future reference?
 
 Yes, you can do so by using the feature to [publish a snapshot to Raintank](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#publish-a-snapshot). An example of what such a snapshot looks like: [MySQL bounded test comparing `v7.9.1` vs `v7.10.0-rc2`](https://snapshots.raintank.io/dashboard/snapshot/h356ygrRZIUFWf5u5cctLjFavu97lFR2?orgId=2).
 
 Two considerations:
 
-- Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporal instances, you can still do so for this purpose with the credentials `admin`/`admin`.
+- Due to [this issue](https://github.com/grafana/grafana/issues/32585), you need to be logged in to access the Snapshot option in the Share dialog. Although logging in is not usually needed in these temporary instances, you can still do so for this purpose with the credentials for the `admin` user, that are listed under the Grafana URL when running `deployment info`.
 - Note that a snapshot, although very useful for reference, is not a fully-functioning dashboard, so you will not be able to query new data using it. Take a look at the example above to understand how it works.
 
 ### Can I stress test the ElasticSearch jobs?
+
 ElasticSearch schedules a daily job for aggregating posts. For configuring this, one needs to modify the Mattermost server's setting `ElasticsearchSettings.PostsAggregatorJobStartTime`, which accepts a hard-coded time (local to the machine running the server) formatted as a string like `"15:04"`.
 If you want to stress test this specific job during a load-test, you can use the [config patch](config/deployer.md#mattermost-config-patch-file) setting in the deployer config to change it to a time where the test will be running, using a partial Mattermost config like the following one:
 
@@ -124,7 +149,9 @@ Yes, it's possible by disabling the proxy server and setting up the `ServerURL` 
 ### Increase debugging level
 
 For troubleshooting purposes, the first step should be increasing the debugging level of both the Mattermost server and the agents:
+
 - For the Mattermost server, a [config patch](config/deployer.md#mattermost-config-patch-file) can be used, with a partial config that can contain the following:
+
 ```json
 {
     "LogSettings": {
@@ -132,6 +159,7 @@ For troubleshooting purposes, the first step should be increasing the debugging 
     }
 }
 ```
+
 - For the agents, the [`LogSettings.FileLevel` setting of the config.json file](config/config.md#file-level) should be set to `"DEBUG"` as well.
 
 ### Users are not connecting
@@ -155,6 +183,7 @@ ulimit -n VALUE
 ```
 
 #### Note
+
 For Terraform deployments, this value is hard coded in the `systemd` file for the loadtest api. If you need to change the value, you'll have to change the `LimitNOFILE` value in `/lib/systemd/system/ltapi.service` file to a higher value.
 
 1. ssh into your loadtest agents. You can see the agents available by running `go run ./cmd/ltctl ssh`.
@@ -167,3 +196,23 @@ sudo systemctl restart ltapi
 ```
 
 You will have to run this for every loadtest agent you have. These will be appended by `agent-` when you run the `ltctl ssh` command above.
+
+### What's the purpose of the `ServerURL` and `ServerScheme` settings?
+
+These are intended for users that need to override the connection URL to their Mattermost server in their load tests environments, in most cases because there's a custom reverse proxy in front of the load-test deployment.
+
+This **should not be used in most cases** as the loadtest agent will automatically detect the server URL and scheme from the configuration and deployed services.
+
+### When starting deployment create, it fails due to `No default subnet for availability zone: 'AWS_SUBNETS_HERE'.`
+
+This likely happens because AWS doesn’t have an available subnet in the zone we explicitly set in the Terraform config. You can fix this by leaving AWSAvailabilityZone empty in config/deployer.json.
+
+Just a heads-up — leaving it empty might increase traffic-related AWS costs for very large tests, since resources won’t necessarily be deployed in the same Availability Zone.
+
+### Why does the agent fail with a 501 error against Mattermost servers older than v11.0.1?
+
+Starting with load-test-ng **v1.30.0**, the tool uses the `GetClientConfig` API endpoint, which changed in Mattermost **v11.0.1** (the `format` parameter was deprecated). Running load-test-ng v1.30.0 or later against a Mattermost server older than v11.0.1 will result in a 501 error.
+
+If you are running a Mattermost server older than v11.0.1, use load-test-ng **v1.29.0** or earlier, which calls the legacy client config API using `format=old` and is compatible with pre-v11 servers.
+
+**Note:** Older load-test-ng versions may not include the latest fixes or features. Review the [changelog](https://github.com/mattermost/mattermost-load-test-ng/releases) for your selected version to understand any potential limitations.

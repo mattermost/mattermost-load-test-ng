@@ -263,11 +263,11 @@ func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval
 	if mins != "" {
 		if minInterval == "(" {
 			if min >= val {
-				return errors.New("value is lesser or equal")
+				return fmt.Errorf("value %v is lesser or equal than %v", val, min)
 			}
 		} else {
 			if min > val {
-				return errors.New("value is lesser")
+				return fmt.Errorf("value %v is lesser than %v", val, min)
 			}
 		}
 	}
@@ -275,11 +275,11 @@ func validateFromRange(value reflect.Value, mins, maxs, minInterval, maxInterval
 	if maxs != "" {
 		if maxInterval == ")" {
 			if max <= val {
-				return errors.New("value is greater or equal")
+				return fmt.Errorf("value %v is greater or equal than %v", val, max)
 			}
 		} else {
 			if max < val {
-				return errors.New("value is greater")
+				return fmt.Errorf("value %v is greater than %v", val, max)
 			}
 		}
 	}

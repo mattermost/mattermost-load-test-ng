@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "NodeNext",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "moduleResolution": "node16",
+    "baseUrl": "./",
+    "resolveJsonModule": true,
+    "noUncheckedSideEffectImports": true,
+    "esModuleInterop": true,
+    "moduleDetection": "force",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "isolatedModules": true,
+    "importHelpers": true,
+    "allowJs": false,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noImplicitAny": true,
+    "verbatimModuleSyntax": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

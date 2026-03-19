@@ -1,0 +1,48 @@
+{
+  "BrowserLogSettings": {
+    "ConsoleLevel": "debug",
+    "EnableConsole": true
+  },
+  "InstanceConfiguration": {
+    "NumChannels": 0,
+    "PercentDirectChannels": 0,
+    "PercentGroupChannels": 0,
+    "PercentPrivateChannels": 0,
+    "PercentPublicChannels": 1
+  },
+  "LogSettings": {
+    "ConsoleLevel": "DEBUG",
+    "EnableColor": true,
+    "FileJson": true,
+    "FileLevel": "DEBUG",
+    "FileLocation": "ltagent.log"
+  },
+  "UserControllerConfiguration": {
+    "Type": "simulative",
+    "RatesDistribution": [
+      {
+        "Percentage": 0.05,
+        "Rate": 1
+      },
+      {
+        "Percentage": 0.1,
+        "Rate": 2
+      },
+      {
+        "Percentage": 0.15,
+        "Rate": 3
+      },
+      {
+        "Percentage": 0.4,
+        "Rate": 6
+      },
+      {
+        "Percentage": 0.3,
+        "Rate": 30
+      }
+    ]
+  },
+  "UsersConfiguration": {
+    "MaxActiveBrowserUsers": 15
+  }
+}

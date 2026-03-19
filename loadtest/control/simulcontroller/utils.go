@@ -227,3 +227,18 @@ func getPostFromEvent(ev *model.WebSocketEvent) (*model.Post, error) {
 
 	return post, nil
 }
+
+func getLatestUpdateAt(postIds []string, getPost func(string) (*model.Post, error)) (int64, error) {
+	var latestUpdateAt int64 = -1
+	for _, postId := range postIds {
+		p, err := getPost(postId)
+		if err != nil {
+			return 0, err
+		}
+		if latestUpdateAt < p.UpdateAt {
+			latestUpdateAt = p.UpdateAt
+		}
+	}
+
+	return latestUpdateAt, nil
+}

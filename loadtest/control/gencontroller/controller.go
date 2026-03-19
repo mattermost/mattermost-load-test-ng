@@ -8,11 +8,15 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
+
+	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
 
 // GenController is an implementation of a UserController used to generate
@@ -27,6 +31,7 @@ type GenController struct {
 	config                  *Config
 	channelSelectionWeights []int
 	numUsers                int
+	plugins                 []plugins.GenController
 }
 
 // New creates and initializes a new GenController with given parameters.
@@ -46,6 +51,19 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		weights[i] = int(config.ChannelMembersDistribution[i].Probability * 100)
 	}
 
+	installedPlugins := []plugins.GenController{}
+	plugins.SpawnPluginControllers(plugins.TypeGenController, func(p plugins.Controller) {
+		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
+			s, ok := p.(plugins.GenController)
+			if !ok {
+				// Should never happen
+				mlog.Error("The provided plugins.Controller cannot be casted to plugins.GenController", mlog.String("plugin_id", p.PluginId()))
+				return
+			}
+			installedPlugins = append(installedPlugins, s)
+		}
+	})
+
 	sc := &GenController{
 		id:                      id,
 		user:                    user,
@@ -56,6 +74,7 @@ func New(id int, user user.User, sysadmin user.User, config *Config, status chan
 		config:                  config,
 		channelSelectionWeights: weights,
 		numUsers:                numUsers,
+		plugins:                 installedPlugins,
 	}
 
 	return sc, nil
@@ -122,6 +141,28 @@ func (c *GenController) Run() {
 	}
 
 	c.status <- c.newInfoStatus("user init done")
+
+	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
+	if resp.Err != nil {
+		c.sendFailStatus("Failed to retreive CustomProfileAttributesEnabled")
+		return
+	}
+
+	// Create CPA fields
+	if cpaEnabled {
+		actions := map[string]userAction{
+			"createCPAField": {
+				run:        c.createCPAField,
+				frequency:  int(c.config.NumCPAFields),
+				idleTimeMs: 1000,
+			},
+		}
+		c.runActions(actions, func() bool {
+			return st.get(StateTargetCPAFields) >= c.config.NumCPAFields
+		})
+
+		c.runAction(c.createCPAValues)
+	}
 
 	// Wait for all users to be logged in.
 	// This also means now users can join all teams.
@@ -225,8 +266,27 @@ func (c *GenController) Run() {
 		},
 	}
 
+	for _, p := range c.plugins {
+		id := p.PluginId()
+		for _, a := range p.Actions() {
+			actions[id+"."+a.Name] = userAction{
+				run:        a.Run,
+				frequency:  100 * int(a.Frequency),
+				idleTimeMs: 10,
+			}
+		}
+	}
+
 	c.runActions(actions, func() bool {
-		return st.get(StateTargetTeams) >= c.config.NumTeams &&
+		pluginsDone := true
+		for _, p := range c.plugins {
+			if !p.Done() {
+				pluginsDone = false
+				break
+			}
+		}
+		return pluginsDone &&
+			st.get(StateTargetTeams) >= c.config.NumTeams &&
 			st.get(StateTargetChannelsDM) >= c.config.NumChannelsDM &&
 			st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM &&
 			st.get(StateTargetChannelsPrivate) >= c.config.NumChannelsPrivate &&
@@ -292,6 +352,10 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 
 		if st.get(StateTargetChannelsGM) >= c.config.NumChannelsGM {
 			delete(actions, "createGroupChannel")
+		}
+
+		if st.get(StateTargetCPAFields) >= c.config.NumCPAFields {
+			delete(actions, "createCPAField")
 		}
 
 		if st.get(StateTargetPosts) >= c.config.NumPosts {

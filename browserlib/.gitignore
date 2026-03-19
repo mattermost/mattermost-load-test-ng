@@ -1,0 +1,39 @@
+# Node.js dependencies
+node_modules/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Build outputs
+dist/
+
+# npm debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MacOS files
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows files
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux files
+*~

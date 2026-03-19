@@ -115,6 +115,10 @@ func (t *ueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
+func (ue *UserEntity) Client() *model.Client4 {
+	return ue.client
+}
+
 // Store returns the underlying store of the user.
 func (ue *UserEntity) Store() store.UserStore {
 	return ue.store
@@ -158,7 +162,7 @@ func New(setup Setup, config Config) *UserEntity {
 			"agent":    "other",
 		},
 		ClientID: model.NewId(),
-		Start:    float64(time.Now().UnixMilli()) / 1000,
+		Start:    float64(time.Now().UnixMilli()),
 	})
 
 	return &ue

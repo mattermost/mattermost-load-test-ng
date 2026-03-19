@@ -17,6 +17,8 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
+const ltAPIPort = "4000"
+
 // StartCoordinator starts the coordinator in the current load-test deployment.
 func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err := t.preFlightCheck(); err != nil {
@@ -30,13 +32,25 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if len(t.output.Agents) == 0 {
 		return errors.New("there are no agent instances to run the coordinator")
 	}
-	ip := t.output.Agents[0].GetConnectionIP()
+
+	// Coordinator resides in the first agent instance
+	coordinatorIP := t.output.Agents[0].GetConnectionIP()
 
 	var loadAgentConfigs []cluster.LoadAgentConfig
 	for _, val := range t.output.Agents {
 		loadAgentConfigs = append(loadAgentConfigs, cluster.LoadAgentConfig{
 			Id:     val.Tags.Name,
-			ApiURL: "http://" + val.GetConnectionIP() + ":4000",
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
+		})
+	}
+
+	// Notice we are not passing the port of LTBrowser API server here
+	// but its the LT API port since LTBrowser API will be called from LT API server and not directly from coordinator
+	var browserAgentConfigs []cluster.LoadAgentConfig
+	for _, val := range t.output.BrowserAgents {
+		browserAgentConfigs = append(browserAgentConfigs, cluster.LoadAgentConfig{
+			Id:     val.Tags.Name,
+			ApiURL: "http://" + val.GetConnectionIP() + ":" + ltAPIPort,
 		})
 	}
 
@@ -44,12 +58,14 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 	if err != nil {
 		return err
 	}
-	sshc, err := extAgent.NewClient(ip)
+
+	sshClientCoordinator, err := extAgent.NewClient(t.Config().AWSAMIUser, coordinatorIP)
 	if err != nil {
 		return err
 	}
+	defer sshClientCoordinator.Close()
 
-	mlog.Info("Setting up coordinator", mlog.String("ip", ip))
+	mlog.Info("Setting up coordinator", mlog.String("ip", coordinatorIP))
 
 	if config == nil {
 		config, err = coordinator.ReadConfig("")
@@ -58,6 +74,7 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		}
 	}
 	config.ClusterConfig.Agents = loadAgentConfigs
+	config.ClusterConfig.BrowserAgents = browserAgentConfigs
 	config.MonitorConfig.PrometheusURL = "http://" + t.output.MetricsServer.GetConnectionIP() + ":9090"
 
 	// TODO: consider removing this. Config is passed dynamically when creating
@@ -67,8 +84,8 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 	mlog.Info("Uploading updated coordinator config file")
-	dstPath := "/home/ubuntu/mattermost-load-test-ng/config/coordinator.json"
-	if out, err := sshc.Upload(bytes.NewReader(data), dstPath, false); err != nil {
+	dstPath := fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/coordinator.json", t.config.AWSAMIUser)
+	if out, err := sshClientCoordinator.Upload(bytes.NewReader(data), dstPath, false); err != nil {
 		return fmt.Errorf("error running ssh command: output: %s, error: %w", out, err)
 	}
 
@@ -94,40 +111,41 @@ func (t *Terraform) StartCoordinator(config *coordinator.Config) error {
 		return err
 	}
 
-	batch := []struct {
+	batchForControllerConfigs := []struct {
 		input   interface{}
 		dstPath string
 	}{
 		{
 			input:   agentConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/config.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/config.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simulConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simulcontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simulcontroller.json", t.Config().AWSAMIUser),
 		},
 		{
 			input:   simpleConfig,
-			dstPath: "/home/ubuntu/mattermost-load-test-ng/config/simplecontroller.json",
+			dstPath: fmt.Sprintf("/home/%s/mattermost-load-test-ng/config/simplecontroller.json", t.Config().AWSAMIUser),
 		},
 	}
 
-	for _, info := range batch {
+	// Upload config files to the coordinator instance
+	for _, info := range batchForControllerConfigs {
 		data, err := json.MarshalIndent(info.input, "", "  ")
 		if err != nil {
 			return err
 		}
 
-		mlog.Info(info.dstPath)
-		if out, err := sshc.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
-			return fmt.Errorf("error uploading file, dstPath: %s, output: %q: %w", info.dstPath, out, err)
+		mlog.Info("Uploading config file to instance", mlog.String("file", info.dstPath))
+		if out, err := sshClientCoordinator.Upload(bytes.NewReader(data), info.dstPath, false); err != nil {
+			return fmt.Errorf("error uploading file to instance, dstPath: %s, output: %q: %w", info.dstPath, out, err)
 		}
 	}
 
 	mlog.Info("Starting the coordinator")
 
 	id := t.config.ClusterName + "-coordinator-0"
-	coord, err := client.New(id, "http://"+ip+":4000", nil)
+	coord, err := client.New(id, "http://"+coordinatorIP+":4000", nil)
 	if err != nil {
 		return fmt.Errorf("failed to create coordinator client: %w", err)
 	}

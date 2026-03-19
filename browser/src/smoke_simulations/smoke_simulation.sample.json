@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "username": "user1@example.com",
+      "password": "Password-1!"
+    },
+    {
+      "username": "user2@example.com",
+      "password": "password-1"
+    }
+  ],
+  "simulations": ["mattermostPostAndScroll", "mattermostPostAndScroll"],
+  "serverURL": "http://localhost:8065",
+  "runInHeadless": false,
+  "testDurationMs": 120000,
+  "sessionMonitorIntervalMs": 5000
+}

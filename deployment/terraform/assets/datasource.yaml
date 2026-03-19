@@ -14,6 +14,7 @@ datasources:
   editable: true
   jsonData:
     timeInterval: "5s"
+    httpMethod: "GET"
 - name: Loki
   type: loki
   access: proxy

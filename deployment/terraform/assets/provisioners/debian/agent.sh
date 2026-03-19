@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Retry loop (up to 3 times)
+n=0
+until [ "$n" -ge 3 ]; do
+		# Note: commands below are expected to be either idempotent or generally safe to be run more than once.
+		echo "Attempt ${n}"
+		sudo apt-get -y update &&
+		sudo apt-get install -y prometheus-node-exporter &&
+		sudo apt-get install -y numactl linux-tools-aws &&
+		sudo apt-get install -y make &&
+		echo "Installing nvm Node.js version manager" &&
+		curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash &&
+		export NVM_DIR="$HOME/.nvm" &&
+		[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" &&
+		echo "nvm installed successfully with version $(nvm --version)" &&
+		# Although we have a .nvmrc file, but we cannot use that because its not available at the provisioner level
+		nvm install 24.11 &&
+		nvm use 24.11 &&
+		echo "Node.js installed successfully with version $(node --version)" &&
+		# Install OpenTelemetry collector, using current user to avoid permission issues
+		wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb &&
+		sudo dpkg -i otelcol-contrib_0.120.0_linux_amd64.deb &&
+		sudo sed -i "s/User=.*/User=${USER}/g" /lib/systemd/system/otelcol-contrib.service &&
+		sudo sed -i "s/Group=.*/Group=${USER}/g" /lib/systemd/system/otelcol-contrib.service &&
+		sudo systemctl daemon-reload && sudo systemctl restart otelcol-contrib &&
+		sudo chown -R ${USER}:${USER} ${HOME}/.nvm &&
+		exit 0
+	n=$((n + 1))
+	sleep 2
+done
+
+echo 'All retry attempts have failed, exiting' && exit 1

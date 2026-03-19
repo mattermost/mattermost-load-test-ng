@@ -154,8 +154,39 @@ To compare the results of your load tests, see [here](compare.md).
 
 ### SSH access to the terraformed hosts
 
-To access one of the terraformed hosts via ssh, invoke `ltctl ssh` with the appropriate target:
-* One of the instance names (invoke `ltctl ssh` to list them)
-* `coordinator` to connect to the first agent doing double duty as the loadtest coordinator
-* `proxy` to connect to the instance running Nginx
-* `metrics`, `prometheus` or `grafana` to connect to the instance running all metrics related services
+* To get the list of terraformed hosts:
+  ```sh
+  go run ./cmd/ltctl ssh  
+  ```
+* To access a specific host via SSH, run:
+  ```sh
+  go run ./cmd/ltctl ssh <instance-name>
+  ```
+
+* Following are some common targets:
+  * `coordinator` — connects to the first agent, which also acts as the load test coordinator
+  * `proxy` — connects to the instance running Nginx
+  * `metrics`, `prometheus`, or `grafana` — connects to the instance running all metrics-related services
+  * `browser-agent` — connects to the instance running the browser agent
+
+### Database access
+
+* To list all database cluster instances with their roles:
+  ```sh
+  go run ./cmd/ltctl db
+  ```
+  This will output each instance with its role (`writer` or `reader-N`), endpoint, and identifier.
+
+* To connect to a database instance via an interactive `psql` session:
+  ```sh
+  go run ./cmd/ltctl db connect
+  ```
+  This establishes an SSH tunnel through a jump host (app server or metrics server) and opens `psql`. By default, it connects to the first reader instance, falling back to the writer if only one instance exists.
+
+* To connect to a specific instance:
+  ```sh
+  go run ./cmd/ltctl db connect writer
+  go run ./cmd/ltctl db connect reader-0
+  ```
+
+  **Note:** Only `aurora-postgresql` is supported. `psql` must be installed locally.

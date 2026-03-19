@@ -39,13 +39,10 @@ build-osx: ## Build the binary (only for OSX on AMD64).
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
 
-assets: ## Generate the assets. Install go-bindata if needed.
-	go install github.com/kevinburke/go-bindata/go-bindata@v3.23.0
-	go generate ./...
-	go fmt ./...
+build-browser-api: ## Build the browser testing HTTP server.
+	cd browser && $(MAKE) build
 
-build: assets build-linux build-osx ## Generate the assets and build the binary for all platforms.
-
+build: build-linux build-osx build-browser-api ## Build the binary for all platforms and browser API server.
 
 install: ## Build and install for the current platform.
 	$(GO) install $(API_SERVER_ARGS)
@@ -55,6 +52,7 @@ ifneq ($(STATUS), 0)
 	@echo Warning: Repository has uncommitted changes.
 endif
 	@$(MAKE) build-linux
+	@$(MAKE) build-browser-api
 	rm -rf $(DIST_ROOT)
 	$(eval PLATFORM=linux-amd64)
 	$(eval PLATFORM_DIST_PATH=$(DIST_PATH)/$(PLATFORM))
@@ -62,14 +60,28 @@ endif
 	mkdir -p $(PLATFORM_DIST_PATH)/config
 	mkdir -p $(PLATFORM_DIST_PATH)/bin
 
+	cp LICENSE.txt $(PLATFORM_DIST_PATH)
+	cp .nvmrc $(PLATFORM_DIST_PATH)
+
 	cp config/config.sample.json $(PLATFORM_DIST_PATH)/config/config.json
+	cp config/browsercontroller.sample.json $(PLATFORM_DIST_PATH)/config/browsercontroller.json
 	cp config/coordinator.sample.json $(PLATFORM_DIST_PATH)/config/coordinator.json
 	cp config/simplecontroller.sample.json $(PLATFORM_DIST_PATH)/config/simplecontroller.json
 	cp config/simulcontroller.sample.json $(PLATFORM_DIST_PATH)/config/simulcontroller.json
-	cp LICENSE.txt $(PLATFORM_DIST_PATH)
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
+
+	# Copy LTBrowser build directory if it exists
+	if [ -d "browser/dist" ]; then \
+		mkdir -p $(PLATFORM_DIST_PATH)/browser; \
+		cp -r browser/dist $(PLATFORM_DIST_PATH)/browser/dist; \
+		cp -r browser/packs $(PLATFORM_DIST_PATH)/browser/packs; \
+		cp browser/package.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/package-lock.json $(PLATFORM_DIST_PATH)/browser; \
+		cp browser/Makefile $(PLATFORM_DIST_PATH)/browser; \
+	fi
+
 	$(eval PACKAGE_NAME=mattermost-load-test-ng-$(DIST_VER)-$(PLATFORM))
 	cp -r $(PLATFORM_DIST_PATH) $(DIST_PATH)/$(PACKAGE_NAME)
 	tar -C $(DIST_PATH) -czf $(DIST_PATH)/$(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)
@@ -81,7 +93,7 @@ verify-gomod: ## Run go mod verify.
 	$(GO) mod download
 	$(GO) mod verify
 
-check-style: golangci-lint ## Check the style of the code.
+check-style: golangci-lint validate-json-configs validate-example-configs ## Check the style of the code.
 
 golangci-lint:
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64
@@ -89,7 +101,30 @@ golangci-lint:
 	@echo Running golangci-lint
 	$(GOBIN)/golangci-lint run ./...
 
+validate-json-configs:
+	$(GO) run ./scripts/json_validator.go config/config.sample.json
+	$(GO) run ./scripts/json_validator.go config/coordinator.sample.json
+	$(GO) run ./scripts/json_validator.go config/deployer.sample.json
+	$(GO) run ./scripts/json_validator.go config/comparison.sample.json
+	$(GO) run ./scripts/json_validator.go config/gencontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simplecontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/simulcontroller.sample.json
+	$(GO) run ./scripts/json_validator.go config/browsercontroller.sample.json
+
+validate-example-configs: ## Validate example config files against real config structs.
+	$(GO) run ./cmd/validate-examples --type comparison examples/config/release/json/comparison.json
+	$(GO) run ./cmd/validate-examples --type config examples/config/release/json/config.json
+	$(GO) run ./cmd/validate-examples --type coordinator examples/config/release/json/coordinator.json
+	$(GO) run ./cmd/validate-examples --type deployer examples/config/release/json/deployer.json
+	$(GO) run ./cmd/validate-examples --type comparison examples/config/perfcomp/json/comparison.json
+	$(GO) run ./cmd/validate-examples --type config examples/config/perfcomp/json/config.json
+	$(GO) run ./cmd/validate-examples --type coordinator examples/config/perfcomp/json/coordinator.json
+	$(GO) run ./cmd/validate-examples --type deployer examples/config/perfcomp/json/deployer.json
+
 test: ## Run all tests.
+	$(GO) test -v -mod=readonly -race -tags=integration ./...
+
+test-ci: ## Run all tests with failfast to avoid running all tests when one fails.
 	$(GO) test -v -mod=readonly -failfast -race -tags=integration ./...
 
 MATCH=v.+\/mattermost-load-test-ng-v.+-linux-amd64.tar.gz
@@ -107,7 +142,7 @@ else
 ifeq ($(TAG_EXISTS), 0)
 	@echo "Error: tag ${NEXT_VER} already exists"
 else
-	go install github.com/goreleaser/goreleaser@latest
+	go install github.com/goreleaser/goreleaser/v2@latest
 	@echo -n "Release will be created from branch $(CURR_BRANCH). "
 	@echo -n "Do you want to continue? [y/N] " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	git pull
