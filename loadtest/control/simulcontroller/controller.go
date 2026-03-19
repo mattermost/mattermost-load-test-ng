@@ -108,7 +108,7 @@ func getActionList(c *SimulController) []userAction {
 		{
 			name:             "SearchPosts",
 			run:              searchPosts,
-			frequency:        0.0109,
+			frequency:        0.0218,
 			minServerVersion: control.MinSupportedVersion,
 		},
 		{
