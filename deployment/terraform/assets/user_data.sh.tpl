@@ -12,14 +12,11 @@ PROVEOF
 chmod +x /tmp/provisioner.sh
 
 # Cloud-init runs user_data as root with a minimal environment.
-# Set HOME to the AMI user's home directory since provisioner scripts
-# (e.g. nvm) install to $HOME and other code expects files there.
-export HOME="/home/${ami_user}"
-export USER="${ami_user}"
-
+# Use runuser -l to execute the provisioner as the AMI user with a full
+# login shell so that tools like nvm (sourced via ~/.bashrc) are available.
 cd /tmp
 rc=0
-/tmp/provisioner.sh || rc=$?
+runuser -l "${ami_user}" -c /tmp/provisioner.sh || rc=$?
 if [ $rc -eq 0 ]; then
   touch /var/lib/cloud/instance/provisioning-done
 else
