@@ -10,30 +10,24 @@ import {z as zod} from 'zod';
 
 const logLabelLevels = Object.values(pino.levels.labels);
 
-const SliceOfConfigJsonSchema = zod.object({
-  ConnectionConfiguration: zod.object({
-    ServerURL: zod.string().min(1, 'ConnectionConfiguration.ServerURL cannot be empty'),
-  }),
-  BrowserLogSettings: zod.object({
-    EnableConsole: zod.boolean(),
-    ConsoleLevel: zod.enum(logLabelLevels, {
-      message: `BrowserLogSettings.ConsoleLevel must be one of: ${logLabelLevels.join(', ')}`,
-    }),
-    EnableFile: zod.boolean(),
-    FileLevel: zod.enum(logLabelLevels, {
-      message: `BrowserLogSettings.FileLevel must be one of: ${logLabelLevels.join(', ')}`,
-    }),
-    FileLocation: zod.string().min(1, 'BrowserLogSettings.FileLocation cannot be empty'),
-  }),
-});
-
 const BrowserControllerConfigJsonSchema = zod.object({
+  SimulationId: zod.string().min(1, 'SimulationId cannot be empty'),
   RunInHeadless: zod.boolean(),
   SimulationTimeoutMs: zod
     .number()
     .gte(0, 'SimulationTimeoutMs must be greater than or equal to 0. Set to 0 to disable timeout.'),
   EnabledPlugins: zod.boolean(),
-  SimulationId: zod.string().min(1, 'SimulationId cannot be empty'),
+  LogSettings: zod.object({
+    EnableConsole: zod.boolean(),
+    ConsoleLevel: zod.enum(logLabelLevels, {
+      message: `Browser LogSettings.ConsoleLevel must be one of: ${logLabelLevels.join(', ')}`,
+    }),
+    EnableFile: zod.boolean(),
+    FileLevel: zod.enum(logLabelLevels, {
+      message: `Browser LogSettings.FileLevel must be one of: ${logLabelLevels.join(', ')}`,
+    }),
+    FileLocation: zod.string().min(1, 'Browser LogSettings.FileLocation cannot be empty'),
+  }),
 });
 
 const GoModFileName = 'go.mod';
@@ -89,11 +83,6 @@ function loadJsonFile<T>(filePath: string, schema: zod.ZodSchema<T>): T {
 }
 
 const ConfigFolderName = 'config';
-
-const ConfigFileName = 'config.json';
-const configJsonPath = join(getRootDirectory(), ConfigFolderName, ConfigFileName);
-export const configJson = loadJsonFile(configJsonPath, SliceOfConfigJsonSchema);
-
 const BrowserControllerConfigFileName = 'browsercontroller.json';
 const browserControllerConfigJsonPath = join(getRootDirectory(), ConfigFolderName, BrowserControllerConfigFileName);
 export const browserControllerConfigJson = loadJsonFile(

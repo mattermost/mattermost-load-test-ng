@@ -2,5 +2,12 @@
     "SimulationId": "mattermostPostAndScroll",
     "RunInHeadless": true,
     "SimulationTimeoutMs": 60000,
-    "EnabledPlugins": false
+    "EnabledPlugins": false,
+    "LogSettings": {
+        "EnableConsole": true,
+        "ConsoleLevel": "debug",
+        "EnableFile": true,
+        "FileLevel": "debug",
+        "FileLocation": "browseragent.log"
+    }
 }

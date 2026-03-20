@@ -1,30 +1,35 @@
 // Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {configJson, browserControllerConfigJson} from './config_helpers.js';
+import {browserControllerConfigJson} from './loader.js';
 
+/**
+ * Server URl is always passed as a parameter to the browser controller while
+ * it's created. So we don't need to read it from the config.json. But we need
+ * hardcoded value for tests and smoke simulations.
+ */
 export function getMattermostServerURL(): string {
-  return configJson.ConnectionConfiguration.ServerURL;
+  return 'http://localhost:8065';
 }
 
 export function isConsoleLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings.EnableConsole;
+  return browserControllerConfigJson.LogSettings.EnableConsole;
 }
 
 export function getConsoleLoggingLevel(): string {
-  return configJson.BrowserLogSettings.ConsoleLevel;
+  return browserControllerConfigJson.LogSettings.ConsoleLevel;
 }
 
 export function isFileLoggingEnabled(): boolean {
-  return configJson.BrowserLogSettings.EnableFile;
+  return browserControllerConfigJson.LogSettings.EnableFile;
 }
 
 export function getFileLoggingLevel(): string {
-  return configJson.BrowserLogSettings.FileLevel;
+  return browserControllerConfigJson.LogSettings.FileLevel;
 }
 
 export function getFileLoggingLocation(): string {
-  return configJson.BrowserLogSettings.FileLocation;
+  return browserControllerConfigJson.LogSettings.FileLocation;
 }
 
 export function isBrowserHeadless(): boolean {

@@ -11,6 +11,7 @@ import (
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -38,6 +39,8 @@ func createCoordinator(t *testing.T, id, serverURL string) *client.Coordinator {
 }
 
 func TestCreateCoordinator(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -95,6 +98,7 @@ func TestCreateCoordinator(t *testing.T) {
 }
 
 func TestCoordinatorId(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -108,6 +112,7 @@ func TestCoordinatorId(t *testing.T) {
 }
 
 func TestCoordinatorStatus(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -125,6 +130,7 @@ func TestCoordinatorStatus(t *testing.T) {
 }
 
 func TestCoordinatorStartStop(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -196,6 +202,7 @@ func TestCoordinatorStartStop(t *testing.T) {
 }
 
 func TestCoordinatorDestroy(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -226,6 +233,7 @@ func TestCoordinatorDestroy(t *testing.T) {
 }
 
 func TestCoordinatorInjectAction(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 

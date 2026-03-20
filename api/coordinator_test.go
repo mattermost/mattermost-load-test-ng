@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
@@ -19,6 +20,7 @@ import (
 )
 
 func TestCoordinatorAPI(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
