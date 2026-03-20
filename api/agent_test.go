@@ -400,11 +400,32 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 	t.Run("succeeds with valid browsercontroller.json", func(t *testing.T) {
 		setupAgentType(t, deployment.AgentTypeBrowser)
 
-		// ReadConfig uses "./config/browsercontroller.json" relative to cwd,
-		// so we need to be at the repo root for the path to resolve.
+		// Create a temporary directory with a valid browsercontroller.json
+		tempDir, err := os.MkdirTemp("", "test_browser_valid_config")
+		require.NoError(t, err)
+		t.Cleanup(func() { os.RemoveAll(tempDir) })
+
+		configDir := filepath.Join(tempDir, "config")
+		require.NoError(t, os.MkdirAll(configDir, 0755))
+
+		validConfig := `{
+			"SimulationId": "mattermostPostAndScroll",
+			"RunInHeadless": true,
+			"SimulationTimeoutMs": 60000,
+			"EnabledPlugins": false,
+			"LogSettings": {
+				"EnableConsole": true,
+				"ConsoleLevel": "debug",
+				"EnableFile": true,
+				"FileLevel": "debug",
+				"FileLocation": "browseragent.log"
+			}
+		}`
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(validConfig), 0644))
+
 		originalDir, err := os.Getwd()
 		require.NoError(t, err)
-		require.NoError(t, os.Chdir(".."))
+		require.NoError(t, os.Chdir(tempDir))
 		t.Cleanup(func() { os.Chdir(originalDir) })
 
 		rd := requestData{LoadTestConfig: ltConfig}
