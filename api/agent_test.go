@@ -34,16 +34,13 @@ type requestData struct {
 
 func setupAgentType(t *testing.T, agentType string) {
 	t.Helper()
-	originalHome := os.Getenv("HOME")
 	tempDir, err := os.MkdirTemp("", "test_home_"+agentType)
 	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tempDir) })
+
 	agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
 	require.NoError(t, os.WriteFile(agentTypeFile, []byte(agentType), 0644))
-	os.Setenv("HOME", tempDir)
-	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
-		os.RemoveAll(tempDir)
-	})
+	t.Setenv("HOME", tempDir)
 }
 
 func TestAgentAPI(t *testing.T) {
@@ -338,14 +335,10 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt file does not exist", func(t *testing.T) {
-		originalHome := os.Getenv("HOME")
 		tempDir, err := os.MkdirTemp("", "test_home_missing")
 		require.NoError(t, err)
-		t.Cleanup(func() {
-			os.Setenv("HOME", originalHome)
-			os.RemoveAll(tempDir)
-		})
-		os.Setenv("HOME", tempDir)
+		t.Cleanup(func() { os.RemoveAll(tempDir) })
+		t.Setenv("HOME", tempDir)
 
 		result, err := isBrowserAgentInstance()
 		require.Error(t, err)
@@ -353,14 +346,10 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt contains unknown content", func(t *testing.T) {
-		originalHome := os.Getenv("HOME")
 		tempDir, err := os.MkdirTemp("", "test_home_unknown")
 		require.NoError(t, err)
-		t.Cleanup(func() {
-			os.Setenv("HOME", originalHome)
-			os.RemoveAll(tempDir)
-		})
-		os.Setenv("HOME", tempDir)
+		t.Cleanup(func() { os.RemoveAll(tempDir) })
+		t.Setenv("HOME", tempDir)
 
 		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
 		require.NoError(t, os.WriteFile(agentTypeFile, []byte("unknown_agent_type"), 0644))
@@ -423,10 +412,7 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 		}`
 		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(validConfig), 0644))
 
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		require.NoError(t, os.Chdir(tempDir))
-		t.Cleanup(func() { os.Chdir(originalDir) })
+		t.Chdir(tempDir)
 
 		rd := requestData{LoadTestConfig: ltConfig}
 		obj := e.POST("/create").WithQuery("id", "ltb1").WithJSON(rd).
@@ -465,10 +451,7 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 		}`
 		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(invalidConfig), 0644))
 
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		require.NoError(t, os.Chdir(tempDir))
-		t.Cleanup(func() { os.Chdir(originalDir) })
+		t.Chdir(tempDir)
 
 		rd := requestData{LoadTestConfig: ltConfig}
 		e.POST("/create").WithQuery("id", "ltb2").WithJSON(rd).
