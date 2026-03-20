@@ -5,7 +5,7 @@ import {browserControllerConfigJson} from './loader.js';
 
 /**
  * Server URl is always passed as a parameter to the browser controller while
- * its created. So we don't need to read it from the config.json. But we need
+ * it's created. So we don't need to read it from the config.json. But we need
  * hardcoded value for tests and smoke simulations.
  */
 export function getMattermostServerURL(): string {
