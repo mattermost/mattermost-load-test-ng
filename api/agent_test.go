@@ -34,10 +34,7 @@ type requestData struct {
 
 func setupAgentType(t *testing.T, agentType string) {
 	t.Helper()
-	tempDir, err := os.MkdirTemp("", "test_home_"+agentType)
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(tempDir) })
-
+	tempDir := t.TempDir()
 	agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
 	require.NoError(t, os.WriteFile(agentTypeFile, []byte(agentType), 0644))
 	t.Setenv("HOME", tempDir)
@@ -335,9 +332,7 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt file does not exist", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "test_home_missing")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(tempDir) })
+		tempDir := t.TempDir()
 		t.Setenv("HOME", tempDir)
 
 		result, err := isBrowserAgentInstance()
@@ -346,9 +341,7 @@ func TestIsBrowserAgentInstance(t *testing.T) {
 	})
 
 	t.Run("returns false when agent_type.txt contains unknown content", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "test_home_unknown")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(tempDir) })
+		tempDir := t.TempDir()
 		t.Setenv("HOME", tempDir)
 
 		agentTypeFile := filepath.Join(tempDir, deployment.AgentTypeFileName)
@@ -377,8 +370,21 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 	ltConfig.ConnectionConfiguration.ServerURL = mmServer.URL
 	ltConfig.UsersConfiguration.MaxActiveUsers = 100
 
+	setupBaseCfgDir := func(t *testing.T) string {
+		t.Helper()
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
+		cfgDir := filepath.Join(tempDir, "config")
+		require.NoError(t, os.MkdirAll(cfgDir, 0755))
+
+		return cfgDir
+	}
+
 	t.Run("fails when browsercontroller.json is missing", func(t *testing.T) {
 		setupAgentType(t, deployment.AgentTypeBrowser)
+
+		// Empty config directory
+		_ = setupBaseCfgDir(t)
 
 		rd := requestData{LoadTestConfig: ltConfig}
 		e.POST("/create").WithQuery("id", "ltb0").WithJSON(rd).
@@ -389,13 +395,8 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 	t.Run("succeeds with valid browsercontroller.json", func(t *testing.T) {
 		setupAgentType(t, deployment.AgentTypeBrowser)
 
-		// Create a temporary directory with a valid browsercontroller.json
-		tempDir, err := os.MkdirTemp("", "test_browser_valid_config")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(tempDir) })
-
-		configDir := filepath.Join(tempDir, "config")
-		require.NoError(t, os.MkdirAll(configDir, 0755))
+		// Config directory with a valid browsercontroller.json
+		cfgDir := setupBaseCfgDir(t)
 
 		validConfig := `{
 			"SimulationId": "mattermostPostAndScroll",
@@ -410,9 +411,7 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 				"FileLocation": "browseragent.log"
 			}
 		}`
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(validConfig), 0644))
-
-		t.Chdir(tempDir)
+		require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "browsercontroller.json"), []byte(validConfig), 0644))
 
 		rd := requestData{LoadTestConfig: ltConfig}
 		obj := e.POST("/create").WithQuery("id", "ltb1").WithJSON(rd).
@@ -428,13 +427,8 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 	t.Run("fails with invalid browsercontroller.json values", func(t *testing.T) {
 		setupAgentType(t, deployment.AgentTypeBrowser)
 
-		// Create a temporary directory with an invalid browsercontroller.json
-		tempDir, err := os.MkdirTemp("", "test_browser_invalid_config")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(tempDir) })
-
-		configDir := filepath.Join(tempDir, "config")
-		require.NoError(t, os.MkdirAll(configDir, 0755))
+		// Config directory with an invalid browsercontroller.json
+		cfgDir := setupBaseCfgDir(t)
 
 		invalidConfig := `{
 			"SimulationId": "",
@@ -449,9 +443,7 @@ func TestBrowserAgentConfigValidation(t *testing.T) {
 				"FileLocation": "browseragent.log"
 			}
 		}`
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, "browsercontroller.json"), []byte(invalidConfig), 0644))
-
-		t.Chdir(tempDir)
+		require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "browsercontroller.json"), []byte(invalidConfig), 0644))
 
 		rd := requestData{LoadTestConfig: ltConfig}
 		e.POST("/create").WithQuery("id", "ltb2").WithJSON(rd).
