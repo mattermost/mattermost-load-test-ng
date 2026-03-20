@@ -52,7 +52,7 @@ When true, the browser server outputs log messages to the console based on Conso
 
 Level of detail at which log events are written to the console.
 
-Possible values (in order of decreasing verbosity, these are case sensitive):
+Possible values (in order of decreasing verbosity, these are case-sensitive):
 - `trace`
 - `debug`
 - `info`
@@ -72,7 +72,7 @@ When true, the browser server outputs log messages to the file specified by the 
 
 Level of detail at which log events are written to log files. Exactly same as `ConsoleLevel` as mentioned above.
 
-Possible values (in order of decreasing verbosity, these are case sensitive):
+Possible values (in order of decreasing verbosity, these are case-sensitive):
 - `trace`
 - `debug`
 - `info`
