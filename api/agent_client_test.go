@@ -13,6 +13,7 @@ import (
 
 	client "github.com/mattermost/mattermost-load-test-ng/api/client/agent"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -64,6 +65,8 @@ func createAgent(t *testing.T, id, serverURL string) *client.Agent {
 }
 
 func TestCreateAgent(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -155,6 +158,8 @@ func TestCreateAgent(t *testing.T) {
 }
 
 func TestAgentId(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -168,6 +173,8 @@ func TestAgentId(t *testing.T) {
 }
 
 func TestAgentStatus(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -185,6 +192,8 @@ func TestAgentStatus(t *testing.T) {
 }
 
 func TestAgentRunStop(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -245,6 +254,8 @@ func TestAgentRunStop(t *testing.T) {
 }
 
 func TestAgentAddRemoveUsers(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -301,6 +312,8 @@ func TestAgentAddRemoveUsers(t *testing.T) {
 }
 
 func TestAgentDestroy(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -332,6 +345,8 @@ func TestAgentDestroy(t *testing.T) {
 }
 
 func TestAgentInjectAction(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 

@@ -62,12 +62,5 @@
     "FileJson": true,
     "FileLocation": "ltagent.log",
     "EnableColor": false
-  },
-  "BrowserLogSettings": {
-    "EnableConsole": true,
-    "ConsoleLevel": "debug",
-    "EnableFile": true,
-    "FileLevel": "debug",
-    "FileLocation": "browseragent.log"
   }
 }

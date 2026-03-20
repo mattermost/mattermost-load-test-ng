@@ -122,6 +122,25 @@ func (a *api) createLoadAgentHandler(w http.ResponseWriter, r *http.Request) {
 		mlog.Warn("failed to detect agent_type. Going ahead assuming it's a server agent", mlog.Err(err))
 	}
 
+	// Read and validate the browsercontroller.json that was uploaded by
+	// Terraform to confirm it landed correctly and contains valid values
+	// before proceeding with browser agent creation if it's a browser agent instance.
+	if isBAInstance {
+		bccfg, err := browsercontroller.ReadConfig("./config/browsercontroller.json")
+		if err != nil {
+			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+				Error: fmt.Sprintf("could not read browser controller config: %s", err),
+			})
+			return
+		}
+		if err := defaults.Validate(bccfg); err != nil {
+			writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{
+				Error: fmt.Sprintf("could not validate browser controller config: %s", err),
+			})
+			return
+		}
+	}
+
 	newC, err := NewControllerWrapper(&ltConfig, ucConfig, 0, agentId, a.metrics, isBAInstance)
 	if err != nil {
 		writeAgentResponse(w, http.StatusBadRequest, &client.AgentResponse{

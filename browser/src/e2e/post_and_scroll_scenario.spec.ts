@@ -6,8 +6,8 @@ import {test} from '@playwright/test';
 import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
 import {postAndScrollScenario} from '../simulations/post_and_scroll_scenario.js';
-import {getMattermostServerURL} from '../utils/config_accessors.js';
-import {createNullLogger} from '../utils/log.js';
+import {getMattermostServerURL} from '../config/accessors.js';
+import {createNullLogger} from '../logger/index.js';
 
 test('Post and Scroll Scenario', async ({page}) => {
   const browserInstance = {

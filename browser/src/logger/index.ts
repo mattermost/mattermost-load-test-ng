@@ -21,7 +21,7 @@ import {
   isFileLoggingEnabled,
   getFileLoggingLevel,
   getFileLoggingLocation,
-} from './config_accessors.js';
+} from '../config/accessors.js';
 
 const pino = require('pino');
 

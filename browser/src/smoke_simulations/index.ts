@@ -9,7 +9,7 @@ import ms from 'ms';
 
 import {browserTestSessionManager} from '../services/browser_manager.js';
 import {SimulationsRegistry} from '../registry.js';
-import {getMattermostServerURL} from '../utils/config_accessors.js';
+import {getMattermostServerURL} from '../config/accessors.js';
 
 interface SmokeSimulationConfig {
   users: Array<{username: string; password: string}>;

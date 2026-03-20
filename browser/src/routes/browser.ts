@@ -7,7 +7,7 @@ import {postSchema, deleteSchema, getSchema} from './browser.schema.js';
 import type {IReply} from './types.js';
 
 import {browserTestSessionManager} from '../services/browser_manager.js';
-import {getSimulationId, isBrowserHeadless} from '../utils/config_accessors.js';
+import {getSimulationId, isBrowserHeadless} from '../config/accessors.js';
 
 export default async function browserRoutes(fastify: FastifyInstance) {
   // Register shutdown hook when routes are loaded
