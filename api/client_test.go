@@ -14,6 +14,7 @@ import (
 	coordClient "github.com/mattermost/mattermost-load-test-ng/api/client/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/coordinator"
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/simulcontroller"
@@ -26,6 +27,8 @@ import (
 const n = 8
 
 func TestAgentClientConcurrency(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 
@@ -178,6 +181,8 @@ func TestAgentClientConcurrency(t *testing.T) {
 }
 
 func TestCoordClientConcurrency(t *testing.T) {
+	setupAgentType(t, deployment.AgentTypeServer)
+
 	// create http.Handler
 	handler := SetupAPIRouter(logger.New(&logger.Settings{}), logger.New(&logger.Settings{}))
 

@@ -15,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/deployment/terraform/ssh"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
 
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
@@ -102,6 +103,22 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		instance  Instance
 		agentType string
 		index     int
+	}
+
+	// We read the local browsercontroller.json file, marshal it, and upload it to each browser agent below so
+	// that ltbrowserapi has a valid config at startup. Thus, local browsercontroller.json config file is required
+	// for browser load tests to work.
+	var browserControllerConfig string
+	if t.output.HasBrowserAgents() {
+		bccfg, err := browsercontroller.ReadConfig("./config/browsercontroller.json")
+		if err != nil {
+			return fmt.Errorf("error reading browser controller config: %w", err)
+		}
+		data, err := json.MarshalIndent(bccfg, "", "  ")
+		if err != nil {
+			return fmt.Errorf("error marshaling browser controller config: %w", err)
+		}
+		browserControllerConfig = string(data)
 	}
 
 	allAgents := make([]agentInfo, 0, len(t.output.Agents)+len(t.output.BrowserAgents))
@@ -208,6 +225,15 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 			if t.config.UsersFilePath != "" {
 				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: t.ExpandWithUser(dstUsersFilePath), msg: "Uploading list of users credentials"})
+			}
+
+			// Upload the browsercontroller.json to the browser agent instance.
+			if agentType == deployment.AgentTypeBrowser {
+				batch = append(batch, uploadInfo{
+					srcData: browserControllerConfig,
+					dstPath: t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/browsercontroller.json"),
+					msg:     "Uploading browsercontroller.json",
+				})
 			}
 
 			// If SiteURL is set, update /etc/hosts to point to the correct IP

@@ -1,8 +1,4 @@
 {
-  "BrowserLogSettings": {
-    "ConsoleLevel": "debug",
-    "EnableConsole": true
-  },
   "InstanceConfiguration": {
     "NumChannels": 0,
     "PercentDirectChannels": 0,

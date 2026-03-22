@@ -9,8 +9,8 @@ import {type BrowserInstance} from '@mattermost/loadtest-browser-lib';
 
 import {testManager} from './test_manager.js';
 import {log} from '../app.js';
-import {getSimulationTimeoutMs} from '../utils/config_accessors.js';
-import {screenshotsDirectory} from '../utils/config_helpers.js';
+import {getSimulationTimeoutMs} from '../config/accessors.js';
+import {screenshotsDirectory} from '../config/loader.js';
 
 const CLEANUP_TIMEOUT_MS = 4_000;
 

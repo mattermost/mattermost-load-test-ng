@@ -7,12 +7,11 @@ import {describe, expect, test, beforeEach, afterEach, vi} from 'vitest';
 
 import {createApp} from '../app.js';
 
-vi.mock('../utils/config_accessors.js', async (importOriginal) => {
+vi.mock('../config/accessors.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(actual as any),
-    getMattermostServerURL: vi.fn().mockReturnValue('http://localhost:8065'),
     isBrowserHeadless: vi.fn().mockReturnValue(true),
     getSimulationId: vi.fn().mockReturnValue('postAndScroll'),
   };
@@ -152,11 +151,7 @@ describe('API /browsers', () => {
       });
     });
 
-    test('should return 400 when server URL is missing in config', async () => {
-      // Mock getMattermostServerURL to return empty string
-      const {getMattermostServerURL} = await import('../utils/config_accessors.js');
-      vi.mocked(getMattermostServerURL).mockReturnValueOnce('');
-
+    test('should return 400 when server URL is missing in request body', async () => {
       await app.listen({port});
 
       const response = await supertest(`http://localhost:${port}`)
