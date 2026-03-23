@@ -9,12 +9,12 @@
   },
   "LoadTests": [
     {
-      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_610_fixed_psql.sql.gz",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.5.1_psql.sql.gz",
       "DBEngine": "postgresql",
       "Type": "unbounded"
     },
     {
-      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_610_fixed_psql.sql.gz",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.5.1_psql.sql.gz",
       "DBEngine": "postgresql",
       "Duration": "90m",
       "NumUsers": 6500,
