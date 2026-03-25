@@ -218,7 +218,6 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				{srcData: strings.TrimPrefix(browserBuf.String(), "\n"), dstPath: "/lib/systemd/system/ltbrowserapi.service", msg: "Uploading load-test browser api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 				{srcData: agentType, dstPath: t.ExpandWithUser(dstAgentTypeFilePath), msg: "Uploading agent type file"},
 			}

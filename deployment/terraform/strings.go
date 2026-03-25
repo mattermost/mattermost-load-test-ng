@@ -552,10 +552,6 @@ KC_DB_PASSWORD=mmpass
 KC_DB_USERNAME=keycloak
 KC_DATABASE=keycloak`
 
-const prometheusNodeExporterConfig = `
-ARGS="--collector.ethtool"
-`
-
 const netpeekServiceFile = `
 [Unit]
 Description=netpeek
@@ -577,7 +573,7 @@ Description=Node Exporter
 [Service]
 # Fallback when environment file does not exist
 EnvironmentFile=-/etc/default/prometheus-node-exporter
-ExecStart=/usr/bin/prometheus-node-exporter
+ExecStart=/usr/bin/prometheus-node-exporter --collector.ethtool
 
 [Install]
 WantedBy=multi-user.target`
