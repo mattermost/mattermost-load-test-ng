@@ -577,7 +577,7 @@ Description=Node Exporter
 [Service]
 # Fallback when environment file does not exist
 EnvironmentFile=-/etc/default/prometheus-node-exporter
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/bin/prometheus-node-exporter
 
 [Install]
 WantedBy=multi-user.target`
