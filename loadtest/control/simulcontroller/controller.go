@@ -112,6 +112,12 @@ func getActionList(c *SimulController) []userAction {
 			minServerVersion: control.MinSupportedVersion,
 		},
 		{
+			name:             "SearchPostsAllTeams",
+			run:              searchPostsAllTeams,
+			frequency:        0.0109,
+			minServerVersion: semver.MustParse("10.7.0"),
+		},
+		{
 			name:             "CreatePostReminder",
 			run:              c.createPostReminder,
 			frequency:        0.0005,
