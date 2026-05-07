@@ -34,8 +34,9 @@ require (
 	github.com/gliderlabs/ssh v0.1.1
 	github.com/grafana/alloy/syntax v0.1.0
 	github.com/graph-gophers/graphql-go v1.10.2
+	github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605134517-d89b02ad1328
 	github.com/mattermost/mattermost-plugin-playbooks v1.41.1-0.20260127194607-8f646f6e5d13
-	github.com/mattermost/mattermost/server/public v0.4.1
+	github.com/mattermost/mattermost/server/public v0.4.2
 	github.com/mattermost/mattermost/server/v8 v8.0.0-20260528093044-23d83b74d2fb
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/pelletier/go-toml/v2 v2.3.1
