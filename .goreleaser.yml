@@ -33,6 +33,18 @@ builds:
       - -trimpath
     env:
       - CGO_ENABLED=0
+  - main: ./cmd/ltctl
+    id: "ltctl"
+    binary: bin/ltctl
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
 archives:
   -
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
