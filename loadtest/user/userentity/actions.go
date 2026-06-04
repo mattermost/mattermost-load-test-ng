@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/blang/semver"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -224,12 +225,34 @@ func (ue *UserEntity) Logout() error {
 	return nil
 }
 
+func (ue *UserEntity) getOldClientConfig(ctx context.Context, etag string) (map[string]string, *model.Response, error) {
+	r, err := ue.client.DoAPIGet(ctx, "/config/client?format=old", etag)
+	if err != nil {
+		return nil, model.BuildResponse(r), err
+	}
+	defer closeBody(r)
+	return model.MapFromJSON(r.Body), model.BuildResponse(r), nil
+}
+
 // GetClientConfig fetches and stores the limited server's configuration for logged in user.
 func (ue *UserEntity) GetClientConfig() error {
-	config, _, err := ue.client.GetClientConfig(context.Background(), "")
-	if err != nil {
-		return err
+	var config map[string]string
+	var err error
+
+	// For versions strictly older than v11.0.0, use the ?format=old query parameter;
+	// for v11.0.0 and newer, use the plan /config/client enpdoint
+	if ue.store.ServerVersion().LT(semver.MustParse("11.0.0")) {
+		config, _, err = ue.getOldClientConfig(context.Background(), "")
+		if err != nil {
+			return err
+		}
+	} else {
+		config, _, err = ue.client.GetClientConfig(context.Background(), "")
+		if err != nil {
+			return err
+		}
 	}
+
 	ue.store.SetClientConfig(config)
 	return nil
 }
