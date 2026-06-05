@@ -83,7 +83,7 @@ func checkTerraformVersion() error {
 	}
 
 	if installedVersion.Major > requiredVersion.Major {
-		return fmt.Errorf("installed major version %q is greater than supported major version %q", installedVersion.Major, requiredVersion.Major)
+		return fmt.Errorf("installed major version %d is greater than supported major version %d", installedVersion.Major, requiredVersion.Major)
 	}
 
 	if installedVersion.LT(requiredVersion) {

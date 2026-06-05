@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/wiggin77/merror"
 
+	_ "github.com/mattermost/mattermost-plugin-agents/loadtest/controller"
 	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
 
