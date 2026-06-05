@@ -297,8 +297,8 @@ github.com/mattermost/ldap v3.0.4+incompatible h1:SOeNnz+JNR+foQ3yHkYqijb9MLPhXN
 github.com/mattermost/ldap v3.0.4+incompatible/go.mod h1:b4reDCcGpBxJ4WX0f224KFY+OR0npin7or7EFpeIko4=
 github.com/mattermost/logr/v2 v2.0.22 h1:npFkXlkAWR9J8payh8ftPcCZvLbHSI125mAM5/r/lP4=
 github.com/mattermost/logr/v2 v2.0.22/go.mod h1:0sUKpO+XNMZApeumaid7PYaUZPBIydfuWZ0dqixXo+s=
-github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605134517-d89b02ad1328 h1:EpjurOHjfRwNGKQrilPx8NlN1BWWIekfColca4TQR0s=
-github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605134517-d89b02ad1328/go.mod h1:KLdUtKmHHJx7dW+jEmPXLhq0GQathxM3qtpGNUrM0xc=
+github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605141157-00ae379a2594 h1:e71zX2tBnKYRv5jPU2nFKqG2h625ye6FDH4XNe0JkuY=
+github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605141157-00ae379a2594/go.mod h1:KLdUtKmHHJx7dW+jEmPXLhq0GQathxM3qtpGNUrM0xc=
 github.com/mattermost/mattermost-plugin-playbooks v1.41.1-0.20260127194607-8f646f6e5d13 h1:/mBaRmn+oB6NETWmvFcJV+cVMoUOy6BTQL4hoLkbQq8=
 github.com/mattermost/mattermost-plugin-playbooks v1.41.1-0.20260127194607-8f646f6e5d13/go.mod h1:vVGqFE72inL1O7iy8uJE7IelCzwHnFAOx2O+NAMbdFA=
 github.com/mattermost/mattermost-plugin-playbooks/client v0.8.1-0.20260127194607-8f646f6e5d13 h1:egoOIHtGEe+LbYTn+kRDK+bdaYBN4NdeDcf3C6dj5V8=
