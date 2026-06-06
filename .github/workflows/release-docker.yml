@@ -1,0 +1,160 @@
+# Builds and publishes the mattermost-load-test-ng container on tag push.
+# Single-arch (linux/amd64); switch to multi-arch later by extending the platforms list.
+#
+# Required repo secrets:
+#   DOCKERHUB_USERNAME - account with push access to docker.io/mattermost
+#   DOCKERHUB_TOKEN    - PAT scoped to the mattermost-load-test-ng repo only
+#
+# Triggers:
+#   - push of a v* tag (e.g. v1.6.0)   -> full publish to Docker Hub + GHCR
+#   - workflow_dispatch                 -> manual run for testing the workflow itself
+#
+# Verify action versions periodically (release pages on github.com/<org>/<action>/releases):
+#   actions/checkout, docker/setup-buildx-action, docker/setup-qemu-action,
+#   docker/login-action, docker/metadata-action, docker/build-push-action,
+#   aquasecurity/trivy-action, sigstore/cosign-installer
+name: release-docker
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to publish (manual runs only, e.g. v0.0.0-test).'
+        required: true
+        default: 'v0.0.0-manual'
+      push:
+        description: 'Push to Docker Hub (true) or build-only (false).'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  packages: write     # publish to ghcr.io
+  id-token: write     # cosign keyless signing via GitHub OIDC
+
+env:
+  DOCKERHUB_IMAGE: mattermost/mattermost-load-test-ng
+  GHCR_IMAGE: ghcr.io/mattermost/mattermost-load-test-ng
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version + push intent
+        id: ctx
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "push=${{ inputs.push }}"    >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "push=true"                       >> "$GITHUB_OUTPUT"
+          fi
+
+      # QEMU is kept here so flipping to multi-arch later is a one-line change in the
+      # build step's `platforms:` field — no other workflow surgery needed.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: steps.ctx.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        if: steps.ctx.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          # Pin :v1.2.3 always; only re-tag :latest on real tag pushes (not manual runs).
+          tags: |
+            type=raw,value=${{ steps.ctx.outputs.version }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.ctx.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          # When push=true, image goes to the registries. When false, image is loaded
+          # locally for the Trivy scan step (build-and-scan dry-run).
+          push: ${{ steps.ctx.outputs.push == 'true' }}
+          load: ${{ steps.ctx.outputs.push == 'false' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Buildx-native supply-chain attestations attached to the image manifest.
+          provenance: true
+          sbom: true
+
+      # Block releases when CRITICAL/HIGH CVEs with available fixes are present.
+      # ignore-unfixed: don't fail on CVEs upstream hasn't shipped fixes for yet.
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DOCKERHUB_IMAGE }}:${{ steps.ctx.outputs.version }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Install cosign
+        if: steps.ctx.outputs.push == 'true'
+        uses: sigstore/cosign-installer@v3
+
+      # Keyless signing via GitHub OIDC — no key management required.
+      # Consumers verify with:
+      #   cosign verify mattermost/mattermost-load-test-ng:vX.Y.Z \
+      #     --certificate-identity-regexp 'https://github.com/mattermost/mattermost-load-test-ng/.*' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Sign images
+        if: steps.ctx.outputs.push == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS:   ${{ steps.meta.outputs.tags }}
+        run: |
+          for tag in $TAGS; do
+            cosign sign --yes "${tag}@${DIGEST}"
+          done
+
+      - name: Write job summary
+        if: steps.ctx.outputs.push == 'true'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Published images
+
+          \`\`\`
+          docker pull ${{ env.DOCKERHUB_IMAGE }}:${{ steps.ctx.outputs.version }}
+          docker pull ${{ env.GHCR_IMAGE }}:${{ steps.ctx.outputs.version }}
+          \`\`\`
+          EOF

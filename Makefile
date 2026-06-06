@@ -23,6 +23,8 @@ AGENT=$(GOBIN)/ltagent
 AGENT_ARGS=-mod=readonly -trimpath ./cmd/ltagent
 API_SERVER=$(GOBIN)/ltapi
 API_SERVER_ARGS=-mod=readonly -trimpath ./cmd/ltapi
+LTCTL=$(GOBIN)/ltctl
+LTCTL_ARGS=-mod=readonly -trimpath ./cmd/ltctl
 
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
@@ -33,19 +35,23 @@ build-linux: ## Build the binary (only for Linux on AMD64).
 	@echo Build Linux amd64
 	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build -o $(LTCTL) $(LTCTL_ARGS)
 
 build-osx: ## Build the binary (only for OSX on AMD64).
 	@echo Build OSX amd64
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(AGENT) $(AGENT_ARGS)
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(API_SERVER) $(API_SERVER_ARGS)
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(LTCTL) $(LTCTL_ARGS)
 
 build-browser-api: ## Build the browser testing HTTP server.
 	cd browser && $(MAKE) build
 
 build: build-linux build-osx build-browser-api ## Build the binary for all platforms and browser API server.
 
-install: ## Build and install for the current platform.
+install: ## Build and install ltagent, ltapi, and ltctl for the current platform.
+	$(GO) install $(AGENT_ARGS)
 	$(GO) install $(API_SERVER_ARGS)
+	$(GO) install $(LTCTL_ARGS)
 
 package: ## Build and package (only available for Linux on AMD64).
 ifneq ($(STATUS), 0)
@@ -71,6 +77,7 @@ endif
 
 	mv $(AGENT) $(PLATFORM_DIST_PATH)/bin
 	mv $(API_SERVER) $(PLATFORM_DIST_PATH)/bin
+	mv $(LTCTL) $(PLATFORM_DIST_PATH)/bin
 
 	# Copy LTBrowser build directory if it exists
 	if [ -d "browser/dist" ]; then \
