@@ -45,7 +45,8 @@
     "Password": "mostest80098bigpass_",
     "EnablePerformanceInsights": false,
     "DBParameters": [],
-    "ClusterIdentifier": "REPLACE_WITH_RESTORED_CLUSTER_ID"
+    "ClusterIdentifier": "cpmbem1b-restored-db",
+    "DBName": "cpmbem1adb"
   },
   "ExternalDBSettings": { "DriverName": "cockroach", "DataSource": "", "DataSourceReplicas": [], "DataSourceSearchReplicas": [], "ClusterIdentifier": "" },
   "ExternalBucketSettings": { "AmazonS3Region": "us-east-1", "AmazonS3Endpoint": "s3.amazonaws.com", "AmazonS3SSL": true },
