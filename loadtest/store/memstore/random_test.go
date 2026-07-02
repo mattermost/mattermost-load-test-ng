@@ -1125,6 +1125,88 @@ func TestRandomChannel(t *testing.T) {
 	})
 }
 
+func TestRandomChannelMBESteering(t *testing.T) {
+	setup := func(t *testing.T) (*MemStore, string, string, string) {
+		s := newStore(t)
+		user := &model.User{Id: model.NewId()}
+		require.NoError(t, s.SetUser(user))
+		teamId := model.NewId()
+		require.NoError(t, s.SetTeams([]*model.Team{{Id: teamId}}))
+		mbeChanId := model.NewId()
+		otherChanId := model.NewId()
+		require.NoError(t, s.SetChannels([]*model.Channel{
+			{Id: mbeChanId, TeamId: teamId, Type: model.ChannelTypePrivate},
+			{Id: otherChanId, TeamId: teamId, Type: model.ChannelTypePrivate},
+		}))
+		require.NoError(t, s.SetChannelMembers(model.ChannelMembers{
+			{ChannelId: mbeChanId, UserId: user.Id},
+			{ChannelId: otherChanId, UserId: user.Id},
+		}))
+		return s, teamId, mbeChanId, otherChanId
+	}
+
+	t.Run("weight 0 hard-excludes MBE channels from RandomChannel", func(t *testing.T) {
+		s, teamId, mbeChanId, otherChanId := setup(t)
+		s.SetMBESteering([]string{mbeChanId}, 0)
+
+		for i := 0; i < 20; i++ {
+			channel, err := s.RandomChannel(teamId, store.SelectMemberOf)
+			require.NoError(t, err)
+			require.Equal(t, otherChanId, channel.Id)
+		}
+	})
+
+	t.Run("no steering configured behaves like before", func(t *testing.T) {
+		s, teamId, mbeChanId, otherChanId := setup(t)
+
+		seen := map[string]bool{}
+		for i := 0; i < 20; i++ {
+			channel, err := s.RandomChannel(teamId, store.SelectMemberOf)
+			require.NoError(t, err)
+			seen[channel.Id] = true
+		}
+		require.True(t, seen[mbeChanId])
+		require.True(t, seen[otherChanId])
+	})
+
+	t.Run("RandomMBEChannel filters by MBE membership", func(t *testing.T) {
+		s, teamId, mbeChanId, otherChanId := setup(t)
+		s.SetMBESteering([]string{mbeChanId}, 0.5)
+
+		channel, err := s.RandomMBEChannel(teamId, true, store.SelectMemberOf)
+		require.NoError(t, err)
+		require.Equal(t, mbeChanId, channel.Id)
+
+		channel, err = s.RandomMBEChannel(teamId, false, store.SelectMemberOf)
+		require.NoError(t, err)
+		require.Equal(t, otherChanId, channel.Id)
+	})
+
+	t.Run("RandomMBEChannel returns ErrChannelStoreEmpty when the requested side has no members", func(t *testing.T) {
+		s := newStore(t)
+		user := &model.User{Id: model.NewId()}
+		require.NoError(t, s.SetUser(user))
+		teamId := model.NewId()
+		require.NoError(t, s.SetTeams([]*model.Team{{Id: teamId}}))
+		mbeChanId := model.NewId()
+		require.NoError(t, s.SetChannels([]*model.Channel{
+			{Id: mbeChanId, TeamId: teamId, Type: model.ChannelTypePrivate},
+		}))
+		require.NoError(t, s.SetChannelMembers(model.ChannelMembers{
+			{ChannelId: mbeChanId, UserId: user.Id},
+		}))
+		s.SetMBESteering([]string{mbeChanId}, 1)
+
+		// The user is only a member of the MBE channel, so the non-MBE side is empty.
+		_, err := s.RandomMBEChannel(teamId, false, store.SelectMemberOf)
+		require.True(t, errors.Is(err, ErrChannelStoreEmpty))
+
+		channel, err := s.RandomMBEChannel(teamId, true, store.SelectMemberOf)
+		require.NoError(t, err)
+		require.Equal(t, mbeChanId, channel.Id)
+	})
+}
+
 func TestRandomThread(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		s := newStore(t)

@@ -100,6 +100,12 @@ type UserStore interface {
 	// RandomChannel returns a random channel for the given teamId
 	// for the current user.
 	RandomChannel(teamId string, st SelectionType) (model.Channel, error)
+	// RandomMBEChannel returns a random channel for the given teamId for the current user,
+	// restricted to the configured MBE channel set (mbe=true) or its complement (mbe=false).
+	// Used to steer channel-targeted traffic toward/away from MBE channels at a precise ratio
+	// (see mbe-load-test-plan.md WS4b) without perturbing RandomChannel's behavior for other
+	// callers.
+	RandomMBEChannel(teamId string, mbe bool, st SelectionType) (model.Channel, error)
 	// RandomTeam returns a random team for the current user.
 	RandomTeam(st SelectionType) (model.Team, error)
 	// RandomUser returns a random user from the set of users.

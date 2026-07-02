@@ -12,6 +12,21 @@ The minium amount of time (in milliseconds) the controlled users will wait betwe
 
 The average amount of time (in milliseconds) the controlled users will wait between actions.
 
+## MBEChannelIdsFile
+
+*string*
+
+Path to the MBE channel-ID JSON file emitted by `cmd/ltmbebootstrap`'s `-output` flag (a list of `{"id": ...}` objects). When set, `MBEChannelWeight` controls how the controller steers channel-targeted post/read traffic toward those channels. Leave empty (default) to disable MBE steering entirely — this is the non-MBE, pre-existing behavior. See `mbe-load-test-plan.md` WS4b.
+
+## MBEChannelWeight
+
+*float64*
+
+The target share (0 to 1) of channel-targeted post/read actions steered to MBE channels. Only takes effect when `MBEChannelIdsFile` is set.
+
+- `0` (default): hard-excludes the configured MBE channels from the channel candidate pool entirely — use for the control and 0% MBE arms.
+- `0.1` / `1`: steers about 10% / 100% of `switchChannel` picks to an MBE channel the user is a member of, falling back to the unrestricted pool if the user has no member channels on the targeted side of the split.
+
 ## EnabledPlugins
 
 *[]string*

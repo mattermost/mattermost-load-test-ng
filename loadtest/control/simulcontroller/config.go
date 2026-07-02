@@ -23,6 +23,14 @@ type Config struct {
 
 	// The IDs of the enabled plugins.
 	EnabledPlugins []string
+
+	// Path to the MBE channel-ID JSON file emitted by cmd/ltmbebootstrap. When set, the listed
+	// channels are steered per MBEChannelWeight; when empty, MBE steering is disabled (default,
+	// pre-MBE behavior). See mbe-load-test-plan.md WS4b.
+	MBEChannelIdsFile string `default:""`
+	// The target share (0 to 1) of channel-targeted post/read actions steered to MBE channels.
+	// 0 hard-excludes MBE channels from the channel candidate pool (control/0% arms).
+	MBEChannelWeight float64 `default:"0" validate:"range:[0,1]"`
 }
 
 // ReadConfig reads the configuration file from the given string. If the string

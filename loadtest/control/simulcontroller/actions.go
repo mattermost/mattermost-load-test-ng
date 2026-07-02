@@ -572,7 +572,26 @@ func (c *SimulController) switchChannel(u user.User) control.UserActionResponse 
 		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
-	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotCurrent|store.SelectNotDirect|store.SelectNotGroup)
+	st := store.SelectMemberOf | store.SelectNotCurrent | store.SelectNotDirect | store.SelectNotGroup
+
+	var channel model.Channel
+	if c.config.MBEChannelWeight > 0 {
+		// Force the switchChannel chokepoint to land on the MBE side of the split with
+		// probability MBEChannelWeight, so the target share is hit precisely regardless of
+		// how MBE channel membership happens to be distributed (see mbe-load-test-plan.md WS4b).
+		if rand.Float64() < c.config.MBEChannelWeight {
+			channel, err = u.Store().RandomMBEChannel(team.Id, true, st)
+		} else {
+			channel, err = u.Store().RandomMBEChannel(team.Id, false, st)
+		}
+		if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+			// The user has no member channels on the targeted side of the split (e.g. not
+			// yet an MBE-channel member) -- fall back to the unrestricted pool.
+			channel, err = u.Store().RandomChannel(team.Id, st)
+		}
+	} else {
+		channel, err = u.Store().RandomChannel(team.Id, st)
+	}
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

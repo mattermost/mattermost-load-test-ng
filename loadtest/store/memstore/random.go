@@ -91,6 +91,21 @@ func excludeChannelType(st store.SelectionType, channelType model.ChannelType) b
 // RandomChannel returns a random channel for the given teamId for the current
 // user.
 func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.Channel, error) {
+	return s.randomChannel(teamId, st, nil)
+}
+
+// RandomMBEChannel returns a random channel for the given teamId for the current user,
+// restricted to the configured MBE channel set (mbe=true) or its complement (mbe=false). See
+// SetMBESteering and mbe-load-test-plan.md WS4b.
+func (s *MemStore) RandomMBEChannel(teamId string, mbe bool, st store.SelectionType) (model.Channel, error) {
+	return s.randomChannel(teamId, st, &mbe)
+}
+
+// randomChannel is the shared implementation backing RandomChannel and RandomMBEChannel.
+// mbeFilter, when non-nil, restricts the candidate pool to channels whose MBE membership
+// matches *mbeFilter; when nil, MBE channels are hard-excluded if a weight of 0 has been
+// configured via SetMBESteering (control/0% MBE arms), and otherwise included normally.
+func (s *MemStore) randomChannel(teamId string, st store.SelectionType, mbeFilter *bool) (model.Channel, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -111,6 +126,14 @@ func (s *MemStore) RandomChannel(teamId string, st store.SelectionType) (model.C
 
 	var channels []*model.Channel
 	for channelId, channel := range s.channels {
+		isMBE := s.mbeChannelIDs[channelId]
+		if mbeFilter == nil {
+			if isMBE && s.mbeChannelWeight == 0 {
+				continue
+			}
+		} else if isMBE != *mbeFilter {
+			continue
+		}
 		if (currChanId == channelId) && isSelectionType(st, store.SelectNotCurrent) {
 			continue
 		}

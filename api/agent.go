@@ -420,6 +420,16 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		modAdmins = int(1 / config.UsersConfiguration.PercentOfUsersAreAdmin)
 	}
 
+	// Loaded once (not per user) since it's the same file/weight for every simulated user in
+	// this process. See mbe-load-test-plan.md WS4b.
+	var mbeChannelIDs []string
+	if simConfig, ok := controllerConfig.(*simulcontroller.Config); ok && simConfig.MBEChannelIdsFile != "" {
+		mbeChannelIDs, err = simulcontroller.LoadMBEChannelIDs(simConfig.MBEChannelIdsFile)
+		if err != nil {
+			return nil, fmt.Errorf("error loading MBE channel ids: %w", err)
+		}
+	}
+
 	err = createCustomEmoji(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating custom emoji from config: %w", err)
@@ -493,7 +503,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		case loadtest.UserControllerSimple:
 			return simplecontroller.New(id, ue, controllerConfig.(*simplecontroller.Config), status)
 		case loadtest.UserControllerSimulative:
-			return simulcontroller.New(id, ue, controllerConfig.(*simulcontroller.Config), status)
+			simConfig := controllerConfig.(*simulcontroller.Config)
+			store.SetMBESteering(mbeChannelIDs, simConfig.MBEChannelWeight)
+			return simulcontroller.New(id, ue, simConfig, status)
 		case loadtest.UserControllerGenerative:
 			adminStore, err := memstore.New(nil)
 			if err != nil {

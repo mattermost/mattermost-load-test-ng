@@ -58,6 +58,8 @@ type MemStore struct {
 	scheduledPosts        map[string]map[string][]*model.ScheduledPost // map of team ID -> channel/thread ID -> list of scheduled posts
 	customAttributeFields []*model.PropertyField
 	customAttributeValues map[string]map[string]json.RawMessage
+	mbeChannelIDs         map[string]bool
+	mbeChannelWeight      float64
 }
 
 // New returns a new instance of MemStore with the given config.
@@ -1052,6 +1054,21 @@ func (s *MemStore) SetServerVersion(version semver.Version) error {
 	defer s.lock.Unlock()
 	s.serverVersion = version
 	return nil
+}
+
+// SetMBESteering configures the set of MBE channel IDs and the target weight (0 to 1) used by
+// RandomChannel and RandomMBEChannel to steer channel-targeted traffic (see mbe-load-test-plan.md
+// WS4b). A weight of 0 hard-excludes the given channels from RandomChannel's candidate pool; a
+// nil or empty channelIDs is a no-op, preserving pre-MBE behavior.
+func (s *MemStore) SetMBESteering(channelIDs []string, weight float64) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	ids := make(map[string]bool, len(channelIDs))
+	for _, id := range channelIDs {
+		ids[id] = true
+	}
+	s.mbeChannelIDs = ids
+	s.mbeChannelWeight = weight
 }
 
 // SetThread stores the given thread reponse.
