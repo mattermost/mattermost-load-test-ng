@@ -1,8 +1,4 @@
 {
-  "FeatureFlags": {
-    "ConsumePostHook": true,
-    "AggregatePluginMetrics": true
-  },
   "PluginSettings": {
     "Plugins": {
       "message-based-encryption": {
