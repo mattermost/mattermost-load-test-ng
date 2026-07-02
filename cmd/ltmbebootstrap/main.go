@@ -45,6 +45,8 @@ func main() {
 		addsPerSecond     = flag.Float64("rate", 4, "max total channel-member-adds per second across all channels")
 		usersPageSize     = flag.Int("users-page-size", 200, "page size when listing candidate users")
 		outputFile        = flag.String("output", "mbe-channels.json", "path to write the created channel-ID list (JSON)")
+		existingChannels  = flag.String("existing-channels", "", "path to a channel-ID JSON file from a previous run; when set, reuses those channels instead of creating new ones (for adding a fresh batch of members, e.g. simulcontroller users created after the first bootstrap pass)")
+		usernamePrefix    = flag.String("username-prefix", "", "when set, find candidate members by username prefix (e.g. a load-test agent's '<cluster>-agent-N-' pattern) via user search, instead of paging through all users")
 	)
 	flag.Parse()
 
@@ -54,12 +56,12 @@ func main() {
 		os.Exit(2)
 	}
 
-	if err := run(*serverURL, *adminEmail, *adminPassword, *teamName, *pluginID, *numChannels, *channelPrefix, *membersPerChannel, *addsPerSecond, *usersPageSize, *outputFile); err != nil {
+	if err := run(*serverURL, *adminEmail, *adminPassword, *teamName, *pluginID, *numChannels, *channelPrefix, *membersPerChannel, *addsPerSecond, *usersPageSize, *outputFile, *existingChannels, *usernamePrefix); err != nil {
 		log.Fatalf("bootstrap failed: %v", err)
 	}
 }
 
-func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numChannels int, channelPrefix string, membersPerChannel int, addsPerSecond float64, usersPageSize int, outputFile string) error {
+func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numChannels int, channelPrefix string, membersPerChannel int, addsPerSecond float64, usersPageSize int, outputFile, existingChannelsFile, usernamePrefix string) error {
 	ctx := context.Background()
 	client := model.NewAPIv4Client(serverURL)
 
@@ -92,7 +94,12 @@ func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numCha
 	}
 
 	needed := numChannels * membersPerChannel
-	candidates, err := collectCandidateUsers(ctx, client, me.Id, needed, usersPageSize)
+	var candidates []string
+	if usernamePrefix != "" {
+		candidates, err = collectCandidateUsersByPrefix(ctx, client, usernamePrefix, needed)
+	} else {
+		candidates, err = collectCandidateUsers(ctx, client, me.Id, needed, usersPageSize)
+	}
 	if err != nil {
 		return fmt.Errorf("collect candidate users: %w", err)
 	}
@@ -100,25 +107,37 @@ func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numCha
 		log.Printf("warning: only found %d candidate users, wanted %d; some channels will get fewer members", len(candidates), needed)
 	}
 
-	channels := make([]mbeChannel, 0, numChannels)
-	for i := 0; i < numChannels; i++ {
-		name := fmt.Sprintf("%s-%d", channelPrefix, i)
-		displayName := fmt.Sprintf("MBE Bootstrap Channel %d", i)
-		body := map[string]string{
-			"team_id":      team.Id,
-			"name":         name,
-			"display_name": displayName,
-		}
-		_, respBody, err := pluginRequest(ctx, client, pluginID, http.MethodPost, "/channels", body)
+	var channels []mbeChannel
+	if existingChannelsFile != "" {
+		data, err := os.ReadFile(existingChannelsFile)
 		if err != nil {
-			return fmt.Errorf("create channel %s: %w", name, err)
+			return fmt.Errorf("read existing channels file %s: %w", existingChannelsFile, err)
 		}
-		var ch model.Channel
-		if err := json.Unmarshal(respBody, &ch); err != nil {
-			return fmt.Errorf("parse create-channel response for %s: %w", name, err)
+		if err := json.Unmarshal(data, &channels); err != nil {
+			return fmt.Errorf("parse existing channels file %s: %w", existingChannelsFile, err)
 		}
-		channels = append(channels, mbeChannel{Id: ch.Id, TeamId: ch.TeamId, Name: ch.Name, DisplayName: ch.DisplayName})
-		log.Printf("created MBE channel %s (id=%s)", name, ch.Id)
+		log.Printf("reusing %d existing channels from %s", len(channels), existingChannelsFile)
+	} else {
+		channels = make([]mbeChannel, 0, numChannels)
+		for i := 0; i < numChannels; i++ {
+			name := fmt.Sprintf("%s-%d", channelPrefix, i)
+			displayName := fmt.Sprintf("MBE Bootstrap Channel %d", i)
+			body := map[string]string{
+				"team_id":      team.Id,
+				"name":         name,
+				"display_name": displayName,
+			}
+			_, respBody, err := pluginRequest(ctx, client, pluginID, http.MethodPost, "/channels", body)
+			if err != nil {
+				return fmt.Errorf("create channel %s: %w", name, err)
+			}
+			var ch model.Channel
+			if err := json.Unmarshal(respBody, &ch); err != nil {
+				return fmt.Errorf("parse create-channel response for %s: %w", name, err)
+			}
+			channels = append(channels, mbeChannel{Id: ch.Id, TeamId: ch.TeamId, Name: ch.Name, DisplayName: ch.DisplayName})
+			log.Printf("created MBE channel %s (id=%s)", name, ch.Id)
+		}
 	}
 
 	interval := time.Duration(float64(time.Second) / addsPerSecond)
@@ -183,6 +202,28 @@ func collectCandidateUsers(ctx context.Context, client *model.Client4, excludeID
 			}
 		}
 		if len(users) < pageSize {
+			break
+		}
+	}
+	return ids, nil
+}
+
+// collectCandidateUsersByPrefix finds up to `needed` user IDs whose username starts with prefix,
+// via user search. Used to target simulcontroller-created users (e.g. "<cluster>-agent-0-"), which
+// don't exist yet at the time of an initial bootstrap pass against the base dump and so can't be
+// found by collectCandidateUsers.
+func collectCandidateUsersByPrefix(ctx context.Context, client *model.Client4, prefix string, needed int) ([]string, error) {
+	users, _, err := client.SearchUsers(ctx, &model.UserSearch{Term: prefix, AllowInactive: true, Limit: needed})
+	if err != nil {
+		return nil, fmt.Errorf("search users with prefix %q: %w", prefix, err)
+	}
+	ids := make([]string, 0, len(users))
+	for _, u := range users {
+		if !strings.HasPrefix(u.Username, prefix) {
+			continue
+		}
+		ids = append(ids, u.Id)
+		if len(ids) >= needed {
 			break
 		}
 	}
