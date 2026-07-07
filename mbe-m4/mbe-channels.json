@@ -1,0 +1,302 @@
+[
+  {
+    "id": "fttozczrmjbx8q55bak181krdh",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-0",
+    "display_name": "MBE Bootstrap Channel 0"
+  },
+  {
+    "id": "7brq5zc67pgi8eyucte8gqmdww",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-1",
+    "display_name": "MBE Bootstrap Channel 1"
+  },
+  {
+    "id": "87ek81s9x7yojjom8b3anioq3c",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-2",
+    "display_name": "MBE Bootstrap Channel 2"
+  },
+  {
+    "id": "8sdom6fxa3bcf8w7zs4jassjeh",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-3",
+    "display_name": "MBE Bootstrap Channel 3"
+  },
+  {
+    "id": "y4sy1qygntnsfpr9mud7hf3amo",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-4",
+    "display_name": "MBE Bootstrap Channel 4"
+  },
+  {
+    "id": "coijccsqo7fftbinr9nfrjndqe",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-5",
+    "display_name": "MBE Bootstrap Channel 5"
+  },
+  {
+    "id": "p3wtj4ezni8wpng15fg14hba4e",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-6",
+    "display_name": "MBE Bootstrap Channel 6"
+  },
+  {
+    "id": "1uj45xtj4f89u88qrz5cwofkrr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-7",
+    "display_name": "MBE Bootstrap Channel 7"
+  },
+  {
+    "id": "yweghgdupjyf58bntxcxfq3twe",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-8",
+    "display_name": "MBE Bootstrap Channel 8"
+  },
+  {
+    "id": "nur8q9uf9tbbpcsfputgi8916h",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-9",
+    "display_name": "MBE Bootstrap Channel 9"
+  },
+  {
+    "id": "rzxzu3tab3g19p3fs7wknjkihe",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-10",
+    "display_name": "MBE Bootstrap Channel 10"
+  },
+  {
+    "id": "gphz16hio7yqi8pk1awznniz7e",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-11",
+    "display_name": "MBE Bootstrap Channel 11"
+  },
+  {
+    "id": "zazys8x643gy5jugwk96ss63na",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-12",
+    "display_name": "MBE Bootstrap Channel 12"
+  },
+  {
+    "id": "79h8o4p483re7mstsahexqnkuo",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-13",
+    "display_name": "MBE Bootstrap Channel 13"
+  },
+  {
+    "id": "n4j9fn749inr7mprozxna6tt3w",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-14",
+    "display_name": "MBE Bootstrap Channel 14"
+  },
+  {
+    "id": "6a9ad63intbf7yokn6nz6yje4c",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-15",
+    "display_name": "MBE Bootstrap Channel 15"
+  },
+  {
+    "id": "5aq83qjmqtb3jfodxwr9ks314r",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-16",
+    "display_name": "MBE Bootstrap Channel 16"
+  },
+  {
+    "id": "p9eb9iuw8ffsme1xb18rs3t8rc",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-17",
+    "display_name": "MBE Bootstrap Channel 17"
+  },
+  {
+    "id": "13odzxcmktdkmcron483qusfic",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-18",
+    "display_name": "MBE Bootstrap Channel 18"
+  },
+  {
+    "id": "1jdxghzjo3nxxcdg19ndbaunzy",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-19",
+    "display_name": "MBE Bootstrap Channel 19"
+  },
+  {
+    "id": "isu5k76gwpnttdb9sgyrb8h7mr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-20",
+    "display_name": "MBE Bootstrap Channel 20"
+  },
+  {
+    "id": "t81xaz4urpf7uruehz9nsanfkr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-21",
+    "display_name": "MBE Bootstrap Channel 21"
+  },
+  {
+    "id": "d9a3g6a5g3rg7ehp1r4ptg3fcw",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-22",
+    "display_name": "MBE Bootstrap Channel 22"
+  },
+  {
+    "id": "fiyty91q4t8q5m88hk4ugw6ksy",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-23",
+    "display_name": "MBE Bootstrap Channel 23"
+  },
+  {
+    "id": "9tkhtgh9qbnsmcohfyz8mmbw3w",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-24",
+    "display_name": "MBE Bootstrap Channel 24"
+  },
+  {
+    "id": "gq1p6ktinffq7yfrw1iaby6dah",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-25",
+    "display_name": "MBE Bootstrap Channel 25"
+  },
+  {
+    "id": "6557epwk5fgrbrztxsquhdsbzo",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-26",
+    "display_name": "MBE Bootstrap Channel 26"
+  },
+  {
+    "id": "g6zu3uq7ptnete9f6psipxkocw",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-27",
+    "display_name": "MBE Bootstrap Channel 27"
+  },
+  {
+    "id": "q13jjh86f7d4mj7y811mctrjpr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-28",
+    "display_name": "MBE Bootstrap Channel 28"
+  },
+  {
+    "id": "jq73ptfaxpfizr1w6qdonnnjwo",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-29",
+    "display_name": "MBE Bootstrap Channel 29"
+  },
+  {
+    "id": "zp3ha38ag7ffjqqmbf7kracrxr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-30",
+    "display_name": "MBE Bootstrap Channel 30"
+  },
+  {
+    "id": "8c9bxf3kz7dn7q3ixgddzeaq1e",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-31",
+    "display_name": "MBE Bootstrap Channel 31"
+  },
+  {
+    "id": "xof1ox4aobrwbeb3btjsm1o3qo",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-32",
+    "display_name": "MBE Bootstrap Channel 32"
+  },
+  {
+    "id": "9gbn937tm7yyfy6znny5hr6gwa",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-33",
+    "display_name": "MBE Bootstrap Channel 33"
+  },
+  {
+    "id": "zoqiqg349tf9prfj5pbjto9yta",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-34",
+    "display_name": "MBE Bootstrap Channel 34"
+  },
+  {
+    "id": "k3o56easbjd3xy4w5bifo1kxda",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-35",
+    "display_name": "MBE Bootstrap Channel 35"
+  },
+  {
+    "id": "b15s58yxyp8exp6765uhebyq3a",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-36",
+    "display_name": "MBE Bootstrap Channel 36"
+  },
+  {
+    "id": "3155zmqqe3f67dqd6n845jfs9h",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-37",
+    "display_name": "MBE Bootstrap Channel 37"
+  },
+  {
+    "id": "ch1anmkpdjrn9jof4rhdhrr5ye",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-38",
+    "display_name": "MBE Bootstrap Channel 38"
+  },
+  {
+    "id": "hh94bji9p38ibbf59kw978joth",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-39",
+    "display_name": "MBE Bootstrap Channel 39"
+  },
+  {
+    "id": "cf56uwqg7ircfk7hwdcn5rgjqr",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-40",
+    "display_name": "MBE Bootstrap Channel 40"
+  },
+  {
+    "id": "r4w111w97byntg1uxd3z96a75o",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-41",
+    "display_name": "MBE Bootstrap Channel 41"
+  },
+  {
+    "id": "ckmqgdqqm78fudgusdz48xm74o",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-42",
+    "display_name": "MBE Bootstrap Channel 42"
+  },
+  {
+    "id": "jfie1w14spf4jbq13jwxubaz3h",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-43",
+    "display_name": "MBE Bootstrap Channel 43"
+  },
+  {
+    "id": "raxb7fqaffr3z8cprd6bdi4nha",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-44",
+    "display_name": "MBE Bootstrap Channel 44"
+  },
+  {
+    "id": "88wwocs11jysjmwwcgbgjo6d7c",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-45",
+    "display_name": "MBE Bootstrap Channel 45"
+  },
+  {
+    "id": "7tb5gwamd3d7b8wgwny9s4kaae",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-46",
+    "display_name": "MBE Bootstrap Channel 46"
+  },
+  {
+    "id": "pencqmejdifnzd1my4tofb4jka",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-47",
+    "display_name": "MBE Bootstrap Channel 47"
+  },
+  {
+    "id": "8jt5qyukm7d3my3gath1qsucia",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-48",
+    "display_name": "MBE Bootstrap Channel 48"
+  },
+  {
+    "id": "sz5ez9zj1fdwum9wbpopq5dg4h",
+    "team_id": "fyywt58zhtf98e4x4o6s4igrho",
+    "name": "mbe-prod-49",
+    "display_name": "MBE Bootstrap Channel 49"
+  }
+]

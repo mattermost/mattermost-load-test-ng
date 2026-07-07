@@ -1,0 +1,126 @@
+{
+  "AWSAMI": "ami-003d3d03cfe1b0468",
+  "AWSAvailabilityZone": "us-east-1c",
+  "AWSRoleARN": "",
+  "AWSProfile": "mm-loadtest",
+  "AWSRegion": "us-east-1",
+  "AdminEmail": "sysadmin@sample.mattermost.com",
+  "AdminPassword": "Sys@dmin-sample1",
+  "AdminUsername": "sysadmin",
+  "AgentInstanceCount": 11,
+  "AgentInstanceType": "c7i.xlarge",
+  "BrowserAgentInstanceCount": 0,
+  "BrowserAgentInstanceType": "c7i.xlarge",
+  "AgentAllocatePublicIPAddress": true,
+  "AppAttachIAMProfile": "",
+  "EnableMetricsInstance": true,
+  "AppInstanceCount": 2,
+  "AppInstanceType": "c7i.2xlarge",
+  "ClusterName": "cpmbem4c",
+  "ClusterVpcID": "",
+  "DBDumpURI": "",
+  "EnableAgentFullLogs": true,
+  "EnableNetPeekMetrics": false,
+  "LoadTestDownloadURL": "file:///home/ubuntu/cp/load-test-ng-mbe/dist/latest.tar.gz",
+  "MattermostConfigPatchFile": "",
+  "MattermostDownloadURL": "file:///home/ubuntu/cp/mbe-loadtest/mattermost-enterprise-linux-amd64.tar.gz",
+  "MattermostLicenseFile": "/home/ubuntu/licenses/lt_enterprise-500K.mattermost-license",
+  "MetricsInstanceType": "t3.xlarge",
+  "ProxyInstanceCount": 1,
+  "ProxyInstanceType": "c7i.xlarge",
+  "ProxyAllocatePublicIPAddress": true,
+  "S3BucketDumpURI": "",
+  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
+  "SiteURL": "",
+  "ServerURL": "",
+  "ServerScheme": "http",
+  "TerraformStateDir": "/home/ubuntu/cp/mbe-m4/terraform-state-control",
+  "ClusterSubnetIDs": {},
+  "ElasticSearchSettings": {},
+  "ExternalBucketSettings": {},
+  "ExternalDBSettings": {},
+  "JobServerSettings": {},
+  "LogSettings": {
+    "ConsoleJson": false,
+    "ConsoleLevel": "DEBUG",
+    "EnableColor": true,
+    "EnableConsole": true,
+    "EnableFile": true,
+    "FileJson": true,
+    "FileLevel": "DEBUG",
+    "FileLocation": "deployer.log"
+  },
+  "PyroscopeSettings": {
+    "BlockProfileRate": 0,
+    "EnableAgentProfiling": true,
+    "EnableAppProfiling": true
+  },
+  "Report": {
+    "Label": "{instance=~\"app.*\"}",
+    "GraphQueries": [
+      {
+        "Name": "CPU Utilization",
+        "Query": "avg(rate(mattermost_process_cpu_seconds_total{instance=~\"app.*\"}[1m])* 100)"
+      },
+      {
+        "Name": "Heap In Use",
+        "Query": "avg(go_memstats_heap_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "Stack In Use",
+        "Query": "avg(go_memstats_stack_inuse_bytes{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "Goroutines In Use",
+        "Query": "sum(go_goroutines{instance=~\"app.*:8067\"})"
+      },
+      {
+        "Name": "RPS",
+        "Query": "sum(rate(mattermost_http_requests_total{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name": "Avg Store times",
+        "Query": "sum(rate(mattermost_db_store_time_sum{instance=~\"app.*:8067\"}[1m])) / sum(rate(mattermost_db_store_time_count{instance=~\"app.*:8067\"}[1m]))"
+      },
+      {
+        "Name": "P99 Store times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_db_store_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name": "Avg API times",
+        "Query": "sum(rate(mattermost_api_time_sum[1m])) / sum(rate(mattermost_api_time_count[1m]))"
+      },
+      {
+        "Name": "P99 API times",
+        "Query": "histogram_quantile(0.99, sum(rate(mattermost_api_time_bucket[1m])) by (le))"
+      },
+      {
+        "Name": "Number of Connected Devices",
+        "Query": "sum(mattermost_http_websockets_total{instance=~\"app.*:8067\"})"
+      }
+    ]
+  },
+  "StorageSizes": {
+    "Agent": 10,
+    "App": 20,
+    "ElasticSearch": 20,
+    "Job": 50,
+    "Metrics": 50,
+    "Proxy": 10
+  },
+  "TerraformDBSettings": {
+    "ClusterIdentifier": "cpmbem4c-restored-db",
+    "DBName": "cpmbem3db",
+    "DBParameters": [],
+    "EnablePerformanceInsights": true,
+    "InstanceCount": 2,
+    "InstanceEngine": "aurora-postgresql",
+    "InstanceType": "db.r7g.2xlarge",
+    "Password": "mostest80098bigpass_",
+    "UserName": "mmuser"
+  },
+  "CustomTags": {
+    "owner": "chrisp",
+    "purpose": "mbe-load-test-m4-control"
+  }
+}

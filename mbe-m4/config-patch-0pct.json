@@ -1,0 +1,11 @@
+{
+  "PluginSettings": {
+    "Plugins": {
+      "message-based-encryption": {
+        "pkcs11tokenlabel": "pbe-dev",
+        "pkcs11pin": "1234",
+        "keklabel": "pbe-kek-dev"
+      }
+    }
+  }
+}

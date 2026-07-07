@@ -1,0 +1,9 @@
+{
+  "MinIdleTimeMs": 1000,
+  "AvgIdleTimeMs": 20000,
+  "PercentUrgentPosts": 0.001,
+  "PercentReplies": 0.18,
+  "EnabledPlugins": [],
+  "MBEChannelIdsFile": "/home/ubuntu/mattermost-load-test-ng/config/mbe-channels.json",
+  "MBEChannelWeight": 0
+}

@@ -1,0 +1,73 @@
+{
+  "ConnectionConfiguration": {
+    "AdminEmail": "sysadmin@sample.mattermost.com",
+    "AdminPassword": "Sys@dmin-sample1",
+    "ServerURL": "http://localhost:8065",
+    "WebSocketURL": "ws://localhost:8065"
+  },
+  "InstanceConfiguration": {
+    "NumAdmins": 0,
+    "NumChannels": 0,
+    "NumPosts": 0,
+    "NumReactions": 0,
+    "NumTeams": 2,
+    "PercentDirectChannels": 0,
+    "PercentGroupChannels": 0,
+    "PercentPrivateChannels": 0,
+    "PercentPublicChannels": 1,
+    "PercentReplies": 0.5,
+    "PercentRepliesInLongThreads": 0.05,
+    "PercentUrgentPosts": 0.001
+  },
+  "LogSettings": {
+    "ConsoleJson": false,
+    "ConsoleLevel": "DEBUG",
+    "EnableColor": true,
+    "EnableConsole": true,
+    "EnableFile": true,
+    "FileJson": true,
+    "FileLevel": "DEBUG",
+    "FileLocation": "ltagent.log"
+  },
+  "BrowserLogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "debug",
+    "EnableFile": true,
+    "FileLevel": "debug",
+    "FileLocation": "browseragent.log"
+  },
+  "UserControllerConfiguration": {
+    "Type": "simulative",
+    "RatesDistribution": [
+      {
+        "Percentage": 0.05,
+        "Rate": 1.0
+      },
+      {
+        "Percentage": 0.1,
+        "Rate": 2.0
+      },
+      {
+        "Percentage": 0.15,
+        "Rate": 3.0
+      },
+      {
+        "Percentage": 0.4,
+        "Rate": 6.0
+      },
+      {
+        "Percentage": 0.3,
+        "Rate": 30.0
+      }
+    ],
+    "ServerVersion": ""
+  },
+  "UsersConfiguration": {
+    "AvgSessionsPerUser": 1,
+    "InitialActiveUsers": 0,
+    "MaxActiveUsers": 2000,
+    "MaxActiveBrowserUsers": 0,
+    "PercentOfUsersAreAdmin": 0.0005,
+    "UsersFilePath": ""
+  }
+}
