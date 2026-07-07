@@ -103,8 +103,11 @@ func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numCha
 	if err != nil {
 		return fmt.Errorf("collect candidate users: %w", err)
 	}
+	if len(candidates) == 0 {
+		return fmt.Errorf("found 0 candidate users; nothing to add")
+	}
 	if len(candidates) < needed {
-		log.Printf("warning: only found %d candidate users, wanted %d; some channels will get fewer members", len(candidates), needed)
+		log.Printf("found %d candidate users, wanted %d distinct; reusing users across channels to fill every channel's quota (each channel still gets %d members, just not all distinct server-wide)", len(candidates), needed, membersPerChannel)
 	}
 
 	var channels []mbeChannel
@@ -144,14 +147,26 @@ func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numCha
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	// pos advances globally across all channels and wraps via modulo once the candidate pool is
+	// exhausted, so every channel still gets its full membersPerChannel quota even when the server
+	// has fewer distinct users than numChannels*membersPerChannel. This assumes
+	// len(candidates) > membersPerChannel, so a wraparound repeat always lands in a different
+	// channel than the user's first occurrence (never a duplicate add within the same channel).
 	var succeeded, failed int
 	pos := 0
 	for _, ch := range channels {
 		want := membersPerChannel
-		for n := 0; n < want && pos < len(candidates); n++ {
-			userID := candidates[pos]
+		for n := 0; n < want; n++ {
+			userID := candidates[pos%len(candidates)]
 			pos++
 			<-ticker.C
+			// Join the team first: candidates come from the whole dump, not just team.Id, so most
+			// won't be team members yet. AddTeamMember errors (e.g. already a member) are swallowed
+			// here — a real problem (deactivated user, etc.) will still surface as an AddChannelMember
+			// failure below, which is what gets counted and logged.
+			if _, _, err := client.AddTeamMember(ctx, team.Id, userID); err != nil {
+				log.Printf("add %s to team %s: %v (continuing — likely already a member)", userID, teamName, err)
+			}
 			if _, _, err := client.AddChannelMember(ctx, ch.Id, userID); err != nil {
 				failed++
 				log.Printf("add member %s to channel %s failed: %v", userID, ch.Name, err)
@@ -181,7 +196,10 @@ func run(serverURL, adminEmail, adminPassword, teamName, pluginID string, numCha
 }
 
 // collectCandidateUsers pages through GET /api/v4/users as sysadmin and returns up to `needed`
-// distinct user IDs, excluding excludeID (the acting EM/sysadmin itself).
+// distinct user IDs, excluding excludeID (the acting EM/sysadmin itself). Candidates are drawn from
+// the whole dump, not scoped to the target team — capping the pool at existing team members risks
+// running out of candidates if the team is smaller than needed. The caller joins each candidate to
+// the team before adding it to a channel.
 func collectCandidateUsers(ctx context.Context, client *model.Client4, excludeID string, needed, pageSize int) ([]string, error) {
 	var ids []string
 	for page := 0; len(ids) < needed; page++ {
@@ -211,7 +229,8 @@ func collectCandidateUsers(ctx context.Context, client *model.Client4, excludeID
 // collectCandidateUsersByPrefix finds up to `needed` user IDs whose username starts with prefix,
 // via user search. Used to target simulcontroller-created users (e.g. "<cluster>-agent-0-"), which
 // don't exist yet at the time of an initial bootstrap pass against the base dump and so can't be
-// found by collectCandidateUsers.
+// found by collectCandidateUsers. Not scoped to the team, for the same reason as
+// collectCandidateUsers — the caller joins each candidate to the team before adding it to a channel.
 func collectCandidateUsersByPrefix(ctx context.Context, client *model.Client4, prefix string, needed int) ([]string, error) {
 	users, _, err := client.SearchUsers(ctx, &model.UserSearch{Term: prefix, AllowInactive: true, Limit: needed})
 	if err != nil {
