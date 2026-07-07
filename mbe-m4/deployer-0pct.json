@@ -1,6 +1,6 @@
 {
   "AWSAMI": "ami-003d3d03cfe1b0468",
-  "AWSAvailabilityZone": "us-east-1c",
+  "AWSAvailabilityZone": "",
   "AWSRoleARN": "",
   "AWSProfile": "mm-loadtest",
   "AWSRegion": "us-east-1",
