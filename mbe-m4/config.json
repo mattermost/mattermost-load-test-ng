@@ -29,13 +29,6 @@
     "FileLevel": "DEBUG",
     "FileLocation": "ltagent.log"
   },
-  "BrowserLogSettings": {
-    "EnableConsole": true,
-    "ConsoleLevel": "debug",
-    "EnableFile": true,
-    "FileLevel": "debug",
-    "FileLocation": "browseragent.log"
-  },
   "UserControllerConfiguration": {
     "Type": "simulative",
     "RatesDistribution": [
