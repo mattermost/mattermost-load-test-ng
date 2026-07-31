@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+cd "/home/${VM_ADMIN_USER}/mattermost-load-test-ng"
+export PATH=$PATH:/usr/local/go/bin
+./bin/ltagent init -c config/config.json
+echo "ltagent init complete"

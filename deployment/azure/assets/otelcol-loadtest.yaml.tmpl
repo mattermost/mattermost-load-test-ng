@@ -1,0 +1,43 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog/agent:
+    include: [ /home/mmadmin/mattermost-load-test-ng/ltagent.log ]
+    resource:
+      service.name: "agent"
+      service.instance.id: "${INSTANCE_NAME}"
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%L Z'
+        severity:
+          parse_from: attributes.level
+  filelog/coordinator:
+    include: [ /home/mmadmin/mattermost-load-test-ng/ltcoordinator.log ]
+    resource:
+      service.name: "coordinator"
+      service.instance.id: "${INSTANCE_NAME}"
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%L Z'
+        severity:
+          parse_from: attributes.level
+
+exporters:
+  otlphttp/logs:
+    endpoint: "http://${METRICS_IP}:3100/otlp"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog/agent, filelog/coordinator]
+      exporters: [otlphttp/logs]

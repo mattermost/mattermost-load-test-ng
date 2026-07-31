@@ -1,0 +1,17 @@
+[Unit]
+Description=Mattermost load-test API Server
+After=network.target
+
+[Service]
+Type=simple
+Environment="GOGC=50"
+ExecStart=/home/mmadmin/mattermost-load-test-ng/bin/ltapi
+Restart=always
+RestartSec=1
+WorkingDirectory=/home/mmadmin/mattermost-load-test-ng
+User=mmadmin
+Group=mmadmin
+LimitNOFILE=262144
+
+[Install]
+WantedBy=multi-user.target

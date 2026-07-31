@@ -1,0 +1,27 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  journald/app:
+    resource:
+      service.name: "app"
+      service.instance.id: "${INSTANCE_NAME}"
+    operators:
+      - type: move
+        from: body.MESSAGE
+        to: body
+
+exporters:
+  otlphttp/logs:
+    endpoint: "http://${METRICS_IP}:3100/otlp"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [journald/app]
+      exporters: [otlphttp/logs]

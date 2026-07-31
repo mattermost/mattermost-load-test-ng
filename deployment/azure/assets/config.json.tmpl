@@ -1,0 +1,51 @@
+{
+  "ConnectionConfiguration": {
+    "ServerURL": "http://${PROXY_IP}:8065",
+    "WebSocketURL": "ws://${PROXY_IP}:8065",
+    "AdminEmail": "sysadmin@loadtest.mattermost.com",
+    "AdminPassword": "${MM_ADMIN_PASSWORD}"
+  },
+  "UserControllerConfiguration": {
+    "Type": "simulative",
+    "RatesDistribution":[
+      {"Rate": 1.0, "Percentage": 0.05},
+      {"Rate": 2.0, "Percentage": 0.1},
+      {"Rate": 3.0, "Percentage": 0.15},
+      {"Rate": 6.0, "Percentage": 0.4},
+      {"Rate": 30.0, "Percentage": 0.3}
+    ],
+    "ServerVersion": ""
+  },
+  "InstanceConfiguration": {
+    "NumTeams": 2,
+    "NumChannels": 10,
+    "NumPosts": 0,
+    "NumReactions": 0,
+    "NumAdmins": 0,
+    "PercentReplies": 0.5,
+    "PercentRepliesInLongThreads": 0.05,
+    "PercentUrgentPosts": 0.001,
+    "PercentPublicChannels": 0.2,
+    "PercentPrivateChannels": 0.1,
+    "PercentDirectChannels": 0.6,
+    "PercentGroupChannels": 0.1
+  },
+  "UsersConfiguration": {
+    "InitialActiveUsers": 0,
+    "UsersFilePath": "",
+    "MaxActiveUsers": 2000,
+    "MaxActiveBrowserUsers": 5,
+    "AvgSessionsPerUser": 1,
+    "PercentOfUsersAreAdmin": 0.0005
+  },
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "INFO",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileJson": true,
+    "FileLocation": "ltagent.log",
+    "EnableColor": false
+  }
+}

@@ -1,0 +1,90 @@
+#!/bin/bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+# apt mirrors are occasionally inconsistent right after adding a new repo / on a fresh
+# mirror sync - retry transient failures instead of aborting the whole provisioning run.
+retry() { local n=0; until "$@"; do n=$((n+1)); [ "$n" -ge 5 ] && return 1; sleep $((n*5)); done; }
+
+sudo tee /etc/security/limits.d/99-loadtest.conf >/dev/null <<'LIMITS'
+${LIMITS_CONF}
+LIMITS
+
+sudo tee /etc/sysctl.d/99-loadtest.conf >/dev/null <<'SYSCTL'
+${SYSCTL_CONF}
+SYSCTL
+sudo sysctl -p /etc/sysctl.d/99-loadtest.conf
+
+retry sudo apt-get update -y
+retry sudo apt-get install -y git tmux prometheus-node-exporter build-essential
+
+if ! command -v go &>/dev/null || [ "$(go version | awk '{print $3}')" != "go${GO_VERSION}" ]; then
+  wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O /tmp/go.tar.gz
+  sudo rm -rf /usr/local/go
+  sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+  echo 'export PATH=$PATH:/usr/local/go/bin:/home/${VM_ADMIN_USER}/go/bin' | sudo tee /etc/profile.d/go.sh
+fi
+export PATH=$PATH:/usr/local/go/bin
+
+if ! dpkg -s otelcol-contrib &>/dev/null; then
+  wget -q https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb -O /tmp/otelcol.deb
+  sudo dpkg -i /tmp/otelcol.deb
+fi
+sudo systemctl stop otelcol-contrib || true
+
+# az vm run-command executes without HOME set, so Go can't compute its default
+# GOPATH/GOMODCACHE location and fails outright ("module cache not found") - set them
+# explicitly rather than relying on $HOME.
+export HOME=/home/${VM_ADMIN_USER}
+export GOPATH=/home/${VM_ADMIN_USER}/go
+export GOMODCACHE=/home/${VM_ADMIN_USER}/go/pkg/mod
+sudo mkdir -p "$GOMODCACHE"
+sudo chown -R "${VM_ADMIN_USER}:${VM_ADMIN_USER}" "/home/${VM_ADMIN_USER}/go"
+
+REPO=/home/${VM_ADMIN_USER}/mattermost-load-test-ng
+if [ ! -d "$REPO" ]; then
+  git clone --depth 1 https://github.com/mattermost/mattermost-load-test-ng.git "$REPO"
+fi
+# This whole provisioning script runs as root (via az vm run-command), so the clone above ends
+# up root-owned, including bin/ - which breaks any later interactive use as $VM_ADMIN_USER (e.g.
+# ltcoordinator failing with "can't open new logfile: permission denied", or scp'ing a
+# regenerated config.json into config/ failing with "Permission denied").
+sudo chown -R "${VM_ADMIN_USER}:${VM_ADMIN_USER}" "$REPO"
+cd "$REPO"
+mkdir -p bin
+# -buildvcs=false: this script runs as root (az vm run-command) but $REPO is chowned to
+# ${VM_ADMIN_USER} above, so git's dubious-ownership check rejects any VCS status lookup go
+# build would otherwise do to stamp the binary ("error obtaining VCS status: exit status 128") -
+# VCS stamping isn't needed for these binaries anyway.
+env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -buildvcs=false -o bin/ltapi ./cmd/ltapi
+env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -buildvcs=false -o bin/ltcoordinator ./cmd/ltcoordinator
+env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -buildvcs=false -o bin/ltagent ./cmd/ltagent
+
+tee config/config.json >/dev/null <<'CFGJSON'
+${LOADTEST_CONFIG_JSON}
+CFGJSON
+
+tee config/coordinator.json >/dev/null <<'COORDJSON'
+${LOADTEST_COORDINATOR_JSON}
+COORDJSON
+
+tee config/simulcontroller.json >/dev/null <<'SIMJSON'
+${LOADTEST_SIMULCONTROLLER_JSON}
+SIMJSON
+
+sudo tee /etc/systemd/system/ltapi.service >/dev/null <<'UNIT'
+${LTAPI_SERVICE}
+UNIT
+
+sudo tee /etc/otelcol-contrib/config.yaml >/dev/null <<'OTELCONF'
+${OTELCOL_CONFIG}
+OTELCONF
+sudo sed -i "s/User=.*/User=${VM_ADMIN_USER}/g" /lib/systemd/system/otelcol-contrib.service
+sudo sed -i "s/Group=.*/Group=${VM_ADMIN_USER}/g" /lib/systemd/system/otelcol-contrib.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now prometheus-node-exporter
+sudo systemctl enable --now ltapi
+sudo systemctl enable --now otelcol-contrib
+
+echo "load-test VM provisioning complete"

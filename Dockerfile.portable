@@ -1,0 +1,25 @@
+# Portable load-test image, per the "Portable Load Testing" spec (MM-69373).
+#
+# Ships ltapi in a single self-contained image so it can be built on an operator machine,
+# transferred across an air-gap boundary (e.g. `docker save`/`docker load`), and run on a
+# target VM with no Go toolchain, no git, and no internet access at all. ltapi is the only
+# binary that needs to run persistently on the remote machine: ltcoordinator is meant to run
+# on the operator's own machine, and ltagent is unused once real test data is loaded, so
+# neither is included here. The GitHub release tarball itself only ships ltagent and ltapi
+# anyway (see .goreleaser.yml) - ltcoordinator was never published there.
+#
+# Pulls the ltapi binary from a tagged GitHub release instead of building from source. Bump
+# LTNG_VERSION (or override with --build-arg LTNG_VERSION=x.y.z) to pick up a newer release.
+# Building this image requires internet access; the resulting image does not.
+
+FROM debian:bookworm-slim
+ARG LTNG_VERSION=1.32.0
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+    && curl -fsSL -o /tmp/ltng.tar.gz \
+      "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v${LTNG_VERSION}/mattermost-load-test-ng-v${LTNG_VERSION}-linux-amd64.tar.gz" \
+    && tar -xzf /tmp/ltng.tar.gz -C /tmp \
+    && cp /tmp/mattermost-load-test-ng-v${LTNG_VERSION}-linux-amd64/bin/ltapi /usr/local/bin/ltapi \
+    && rm -rf /tmp/ltng.tar.gz /tmp/mattermost-load-test-ng-v${LTNG_VERSION}-linux-amd64 \
+    && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+EXPOSE 4000
+CMD ["ltapi"]

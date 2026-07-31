@@ -97,3 +97,8 @@ lambda/node_modules
 lambda/screenshot*
 lambda/response*
 lambda/deployment.zip
+
+# Azure load-test deployment (deployment/azure/deploy.sh)
+/secrets/
+deployment/azure/.state/
+deployment/azure/operator/

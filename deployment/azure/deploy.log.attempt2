@@ -1,0 +1,30 @@
+
+[1;36m==> === 00-network ===[0m
+
+[1;36m==> Operator IP for SSH rules: 83.60.43.167/32[0m
+
+[1;36m==> Resource group rg-mm-loadtest-ha in westus2[0m
+
+[1;36m==> VNet vnet-mm-loadtest + subnets[0m
+
+[1;36m==> NSG: nsg-proxy[0m
+
+[1;36m==> NSG: nsg-app[0m
+
+[1;36m==> NSG: nsg-db[0m
+
+[1;36m==> NSG: nsg-metrics[0m
+
+[1;36m==> NSG: nsg-loadtest[0m
+
+[1;36m==> Associating NSGs with subnets[0m
+
+[1;36m==> Network setup complete[0m
+
+[1;36m==> === 01-database ===[0m
+
+[1;36m==> Pre-creating private DNS zone testzone123.private.postgres.database.azure.com (works around a broken CLI auto-create path)[0m
+ERROR: (PreconditionFailed) The Zone testzone123.private.postgres.database.azure.com exists already and hence cannot be created again.
+Code: PreconditionFailed
+Message: The Zone testzone123.private.postgres.database.azure.com exists already and hence cannot be created again.
+EXIT_CODE=1

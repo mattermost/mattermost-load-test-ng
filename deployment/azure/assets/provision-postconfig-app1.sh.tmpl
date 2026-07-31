@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+
+for i in $(seq 1 30); do
+  curl -sf http://localhost:8065/api/v4/system/ping >/dev/null && break
+  echo "waiting for mattermost to come up ($i/30)..."; sleep 5
+done
+
+# The mattermost server binary has no `user create` CLI subcommand (that's mmctl, which
+# isn't installed here) - but on a fresh instance (no users yet) the first account created
+# via the public signup API automatically becomes System Admin, so use that instead.
+curl -sS -X POST http://localhost:8065/api/v4/users \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"sysadmin@loadtest.mattermost.com\",\"username\":\"sysadmin\",\"password\":\"${MM_ADMIN_PASSWORD}\"}" \
+  || echo "sysadmin user may already exist, continuing"
+
+echo "${LICENSE_B64}" | base64 -d > /tmp/loadtest.mattermost-license
+
+TOKEN=$(curl -sS -i -X POST http://localhost:8065/api/v4/users/login \
+  -H 'Content-Type: application/json' \
+  -d "{\"login_id\":\"sysadmin@loadtest.mattermost.com\",\"password\":\"${MM_ADMIN_PASSWORD}\"}" \
+  | grep -i '^Token:' | awk '{print $2}' | tr -d '\r')
+
+if [ -z "$TOKEN" ]; then
+  echo "ERROR: could not log in as sysadmin to upload the license" >&2
+  exit 1
+fi
+
+curl -sS -X POST http://localhost:8065/api/v4/license \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -F "license=@/tmp/loadtest.mattermost-license"
+
+rm -f /tmp/loadtest.mattermost-license
+echo "license uploaded, sysadmin ready"

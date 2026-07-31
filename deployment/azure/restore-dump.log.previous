@@ -1,0 +1,655 @@
+This will DROP and recreate the 'mattermost' database on mm-loadtest-pg, replacing
+every team/channel/user currently on the server with the dataset from:
+  https://lt-public-data.s3.amazonaws.com/12M_610_fixed_psql.sql.gz
+The dump's own sysadmin (sysadmin@sample.mattermost.com) becomes the working admin account afterward.
+
+[1;36m==> 1/7 Stopping mattermost.service on app-1 and app-2[0m
+Warning: Permanently added '20.29.224.172' (ED25519) to the list of known hosts.
+
+[1;36m==> 2/7 Dropping and recreating database 'mattermost' on mm-loadtest-pg[0m
+
+[1;36m==> 3/7 Streaming the restore from mm-app-1 (avoids storing the multi-GB uncompressed SQL on disk; can take 15-30+ min)[0m
+Terminating any lingering connections to mattermost...
+ pg_terminate_backend 
+----------------------
+(0 rows)
+
+Dropping and recreating mattermost...
+DROP DATABASE
+CREATE DATABASE
+Streaming restore from https://lt-public-data.s3.amazonaws.com/12M_610_fixed_psql.sql.gz (can take a while; errors about role "rdsadmin"/
+"mmuser" not existing are expected and benign - those are ownership statements from the
+dump's original AWS RDS source, not applicable here)...
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+CREATE TYPE
+ERROR:  role "mmuser" does not exist
+CREATE TYPE
+ERROR:  role "mmuser" does not exist
+CREATE TYPE
+ERROR:  role "mmuser" does not exist
+CREATE TYPE
+ERROR:  role "mmuser" does not exist
+CREATE TYPE
+SET
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE MATERIALIZED VIEW
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+CREATE TABLE
+ERROR:  role "mmuser" does not exist
+COPY 73437
+COPY 6
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 684128
+COPY 4676228
+COPY 272168
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 127
+COPY 4
+COPY 0
+COPY 0
+COPY 0
+COPY 1731
+COPY 36
+COPY 36
+COPY 1
+COPY 0
+COPY 0
+COPY 1
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 1
+COPY 0
+COPY 0
+COPY 0
+COPY 1249
+COPY 1
+COPY 2241
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 6224
+COPY 0
+COPY 0
+COPY 11841269
+COPY 0
+COPY 2035125
+COPY 0
+COPY 3125
+COPY 2410477
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 22
+COPY 0
+COPY 1
+COPY 0
+COPY 2
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 21003
+COPY 37
+COPY 7002
+COPY 65
+COPY 25164
+COPY 2
+COPY 0
+COPY 765546
+COPY 847646
+COPY 0
+COPY 0
+COPY 0
+COPY 0
+COPY 16088
+COPY 0
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ERROR:  role "rdsadmin" does not exist
+REVOKE
+ERROR:  role "mmuser" does not exist
+GRANT
+REFRESH MATERIALIZED VIEW
+Row counts:
+  posts   | users | teams 
+----------+-------+-------
+ 11841269 | 16088 |     2
+(1 row)
+
+
+[1;36m==> 4/7 Restarting mattermost.service - app-1 first (watch it migrate the dump's schema), then app-2[0m
+  waiting for mattermost on app-1 (1/30)...
+  waiting for mattermost on app-1 (2/30)...
+  waiting for mattermost on app-1 (3/30)...
+  waiting for mattermost on app-1 (4/30)...
+  waiting for mattermost on app-1 (5/30)...
+  waiting for mattermost on app-2 (1/30)...
+
+[1;36m==> 5/7 Re-uploading the license (the restore wiped it - license state lives in the DB)[0m
+{"id":"N8gUldegpMh6H6MjP3zaoNkN8A","issued_at":1766165549376,"starts_at":1766165549376,"expires_at":1860469200000,"customer":{"id":"p9un369a66ssmj4yd6i6ib39wh","name":"Dev Load Test License","email":"alejandro.garcia@mattermost.com","company":"Mattermost Engineering"},"features":{"users":500000,"ldap":true,"ldap_groups":true,"mfa":true,"google_oauth":true,"office365_oauth":true,"openid":true,"compliance":true,"cluster":true,"metrics":true,"mhpns":true,"saml":true,"elastic_search":true,"announcement":true,"theme_management":true,"email_notification_contents":true,"data_retention":true,"message_export":true,"custom_permissions_schemes":true,"custom_terms_of_service":true,"guest_accounts":true,"guest_accounts_permissions":true,"id_loaded":true,"lock_teammate_name_display":true,"enterprise_plugins":true,"advanced_logging":true,"cloud":false,"shared_channels":true,"remote_cluster_service":true,"outgoing_oauth_connections":true,"auto_translation":null,"future_features":true},"sku_name":"Mattermost Enterprise Advanced","sku_short_name":"advanced","is_trial":false,"is_gov_sku":false,"is_seat_count_enforced":false,"extra_users":0,"signup_jwt":null,"limits":null}
+
+
+[1;36m==> 6/7 Restarting both nodes once more so they pick up the license/cluster state from the DB cleanly[0m
+  waiting for mattermost on app-1 (1/30)...
+  waiting for mattermost on app-2 (1/30)...
+Cluster status (expect both app-1 and app-2):
+[{"id":"ykzxwcpt8bfktfjqjcbmodt9oy","version":"11.9.0.28847360617","schema_version":"200","config_hash":"dae03274ddb199a9b2f66b0d1326a2234496727dd340ccdd7de9a05358a3e8f6","ipaddress":"10.20.2.4:8074","hostname":"mm-app-1"},{"id":"gfhcegyx7jygxp39i7nz8txbmh","version":"11.9.0.28847360617","schema_version":"200","config_hash":"dae03274ddb199a9b2f66b0d1326a2234496727dd340ccdd7de9a05358a3e8f6","ipaddress":"10.20.2.5:8074","hostname":"mm-app-2"}]
+
+[1;36m==> 7/7 Switching secrets/ and the load-test VM's local config.json to the dump's sysadmin[0m
+scp: dest open "mattermost-load-test-ng/config/config.json": Permission denied
+scp: failed to upload file /home/alejandro/projects/mattermost-load-test-ng/deployment/azure/.state/loadtest-config-restored.json to mattermost-load-test-ng/config/config.json

@@ -1,0 +1,66 @@
+#!/bin/bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+# apt mirrors are occasionally inconsistent right after adding a new repo / on a fresh
+# mirror sync - retry transient failures instead of aborting the whole provisioning run.
+retry() { local n=0; until "$@"; do n=$((n+1)); [ "$n" -ge 5 ] && return 1; sleep $((n*5)); done; }
+
+echo 'tcp_bbr' | sudo tee -a /etc/modules >/dev/null
+sudo modprobe tcp_bbr
+
+sudo tee /etc/security/limits.d/99-mattermost.conf >/dev/null <<'LIMITS'
+${LIMITS_CONF}
+LIMITS
+
+sudo tee /etc/sysctl.d/99-mattermost.conf >/dev/null <<'SYSCTL'
+${SYSCTL_CONF}
+SYSCTL
+sudo sysctl -p /etc/sysctl.d/99-mattermost.conf
+
+wget -qO - https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/nginx.gpg >/dev/null
+sudo sh -c 'echo "deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list'
+retry sudo apt-get update -y
+retry sudo apt-get install -y nginx prometheus-node-exporter
+
+if ! dpkg -s otelcol-contrib &>/dev/null; then
+  wget -q https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb -O /tmp/otelcol.deb
+  sudo dpkg -i /tmp/otelcol.deb
+fi
+sudo systemctl stop otelcol-contrib || true
+
+sudo mkdir -p /etc/nginx/snippets /etc/nginx/sites-available /etc/nginx/sites-enabled
+sudo rm -f /etc/nginx/sites-enabled/default
+
+sudo tee /etc/nginx/nginx.conf >/dev/null <<'NGINXCONF'
+${NGINX_CONF}
+NGINXCONF
+
+sudo tee /etc/nginx/snippets/proxy.conf >/dev/null <<'PROXYSNIP'
+${NGINX_PROXY_SNIPPET}
+PROXYSNIP
+
+sudo tee /etc/nginx/snippets/cache.conf >/dev/null <<'CACHESNIP'
+${NGINX_CACHE_SNIPPET}
+CACHESNIP
+
+sudo tee /etc/nginx/sites-available/mattermost >/dev/null <<'SITECONF'
+${NGINX_SITE_CONF}
+SITECONF
+sudo ln -fs /etc/nginx/sites-available/mattermost /etc/nginx/sites-enabled/mattermost
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now prometheus-node-exporter
+sudo systemctl enable nginx
+sudo nginx -t
+sudo systemctl restart nginx
+
+# TLS for the public hostname via Let's Encrypt (Azure-provided DNS label is already
+# publicly resolvable, no custom domain needed).
+sudo snap install core; sudo snap refresh core
+sudo snap install --classic certbot
+sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+sudo certbot --nginx --non-interactive --agree-tos -m ${LE_EMAIL} -d ${PROXY_FQDN} --redirect || \
+  echo "WARNING: certbot failed - the public HTTPS listener on 443 will not have a valid cert until this is re-run manually."
+
+echo "proxy provisioning complete"

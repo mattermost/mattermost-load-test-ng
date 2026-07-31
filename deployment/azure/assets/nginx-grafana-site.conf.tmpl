@@ -1,0 +1,23 @@
+# Public HTTPS entry point for Grafana. certbot --nginx -d ${METRICS_FQDN} rewrites this
+# block in place to add the TLS listener + HTTP->HTTPS redirect. Grafana itself only
+# listens on localhost:3000 - never exposed directly.
+server {
+  listen 80;
+  server_name ${METRICS_FQDN};
+
+  client_max_body_size 50M;
+
+  location / {
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+
+    # Grafana Live (websocket) support
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    proxy_pass http://localhost:3000;
+  }
+}

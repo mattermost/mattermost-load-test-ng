@@ -1,0 +1,33 @@
+global:
+  scrape_interval:     5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: node
+    static_configs:
+      - targets: ['localhost:9100']
+        labels: {instance: 'metrics'}
+      - targets: ['${APP1_IP}:9100']
+        labels: {instance: 'app-0'}
+      - targets: ['${APP2_IP}:9100']
+        labels: {instance: 'app-1'}
+      - targets: ['${PROXY_IP}:9100']
+        labels: {instance: 'proxy'}
+      - targets: ['${LOADTEST_IP}:9100']
+        labels: {instance: 'loadtest-0'}
+
+  - job_name: mattermost
+    static_configs:
+      - targets: ['${APP1_IP}:8067']
+        labels: {instance: 'app-0'}
+      - targets: ['${APP2_IP}:8067']
+        labels: {instance: 'app-1'}
+
+  - job_name: loadtest
+    static_configs:
+      - targets: ['${LOADTEST_IP}:4000']
+        labels: {instance: 'loadtest-0'}

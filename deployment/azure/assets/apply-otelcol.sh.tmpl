@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+sudo tee /etc/otelcol-contrib/config.yaml >/dev/null <<'OTELCONF'
+${OTELCOL_CONFIG}
+OTELCONF
+sudo sed -i "s/User=.*/User=${VM_ADMIN_USER}/g" /lib/systemd/system/otelcol-contrib.service
+sudo sed -i "s/Group=.*/Group=${VM_ADMIN_USER}/g" /lib/systemd/system/otelcol-contrib.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now otelcol-contrib
+echo "otelcol-contrib configured and started"

@@ -1,0 +1,84 @@
+#!/bin/bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+# apt mirrors are occasionally inconsistent right after adding a new repo / on a fresh
+# mirror sync - retry transient failures instead of aborting the whole provisioning run.
+retry() { local n=0; until "$@"; do n=$((n+1)); [ "$n" -ge 5 ] && return 1; sleep $((n*5)); done; }
+
+echo 'tcp_bbr' | sudo tee -a /etc/modules >/dev/null
+sudo modprobe tcp_bbr
+
+sudo tee /etc/security/limits.d/99-mattermost.conf >/dev/null <<'LIMITS'
+${LIMITS_CONF}
+LIMITS
+
+sudo tee /etc/sysctl.d/99-mattermost.conf >/dev/null <<'SYSCTL'
+${SYSCTL_CONF}
+SYSCTL
+sudo sysctl -p /etc/sysctl.d/99-mattermost.conf
+
+retry sudo apt-get update -y
+retry sudo apt-get install -y cifs-utils prometheus-node-exporter jq postgresql-client
+
+if ! dpkg -s otelcol-contrib &>/dev/null; then
+  wget -q https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.120.0/otelcol-contrib_0.120.0_linux_amd64.deb -O /tmp/otelcol.deb
+  sudo dpkg -i /tmp/otelcol.deb
+fi
+sudo systemctl stop otelcol-contrib || true
+
+# Mount the shared Azure Files SMB share used by both app nodes for FileSettings.Directory.
+sudo mkdir -p /opt/mattermost/data
+sudo mkdir -p /etc/smbcredentials
+sudo tee /etc/smbcredentials/mattermost.cred >/dev/null <<CRED
+username=${STORAGE_ACCOUNT}
+password=${STORAGE_KEY}
+CRED
+sudo chmod 600 /etc/smbcredentials/mattermost.cred
+grep -q mattermost-data /etc/fstab || \
+  echo "//${STORAGE_ACCOUNT}.file.core.windows.net/mattermost-data /opt/mattermost/data cifs nofail,credentials=/etc/smbcredentials/mattermost.cred,serverino,dir_mode=0777,file_mode=0777,vers=3.0 0 0" | sudo tee -a /etc/fstab
+sudo mount -a
+
+id -u mattermost &>/dev/null || sudo useradd --system --home /opt/mattermost --shell /usr/sbin/nologin mattermost
+
+if [ ! -x /opt/mattermost/bin/mattermost ]; then
+  wget -q "${MM_DOWNLOAD_URL}" -O /tmp/mattermost.tar.gz
+  sudo tar -xzf /tmp/mattermost.tar.gz -C /opt
+fi
+
+sudo tee /etc/systemd/system/mattermost.service >/dev/null <<'UNIT'
+${MATTERMOST_SERVICE}
+UNIT
+
+DSN="postgres://${DB_ADMIN_USER}:${DB_PASSWORD}@${DB_FQDN}:5432/${DB_NAME}?sslmode=require"
+sudo jq \
+  --arg dsn "$DSN" \
+  --arg siteurl "${SITE_URL}" \
+  '.SqlSettings.DriverName="postgres"
+   | .SqlSettings.DataSource=$dsn
+   | .SqlSettings.MaxIdleConns=100
+   | .SqlSettings.MaxOpenConns=100
+   | .ClusterSettings.Enable=true
+   | .ClusterSettings.ClusterName="mm-loadtest-ha"
+   | .ClusterSettings.GossipPort=8074
+   | .ClusterSettings.EnableExperimentalGossipEncryption=true
+   | .ClusterSettings.ReadOnlyConfig=false
+   | .MetricsSettings.Enable=true
+   | .FileSettings.DriverName="local"
+   | .FileSettings.Directory="/opt/mattermost/data"
+   | .ServiceSettings.SiteURL=$siteurl
+   | .ServiceSettings.ListenAddress=":8065"
+   | .ServiceSettings.EnableLocalMode=true
+   | .TeamSettings.EnableOpenServer=true
+   | .TeamSettings.MaxUsersPerTeam=100000' \
+  /opt/mattermost/config/config.json | sudo tee /opt/mattermost/config/config.json.new >/dev/null
+sudo mv /opt/mattermost/config/config.json.new /opt/mattermost/config/config.json
+
+sudo chown -R mattermost:mattermost /opt/mattermost
+sudo chmod -R 770 /opt/mattermost/data
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now prometheus-node-exporter
+sudo systemctl enable --now mattermost
+
+echo "app-node provisioning complete"

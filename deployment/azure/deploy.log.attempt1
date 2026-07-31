@@ -1,0 +1,53 @@
+
+[1;36m==> === 00-network ===[0m
+
+[1;36m==> Operator IP for SSH rules: 83.60.43.167/32[0m
+
+[1;36m==> Resource group rg-mm-loadtest-ha in westus2[0m
+
+[1;36m==> VNet vnet-mm-loadtest + subnets[0m
+
+[1;36m==> NSG: nsg-proxy[0m
+
+[1;36m==> NSG: nsg-app[0m
+
+[1;36m==> NSG: nsg-db[0m
+
+[1;36m==> NSG: nsg-metrics[0m
+
+[1;36m==> NSG: nsg-loadtest[0m
+
+[1;36m==> Associating NSGs with subnets[0m
+
+[1;36m==> Network setup complete[0m
+
+[1;36m==> === 01-database ===[0m
+
+[1;36m==> Pre-creating private DNS zone testzone123.private.postgres.database.azure.com (works around a broken CLI auto-create path)[0m
+
+[1;36m==> Creating Postgres Flexible Server mm-loadtest-pg (this takes ~10-15 min)[0m
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: attempt 1/6 failed, retrying in 5s: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: attempt 2/6 failed, retrying in 10s: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: attempt 3/6 failed, retrying in 20s: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: attempt 4/6 failed, retrying in 40s: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: attempt 5/6 failed, retrying in 80s: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+ERROR: Specified server name is already used.
+retry: giving up after 6 attempts: az postgres flexible-server create -g rg-mm-loadtest-ha -n mm-loadtest-pg -l westus2 --admin-user mmdbadmin --admin-password 02s9dfhjAGQPODnZh3Jk472B --sku-name Standard_D4ds_v5 --tier GeneralPurpose --storage-size 128 --version 16 --vnet vnet-mm-loadtest --subnet snet-db --private-dns-zone testzone123.private.postgres.database.azure.com --yes -o none
+EXIT_CODE=1

@@ -1,0 +1,667 @@
+
+[1;36m==> === 00-network ===[0m
+
+[1;36m==> Operator IP for SSH rules: 83.60.43.167/32[0m
+
+[1;36m==> Resource group rg-mm-loadtest-ha in westus2[0m
+
+[1;36m==> VNet vnet-mm-loadtest + subnets[0m
+
+[1;36m==> NSG: nsg-proxy[0m
+
+[1;36m==> NSG: nsg-app[0m
+
+[1;36m==> NSG: nsg-db[0m
+
+[1;36m==> NSG: nsg-metrics[0m
+
+[1;36m==> NSG: nsg-loadtest[0m
+
+[1;36m==> Associating NSGs with subnets[0m
+
+[1;36m==> Network setup complete[0m
+
+[1;36m==> === 01-database ===[0m
+
+[1;36m==> Pre-creating private DNS zone testzone123.private.postgres.database.azure.com (works around a broken CLI auto-create path)[0m
+
+[1;36m==> Creating Postgres Flexible Server mm-loadtest-pg-udln2nkd (this takes ~10-15 min)[0m
+WARNING: Checking the existence of the resource group 'rg-mm-loadtest-ha'...
+WARNING: Resource group 'rg-mm-loadtest-ha' exists ? : True 
+WARNING: Creating PostgreSQL Server 'mm-loadtest-pg-udln2nkd' in group 'rg-mm-loadtest-ha'...
+WARNING: Your server 'mm-loadtest-pg-udln2nkd' is using sku 'Standard_D4ds_v5' (Paid Tier). Please refer to https://aka.ms/postgres-pricing for pricing details
+WARNING: Make a note of your password. If you forget, you would have to reset your password with "az postgres flexible-server update -n mm-loadtest-pg-udln2nkd -g rg-mm-loadtest-ha -p <new-password>".
+WARNING: Try using 'az postgres flexible-server connect' command to test out connection.
+
+[1;36m==> Creating database mattermost[0m
+WARNING: Creating database with utf8 charset and en_US.utf8 collation
+
+[1;36m==> Postgres Flexible Server ready: mm-loadtest-pg-udln2nkd.postgres.database.azure.com (private access only, VNet: vnet-mm-loadtest/snet-db)[0m
+
+[1;36m==> === 02-storage ===[0m
+
+[1;36m==> Enabling Microsoft.Storage service endpoint on snet-app[0m
+
+[1;36m==> Creating storage account mmltudln2nkd[0m
+
+[1;36m==> Creating file share 'mattermost-data' (via ARM, bypasses the data-plane network rule)[0m
+
+[1;36m==> Storage ready: account=mmltudln2nkd share=mattermost-data (network-restricted to snet-app)[0m
+
+[1;36m==> === 03-app-nodes ===[0m
+
+[1;36m==> Creating VM mm-app-1[0m
+WARNING: Consider upgrading security for your workloads using Azure Trusted Launch VMs. To know more about Trusted Launch, please visit https://aka.ms/TrustedLaunch.
+
+[1;36m==> Creating VM mm-app-2[0m
+WARNING: Consider upgrading security for your workloads using Azure Trusted Launch VMs. To know more about Trusted Launch, please visit https://aka.ms/TrustedLaunch.
+
+[1;36m==> Provisioning mm-app-1[0m
+Enable succeeded: 
+[stdout]
+-2_all.deb ...
+Unpacking libtimedate-perl (2.3300-2) ...
+Selecting previously unselected package moreutils.
+Preparing to unpack .../09-moreutils_0.66-1_amd64.deb ...
+Unpacking moreutils (0.66-1) ...
+Selecting previously unselected package postgresql-client-common.
+Preparing to unpack .../10-postgresql-client-common_238_all.deb ...
+Unpacking postgresql-client-common (238) ...
+Selecting previously unselected package postgresql-client-14.
+Preparing to unpack .../11-postgresql-client-14_14.23-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking postgresql-client-14 (14.23-0ubuntu0.22.04.1) ...
+Selecting previously unselected package postgresql-client.
+Preparing to unpack .../12-postgresql-client_14+238_all.deb ...
+Unpacking postgresql-client (14+238) ...
+Selecting previously unselected package prometheus-node-exporter-collectors.
+Preparing to unpack .../13-prometheus-node-exporter-collectors_0+git20211024.8eeeffb-1_all.deb ...
+Unpacking prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Selecting previously unselected package smartmontools.
+Preparing to unpack .../14-smartmontools_7.2-1ubuntu0.1_amd64.deb ...
+Unpacking smartmontools (7.2-1ubuntu0.1) ...
+Setting up smartmontools (7.2-1ubuntu0.1) ...
+Created symlink /etc/systemd/system/smartd.service → /lib/systemd/system/smartmontools.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/smartmontools.service → /lib/systemd/system/smartmontools.service.
+Setting up postgresql-client-common (238) ...
+Setting up libio-pty-perl (1:1.15-2build2) ...
+Setting up libpq5:amd64 (14.23-0ubuntu0.22.04.1) ...
+Setting up postgresql-client-14 (14.23-0ubuntu0.22.04.1) ...
+update-alternatives: using /usr/share/postgresql/14/man/man1/psql.1.gz to provide /usr/share/man/man1/psql.1.gz (psql.1.gz) in auto mode
+Setting up prometheus-node-exporter (1.3.1-1ubuntu0.22.04.3) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/prometheus-node-exporter.service → /lib/systemd/system/prometheus-node-exporter.service.
+Setting up libipc-run-perl (20200505.0-1) ...
+Setting up libtime-duration-perl (1.21-1) ...
+Setting up libtimedate-perl (2.3300-2) ...
+Setting up libonig5:amd64 (6.9.7.1-2build1) ...
+Setting up moreutils (0.66-1) ...
+Setting up postgresql-client (14+238) ...
+Setting up libjq1:amd64 (1.6-2.1ubuntu3.2) ...
+Setting up jq (1.6-2.1ubuntu3.2) ...
+Setting up prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-apt.timer → /lib/systemd/system/prometheus-node-exporter-apt.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-ipmitool-sensor.timer → /lib/systemd/system/prometheus-node-exporter-ipmitool-sensor.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-mellanox-hca-temp.timer → /lib/systemd/system/prometheus-node-exporter-mellanox-hca-temp.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-nvme.timer → /lib/systemd/system/prometheus-node-exporter-nvme.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-smartmon.timer → /lib/systemd/system/prometheus-node-exporter-smartmon.timer.
+Processing triggers for man-db (2.10.2-1) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.13) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Selecting previously unselected package otelcol-contrib.
+(Reading database ... 63449 files and directories currently installed.)
+Preparing to unpack /tmp/otelcol.deb ...
+Unpacking otelcol-contrib (0.120.0) ...
+Setting up otelcol-contrib (0.120.0) ...
+//mmltudln2nkd.file.core.windows.net/mattermost-data /opt/mattermost/data cifs nofail,credentials=/etc/smbcredentials/mattermost.cred,serverino,dir_mode=0777,file_mode=0777,vers=3.0 0 0
+app-node provisioning complete
+
+[stderr]
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+Created symlink /etc/systemd/system/multi-user.target.wants/otelcol-contrib.service → /lib/systemd/system/otelcol-contrib.service.
+Synchronizing state of prometheus-node-exporter.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable prometheus-node-exporter
+Created symlink /etc/systemd/system/multi-user.target.wants/mattermost.service → /etc/systemd/system/mattermost.service.
+
+
+[1;36m==> Provisioning mm-app-2[0m
+Enable succeeded: 
+[stdout]
+-2_all.deb ...
+Unpacking libtimedate-perl (2.3300-2) ...
+Selecting previously unselected package moreutils.
+Preparing to unpack .../09-moreutils_0.66-1_amd64.deb ...
+Unpacking moreutils (0.66-1) ...
+Selecting previously unselected package postgresql-client-common.
+Preparing to unpack .../10-postgresql-client-common_238_all.deb ...
+Unpacking postgresql-client-common (238) ...
+Selecting previously unselected package postgresql-client-14.
+Preparing to unpack .../11-postgresql-client-14_14.23-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking postgresql-client-14 (14.23-0ubuntu0.22.04.1) ...
+Selecting previously unselected package postgresql-client.
+Preparing to unpack .../12-postgresql-client_14+238_all.deb ...
+Unpacking postgresql-client (14+238) ...
+Selecting previously unselected package prometheus-node-exporter-collectors.
+Preparing to unpack .../13-prometheus-node-exporter-collectors_0+git20211024.8eeeffb-1_all.deb ...
+Unpacking prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Selecting previously unselected package smartmontools.
+Preparing to unpack .../14-smartmontools_7.2-1ubuntu0.1_amd64.deb ...
+Unpacking smartmontools (7.2-1ubuntu0.1) ...
+Setting up smartmontools (7.2-1ubuntu0.1) ...
+Created symlink /etc/systemd/system/smartd.service → /lib/systemd/system/smartmontools.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/smartmontools.service → /lib/systemd/system/smartmontools.service.
+Setting up postgresql-client-common (238) ...
+Setting up libio-pty-perl (1:1.15-2build2) ...
+Setting up libpq5:amd64 (14.23-0ubuntu0.22.04.1) ...
+Setting up postgresql-client-14 (14.23-0ubuntu0.22.04.1) ...
+update-alternatives: using /usr/share/postgresql/14/man/man1/psql.1.gz to provide /usr/share/man/man1/psql.1.gz (psql.1.gz) in auto mode
+Setting up prometheus-node-exporter (1.3.1-1ubuntu0.22.04.3) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/prometheus-node-exporter.service → /lib/systemd/system/prometheus-node-exporter.service.
+Setting up libipc-run-perl (20200505.0-1) ...
+Setting up libtime-duration-perl (1.21-1) ...
+Setting up libtimedate-perl (2.3300-2) ...
+Setting up libonig5:amd64 (6.9.7.1-2build1) ...
+Setting up moreutils (0.66-1) ...
+Setting up postgresql-client (14+238) ...
+Setting up libjq1:amd64 (1.6-2.1ubuntu3.2) ...
+Setting up jq (1.6-2.1ubuntu3.2) ...
+Setting up prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-apt.timer → /lib/systemd/system/prometheus-node-exporter-apt.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-ipmitool-sensor.timer → /lib/systemd/system/prometheus-node-exporter-ipmitool-sensor.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-mellanox-hca-temp.timer → /lib/systemd/system/prometheus-node-exporter-mellanox-hca-temp.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-nvme.timer → /lib/systemd/system/prometheus-node-exporter-nvme.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-smartmon.timer → /lib/systemd/system/prometheus-node-exporter-smartmon.timer.
+Processing triggers for man-db (2.10.2-1) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.13) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Selecting previously unselected package otelcol-contrib.
+(Reading database ... 63449 files and directories currently installed.)
+Preparing to unpack /tmp/otelcol.deb ...
+Unpacking otelcol-contrib (0.120.0) ...
+Setting up otelcol-contrib (0.120.0) ...
+//mmltudln2nkd.file.core.windows.net/mattermost-data /opt/mattermost/data cifs nofail,credentials=/etc/smbcredentials/mattermost.cred,serverino,dir_mode=0777,file_mode=0777,vers=3.0 0 0
+app-node provisioning complete
+
+[stderr]
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+Created symlink /etc/systemd/system/multi-user.target.wants/otelcol-contrib.service → /lib/systemd/system/otelcol-contrib.service.
+Synchronizing state of prometheus-node-exporter.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable prometheus-node-exporter
+Created symlink /etc/systemd/system/multi-user.target.wants/mattermost.service → /etc/systemd/system/mattermost.service.
+
+
+[1;36m==> App nodes: 10.20.2.4 10.20.2.5 (private IPs)[0m
+
+[1;36m==> === 04-proxy ===[0m
+
+[1;36m==> Creating public IP for proxy (mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com)[0m
+WARNING: [Coming breaking change] In the coming release, the default behavior will be changed as follows when sku is Standard and zone is not provided: For zonal regions, you will get a zone-redundant IP indicated by zones:["1","2","3"]; For non-zonal regions, you will get a non zone-redundant IP indicated by zones:null.
+
+[1;36m==> Creating VM mm-proxy[0m
+WARNING: Consider upgrading security for your workloads using Azure Trusted Launch VMs. To know more about Trusted Launch, please visit https://aka.ms/TrustedLaunch.
+
+[1;36m==> Provisioning mm-proxy[0m
+Enable succeeded: 
+[stdout]
+---------------------------
+Unpacking nginx (1.31.3-1~jammy) ...
+Selecting previously unselected package prometheus-node-exporter-collectors.
+Preparing to unpack .../7-prometheus-node-exporter-collectors_0+git20211024.8eeeffb-1_all.deb ...
+Unpacking prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Selecting previously unselected package smartmontools.
+Preparing to unpack .../8-smartmontools_7.2-1ubuntu0.1_amd64.deb ...
+Unpacking smartmontools (7.2-1ubuntu0.1) ...
+Setting up smartmontools (7.2-1ubuntu0.1) ...
+Created symlink /etc/systemd/system/smartd.service → /lib/systemd/system/smartmontools.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/smartmontools.service → /lib/systemd/system/smartmontools.service.
+Setting up libio-pty-perl (1:1.15-2build2) ...
+Setting up nginx (1.31.3-1~jammy) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service → /lib/systemd/system/nginx.service.
+Setting up prometheus-node-exporter (1.3.1-1ubuntu0.22.04.3) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/prometheus-node-exporter.service → /lib/systemd/system/prometheus-node-exporter.service.
+Setting up libipc-run-perl (20200505.0-1) ...
+Setting up libtime-duration-perl (1.21-1) ...
+Setting up libtimedate-perl (2.3300-2) ...
+Setting up moreutils (0.66-1) ...
+Setting up prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-apt.timer → /lib/systemd/system/prometheus-node-exporter-apt.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-ipmitool-sensor.timer → /lib/systemd/system/prometheus-node-exporter-ipmitool-sensor.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-mellanox-hca-temp.timer → /lib/systemd/system/prometheus-node-exporter-mellanox-hca-temp.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-nvme.timer → /lib/systemd/system/prometheus-node-exporter-nvme.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-smartmon.timer → /lib/systemd/system/prometheus-node-exporter-smartmon.timer.
+Processing triggers for man-db (2.10.2-1) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Selecting previously unselected package otelcol-contrib.
+(Reading database ... 63157 files and directories currently installed.)
+Preparing to unpack /tmp/otelcol.deb ...
+Unpacking otelcol-contrib (0.120.0) ...
+Setting up otelcol-contrib (0.120.0) ...
+core 16-2.61.4-20260225 from Canonical** installed
+certbot 5.7.0 from Certbot Project (certbot-eff**) installed
+Account registered.
+Requesting a certificate for mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com/privkey.pem
+This certificate expires on 2026-10-29.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+Deploying certificate
+Successfully deployed certificate for mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com to /etc/nginx/sites-enabled/mattermost
+Congratulations! You have successfully enabled HTTPS on https://mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+proxy provisioning complete
+
+[stderr]
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+Created symlink /etc/systemd/system/multi-user.target.wants/otelcol-contrib.service → /lib/systemd/system/otelcol-contrib.service.
+Synchronizing state of prometheus-node-exporter.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable prometheus-node-exporter
+Synchronizing state of nginx.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable nginx
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+snap "core" has no updates available
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+
+
+[1;36m==> Proxy ready: https://mm-lt-proxy-udln2nkd.westus2.cloudapp.azure.com (public), http://10.20.1.4:8065 (load-test only)[0m
+
+[1;36m==> === 05-metrics ===[0m
+
+[1;36m==> Creating public IP for metrics VM (mm-lt-grafana-udln2nkd.westus2.cloudapp.azure.com)[0m
+WARNING: [Coming breaking change] In the coming release, the default behavior will be changed as follows when sku is Standard and zone is not provided: For zonal regions, you will get a zone-redundant IP indicated by zones:["1","2","3"]; For non-zonal regions, you will get a non zone-redundant IP indicated by zones:null.
+
+[1;36m==> Creating VM mm-metrics[0m
+WARNING: Consider upgrading security for your workloads using Azure Trusted Launch VMs. To know more about Trusted Launch, please visit https://aka.ms/TrustedLaunch.
+
+[1;36m==> Provisioning mm-metrics[0m
+Enable succeeded: 
+[stdout]
+234 kB]
+Get:13 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 c-n-f Metadata [23.2 kB]
+Get:14 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [69.1 kB]
+Get:15 http://security.ubuntu.com/ubuntu jammy-security/multiverse Translation-en [12.9 kB]
+Get:16 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 c-n-f Metadata [544 B]
+Get:17 http://archive.ubuntu.com/ubuntu jammy/universe amd64 c-n-f Metadata [286 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy/multiverse amd64 Packages [217 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy/multiverse Translation-en [112 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy/multiverse amd64 c-n-f Metadata [8372 B]
+Get:21 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3683 kB]
+Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main Translation-en [552 kB]
+Get:23 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [6346 kB]
+Get:24 http://archive.ubuntu.com/ubuntu jammy-updates/restricted Translation-en [1215 kB]
+Get:25 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1279 kB]
+Get:26 http://archive.ubuntu.com/ubuntu jammy-updates/universe Translation-en [322 kB]
+Get:27 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 c-n-f Metadata [30.8 kB]
+Get:28 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [76.5 kB]
+Get:29 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse Translation-en [15.9 kB]
+Get:30 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 c-n-f Metadata [756 B]
+Get:31 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [70.2 kB]
+Get:32 http://archive.ubuntu.com/ubuntu jammy-backports/main Translation-en [11.4 kB]
+Get:33 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 c-n-f Metadata [412 B]
+Get:34 http://archive.ubuntu.com/ubuntu jammy-backports/restricted amd64 c-n-f Metadata [116 B]
+Get:35 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [30.8 kB]
+Get:36 http://archive.ubuntu.com/ubuntu jammy-backports/universe Translation-en [16.9 kB]
+Get:37 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 c-n-f Metadata [676 B]
+Get:38 http://archive.ubuntu.com/ubuntu jammy-backports/multiverse amd64 c-n-f Metadata [116 B]
+Fetched 47.0 MB in 12s (3875 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Package gnupg2 is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  gpgv gpgsm gnupg-l10n gnupg dirmngr
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Package gnupg2 is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  gpgv gpgsm gnupg-l10n gnupg dirmngr
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Package gnupg2 is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  gpgv gpgsm gnupg-l10n gnupg dirmngr
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Package gnupg2 is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  gpgv gpgsm gnupg-l10n gnupg dirmngr
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Package gnupg2 is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+However the following packages replace it:
+  gpgv gpgsm gnupg-l10n gnupg dirmngr
+
+
+[stderr]
+E: Unable to locate package prometheus
+E: Unable to locate package prometheus-node-exporter
+E: Unable to locate package libfontconfig1
+E: Unable to locate package musl
+E: Package 'gnupg2' has no installation candidate
+E: Unable to locate package prometheus
+E: Unable to locate package prometheus-node-exporter
+E: Unable to locate package libfontconfig1
+E: Unable to locate package musl
+E: Package 'gnupg2' has no installation candidate
+E: Unable to locate package prometheus
+E: Unable to locate package prometheus-node-exporter
+E: Unable to locate package libfontconfig1
+E: Unable to locate package musl
+E: Package 'gnupg2' has no installation candidate
+E: Unable to locate package prometheus
+E: Unable to locate package prometheus-node-exporter
+E: Unable to locate package libfontconfig1
+E: Unable to locate package musl
+E: Package 'gnupg2' has no installation candidate
+E: Unable to locate package prometheus
+E: Unable to locate package prometheus-node-exporter
+E: Unable to locate package libfontconfig1
+E: Unable to locate package musl
+E: Package 'gnupg2' has no installation candidate
+
+
+[1;36m==> Grafana ready: https://mm-lt-grafana-udln2nkd.westus2.cloudapp.azure.com (admin / see secrets/grafana_admin_password)[0m
+
+[1;36m==> NOTE: default dashboards (default_dashboard_tmpl.json / coordinator_dashboard_tmpl.json) were NOT imported -[0m
+
+[1;36m==> they're Go-templated/generated in deployment/terraform/metrics.go and not straightforward to reuse outside that Go code.[0m
+
+[1;36m==> Grafana has working Prometheus + Loki datasources; use Explore or build/import a dashboard manually.[0m
+
+[1;36m==> === 06-loadtest ===[0m
+
+[1;36m==> Creating public IP for load-test VM (SSH only)[0m
+WARNING: [Coming breaking change] In the coming release, the default behavior will be changed as follows when sku is Standard and zone is not provided: For zonal regions, you will get a zone-redundant IP indicated by zones:["1","2","3"]; For non-zonal regions, you will get a non zone-redundant IP indicated by zones:null.
+
+[1;36m==> Creating VM mm-loadtest[0m
+WARNING: Consider upgrading security for your workloads using Azure Trusted Launch VMs. To know more about Trusted Launch, please visit https://aka.ms/TrustedLaunch.
+
+[1;36m==> Provisioning mm-loadtest (this includes a from-source Go build, can take a few minutes)[0m
+Enable succeeded: 
+[stdout]
+
+Setting up libtime-duration-perl (1.21-1) ...
+Setting up libwebp7:amd64 (1.2.2-2ubuntu0.22.04.2) ...
+Setting up libtimedate-perl (2.3300-2) ...
+Setting up libubsan1:amd64 (12.3.0-1ubuntu1~22.04.3) ...
+Setting up libnsl-dev:amd64 (1.3.0-2build2) ...
+Setting up libcrypt-dev:amd64 (1:4.4.27-1) ...
+Setting up libisl23:amd64 (0.24-2build1) ...
+Setting up libc-dev-bin (2.35-0ubuntu3.14) ...
+Setting up libalgorithm-diff-xs-perl (0.04-6build3) ...
+Setting up libcc1-0:amd64 (12.3.0-1ubuntu1~22.04.3) ...
+Setting up liblsan0:amd64 (12.3.0-1ubuntu1~22.04.3) ...
+Setting up libitm1:amd64 (12.3.0-1ubuntu1~22.04.3) ...
+Setting up libalgorithm-merge-perl (0.08-3) ...
+Setting up libtsan0:amd64 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up libjpeg8:amd64 (8c-2ubuntu10) ...
+Setting up cpp-11 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up moreutils (0.66-1) ...
+Setting up fontconfig-config (2.13.1-4.2ubuntu5) ...
+Setting up dpkg-dev (1.21.1ubuntu2.6) ...
+Setting up libgcc-11-dev:amd64 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up gcc-11 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up cpp (4:11.2.0-1ubuntu1) ...
+Setting up libc6-dev:amd64 (2.35-0ubuntu3.14) ...
+Setting up libtiff5:amd64 (4.3.0-6ubuntu0.13) ...
+Setting up libfontconfig1:amd64 (2.13.1-4.2ubuntu5) ...
+Setting up prometheus-node-exporter-collectors (0+git20211024.8eeeffb-1) ...
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-apt.timer → /lib/systemd/system/prometheus-node-exporter-apt.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-ipmitool-sensor.timer → /lib/systemd/system/prometheus-node-exporter-ipmitool-sensor.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-mellanox-hca-temp.timer → /lib/systemd/system/prometheus-node-exporter-mellanox-hca-temp.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-nvme.timer → /lib/systemd/system/prometheus-node-exporter-nvme.timer.
+Created symlink /etc/systemd/system/timers.target.wants/prometheus-node-exporter-smartmon.timer → /lib/systemd/system/prometheus-node-exporter-smartmon.timer.
+Setting up gcc (4:11.2.0-1ubuntu1) ...
+Setting up libgd3:amd64 (2.3.0-2ubuntu2.3) ...
+Setting up libstdc++-11-dev:amd64 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up libc-devtools (2.35-0ubuntu3.14) ...
+Setting up g++-11 (11.4.0-1ubuntu1~22.04.3) ...
+Setting up g++ (4:11.2.0-1ubuntu1) ...
+update-alternatives: using /usr/bin/g++ to provide /usr/bin/c++ (c++) in auto mode
+Setting up build-essential (12.9ubuntu3) ...
+Processing triggers for man-db (2.10.2-1) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.13) ...
+
+Running kernel seems to be up-to-date.
+
+Services to be restarted:
+ systemctl restart chrony.service
+ systemctl restart cron.service
+ systemctl restart hv-kvp-daemon.service
+ systemctl restart irqbalance.service
+ systemctl restart multipathd.service
+ systemctl restart packagekit.service
+ systemctl restart polkit.service
+ systemctl restart rsyslog.service
+ systemctl restart serial-getty@ttyS0.service
+ systemctl restart ssh.service
+ systemctl restart systemd-journald.service
+ systemctl restart systemd-networkd.service
+ systemctl restart systemd-resolved.service
+ systemctl restart systemd-udevd.service
+ systemctl restart walinuxagent.service
+
+Service restarts being deferred:
+ /etc/needrestart/restart.d/dbus.service
+ systemctl restart getty@tty1.service
+ systemctl restart networkd-dispatcher.service
+ systemctl restart systemd-logind.service
+ systemctl restart unattended-upgrades.service
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+export PATH=$PATH:/usr/local/go/bin:/home/mmadmin/go/bin
+Selecting previously unselected package otelcol-contrib.
+(Reading database ... 68856 files and directories currently installed.)
+Preparing to unpack /tmp/otelcol.deb ...
+Unpacking otelcol-contrib (0.120.0) ...
+Setting up otelcol-contrib (0.120.0) ...
+load-test VM provisioning complete
+
+[stderr]
+go: downloading github.com/gobwas/glob v0.2.3
+go: downloading github.com/kennygrant/sanitize v1.2.4
+go: downloading github.com/nlnwa/whatwg-url v0.6.2
+go: downloading github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
+go: downloading github.com/temoto/robotstxt v1.1.2
+go: downloading golang.org/x/net v0.55.0
+go: downloading google.golang.org/appengine v1.6.8
+go: downloading github.com/beorn7/perks v1.0.1
+go: downloading github.com/cespare/xxhash/v2 v2.3.0
+go: downloading github.com/prometheus/client_model v0.6.2
+go: downloading github.com/prometheus/procfs v0.20.1
+go: downloading google.golang.org/protobuf v1.36.11
+go: downloading github.com/wiggin77/srslog v1.0.1
+go: downloading gopkg.in/natefinch/lumberjack.v2 v2.2.1
+go: downloading github.com/hashicorp/errwrap v1.1.0
+go: downloading github.com/golang/protobuf v1.5.4
+go: downloading github.com/hashicorp/go-hclog v1.6.3
+go: downloading github.com/hashicorp/yamux v0.1.2
+go: downloading google.golang.org/grpc v1.81.1
+go: downloading github.com/oklog/run v1.2.0
+go: downloading github.com/mattermost/go-i18n v1.11.1-0.20211013152124-5c415071e404
+go: downloading gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d
+go: downloading github.com/google/uuid v1.6.0
+go: downloading github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+go: downloading github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
+go: downloading github.com/vmihailenco/tagparser/v2 v2.0.0
+go: downloading github.com/philhofer/fwd v1.2.0
+go: downloading github.com/kr/fs v0.1.0
+go: downloading go.yaml.in/yaml/v2 v2.4.4
+go: downloading github.com/antchfx/xpath v1.3.6
+go: downloading github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
+go: downloading github.com/andybalholm/cascadia v1.3.3
+go: downloading github.com/bits-and-blooms/bitset v1.24.4
+go: downloading github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
+go: downloading golang.org/x/sys v0.45.0
+go: downloading github.com/mattermost/mattermost-plugin-playbooks/client v0.8.1-0.20260127194607-8f646f6e5d13
+go: downloading github.com/mattn/go-isatty v0.0.22
+go: downloading github.com/fatih/color v1.19.0
+go: downloading github.com/jmoiron/sqlx v1.4.0
+go: downloading github.com/lib/pq v1.12.3
+go: downloading github.com/mattermost/morph v1.1.0
+go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading gopkg.in/yaml.v2 v2.4.0
+go: downloading github.com/json-iterator/go v1.1.12
+go: downloading github.com/sirupsen/logrus v1.9.4
+go: downloading github.com/writeas/go-strip-markdown v2.0.1+incompatible
+go: downloading gopkg.in/guregu/null.v4 v4.0.0
+go: downloading github.com/mattn/go-colorable v0.1.14
+go: downloading github.com/google/go-querystring v1.2.0
+go: downloading golang.org/x/oauth2 v0.36.0
+go: downloading github.com/yuin/goldmark v1.8.2
+go: downloading github.com/mitchellh/mapstructure v1.5.0
+go: downloading github.com/mattermost/gosaml2 v0.10.0
+go: downloading github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+go: downloading github.com/modern-go/reflect2 v1.0.2
+go: downloading github.com/go-sql-driver/mysql v1.10.0
+go: downloading modernc.org/sqlite v1.51.0
+go: downloading filippo.io/edwards25519 v1.2.0
+go: downloading github.com/mattermost/xml-roundtrip-validator v0.1.0
+go: downloading github.com/beevik/etree v1.6.0
+go: downloading github.com/russellhaering/goxmldsig v1.6.0
+go: downloading github.com/jonboulle/clockwork v0.5.0
+go: downloading modernc.org/libc v1.72.5
+go: downloading modernc.org/mathutil v1.7.1
+go: downloading github.com/dustin/go-humanize v1.0.1
+go: downloading modernc.org/memory v1.11.0
+go: downloading github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
+Synchronizing state of prometheus-node-exporter.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable prometheus-node-exporter
+Created symlink /etc/systemd/system/multi-user.target.wants/ltapi.service → /etc/systemd/system/ltapi.service.
+
+
+[1;36m==> Load-test VM ready: 10.20.5.4 (private), 20.114.12.231 (SSH only)[0m
+
+[1;36m==> === 06b-loadtest-docker ===[0m
+
+[1;36m==> Building ltapi:latest from /home/alejandro/projects/mattermost-load-test-ng/Dockerfile.portable (operator machine)[0m
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.portable
+#1 transferring dockerfile: 1.69kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#2 DONE 0.8s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 139B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
+#4 resolve docker.io/library/debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818 done
+#4 DONE 0.0s
+
+#5 [2/2] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl     && curl -fsSL -o /tmp/ltng.tar.gz       "https://github.com/mattermost/mattermost-load-test-ng/releases/download/v1.32.0/mattermost-load-test-ng-v1.32.0-linux-amd64.tar.gz"     && tar -xzf /tmp/ltng.tar.gz -C /tmp     && cp /tmp/mattermost-load-test-ng-v1.32.0-linux-amd64/bin/ltapi /usr/local/bin/ltapi     && rm -rf /tmp/ltng.tar.gz /tmp/mattermost-load-test-ng-v1.32.0-linux-amd64     && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+#5 CACHED
+
+#6 exporting to image
+#6 exporting layers done
+#6 exporting manifest sha256:3b6a57db0f6f8b64682b406666d849f60dd85ea0d3c4d9b2414711c313117a8a done
+#6 exporting config sha256:84692103d98e295f81d377f0e95fd1ede85da0bc0f34d6965a4a1d5dd4771ba1 done
+#6 exporting attestation manifest sha256:02e4c8c288013202837cf885ea27e1139a4924cb24472a4344a574362c269128 done
+#6 exporting manifest list sha256:17ccb1fd7fe67a6183b6c9b0a72eff4cc8c986a7da89da3465121284d9aaf083 done
+#6 naming to docker.io/library/ltapi:latest done
+#6 unpacking to docker.io/library/ltapi:latest 0.1s done
+#6 DONE 0.2s
+
+[1;36m==> Saving image to /home/alejandro/projects/mattermost-load-test-ng/deployment/azure/.state/ltapi-image.tar.gz (simulates transfer across an air-gap boundary)[0m
+-rw-rw-r-- 1 alejandro alejandro 43M Jul 31 18:41 /home/alejandro/projects/mattermost-load-test-ng/deployment/azure/.state/ltapi-image.tar.gz
+
+[1;36m==> Transferring image to mm-loadtest (20.114.12.231)[0m
+Warning: Permanently added '20.114.12.231' (ED25519) to the list of known hosts.
+
+[1;36m==> Installing Docker on mm-loadtest (if not already present)[0m
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  bridge-utils containerd dns-root-data dnsmasq-base pigz runc ubuntu-fan
+Suggested packages:
+  ifupdown aufs-tools cgroupfs-mount | cgroup-lite debootstrap docker-buildx
+  docker-compose-v2 docker-doc rinse zfs-fuse | zfsutils
+The following NEW packages will be installed:
+  bridge-utils containerd dns-root-data dnsmasq-base docker.io pigz runc
+  ubuntu-fan
+0 upgraded, 8 newly installed, 0 to remove and 41 not upgraded.
+Need to get 74.0 MB of archives.
+After this operation, 279 MB of additional disk space will be used.
+Get:1 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 pigz amd64 2.6-1 [63.6 kB]
+Get:2 http://azure.archive.ubuntu.com/ubuntu jammy/main amd64 bridge-utils amd64 1.7-1ubuntu3 [34.4 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu jammy-updates/main amd64 runc amd64 1.3.4-0ubuntu1~22.04.1 [9569 kB]

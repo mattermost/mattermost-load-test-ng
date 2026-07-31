@@ -1,0 +1,9 @@
+.git
+secrets/
+deployment/azure/.state/
+deployer.log
+*.log
+dist/
+bin/
+browser/node_modules
+ltstate/
