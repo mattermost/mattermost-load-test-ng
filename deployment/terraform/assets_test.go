@@ -4,6 +4,7 @@
 package terraform
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,6 +26,18 @@ func TestAsset(t *testing.T) {
 		_, err := Asset("non_existent_file.txt")
 		require.Error(t, err)
 	})
+}
+
+func TestDefaultDashboardTemplateRendersValidJSON(t *testing.T) {
+	data, err := Asset("default_dashboard_tmpl.json")
+	require.NoError(t, err)
+
+	rendered, err := fillConfigTemplate(string(data), map[string]any{"ClusterName": "loadtest"})
+	require.NoError(t, err)
+
+	var dashboard map[string]any
+	require.NoError(t, json.Unmarshal([]byte(rendered), &dashboard))
+	require.NotEmpty(t, dashboard["panels"])
 }
 
 func TestMustAsset(t *testing.T) {

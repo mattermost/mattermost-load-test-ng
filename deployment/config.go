@@ -17,7 +17,10 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 )
 
-var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
+var (
+	esDomainNameRe       = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
+	environmentVarNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+)
 
 // Config contains the necessary data
 // to deploy and provision a load test environment.
@@ -94,6 +97,9 @@ type Config struct {
 	// Optional path to a partial Mattermost config file to be applied as patch during
 	// app server deployment.
 	MattermostConfigPatchFile string `default:""`
+	// MattermostEnvVars contains additional environment variables to add to the
+	// Mattermost application and job server systemd services.
+	MattermostEnvVars map[string]string
 	// Mattermost instance sysadmin e-mail.
 	AdminEmail string `default:"sysadmin@sample.mattermost.com" validate:"email"`
 	// MattermostPlugins maps each specified plugin ID to an URL (or local file if
@@ -460,6 +466,12 @@ func (c *Config) IsValid() error {
 
 	if err := c.validateDBName(); err != nil {
 		return err
+	}
+
+	for name := range c.MattermostEnvVars {
+		if !environmentVarNameRe.MatchString(name) {
+			return fmt.Errorf("invalid MattermostEnvVars variable name %q", name)
+		}
 	}
 
 	return nil

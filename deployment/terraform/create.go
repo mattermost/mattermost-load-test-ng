@@ -457,9 +457,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	var serviceFileTemplateOutput bytes.Buffer
-	err = serviceFileTemplate.Execute(&serviceFileTemplateOutput, map[string]string{
-		"ServiceEnvironment": os.Getenv("MM_SERVICEENVIRONMENT"),
-		"User":               t.Config().AWSAMIUser,
+	err = serviceFileTemplate.Execute(&serviceFileTemplateOutput, map[string]any{
+		"MattermostEnvironment": systemdEnvironmentVariables(t.Config().MattermostEnvVars),
+		"ServiceEnvironment":    os.Getenv("MM_SERVICEENVIRONMENT"),
+		"User":                  t.Config().AWSAMIUser,
 	})
 	if err != nil {
 		return fmt.Errorf("error executing service file template: %w", err)

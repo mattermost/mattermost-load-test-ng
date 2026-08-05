@@ -50,6 +50,7 @@ The steps to load-test a new feature in production, after testing new actions lo
             - Run `make package` in the `mattermost-load-test-ng` directory, change `LoadTestDownloadURL` value to the path containing the gzip of the load-test package. For example `file:///somepath/mattermost-load-test-ng/dist/v1.5.0-8-gd4f18cf/mattermost-load-test-ng-v1.5.0-8-gd4f18cf-linux-amd64.tar.gz`.
             - **Mattermost Agents on this stacked load-test-ng branch:** Build and deploy a custom load-test-ng tarball from the current stack with `make package`, then point `LoadTestDownloadURL` at `file:///absolute/path/to/mattermost-load-test-ng/dist/<version>/mattermost-load-test-ng-<version>-linux-amd64.tar.gz` for local iteration, or upload the tarball and use its HTTPS URL. The package includes `config/simulcontroller.json` copied from [`config/simulcontroller.sample.json`](../config/simulcontroller.sample.json), so the bundled simulator config enables `mattermost-ai`.
             - Install the Agents plugin separately through deployer **`MattermostPlugins`** using the manifest ID `mattermost-ai` and a reachable Agents plugin tarball URL (or `file://` path). Configure the Agents bot for load testing (`loadtest_mock` service type with MCP tools set to **`auto_run_everywhere`**) per Agents setup docs so mention/DM prompts run without blocking on manual tool approval in the terraform environment.
+            - For AI Recaps deployment, mock configuration, scheduled-burst methodology, and observability, follow the [AI Recaps load-testing runbook](recaps-load-testing.md).
             - **Cleanup:** Drop the temporary `LoadTestDownloadURL` (and Agents artifact overrides if added only for the stack branch) once the stacked PRs are merged and a normal released `mattermost-load-test-ng` binary includes Agents registration and sample config—the defaults in `deployer.json`/`MattermostDownloadURL` + `LoadTestDownloadURL` can return to upstream releases after that point.
     - Edit `SSHPublicKey` in `deployer.json` after setting up ssh.
     - `go run ./cmd/ltctl deployment create`
@@ -112,4 +113,10 @@ After all the code changes:
         - Run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
  - **If the feature is behind a feature flag**:
 
-    Add `Environment=MM_FEATUREFLAGS_<feature_flag_name>=true` to the `mattermostServiceFile` string in [deployment/terraform/strings.go](https://github.com/mattermost/mattermost-load-test-ng/blob/bd72575bd115112274e84823a646d8dda313c451/deployment/terraform/strings.go#L20)
+    Add the flag to deployer [`MattermostEnvVars`](config/deployer.md#mattermostenvvars), for example:
+
+    ```json
+    "MattermostEnvVars": {
+      "MM_FEATUREFLAGS_<FEATURE_FLAG_NAME>": "true"
+    }
+    ```
