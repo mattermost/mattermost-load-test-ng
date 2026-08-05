@@ -87,7 +87,7 @@ Channel selection mode for scheduled recaps: `specific` selects member channels 
 
 *string*
 
-Optional scheduled recap due time in `HH:MM` UTC format. When empty, schedule times are spread randomly across the day. When set, every created schedule uses the same minute.
+Optional scheduled recap due time in `HH:MM` UTC format. When empty, schedule times are spread randomly across the day. When set, every created schedule uses the same minute. If that minute has already passed when schedules are seeded, the server schedules their first recurring run for the following day.
 
 ## AI Recaps load testing
 

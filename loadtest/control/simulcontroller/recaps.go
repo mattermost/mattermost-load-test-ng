@@ -48,9 +48,6 @@ func (c *SimulController) createRecap(u user.User) control.UserActionResponse {
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("create recap: %w", err))}
 	}
-	if recap == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("create recap returned an empty response"))}
-	}
 
 	return c.pollRecap(u, recap)
 }
@@ -79,9 +76,6 @@ func (c *SimulController) pollRecap(u user.User, recap *model.Recap) control.Use
 			}
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("poll recap %s: %w", recap.Id, err))}
-			}
-			if updated == nil {
-				return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("poll recap %s returned an empty response", recap.Id))}
 			}
 			if response, done := recapTerminalResponse(updated); done {
 				return response
@@ -197,9 +191,6 @@ func (c *SimulController) createScheduledRecap(u user.User) control.UserActionRe
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(fmt.Errorf("create scheduled recap: %w", err))}
 	}
-	if scheduledRecap == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("create scheduled recap returned an empty response"))}
-	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created scheduled recap %s due at %s UTC", scheduledRecap.Id, scheduledRecap.TimeOfDay)}
 }
@@ -223,15 +214,30 @@ func (c *SimulController) resolveRecapAgentID(u user.User) (string, error) {
 }
 
 func pickRecapChannelIDs(u user.User, maxChannels int) ([]string, error) {
-	channels, err := u.GetChannelsForUser(u.Store().Id())
+	userStore := u.Store()
+	userID := userStore.Id()
+	teams, err := userStore.Teams()
 	if err != nil {
 		return nil, err
 	}
 
-	eligible := make([]string, 0, len(channels))
-	for _, channel := range channels {
-		if channel.DeleteAt == 0 && (channel.Type == model.ChannelTypeOpen || channel.Type == model.ChannelTypePrivate) {
-			eligible = append(eligible, channel.Id)
+	var eligible []string
+	for _, team := range teams {
+		channels, err := userStore.Channels(team.Id)
+		if err != nil {
+			return nil, err
+		}
+		for _, channel := range channels {
+			if channel.DeleteAt != 0 || (channel.Type != model.ChannelTypeOpen && channel.Type != model.ChannelTypePrivate) {
+				continue
+			}
+			member, err := userStore.ChannelMember(channel.Id, userID)
+			if err != nil {
+				return nil, err
+			}
+			if member.UserId != "" {
+				eligible = append(eligible, channel.Id)
+			}
 		}
 	}
 	if len(eligible) == 0 {

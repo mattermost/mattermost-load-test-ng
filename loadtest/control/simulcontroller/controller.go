@@ -354,6 +354,8 @@ func getActionList(c *SimulController) []userAction {
 	}
 
 	if c.config.RecapsConfiguration.Enabled {
+		// Recaps target the 11.2 development line and must remain reachable on master builds,
+		// so these actions deliberately use 11.2.0 instead of control.UnreleasedVersion.
 		actions = append(actions,
 			userAction{
 				name:             "CreateRecap",

@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/stretchr/testify/require"
@@ -16,6 +18,7 @@ type recapTestUser struct {
 	user.User
 	getRecap            func(string) (*model.Recap, error)
 	getUsersByUsernames func([]string) ([]string, error)
+	userStore           store.UserStore
 }
 
 func (u *recapTestUser) GetRecap(recapID string) (*model.Recap, error) {
@@ -24,6 +27,10 @@ func (u *recapTestUser) GetRecap(recapID string) (*model.Recap, error) {
 
 func (u *recapTestUser) GetUsersByUsernames(usernames []string) ([]string, error) {
 	return u.getUsersByUsernames(usernames)
+}
+
+func (u *recapTestUser) Store() store.UserStore {
+	return u.userStore
 }
 
 func defaultSimulControllerConfig(t *testing.T) Config {
@@ -64,9 +71,9 @@ func TestRecapsConfigurationValidation(t *testing.T) {
 			},
 		},
 		{
-			name: "empty agent allowed when disabled",
+			name: "disabled zero value",
 			mutate: func(config *RecapsConfiguration) {
-				config.AgentUsername = ""
+				*config = RecapsConfiguration{}
 			},
 		},
 		{
@@ -78,8 +85,17 @@ func TestRecapsConfigurationValidation(t *testing.T) {
 			wantError: true,
 		},
 		{
+			name: "zero max channels",
+			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
+				config.MaxChannelsPerRecap = 0
+			},
+			wantError: true,
+		},
+		{
 			name: "invalid channel mode",
 			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
 				config.ScheduledRecapChannelMode = "invalid"
 			},
 			wantError: true,
@@ -87,6 +103,7 @@ func TestRecapsConfigurationValidation(t *testing.T) {
 		{
 			name: "invalid due time",
 			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
 				config.ScheduledRecapDueTime = "9:00"
 			},
 			wantError: true,
@@ -94,6 +111,7 @@ func TestRecapsConfigurationValidation(t *testing.T) {
 		{
 			name: "zero poll interval",
 			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
 				config.PollIntervalMs = 0
 			},
 			wantError: true,
@@ -101,7 +119,32 @@ func TestRecapsConfigurationValidation(t *testing.T) {
 		{
 			name: "zero poll timeout",
 			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
 				config.PollTimeoutMs = 0
+			},
+			wantError: true,
+		},
+		{
+			name: "poll interval exceeds timeout",
+			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
+				config.PollIntervalMs = config.PollTimeoutMs + 1
+			},
+			wantError: true,
+		},
+		{
+			name: "negative scheduled recap cap",
+			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
+				config.MaxScheduledRecapsPerUser = -1
+			},
+			wantError: true,
+		},
+		{
+			name: "scheduled recap cap exceeds page size",
+			mutate: func(config *RecapsConfiguration) {
+				config.Enabled = true
+				config.MaxScheduledRecapsPerUser = maxScheduledRecapsPageSize + 1
 			},
 			wantError: true,
 		},
@@ -163,6 +206,58 @@ func TestScheduledRecapDueTime(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.expected, scheduledRecapDueTime(test.configured, test.randomMinute))
+		})
+	}
+}
+
+func TestPickRecapChannelIDs(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*testing.T, *memstore.MemStore, string) []string
+	}{
+		{
+			name: "empty store",
+			setup: func(_ *testing.T, _ *memstore.MemStore, _ string) []string {
+				return nil
+			},
+		},
+		{
+			name: "only active member public or private channels",
+			setup: func(t *testing.T, userStore *memstore.MemStore, userID string) []string {
+				teamID := model.NewId()
+				eligibleID := model.NewId()
+				nonMemberID := model.NewId()
+				deletedID := model.NewId()
+				directID := model.NewId()
+				require.NoError(t, userStore.SetTeams([]*model.Team{{Id: teamID}}))
+				require.NoError(t, userStore.SetChannels([]*model.Channel{
+					{Id: eligibleID, TeamId: teamID, Type: model.ChannelTypePrivate},
+					{Id: nonMemberID, TeamId: teamID, Type: model.ChannelTypeOpen},
+					{Id: deletedID, TeamId: teamID, Type: model.ChannelTypeOpen, DeleteAt: 1},
+					{Id: directID, TeamId: teamID, Type: model.ChannelTypeDirect},
+				}))
+				require.NoError(t, userStore.SetChannelMembers(model.ChannelMembers{
+					{ChannelId: eligibleID, UserId: userID},
+					{ChannelId: deletedID, UserId: userID},
+					{ChannelId: directID, UserId: userID},
+				}))
+				return []string{eligibleID}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			userStore, err := memstore.New(nil)
+			require.NoError(t, err)
+			userID := model.NewId()
+			require.NoError(t, userStore.SetUser(&model.User{Id: userID}))
+			expected := test.setup(t, userStore, userID)
+
+			channelIDs, err := pickRecapChannelIDs(&recapTestUser{userStore: userStore}, 3)
+
+			require.NoError(t, err)
+			require.ElementsMatch(t, expected, channelIDs)
 		})
 	}
 }

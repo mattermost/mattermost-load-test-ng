@@ -366,16 +366,10 @@ type User interface {
 	CreateRecap(request *model.CreateRecapRequest) (*model.Recap, error)
 	GetRecap(recapID string) (*model.Recap, error)
 	GetRecaps(page, perPage int) ([]*model.Recap, error)
-	GetRecapLimitStatus() (*model.RecapLimitStatus, error)
 	MarkRecapsAsViewed() (*model.MarkRecapsViewedResponse, error)
 	MarkRecapAsRead(recapID string) (*model.Recap, error)
-	DeleteRecap(recapID string) error
 	CreateScheduledRecap(scheduledRecap *model.ScheduledRecap) (*model.ScheduledRecap, error)
 	GetScheduledRecaps(page, perPage int) ([]*model.ScheduledRecap, error)
-	UpdateScheduledRecap(scheduledRecap *model.ScheduledRecap) (*model.ScheduledRecap, error)
-	DeleteScheduledRecap(scheduledRecapID string) error
-	PauseScheduledRecap(scheduledRecapID string) (*model.ScheduledRecap, error)
-	ResumeScheduledRecap(scheduledRecapID string) (*model.ScheduledRecap, error)
 
 	// Custom Profile Attributes
 	GetCPAValues(userId string) (map[string]json.RawMessage, error)
