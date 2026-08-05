@@ -26,6 +26,8 @@ const (
 	probabilityAttachFileToPost = 0.02
 )
 
+var recurringScheduledPostsMinServerVersion = control.UnreleasedVersion
+
 func getActionList(c *SimulController) []userAction {
 	actions := []userAction{
 		{
@@ -315,6 +317,12 @@ func getActionList(c *SimulController) []userAction {
 			run:              c.createScheduledPost,
 			frequency:        0.001,
 			minServerVersion: semver.MustParse("10.3.0"),
+		},
+		{
+			name:             "CreateRecurringScheduledPost",
+			run:              c.createRecurringScheduledPost,
+			frequency:        0.001,
+			minServerVersion: recurringScheduledPostsMinServerVersion,
 		},
 		{
 			name:             "UpdateScheduledPost",

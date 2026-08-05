@@ -3,16 +3,78 @@ package simulcontroller
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
-	"math/rand"
-	"time"
 )
 
+const (
+	probabilityToggleScheduledPostRecurrence = 0.10
+	scheduledPostFutureTimeDeltaStart        = 48 * time.Hour
+	scheduledPostFutureTimeMaxUntil          = 240 * time.Hour
+)
+
+var recurringScheduledPostFallbackTimezones = []string{
+	"UTC",
+	"America/New_York",
+	"Europe/London",
+	"Asia/Tokyo",
+}
+
+func nextScheduledPostBatchBoundary(now time.Time, interval, minLead time.Duration) int64 {
+	eligible := now.UTC().Add(minLead)
+	boundary := eligible.Truncate(interval)
+	if boundary.Before(eligible) {
+		boundary = boundary.Add(interval)
+	}
+
+	return boundary.UnixMilli()
+}
+
+func (c *SimulController) scheduledPostTime(now time.Time) int64 {
+	if rand.Float64() < c.config.PercentBatchAlignedScheduledPosts {
+		interval := time.Duration(c.config.ScheduledPostBatchIntervalMinutes) * time.Minute
+		minLead := time.Duration(c.config.ScheduledPostBatchMinLeadMinutes) * time.Minute
+		return nextScheduledPostBatchBoundary(now, interval, minLead)
+	}
+
+	return loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
+}
+
+func recurringScheduledPostTimezoneForUser(currentUser *model.User) string {
+	timezone := currentUser.GetPreferredTimezone()
+	if timezone != "" && timezone != "Local" {
+		if _, err := time.LoadLocation(timezone); err == nil {
+			return timezone
+		}
+	}
+
+	return recurringScheduledPostFallbackTimezones[rand.Intn(len(recurringScheduledPostFallbackTimezones))]
+}
+
+func recurringScheduledPostTimezone(u user.User) string {
+	currentUser, err := u.Store().User()
+	if err != nil {
+		return recurringScheduledPostFallbackTimezones[rand.Intn(len(recurringScheduledPostFallbackTimezones))]
+	}
+
+	return recurringScheduledPostTimezoneForUser(currentUser)
+}
+
 func (c *SimulController) createScheduledPost(u user.User) control.UserActionResponse {
+	return c.createScheduledPostWithRecurrence(u, false)
+}
+
+func (c *SimulController) createRecurringScheduledPost(u user.User) control.UserActionResponse {
+	return c.createScheduledPostWithRecurrence(u, true)
+}
+
+func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurring bool) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
 		return resp
 	} else if !ok {
@@ -56,13 +118,18 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 			RootId:    rootId,
 			CreateAt:  model.GetMillis(),
 		},
-		ScheduledAt: loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10),
+		ScheduledAt: c.scheduledPostTime(time.Now()),
 	}
 
 	if rand.Float64() < probabilityAttachFileToPost {
 		if err := control.AttachFilesToDraft(u, &scheduledPost.Draft); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
+	}
+
+	if recurring {
+		scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
+		scheduledPost.RepeatTimezone = recurringScheduledPostTimezone(u)
 	}
 
 	if err := u.CreateScheduledPost(channel.TeamId, scheduledPost); err != nil {
@@ -97,7 +164,18 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost.Message = message
-	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10)
+	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
+
+	if c.serverVersion.GTE(recurringScheduledPostsMinServerVersion) &&
+		rand.Float64() < probabilityToggleScheduledPostRecurrence {
+		if scheduledPost.IsRecurring() {
+			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeNone
+			scheduledPost.RepeatTimezone = ""
+		} else {
+			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
+			scheduledPost.RepeatTimezone = recurringScheduledPostTimezone(u)
+		}
+	}
 
 	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
