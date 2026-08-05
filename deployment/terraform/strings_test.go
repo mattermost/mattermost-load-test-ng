@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -157,4 +158,34 @@ func TestRenderProxyOtelcolConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, expectedProxyConf, cfg)
+}
+
+func TestSystemdEnvironmentVariables(t *testing.T) {
+	variables := systemdEnvironmentVariables(map[string]string{
+		"Z_VALUE":       "plain",
+		"A_VALUE":       `value with "quotes"`,
+		"PERCENT_VALUE": "50%",
+	})
+
+	require.Equal(t, []string{
+		`"A_VALUE=value with \"quotes\""`,
+		`"PERCENT_VALUE=50%%"`,
+		`"Z_VALUE=plain"`,
+	}, variables)
+
+	data := map[string]any{
+		"MattermostEnvironment": variables,
+		"ServiceEnvironment":    "test",
+		"User":                  "mattermost",
+	}
+	for _, serviceFile := range []string{mattermostServiceFile, jobServerServiceFile} {
+		rendered, err := fillConfigTemplate(serviceFile, data)
+		require.NoError(t, err)
+		for _, variable := range variables {
+			require.Contains(t, rendered, "Environment="+variable)
+			require.Equal(t, 1, strings.Count(rendered, "Environment="+variable))
+		}
+		require.Contains(t, rendered, `Environment="PERCENT_VALUE=50%%"`)
+		require.Contains(t, rendered, "Environment=MM_SERVICEENVIRONMENT=test")
+	}
 }
