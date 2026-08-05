@@ -162,8 +162,6 @@ func runLoadTest(config Config, ltConfig loadtest.Config, coordConfig coordinato
 			}
 		}
 	}
-
-	return nil
 }
 
 func runCmdF(cmd *cobra.Command, args []string) error {
