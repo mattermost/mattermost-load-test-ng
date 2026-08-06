@@ -112,6 +112,10 @@ func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurri
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if recurring {
+		return control.UserActionResponse{Info: fmt.Sprintf("recurring scheduled post created in channel with id %s", channel.Id)}
+	}
+
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post created in channel with id %s", channel.Id)}
 }
 
@@ -142,19 +146,26 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	scheduledPost.Message = message
 	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
 
+	recurrenceUpdate := ""
 	if c.serverVersion.GTE(control.RecurringScheduledPostsMinVersion) &&
 		rand.Float64() < probabilityToggleScheduledPostRecurrence {
 		if scheduledPost.IsRecurring() {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeNone
 			scheduledPost.RepeatTimezone = ""
+			recurrenceUpdate = "disabled"
 		} else {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
 			scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
+			recurrenceUpdate = "enabled"
 		}
 	}
 
 	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if recurrenceUpdate != "" {
+		return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated with recurrence %s in channel with id %s", recurrenceUpdate, channel.Id)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated in channel with id %s", channel.Id)}
