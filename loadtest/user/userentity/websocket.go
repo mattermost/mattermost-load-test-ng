@@ -95,6 +95,68 @@ func (ue *UserEntity) handlePostEvent(ev *model.WebSocketEvent) error {
 	return nil
 }
 
+func (ue *UserEntity) resolveScheduledPostTeamID(channelID string) (string, bool, error) {
+	channel, err := ue.store.Channel(channelID)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to get scheduled post channel from store: %w", err)
+	}
+	if channel == nil {
+		return "", false, nil
+	}
+	if channel.TeamId != "" {
+		return channel.TeamId, true, nil
+	}
+
+	currentTeam, err := ue.store.CurrentTeam()
+	if err != nil {
+		return "", false, fmt.Errorf("failed to get current team from store: %w", err)
+	}
+	if currentTeam == nil {
+		return "", false, nil
+	}
+
+	return currentTeam.Id, true, nil
+}
+
+func (ue *UserEntity) handleScheduledPostEvent(ev *model.WebSocketEvent) error {
+	var data string
+	if el, ok := ev.GetData()["scheduledPost"]; !ok {
+		return errors.New("scheduled post data is missing")
+	} else if data, ok = el.(string); !ok {
+		return fmt.Errorf("type of the scheduled post data should be a string, but it is %T", el)
+	}
+
+	var scheduledPost *model.ScheduledPost
+	if err := json.Unmarshal([]byte(data), &scheduledPost); err != nil {
+		return err
+	}
+	if scheduledPost == nil {
+		return errors.New("scheduled post data is null")
+	}
+
+	if ev.EventType() == model.WebsocketScheduledPostDeleted {
+		ue.store.DeleteScheduledPost(scheduledPost)
+		return nil
+	}
+
+	teamID, resolved, err := ue.resolveScheduledPostTeamID(scheduledPost.ChannelId)
+	if err != nil {
+		return err
+	}
+	if !resolved {
+		return nil
+	}
+
+	switch ev.EventType() {
+	case model.WebsocketScheduledPostCreated:
+		return ue.store.SetScheduledPost(teamID, scheduledPost)
+	case model.WebsocketScheduledPostUpdated:
+		ue.store.UpdateScheduledPost(teamID, scheduledPost)
+	}
+
+	return nil
+}
+
 // wsEventHandler handles the given WebSocket event by calling the appropriate
 // store methods to make sure the internal user state is kept updated.
 // Handling the event at this layer is needed to keep the user state in
@@ -129,6 +191,10 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 		return ue.handleReactionEvent(ev)
 	case model.WebsocketEventPosted, model.WebsocketEventPostEdited, model.WebsocketEventPostDeleted:
 		return ue.handlePostEvent(ev)
+	case model.WebsocketScheduledPostCreated,
+		model.WebsocketScheduledPostUpdated,
+		model.WebsocketScheduledPostDeleted:
+		return ue.handleScheduledPostEvent(ev)
 	}
 
 	return nil
