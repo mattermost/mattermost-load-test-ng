@@ -1,3 +1,6 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See License.txt for license information.
+
 package simulcontroller
 
 import (
@@ -19,13 +22,6 @@ const (
 	scheduledPostFutureTimeMaxUntil          = 240 * time.Hour
 )
 
-var recurringScheduledPostFallbackTimezones = []string{
-	"UTC",
-	"America/New_York",
-	"Europe/London",
-	"Asia/Tokyo",
-}
-
 func nextScheduledPostBatchBoundary(now time.Time, interval, minLead time.Duration) int64 {
 	eligible := now.UTC().Add(minLead)
 	boundary := eligible.Truncate(interval)
@@ -44,26 +40,6 @@ func (c *SimulController) scheduledPostTime(now time.Time) int64 {
 	}
 
 	return loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
-}
-
-func recurringScheduledPostTimezoneForUser(currentUser *model.User) string {
-	timezone := currentUser.GetPreferredTimezone()
-	if timezone != "" && timezone != "Local" {
-		if _, err := time.LoadLocation(timezone); err == nil {
-			return timezone
-		}
-	}
-
-	return recurringScheduledPostFallbackTimezones[rand.Intn(len(recurringScheduledPostFallbackTimezones))]
-}
-
-func recurringScheduledPostTimezone(u user.User) string {
-	currentUser, err := u.Store().User()
-	if err != nil {
-		return recurringScheduledPostFallbackTimezones[rand.Intn(len(recurringScheduledPostFallbackTimezones))]
-	}
-
-	return recurringScheduledPostTimezoneForUser(currentUser)
 }
 
 func (c *SimulController) createScheduledPost(u user.User) control.UserActionResponse {
@@ -129,7 +105,7 @@ func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurri
 
 	if recurring {
 		scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
-		scheduledPost.RepeatTimezone = recurringScheduledPostTimezone(u)
+		scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
 	}
 
 	if err := u.CreateScheduledPost(channel.TeamId, scheduledPost); err != nil {
@@ -166,14 +142,14 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	scheduledPost.Message = message
 	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
 
-	if c.serverVersion.GTE(recurringScheduledPostsMinServerVersion) &&
+	if c.serverVersion.GTE(control.RecurringScheduledPostsMinVersion) &&
 		rand.Float64() < probabilityToggleScheduledPostRecurrence {
 		if scheduledPost.IsRecurring() {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeNone
 			scheduledPost.RepeatTimezone = ""
 		} else {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
-			scheduledPost.RepeatTimezone = recurringScheduledPostTimezone(u)
+			scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
 		}
 	}
 

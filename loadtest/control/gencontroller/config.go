@@ -30,6 +30,8 @@ type Config struct {
 	NumReactions int64 `default:"200" validate:"range:[0,]"`
 	// The target number of post reminders to be created.
 	NumPostReminders int64 `default:"200" validate:"range:[0,]"`
+	// The target number of scheduled posts to be created.
+	NumScheduledPosts int64 `default:"0" validate:"range:[0,]"`
 	// The target number of sidebar categories to be created.
 	NumSidebarCategories int64 `default:"10" validate:"range:[0,]"`
 	// The target number of threads to follow.
@@ -40,6 +42,8 @@ type Config struct {
 	PercentRepliesInLongThreads float64 `default:"0.05" validate:"range:[0,1]"`
 	// The percentage of post that are marked as urgent.
 	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
+	// The percentage of scheduled posts that should recur weekly.
+	PercentRecurringScheduledPosts float64 `default:"0.1" validate:"range:[0,1]"`
 
 	// Indicates the distribution of chanel members within channels.
 	ChannelMembersDistribution []ChannelMemberDistribution
@@ -75,6 +79,10 @@ func ReadConfig(configFilePath string) (*Config, error) {
 // IsValid reports whether a given gencontroller.Config is valid or not.
 // Returns an error if the validation fails.
 func (c *Config) IsValid(numUsers int) error {
+	if err := defaults.Validate(*c); err != nil {
+		return err
+	}
+
 	totalPercent := 0.0
 	for _, item := range c.ChannelMembersDistribution {
 		totalPercent += item.Probability

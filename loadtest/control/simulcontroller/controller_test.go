@@ -126,7 +126,7 @@ func TestGetActionList(t *testing.T) {
 		require.NotZero(t, action.minServerVersion, "All actions must have minServerVersion set")
 		if action.name == "CreateRecurringScheduledPost" {
 			recurringActionCount++
-			require.Equal(t, recurringScheduledPostsMinServerVersion, action.minServerVersion)
+			require.Equal(t, control.RecurringScheduledPostsMinVersion, action.minServerVersion)
 			require.NotNil(t, action.run)
 		}
 	}

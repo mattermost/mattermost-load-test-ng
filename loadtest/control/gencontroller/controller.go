@@ -11,6 +11,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/plugins"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -18,6 +19,8 @@ import (
 
 	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
+
+var scheduledPostsMinVersion = semver.MustParse("10.3.0")
 
 // GenController is an implementation of a UserController used to generate
 // realistic initial data.
@@ -31,6 +34,7 @@ type GenController struct {
 	config                  *Config
 	channelSelectionWeights []int
 	numUsers                int
+	serverVersion           semver.Version
 	plugins                 []plugins.GenController
 }
 
@@ -90,6 +94,8 @@ func (c *GenController) Run() {
 		return
 	}
 
+	c.serverVersion = c.user.Store().ServerVersion()
+
 	defer func() {
 		if resp := logout(c.user); resp.Err != nil {
 			c.status <- c.newErrorStatus(resp.Err)
@@ -108,6 +114,7 @@ func (c *GenController) Run() {
 			st.get(StateTargetPosts) >= c.config.NumPosts &&
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
+			st.get(StateTargetScheduledPosts) >= c.config.NumScheduledPosts &&
 			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
 			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads &&
 			st.get(StateTargetUsers) == int64(c.numUsers)
@@ -141,6 +148,37 @@ func (c *GenController) Run() {
 	}
 
 	c.status <- c.newInfoStatus("user init done")
+
+	if c.config.NumScheduledPosts > 0 {
+		if !c.isVersionSupported(scheduledPostsMinVersion) {
+			c.sendFailStatus(fmt.Sprintf(
+				"scheduled posts require server version %q or later, but the server version is %q",
+				scheduledPostsMinVersion.String(),
+				c.serverVersion.String(),
+			))
+			return
+		}
+
+		scheduledPostsEnabled, resp := control.ScheduledPostsEnabled(c.user)
+		if resp.Err != nil {
+			c.status <- c.newErrorStatus(resp.Err)
+			return
+		}
+		if !scheduledPostsEnabled {
+			c.sendFailStatus("scheduled post target cannot be fulfilled because scheduled posts are disabled or unavailable")
+			return
+		}
+
+		if c.config.PercentRecurringScheduledPosts > 0 &&
+			!c.isVersionSupported(control.RecurringScheduledPostsMinVersion) {
+			c.sendFailStatus(fmt.Sprintf(
+				"recurring scheduled posts require server version %q or later, but the server version is %q",
+				control.RecurringScheduledPostsMinVersion.String(),
+				c.serverVersion.String(),
+			))
+			return
+		}
+	}
 
 	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
 	if resp.Err != nil {
@@ -237,6 +275,11 @@ func (c *GenController) Run() {
 			frequency:  int(c.config.NumPostReminders),
 			idleTimeMs: 1000,
 		},
+		"createScheduledPost": {
+			run:        c.createScheduledPost,
+			frequency:  int(c.config.NumScheduledPosts),
+			idleTimeMs: 1000,
+		},
 		"createReply": {
 			run:        c.createReply,
 			frequency:  int(math.Ceil(float64(c.config.NumPosts) * c.config.PercentReplies)),
@@ -294,6 +337,7 @@ func (c *GenController) Run() {
 			st.get(StateTargetPosts) >= c.config.NumPosts &&
 			st.get(StateTargetReactions) >= c.config.NumReactions &&
 			st.get(StateTargetPostReminders) >= c.config.NumPostReminders &&
+			st.get(StateTargetScheduledPosts) >= c.config.NumScheduledPosts &&
 			st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories &&
 			st.get(StateTargetFollowedThreads) >= c.config.NumFollowedThreads
 	})
@@ -371,6 +415,10 @@ func (c *GenController) runActions(actions map[string]userAction, done func() bo
 			delete(actions, "createPostReminder")
 		}
 
+		if st.get(StateTargetScheduledPosts) >= c.config.NumScheduledPosts {
+			delete(actions, "createScheduledPost")
+		}
+
 		if st.get(StateTargetSidebarCategories) >= c.config.NumSidebarCategories {
 			delete(actions, "createSidebarCategory")
 		}
@@ -409,6 +457,10 @@ func (c *GenController) sendFailStatus(reason string) {
 
 func (c *GenController) sendStopStatus() {
 	c.status <- control.UserStatus{ControllerId: c.id, User: c.user, Info: "user stopped", Code: control.USER_STATUS_STOPPED}
+}
+
+func (c *GenController) isVersionSupported(version semver.Version) bool {
+	return version.LTE(c.serverVersion)
 }
 
 // InjectAction allows a named UserAction to be injected that is run once, at the next
