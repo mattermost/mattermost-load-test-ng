@@ -43,6 +43,7 @@ const (
 	StateTargetPosts             = "posts"
 	StateTargetReactions         = "reactions"
 	StateTargetPostReminders     = "postreminders"
+	StateTargetScheduledPosts    = "scheduledposts"
 	StateTargetSidebarCategories = "sidebarcategories"
 	StateTargetFollowedThreads   = "followedthreads"
 	StateTargetUsers             = "users"
@@ -60,6 +61,7 @@ func init() {
 			StateTargetPosts:             0,
 			StateTargetReactions:         0,
 			StateTargetPostReminders:     0,
+			StateTargetScheduledPosts:    0,
 			StateTargetSidebarCategories: 0,
 			StateTargetFollowedThreads:   0,
 			StateTargetUsers:             0,

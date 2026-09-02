@@ -881,3 +881,239 @@ func TestCPAValues(t *testing.T) {
 		require.Equal(t, expected, actual)
 	})
 }
+
+func TestSetAndUpdateScheduledPost(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(t *testing.T, s *MemStore)
+	}{
+		{
+			name: "set rejects nil",
+			run: func(t *testing.T, s *MemStore) {
+				require.Error(t, s.SetScheduledPost("team1", nil))
+				require.Empty(t, s.scheduledPosts)
+			},
+		},
+		{
+			name: "repeated set replaces existing row",
+			run: func(t *testing.T, s *MemStore) {
+				original := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "channel1"},
+					Id:          "scheduled-post1",
+					ScheduledAt: 1000,
+				}
+				updated := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "channel1"},
+					Id:          original.Id,
+					ScheduledAt: 2000,
+				}
+
+				require.NoError(t, s.SetScheduledPost("team1", original))
+				require.NoError(t, s.SetScheduledPost("team1", updated))
+
+				require.Len(t, s.scheduledPosts["team1"]["channel1"], 1)
+				require.Same(t, updated, s.scheduledPosts["team1"]["channel1"][0])
+			},
+		},
+		{
+			name: "update replaces row set by HTTP path",
+			run: func(t *testing.T, s *MemStore) {
+				original := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "channel1"},
+					Id:          "scheduled-post1",
+					ScheduledAt: 1000,
+				}
+				updated := &model.ScheduledPost{
+					Draft:          model.Draft{ChannelId: "channel1"},
+					Id:             original.Id,
+					ScheduledAt:    604801000,
+					ErrorCode:      "unable_to_send",
+					RepeatType:     model.ScheduledPostRepeatTypeWeekly,
+					RepeatTimezone: "UTC",
+				}
+
+				require.NoError(t, s.SetScheduledPost("team1", original))
+				s.UpdateScheduledPost("team1", updated)
+
+				require.Len(t, s.scheduledPosts["team1"]["channel1"], 1)
+				require.Same(t, updated, s.scheduledPosts["team1"]["channel1"][0])
+			},
+		},
+		{
+			name: "update inserts when team is absent",
+			run: func(t *testing.T, s *MemStore) {
+				scheduledPost := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1"},
+					Id:    "scheduled-post1",
+				}
+
+				s.UpdateScheduledPost("team1", scheduledPost)
+
+				require.Len(t, s.scheduledPosts["team1"]["channel1"], 1)
+				require.Same(t, scheduledPost, s.scheduledPosts["team1"]["channel1"][0])
+			},
+		},
+		{
+			name: "update inserts when team exists without row",
+			run: func(t *testing.T, s *MemStore) {
+				existing := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "other-channel"},
+					Id:    "other-scheduled-post",
+				}
+				scheduledPost := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1"},
+					Id:    "scheduled-post1",
+				}
+
+				require.NoError(t, s.SetScheduledPost("team1", existing))
+				s.UpdateScheduledPost("team1", scheduledPost)
+
+				require.Len(t, s.scheduledPosts["team1"], 2)
+				require.Len(t, s.scheduledPosts["team1"]["channel1"], 1)
+				require.Same(t, scheduledPost, s.scheduledPosts["team1"]["channel1"][0])
+			},
+		},
+		{
+			name: "root and channel rows use distinct buckets",
+			run: func(t *testing.T, s *MemStore) {
+				channelPost := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1"},
+					Id:    "channel-scheduled-post",
+				}
+				rootPost := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1", RootId: "root1"},
+					Id:    "root-scheduled-post",
+				}
+
+				require.NoError(t, s.SetScheduledPost("team1", channelPost))
+				require.NoError(t, s.SetScheduledPost("team1", rootPost))
+
+				require.Equal(t, []*model.ScheduledPost{channelPost}, s.scheduledPosts["team1"]["channel1"])
+				require.Equal(t, []*model.ScheduledPost{rootPost}, s.scheduledPosts["team1"]["root1"])
+			},
+		},
+		{
+			name: "upsert replaces every team copy",
+			run: func(t *testing.T, s *MemStore) {
+				firstCopy := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "direct-channel"},
+					Id:          "scheduled-post1",
+					ScheduledAt: 1000,
+				}
+				secondCopy := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "direct-channel"},
+					Id:          firstCopy.Id,
+					ScheduledAt: 1000,
+				}
+				updated := &model.ScheduledPost{
+					Draft:       model.Draft{ChannelId: "direct-channel"},
+					Id:          firstCopy.Id,
+					ScheduledAt: 2000,
+				}
+				s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{
+					"team1": {"direct-channel": {firstCopy}},
+					"team2": {"direct-channel": {secondCopy}},
+				}
+
+				s.UpdateScheduledPost("team1", updated)
+
+				require.Len(t, s.scheduledPosts, 2)
+				require.Len(t, s.scheduledPosts["team1"]["direct-channel"], 1)
+				require.Len(t, s.scheduledPosts["team2"]["direct-channel"], 1)
+				require.Same(t, updated, s.scheduledPosts["team1"]["direct-channel"][0])
+				require.Same(t, updated, s.scheduledPosts["team2"]["direct-channel"][0])
+			},
+		},
+		{
+			name: "nil update is a no-op",
+			run: func(t *testing.T, s *MemStore) {
+				s.UpdateScheduledPost("team1", nil)
+				require.Empty(t, s.scheduledPosts)
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.run(t, newStore(t))
+		})
+	}
+}
+
+func TestDeleteScheduledPost(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(t *testing.T, s *MemStore)
+	}{
+		{
+			name: "removes every copy and prunes empty buckets",
+			run: func(t *testing.T, s *MemStore) {
+				firstCopy := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "direct-channel"},
+					Id:    "scheduled-post1",
+				}
+				secondCopy := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "direct-channel"},
+					Id:    firstCopy.Id,
+				}
+				s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{
+					"team1": {"direct-channel": {firstCopy, secondCopy}},
+					"team2": {"another-bucket": {secondCopy}},
+				}
+
+				s.DeleteScheduledPost(&model.ScheduledPost{Id: firstCopy.Id})
+
+				require.Empty(t, s.scheduledPosts)
+				_, err := s.GetRandomScheduledPost()
+				require.ErrorIs(t, err, ErrScheduledPostStoreEmpty)
+			},
+		},
+		{
+			name: "preserves unrelated rows while pruning matching bucket",
+			run: func(t *testing.T, s *MemStore) {
+				deleted := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1"},
+					Id:    "scheduled-post1",
+				}
+				remaining := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel2"},
+					Id:    "scheduled-post2",
+				}
+				s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{
+					"team1": {
+						"channel1": {deleted},
+						"channel2": {remaining},
+					},
+				}
+
+				s.DeleteScheduledPost(deleted)
+
+				require.Len(t, s.scheduledPosts["team1"], 1)
+				require.NotContains(t, s.scheduledPosts["team1"], "channel1")
+				require.Equal(t, []*model.ScheduledPost{remaining}, s.scheduledPosts["team1"]["channel2"])
+			},
+		},
+		{
+			name: "nil and unknown rows are no-ops",
+			run: func(t *testing.T, s *MemStore) {
+				existing := &model.ScheduledPost{
+					Draft: model.Draft{ChannelId: "channel1"},
+					Id:    "scheduled-post1",
+				}
+				require.NoError(t, s.SetScheduledPost("team1", existing))
+
+				s.DeleteScheduledPost(nil)
+				s.DeleteScheduledPost(&model.ScheduledPost{Id: "unknown"})
+
+				require.Len(t, s.scheduledPosts["team1"]["channel1"], 1)
+				require.Same(t, existing, s.scheduledPosts["team1"]["channel1"][0])
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.run(t, newStore(t))
+		})
+	}
+}

@@ -398,9 +398,6 @@ func (t *Terraform) setupKeycloakAppConfig(sshc *ssh.Client, cfg *model.Config) 
 	cfg.SamlSettings.LocaleAttribute = model.NewPointer("")
 	cfg.SamlSettings.PositionAttribute = model.NewPointer("")
 	cfg.SamlSettings.LoginButtonText = model.NewPointer("SAML Login")
-	cfg.SamlSettings.LoginButtonColor = model.NewPointer("#34a28b")
-	cfg.SamlSettings.LoginButtonBorderColor = model.NewPointer("#2389D7")
-	cfg.SamlSettings.LoginButtonTextColor = model.NewPointer("#ffffff")
 
 	return nil
 }

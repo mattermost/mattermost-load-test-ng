@@ -3,5 +3,8 @@
   "AvgIdleTimeMs": 20000,
   "PercentUrgentPosts": 0.001,
   "PercentReplies": 0.18,
+  "PercentBatchAlignedScheduledPosts": 0.5,
+  "ScheduledPostBatchIntervalMinutes": 30,
+  "ScheduledPostBatchMinLeadMinutes": 10,
   "EnabledPlugins": ["playbooks", "mattermost-ai"]
 }
