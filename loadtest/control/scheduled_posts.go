@@ -7,13 +7,14 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
 )
 
 // RecurringScheduledPostsMinVersion is the minimum server version that supports
 // recurring scheduled posts.
-var RecurringScheduledPostsMinVersion = UnreleasedVersion
+var RecurringScheduledPostsMinVersion = semver.MustParse("11.11.0")
 
 var recurringScheduledPostFallbackTimezones = []string{
 	"UTC",

@@ -57,6 +57,10 @@ func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurri
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
 	}
 
+	if recurring && !control.RecurringScheduledPostsEnabled(u) {
+		return control.UserActionResponse{Info: "recurring scheduled posts not enabled"}
+	}
+
 	channel, err := u.Store().CurrentChannel()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -97,7 +101,7 @@ func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurri
 		ScheduledAt: c.scheduledPostTime(time.Now()),
 	}
 
-	if rand.Float64() < probabilityAttachFileToPost {
+	if !recurring && rand.Float64() < probabilityAttachFileToPost {
 		if err := control.AttachFilesToDraft(u, &scheduledPost.Draft); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
@@ -144,16 +148,16 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost.Message = message
-	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
 
 	recurrenceUpdate := ""
 	if c.serverVersion.GTE(control.RecurringScheduledPostsMinVersion) &&
+		control.RecurringScheduledPostsEnabled(u) &&
 		rand.Float64() < probabilityToggleScheduledPostRecurrence {
 		if scheduledPost.IsRecurring() {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeNone
 			scheduledPost.RepeatTimezone = ""
 			recurrenceUpdate = "disabled"
-		} else {
+		} else if len(scheduledPost.FileIds) == 0 {
 			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
 			scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
 			recurrenceUpdate = "enabled"

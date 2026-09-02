@@ -178,6 +178,12 @@ func (c *GenController) Run() {
 			))
 			return
 		}
+
+		if c.config.PercentRecurringScheduledPosts > 0 &&
+			!control.RecurringScheduledPostsEnabled(c.user) {
+			c.sendFailStatus("recurring scheduled post target cannot be fulfilled because recurring scheduled posts are disabled or unavailable")
+			return
+		}
 	}
 
 	cpaEnabled, resp := control.CustomProfileAttributesEnabled(c.user)
