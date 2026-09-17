@@ -348,7 +348,7 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
-	if t.config.AgentInstanceCount > 0 {
+	if t.config.AgentInstanceCount > 0 || t.config.BrowserAgentInstanceCount > 0 {
 		if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
 			return fmt.Errorf("error setting up loadtest agents: %w", err)
 		}
