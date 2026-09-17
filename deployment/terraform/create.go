@@ -348,10 +348,8 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
-	if t.config.AgentInstanceCount > 0 {
-		if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
-			return fmt.Errorf("error setting up loadtest agents: %w", err)
-		}
+	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
+		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
 	mlog.Info("Deployment complete.")
@@ -606,19 +604,21 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) error {
-	if err := t.configureAndRunAgents(extAgent); err != nil {
-		return fmt.Errorf("error while setting up an agents: %w", err)
+	if t.config.AgentInstanceCount > 0 || t.config.BrowserAgentInstanceCount > 0 {
+		if err := t.configureAndRunAgents(extAgent); err != nil {
+			return fmt.Errorf("error while setting up an agents: %w", err)
+		}
 	}
 
 	if !t.output.HasAppServers() {
 		return nil
 	}
 
-	if err := t.initLoadtest(extAgent, initData); err != nil {
-		return err
+	if t.config.AgentInstanceCount <= 0 {
+		return nil
 	}
 
-	return nil
+	return t.initLoadtest(extAgent, initData)
 }
 
 func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
