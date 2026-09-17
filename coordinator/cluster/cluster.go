@@ -210,7 +210,7 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 		return fmt.Errorf("cluster: cannot add users to any agent: %w", err)
 	}
 	for i, dec := range dist {
-		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", c.config.Agents[i].Id))
+		c.log.Info("cluster: removing users from agent", mlog.Int("num_users", dec), mlog.String("agent_id", all[i].Id()))
 		if _, err := all[i].RemoveUsers(dec); err != nil {
 			// Most probably the agent crashed, so we just start it again.
 			if _, err := all[i].Run(); err != nil {
