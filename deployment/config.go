@@ -495,8 +495,13 @@ func (c *Config) validateUsersFilePath() error {
 
 	// Check that the file exists
 	localPath := strings.TrimPrefix(c.UsersFilePath, "file://")
-	if _, err := os.Stat(localPath); err != nil {
+	info, err := os.Stat(localPath)
+	if err != nil {
 		return fmt.Errorf("UsersFilePath %q: %w", c.UsersFilePath, err)
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("UsersFilePath %q is a directory", c.UsersFilePath)
 	}
 
 	return nil
