@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/report"
@@ -479,7 +480,8 @@ func (c *Config) validateUsersFilePath() error {
 
 	// Check that the URL exists
 	if strings.HasPrefix(c.UsersFilePath, "http://") || strings.HasPrefix(c.UsersFilePath, "https://") {
-		resp, err := http.Get(c.UsersFilePath)
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Get(c.UsersFilePath)
 		if err != nil {
 			return fmt.Errorf("UsersFilePath %q: %w", c.UsersFilePath, err)
 		}
