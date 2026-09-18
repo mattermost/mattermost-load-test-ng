@@ -1045,7 +1045,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
 
-	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers;"
+	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers, users, sessions, audits, usertermsofservice, tokens;"
 	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
 
 	mlog.Info("Vacuuming the tables", mlog.String("cmd", cmd))
