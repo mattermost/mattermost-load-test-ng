@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -141,9 +143,10 @@ type Config struct {
 	ServerURL string `default:""`
 	// ServerScheme is the scheme to use when connecting to the Mattermost server.
 	ServerScheme string `default:"http" validate:"oneof:{http,https}"`
-	// UsersFilePath specifies the path to an optional file containing a list of credentials for the controllers
+	// UsersFilePath specifies the path or URL to an optional file containing a list of credentials for the controllers
 	// to use. If present, it is used to automatically upload it to the agents and override the agent's config's
 	// own UsersFilePath.
+	// This can also point to a local file if prefixed with "file://".
 	UsersFilePath string `default:""`
 	// PyroscopeSettings contains the settings for configuring the continuous profiling through Pyroscope
 	PyroscopeSettings PyroscopeSettings
@@ -446,6 +449,10 @@ func (c *Config) IsValid() error {
 		return fmt.Errorf("load-test download url is not in correct format: %q", c.LoadTestDownloadURL)
 	}
 
+	if err := c.validateUsersFilePath(); err != nil {
+		return err
+	}
+
 	if c.ExternalDBSettings.DataSource != "" && c.DBDumpURI != "" {
 		return fmt.Errorf("both ExternalDBSettings.DataSource and DBDumpURI are set, only one can be set")
 	}
@@ -460,6 +467,34 @@ func (c *Config) IsValid() error {
 
 	if err := c.validateDBName(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (c *Config) validateUsersFilePath() error {
+	if c.UsersFilePath == "" {
+		return nil
+	}
+
+	// Check that the URL exists
+	if strings.HasPrefix(c.UsersFilePath, "http://") || strings.HasPrefix(c.UsersFilePath, "https://") {
+		resp, err := http.Get(c.UsersFilePath)
+		if err != nil {
+			return fmt.Errorf("UsersFilePath %q: %w", c.UsersFilePath, err)
+		}
+		// Close the body immediately, we are only interested in the status code to check reachability
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("UsersFilePath %q: unexpected status %d", c.UsersFilePath, resp.StatusCode)
+		}
+		return nil
+	}
+
+	// Check that the file exists
+	localPath := strings.TrimPrefix(c.UsersFilePath, "file://")
+	if _, err := os.Stat(localPath); err != nil {
+		return fmt.Errorf("UsersFilePath %q: %w", c.UsersFilePath, err)
 	}
 
 	return nil

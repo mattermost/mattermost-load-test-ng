@@ -2,6 +2,8 @@ package deployment
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
@@ -33,6 +35,54 @@ func TestConfigIsValid(t *testing.T) {
 		t.Run("MattermostDownloadUrl must be an url or a file", func(t *testing.T) {
 			c := baseConfig()
 			c.MattermostDownloadURL = "/some/path"
+
+			require.Error(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath can be empty", func(t *testing.T) {
+			c := baseConfig()
+			c.UsersFilePath = ""
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath can be a file:// path", func(t *testing.T) {
+			c := baseConfig()
+			c.UsersFilePath = "file:///dev/null"
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath can be a plain local path", func(t *testing.T) {
+			c := baseConfig()
+			c.UsersFilePath = "/dev/null"
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath can be an http URL", func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			defer srv.Close()
+			c := baseConfig()
+			c.UsersFilePath = srv.URL
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath rejects an unreachable URL", func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer srv.Close()
+			c := baseConfig()
+			c.UsersFilePath = srv.URL
+
+			require.Error(t, c.IsValid())
+		})
+
+		t.Run("UsersFilePath rejects a non-existent local path", func(t *testing.T) {
+			c := baseConfig()
+			c.UsersFilePath = "/some/nonexistent/path/users.txt"
 
 			require.Error(t, c.IsValid())
 		})

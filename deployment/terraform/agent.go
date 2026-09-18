@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -81,10 +83,11 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	totalAgentCount := len(t.output.Agents) + len(t.output.BrowserAgents)
 	splitFiles := make([][]string, 0, totalAgentCount)
 	if t.config.UsersFilePath != "" {
-		f, err := os.Open(t.config.UsersFilePath)
+		f, err := openUsersFile(t.config.UsersFilePath)
 		if err != nil {
-			return fmt.Errorf("error opening UsersFilePath %q", t.config.UsersFilePath)
+			return fmt.Errorf("error opening UsersFilePath %q: %w", t.config.UsersFilePath, err)
 		}
+		defer f.Close()
 		scanner := bufio.NewScanner(f)
 		for i := 0; i < totalAgentCount; i++ {
 			splitFiles = append(splitFiles, []string{})
@@ -358,4 +361,21 @@ func (t *Terraform) getAppHostsFile(index int) (string, error) {
 	}
 
 	return fmt.Sprintf(appHosts, proxyHost), nil
+}
+
+// openUsersFile opens a users credentials file for reading.
+// It supports local files (prefixed with "file://") and remote files (http:// or https://).
+func openUsersFile(path string) (io.ReadCloser, error) {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		resp, err := http.Get(path)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
+		}
+		return resp.Body, nil
+	}
+	return os.Open(strings.TrimPrefix(path, filePrefix))
 }
