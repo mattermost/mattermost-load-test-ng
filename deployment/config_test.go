@@ -71,6 +71,25 @@ func TestConfigIsValid(t *testing.T) {
 			require.NoError(t, c.IsValid())
 		})
 	})
+
+	t.Run("MattermostEnvVars", func(t *testing.T) {
+		t.Run("valid variable names", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostEnvVars = map[string]string{
+				"MM_FEATUREFLAGS_ENABLEAIRECAPS": "true",
+				"_CUSTOM_VALUE":                  "value",
+			}
+
+			require.NoError(t, c.IsValid())
+		})
+
+		t.Run("invalid variable name", func(t *testing.T) {
+			c := baseConfig()
+			c.MattermostEnvVars = map[string]string{"INVALID-NAME": "value"}
+
+			require.ErrorContains(t, c.IsValid(), "invalid MattermostEnvVars variable name")
+		})
+	})
 }
 
 func TestValidateElasticSearchConfig(t *testing.T) {
