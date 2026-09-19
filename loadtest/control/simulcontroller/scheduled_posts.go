@@ -1,22 +1,64 @@
+// Copyright (c) 2019-present Mattermost, Inc. All Rights Reserved.
+// See License.txt for license information.
+
 package simulcontroller
 
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost/server/public/model"
-	"math/rand"
-	"time"
 )
 
+const (
+	probabilityToggleScheduledPostRecurrence = 0.10
+	scheduledPostFutureTimeDeltaStart        = 48 * time.Hour
+	scheduledPostFutureTimeMaxUntil          = 240 * time.Hour
+)
+
+func nextScheduledPostBatchBoundary(now time.Time, interval, minLead time.Duration) int64 {
+	eligible := now.UTC().Add(minLead)
+	boundary := eligible.Truncate(interval)
+	if boundary.Before(eligible) {
+		boundary = boundary.Add(interval)
+	}
+
+	return boundary.UnixMilli()
+}
+
+func (c *SimulController) scheduledPostTime(now time.Time) int64 {
+	if rand.Float64() < c.config.PercentBatchAlignedScheduledPosts {
+		interval := time.Duration(c.config.ScheduledPostBatchIntervalMinutes) * time.Minute
+		minLead := time.Duration(c.config.ScheduledPostBatchMinLeadMinutes) * time.Minute
+		return nextScheduledPostBatchBoundary(now, interval, minLead)
+	}
+
+	return loadtest.RandomFutureTime(scheduledPostFutureTimeDeltaStart, scheduledPostFutureTimeMaxUntil)
+}
+
 func (c *SimulController) createScheduledPost(u user.User) control.UserActionResponse {
+	return c.createScheduledPostWithRecurrence(u, false)
+}
+
+func (c *SimulController) createRecurringScheduledPost(u user.User) control.UserActionResponse {
+	return c.createScheduledPostWithRecurrence(u, true)
+}
+
+func (c *SimulController) createScheduledPostWithRecurrence(u user.User, recurring bool) control.UserActionResponse {
 	if ok, resp := control.ScheduledPostsEnabled(u); resp.Err != nil {
 		return resp
 	} else if !ok {
 		return control.UserActionResponse{Info: "scheduled posts not enabled"}
+	}
+
+	if recurring && !control.RecurringScheduledPostsEnabled(u) {
+		return control.UserActionResponse{Info: "recurring scheduled posts not enabled"}
 	}
 
 	channel, err := u.Store().CurrentChannel()
@@ -56,17 +98,26 @@ func (c *SimulController) createScheduledPost(u user.User) control.UserActionRes
 			RootId:    rootId,
 			CreateAt:  model.GetMillis(),
 		},
-		ScheduledAt: loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10),
+		ScheduledAt: c.scheduledPostTime(time.Now()),
 	}
 
-	if rand.Float64() < probabilityAttachFileToPost {
+	if !recurring && rand.Float64() < probabilityAttachFileToPost {
 		if err := control.AttachFilesToDraft(u, &scheduledPost.Draft); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
+	if recurring {
+		scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
+		scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
+	}
+
 	if err := u.CreateScheduledPost(channel.TeamId, scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if recurring {
+		return control.UserActionResponse{Info: fmt.Sprintf("recurring scheduled post created in channel with id %s", channel.Id)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post created in channel with id %s", channel.Id)}
@@ -97,10 +148,28 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 	}
 
 	scheduledPost.Message = message
-	scheduledPost.ScheduledAt = loadtest.RandomFutureTime(time.Hour*24*2, time.Hour*24*10)
+
+	recurrenceUpdate := ""
+	if c.serverVersion.GTE(control.RecurringScheduledPostsMinVersion) &&
+		control.RecurringScheduledPostsEnabled(u) &&
+		rand.Float64() < probabilityToggleScheduledPostRecurrence {
+		if scheduledPost.IsRecurring() {
+			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeNone
+			scheduledPost.RepeatTimezone = ""
+			recurrenceUpdate = "disabled"
+		} else if len(scheduledPost.FileIds) == 0 {
+			scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
+			scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
+			recurrenceUpdate = "enabled"
+		}
+	}
 
 	if err := u.UpdateScheduledPost(channel.TeamId, scheduledPost); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if recurrenceUpdate != "" {
+		return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated with recurrence %s in channel with id %s", recurrenceUpdate, channel.Id)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post updated in channel with id %s", channel.Id)}

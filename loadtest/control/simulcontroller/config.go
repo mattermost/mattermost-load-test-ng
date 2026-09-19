@@ -20,6 +20,12 @@ type Config struct {
 	PercentUrgentPosts float64 `default:"0.001" validate:"range:[0,1]"`
 	// The percentage of all posts that are replies
 	PercentReplies float64 `default:"0.18" validate:"range:[0,1]"`
+	// The portion of newly created scheduled posts aligned to a shared batch boundary.
+	PercentBatchAlignedScheduledPosts float64 `default:"0.5" validate:"range:[0,1]"`
+	// The number of minutes between shared scheduled-post batch boundaries.
+	ScheduledPostBatchIntervalMinutes int `default:"30" validate:"range:[5,60]"`
+	// The minimum number of minutes before a shared scheduled-post batch boundary.
+	ScheduledPostBatchMinLeadMinutes int `default:"10" validate:"range:[5,60]"`
 
 	// The IDs of the enabled plugins.
 	EnabledPlugins []string

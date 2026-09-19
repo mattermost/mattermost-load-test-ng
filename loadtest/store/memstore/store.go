@@ -1382,6 +1382,43 @@ func (s *MemStore) DeleteChannelBookmark(bookmarkId string) error {
 	return nil
 }
 
+func scheduledPostBucketID(scheduledPost *model.ScheduledPost) string {
+	if scheduledPost.RootId != "" {
+		return scheduledPost.RootId
+	}
+	return scheduledPost.ChannelId
+}
+
+// upsertScheduledPost inserts a scheduled post or replaces all existing local
+// copies with the same ID. The caller must hold s.lock for writing.
+func (s *MemStore) upsertScheduledPost(teamId string, scheduledPost *model.ScheduledPost) {
+	found := false
+	for _, teamScheduledPosts := range s.scheduledPosts {
+		for bucketID, scheduledPosts := range teamScheduledPosts {
+			for i, storedScheduledPost := range scheduledPosts {
+				if storedScheduledPost.Id == scheduledPost.Id {
+					teamScheduledPosts[bucketID][i] = scheduledPost
+					found = true
+				}
+			}
+		}
+	}
+
+	if found {
+		return
+	}
+
+	if s.scheduledPosts == nil {
+		s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
+	}
+	if s.scheduledPosts[teamId] == nil {
+		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{}
+	}
+
+	bucketID := scheduledPostBucketID(scheduledPost)
+	s.scheduledPosts[teamId][bucketID] = append(s.scheduledPosts[teamId][bucketID], scheduledPost)
+}
+
 func (s *MemStore) SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -1390,20 +1427,7 @@ func (s *MemStore) SetScheduledPost(teamId string, scheduledPost *model.Schedule
 		return errors.New("memstore: scheduled post should not be nil")
 	}
 
-	if s.scheduledPosts == nil {
-		s.scheduledPosts = map[string]map[string][]*model.ScheduledPost{}
-	}
-
-	if s.scheduledPosts[teamId] == nil {
-		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{}
-	}
-
-	channelOrThreadId := scheduledPost.ChannelId
-	if scheduledPost.RootId != "" {
-		channelOrThreadId = scheduledPost.RootId
-	}
-
-	s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId], scheduledPost)
+	s.upsertScheduledPost(teamId, scheduledPost)
 	return nil
 }
 
@@ -1411,18 +1435,28 @@ func (s *MemStore) DeleteScheduledPost(scheduledPost *model.ScheduledPost) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	for teamId := range s.scheduledPosts {
-		channelOrThreadId := scheduledPost.ChannelId
-		if scheduledPost.RootId != "" {
-			channelOrThreadId = scheduledPost.RootId
+	if scheduledPost == nil {
+		return
+	}
+
+	for teamID, teamScheduledPosts := range s.scheduledPosts {
+		for bucketID, scheduledPosts := range teamScheduledPosts {
+			kept := scheduledPosts[:0]
+			for _, storedScheduledPost := range scheduledPosts {
+				if storedScheduledPost.Id != scheduledPost.Id {
+					kept = append(kept, storedScheduledPost)
+				}
+			}
+
+			if len(kept) == 0 {
+				delete(teamScheduledPosts, bucketID)
+			} else {
+				teamScheduledPosts[bucketID] = kept
+			}
 		}
 
-		// find index of scheduledPost in s.scheduledPosts[teamId][channelOrThreadId] and if found, delete it
-		for i, sp := range s.scheduledPosts[teamId][channelOrThreadId] {
-			if sp.Id == scheduledPost.Id {
-				s.scheduledPosts[teamId][channelOrThreadId] = append(s.scheduledPosts[teamId][channelOrThreadId][:i], s.scheduledPosts[teamId][channelOrThreadId][i+1:]...)
-				break
-			}
+		if len(teamScheduledPosts) == 0 {
+			delete(s.scheduledPosts, teamID)
 		}
 	}
 }
@@ -1431,24 +1465,11 @@ func (s *MemStore) UpdateScheduledPost(teamId string, scheduledPost *model.Sched
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	channelOrThreadId := scheduledPost.ChannelId
-	if scheduledPost.RootId != "" {
-		channelOrThreadId = scheduledPost.RootId
-	}
-
-	if _, ok := s.scheduledPosts[teamId]; !ok {
-		s.scheduledPosts[teamId] = map[string][]*model.ScheduledPost{
-			channelOrThreadId: {scheduledPost},
-		}
+	if scheduledPost == nil {
 		return
 	}
 
-	for i := range s.scheduledPosts[teamId][channelOrThreadId] {
-		if s.scheduledPosts[teamId][channelOrThreadId][i].Id == scheduledPost.Id {
-			s.scheduledPosts[teamId][channelOrThreadId][i] = scheduledPost
-			break
-		}
-	}
+	s.upsertScheduledPost(teamId, scheduledPost)
 }
 
 func (s *MemStore) SetCPAFields(fields []*model.PropertyField) error {

@@ -12,6 +12,24 @@ The minium amount of time (in milliseconds) the controlled users will wait betwe
 
 The average amount of time (in milliseconds) the controlled users will wait between actions.
 
+## PercentBatchAlignedScheduledPosts
+
+*float64*
+
+The fraction of newly created scheduled posts, including recurring posts, that are aligned to a shared UTC batch boundary. The default is `0.5`, and the valid range is `0` to `1`.
+
+## ScheduledPostBatchIntervalMinutes
+
+*int*
+
+The number of minutes between shared UTC scheduled-post batch boundaries. The default is `30`, and the valid range is `5` to `60`.
+
+## ScheduledPostBatchMinLeadMinutes
+
+*int*
+
+The minimum lead time in minutes for a shared scheduled-post batch boundary. The default is `10`, and the valid range is `5` to `60`. The next boundary is computed after adding this lead time, so all agents scheduling at the same instant select the same upcoming UTC boundary.
+
 ## EnabledPlugins
 
 *[]string*

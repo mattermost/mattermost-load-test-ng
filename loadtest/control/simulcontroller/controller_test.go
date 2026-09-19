@@ -120,9 +120,17 @@ func TestRunStop(t *testing.T) {
 func TestGetActionList(t *testing.T) {
 	c, statusChan := newController(t)
 	close(statusChan) // not used
-	for _, action := range getActionList(c) {
+	actions := getActionList(c)
+	recurringActionCount := 0
+	for _, action := range actions {
 		require.NotZero(t, action.minServerVersion, "All actions must have minServerVersion set")
+		if action.name == "CreateRecurringScheduledPost" {
+			recurringActionCount++
+			require.Equal(t, control.RecurringScheduledPostsMinVersion, action.minServerVersion)
+			require.NotNil(t, action.run)
+		}
 	}
+	require.Equal(t, 1, recurringActionCount)
 }
 
 func TestAgentsPluginRegistersSimulController(t *testing.T) {

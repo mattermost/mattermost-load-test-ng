@@ -44,6 +44,8 @@ type UserStore interface {
 	Email() string
 	// Password returns the password for the stored user.
 	Password() string
+	// User returns the stored user.
+	User() (*model.User, error)
 
 	// Config returns the server configuration settings.
 	Config() model.Config
@@ -206,8 +208,6 @@ type MutableUserStore interface {
 	// users
 	// SetUser stores the given user.
 	SetUser(user *model.User) error
-	// User returns the stored user.
-	User() (*model.User, error)
 	// SetUsers stores the given users.
 	SetUsers(users []*model.User) error
 
