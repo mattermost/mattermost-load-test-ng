@@ -1,17 +1,27 @@
 {
-  "NumUsersDec": 6,
-  "NumUsersInc": 6,
   "ClusterConfig": {
+    "Agents": [
+      {
+        "ApiURL": "http://localhost:4000",
+        "Id": "lt0"
+      }
+    ],
     "MaxActiveUsers": 20000,
-    "BrowserAgents": []
+    "BrowserAgents": [],
+    "MaxActiveBrowserUsers": 0
   },
   "LogSettings": {
+    "ConsoleJson": false,
     "ConsoleLevel": "INFO",
+    "EnableColor": false,
+    "EnableConsole": true,
+    "EnableFile": true,
     "FileJson": true,
     "FileLevel": "INFO",
     "FileLocation": "ltcoordinator.log"
   },
   "MonitorConfig": {
+    "PrometheusURL": "http://localhost:9090",
     "Queries": [
       {
         "Alert": true,
@@ -85,6 +95,10 @@
         "Query": "(avg(rate(node_netstat_Tcp_RetransSegs{instance=~\"proxy:9100\"}[1m])) / avg(rate(node_netstat_Tcp_OutSegs{instance=~\"proxy:9100\"}[1m]))) * 100",
         "Threshold": 0.5
       }
-    ]
-  }
+    ],
+    "UpdateIntervalMs": 2000
+  },
+  "NumUsersDec": 6,
+  "NumUsersInc": 6,
+  "RestTimeSec": 2
 }
