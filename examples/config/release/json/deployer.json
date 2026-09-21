@@ -1,28 +1,63 @@
 {
   "AWSAMI": "ami-003d3d03cfe1b0468",
+  "AWSAMIUser": "ubuntu",
   "AWSAvailabilityZone": "",
+  "AWSRoleARN": "",
   "AWSProfile": "mm-loadtest",
+  "AWSRegion": "us-east-1",
+  "OperatingSystemKind": "debian",
+  "AdminEmail": "sysadmin@sample.mattermost.com",
+  "AdminPassword": "TestPassword123$",
+  "AdminUsername": "sysadmin",
   "AgentInstanceCount": 6,
   "AgentInstanceType": "c7i.xlarge",
-  "BrowserAgentInstanceCount": 2,
+  "BrowserAgentInstanceCount": 0,
   "BrowserAgentInstanceType": "c7i.xlarge",
+  "AgentAllocatePublicIPAddress": true,
+  "AppAttachIAMProfile": "",
+  "EnableMetricsInstance": true,
   "AppInstanceCount": 2,
   "AppInstanceType": "c7i.xlarge",
-  "ClusterName": "TBD",
+  "ClusterName": "<TBD>",
+  "ClusterSubnetIDs": {},
+  "ClusterVpcID": "",
+  "ConnectionType": "public",
+  "DBDumpURI": "",
+  "DBExtraSQL": [],
+  "ElasticSearchSettings": {},
+  "RedisSettings": {},
+  "OpenLDAPSettings": {},
+  "EnableAgentFullLogs": true,
+  "EnableNetPeekMetrics": false,
+  "ExternalBucketSettings": {},
+  "ExternalDBSettings": {},
+  "ExternalAuthProviderSettings": {},
+  "JobServerSettings": {},
   "LoadTestDownloadURL": "https://github.com/mattermost/mattermost-load-test-ng/releases/download/vTBD/mattermost-load-test-ng-vTBD-linux-amd64.tar.gz",
-  "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
-  "MattermostLicenseFile": "",
-  "MetricsInstanceType": "t3.xlarge",
-  "ProxyInstanceCount": 1,
-  "ProxyInstanceType": "c7i.xlarge",
-  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
-  "TerraformStateDir": "./ltstatus",
   "LogSettings": {
+    "ConsoleJson": false,
     "ConsoleLevel": "INFO",
     "EnableColor": true,
+    "EnableConsole": true,
+    "EnableFile": true,
     "FileJson": true,
     "FileLevel": "DEBUG",
     "FileLocation": "deployer.log"
+  },
+  "MattermostConfigPatchFile": "",
+  "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
+  "MattermostLicenseFile": "/home/ubuntu/licenses/lt_enterprise-500K.mattermost-license",
+  "MattermostPlugins": {
+    "playbooks": "https://github.com/mattermost/mattermost-plugin-playbooks/releases/download/v2.10.1/mattermost-plugin-playbooks-v2.10.1-linux-amd64.tar.gz"
+  },
+  "MetricsInstanceType": "t3.xlarge",
+  "ProxyInstanceCount": 1,
+  "ProxyInstanceType": "c7i.xlarge",
+  "ProxyAllocatePublicIPAddress": true,
+  "PyroscopeSettings": {
+    "BlockProfileRate": 0,
+    "EnableAgentProfiling": true,
+    "EnableAppProfiling": true
   },
   "Report": {
     "GraphQueries": [
@@ -69,20 +104,36 @@
     ],
     "Label": "{instance=~\"app.*\"}"
   },
+  "S3BucketDumpURI": "",
+  "SSHPublicKey": "~/.ssh/id_ed25519.pub",
   "SiteURL": "",
+  "ServerURL": "",
+  "ServerScheme": "http",
+  "UsersFilePath": "https://lt-public-data.s3.amazonaws.com/12M_11.10.1_users.txt",
   "StorageSizes": {
-    "App": 20
+    "Agent": 10,
+    "App": 20,
+    "ElasticSearch": 20,
+    "Job": 50,
+    "Metrics": 50,
+    "Proxy": 10,
+    "KeyCloak": 10,
+    "OpenLDAP": 20
   },
   "TerraformDBSettings": {
+    "ClusterIdentifier": "",
     "DBParameters": [],
-    "InstanceEngine": "aurora-postgresql",
+    "EnablePerformanceInsights": true,
     "InstanceCount": 2,
-    "InstanceType": "db.r7g.xlarge"
+    "InstanceEngine": "aurora-postgresql",
+    "InstanceType": "db.r7g.xlarge",
+    "Password": "mostest80098bigpass_",
+    "UserName": "mmuser",
+    "DBName": ""
   },
+  "TerraformStateDir": "./ltstatus",
+  "EnableEFS": false,
   "CustomTags": {
     "Origin": "release-testing"
-  },
-  "MattermostPlugins": {
-    "playbooks": "https://plugins.releases.mattermost.com/release/mattermost-plugin-playbooks-v2.8.0-linux-amd64.tar.gz"
   }
 }
