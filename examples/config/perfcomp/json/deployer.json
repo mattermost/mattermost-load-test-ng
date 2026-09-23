@@ -7,7 +7,7 @@
   "AWSRegion": "us-east-1",
   "OperatingSystemKind": "debian",
   "AdminEmail": "sysadmin@sample.mattermost.com",
-  "AdminPassword": "Sys@dmin-sample1",
+  "AdminPassword": "TestPassword123$",
   "AdminUsername": "sysadmin",
   "AgentInstanceCount": 11,
   "AgentInstanceType": "c7i.xlarge",
