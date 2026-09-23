@@ -1,0 +1,50 @@
+{
+  "ConnectionConfiguration": {
+    "AdminEmail": "sysadmin@sample.mattermost.com",
+    "AdminPassword": "Sys@dmin-sample1",
+    "ServerURL": "http://localhost:8065",
+    "WebSocketURL": "ws://localhost:8065"
+  },
+  "InstanceConfiguration": {
+    "NumAdmins": 1,
+    "NumChannels": 0,
+    "NumPosts": 1000,
+    "NumReactions": 50,
+    "NumTeams": 2,
+    "PercentDirectChannels": 0,
+    "PercentGroupChannels": 0,
+    "PercentPrivateChannels": 0,
+    "PercentPublicChannels": 1,
+    "PercentReplies": 0.5,
+    "PercentRepliesInLongThreads": 0.05,
+    "PercentUrgentPosts": 0.001
+  },
+  "LogSettings": {
+    "ConsoleJson": false,
+    "ConsoleLevel": "DEBUG",
+    "EnableColor": true,
+    "EnableConsole": true,
+    "EnableFile": true,
+    "FileJson": true,
+    "FileLevel": "DEBUG",
+    "FileLocation": "ltagent.log"
+  },
+  "UserControllerConfiguration": {
+    "RatesDistribution": [
+      {
+        "Percentage": 1.0,
+        "Rate": 1.0
+      }
+    ],
+    "Type": "noop",
+    "ServerVersion": ""
+  },
+  "UsersConfiguration": {
+    "AvgSessionsPerUser": 1,
+    "InitialActiveUsers": 0,
+    "MaxActiveUsers": 2000,
+    "MaxActiveBrowserUsers": 5,
+    "PercentOfUsersAreAdmin": 0.0005,
+    "UsersFilePath": ""
+  }
+}

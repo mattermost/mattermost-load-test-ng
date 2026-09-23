@@ -4,3 +4,4 @@ This directory contains sets of configuration templates that we use in different
 - [Release testing](./release): configuration used when testing a new release of the load-test tool.
 - [Performance comparison](./perfcomp): configuration used for regression testing of new Mattermost releases. The results of these runs can be found in the [`performance-reports` repository](https://github.com/mattermost/performance-reports/tree/main/performance-comparisons).
 - [CI](./ci): configuration template used by Mattermost's CI pipeline to run automated load-test comparisons in pull requests.
+- [Browser load testing](./browser): configuration used for the monthly browser load testing cadence.
