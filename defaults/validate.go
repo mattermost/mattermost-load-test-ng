@@ -89,9 +89,9 @@ func Validate(value interface{}) error {
 				merr.Append(err)
 			}
 		case reflect.Chan:
-			// Chan fields have no validate tags; skip.
+			continue
 		default:
-			return fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name)
+			merr.Append(fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name))
 		}
 	}
 	return merr.ErrorOrNil()
