@@ -32,6 +32,7 @@ type UserEntity struct {
 	metrics     *performance.UserEntityMetrics
 	wsConnID    string
 	wsServerSeq int64
+	postLogin   func(user *model.User) error
 }
 
 const (
@@ -56,6 +57,9 @@ type Config struct {
 	Email string
 	// The password to be used by the entity.
 	Password string
+	// Optional HTTP headers to be sent with every request, including the
+	// WebSocket handshake.
+	Headers map[string]string
 }
 
 // Setup contains data used to create a new instance of UserEntity.
@@ -68,6 +72,9 @@ type Setup struct {
 	Metrics *performance.UserEntityMetrics
 	// The HTTP client timeout to use.
 	ClientTimeout time.Duration
+	// An optional function called with the logged in user after every
+	// successful login. Login fails if it returns an error.
+	PostLoginHook func(user *model.User) error
 }
 
 type userTypingMsg struct {
@@ -130,7 +137,11 @@ func New(setup Setup, config Config) *UserEntity {
 	ue.config = config
 	ue.store = setup.Store
 	ue.metrics = setup.Metrics
+	ue.postLogin = setup.PostLoginHook
 	ue.client = model.NewAPIv4Client(config.ServerURL)
+	if len(config.Headers) > 0 {
+		ue.client.HTTPHeader = config.Headers
+	}
 
 	if setup.Transport == nil {
 		setup.Transport = http.DefaultTransport

@@ -112,6 +112,10 @@
   "MattermostDownloadURL": "https://latest.mattermost.com/mattermost-enterprise-linux",
   "MattermostLicenseFile": "",
   "MattermostConfigPatchFile": "",
+  "MattermostFeatureFlags": {},
+  "AccessControlSettings": {
+    "Enable": false
+  },
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminUsername": "sysadmin",
   "AdminPassword": "Sys@dmin-sample1",

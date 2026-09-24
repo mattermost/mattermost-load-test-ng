@@ -18,6 +18,17 @@ import (
 )
 
 var esDomainNameRe = regexp.MustCompile(`^[a-z][a-z0-9\-]{2,27}$`)
+var featureFlagNameRE = regexp.MustCompile(`^[A-Za-z0-9]+$`)
+
+// AccessControlSettings contains the settings for Attribute-Based Access Control (ABAC).
+type AccessControlSettings struct {
+	// Enable enables ABAC on the Mattermost servers along with the feature flags
+	// needed for permission policies and session attributes (PermissionPolicies and
+	// SessionAttributes). Requires an Enterprise Advanced license.
+	// The attributes and policies to load-test are configured through
+	// AccessControlConfiguration in the load-test config.
+	Enable bool `default:"false"`
+}
 
 // Config contains the necessary data
 // to deploy and provision a load test environment.
@@ -99,6 +110,12 @@ type Config struct {
 	// MattermostPlugins maps each specified plugin ID to an URL (or local file if
 	// prepended with file://) from which to download and install it
 	MattermostPlugins map[string]string
+	// MattermostFeatureFlags maps feature flag names (e.g. "SessionAttributes") to the
+	// values to set on the app and job servers through MM_FEATUREFLAGS_<NAME>
+	// environment variables. These override the flags set by default.
+	MattermostFeatureFlags map[string]string
+	// AccessControlSettings contains the settings for Attribute-Based Access Control.
+	AccessControlSettings AccessControlSettings
 	// Mattermost instance sysadmin user name.
 	AdminUsername string `default:"sysadmin" validate:"notempty"`
 	// Mattermost instance sysadmin password.
@@ -460,6 +477,15 @@ func (c *Config) IsValid() error {
 
 	if err := c.validateDBName(); err != nil {
 		return err
+	}
+
+	for name, value := range c.MattermostFeatureFlags {
+		if !featureFlagNameRE.MatchString(name) {
+			return fmt.Errorf("invalid feature flag name %q", name)
+		}
+		if strings.ContainsAny(value, "\r\n") {
+			return fmt.Errorf("invalid value for feature flag %q: it cannot contain line breaks", name)
+		}
 	}
 
 	return nil

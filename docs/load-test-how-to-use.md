@@ -109,4 +109,4 @@ After all the code changes:
         - Run `sudo systemctl restart mattermost && until $(curl -sSf http://localhost:8065 --output /dev/null); do sleep 1; done;`
  - **If the feature is behind a feature flag**:
 
-    Add `Environment=MM_FEATUREFLAGS_<feature_flag_name>=true` to the `mattermostServiceFile` string in [deployment/terraform/strings.go](https://github.com/mattermost/mattermost-load-test-ng/blob/bd72575bd115112274e84823a646d8dda313c451/deployment/terraform/strings.go#L20)
+    Add the feature flag to [`MattermostFeatureFlags`](config/deployer.md#mattermostfeatureflags) in your `deployer.json`, e.g. `"MattermostFeatureFlags": {"<feature_flag_name>": "true"}`. It will be set through a `MM_FEATUREFLAGS_<FEATURE_FLAG_NAME>` environment variable on the app and job servers.

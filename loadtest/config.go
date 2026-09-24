@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/accesscontrol"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 )
 
@@ -160,6 +161,9 @@ type Config struct {
 	UsersConfiguration          UsersConfiguration
 	LogSettings                 logger.Settings
 	BrowserLogSettings          BrowserLogSettings
+	// Attribute-Based Access Control setup to load-test channel read and
+	// write access policies.
+	AccessControlConfiguration accesscontrol.Config
 }
 
 // IsValid reports whether a given Config is valid or not.
