@@ -2575,6 +2575,221 @@
         "x": 0,
         "y": 107
       },
+      "id": 54,
+      "panels": [],
+      "title": "Access control (ABAC)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "description": "Share of the access control decisions for each action that were denied, by the lane that denied them: `deny_resource_policy` (a channel policy), `deny_permission_policy` (a system permission policy) or `error` (the evaluation failed, which denies). An action with no decisions in the window is not shown. The permission-policy lane only runs once the resource-policy lane allows.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 108
+      },
+      "id": 55,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "editorMode": "code",
+          "expr": "100 * sum by (action, decision) (increase(mattermost_access_control_decisions_total{decision!=\"allow\"}[1m])) / ignoring(decision) group_left() (sum by (action) (increase(mattermost_access_control_decisions_total[1m])) > 0)",
+          "legendFormat": "{{`{{action}}`}} - {{`{{decision}}`}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "ABAC Denied Decisions (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "description": "Access control decisions per second across the cluster, by action and decision. This counts PDP evaluations, not requests: a request that lists channels, or a WebSocket event fanned out to many recipients, evaluates once per channel or recipient, and repeated checks within a request are memoized.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 108
+      },
+      "id": 56,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "editorMode": "code",
+          "expr": "sum by (action, decision) (rate(mattermost_access_control_decisions_total[1m])) > 0",
+          "legendFormat": "{{`{{action}}`}} - {{`{{decision}}`}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "ABAC Decisions per Second",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 117
+      },
       "id": 41,
       "panels": [],
       "title": "Cloudwatch metrics",
@@ -2589,7 +2804,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 108
+        "y": 118
       },
       "id": 43,
       "options": {
@@ -2668,7 +2883,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 117
+        "y": 127
       },
       "id": 44,
       "options": {
@@ -2765,7 +2980,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 117
+        "y": 127
       },
       "id": 45,
       "options": {
@@ -2804,7 +3019,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 125
+        "y": 135
       },
       "id": 49,
       "panels": [],
@@ -2820,7 +3035,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 126
+        "y": 136
       },
       "id": 47,
       "options": {
@@ -3053,7 +3268,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 134
+        "y": 144
       },
       "id": 53,
       "options": {
@@ -3297,7 +3512,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 134
+        "y": 144
       },
       "id": 52,
       "options": {
@@ -3541,7 +3756,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 142
+        "y": 152
       },
       "id": 50,
       "options": {
@@ -3785,7 +4000,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 142
+        "y": 152
       },
       "id": 51,
       "options": {

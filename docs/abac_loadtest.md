@@ -50,6 +50,24 @@ The sample `config.sample.json` grants 90% of users read and write access:
 
 Denied requests fail with a `403` (`api.channel.channel_read_access.abac_denied.app_error` or `api.channel.channel_write_access.abac_denied.app_error`), and denied channels are filtered out of the list endpoints.
 
+## Monitoring
+
+The server counts every access control decision in `mattermost_access_control_decisions_total`, with two labels:
+
+- `action`: the action evaluated, e.g. `channel_read_access` or `channel_write_access`. Plugin-defined actions are reported as `plugin`, and unknown ones as `other`.
+- `decision`: `allow`, `deny_resource_policy` (a channel policy denied), `deny_permission_policy` (a system permission policy denied) or `error` (the evaluation failed, which denies). The permission policies are only evaluated once the channel policy allows.
+
+The "Access control (ABAC)" row of the default Grafana dashboard shows:
+
+- **ABAC Denied Decisions (%)**: the share of each action's decisions denied, by decision, over time.
+- **ABAC Decisions per Second**: the decision rate, by action and decision.
+
+When reading them, keep in mind:
+
+- They count evaluations, not requests. A request listing channels evaluates each of them, a WebSocket event is evaluated for each recipient, and a request checking the same channel several times evaluates it once. So the denied share doesn't match the share of requests failing with a `403`: see the "HTTP Errors per Minute" panel for those.
+- A write is checked against `channel_read_access` first, and `channel_write_access` is only evaluated if that allows. A write by a user denied read access is counted as a `channel_read_access` deny. With the sample configuration, which denies the same users both, `channel_write_access` is hardly ever denied.
+- Users are denied until the server refreshes its attribute view after they first log in (see the caveats below), so expect a spike of denials at the start of a run.
+
 ## Caveats
 
 - The user attribute values of a user become visible to the policies after the server refreshes its attribute view, which can take up to 30 seconds after the user first logs in. The user is denied access in the meantime.
