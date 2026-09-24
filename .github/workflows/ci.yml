@@ -26,19 +26,13 @@ jobs:
       - name: ci/verify
         run: make verify-gomod
 
-      - name: Generate a dummy SSH key
-        id: gen-ssh-key
+      - name: Generate a dummy SSH key and start agent
         run: |
           ssh-keygen -t ed25519 -f $GITHUB_WORKSPACE/sshkey -q -N ""
-          {
-            echo 'SSH_PRIVATE_KEY<<EOF'
-            cat $GITHUB_WORKSPACE/sshkey
-            echo EOF
-          } >> $GITHUB_OUTPUT
-
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ steps.gen-ssh-key.outputs.SSH_PRIVATE_KEY }}
+          eval "$(ssh-agent -s)"
+          ssh-add $GITHUB_WORKSPACE/sshkey
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
 
       - name: ci/check-style
         run: make check-style
