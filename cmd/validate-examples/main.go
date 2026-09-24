@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+
+	"github.com/wiggin77/merror"
 )
 
 func main() {
@@ -51,8 +54,16 @@ func main() {
 	}
 
 	if err := defaults.Validate(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "error: validation failed for %s: %v\n", filePath, err)
-		os.Exit(1)
+		var merr *merror.MError
+		if !errors.As(err, &merr) {
+			fmt.Fprintln(os.Stderr, "error: failed to convert error to merror")
+			os.Exit(1)
+		}
+
+		if merr.Len() > 1 || !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(os.Stderr, "error: validation failed for %s: %v\n", filePath, err)
+			os.Exit(1)
+		}
 	}
 
 	fmt.Printf("ok: %s (%s)\n", filePath, *configType)
