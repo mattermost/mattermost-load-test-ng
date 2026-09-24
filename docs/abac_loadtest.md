@@ -1,0 +1,76 @@
+# Load-testing channel access policies
+
+The load-test can set up Attribute-Based Access Control (ABAC) permission policies governing channel read (`channel_read_access`) and write (`channel_write_access`) access, so that every channel request made by the simulated users is evaluated against them.
+
+## Requirements
+
+- A Mattermost server supporting channel access permission policies.
+- An Enterprise Advanced license.
+- The `SessionAttributes` and `PermissionPolicies` feature flags enabled at server startup.
+- `AccessControlSettings.EnableAttributeBasedAccessControl` enabled.
+
+## Configuration
+
+The settings are split by who consumes them:
+
+| File | Setting | Purpose |
+|---|---|---|
+| `deployer.json` | [`AccessControlSettings.Enable`](config/deployer.md#accesscontrolsettings) | Enables ABAC and the required feature flags on the servers, and checks the license. |
+| `deployer.json` | [`MattermostFeatureFlags`](config/deployer.md#mattermostfeatureflags) | Optionally sets or overrides any other feature flag. |
+| `config.json` | [`AccessControlConfiguration`](config/config.md#accesscontrolconfiguration) | The user attributes, session attributes and policies, and whether the simulated users send session attributes. |
+
+The controller configs (e.g. `simulcontroller.json`) need no change: the attributes are handled by the users underneath every controller.
+
+When not using the deployer, enable the feature flags (e.g. through the `MM_FEATUREFLAGS_SESSIONATTRIBUTES=true` and `MM_FEATUREFLAGS_PERMISSIONPOLICIES=true` environment variables) and `AccessControlSettings.EnableAttributeBasedAccessControl` on the target instance yourself.
+
+## How it works
+
+When an agent is created with `AccessControlConfiguration.Enable` set, it logs in as the system admin and:
+
+1. Enables the configured session attributes, optionally overriding their TTLs.
+2. Creates the configured user attributes as admin managed custom profile attributes, or adds missing options to existing ones.
+3. Creates or updates the permission policies, and deletes the ones left by earlier runs that are no longer configured. Policy IDs are derived from their names, so running the setup again (e.g. from other agents) doesn't duplicate them.
+4. Logs the expected share of users granted read and write access.
+
+Then, for each simulated user:
+
+- On login, the system admin assigns the user attribute values to the user.
+- On every request, including the WebSocket handshake, the user sends its session attribute values through the `X-MM-Session-Attributes` header, as base64-encoded JSON. It also sends a desktop app `User-Agent`, since the server only accepts client session attributes from the desktop and mobile apps.
+
+Values are picked from the configured weights, deterministically from the user's email, so a user always gets the same values regardless of the agent simulating it.
+
+## Controlling the share of users granted access
+
+A user gets read access if it passes every `channel_read_access` policy, and write access if it also passes every `channel_write_access` policy. So the share of users granted access follows from the policies and the weights of the attribute values.
+
+The sample `config.sample.json` grants 90% of users read and write access:
+
+- `lt-read-clearance-vpn` and `lt-write-clearance-vpn` deny users with a `low` `lt_clearance` (25%) that are not on a VPN (`vpn_active` is `false`, 40%): 0.25 × 0.4 = 10% of users.
+- The other policies check a user and a session attribute against all the values the users get assigned, so they don't deny anyone, but are evaluated on every request like the others.
+
+Denied requests fail with a `403` (`api.channel.channel_read_access.abac_denied.app_error` or `api.channel.channel_write_access.abac_denied.app_error`), and denied channels are filtered out of the list endpoints.
+
+## Monitoring
+
+The server counts every access control decision in `mattermost_access_control_decisions_total`, with two labels:
+
+- `action`: the action evaluated, e.g. `channel_read_access` or `channel_write_access`. Plugin-defined actions are reported as `plugin`, and unknown ones as `other`.
+- `decision`: `allow`, `deny_resource_policy` (a channel policy denied), `deny_permission_policy` (a system permission policy denied) or `error` (the evaluation failed, which denies). The permission policies are only evaluated once the channel policy allows.
+
+The "Access control (ABAC)" row of the default Grafana dashboard shows:
+
+- **ABAC Denied Decisions (%)**: the share of each action's decisions denied, by decision, over time.
+- **ABAC Decisions per Second**: the decision rate, by action and decision.
+
+When reading them, keep in mind:
+
+- They count evaluations, not requests. A request listing channels evaluates each of them, a WebSocket event is evaluated for each recipient, and a request checking the same channel several times evaluates it once. So the denied share doesn't match the share of requests failing with a `403`: see the "HTTP Errors per Minute" panel for those.
+- A write is checked against `channel_read_access` first, and `channel_write_access` is only evaluated if that allows. A write by a user denied read access is counted as a `channel_read_access` deny. With the sample configuration, which denies the same users both, `channel_write_access` is hardly ever denied.
+- Users are denied until the server refreshes its attribute view after they first log in (see the caveats below), so expect a spike of denials at the start of a run.
+
+## Caveats
+
+- The user attribute values of a user become visible to the policies after the server refreshes its attribute view, which can take up to 30 seconds after the user first logs in. The user is denied access in the meantime.
+- The setup is skipped for the `generative` controller, so the data generated by `ltagent init` is not restricted by the policies.
+- Browser agents don't send session attributes, so they are denied access to every channel.
+- The server only evaluates the first 10 permission policies (ordered by ID). Other permission policies on the target instance count towards this limit.

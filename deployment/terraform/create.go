@@ -119,8 +119,12 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 	// Validate the license only if we deploy app nodes;
 	// otherwise we don't need a license at all
 	if t.config.AppInstanceCount > 0 {
-		if err := validateLicense(t.config.MattermostLicenseFile); err != nil {
+		license, err := readValidLicense(t.config.MattermostLicenseFile)
+		if err != nil {
 			return fmt.Errorf("license validation failed: %w", err)
+		}
+		if t.config.AccessControlSettings.Enable && !model.MinimumEnterpriseAdvancedLicense(license) {
+			return errors.New("license validation failed: AccessControlSettings.Enable requires an Enterprise Advanced license")
 		}
 	}
 
@@ -453,9 +457,10 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 	}
 
 	var serviceFileTemplateOutput bytes.Buffer
-	err = serviceFileTemplate.Execute(&serviceFileTemplateOutput, map[string]string{
+	err = serviceFileTemplate.Execute(&serviceFileTemplateOutput, map[string]any{
 		"ServiceEnvironment": os.Getenv("MM_SERVICEENVIRONMENT"),
 		"User":               t.Config().AWSAMIUser,
+		"FeatureFlags":       featureFlagsEnv(t.config),
 	})
 	if err != nil {
 		return fmt.Errorf("error executing service file template: %w", err)
@@ -1191,6 +1196,10 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 		redisEndpoint := net.JoinHostPort(t.output.RedisServer.Address, strconv.Itoa(t.output.RedisServer.Port))
 		cfg.CacheSettings.RedisAddress = model.NewPointer(redisEndpoint)
 		cfg.CacheSettings.RedisDB = model.NewPointer(0)
+	}
+
+	if t.config.AccessControlSettings.Enable {
+		cfg.AccessControlSettings.EnableAttributeBasedAccessControl = model.NewPointer(true)
 	}
 
 	if t.config.MattermostConfigPatchFile != "" {

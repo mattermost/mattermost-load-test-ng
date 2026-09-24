@@ -146,6 +146,7 @@ start:
 			AuthToken:      ue.client.AuthToken,
 			ConnID:         ue.wsConnID,
 			ServerSequence: ue.wsServerSeq,
+			Headers:        ue.config.Headers,
 		})
 		if err != nil {
 			errChan <- fmt.Errorf("userentity: websocketClient creation error: %w", err)

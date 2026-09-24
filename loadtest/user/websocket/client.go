@@ -36,13 +36,17 @@ type ClientParams struct {
 	AuthToken      string
 	ConnID         string
 	ServerSequence int64
+	// Optional headers to be sent with the handshake request.
+	Headers map[string]string
 }
 
 // NewClient4 constructs a new WebSocket client.
 func NewClient4(param *ClientParams) (*Client, error) {
-	header := http.Header{
-		"Authorization": []string{"Bearer " + param.AuthToken},
+	header := http.Header{}
+	for k, v := range param.Headers {
+		header.Set(k, v)
 	}
+	header.Set("Authorization", "Bearer "+param.AuthToken)
 
 	url := param.WsURL + model.APIURLSuffix + "/websocket" + fmt.Sprintf("?connection_id=%s&sequence_number=%d", param.ConnID, param.ServerSequence)
 	conn, _, err := websocket.DefaultDialer.Dial(url, header)
