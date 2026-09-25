@@ -18,7 +18,7 @@
   "EnableMetricsInstance": true,
   "AppInstanceCount": 2,
   "AppInstanceType": "c7i.2xlarge",
-  "ClusterName": "<TBD>",
+  "ClusterName": "TBD",
   "ClusterVpcID": "",
   "ConnectionType": "public",
   "DBDumpURI": "",
