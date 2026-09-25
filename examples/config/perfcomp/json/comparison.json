@@ -1,27 +1,34 @@
 {
   "BaseBuild": {
-    "Label": "release-TBD",
-    "URL": "https://releases.mattermost.com/TBD/mattermost-enterprise-TBD-linux-amd64.tar.gz"
+    "Label": "release-<TBD>",
+    "URL": "https://releases.mattermost.com/<TBD>/mattermost-enterprise-<TBD>-linux-amd64.tar.gz"
   },
   "NewBuild": {
-    "Label": "release-TBD-rc1",
-    "URL": "https://releases.mattermost.com/TBD-rc1/mattermost-enterprise-TBD-rc1-linux-amd64.tar.gz"
+    "Label": "release-<TBD>-rc1",
+    "URL": "https://releases.mattermost.com/<TBD>-rc1/mattermost-enterprise-<TBD>-rc1-linux-amd64.tar.gz"
   },
   "LoadTests": [
     {
-      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.5.1_psql.sql.gz",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.10.1_psql.sql.gz",
       "DBEngine": "postgresql",
+      "S3BucketDumpURI": "",
+      "NumUsers": 0,
+      "Duration": "",
       "Type": "unbounded"
     },
     {
-      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.5.1_psql.sql.gz",
+      "DBDumpURL": "https://lt-public-data.s3.amazonaws.com/12M_11.10.1_psql.sql.gz",
       "DBEngine": "postgresql",
+      "S3BucketDumpURI": "",
       "Duration": "90m",
       "NumUsers": 6500,
       "Type": "bounded"
     }
   ],
   "Output": {
-    "GenerateGraphs": true
+    "GenerateGraphs": true,
+    "GenerateReport": true,
+    "UploadDashboard": true,
+    "GraphsPath": ""
   }
 }

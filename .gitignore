@@ -87,6 +87,11 @@ mattermost-load-test.iml
 *.tar
 .aider*
 
+# Local AI planning and agent guidance
+.planning/
+.claude/
+CLAUDE.md
+
 # lambda function
 lambda/node_modules
 lambda/screenshot*

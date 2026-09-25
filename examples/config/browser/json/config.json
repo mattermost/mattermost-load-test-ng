@@ -6,10 +6,10 @@
     "WebSocketURL": "ws://localhost:8065"
   },
   "InstanceConfiguration": {
-    "NumAdmins": 0,
+    "NumAdmins": 1,
     "NumChannels": 0,
-    "NumPosts": 0,
-    "NumReactions": 0,
+    "NumPosts": 1000,
+    "NumReactions": 50,
     "NumTeams": 2,
     "PercentDirectChannels": 0,
     "PercentGroupChannels": 0,
@@ -32,34 +32,18 @@
   "UserControllerConfiguration": {
     "RatesDistribution": [
       {
-        "Percentage": 0.05,
-        "Rate": 1
-      },
-      {
-        "Percentage": 0.1,
-        "Rate": 2
-      },
-      {
-        "Percentage": 0.15,
-        "Rate": 3
-      },
-      {
-        "Percentage": 0.4,
-        "Rate": 6
-      },
-      {
-        "Percentage": 0.3,
-        "Rate": 30
+        "Percentage": 1.0,
+        "Rate": 1.0
       }
     ],
-    "Type": "simulative",
+    "Type": "noop",
     "ServerVersion": ""
   },
   "UsersConfiguration": {
     "AvgSessionsPerUser": 1,
     "InitialActiveUsers": 0,
     "MaxActiveUsers": 2000,
-    "MaxActiveBrowserUsers": 0,
+    "MaxActiveBrowserUsers": 5,
     "PercentOfUsersAreAdmin": 0.0005,
     "UsersFilePath": ""
   }

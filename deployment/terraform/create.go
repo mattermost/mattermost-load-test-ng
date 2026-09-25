@@ -348,10 +348,8 @@ func (t *Terraform) Create(extAgent *ssh.ExtAgent, initData bool) error {
 		}
 	}
 
-	if t.config.AgentInstanceCount > 0 {
-		if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
-			return fmt.Errorf("error setting up loadtest agents: %w", err)
-		}
+	if err := t.setupLoadtestAgents(extAgent, initData); err != nil {
+		return fmt.Errorf("error setting up loadtest agents: %w", err)
 	}
 
 	mlog.Info("Deployment complete.")
@@ -476,7 +474,6 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 		{srcData: strings.TrimPrefix(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 		{srcData: strings.TrimSpace(serviceFileTemplateOutput.String()), dstPath: "/lib/systemd/system/mattermost.service"},
 		{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-		{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 		{srcData: strings.TrimSpace(fmt.Sprintf(netpeekServiceFile, gossipPort)), dstPath: "/lib/systemd/system/netpeek.service"},
 		{srcData: strings.TrimSpace(otelcolConfig), dstPath: "/etc/otelcol-contrib/config.yaml"},
 	}
@@ -607,19 +604,21 @@ func (t *Terraform) setupAppServer(extAgent *ssh.ExtAgent, ip, siteURL, serviceF
 }
 
 func (t *Terraform) setupLoadtestAgents(extAgent *ssh.ExtAgent, initData bool) error {
-	if err := t.configureAndRunAgents(extAgent); err != nil {
-		return fmt.Errorf("error while setting up an agents: %w", err)
+	if t.config.AgentInstanceCount > 0 || t.config.BrowserAgentInstanceCount > 0 {
+		if err := t.configureAndRunAgents(extAgent); err != nil {
+			return fmt.Errorf("error while setting up an agents: %w", err)
+		}
 	}
 
 	if !t.output.HasAppServers() {
 		return nil
 	}
 
-	if err := t.initLoadtest(extAgent, initData); err != nil {
-		return err
+	if t.config.AgentInstanceCount <= 0 {
+		return nil
 	}
 
-	return nil
+	return t.initLoadtest(extAgent, initData)
 }
 
 func (t *Terraform) setupElasticSearchServer(extAgent *ssh.ExtAgent, ip string) error {
@@ -972,7 +971,6 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			{srcData: strings.TrimLeft(serverSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 			{srcData: strings.TrimLeft(nginxConfig, "\n"), dstPath: "/etc/nginx/nginx.conf"},
 			{srcData: strings.TrimLeft(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-			{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 			{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 		}
 		if err := uploadBatch(sshc, batch); err != nil {
@@ -1047,7 +1045,7 @@ func (t *Terraform) updatePostgresSettings(extAgent *ssh.ExtAgent) error {
 		return fmt.Errorf("error running ssh command: %s, output: %s, error: %w", cmd, out, err)
 	}
 
-	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers;"
+	sqlCmd = "vacuum analyze channels, sidebarchannels, sidebarcategories, posts, threads, threadmemberships, channelmembers, users, sessions, audits, usertermsofservice, tokens;"
 	cmd = fmt.Sprintf("psql '%s' -c '%s'", dns, sqlCmd)
 
 	mlog.Info("Vacuuming the tables", mlog.String("cmd", cmd))

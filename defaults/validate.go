@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/wiggin77/merror"
 )
 
 var (
@@ -26,6 +28,8 @@ func Validate(value interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(value))
 	t := v.Type()
 
+	merr := merror.New()
+
 	// Look for an IsValid method on value. To check that this IsValid method
 	// exists, we need to retrieve it with MethodByName, which returns a
 	// reflect.Value. This reflect.Value, m, has a method that is called
@@ -37,14 +41,14 @@ func Validate(value interface{}) error {
 		e := m.Call([]reflect.Value{})
 		err, ok := e[0].Interface().(error)
 		if ok && err != nil {
-			return err
+			merr.Append(err)
 		}
 	}
 
 	// For non-struct values, we cannot do much, as there's no associated tags
 	// to lookup to decide how to validate, so we have to assume they're valid.
 	if t.Kind() != reflect.Struct {
-		return nil
+		return merr.ErrorOrNil()
 	}
 
 	// For struct values, iterate through the fields and use the type of field
@@ -56,24 +60,24 @@ func Validate(value interface{}) error {
 		case reflect.Struct:
 			dv := field.Interface()
 			if err := Validate(dv); err != nil {
-				return err
+				merr.Append(err)
 			}
 		case reflect.Slice:
 			dv := reflect.ValueOf(field.Interface())
 			if tag, ok := t.Field(i).Tag.Lookup("validate"); ok {
 				if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
-					return err
+					merr.Append(err)
 				}
 			}
 			for j := 0; j < dv.Len(); j++ {
 				if err := Validate(dv.Index(j).Interface()); err != nil {
-					return err
+					merr.Append(err)
 				}
 			}
 		case reflect.Map:
 			if tag, ok := t.Field(i).Tag.Lookup("validate"); ok {
 				if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
-					return err
+					merr.Append(err)
 				}
 			}
 		case reflect.Bool, reflect.Int, reflect.Int64, reflect.Float64, reflect.String:
@@ -82,15 +86,15 @@ func Validate(value interface{}) error {
 				continue
 			}
 			if err := validate(tag, t.Field(i).Name, v, v.Field(i)); err != nil {
-				return err
+				merr.Append(err)
 			}
 		case reflect.Chan:
-			return nil
+			continue
 		default:
-			return fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name)
+			merr.Append(fmt.Errorf("unimplemented struct field type: %s", t.Field(i).Name))
 		}
 	}
-	return nil
+	return merr.ErrorOrNil()
 }
 
 func validate(validation, fieldName string, p, v reflect.Value) error {

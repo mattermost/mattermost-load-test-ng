@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -76,16 +78,18 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		commands = append([]string{"wget -O tmp.tar.gz " + t.config.LoadTestDownloadURL}, commands...)
 	}
 
-	// If UsersFilePath is present, split the user credentials among all the agents,
-	// so that the logged in users don't clash
-	splitFiles := make([][]string, 0, len(t.output.Agents))
+	// If UsersFilePath is present, split the user credentials among all the agents
+	// (both server and browser agents), so that the logged in users don't clash
+	totalAgentCount := len(t.output.Agents) + len(t.output.BrowserAgents)
+	splitFiles := make([][]string, 0, totalAgentCount)
 	if t.config.UsersFilePath != "" {
-		f, err := os.Open(t.config.UsersFilePath)
+		f, err := openUsersFile(t.config.UsersFilePath)
 		if err != nil {
-			return fmt.Errorf("error opening UsersFilePath %q", t.config.UsersFilePath)
+			return fmt.Errorf("error opening UsersFilePath %q: %w", t.config.UsersFilePath, err)
 		}
+		defer f.Close()
 		scanner := bufio.NewScanner(f)
-		for range t.output.Agents {
+		for i := 0; i < totalAgentCount; i++ {
 			splitFiles = append(splitFiles, []string{})
 		}
 		i := 0
@@ -100,9 +104,10 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 
 	// Create combined list of all agents with type information
 	type agentInfo struct {
-		instance  Instance
-		agentType string
-		index     int
+		instance    Instance
+		agentType   string
+		index       int
+		globalIndex int
 	}
 
 	// We read the local browsercontroller.json file, marshal it, and upload it to each browser agent below so
@@ -121,12 +126,12 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 		browserControllerConfig = string(data)
 	}
 
-	allAgents := make([]agentInfo, 0, len(t.output.Agents)+len(t.output.BrowserAgents))
+	allAgents := make([]agentInfo, 0, totalAgentCount)
 	for i, agent := range t.output.Agents {
-		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeServer, index: i})
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeServer, index: i, globalIndex: i})
 	}
 	for i, agent := range t.output.BrowserAgents {
-		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeBrowser, index: i})
+		allAgents = append(allAgents, agentInfo{instance: agent, agentType: deployment.AgentTypeBrowser, index: i, globalIndex: i + len(t.output.Agents)})
 	}
 
 	wg := sync.WaitGroup{}
@@ -135,6 +140,7 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 	for _, agentInfo := range allAgents {
 		wg.Add(1)
 		agentNumber := agentInfo.index
+		globalIndex := agentInfo.globalIndex
 		instance := agentInfo.instance
 		agentType := agentInfo.agentType
 
@@ -218,13 +224,21 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				{srcData: strings.TrimPrefix(browserBuf.String(), "\n"), dstPath: "/lib/systemd/system/ltbrowserapi.service", msg: "Uploading load-test browser api service file"},
 				{srcData: strings.TrimPrefix(clientSysctlConfig, "\n"), dstPath: "/etc/sysctl.conf"},
 				{srcData: strings.TrimPrefix(limitsConfig, "\n"), dstPath: "/etc/security/limits.conf"},
-				{srcData: strings.TrimPrefix(prometheusNodeExporterConfig, "\n"), dstPath: "/etc/default/prometheus-node-exporter"},
 				{srcData: strings.TrimSpace(otelcolConfigFile), dstPath: "/etc/otelcol-contrib/config.yaml"},
 				{srcData: agentType, dstPath: t.ExpandWithUser(dstAgentTypeFilePath), msg: "Uploading agent type file"},
 			}
 
 			if t.config.UsersFilePath != "" {
-				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[agentNumber], "\n"), dstPath: t.ExpandWithUser(dstUsersFilePath), msg: "Uploading list of users credentials"})
+				batch = append(batch, uploadInfo{srcData: strings.Join(splitFiles[globalIndex], "\n"), dstPath: t.ExpandWithUser(dstUsersFilePath), msg: "Uploading list of users credentials"})
+			}
+
+			// Upload the browsercontroller.json to the browser agent instance.
+			if agentType == deployment.AgentTypeBrowser {
+				batch = append(batch, uploadInfo{
+					srcData: browserControllerConfig,
+					dstPath: t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/browsercontroller.json"),
+					msg:     "Uploading browsercontroller.json",
+				})
 			}
 
 			// Upload the browsercontroller.json to the browser agent instance.
@@ -356,4 +370,21 @@ func (t *Terraform) getAppHostsFile(index int) (string, error) {
 	}
 
 	return fmt.Sprintf(appHosts, proxyHost), nil
+}
+
+// openUsersFile opens a users credentials file for reading.
+// It supports local files (prefixed with "file://") and remote files (http:// or https://).
+func openUsersFile(path string) (io.ReadCloser, error) {
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		resp, err := http.Get(path)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
+		}
+		return resp.Body, nil
+	}
+	return os.Open(strings.TrimPrefix(path, filePrefix))
 }

@@ -89,12 +89,23 @@ func (c *NoopController) joinTeam(u user.User) control.UserActionResponse {
 
 	team, err := u.Store().RandomTeam(store.SelectNotMemberOf)
 	if errors.Is(err, memstore.ErrTeamStoreEmpty) {
+		team, err = u.Store().RandomTeam(store.SelectMemberOf)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if err := u.SetCurrentTeam(&team); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 		return control.UserActionResponse{Info: "already joined all teams"}
 	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	if err := u.AddTeamMember(team.Id, userID); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	if err := u.SetCurrentTeam(&team); err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
