@@ -241,15 +241,6 @@ func (t *Terraform) configureAndRunAgents(extAgent *ssh.ExtAgent) error {
 				})
 			}
 
-			// Upload the browsercontroller.json to the browser agent instance.
-			if agentType == deployment.AgentTypeBrowser {
-				batch = append(batch, uploadInfo{
-					srcData: browserControllerConfig,
-					dstPath: t.ExpandWithUser("/home/{{.Username}}/mattermost-load-test-ng/config/browsercontroller.json"),
-					msg:     "Uploading browsercontroller.json",
-				})
-			}
-
 			// If SiteURL is set, update /etc/hosts to point to the correct IP
 			if t.config.SiteURL != "" {
 				appHostsFile, err := t.getAppHostsFile(agentNumber)
