@@ -9,19 +9,19 @@
   "AdminEmail": "sysadmin@sample.mattermost.com",
   "AdminPassword": "TestPassword123$",
   "AdminUsername": "sysadmin",
-  "AgentInstanceCount": 11,
+  "AgentInstanceCount": 1,
   "AgentInstanceType": "c7i.xlarge",
-  "BrowserAgentInstanceCount": 0,
+  "BrowserAgentInstanceCount": 5,
   "BrowserAgentInstanceType": "c7i.xlarge",
   "AgentAllocatePublicIPAddress": true,
   "AppAttachIAMProfile": "",
   "EnableMetricsInstance": true,
   "AppInstanceCount": 2,
   "AppInstanceType": "c7i.2xlarge",
-  "ClusterName": "TBD",
+  "ClusterName": "<TBD>",
   "ClusterVpcID": "",
   "ConnectionType": "public",
-  "DBDumpURI": "",
+  "DBDumpURI": "https://lt-public-data.s3.amazonaws.com/12M_11.10.1_psql.sql.gz",
   "DBExtraSQL": [],
   "EnableAgentFullLogs": true,
   "EnableNetPeekMetrics": false,
@@ -41,7 +41,7 @@
   "SiteURL": "",
   "ServerURL": "",
   "ServerScheme": "http",
-  "UsersFilePath": "https://lt-public-data.s3.amazonaws.com/12M_11.10.1_users.txt",
+  "UsersFilePath": "",
   "TerraformStateDir": "./ltstatus",
   "ClusterSubnetIDs": {},
   "ElasticSearchSettings": {},
@@ -134,6 +134,6 @@
   },
   "EnableEFS": false,
   "CustomTags": {
-    "Origin": "performance-comparison"
+    "Origin": "browser-load-test"
   }
 }

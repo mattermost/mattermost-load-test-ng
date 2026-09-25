@@ -18,6 +18,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/wiggin77/merror"
 
+	_ "github.com/mattermost/mattermost-plugin-agents/loadtest/controller"
 	_ "github.com/mattermost/mattermost-plugin-playbooks/loadtest"
 )
 
@@ -110,6 +111,12 @@ func getActionList(c *SimulController) []userAction {
 			run:              searchPosts,
 			frequency:        0.0218,
 			minServerVersion: control.MinSupportedVersion,
+		},
+		{
+			name:             "SearchPostsAllTeams",
+			run:              searchPostsAllTeams,
+			frequency:        0.0109,
+			minServerVersion: semver.MustParse("10.7.0"),
 		},
 		{
 			name:             "CreatePostReminder",

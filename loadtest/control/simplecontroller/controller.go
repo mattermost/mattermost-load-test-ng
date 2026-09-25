@@ -217,19 +217,20 @@ func (c *SimpleController) createActions(definitions []actionDefinition) error {
 		"Reload": func(u user.User) control.UserActionResponse {
 			return c.reload(true)
 		},
-		"RemoveReaction":     control.RemoveReaction,
-		"ScrollChannel":      c.scrollChannel,
-		"SearchChannels":     control.SearchChannels,
-		"SearchPosts":        control.SearchPosts,
-		"SearchUsers":        control.SearchUsers,
-		"SignUp":             control.SignUp,
-		"UpdateProfile":      c.updateProfile,
-		"UpdateProfileImage": control.UpdateProfileImage,
-		"ViewChannel":        control.ViewChannel,
-		"ViewUser":           control.ViewUser,
-		"FetchStaticAssets":  control.FetchStaticAssets,
-		"UpdateTeam":         c.updateTeam,
-		"MessageExport":      control.MessageExport,
+		"RemoveReaction":      control.RemoveReaction,
+		"ScrollChannel":       c.scrollChannel,
+		"SearchChannels":      control.SearchChannels,
+		"SearchPosts":         control.SearchPosts,
+		"SearchPostsAllTeams": control.SearchPostsAllTeams,
+		"SearchUsers":         control.SearchUsers,
+		"SignUp":              control.SignUp,
+		"UpdateProfile":       c.updateProfile,
+		"UpdateProfileImage":  control.UpdateProfileImage,
+		"ViewChannel":         control.ViewChannel,
+		"ViewUser":            control.ViewUser,
+		"FetchStaticAssets":   control.FetchStaticAssets,
+		"UpdateTeam":          c.updateTeam,
+		"MessageExport":       control.MessageExport,
 	}
 
 	for _, def := range definitions {

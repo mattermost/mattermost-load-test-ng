@@ -562,7 +562,7 @@ func (ue *UserEntity) AddChannelMember(channelId, userId string) error {
 
 // GetChannel fetches and stores the specified channel.
 func (ue *UserEntity) GetChannel(channelId string) error {
-	channel, _, err := ue.client.GetChannel(context.Background(), channelId, "")
+	channel, _, err := ue.client.GetChannel(context.Background(), channelId)
 	if err != nil {
 		return err
 	}

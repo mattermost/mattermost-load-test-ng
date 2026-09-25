@@ -1190,14 +1190,7 @@ func (c *SimulController) searchChannels(u user.User) control.UserActionResponse
 	})
 }
 
-func searchPosts(u user.User) control.UserActionResponse {
-	team, err := u.Store().CurrentTeam()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	} else if team == nil {
-		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
-	}
-
+func searchPostsForTeam(u user.User, teamID string) control.UserActionResponse {
 	var words []string
 	var opts control.PostsSearchOpts
 	// This is an arbitrary limit on the number of words to search for.
@@ -1205,43 +1198,45 @@ func searchPosts(u user.User) control.UserActionResponse {
 	count := 1 + rand.Intn(4)
 
 	// TODO: back the probability of these choices with real data.
-	if rand.Float64() < 0.2 {
-		user, err := u.Store().RandomUser()
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		opts.From = user.Username
-		control.EmulateUserTyping(opts.From, func(term string) control.UserActionResponse {
-			users, err := u.AutocompleteUsersInTeam(team.Id, term, 25)
+	if teamID != "" {
+		if rand.Float64() < 0.2 {
+			user, err := u.Store().RandomUser()
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
-			if err := getProfileImageForUsers(u, keys(users)); err != nil {
-				return control.UserActionResponse{Err: control.NewUserError(err)}
-			}
-			if len(users) == 1 {
-				return control.UserActionResponse{Err: errors.New("found")}
-			}
-			return control.UserActionResponse{Info: "emulated user typing users"}
-		})
-	}
+			opts.From = user.Username
+			control.EmulateUserTyping(opts.From, func(term string) control.UserActionResponse {
+				users, err := u.AutocompleteUsersInTeam(teamID, term, 25)
+				if err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+				if err := getProfileImageForUsers(u, keys(users)); err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+				if len(users) == 1 {
+					return control.UserActionResponse{Err: errors.New("found")}
+				}
+				return control.UserActionResponse{Info: "emulated user typing users"}
+			})
+		}
 
-	if rand.Float64() < 0.2 {
-		channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf|store.SelectNotDirect|store.SelectNotGroup)
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		opts.In = channel.Name
-		control.EmulateUserTyping(opts.In, func(term string) control.UserActionResponse {
-			channels, err := u.AutocompleteChannelsForTeamForSearch(team.Id, term)
+		if rand.Float64() < 0.2 {
+			channel, err := u.Store().RandomChannel(teamID, store.SelectMemberOf|store.SelectNotDirect|store.SelectNotGroup)
 			if err != nil {
 				return control.UserActionResponse{Err: control.NewUserError(err)}
 			}
-			if len(channels) == 1 {
-				return control.UserActionResponse{Err: errors.New("found")}
-			}
-			return control.UserActionResponse{Info: "emulated user typing channels"}
-		})
+			opts.In = channel.Name
+			control.EmulateUserTyping(opts.In, func(term string) control.UserActionResponse {
+				channels, err := u.AutocompleteChannelsForTeamForSearch(teamID, term)
+				if err != nil {
+					return control.UserActionResponse{Err: control.NewUserError(err)}
+				}
+				if len(channels) == 1 {
+					return control.UserActionResponse{Err: errors.New("found")}
+				}
+				return control.UserActionResponse{Info: "emulated user typing channels"}
+			})
+		}
 	}
 
 	if rand.Float64() < 0.2 {
@@ -1265,17 +1260,34 @@ func searchPosts(u user.User) control.UserActionResponse {
 		opts.IsPhrase = true
 	}
 
-	for i := 0; i < count; i++ {
+	for range count {
 		words = append(words, control.PickRandomWord())
 	}
 
 	term := control.GeneratePostsSearchTerm(words, opts)
-	list, err := u.SearchPosts(team.Id, term, false)
+	list, err := u.SearchPosts(teamID, term, false)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
+	if teamID == "" {
+		return control.UserActionResponse{Info: fmt.Sprintf("found %d posts in all teams", len(list.Posts))}
+	}
 	return control.UserActionResponse{Info: fmt.Sprintf("found %d posts", len(list.Posts))}
+}
+
+func searchPosts(u user.User) control.UserActionResponse {
+	team, err := u.Store().CurrentTeam()
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if team == nil {
+		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
+	}
+	return searchPostsForTeam(u, team.Id)
+}
+
+func searchPostsAllTeams(u user.User) control.UserActionResponse {
+	return searchPostsForTeam(u, "")
 }
 
 func searchUsers(u user.User) control.UserActionResponse {
@@ -2232,7 +2244,6 @@ func (c *SimulController) generateUserReport(u user.User) control.UserActionResp
 				FromId:          lastId,
 			},
 		})
-
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}

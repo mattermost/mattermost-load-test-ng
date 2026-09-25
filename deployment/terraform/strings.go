@@ -274,15 +274,9 @@ net.ipv4.tcp_notsent_lowat = 16384
 net.ipv4.tcp_rmem = 4096 156250 2500000
 net.ipv4.tcp_wmem = 4096 156250 2500000
 
-# Bumping the theoretical maximum buffer size for receiving TCP sockets not making use of autotuning (i.e. using SO_RCVBUF).
-net.core.rmem_max = 2500000
-# Bumping the theoretical maximum buffer size for sending TCP sockets not making use of autotuning (i.e. using SO_SNDBUF).
-net.core.wmem_max = 2500000
-
-# Bumping the theoretical maximum buffer size of receiving UDP sockets.
+# Bumping the theoretical maximum buffer size of receiving/sending sockets,
+# either UDP, or TCP not using autotuning (i.e. using SO_RCVBUF)
 net.core.rmem_max = 16777216
-
-# Setting the theoretical maximum buffer size of sending UDP sockets.
 net.core.wmem_max = 16777216
 `
 
@@ -552,10 +546,6 @@ KC_DB_PASSWORD=mmpass
 KC_DB_USERNAME=keycloak
 KC_DATABASE=keycloak`
 
-const prometheusNodeExporterConfig = `
-ARGS="--collector.ethtool"
-`
-
 const netpeekServiceFile = `
 [Unit]
 Description=netpeek
@@ -575,9 +565,7 @@ const prometheusNodeExporterServiceFile = `[Unit]
 Description=Node Exporter
 
 [Service]
-# Fallback when environment file does not exist
-EnvironmentFile=-/etc/default/prometheus-node-exporter
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/bin/prometheus-node-exporter --collector.ethtool
 
 [Install]
 WantedBy=multi-user.target`

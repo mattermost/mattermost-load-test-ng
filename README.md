@@ -18,4 +18,3 @@ Code specific documentation can be found on [GoDoc](https://godoc.org/github.com
 ## Help
 
 If you need any help you can join the [Developers: Performance](https://community.mattermost.com/core/channels/developers-performance) channel and ask developers any question related to this project.
-

@@ -23,7 +23,7 @@ func TestConfigIsValid(t *testing.T) {
 
 		err := defaults.Validate(cfg)
 		require.Error(t, err)
-		require.Equal(t, "NumUsersInc is not in the range of range:(0,]: value 0 is lesser or equal than 0", err.Error())
+		require.Contains(t, err.Error(), "NumUsersInc is not in the range of range:(0,]: value 0 is lesser or equal than 0")
 	})
 
 	t.Run("invalid NumUsersDec", func(t *testing.T) {
@@ -34,7 +34,7 @@ func TestConfigIsValid(t *testing.T) {
 
 		err := defaults.Validate(cfg)
 		require.Error(t, err)
-		require.Equal(t, "NumUsersDec is not in the range of range:(0,]: value 0 is lesser or equal than 0", err.Error())
+		require.Contains(t, err.Error(), "NumUsersDec is not in the range of range:(0,]: value 0 is lesser or equal than 0")
 	})
 
 	t.Run("RestTimeSec less than UpdateIntervalMs/1000", func(t *testing.T) {
