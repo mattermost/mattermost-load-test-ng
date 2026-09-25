@@ -53,18 +53,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := defaults.Validate(cfg); err != nil {
-		var merr *merror.MError
-		if !errors.As(err, &merr) {
-			fmt.Fprintln(os.Stderr, "error: failed to convert error to merror")
-			os.Exit(1)
-		}
-
-		if merr.Len() > 1 || !errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintf(os.Stderr, "error: validation failed for %s: %v\n", filePath, err)
-			os.Exit(1)
-		}
+	if err := validate(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "error: validation failed for %s: %v\n", filePath, err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("ok: %s (%s)\n", filePath, *configType)
+}
+
+// validate runs defaults.Validate and inspects the returned error for false positives
+func validate(cfg any) error {
+	err := defaults.Validate(cfg)
+	if err == nil {
+		return nil
+	}
+
+	var merr *merror.MError
+	if !errors.As(err, &merr) {
+		return fmt.Errorf("failed to convert error to merror")
+	}
+
+	// defaults.Validate returns an os.ErrNotExist on files that do not exist
+	// locally; this is correct on production, but not for this script aiming to
+	// validate template config files, which may contain paths that exist in the
+	// target deployment, but not where the script is executed, so we need to
+	// filter out such error
+	filteredMerr := merror.New()
+	for _, err := range merr.Errors() {
+		if !errors.Is(err, os.ErrNotExist) {
+			filteredMerr.Append(err)
+		}
+	}
+
+	return filteredMerr.ErrorOrNil()
 }
