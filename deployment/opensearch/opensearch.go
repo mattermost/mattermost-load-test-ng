@@ -255,7 +255,10 @@ func (c *Client) ListIndices() ([]string, error) {
 	}
 
 	indices := []string{}
-	for index := range resp.Indices {
+	if resp.IndicesGetRespData == nil {
+		return indices, nil
+	}
+	for index := range *resp.IndicesGetRespData {
 		indices = append(indices, index)
 	}
 
@@ -290,7 +293,7 @@ func (c *Client) SnapshotIndicesRecovery(indices []string) ([]SnapshotIndexShard
 		return nil, fmt.Errorf("unable to perform IndicesRecovery request: %w", err)
 	}
 	recovery := []SnapshotIndexShardRecovery{}
-	for _, resp := range resp.Indices {
+	for _, resp := range resp.GetIndices() {
 		for _, shard := range resp.Shards {
 			// Add only the shards corresponding to the snapshot restoration
 			if shard.Type != "SNAPSHOT" {

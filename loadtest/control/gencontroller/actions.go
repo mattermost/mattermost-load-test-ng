@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattermost/mattermost-load-test-ng/loadtest"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
@@ -364,6 +365,75 @@ func (c *GenController) createPostReminder(u user.User) (res control.UserActionR
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("created post reminder, id %s", post.Id)}
+}
+
+func (c *GenController) createScheduledPost(u user.User) (res control.UserActionResponse) {
+	if !c.isVersionSupported(scheduledPostsMinVersion) {
+		return control.UserActionResponse{Warn: fmt.Sprintf(
+			"scheduled posts require server version %q or later",
+			scheduledPostsMinVersion.String(),
+		)}
+	}
+
+	scheduledPostsEnabled, resp := control.ScheduledPostsEnabled(u)
+	if resp.Err != nil {
+		return resp
+	}
+	if !scheduledPostsEnabled {
+		return control.UserActionResponse{Warn: "scheduled posts are disabled or unavailable"}
+	}
+
+	if c.config.PercentRecurringScheduledPosts > 0 &&
+		!c.isVersionSupported(control.RecurringScheduledPostsMinVersion) {
+		return control.UserActionResponse{Warn: fmt.Sprintf(
+			"recurring scheduled posts require server version %q or later",
+			control.RecurringScheduledPostsMinVersion.String(),
+		)}
+	}
+
+	if !st.inc(StateTargetScheduledPosts, c.config.NumScheduledPosts) {
+		return control.UserActionResponse{Info: "target number of scheduled posts reached"}
+	}
+	defer func() {
+		if res.Err != nil || res.Warn != "" {
+			st.dec(StateTargetScheduledPosts)
+		}
+	}()
+
+	team, err := u.Store().RandomTeam(store.SelectMemberOf)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+	channel, err := u.Store().RandomChannel(team.Id, store.SelectMemberOf)
+	if errors.Is(err, memstore.ErrChannelStoreEmpty) {
+		return control.UserActionResponse{Warn: "no channels in store"}
+	} else if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	avgWordCount := 34
+	minWordCount := 1
+	wordCount := rand.Intn(avgWordCount*2-minWordCount*2) + minWordCount
+
+	scheduledPost := &model.ScheduledPost{
+		Draft: model.Draft{
+			Message:   control.GenerateRandomSentences(wordCount),
+			ChannelId: channel.Id,
+			CreateAt:  model.GetMillis(),
+		},
+		ScheduledAt: loadtest.RandomFutureTime(48*time.Hour, 240*time.Hour),
+	}
+
+	if rand.Float64() < c.config.PercentRecurringScheduledPosts {
+		scheduledPost.RepeatType = model.ScheduledPostRepeatTypeWeekly
+		scheduledPost.RepeatTimezone = control.RecurringScheduledPostTimezone(u)
+	}
+
+	if err := u.CreateScheduledPost(channel.TeamId, scheduledPost); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("scheduled post created in channel with id %s", channel.Id)}
 }
 
 func (c *GenController) createReply(u user.User) (res control.UserActionResponse) {

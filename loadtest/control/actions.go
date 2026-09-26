@@ -1061,6 +1061,10 @@ func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+func RecurringScheduledPostsEnabled(u user.User) bool {
+	return u.Store().FeatureFlags()["RecurringScheduledPosts"]
+}
+
 // MessageExport simulates the given user performing
 // a compliance message export
 func MessageExport(u user.User) UserActionResponse {

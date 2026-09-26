@@ -317,6 +317,12 @@ func getActionList(c *SimulController) []userAction {
 			minServerVersion: semver.MustParse("10.3.0"),
 		},
 		{
+			name:             "CreateRecurringScheduledPost",
+			run:              c.createRecurringScheduledPost,
+			frequency:        0.001,
+			minServerVersion: control.RecurringScheduledPostsMinVersion,
+		},
+		{
 			name:             "UpdateScheduledPost",
 			run:              c.updateScheduledPost,
 			frequency:        0.001,
