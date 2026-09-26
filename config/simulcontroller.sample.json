@@ -3,5 +3,15 @@
   "AvgIdleTimeMs": 20000,
   "PercentUrgentPosts": 0.001,
   "PercentReplies": 0.18,
-  "EnabledPlugins": ["playbooks", "mattermost-ai"]
+  "EnabledPlugins": ["playbooks", "mattermost-ai"],
+  "RecapsConfiguration": {
+    "Enabled": false,
+    "AgentUsername": "ai",
+    "MaxChannelsPerRecap": 3,
+    "PollIntervalMs": 5000,
+    "PollTimeoutMs": 120000,
+    "MaxScheduledRecapsPerUser": 1,
+    "ScheduledRecapChannelMode": "specific",
+    "ScheduledRecapDueTime": ""
+  }
 }

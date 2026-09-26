@@ -3,7 +3,12 @@
 
 package terraform
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+)
 
 const mattermostServiceFile = `
 [Unit]
@@ -23,11 +28,27 @@ Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
 Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
 Environment=MM_FEATUREFLAGS_CHANNELBOOKMARKS=true
 Environment=MM_FEATUREFLAGS_CUSTOMPROFILEATTRIBUTES=true
-Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
+{{range .MattermostEnvironment}}Environment={{.}}
+{{end}}Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target
 `
+
+func systemdEnvironmentVariables(env map[string]string) []string {
+	names := make([]string, 0, len(env))
+	for name := range env {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	variables := make([]string, 0, len(names))
+	for _, name := range names {
+		value := strings.ReplaceAll(env[name], "%", "%%")
+		variables = append(variables, strconv.Quote(name+"="+value))
+	}
+	return variables
+}
 
 const prometheusConfig = `
 global:
@@ -498,7 +519,8 @@ WorkingDirectory=/opt/mattermost
 User={{.User}}
 Group={{.User}}
 LimitNOFILE=49152
-Environment=MM_SERVICEENVIRONMENT=%s
+{{range .MattermostEnvironment}}Environment={{.}}
+{{end}}Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target

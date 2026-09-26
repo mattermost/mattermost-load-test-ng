@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-load-test-ng
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.7.1 // indirect
-	golang.org/x/crypto v0.52.0
+	golang.org/x/crypto v0.54.0
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )
 
@@ -36,8 +36,8 @@ require (
 	github.com/graph-gophers/graphql-go v1.10.2
 	github.com/mattermost/mattermost-plugin-agents/loadtest/controller v0.0.0-20260605141157-00ae379a2594
 	github.com/mattermost/mattermost-plugin-playbooks v1.41.1-0.20260127194607-8f646f6e5d13
-	github.com/mattermost/mattermost/server/public v0.4.2
-	github.com/mattermost/mattermost/server/v8 v8.0.0-20260528093044-23d83b74d2fb
+	github.com/mattermost/mattermost/server/public v0.4.4-0.20260805225838-d849edc64036
+	github.com/mattermost/mattermost/server/v8 v8.0.0-20260805225838-d849edc64036
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/pkg/sftp v1.13.10
@@ -155,11 +155,11 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1 // indirect

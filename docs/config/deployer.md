@@ -493,6 +493,22 @@ The location of the Mattermost Enterprise Edition license file.
 
 An optional path to a partial Mattermost config file to be applied as patch during app server deployment.
 
+## MattermostEnvVars
+
+*map[string]string*
+
+Additional environment variables to add to the Mattermost application and dedicated job server systemd services. Use this for server settings that are environment-only, such as feature flags:
+
+```json
+"MattermostEnvVars": {
+  "MM_FEATUREFLAGS_ENABLEAIRECAPS": "true"
+}
+```
+
+Variable names must use letters, digits, and underscores, and cannot start with a digit. Values are quoted when the service unit is rendered. Custom variables render after the built-in `MM_FEATUREFLAGS_*` entries, so they override a built-in variable with the same name because the last systemd assignment wins. They render before `MM_SERVICEENVIRONMENT`, so setting `MM_SERVICEENVIRONMENT` in this map has no effect.
+
+Do not put secrets in this map because the unit file is world-readable and `systemctl show` exposes service environment values to any user on the instance.
+
 ## MattermostPlugins
 
 *map[string]string*

@@ -362,6 +362,15 @@ type User interface {
 	DeleteScheduledPost(scheduledPost *model.ScheduledPost) error
 	GetTeamScheduledPosts(teamID string) error
 
+	// AI Recaps
+	CreateRecap(request *model.CreateRecapRequest) (*model.Recap, error)
+	GetRecap(recapID string) (*model.Recap, error)
+	GetRecaps(page, perPage int) ([]*model.Recap, error)
+	MarkRecapsAsViewed() (*model.MarkRecapsViewedResponse, error)
+	MarkRecapAsRead(recapID string) (*model.Recap, error)
+	CreateScheduledRecap(scheduledRecap *model.ScheduledRecap) (*model.ScheduledRecap, error)
+	GetScheduledRecaps(page, perPage int) ([]*model.ScheduledRecap, error)
+
 	// Custom Profile Attributes
 	GetCPAValues(userId string) (map[string]json.RawMessage, error)
 	PatchCPAValues(values map[string]json.RawMessage) error
