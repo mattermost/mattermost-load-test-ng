@@ -1,0 +1,28 @@
+{
+  "ServerConfig": {
+    "Port": 5000,
+    "Host": "0.0.0.0",
+    "APIKey": ""
+  },
+  "LatencyConfig": {
+    "Enabled": true,
+    "BaseLatencyMs": 50,
+    "LatencyPerHundredCharsMs": 20,
+    "MaxLatencyMs": 40000,
+    "JitterPercent": 20
+  },
+  "TranslationConfig": {
+    "DefaultSourceLanguage": "en",
+    "DetectionConfidence": 95.5
+  },
+  "LogSettings": {
+    "EnableConsole": true,
+    "ConsoleLevel": "INFO",
+    "ConsoleJson": false,
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileJson": true,
+    "FileLocation": "ltlibre.log",
+    "EnableColor": false
+  }
+}
