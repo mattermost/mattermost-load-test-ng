@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/accesscontrol"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
@@ -61,6 +62,7 @@ type config struct {
 		FileLevel     string `default:"error" validate:"oneof:{trace, debug, info, warn, error, fatal}"`
 		FileLocation  string `default:"browseragent.log"`
 	}
+	AccessControlConfiguration accesscontrol.Config
 }
 
 type TestHelper struct {
@@ -95,12 +97,12 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	require.NotNil(th.tb, s)
 	require.NoError(th.tb, err)
 	u := New(Setup{Store: s}, Config{
-		th.config.ConnectionConfiguration.ServerURL,
-		th.config.ConnectionConfiguration.WebSocketURL,
-		AuthenticationTypeMattermost,
-		"testuser",
-		"testuser@example.com",
-		"testpassword",
+		ServerURL:          th.config.ConnectionConfiguration.ServerURL,
+		WebSocketURL:       th.config.ConnectionConfiguration.WebSocketURL,
+		AuthenticationType: AuthenticationTypeMattermost,
+		Username:           "testuser",
+		Email:              "testuser@example.com",
+		Password:           "testpassword",
 	})
 	require.NotNil(th.tb, u)
 	return u

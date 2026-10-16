@@ -69,5 +69,130 @@
     "EnableFile": true,
     "FileLevel": "debug",
     "FileLocation": "browseragent.log"
+  },
+  "AccessControlConfiguration": {
+    "Enable": false,
+    "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Mattermost/5.13.0 Chrome/136.0.7103.149 Electron/36.4.0 Safari/537.36",
+    "UserAttributes": [
+      {
+        "Name": "lt_department",
+        "Type": "select",
+        "Values": [
+          { "Value": "engineering", "Weight": 0.5 },
+          { "Value": "sales", "Weight": 0.3 },
+          { "Value": "support", "Weight": 0.2 }
+        ]
+      },
+      {
+        "Name": "lt_clearance",
+        "Type": "select",
+        "Values": [
+          { "Value": "high", "Weight": 0.5 },
+          { "Value": "medium", "Weight": 0.25 },
+          { "Value": "low", "Weight": 0.25 }
+        ]
+      },
+      {
+        "Name": "lt_region",
+        "Type": "select",
+        "Values": [
+          { "Value": "amer", "Weight": 0.5 },
+          { "Value": "emea", "Weight": 0.3 },
+          { "Value": "apac", "Weight": 0.2 }
+        ]
+      }
+    ],
+    "SessionAttributes": [
+      {
+        "Name": "vpn_active",
+        "TTLSeconds": 0,
+        "GracePeriodSeconds": 0,
+        "Values": [
+          { "Value": "true", "Weight": 0.6 },
+          { "Value": "false", "Weight": 0.4 }
+        ]
+      },
+      {
+        "Name": "os_platform",
+        "TTLSeconds": 0,
+        "GracePeriodSeconds": 0,
+        "Values": [
+          { "Value": "macos", "Weight": 0.5 },
+          { "Value": "windows", "Weight": 0.4 },
+          { "Value": "linux", "Weight": 0.1 }
+        ]
+      },
+      {
+        "Name": "network_interface_type",
+        "TTLSeconds": 0,
+        "GracePeriodSeconds": 0,
+        "Values": [
+          { "Value": "wifi", "Weight": 0.6 },
+          { "Value": "ethernet", "Weight": 0.4 }
+        ]
+      }
+    ],
+    "Policies": [
+      {
+        "Name": "lt-read-clearance-vpn",
+        "Action": "channel_read_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_clearance",
+        "UserAttributeValues": ["high", "medium"],
+        "Operator": "or",
+        "SessionAttribute": "vpn_active",
+        "SessionAttributeValues": ["true"]
+      },
+      {
+        "Name": "lt-read-department-platform",
+        "Action": "channel_read_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_department",
+        "UserAttributeValues": ["engineering", "sales", "support"],
+        "Operator": "and",
+        "SessionAttribute": "os_platform",
+        "SessionAttributeValues": ["macos", "windows", "linux"]
+      },
+      {
+        "Name": "lt-read-region-network",
+        "Action": "channel_read_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_region",
+        "UserAttributeValues": ["amer", "emea", "apac"],
+        "Operator": "and",
+        "SessionAttribute": "network_interface_type",
+        "SessionAttributeValues": ["wifi", "ethernet"]
+      },
+      {
+        "Name": "lt-write-clearance-vpn",
+        "Action": "channel_write_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_clearance",
+        "UserAttributeValues": ["high", "medium"],
+        "Operator": "or",
+        "SessionAttribute": "vpn_active",
+        "SessionAttributeValues": ["true"]
+      },
+      {
+        "Name": "lt-write-region-platform",
+        "Action": "channel_write_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_region",
+        "UserAttributeValues": ["amer", "emea", "apac"],
+        "Operator": "and",
+        "SessionAttribute": "os_platform",
+        "SessionAttributeValues": ["macos", "windows", "linux"]
+      },
+      {
+        "Name": "lt-write-department-network",
+        "Action": "channel_write_access",
+        "Role": "system_user",
+        "UserAttribute": "lt_department",
+        "UserAttributeValues": ["engineering", "sales", "support"],
+        "Operator": "and",
+        "SessionAttribute": "network_interface_type",
+        "SessionAttributeValues": ["wifi", "ethernet"]
+      }
+    ]
   }
 }

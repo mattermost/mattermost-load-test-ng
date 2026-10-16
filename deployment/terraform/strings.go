@@ -19,11 +19,8 @@ WorkingDirectory=/opt/mattermost
 User={{.User}}
 Group={{.User}}
 LimitNOFILE=49152
-Environment=MM_FEATUREFLAGS_POSTPRIORITY=true
-Environment=MM_FEATUREFLAGS_WEBSOCKETEVENTSCOPE=true
-Environment=MM_FEATUREFLAGS_CHANNELBOOKMARKS=true
-Environment=MM_FEATUREFLAGS_CUSTOMPROFILEATTRIBUTES=true
-Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
+{{range .FeatureFlags}}Environment={{.}}
+{{end}}Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target
@@ -504,7 +501,8 @@ WorkingDirectory=/opt/mattermost
 User={{.User}}
 Group={{.User}}
 LimitNOFILE=49152
-Environment=MM_SERVICEENVIRONMENT=%s
+{{range .FeatureFlags}}Environment={{.}}
+{{end}}Environment=MM_SERVICEENVIRONMENT={{.ServiceEnvironment}}
 
 [Install]
 WantedBy=multi-user.target

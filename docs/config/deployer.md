@@ -501,6 +501,26 @@ A map of plugin identifiers to a string indicating where to download the plugin 
 - A URL: the plugin tarball will be downloaded into the app nodes from this URL.
 - A `file://` prefixed path: the plugin tarball will be uploaded from your local filesystem to the app nodes.
 
+## MattermostFeatureFlags
+
+*map[string]string*
+
+A map of Mattermost feature flag names (e.g. `SessionAttributes`) to the values to set on the app and job servers. Each entry is set through a `MM_FEATUREFLAGS_<NAME>` environment variable in the Mattermost service file, so it applies from server startup and takes precedence over `FeatureFlags` set through `MattermostConfigPatchFile`.
+
+The following flags are always set to `true` unless overridden here: `PostPriority`, `WebSocketEventScope`, `ChannelBookmarks` and `CustomProfileAttributes`.
+
+## AccessControlSettings
+
+### Enable
+
+*bool*
+
+When true, enables Attribute-Based Access Control (ABAC) on the servers so that channel read and write access can be load-tested with permission policies. It sets `AccessControlSettings.EnableAttributeBasedAccessControl` in the server config, and the `PermissionPolicies` and `SessionAttributes` feature flags (which can still be overridden through `MattermostFeatureFlags`).
+
+Requires `MattermostLicenseFile` to be an Enterprise Advanced license; the deployment fails otherwise.
+
+The attributes and policies themselves are configured through [`AccessControlConfiguration`](config.md#accesscontrolconfiguration) in the load-test config. See [Load-testing channel access policies](../abac_loadtest.md).
+
 ## AdminEmail
 
 *string*

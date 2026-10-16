@@ -22,6 +22,7 @@ import (
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
 	"github.com/mattermost/mattermost-load-test-ng/deployment"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/accesscontrol"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/browsercontroller"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control/clustercontroller"
@@ -407,6 +408,16 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	}
 	mlog.Info("Custom emoji created")
 
+	// The generative controller is used to generate the initial data, which
+	// we don't want to be restricted by the policies.
+	var acManager *accesscontrol.Manager
+	if config.AccessControlConfiguration.Enable && config.UserControllerConfiguration.Type != loadtest.UserControllerGenerative {
+		acManager, err = setupAccessControl(config)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up access control: %w", err)
+		}
+	}
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
@@ -437,6 +448,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 			Email:              email,
 			Password:           password,
 		}
+		if acManager != nil {
+			ueConfig.Headers = config.AccessControlConfiguration.Headers(email)
+		}
 
 		store, err := memstore.New(&memstore.Config{
 			MaxStoredPosts:          250,
@@ -461,6 +475,9 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		}
 		if metrics != nil {
 			ueSetup.Metrics = metrics.UserEntityMetrics()
+		}
+		if acManager != nil {
+			ueSetup.PostLoginHook = acManager.AssignUserAttributes
 		}
 		ue := userentity.New(ueSetup, ueConfig)
 
@@ -587,6 +604,26 @@ func createSysAdmin(store *memstore.MemStore, config *loadtest.Config) *userenti
 		Password:     config.ConnectionConfiguration.AdminPassword,
 	}
 	return userentity.New(adminUeSetup, adminUeConfig)
+}
+
+// setupAccessControl sets up the attributes and policies on the target
+// instance, and returns the Manager assigning the user attributes, which
+// stays logged in as the system admin.
+func setupAccessControl(config *loadtest.Config) (*accesscontrol.Manager, error) {
+	adminStore, err := memstore.New(nil)
+	if err != nil {
+		return nil, err
+	}
+	sysadmin := createSysAdmin(adminStore, config)
+	if err := sysadmin.Login(); err != nil {
+		return nil, fmt.Errorf("error login as sysadmin: %w", err)
+	}
+
+	m := accesscontrol.NewManager(config.AccessControlConfiguration, sysadmin.Client())
+	if err := m.Setup(); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func createCustomEmoji(config *loadtest.Config) error {

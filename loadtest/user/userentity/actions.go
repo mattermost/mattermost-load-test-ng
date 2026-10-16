@@ -211,6 +211,12 @@ func (ue *UserEntity) Login() error {
 	if err := ue.store.SetUser(loggedUser); err != nil {
 		return fmt.Errorf("error while setting user: %w", err)
 	}
+
+	if ue.postLogin != nil {
+		if err := ue.postLogin(loggedUser); err != nil {
+			return fmt.Errorf("error while running post login hook: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -1764,6 +1770,10 @@ func (ue *UserEntity) prepareRequest(method, url string, data io.Reader, headers
 	}
 
 	for k, v := range headers {
+		rq.Header.Set(k, v)
+	}
+
+	for k, v := range ue.config.Headers {
 		rq.Header.Set(k, v)
 	}
 
