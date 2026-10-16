@@ -120,7 +120,9 @@ func (m *Manager) setupSessionAttributes(ctx context.Context) error {
 	}
 
 	var fields []propertyField
-	if err := m.doJSON(ctx, http.MethodGet, sessionAttributeFieldsRoute+"?per_page=100", nil, &fields); err != nil {
+	// Session attribute fields live at the system scope, which the server
+	// requires to be given explicitly.
+	if err := m.doJSON(ctx, http.MethodGet, sessionAttributeFieldsRoute+"?target_type=system&per_page=100", nil, &fields); err != nil {
 		return fmt.Errorf("failed to get session attribute fields (is the SessionAttributes feature flag enabled?): %w", err)
 	}
 

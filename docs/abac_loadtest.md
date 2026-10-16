@@ -23,9 +23,30 @@ The controller configs (e.g. `simulcontroller.json`) need no change: the attribu
 
 When not using the deployer, enable the feature flags (e.g. through the `MM_FEATUREFLAGS_SESSIONATTRIBUTES=true` and `MM_FEATUREFLAGS_PERMISSIONPOLICIES=true` environment variables) and `AccessControlSettings.EnableAttributeBasedAccessControl` on the target instance yourself.
 
+## Setting up a deployment
+
+1. Set `AccessControlSettings.Enable` in `deployer.json` and `AccessControlConfiguration.Enable` in `config.json`.
+2. Create the deployment:
+
+    ```sh
+    ltctl deployment create
+    ```
+
+3. Set up the attributes and policies:
+
+    ```sh
+    ltctl deployment test-data
+    ```
+
+    It reads `AccessControlConfiguration` from `./config/config.json` (or the file passed with `--loadtest-config`), and logs in with the `AdminEmail` and `AdminPassword` of the deployer config. It connects to the Mattermost URL shown by `ltctl deployment info`, which can be overridden with `--server-url`. It's safe to run it multiple times, e.g. after changing the configuration.
+
+4. Start the load-test as usual.
+
+Running `ltctl deployment test-data` is optional: load-test agents run the same setup when they are created. It lets you check the setup, e.g. in the System Console, before starting the load-test.
+
 ## How it works
 
-When an agent is created with `AccessControlConfiguration.Enable` set, it logs in as the system admin and:
+When `ltctl deployment test-data` runs, or an agent is created with `AccessControlConfiguration.Enable` set, it logs in as the system admin and:
 
 1. Enables the configured session attributes, optionally overriding their TTLs.
 2. Creates the configured user attributes as admin managed custom profile attributes, or adds missing options to existing ones.

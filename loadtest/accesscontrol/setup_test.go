@@ -69,6 +69,11 @@ func (s *fakeServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case r.Method == http.MethodGet && path == sessionAttributeFieldsRoute:
+		if r.URL.Query().Get("target_type") != "system" {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJSON(model.NewAppError("getPropertyFields", "api.property_field.get.scope_required.app_error", nil, "", http.StatusBadRequest))
+			return
+		}
 		writeJSON(s.sessionFields)
 	case r.Method == http.MethodPatch && strings.HasPrefix(path, sessionAttributeFieldsRoute+"/"):
 		var patch struct {
