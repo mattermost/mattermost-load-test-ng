@@ -12,10 +12,10 @@ import (
 )
 
 // API is a subset of Prometheus API interface.
-// https://github.com/prometheus/client_golang/blob/release-1.14/api/prometheus/v1/api.go#L221-L266
+// https://github.com/prometheus/client_golang/blob/v1.25.0/api/prometheus/v1/api.go
 // This subset allows us to implement in our tests only the functions we use,
 // while allowing compatibility with Prometheus API interface.
 type API interface {
-	Query(ctx context.Context, query string, ts time.Time, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error)
-	QueryRange(ctx context.Context, query string, r apiv1.Range, opts ...apiv1.Option) (model.Value, apiv1.Warnings, error)
+	Query(ctx context.Context, query string, ts time.Time, opts ...apiv1.Option) (model.Value, apiv1.Warnings, apiv1.Infos, error)
+	QueryRange(ctx context.Context, query string, r apiv1.Range, opts ...apiv1.Option) (model.Value, apiv1.Warnings, apiv1.Infos, error)
 }

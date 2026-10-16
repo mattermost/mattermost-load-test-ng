@@ -31,7 +31,7 @@ func Test_CanFetchAScalarValue(t *testing.T) {
 		ts      = time.Now()
 	)
 
-	value, warnings, err := api.Query(context, query, ts)
+	value, warnings, _, err := api.Query(context, query, ts)
 
 	assert.NotNil(t, value)
 

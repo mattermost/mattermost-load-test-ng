@@ -44,7 +44,7 @@ func (p *Helper) VectorFirst(query string) (float64, error) {
 	defer cancel()
 
 	// TODO: use QueryRange to reduce the timespan to query
-	value, _, err := p.api.Query(context, query, time.Now())
+	value, _, _, err := p.api.Query(context, query, time.Now())
 	if err != nil {
 		return 0, err
 	}
@@ -64,7 +64,7 @@ func (p *Helper) Matrix(query string, startTime, endTime time.Time) (model.Matri
 		End:   endTime,
 		Step:  5 * time.Second,
 	}
-	value, _, err := p.api.QueryRange(ctx, query, r)
+	value, _, _, err := p.api.QueryRange(ctx, query, r)
 	if err != nil {
 		return nil, err
 	}
