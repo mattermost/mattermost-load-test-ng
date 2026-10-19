@@ -1155,7 +1155,7 @@ func (t *Terraform) updateAppConfig(siteURL string, sshc *ssh.Client, jobServerE
 	cfg.ClusterSettings.ClusterName = model.NewPointer(t.config.ClusterName)
 	cfg.ClusterSettings.ReadOnlyConfig = model.NewPointer(false)
 	cfg.ClusterSettings.EnableGossipCompression = model.NewPointer(false)
-	cfg.ClusterSettings.EnableExperimentalGossipEncryption = model.NewPointer(true)
+	cfg.ClusterSettings.EnableGossipEncryption = model.NewPointer(true)
 
 	cfg.MetricsSettings.Enable = model.NewPointer(true)
 	cfg.MetricsSettings.BlockProfileRate = model.NewPointer(t.config.PyroscopeSettings.BlockProfileRate)
