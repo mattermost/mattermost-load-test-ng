@@ -164,6 +164,9 @@ func (c *Config) IsValid() error {
 	if err := c.InstanceConfiguration.IsValid(); err != nil {
 		return err
 	}
+	if err := c.AccessControlConfiguration.IsValid(); err != nil {
+		return err
+	}
 	return nil
 }
 
