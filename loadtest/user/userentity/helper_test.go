@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-load-test-ng/defaults"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/accesscontrol"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/logger"
 
@@ -53,7 +54,8 @@ type config struct {
 		AvgSessionsPerUser     int     `default:"1" validate:"range:[1,]"`
 		PercentOfUsersAreAdmin float64 `default:"0.0005" validate:"range:[0,1]"`
 	}
-	LogSettings logger.Settings
+	LogSettings                logger.Settings
+	AccessControlConfiguration accesscontrol.Config
 }
 
 type TestHelper struct {
@@ -88,12 +90,12 @@ func (th *TestHelper) CreateUser() *UserEntity {
 	require.NotNil(th.tb, s)
 	require.NoError(th.tb, err)
 	u := New(Setup{Store: s}, Config{
-		th.config.ConnectionConfiguration.ServerURL,
-		th.config.ConnectionConfiguration.WebSocketURL,
-		AuthenticationTypeMattermost,
-		"testuser",
-		"testuser@example.com",
-		"testpassword",
+		ServerURL:          th.config.ConnectionConfiguration.ServerURL,
+		WebSocketURL:       th.config.ConnectionConfiguration.WebSocketURL,
+		AuthenticationType: AuthenticationTypeMattermost,
+		Username:           "testuser",
+		Email:              "testuser@example.com",
+		Password:           "testpassword",
 	})
 	require.NotNil(th.tb, u)
 	return u

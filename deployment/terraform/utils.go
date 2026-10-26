@@ -191,9 +191,16 @@ func openBrowser(url string) (err error) {
 }
 
 func validateLicense(filename string) error {
+	_, err := readValidLicense(filename)
+	return err
+}
+
+// readValidLicense reads the license file and returns the license it contains
+// if valid, started and not expired.
+func readValidLicense(filename string) (*model.License, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return fmt.Errorf("failed to read license file: %w", err)
+		return nil, fmt.Errorf("failed to read license file: %w", err)
 	}
 
 	validator := &utils.LicenseValidatorImpl{}
@@ -214,28 +221,28 @@ func validateLicense(filename string) error {
 		// If the error is not nil, then the user just needs to set the
 		// -service_environment flag to a different value
 		if _, newEnvErr := validator.ValidateLicense(data); newEnvErr == nil {
-			return fmt.Errorf("this license is valid only with a %q service environment, which is currently set to %q; try adding the -service_environment=%s flag to change it", newValue, currentValue, newValue)
+			return nil, fmt.Errorf("this license is valid only with a %q service environment, which is currently set to %q; try adding the -service_environment=%s flag to change it", newValue, currentValue, newValue)
 		}
 
 		// If not, we just return the (probably not very useful) error returned
 		// by the validator
-		return fmt.Errorf("failed to validate license: %w", err)
+		return nil, fmt.Errorf("failed to validate license: %w", err)
 	}
 
 	var license model.License
 	if err := json.Unmarshal([]byte(licenseStr), &license); err != nil {
-		return fmt.Errorf("failed to parse license: %w", err)
+		return nil, fmt.Errorf("failed to parse license: %w", err)
 	}
 
 	if !license.IsStarted() {
-		return errors.New("license has not started")
+		return nil, errors.New("license has not started")
 	}
 
 	if license.IsExpired() {
-		return errors.New("license has expired")
+		return nil, errors.New("license has expired")
 	}
 
-	return nil
+	return &license, nil
 }
 
 func (t *Terraform) getStatePath() string {

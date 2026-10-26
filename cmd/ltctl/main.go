@@ -345,6 +345,19 @@ func main() {
 	destroyCmd.Flags().Bool("do-not-destroy-metrics-instance", false, "Destroy everything but the metrics instance, so you can still analyze already stored data.")
 	deploymentCommands = append(deploymentCommands, destroyCmd)
 
+	testDataCmd := &cobra.Command{
+		Use:   "test-data",
+		Short: "Set up the test data the load-test needs on the current deployment",
+		Long: "Set up the test data the load-test needs on the current deployment: the user attributes, " +
+			"session attributes and access control policies configured in AccessControlConfiguration in the load-test config. " +
+			"It is safe to run it multiple times.",
+		Example: "ltctl deployment test-data --loadtest-config config/config.json",
+		RunE:    RunTestDataCmdF,
+	}
+	testDataCmd.Flags().String("loadtest-config", "", "path to the load-test configuration file to use (defaults to ./config/config.json)")
+	testDataCmd.Flags().String("server-url", "", "an optional override for the URL of the Mattermost server")
+	deploymentCommands = append(deploymentCommands, testDataCmd)
+
 	deploymentCmd.AddCommand(deploymentCommands...)
 	rootCmd.AddCommand(deploymentCmd)
 
