@@ -5,6 +5,7 @@ package userentity
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -44,12 +45,26 @@ func (ue *UserEntity) UpsertDraft(teamId string, draft *model.Draft) error {
 	return ue.store.SetDraft(teamId, upsertedDraft.RootId, upsertedDraft)
 }
 
-func (ue *UserEntity) DeleteDraft(channelId string, rootId string) error {
+func (ue *UserEntity) DeleteDraft(teamId, channelId, rootId string) error {
 	user, err := ue.getUserFromStore()
 	if err != nil {
 		return err
 	}
 
-	_, _, err = ue.client.DeleteDraft(context.Background(), user.Id, channelId, rootId)
-	return err
+	if rootId == "" {
+		if _, _, err := ue.client.DeleteDraft(context.Background(), user.Id, channelId, rootId); err != nil {
+			return err
+		}
+	} else {
+		// Client4.DeleteDraft ignores the root id and would delete the draft of
+		// the channel instead, so the thread route is requested directly, as
+		// the webapp does.
+		resp, err := ue.client.DoAPIDelete(context.Background(), fmt.Sprintf("/users/%s/channels/%s/drafts/%s", user.Id, channelId, rootId))
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+	}
+
+	return ue.store.DeleteDraft(teamId, channelId, rootId)
 }
