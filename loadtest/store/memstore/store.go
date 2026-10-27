@@ -1305,6 +1305,21 @@ func (s *MemStore) SetDrafts(teamId string, drafts []*model.Draft) error {
 	return nil
 }
 
+// DeleteDraft removes the draft of the given channel, or of the given thread
+// if rootId is set, from the given team.
+func (s *MemStore) DeleteDraft(teamId, channelId, rootId string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	id := rootId
+	if id == "" {
+		id = channelId
+	}
+
+	delete(s.drafts[teamId], id)
+	return nil
+}
+
 // ChannelBookmarks returns all bookmarks for the specified channel.
 func (s *MemStore) ChannelBookmarks(channelId string) []*model.ChannelBookmarkWithFileInfo {
 	s.lock.RLock()
