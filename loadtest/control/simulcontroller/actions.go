@@ -328,7 +328,7 @@ func (c *SimulController) switchTeam(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+	if control.FeatureFlagEnabled(c.user, "WebSocketEventScope") {
 		if err := u.UpdateActiveTeam(team.Id); err != nil {
 			mlog.Warn("Failed to update active team", mlog.String("team_id", team.Id))
 		}
@@ -592,13 +592,13 @@ func (c *SimulController) switchChannel(u user.User) control.UserActionResponse 
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if u.Store().FeatureFlags()["ChannelBookmarks"] {
+	if control.FeatureFlagEnabled(u, "ChannelBookmarks") {
 		if err := u.GetChannelBookmarks(channel.Id, 0); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 	}
 
-	if u.Store().FeatureFlags()["WebSocketEventScope"] {
+	if control.FeatureFlagEnabled(u, "WebSocketEventScope") {
 		if err := u.UpdateActiveChannel(channel.Id); err != nil {
 			mlog.Warn("Failed to update active channel", mlog.String("channel_id", channel.Id))
 		}
@@ -1489,7 +1489,7 @@ func (c *SimulController) initialJoinTeam(u user.User) control.UserActionRespons
 		return resp
 	}
 
-	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+	if control.FeatureFlagEnabled(c.user, "WebSocketEventScope") {
 		// Setting the active thread to empty to allow the optimization to kick in early.
 		// We don't do this in the webapp to keep the code simple, but it's okay to do this in load-test
 		// to magnify the boost.
@@ -1848,7 +1848,7 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	if c.user.Store().FeatureFlags()["WebSocketEventScope"] {
+	if control.FeatureFlagEnabled(c.user, "WebSocketEventScope") {
 		if err := u.UpdateActiveThread(thread.Post.ChannelId); err != nil {
 			mlog.Warn("Failed to update active thread", mlog.String("channel_id", thread.Post.ChannelId))
 		}

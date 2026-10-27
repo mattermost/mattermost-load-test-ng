@@ -1042,14 +1042,22 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+// FeatureFlagEnabled returns whether the given feature flag is enabled in the
+// server the user is connected to. The server only sends the flags that still
+// exist: once a feature is generally available its flag is removed, so a flag
+// that is missing from the client config counts as enabled. A flag that is
+// present keeps the value the server gave it.
+func FeatureFlagEnabled(u user.User, flag string) bool {
+	enabled, ok := u.Store().FeatureFlags()[flag]
+	return !ok || enabled
+}
+
 func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
-	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
-	return allow, UserActionResponse{}
+	return FeatureFlagEnabled(u, "ChannelBookmarks"), UserActionResponse{}
 }
 
 func CustomProfileAttributesEnabled(u user.User) (bool, UserActionResponse) {
-	allow := u.Store().FeatureFlags()["CustomProfileAttributes"]
-	return allow, UserActionResponse{}
+	return FeatureFlagEnabled(u, "CustomProfileAttributes"), UserActionResponse{}
 }
 
 func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
