@@ -1451,36 +1451,51 @@ func (c *SimulController) scrollChannel(u user.User) control.UserActionResponse 
 		return control.UserActionResponse{Info: fmt.Sprintf("no posts in channel %v", channel.Id)}
 	}
 
-	// get the oldest post
-	postId := posts[0].Id
 	// scrolling between 1 and 5 times
 	numScrolls := rand.Intn(5) + 1
+	return c.scrollChannelBack(u, channel.Id, collapsedThreads, numScrolls, func() time.Duration {
+		// idle time between scrolls, between 1 and 10 seconds.
+		return time.Duration(1+rand.Intn(10)) * time.Second
+	})
+}
+
+// scrollChannelBack pages back through the history of the given channel up to
+// numScrolls times. Each page is requested with the oldest post loaded so far
+// as the cursor, so every scroll goes further back than the previous one.
+func (c *SimulController) scrollChannelBack(u user.User, channelId string, collapsedThreads bool, numScrolls int, idleTime func() time.Duration) control.UserActionResponse {
+	scrolls := 0
 	for i := 0; i < numScrolls; i++ {
-		postsIds, err := c.user.GetPostsBefore(channel.Id, postId, 0, 30, collapsedThreads)
+		posts, err := c.user.Store().ChannelPostsSorted(channelId, true)
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		if len(posts) == 0 {
+			break
+		}
+
+		// get the oldest post
+		postsIds, err := c.user.GetPostsBefore(channelId, posts[0].Id, 0, 30, collapsedThreads)
+		if err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+		scrolls++
+
+		// there is nothing older to load, the top of the channel was reached.
+		if len(postsIds) == 0 {
+			break
 		}
 
 		if err := fetchPostsInfo(u, postsIds); err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
 		}
 
-		posts, err := c.user.Store().ChannelPostsSorted(channel.Id, false)
-		if err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
-		// get the newest post
-		postId = posts[0].Id
-
-		// idle time between scrolls, between 1 and 10 seconds.
-		idleTime := time.Duration(1+rand.Intn(10)) * time.Second
 		select {
 		case <-c.stopChan:
 			return control.UserActionResponse{Info: "action canceled"}
-		case <-time.After(idleTime):
+		case <-time.After(idleTime()):
 		}
 	}
-	return control.UserActionResponse{Info: fmt.Sprintf("scrolled channel %v %d times", channel.Id, numScrolls)}
+	return control.UserActionResponse{Info: fmt.Sprintf("scrolled channel %v %d times", channelId, scrolls)}
 }
 
 func (c *SimulController) initialJoinTeam(u user.User) control.UserActionResponse {
