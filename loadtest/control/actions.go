@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
@@ -1042,14 +1043,45 @@ func DraftsEnabled(u user.User) (bool, UserActionResponse) {
 	return allow, UserActionResponse{}
 }
 
+// featureFlagRemovedIn is the first server release that no longer sends the
+// given feature flag, because the feature became generally available.
+var featureFlagRemovedIn = map[string]semver.Version{
+	"ChannelBookmarks":        semver.MustParse("12.0.0"),
+	"CustomProfileAttributes": semver.MustParse("11.11.0"),
+	"WebSocketEventScope":     semver.MustParse("11.10.0"),
+}
+
+// FeatureFlagEnabled returns whether the given feature flag is enabled in the
+// server the user is connected to. A flag that is present keeps the value the
+// server gave it. The server stops sending a flag once its feature is
+// generally available, so a missing flag counts as enabled, but only on
+// servers at or after the release that removed it: on an older server the
+// feature may not exist yet. Pre-release suffixes are ignored, and an unknown
+// server version (0.0.0) or a flag that is not listed counts as enabled.
+func FeatureFlagEnabled(u user.User, flag string) bool {
+	if enabled, ok := u.Store().FeatureFlags()[flag]; ok {
+		return enabled
+	}
+
+	removedIn, ok := featureFlagRemovedIn[flag]
+	if !ok {
+		return true
+	}
+
+	version := u.Store().ServerVersion()
+	version.Pre, version.Build = nil, nil
+	if version.EQ(semver.Version{}) {
+		return true
+	}
+	return version.GTE(removedIn)
+}
+
 func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
-	allow := u.Store().FeatureFlags()["ChannelBookmarks"]
-	return allow, UserActionResponse{}
+	return FeatureFlagEnabled(u, "ChannelBookmarks"), UserActionResponse{}
 }
 
 func CustomProfileAttributesEnabled(u user.User) (bool, UserActionResponse) {
-	allow := u.Store().FeatureFlags()["CustomProfileAttributes"]
-	return allow, UserActionResponse{}
+	return FeatureFlagEnabled(u, "CustomProfileAttributes"), UserActionResponse{}
 }
 
 func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
