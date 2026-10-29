@@ -25,13 +25,21 @@ func TestUpdateScheduledPostUsesItsOwnChannel(t *testing.T) {
 	var mut sync.Mutex
 	var updatedChannelId string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// This runs in the server goroutine, so it must not use require, which
+		// calls FailNow. The test body still fails through resp.Err.
 		sp := &model.ScheduledPost{}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(sp))
+		if err := json.NewDecoder(r.Body).Decode(sp); err != nil {
+			t.Errorf("decoding scheduled post: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		mut.Lock()
 		updatedChannelId = sp.ChannelId
 		mut.Unlock()
 		sp.Message = serverMessage
-		require.NoError(t, json.NewEncoder(w).Encode(sp))
+		if err := json.NewEncoder(w).Encode(sp); err != nil {
+			t.Errorf("encoding scheduled post: %v", err)
+		}
 	}))
 	defer srv.Close()
 
