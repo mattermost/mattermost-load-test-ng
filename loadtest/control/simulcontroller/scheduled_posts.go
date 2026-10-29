@@ -86,12 +86,16 @@ func (c *SimulController) updateScheduledPost(u user.User) control.UserActionRes
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	channel, err := u.Store().CurrentChannel()
+	// The scheduled post can belong to any channel of the user, not only the
+	// current one.
+	channel, err := u.Store().Channel(scheduledPost.ChannelId)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
+	} else if channel == nil {
+		return control.UserActionResponse{Info: fmt.Sprintf("channel %s of the scheduled post not found", scheduledPost.ChannelId)}
 	}
 
-	message, err := createMessage(u, channel, false)
+	message, err := createMessage(u, channel, scheduledPost.RootId != "")
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
