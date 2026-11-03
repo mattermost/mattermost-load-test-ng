@@ -106,11 +106,6 @@ func (c *SimulController) deleteDraft(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Info: "drafts not enabled"}
 	}
 
-	channel, err := u.Store().CurrentChannel()
-	if err != nil {
-		return control.UserActionResponse{Err: control.NewUserError(err)}
-	}
-
 	team, err := u.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
@@ -118,15 +113,18 @@ func (c *SimulController) deleteDraft(u user.User) control.UserActionResponse {
 		return control.UserActionResponse{Err: control.NewUserError(errors.New("current team should be set"))}
 	}
 
-	draftId, err := u.Store().RandomDraftForTeam(team.Id)
+	draft, err := u.Store().RandomDraftForTeam(team.Id)
 	if errors.Is(err, memstore.ErrDraftNotFound) {
 		return control.UserActionResponse{Info: fmt.Sprintf("no drafts found in team %v", team.Id)}
-	}
-
-	err = u.DeleteDraft(channel.Id, draftId)
-	if err != nil {
+	} else if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	return control.UserActionResponse{Info: fmt.Sprintf("draft deleted in channel id %v", channel.Id)}
+	// The draft can be in any channel or thread of the team, not only in the
+	// current channel.
+	if err := u.DeleteDraft(team.Id, draft.ChannelId, draft.RootId); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
+	}
+
+	return control.UserActionResponse{Info: fmt.Sprintf("draft deleted in channel id %v", draft.ChannelId)}
 }

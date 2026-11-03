@@ -126,8 +126,9 @@ type User interface {
 	GetDrafts(teamId string) error
 	// UpsertDraft creates and stores a new draft made by the user.
 	UpsertDraft(teamId string, draft *model.Draft) error
-	// DeleteDraft deletes the draft for the given user in a specified channel.
-	DeleteDraft(channelId, rootId string) error
+	// DeleteDraft deletes the draft of the given channel, or of the given thread
+	// if rootId is set, and removes it from the store.
+	DeleteDraft(teamId, channelId, rootId string) error
 
 	// posts
 	// CreatePost creates and stores a new post made by the user.

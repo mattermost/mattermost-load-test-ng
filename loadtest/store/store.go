@@ -126,8 +126,8 @@ type UserStore interface {
 	RandomThread() (ThreadResponseWrapped, error)
 	// RandomCategory returns a random category from a team
 	RandomCategory(teamID string) (model.SidebarCategoryWithChannels, error)
-	// RandomDraftForTeam returns a random draft id for a team for the current user
-	RandomDraftForTeam(teamId string) (string, error)
+	// RandomDraftForTeam returns a random draft of the current user for a team
+	RandomDraftForTeam(teamId string) (*model.Draft, error)
 	// RandomProperty returns a random property field
 	RandomProperty() *model.PropertyField
 
@@ -220,6 +220,9 @@ type MutableUserStore interface {
 	SetDraft(teamId, id string, draft *model.Draft) error
 	// SetDrafts stores the given drafts.
 	SetDrafts(teamId string, drafts []*model.Draft) error
+	// DeleteDraft removes the draft of the given channel, or of the given
+	// thread if rootId is set, from the given team.
+	DeleteDraft(teamId, channelId, rootId string) error
 
 	// scheduled posts
 	SetScheduledPost(teamId string, scheduledPost *model.ScheduledPost) error
