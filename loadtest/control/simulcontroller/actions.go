@@ -1325,7 +1325,7 @@ func searchGroupChannels(u user.User) control.UserActionResponse {
 	}
 	return control.EmulateUserTyping(user.Username[:1+rand.Intn(numChars)], func(term string) control.UserActionResponse {
 		channels, err := u.SearchGroupChannels(&model.ChannelSearch{
-			Term: user.Username,
+			Term: term,
 		})
 		if err != nil {
 			return control.UserActionResponse{Err: control.NewUserError(err)}
