@@ -436,27 +436,23 @@ func (s *MemStore) RandomThread() (store.ThreadResponseWrapped, error) {
 	return *threads[rand.Intn(len(threads))], nil
 }
 
-// RandomDraftForTeam returns a random draft id for the given team
-func (s *MemStore) RandomDraftForTeam(teamId string) (string, error) {
+// RandomDraftForTeam returns a random draft of the current user for the given team
+func (s *MemStore) RandomDraftForTeam(teamId string) (*model.Draft, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	var draftIDs []string
+	var drafts []*model.Draft
 	for _, draft := range s.drafts[teamId] {
 		if draft.UserId == s.user.Id {
-			rootID := draft.RootId
-			if rootID == "" {
-				rootID = draft.ChannelId
-			}
-			draftIDs = append(draftIDs, rootID)
+			drafts = append(drafts, draft)
 		}
 	}
 
-	if len(draftIDs) == 0 {
-		return "", ErrDraftNotFound
+	if len(drafts) == 0 {
+		return nil, ErrDraftNotFound
 	}
 
-	return draftIDs[rand.Intn(len(draftIDs))], nil
+	return drafts[rand.Intn(len(drafts))], nil
 }
 
 func (s *MemStore) GetRandomScheduledPost() (*model.ScheduledPost, error) {
