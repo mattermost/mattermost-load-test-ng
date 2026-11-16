@@ -21,6 +21,12 @@ type Config struct {
 	// The percentage of all posts that are replies
 	PercentReplies float64 `default:"0.18" validate:"range:[0,1]"`
 
+	// Whether the controlled users react to posted websocket events like the
+	// webapp does: mark the current channel as read on the server for posts of
+	// other users, fetch the thread of a reply whose root is not loaded, and
+	// load the author and mentioned user of the post when they are unknown.
+	ReactToPostedEvents bool `default:"false"`
+
 	// The IDs of the enabled plugins.
 	EnabledPlugins []string
 }

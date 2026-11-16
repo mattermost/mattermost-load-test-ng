@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -27,6 +28,8 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 		wg.Done()
 	}()
 
+	var burst postedBurst
+
 	for ev := range c.user.Events() {
 		switch ev.EventType() {
 		case model.WebsocketEventPosted:
@@ -40,6 +43,21 @@ func (c *SimulController) wsEventHandler(wg *sync.WaitGroup) {
 				if err := c.user.PostedAck(post.Id, "success", "", ""); err != nil {
 					c.status <- c.newErrorStatus(err)
 					break
+				}
+			}
+
+			if c.config.ReactToPostedEvents {
+				batched := burst.batched(time.Now())
+				select {
+				case semaphore <- struct{}{}:
+					go func() {
+						defer func() { <-semaphore }()
+						if err := c.reactToPostedEvent(post, batched); err != nil {
+							c.status <- c.newErrorStatus(fmt.Errorf("simulcontroller: reacting to posted event: %w", err))
+						}
+					}()
+				default:
+					c.status <- c.newErrorStatus(errors.New("simulcontroller: dropping call"))
 				}
 			}
 
