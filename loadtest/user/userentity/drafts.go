@@ -63,7 +63,7 @@ func (ue *UserEntity) DeleteDraft(teamId, channelId, rootId string) error {
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
+		closeBody(resp)
 	}
 
 	return ue.store.DeleteDraft(teamId, channelId, rootId)
