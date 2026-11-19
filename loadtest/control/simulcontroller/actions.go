@@ -292,11 +292,8 @@ func loadTeam(u user.User, team *model.Team, gqlEnabled bool) control.UserAction
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
-	// Get team scheduled posts from 10.3.0 onwards
-	if u.Store().ServerVersion().GTE(semver.MustParse("10.3.0")) {
-		if err := u.GetTeamScheduledPosts(team.Id); err != nil {
-			return control.UserActionResponse{Err: control.NewUserError(err)}
-		}
+	if err := u.GetTeamScheduledPosts(team.Id); err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	return control.UserActionResponse{Info: fmt.Sprintf("loaded team %s", team.Id)}
@@ -1796,7 +1793,7 @@ func (c *SimulController) viewThread(u user.User) control.UserActionResponse {
 		Direction:        "down",
 		PerPage:          60, // Matching with webapp's PER_PAGE_DEFAULT
 	}
-	if thread.LastUpdateAt != 0 && c.serverVersion.GTE(semver.MustParse("10.8.0")) { // Use the new logic only from v10.8 onwards.
+	if thread.LastUpdateAt != 0 {
 		opts.UpdatesOnly = true
 		opts.FromUpdateAt = thread.LastUpdateAt
 	}

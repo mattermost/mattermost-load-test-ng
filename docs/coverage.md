@@ -85,7 +85,7 @@ The value chosen for the `frequency` field should be the result of an informed d
 
 #### Note
 
-If an added action only works on newer server versions make sure to set the `minVersion` field in [`userAction`](https://github.com/mattermost/mattermost-load-test-ng/blob/c76063def0b36d61c0467e18357cf4cca969fe8a/loadtest/control/simulcontroller/actions.go#L23) to the minimum supported server version.
+If an added action only works on newer server versions make sure to set the `minVersion` field in [`userAction`](https://github.com/mattermost/mattermost-load-test-ng/blob/c76063def0b36d61c0467e18357cf4cca969fe8a/loadtest/control/simulcontroller/actions.go#L23) to the minimum supported server version (`control.MinSupportedVersion`, currently 10.11.0) or to a newer one if the action needs it.
 
 ## Testing
 

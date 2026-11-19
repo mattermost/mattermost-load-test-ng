@@ -116,13 +116,13 @@ func getActionList(c *SimulController) []userAction {
 			name:             "SearchPostsAllTeams",
 			run:              searchPostsAllTeams,
 			frequency:        0.0109,
-			minServerVersion: semver.MustParse("10.7.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreatePostReminder",
 			run:              c.createPostReminder,
 			frequency:        0.0005,
-			minServerVersion: control.MinSupportedVersion, // 7.3.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "EditPost",
@@ -140,37 +140,37 @@ func getActionList(c *SimulController) []userAction {
 			name:             "UpdateCustomStatus",
 			run:              c.updateCustomStatus,
 			frequency:        0.0028,
-			minServerVersion: control.MinSupportedVersion, // 5.33.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "RemoveCustomStatus",
 			run:              c.removeCustomStatus,
 			frequency:        0.0026,
-			minServerVersion: control.MinSupportedVersion, // 5.33.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreateSidebarCategory",
 			run:              c.createSidebarCategory,
 			frequency:        0.0001,
-			minServerVersion: control.MinSupportedVersion, // 5.26.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateSidebarCategory",
 			run:              c.updateSidebarCategory,
 			frequency:        0.0040,
-			minServerVersion: control.MinSupportedVersion, // 5.26.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateCustomAttribute",
 			run:              c.updateCustomAttribute,
 			frequency:        0.0040,
-			minServerVersion: semver.MustParse("10.9.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "SearchGroupChannels",
 			run:              searchGroupChannels,
 			frequency:        0.0204,
-			minServerVersion: control.MinSupportedVersion, // 5.14.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreateGroupChannel",
@@ -194,145 +194,145 @@ func getActionList(c *SimulController) []userAction {
 			name:             "ViewGlobalThreads",
 			run:              c.viewGlobalThreads,
 			frequency:        0.6023,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "FollowThread",
 			run:              c.followThread,
 			frequency:        0.0005,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UnfollowThread",
 			run:              c.unfollowThread,
 			frequency:        0.0050,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "ViewThread",
 			run:              c.viewThread,
 			frequency:        0.2841,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "MarkAllThreadsInTeamAsRead",
 			run:              c.markAllThreadsInTeamAsRead,
 			frequency:        0.0001,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateThreadRead",
 			run:              c.updateThreadRead,
 			frequency:        0.3236,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreateAckPost",
 			run:              control.CreateAckPost,
 			frequency:        0.0001,
-			minServerVersion: semver.MustParse("8.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "AckToPost",
 			run:              control.AckToPost,
 			frequency:        0.0001,
-			minServerVersion: semver.MustParse("8.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreatePersistentNotificationPost",
 			run:              control.CreatePersistentNotificationPost,
 			frequency:        0.0001,
-			minServerVersion: semver.MustParse("8.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "ClickUserProfile",
 			run:              c.openUserProfile,
 			frequency:        0.03,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "ClickPermalink",
 			run:              c.openPermalink,
 			frequency:        0.3,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "ReconnectWebSocket",
 			run:              c.reconnectWebSocket,
 			frequency:        0.144,
-			minServerVersion: control.MinSupportedVersion, // 5.37.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "GenerateUserReport",
 			run:              c.generateUserReport,
 			frequency:        0.0001,
-			minServerVersion: semver.MustParse("8.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpsertDraft",
 			run:              c.upsertDraft,
 			frequency:        0.504,
-			minServerVersion: control.MinSupportedVersion, // 7.7.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "GetDrafts",
 			run:              c.getDrafts,
 			frequency:        0.037,
-			minServerVersion: control.MinSupportedVersion, // 7.7.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "DeleteDraft",
 			run:              c.deleteDraft,
 			frequency:        1.41,
-			minServerVersion: control.MinSupportedVersion, // 7.7.0
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "AddChannelBookmark",
 			run:              c.addChannelBookmark,
 			frequency:        0.0003, // https://mattermost.atlassian.net/browse/MM-61131
-			minServerVersion: semver.MustParse("10.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateOrAddChannelBookark",
 			run:              c.updateBookmark,
 			frequency:        0.0002, // https://mattermost.atlassian.net/browse/MM-61131
-			minServerVersion: semver.MustParse("10.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateChannelBookarkSortOrder",
 			run:              c.updateBookmarksSortOrder,
 			frequency:        0.0002, // https://mattermost.atlassian.net/browse/MM-61131
-			minServerVersion: semver.MustParse("10.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "DeleteChannelBookark",
 			run:              c.deleteBookmark,
 			frequency:        0.0001, // https://mattermost.atlassian.net/browse/MM-61131
-			minServerVersion: semver.MustParse("10.0.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "CreateScheduledPost",
 			run:              c.createScheduledPost,
 			frequency:        0.001,
-			minServerVersion: semver.MustParse("10.3.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "UpdateScheduledPost",
 			run:              c.updateScheduledPost,
 			frequency:        0.001,
-			minServerVersion: semver.MustParse("10.3.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "DeleteScheduledPost",
 			run:              c.deleteScheduledPost,
 			frequency:        0.001,
-			minServerVersion: semver.MustParse("10.3.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		{
 			name:             "SendScheduledPost",
 			run:              c.sendScheduledPostNow,
 			frequency:        0.001,
-			minServerVersion: semver.MustParse("10.3.0"),
+			minServerVersion: control.MinSupportedVersion,
 		},
 		// All actions are required to contain a valid minServerVersion:
 		//   - If the action is present in server versions equal or older than
