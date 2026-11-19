@@ -919,7 +919,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 			backends += "server " + addr.PrivateIP + ":8065 max_fails=0;\n"
 		}
 
-		cacheObjects := "10m"
+		cacheObjects := "100m"
 		cacheSize := "3g"
 
 		info, err := t.getProxyInstanceInfo()
@@ -929,7 +929,7 @@ func (t *Terraform) setupProxyServer(extAgent *ssh.ExtAgent, instance Instance) 
 		}
 
 		if *info.MemoryInfo.SizeInMiB >= 32768 { // 32GiB (Usually of instance classes >=4xlarge)
-			cacheObjects = "50m"
+			cacheObjects = "200m"
 			cacheSize = "16g" // Ideally we'd like half of the total server mem. But the mem consumption rarely exceeds 10G
 			// from my tests. So there's no point stretching it further.
 		}
