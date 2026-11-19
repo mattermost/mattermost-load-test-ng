@@ -62,8 +62,8 @@ Percentage is the percentage of controllers that should run with the specified r
 
 *string*
 
-An optional MM server version to use when running actions (e.g. `5.30.0`).
-This value overrides the actual server version. If left empty, the one returned by the server is used instead.
+An optional MM server version to use when running actions (e.g. `10.11.0`).
+This value overrides the actual server version. Values below the minimum supported version (`control.MinSupportedVersion`, 10.11.0) are rejected. If left empty, the one returned by the server is used instead.
 
 ## InstanceConfiguration
 

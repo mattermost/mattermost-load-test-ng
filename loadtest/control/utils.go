@@ -72,10 +72,9 @@ var (
 		"https://reactjs.org",
 	}
 	// MinSupportedVersion is the oldest server version the load-test supports.
-	// It is the first release that includes every feature the simulated user
-	// relies on, so no version guards are needed for older servers. Raise it
-	// (and drop the guards it makes redundant) rather than adding fallbacks
-	// for older versions.
+	// No version guard for anything older than this is needed. Raise it (and
+	// drop the guards it makes redundant) rather than adding fallbacks for
+	// older versions.
 	MinSupportedVersion = semver.MustParse("10.11.0")
 
 	// UnreleasedVersion is a version guaranteed to be larger than any released
