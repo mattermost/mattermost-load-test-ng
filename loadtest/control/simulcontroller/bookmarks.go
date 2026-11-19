@@ -44,7 +44,9 @@ func (c *SimulController) addChannelBookmark(u user.User) control.UserActionResp
 	}
 
 	if bookmark.Type == model.ChannelBookmarkFile {
-		control.AttachFileToBookmark(u, bookmark)
+		if err := control.AttachFileToBookmark(u, bookmark); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	} else {
 		bookmark.LinkUrl = control.RandomLink()
 	}
@@ -86,7 +88,9 @@ func (c *SimulController) updateBookmark(u user.User) control.UserActionResponse
 	}
 
 	if bookmarkWithFileInfo.Type == model.ChannelBookmarkFile {
-		control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark)
+		if err := control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	} else {
 		bookmarkWithFileInfo.LinkUrl = control.RandomLink()
 	}
