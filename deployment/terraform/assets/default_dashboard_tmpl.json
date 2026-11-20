@@ -2575,6 +2575,403 @@
         "x": 0,
         "y": 107
       },
+      "id": 54,
+      "title": "Scoped Configuration",
+      "type": "row",
+      "panels": []
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 108
+      },
+      "id": 55,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "expr": "sum(increase(loadtest_websocket_system_setting_policy_updated_total{instance=~\"$server\"}[1m]))",
+          "legendFormat": "events",
+          "refId": "A"
+        }
+      ],
+      "title": "System Setting Policy Updated Events per Minute (Client)",
+      "type": "timeseries",
+      "description": "Number of system_setting_policy_updated WebSocket events received by the simulated users."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 108
+      },
+      "id": 56,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "expr": "sum(rate(loadtest_http_scoped_config_request_time_sum{instance=~\"$server\"}[1m])) by (request) / sum(rate(loadtest_http_scoped_config_request_time_count{instance=~\"$server\"}[1m])) by (request)",
+          "legendFormat": "{{`{{request}}`}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scoped Configuration Request Time (Client)",
+      "type": "timeseries",
+      "description": "Average time of the client config overrides, system setting policy and attribute requests made by the agents."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 117
+      },
+      "id": 57,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "expr": "sum(rate(mattermost_api_time_sum{instance=~\"$server\",handler=~\"getClientConfigOverrides|createAccessControlPolicy|getAccessControlPolicy|deleteAccessControlPolicy|searchAccessControlPolicies|patchCPAValues|patchCPAValuesForUser|patchCPAField\"}[1m])) by (handler) / sum(rate(mattermost_api_time_count{instance=~\"$server\",handler=~\"getClientConfigOverrides|createAccessControlPolicy|getAccessControlPolicy|deleteAccessControlPolicy|searchAccessControlPolicies|patchCPAValues|patchCPAValuesForUser|patchCPAField\"}[1m])) by (handler)",
+          "legendFormat": "{{`{{handler}}`}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scoped Configuration API Time (Server)",
+      "type": "timeseries",
+      "description": "Average server time of the client config overrides, system setting policy and attribute API handlers."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "loadtest-source"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 117
+      },
+      "id": 58,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "loadtest-source"
+          },
+          "expr": "sum(increase(loadtest_http_errors_total{instance=~\"$server\",path=~\"/api/v4/(config/client/overrides|access_control_policies.*|custom_profile_attributes.*|users/.+/custom_profile_attributes|properties/.*)\"}[1m])) by (path, status_code)",
+          "legendFormat": "{{`{{status_code}}`}} {{`{{path}}`}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scoped Configuration HTTP Errors per Minute (Client)",
+      "type": "timeseries",
+      "description": "Client errors for the client config overrides, system setting policy and attribute requests."
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 126
+      },
       "id": 41,
       "panels": [],
       "title": "Cloudwatch metrics",
@@ -2589,7 +2986,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 108
+        "y": 127
       },
       "id": 43,
       "options": {
@@ -2668,7 +3065,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 117
+        "y": 136
       },
       "id": 44,
       "options": {
@@ -2765,7 +3162,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 117
+        "y": 136
       },
       "id": 45,
       "options": {
@@ -2804,7 +3201,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 125
+        "y": 144
       },
       "id": 49,
       "panels": [],
@@ -2820,7 +3217,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 126
+        "y": 145
       },
       "id": 47,
       "options": {
@@ -3053,7 +3450,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 134
+        "y": 153
       },
       "id": 53,
       "options": {
@@ -3297,7 +3694,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 134
+        "y": 153
       },
       "id": 52,
       "options": {
@@ -3541,7 +3938,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 142
+        "y": 161
       },
       "id": 50,
       "options": {
@@ -3785,7 +4182,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 142
+        "y": 161
       },
       "id": 51,
       "options": {
