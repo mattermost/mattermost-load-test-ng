@@ -44,7 +44,9 @@ func (c *SimulController) addChannelBookmark(u user.User) control.UserActionResp
 	}
 
 	if bookmark.Type == model.ChannelBookmarkFile {
-		control.AttachFileToBookmark(u, bookmark)
+		if err := control.AttachFileToBookmark(u, bookmark); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	} else {
 		bookmark.LinkUrl = control.RandomLink()
 	}
@@ -76,7 +78,11 @@ func (c *SimulController) updateBookmark(u user.User) control.UserActionResponse
 
 	// here we update
 	bookmark := currentBookmarks[rand.Intn(len(currentBookmarks))]
+	// Clone is shallow and shares the embedded ChannelBookmark with the
+	// stored one, so clone it too to leave the store untouched if the
+	// update fails before the request is sent.
 	bookmarkWithFileInfo := bookmark.Clone()
+	bookmarkWithFileInfo.ChannelBookmark = bookmark.ChannelBookmark.Clone()
 	bookmarkWithFileInfo.DisplayName = control.PickRandomString(bookmarkNames)
 
 	// 10% of the times bookmarks will have an emoji assigned.
@@ -86,7 +92,9 @@ func (c *SimulController) updateBookmark(u user.User) control.UserActionResponse
 	}
 
 	if bookmarkWithFileInfo.Type == model.ChannelBookmarkFile {
-		control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark)
+		if err := control.AttachFileToBookmark(u, bookmarkWithFileInfo.ChannelBookmark); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
 	} else {
 		bookmarkWithFileInfo.LinkUrl = control.RandomLink()
 	}
