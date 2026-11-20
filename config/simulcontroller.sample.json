@@ -3,5 +3,14 @@
   "AvgIdleTimeMs": 20000,
   "PercentUrgentPosts": 0.001,
   "PercentReplies": 0.18,
-  "EnabledPlugins": ["playbooks", "mattermost-ai"]
+  "EnabledPlugins": ["playbooks", "mattermost-ai"],
+  "ScopedConfig": {
+    "AssignAttributes": false,
+    "EnablePolicyChurn": false,
+    "PolicyChurnIntervalMs": 60000,
+    "AttributeChurnIntervalMs": 30000,
+    "SettingKeys": [],
+    "SessionAttribute": "user_agent_browser_name",
+    "AttributeFields": []
+  }
 }
