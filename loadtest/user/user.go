@@ -368,4 +368,16 @@ type User interface {
 	PatchCPAValues(values map[string]json.RawMessage) error
 	GetCPAFields() error
 	CreateCPAField(field *model.PropertyField) (*model.PropertyField, error)
+	PatchCPAField(fieldID string, patch *model.PropertyFieldPatch) (*model.PropertyField, error)
+	PatchCPAValuesForUser(userID string, values map[string]json.RawMessage) error
+
+	// Scoped Configuration (system setting policies)
+	// GetClientConfigOverrides fetches and stores the client config values
+	// overridden for the logged in user.
+	GetClientConfigOverrides() error
+	SearchSystemSettingPolicies() ([]*SystemSettingPolicy, error)
+	SaveSystemSettingPolicy(policy *SystemSettingPolicy) (*SystemSettingPolicy, error)
+	DeleteSystemSettingPolicy(policyID string) error
+	GetSessionAttributeFields() ([]*model.PropertyField, error)
+	PatchSessionAttributeField(fieldID string, patch *model.PropertyFieldPatch) (*model.PropertyField, error)
 }

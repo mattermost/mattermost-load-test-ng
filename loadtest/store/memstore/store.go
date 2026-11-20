@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ type MemStore struct {
 	preferences           model.Preferences
 	config                *model.Config
 	clientConfig          map[string]string
+	clientConfigOverrides map[string]string
 	emojis                []*model.Emoji
 	posts                 map[string]*model.Post
 	postsQueue            *CQueue[model.Post]
@@ -96,6 +98,8 @@ func (s *MemStore) Clear() {
 	s.posts = map[string]*model.Post{}
 	clear(s.clientConfig)
 	s.clientConfig = map[string]string{}
+	clear(s.clientConfigOverrides)
+	s.clientConfigOverrides = map[string]string{}
 	s.postsQueue.Reset()
 	clear(s.teams)
 	s.teams = map[string]*model.Team{}
@@ -229,6 +233,24 @@ func (s *MemStore) FeatureFlags() map[string]bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.featureFlags
+}
+
+// ClientConfigOverrides returns the client configuration values overridden
+// for the user by system setting policies.
+func (s *MemStore) ClientConfigOverrides() map[string]string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return maps.Clone(s.clientConfigOverrides)
+}
+
+// SetClientConfigOverrides stores the given client configuration overrides.
+func (s *MemStore) SetClientConfigOverrides(overrides map[string]string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if overrides == nil {
+		overrides = map[string]string{}
+	}
+	s.clientConfigOverrides = overrides
 }
 
 // Config returns the server configuration settings.

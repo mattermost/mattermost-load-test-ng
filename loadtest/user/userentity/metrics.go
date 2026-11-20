@@ -37,6 +37,20 @@ func (ue *UserEntity) observeHTTPRequestTimes(elapsed float64) {
 	}
 }
 
+func (ue *UserEntity) observeScopedConfigRequestTime(request string, elapsed float64) {
+	if ue.metrics != nil {
+		ue.metrics.ScopedConfigRequestTimes.With(prometheus.Labels{
+			"request": request,
+		}).Observe(elapsed)
+	}
+}
+
+func (ue *UserEntity) incSystemSettingPolicyUpdatedWSEvents() {
+	if ue.metrics != nil {
+		ue.metrics.SystemSettingPolicyUpdatedWSEvents.Inc()
+	}
+}
+
 func (ue *UserEntity) incHTTPTimeouts(path, method string) {
 	if ue.metrics != nil {
 		ue.metrics.HTTPTimeouts.With(prometheus.Labels{

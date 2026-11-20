@@ -561,6 +561,26 @@ func TestConfig(t *testing.T) {
 	})
 }
 
+func TestClientConfigOverrides(t *testing.T) {
+	s := newStore(t)
+
+	require.Empty(t, s.ClientConfigOverrides())
+
+	s.SetClientConfigOverrides(map[string]string{"MobileEnableBiometrics": "true"})
+	require.Equal(t, map[string]string{"MobileEnableBiometrics": "true"}, s.ClientConfigOverrides())
+
+	s.ClientConfigOverrides()["MobileEnableBiometrics"] = "false"
+	require.Equal(t, "true", s.ClientConfigOverrides()["MobileEnableBiometrics"])
+
+	s.SetClientConfigOverrides(nil)
+	require.NotNil(t, s.ClientConfigOverrides())
+	require.Empty(t, s.ClientConfigOverrides())
+
+	s.SetClientConfigOverrides(map[string]string{"MobileEnableBiometrics": "true"})
+	s.Clear()
+	require.Empty(t, s.ClientConfigOverrides())
+}
+
 func TestStoreDeadlock(t *testing.T) {
 	s := newStore(t)
 

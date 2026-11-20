@@ -3,6 +3,7 @@ package userentity
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -42,5 +43,29 @@ func (ue *UserEntity) GetCPAValues(userId string) (map[string]json.RawMessage, e
 // PatchCPAValues patches (or creates) a given user's custom profile attributes.
 func (ue *UserEntity) PatchCPAValues(values map[string]json.RawMessage) error {
 	_, _, err := ue.client.PatchCPAValues(context.Background(), values)
+	return err
+}
+
+// PatchCPAField patches the given custom profile attribute field.
+func (ue *UserEntity) PatchCPAField(fieldID string, patch *model.PropertyFieldPatch) (*model.PropertyField, error) {
+	defer func(start time.Time) {
+		ue.observeScopedConfigRequestTime("patch_attribute_field", time.Since(start).Seconds())
+	}(time.Now())
+
+	field, _, err := ue.client.PatchCPAField(context.Background(), fieldID, patch)
+	if err != nil {
+		return nil, err
+	}
+	return field, nil
+}
+
+// PatchCPAValuesForUser patches (or creates) the custom profile attributes of
+// the given user.
+func (ue *UserEntity) PatchCPAValuesForUser(userID string, values map[string]json.RawMessage) error {
+	defer func(start time.Time) {
+		ue.observeScopedConfigRequestTime("patch_user_attributes", time.Since(start).Seconds())
+	}(time.Now())
+
+	_, _, err := ue.client.PatchCPAValuesForUser(context.Background(), userID, values)
 	return err
 }

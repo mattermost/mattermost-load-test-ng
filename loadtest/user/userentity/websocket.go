@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
+	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/user/websocket"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -129,6 +130,8 @@ func (ue *UserEntity) wsEventHandler(ev *model.WebSocketEvent) error {
 		return ue.handleReactionEvent(ev)
 	case model.WebsocketEventPosted, model.WebsocketEventPostEdited, model.WebsocketEventPostDeleted:
 		return ue.handlePostEvent(ev)
+	case user.WebsocketEventSystemSettingPolicyUpdated:
+		return ue.handleSystemSettingPolicyUpdatedEvent(ev)
 	}
 
 	return nil

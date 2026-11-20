@@ -21,6 +21,9 @@ type UserEntityMetrics struct {
 	HTTPErrors           *prometheus.CounterVec
 	HTTPTimeouts         *prometheus.CounterVec
 	WebSocketConnections prometheus.Gauge
+
+	ScopedConfigRequestTimes            *prometheus.HistogramVec
+	SystemSettingPolicyUpdatedWSEvents prometheus.Counter
 }
 
 type Metrics struct {
@@ -65,6 +68,23 @@ func NewMetrics() *Metrics {
 		Help:      "The total number of active WebSocket connections.",
 	})
 	m.registry.MustRegister(m.ueMetrics.WebSocketConnections)
+
+	m.ueMetrics.ScopedConfigRequestTimes = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: metricsNamespace,
+		Subsystem: metricsSubSystemHTTP,
+		Name:      "scoped_config_request_time",
+		Help:      "The time taken to execute scoped configuration (system setting policy) client requests.",
+	},
+		[]string{"request"})
+	m.registry.MustRegister(m.ueMetrics.ScopedConfigRequestTimes)
+
+	m.ueMetrics.SystemSettingPolicyUpdatedWSEvents = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: metricsNamespace,
+		Subsystem: metricsSubSystemWS,
+		Name:      "system_setting_policy_updated_total",
+		Help:      "The total number of system_setting_policy_updated WebSocket events received.",
+	})
+	m.registry.MustRegister(m.ueMetrics.SystemSettingPolicyUpdatedWSEvents)
 
 	return &m
 }

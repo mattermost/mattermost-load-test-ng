@@ -51,6 +51,9 @@ type UserStore interface {
 	ClientConfig() map[string]string
 	// FeatureFlags returns a map of the features flags stored in the client config.
 	FeatureFlags() map[string]bool
+	// ClientConfigOverrides returns the client configuration values overridden
+	// for the logged in user by system setting policies.
+	ClientConfigOverrides() map[string]string
 	// Channel returns the channel for the given channelId.
 	Channel(channelId string) (*model.Channel, error)
 	// Channels returns the channels for a team.
@@ -202,6 +205,8 @@ type MutableUserStore interface {
 	SetConfig(*model.Config)
 	// SetClientConfig stores the given client configuration settings.
 	SetClientConfig(map[string]string)
+	// SetClientConfigOverrides stores the given client configuration overrides.
+	SetClientConfigOverrides(map[string]string)
 
 	// users
 	// SetUser stores the given user.
