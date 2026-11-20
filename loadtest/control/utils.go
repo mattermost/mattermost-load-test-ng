@@ -71,8 +71,11 @@ var (
 		"https://golang.org",
 		"https://reactjs.org",
 	}
-	// MinSupportedVersion is, by definition, the third-to-last ESR
-	MinSupportedVersion = semver.MustParse("7.8.0")
+	// MinSupportedVersion is the oldest server version the load-test supports.
+	// No version guard for anything older than this is needed. Raise it (and
+	// drop the guards it makes redundant) rather than adding fallbacks for
+	// older versions.
+	MinSupportedVersion = semver.MustParse("10.11.0")
 
 	// UnreleasedVersion is a version guaranteed to be larger than any released
 	// version, useful for actions already added to the load-test but not yet
