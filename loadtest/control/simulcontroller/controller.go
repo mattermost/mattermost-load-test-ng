@@ -381,6 +381,7 @@ type SimulController struct {
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      semver.Version  // stores the current server version
 	plugins            []plugins.SimulController
+	scopedConfig       scopedConfigState // only accessed by the periodic actions goroutine
 }
 
 // New creates and initializes a new SimulController with given parameters.

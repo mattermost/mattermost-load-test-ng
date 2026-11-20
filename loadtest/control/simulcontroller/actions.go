@@ -174,6 +174,10 @@ func (c *SimulController) login(u user.User) control.UserActionResponse {
 					return control.UserActionResponse{Err: control.NewUserError(err)}
 				}
 
+				if c.config.ScopedConfig.AssignAttributes {
+					c.sendResponseStatus(assignScopedConfigAttributes(u, c.config.ScopedConfig.attributeFields()))
+				}
+
 				return resp
 			}
 			c.status <- c.newErrorStatus(err)
@@ -786,8 +790,19 @@ func (c *SimulController) updateCustomAttribute(u user.User) control.UserActionR
 		return control.UserActionResponse{Info: "no custom profile attributes to update"}
 	}
 
-	randomText := control.PickRandomWord()
-	value, err := json.Marshal(randomText)
+	if isAdminManagedCPAField(field) {
+		return control.UserActionResponse{Info: fmt.Sprintf("skipping admin managed CPA field %s", field.Name)}
+	}
+
+	var newValue any = control.PickRandomWord()
+	if field.Type == model.PropertyFieldTypeSelect {
+		options := assignableCPAOptions(field)
+		if len(options) == 0 {
+			return control.UserActionResponse{Info: fmt.Sprintf("CPA field %s has no options", field.Name)}
+		}
+		newValue = options[rand.Intn(len(options))].ID
+	}
+	value, err := json.Marshal(newValue)
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}

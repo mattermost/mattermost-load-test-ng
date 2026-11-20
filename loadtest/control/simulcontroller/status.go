@@ -26,3 +26,11 @@ func (c *SimulController) newErrorStatus(err error) control.UserStatus {
 		Err:          err,
 	}
 }
+
+func (c *SimulController) sendResponseStatus(resp control.UserActionResponse) {
+	if resp.Err != nil {
+		c.status <- c.newErrorStatus(resp.Err)
+	} else if resp.Info != "" {
+		c.status <- c.newInfoStatus(resp.Info)
+	}
+}
