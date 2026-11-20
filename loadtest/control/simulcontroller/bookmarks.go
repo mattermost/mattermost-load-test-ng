@@ -78,7 +78,11 @@ func (c *SimulController) updateBookmark(u user.User) control.UserActionResponse
 
 	// here we update
 	bookmark := currentBookmarks[rand.Intn(len(currentBookmarks))]
+	// Clone is shallow and shares the embedded ChannelBookmark with the
+	// stored one, so clone it too to leave the store untouched if the
+	// update fails before the request is sent.
 	bookmarkWithFileInfo := bookmark.Clone()
+	bookmarkWithFileInfo.ChannelBookmark = bookmark.ChannelBookmark.Clone()
 	bookmarkWithFileInfo.DisplayName = control.PickRandomString(bookmarkNames)
 
 	// 10% of the times bookmarks will have an emoji assigned.
