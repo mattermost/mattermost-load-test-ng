@@ -3,5 +3,6 @@
   "AvgIdleTimeMs": 20000,
   "PercentUrgentPosts": 0.001,
   "PercentReplies": 0.18,
+  "ReactToPostedEvents": false,
   "EnabledPlugins": ["playbooks", "mattermost-ai"]
 }

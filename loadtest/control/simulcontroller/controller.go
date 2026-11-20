@@ -381,6 +381,7 @@ type SimulController struct {
 	wg                 *sync.WaitGroup // to keep the track of every goroutine created by the controller
 	serverVersion      semver.Version  // stores the current server version
 	plugins            []plugins.SimulController
+	poller             *profilePoller // batches the fetching of unknown users and statuses
 }
 
 // New creates and initializes a new SimulController with given parameters.
@@ -407,6 +408,8 @@ func New(id int, user user.User, config *Config, status chan<- control.UserStatu
 		stoppedChan:        make(chan struct{}),
 		wg:                 &sync.WaitGroup{},
 	}
+
+	controller.poller = newProfilePoller(profilePollInterval, controller.fetchPolledProfiles)
 
 	plugins.SpawnPluginControllers(plugins.TypeSimulController, func(p plugins.Controller) {
 		if slices.Contains(config.EnabledPlugins, p.PluginId()) {
@@ -442,6 +445,7 @@ func (c *SimulController) Run() {
 		if err := c.disconnect(); err != nil {
 			c.status <- c.newErrorStatus(control.NewUserError(err))
 		}
+		c.poller.reset()
 		c.user.ClearUserData()
 		for _, p := range c.plugins {
 			p.ClearUserData()
