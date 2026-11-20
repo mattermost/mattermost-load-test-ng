@@ -22,7 +22,7 @@ type UserEntityMetrics struct {
 	HTTPTimeouts         *prometheus.CounterVec
 	WebSocketConnections prometheus.Gauge
 
-	ScopedConfigRequestTimes            *prometheus.HistogramVec
+	ScopedConfigRequestTimes           *prometheus.HistogramVec
 	SystemSettingPolicyUpdatedWSEvents prometheus.Counter
 }
 

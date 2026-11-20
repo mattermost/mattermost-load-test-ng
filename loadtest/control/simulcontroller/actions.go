@@ -110,6 +110,12 @@ func (c *SimulController) reload(full bool) control.UserActionResponse {
 		return resp
 	}
 
+	if control.SystemSettingPoliciesEnabled(c.user) {
+		if err := c.user.GetClientConfigOverrides(); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
 	c.status <- c.newInfoStatus(resp.Info)
 
 	team, err := c.user.Store().CurrentTeam()
@@ -1977,6 +1983,12 @@ func (c *SimulController) createPostReminder(u user.User) control.UserActionResp
 }
 
 func (c *SimulController) reconnectWebSocket(u user.User) control.UserActionResponse {
+	if control.SystemSettingPoliciesEnabled(u) {
+		if err := u.GetClientConfigOverrides(); err != nil {
+			return control.UserActionResponse{Err: control.NewUserError(err)}
+		}
+	}
+
 	team, err := c.user.Store().CurrentTeam()
 	if err != nil {
 		return control.UserActionResponse{Err: control.NewUserError(err)}

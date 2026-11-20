@@ -90,6 +90,12 @@ func Login(u user.User) UserActionResponse {
 		}
 	}
 
+	if SystemSettingPoliciesEnabled(u) {
+		if err := u.GetClientConfigOverrides(); err != nil {
+			return UserActionResponse{Err: NewUserError(err)}
+		}
+	}
+
 	return UserActionResponse{Info: "logged in"}
 }
 
@@ -1082,6 +1088,13 @@ func ChannelBookmarkEnabled(u user.User) (bool, UserActionResponse) {
 
 func CustomProfileAttributesEnabled(u user.User) (bool, UserActionResponse) {
 	return FeatureFlagEnabled(u, "CustomProfileAttributes"), UserActionResponse{}
+}
+
+// SystemSettingPoliciesEnabled returns whether the server exposes client config
+// overrides through system setting policies. Unlike FeatureFlagEnabled, a
+// missing flag means the feature is not available.
+func SystemSettingPoliciesEnabled(u user.User) bool {
+	return u.Store().FeatureFlags()["SystemSettingPolicies"]
 }
 
 func ScheduledPostsEnabled(u user.User) (bool, UserActionResponse) {
