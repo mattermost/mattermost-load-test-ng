@@ -156,6 +156,10 @@ func TestReactToPostedEventFetchesMissingRootAndAuthor(t *testing.T) {
 	// check which calls are made.
 	require.NoError(t, f.c.reactToPostedEvent(reply, false))
 	require.Equal(t, 1, f.count("GET /api/v4/posts/"+reply.RootId+"/thread"))
+	// The author is queued for the batched polling instead of fetched right away.
+	require.Equal(t, 0, f.count("POST /api/v4/users/ids"))
+	require.Equal(t, 0, f.count("POST /api/v4/users/status/ids"))
+	f.c.poller.flush()
 	require.Equal(t, 1, f.count("POST /api/v4/users/ids"))
 	require.Equal(t, 1, f.count("/image"))
 	require.Equal(t, 1, f.count("POST /api/v4/users/status/ids"))

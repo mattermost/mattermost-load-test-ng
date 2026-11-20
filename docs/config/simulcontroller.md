@@ -19,7 +19,7 @@ The average amount of time (in milliseconds) the controlled users will wait betw
 Default: `false`. When enabled, the controlled users react to `posted` websocket events the way the webapp does. For a post in the channel the user is viewing:
 
 - a reply whose root post is not loaded triggers a thread fetch (`GET /posts/{id}/thread`);
-- an unknown author is loaded (`POST /users/ids`, profile picture), as is an unknown status (`POST /users/status/ids`) and an unknown mentioned user (`POST /users/usernames`);
+- an unknown author and an unknown status are queued and requested in batches every 3 seconds, like the webapp's polling loaders (`POST /users/ids` with up to 100 ids plus profile pictures, `POST /users/status/ids` with up to 200 ids), while an unknown mentioned user is requested right away (`POST /users/usernames`);
 - a post from another user marks the channel as read on the server (`POST /channels/members/{user_id}/view`), except for system messages and for events the webapp would handle as part of a batch (after 5 events within a burst of events less than 100 ms apart).
 
 With many users viewing the same channel, every new post produces one server-side mark-as-read per viewer. Note that users choose channels at random, so co-viewers of a channel are rare unless the number of active channels is small.

@@ -12,7 +12,6 @@ import (
 
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/control"
 	"github.com/mattermost/mattermost-load-test-ng/loadtest/store/memstore"
-	"github.com/mattermost/mattermost-load-test-ng/loadtest/user"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -49,8 +48,8 @@ func (b *postedBurst) batched(now time.Time) bool {
 // through the websocket (completePostReceive and handleNewPostEvent):
 //   - for a reply whose root is not loaded in the current channel, it fetches
 //     the thread;
-//   - it hydrates the author and the mentioned user of the post (profile,
-//     status and picture) when they are unknown;
+//   - it queues the author of the post (profile, status and picture) for the
+//     batched polling when unknown, and looks up the mentioned user;
 //   - for posts of other users in the channel being viewed, it marks the
 //     channel as read on the server, unless the event is handled as part of a
 //     batch.
@@ -86,7 +85,7 @@ func (c *SimulController) reactToPostedEvent(post *model.Post, batched bool) err
 		}
 	}
 
-	if err := hydratePostedEvent(u, post); err != nil {
+	if err := c.hydratePostedEvent(post); err != nil {
 		return err
 	}
 
@@ -106,28 +105,29 @@ func (c *SimulController) reactToPostedEvent(post *model.Post, batched bool) err
 	return nil
 }
 
-// hydratePostedEvent loads the author and the mentioned user of the post, plus
-// the author's status and profile picture, when they are not known yet. This
-// mirrors batchFetchStatusesProfilesGroupsFromPosts in the webapp, which only
-// requests what is missing from its state (and the browser caches pictures, so
-// the picture is only requested for newly seen users).
-func hydratePostedEvent(u user.User, post *model.Post) error {
+// hydratePostedEvent queues the author of the post for the batched profile
+// and status polling, and looks up the mentioned user, when they are not known
+// yet. This mirrors batchFetchStatusesProfilesGroupsFromPosts in the webapp,
+// which only requests what is missing from its state: unknown authors and
+// statuses are queued in polling loaders (see profilePoller) while mentioned
+// usernames are requested right away. The browser caches pictures, so a
+// picture is only requested for newly seen users, together with their profile.
+func (c *SimulController) hydratePostedEvent(post *model.Post) error {
+	u := c.user
+
 	// The current user is always known (and online).
 	if post.UserId == u.Store().Id() {
 		return nil
 	}
+
+	var userIds, statusIds []string
 
 	author, err := u.Store().GetUser(post.UserId)
 	if err != nil {
 		return fmt.Errorf("failed to get author from store: %w", err)
 	}
 	if author.Id == "" {
-		if _, err := u.GetUsersByIds([]string{post.UserId}, 0); err != nil {
-			return fmt.Errorf("GetUsersByIds failed: %w", err)
-		}
-		if err := getProfileImageForUsers(u, []string{post.UserId}); err != nil {
-			return fmt.Errorf("getProfileImageForUsers failed: %w", err)
-		}
+		userIds = append(userIds, post.UserId)
 	}
 
 	status, err := u.Store().Status(post.UserId)
@@ -135,9 +135,11 @@ func hydratePostedEvent(u user.User, post *model.Post) error {
 		return fmt.Errorf("failed to get status from store: %w", err)
 	}
 	if status.UserId == "" {
-		if err := u.GetUsersStatusesByIds([]string{post.UserId}); err != nil {
-			return fmt.Errorf("GetUsersStatusesByIds failed: %w", err)
-		}
+		statusIds = append(statusIds, post.UserId)
+	}
+
+	if len(userIds) > 0 || len(statusIds) > 0 {
+		c.poller.queue(userIds, statusIds)
 	}
 
 	if username := extractMentionFromMessage(post.Message); username != "" {
@@ -153,4 +155,21 @@ func hydratePostedEvent(u user.User, post *model.Post) error {
 	}
 
 	return nil
+}
+
+// fetchPolledProfiles requests a batch of users (with their pictures) and
+// statuses queued by the poller.
+func (c *SimulController) fetchPolledProfiles(userIds, statusIds []string) {
+	if len(userIds) > 0 {
+		if _, err := c.user.GetUsersByIds(userIds, 0); err != nil {
+			c.status <- c.newErrorStatus(fmt.Errorf("GetUsersByIds failed: %w", err))
+		} else if err := getProfileImageForUsers(c.user, userIds); err != nil {
+			c.status <- c.newErrorStatus(fmt.Errorf("getProfileImageForUsers failed: %w", err))
+		}
+	}
+	if len(statusIds) > 0 {
+		if err := c.user.GetUsersStatusesByIds(statusIds); err != nil {
+			c.status <- c.newErrorStatus(fmt.Errorf("GetUsersStatusesByIds failed: %w", err))
+		}
+	}
 }
