@@ -36,7 +36,10 @@ type errorTrack struct {
 	totalErrors int64
 }
 
-func createAgent(agent *client.Agent, ltConfig loadtest.Config) error {
+// createAgent creates the given agent. Only the agent with scopedConfigLeader set
+// keeps the Scoped Configuration policy churn enabled, so that the churn rate
+// doesn't scale with the number of agents.
+func createAgent(agent *client.Agent, ltConfig loadtest.Config, scopedConfigLeader bool) error {
 	// TODO: UserController config should probably come from the upper layer
 	// and be passed through.
 	var ucConfig interface{}
@@ -45,7 +48,12 @@ func createAgent(agent *client.Agent, ltConfig loadtest.Config) error {
 	case loadtest.UserControllerSimple:
 		ucConfig, err = simplecontroller.ReadConfig("")
 	case loadtest.UserControllerSimulative:
-		ucConfig, err = simulcontroller.ReadConfig("")
+		var simulConfig *simulcontroller.Config
+		simulConfig, err = simulcontroller.ReadConfig("")
+		if err == nil && !scopedConfigLeader {
+			simulConfig.ScopedConfig.EnablePolicyChurn = false
+		}
+		ucConfig = simulConfig
 	}
 	if err != nil {
 		return fmt.Errorf("cluster: failed to read controller config: %w", err)
@@ -82,7 +90,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 			continue
 		}
 
-		if err := createAgent(agent, ltConfig); err != nil {
+		if err := createAgent(agent, ltConfig, i == 0); err != nil {
 			return nil, err
 		}
 	}
@@ -101,7 +109,7 @@ func New(config LoadAgentClusterConfig, ltConfig loadtest.Config, log *mlog.Logg
 			continue
 		}
 
-		if err := createAgent(browserAgent, ltConfig); err != nil {
+		if err := createAgent(browserAgent, ltConfig, false); err != nil {
 			return nil, err
 		}
 	}
@@ -225,11 +233,11 @@ func (c *LoadAgentCluster) DecrementUsers(n int) error {
 // Status returns the current status of the LoadAgentCluster.
 func (c *LoadAgentCluster) Status() (Status, error) {
 	var status Status
-	for _, agent := range c.agents {
+	for i, agent := range c.agents {
 		st, err := agent.Status()
 		// Agent probably crashed. We create it again.
 		if errors.Is(err, client.ErrAgentNotFound) {
-			if err := createAgent(agent, c.ltConfig); err != nil {
+			if err := createAgent(agent, c.ltConfig, i == 0); err != nil {
 				c.log.Error("agent create failed", mlog.Err(err))
 			}
 		} else if err != nil {
@@ -258,7 +266,7 @@ func (c *LoadAgentCluster) Status() (Status, error) {
 		st, err := browserAgent.Status()
 		// Agent probably crashed. We create it again.
 		if errors.Is(err, client.ErrAgentNotFound) {
-			if err := createAgent(browserAgent, c.ltConfig); err != nil {
+			if err := createAgent(browserAgent, c.ltConfig, false); err != nil {
 				c.log.Error("browser agent create failed", mlog.Err(err))
 			}
 
