@@ -376,6 +376,7 @@ type User interface {
 	// overridden for the logged in user.
 	GetClientConfigOverrides() error
 	SearchSystemSettingPolicies() ([]*SystemSettingPolicy, error)
+	GetSystemSettingPolicy(policyID string) (*SystemSettingPolicy, error)
 	SaveSystemSettingPolicy(policy *SystemSettingPolicy) (*SystemSettingPolicy, error)
 	DeleteSystemSettingPolicy(policyID string) error
 	GetSessionAttributeFields() ([]*model.PropertyField, error)

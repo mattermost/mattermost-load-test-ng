@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	// Controller ids start at 1, so the first controller of an agent leads.
+	scopedConfigLeaderID         = 1
 	scopedConfigPolicyNamePrefix = "loadtest-"
 	// An option toggled on and off by the churning admin to exercise attribute
 	// field changes. It is never assigned to users.
@@ -41,8 +43,14 @@ type cpaOption struct {
 	Color string `json:"color,omitempty"`
 }
 
+// IsScopedConfigLeader returns whether the controller with the given id
+// churns system setting policies. That controller logs in as the admin user.
+func IsScopedConfigLeader(config *Config, id int) bool {
+	return config != nil && config.ScopedConfig.EnablePolicyChurn && id == scopedConfigLeaderID
+}
+
 func (c *SimulController) isScopedConfigLeader() bool {
-	return c.id == 0 && c.config.ScopedConfig.EnablePolicyChurn
+	return IsScopedConfigLeader(c.config, c.id)
 }
 
 func cpaFieldOptions(field *model.PropertyField) []cpaOption {
@@ -393,6 +401,12 @@ func (c *SimulController) churnSystemSettingPolicy(u user.User) control.UserActi
 
 	if !strings.HasPrefix(policy.Name, scopedConfigPolicyNamePrefix) {
 		return control.UserActionResponse{Info: fmt.Sprintf("skipping %s: it is managed by policy %q", key, policy.Name)}
+	}
+
+	// Search results reference attributes by ID, which can't be saved back.
+	policy, err = u.GetSystemSettingPolicy(policy.ID)
+	if err != nil {
+		return control.UserActionResponse{Err: control.NewUserError(err)}
 	}
 
 	save := func(desc string) (string, error) {

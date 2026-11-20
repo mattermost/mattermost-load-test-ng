@@ -105,6 +105,10 @@ func TestSaveAndSearchSystemSettingPolicies(t *testing.T) {
 		require.Equal(t, user.SystemSettingPolicyType, search["type"])
 		_, _ = w.Write([]byte(`{"policies":[{"id":"policyid","name":"policy","type":"system_setting","revision":1,"roles":["system_user"],"rules":[{"actions":["MobileEnableBiometrics"],"expression":"true","value":"false"}]}],"total":1}`))
 	})
+	mux.HandleFunc("GET /api/v4/access_control_policies/{id}", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "policyid", r.PathValue("id"))
+		_, _ = w.Write([]byte(`{"id":"policyid","name":"policy","type":"system_setting","revision":1,"roles":["system_user"],"rules":[{"actions":["MobileEnableBiometrics"],"expression":"user.attributes.Department == \"Sales\"","value":"true"}]}`))
+	})
 	u, _ := newScopedConfigTestUser(t, mux)
 
 	saved, err := u.SaveSystemSettingPolicy(policy)
@@ -117,6 +121,10 @@ func TestSaveAndSearchSystemSettingPolicies(t *testing.T) {
 	require.Len(t, policies, 1)
 	require.Equal(t, "policyid", policies[0].ID)
 	require.Equal(t, "false", policies[0].Rules[0].Value)
+
+	fetched, err := u.GetSystemSettingPolicy("policyid")
+	require.NoError(t, err)
+	require.Equal(t, policy.Rules, fetched.Rules)
 }
 
 func TestHandleSystemSettingPolicyUpdatedEvent(t *testing.T) {

@@ -93,6 +93,21 @@ func (ue *UserEntity) SearchSystemSettingPolicies() ([]*user.SystemSettingPolicy
 	return res.Policies, nil
 }
 
+// GetSystemSettingPolicy returns the given system setting policy. Unlike
+// search results, its expressions reference attributes by name.
+func (ue *UserEntity) GetSystemSettingPolicy(policyID string) (*user.SystemSettingPolicy, error) {
+	defer func(start time.Time) {
+		ue.observeScopedConfigRequestTime("get_policy", time.Since(start).Seconds())
+	}(time.Now())
+
+	var policy user.SystemSettingPolicy
+	if err := ue.doScopedConfigRequest(http.MethodGet, "/access_control_policies/"+policyID, nil, &policy); err != nil {
+		return nil, err
+	}
+
+	return &policy, nil
+}
+
 // SaveSystemSettingPolicy creates or updates the given system setting policy.
 func (ue *UserEntity) SaveSystemSettingPolicy(policy *user.SystemSettingPolicy) (*user.SystemSettingPolicy, error) {
 	if policy == nil {
