@@ -46,14 +46,16 @@ func TestScopedConfigDefaults(t *testing.T) {
 }
 
 func TestIsScopedConfigLeader(t *testing.T) {
-	c := &SimulController{id: 0, config: &Config{}}
+	c := &SimulController{id: 1, config: &Config{}}
 	require.False(t, c.isScopedConfigLeader())
 
 	c.config.ScopedConfig.EnablePolicyChurn = true
 	require.True(t, c.isScopedConfigLeader())
 
-	c.id = 1
+	c.id = 2
 	require.False(t, c.isScopedConfigLeader())
+
+	require.False(t, IsScopedConfigLeader(nil, 1))
 }
 
 func TestAssignableCPAOptions(t *testing.T) {

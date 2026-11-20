@@ -426,6 +426,8 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 	}
 	mlog.Info("Custom emoji created")
 
+	simulConfig, _ := controllerConfig.(*simulcontroller.Config)
+
 	return func(id int, status chan<- control.UserStatus) (control.UserController, error) {
 		id += userOffset
 
@@ -434,7 +436,7 @@ func NewControllerWrapper(config *loadtest.Config, controllerConfig interface{},
 		password := "testPass123$"
 		authenticationType := userentity.AuthenticationTypeMattermost
 
-		if modAdmins > 0 && id%modAdmins == 0 {
+		if (modAdmins > 0 && id%modAdmins == 0) || simulcontroller.IsScopedConfigLeader(simulConfig, id) {
 			username = ""
 			email = config.ConnectionConfiguration.AdminEmail
 			password = config.ConnectionConfiguration.AdminPassword

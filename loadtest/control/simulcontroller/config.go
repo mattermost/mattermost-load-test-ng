@@ -33,8 +33,9 @@ type ScopedConfig struct {
 	// Whether users assign themselves a random value for each attribute field
 	// they don't have a value for yet when they first log in.
 	AssignAttributes bool `default:"false"`
-	// Whether the admin user of the controller with id 0 creates the attribute
-	// fields and churns system setting policies and user attribute values.
+	// Whether the first controller of the agent logs in as the admin user
+	// (ConnectionConfiguration.AdminEmail), creates the attribute fields and
+	// churns system setting policies and user attribute values.
 	// When running through the coordinator, only the first agent keeps this enabled.
 	EnablePolicyChurn bool `default:"false"`
 	// The time (in milliseconds) between two system setting policy changes.
